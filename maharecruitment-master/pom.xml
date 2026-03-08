@@ -9,4 +9,11 @@
   <packaging>jar</packaging>
   <name>maharecruitment-master</name>
   <description>maharecruitment-master</description>
+  <dependencies>
+    <dependency>
+      <groupId>com.maharecruitment.gov.in</groupId>
+      <artifactId>maharecruitment-auth</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
 </project>

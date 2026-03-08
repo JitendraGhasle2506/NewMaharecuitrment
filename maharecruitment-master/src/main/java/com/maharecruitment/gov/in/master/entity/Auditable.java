@@ -21,9 +21,11 @@ public abstract class Auditable implements Serializable {
     @Column(name = "updated_user_id")
     private Long updatedUserId;
 
+    @CreationTimestamp
     @Column(name = "created_date_time", updatable = false)
     private LocalDateTime createdDateTime;
 
+    @UpdateTimestamp
     @Column(name = "updated_date_time")
     private LocalDateTime updatedDateTime;
 }

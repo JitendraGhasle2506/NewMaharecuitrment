@@ -105,6 +105,33 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         }
     }
 
+    @Override
+    public void sendAgencyCredentials(String email, String contactName, String temporaryPassword) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(getFromAddress());
+        message.setTo(email);
+        message.setSubject("MahaIT Recruitment Agency Account Created");
+        message.setText("""
+                Dear %s,
+
+                Your agency master record has been created successfully and an agency user account has been provisioned.
+
+                Login ID: %s
+                Temporary Password: %s
+
+                Please sign in and change the password after first login.
+
+                Regards,
+                MahaIT Recruitment
+                """.formatted(contactName, email, temporaryPassword));
+
+        try {
+            mailSender.send(message);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to send agency account credentials.", ex);
+        }
+    }
+
     private String getFromAddress() {
         String fromAddress = getProperty("spring.mail.from.email");
         if (!StringUtils.hasText(fromAddress)) {

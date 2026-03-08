@@ -66,6 +66,9 @@ public class SecurityConfig {
                                                                 "/test/**", "/otp/**",
                                                                 "/error", "/error/**")
                                                 .permitAll()
+
+                                                .requestMatchers("/api/master/agencies/**").hasRole("ADMIN")
+                                                .requestMatchers("/master/agencies/**").hasRole("ADMIN")
                                                 .requestMatchers("/home", "/common/**").authenticated()
                                                 .requestMatchers("/admin/**").hasRole("ADMIN")
                                                 .requestMatchers("/hr/**", "/employees/**").hasRole("HR")
@@ -117,7 +120,8 @@ public class SecurityConfig {
                                 .exceptionHandling(ex -> ex
                                                 .accessDeniedHandler(accessDeniedHandler)
                                                 .authenticationEntryPoint((req, res, authEx) -> res
-                                                                .sendRedirect(req.getContextPath() + "/login?unauthenticated=true")))
+                                                                .sendRedirect(req.getContextPath()
+                                                                                + "/login?unauthenticated=true")))
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessHandler(logoutSuccessHandler)

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Agency Master</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Agency Master', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2>Agency Master Entry</h2>
+                    <a class="btn btn-primary btn-sm" th:href="@{/master/agencies/new}">Add Agency</a>
+                </div>
+
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/resource-levels}">Resource Levels</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/agencies}">Agencies</a>
+                    </div>
+
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="searchInput"
+                                placeholder="Search by name, email, type or status">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle" id="agencyTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Agency Name</th>
+                                    <th>Official Email</th>
+                                    <th>Telephone</th>
+                                    <th>Agency Type</th>
+                                    <th>Entity Type</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${agencies.isEmpty()}">
+                                    <td colspan="8" class="text-center text-muted">No agency records found</td>
+                                </tr>
+                                <tr th:each="item : ${agencies.content}">
+                                    <td th:text="${item.agencyId}"></td>
+                                    <td th:text="${item.agencyName}"></td>
+                                    <td th:text="${item.officialEmail}"></td>
+                                    <td th:text="${item.telephoneNumber}"></td>
+                                    <td th:text="${item.agencyType}"></td>
+                                    <td th:text="${item.entityType != null ? item.entityType.displayName : ''}"></td>
+                                    <td>
+                                        <span class="badge"
+                                            th:classappend="${item.status.name() == 'ACTIVE'} ? ' text-bg-success' : ' text-bg-secondary'"
+                                            th:text="${item.status}"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:href="@{/master/agencies/{id}/edit(id=${item.agencyId})}">Edit</a>
+                                        <form class="d-inline" th:if="${item.status.name() == 'ACTIVE'}"
+                                            th:action="@{/master/agencies/{id}/status(id=${item.agencyId})}" method="post">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <input type="hidden" name="status" value="INACTIVE">
+                                            <button class="btn btn-outline-danger btn-sm" type="submit">Deactivate</button>
+                                        </form>
+                                        <form class="d-inline" th:if="${item.status.name() != 'ACTIVE'}"
+                                            th:action="@{/master/agencies/{id}/status(id=${item.agencyId})}" method="post">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <input type="hidden" name="status" value="ACTIVE">
+                                            <button class="btn btn-outline-success btn-sm" type="submit">Activate</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3" th:if="${agencies.totalPages > 1}">
+                        <a class="btn btn-outline-secondary btn-sm" th:if="${!agencies.first}"
+                            th:href="@{/master/agencies(page=${agencies.number - 1},size=${agencies.size})}">
+                            Previous
+                        </a>
+                        <span th:if="${agencies.first}"></span>
+                        <span class="small text-muted">
+                            Page <span th:text="${agencies.number + 1}"></span> of <span th:text="${agencies.totalPages}"></span>
+                        </span>
+                        <a class="btn btn-outline-secondary btn-sm" th:if="${!agencies.last}"
+                            th:href="@{/master/agencies(page=${agencies.number + 1},size=${agencies.size})}">
+                            Next
+                        </a>
+                        <span th:if="${agencies.last}"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script>
+        document.getElementById('searchInput').addEventListener('input', function () {
+            const filter = this.value.toLowerCase();
+            document.querySelectorAll('#agencyTable tbody tr').forEach(function (row) {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+</body>
+
+</html>

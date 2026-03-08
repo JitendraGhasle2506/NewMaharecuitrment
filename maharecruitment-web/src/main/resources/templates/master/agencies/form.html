@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit} ? 'Edit Agency' : 'Create Agency'">Agency Master Entry</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .section-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-left: 5px solid #0d6efd;
+            margin-top: 25px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            border-radius: 0 4px 4px 0;
+        }
+        .required-asterisk { color: red; }
+        .form-label { font-weight: 500; }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Agency Master', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 th:text="${isEdit} ? 'Edit Agency' : 'Agency Master Entry'">Agency Master Entry</h2>
+                    <a th:href="@{/master/agencies}" class="btn btn-secondary btn-sm">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <!-- Navigation Tabs -->
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/resource-levels}">Resource Levels</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/agencies}">Agencies</a>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <form id="agencyMasterForm"
+                          th:object="${agencyForm}"
+                          th:action="${isEdit} ? @{/master/agencies/{id}(id=${agencyId})} : @{/master/agencies}"
+                          method="post"
+                          enctype="multipart/form-data"
+                          onsubmit="return validateAgencyForm();">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                        <!-- ============== SECTION 1: AGENCY BASIC DETAILS ============== -->
+                        <div class="section-header">1. Agency Basic Details</div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Agency Name <span class="required-asterisk">*</span></label>
+                                <input type="text" class="form-control" th:field="*{agencyName}" maxlength="200">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('agencyName')}" th:errors="*{agencyName}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Official Email ID <span class="required-asterisk">*</span></label>
+                                <input type="email" class="form-control" th:field="*{officialEmail}" maxlength="255">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('officialEmail')}" th:errors="*{officialEmail}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Telephone Number <span class="required-asterisk">*</span></label>
+                                <input type="text" class="form-control" th:field="*{telephoneNumber}" maxlength="15">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('telephoneNumber')}" th:errors="*{telephoneNumber}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Agency Type <span class="required-asterisk">*</span></label>
+                                <select class="form-select" th:field="*{agencyType}">
+                                    <option value="">-- Select --</option>
+                                    <option th:each="item : ${agencyTypes}" th:value="${item}" th:text="${item}"></option>
+                                </select>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('agencyType')}" th:errors="*{agencyType}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Entity Type <span class="required-asterisk">*</span></label>
+                                <select class="form-select" th:field="*{entityType}">
+                                    <option value="">-- Select --</option>
+                                    <option th:each="item : ${entityTypes}" th:value="${item}" th:text="${item.displayName}"></option>
+                                </select>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('entityType')}" th:errors="*{entityType}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">MSME Registered <span class="required-asterisk">*</span></label>
+                                <select class="form-select" th:field="*{msmeRegistered}">
+                                    <option value="">-- Select --</option>
+                                    <option th:value="true">Yes</option>
+                                    <option th:value="false">No</option>
+                                </select>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('msmeRegistered')}" th:errors="*{msmeRegistered}"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Official Address <span class="required-asterisk">*</span></label>
+                                <textarea class="form-control" rows="3" th:field="*{officialAddress}" id="officialAddress" maxlength="500"></textarea>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('officialAddress')}" th:errors="*{officialAddress}"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Permanent Address <span class="required-asterisk">*</span></label>
+                                <div class="form-check mb-1">
+                                    <input class="form-check-input" type="checkbox" id="sameAsOfficialCheck" th:field="*{sameAsOfficialAddress}">
+                                    <label class="form-check-label text-muted small" for="sameAsOfficialCheck">Same as Official Address</label>
+                                </div>
+                                <textarea class="form-control" rows="3" th:field="*{permanentAddress}" id="permanentAddress" maxlength="500"></textarea>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('permanentAddress')}" th:errors="*{permanentAddress}"></div>
+                            </div>
+
+                            <div class="col-12"><hr></div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Contact Person Name <span class="required-asterisk">*</span></label>
+                                <input type="text" class="form-control" th:field="*{contactPersonName}" maxlength="150">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('contactPersonName')}" th:errors="*{contactPersonName}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Contact Person Mobile <span class="required-asterisk">*</span></label>
+                                <input type="text" class="form-control" th:field="*{contactPersonMobileNo}" maxlength="10">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('contactPersonMobileNo')}" th:errors="*{contactPersonMobileNo}"></div>
+                            </div>
+
+                            <div class="col-md-4"></div>
+
+                            <!-- Documents -->
+                            <div class="col-md-6">
+                                <label class="form-label">PAN Number <span class="required-asterisk">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control text-uppercase" th:field="*{panNumber}" id="panNumber" maxlength="10" placeholder="ABCDE1234F">
+                                    <input type="file" class="form-control" th:field="*{panCopyFile}" id="panCopyFile" accept=".pdf,.jpg,.jpeg,.png">
+                                </div>
+                                <small class="text-muted">Format: ABCDE1234F. Upload PDF/Image (Max 5MB).</small>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('panCopyFile')}" th:errors="*{panCopyFile}"></div>
+                                <div class="text-primary mt-1" th:if="${!#strings.isEmpty(agencyForm.existingPanCopyPath)}">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <small th:text="${agencyForm.existingPanCopyPath}">Current file</small>
+                                </div>
+                                <input type="hidden" th:field="*{existingPanCopyPath}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">GST Number <span class="required-asterisk">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control text-uppercase" th:field="*{gstNumber}" id="gstNumber" maxlength="15" placeholder="22AAAAA0000A1Z5">
+                                    <input type="file" class="form-control" th:field="*{gstDocumentFile}" id="gstDocumentFile" accept=".pdf,.jpg,.jpeg,.png">
+                                </div>
+                                <small class="text-muted">15-digit GST number. Upload PDF/Image (Max 5MB).</small>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('gstDocumentFile')}" th:errors="*{gstDocumentFile}"></div>
+                                <div class="text-primary mt-1" th:if="${!#strings.isEmpty(agencyForm.existingGstDocumentPath)}">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <small th:text="${agencyForm.existingGstDocumentPath}">Current file</small>
+                                </div>
+                                <input type="hidden" th:field="*{existingGstDocumentPath}">
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label">Certificate of Incorporation Number <span class="required-asterisk">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" th:field="*{certificateNumber}" maxlength="100">
+                                    <input type="file" class="form-control" th:field="*{certificateDocumentFile}" id="certificateDocumentFile" accept=".pdf,.jpg,.jpeg,.png">
+                                </div>
+                                <small class="text-muted">Upload PDF/Image (Max 5MB).</small>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('certificateDocumentFile')}" th:errors="*{certificateDocumentFile}"></div>
+                                <div class="text-primary mt-1" th:if="${!#strings.isEmpty(agencyForm.existingCertificateDocumentPath)}">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <small th:text="${agencyForm.existingCertificateDocumentPath}">Current file</small>
+                                </div>
+                                <input type="hidden" th:field="*{existingCertificateDocumentPath}">
+                            </div>
+                        </div>
+
+                        <!-- ============== SECTION 2: ESCALATION MATRIX ============== -->
+                        <div class="section-header">2. Escalation Matrix <span class="required-asterisk">*</span></div>
+
+                        <div class="border rounded p-3 mb-4">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover align-middle mb-2" id="escalationTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width:60px;">Sr No</th>
+                                            <th>Name <span class="required-asterisk">*</span></th>
+                                            <th>Mobile <span class="required-asterisk">*</span></th>
+                                            <th style="width:100px;">Level <span class="required-asterisk">*</span></th>
+                                            <th>Designation</th>
+                                            <th>Company Email</th>
+                                            <th style="width:50px;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="escalationTBody">
+                                        <tr th:each="entry, rowStat : *{escalationMatrixEntries}">
+                                            <td class="text-center row-index" th:text="${rowStat.count}">1</td>
+                                            <td>
+                                                <input type="text" class="form-control"
+                                                    th:field="*{escalationMatrixEntries[__${rowStat.index}__].contactName}">
+                                                <div class="text-danger small"
+                                                    th:if="${#fields.hasErrors('escalationMatrixEntries[' + rowStat.index + '].contactName')}"
+                                                    th:errors="*{escalationMatrixEntries[__${rowStat.index}__].contactName}"></div>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control" maxlength="10"
+                                                    th:field="*{escalationMatrixEntries[__${rowStat.index}__].mobileNumber}">
+                                                <div class="text-danger small"
+                                                    th:if="${#fields.hasErrors('escalationMatrixEntries[' + rowStat.index + '].mobileNumber')}"
+                                                    th:errors="*{escalationMatrixEntries[__${rowStat.index}__].mobileNumber}"></div>
+                                            </td>
+                                            <td>
+                                                <select class="form-select"
+                                                    th:field="*{escalationMatrixEntries[__${rowStat.index}__].level}">
+                                                    <option value="">Select</option>
+                                                    <option value="L1">L1</option>
+                                                    <option value="L2">L2</option>
+                                                    <option value="L3">L3</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control"
+                                                    th:field="*{escalationMatrixEntries[__${rowStat.index}__].designation}">
+                                            </td>
+                                            <td>
+                                                <input type="email" class="form-control"
+                                                    th:field="*{escalationMatrixEntries[__${rowStat.index}__].companyEmailId}">
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-escalation-row"
+                                                    onclick="removeEscalationRow(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('escalationMatrixEntries')}" th:errors="*{escalationMatrixEntries}"></div>
+                            <button type="button" class="btn btn-sm btn-light border mt-2" onclick="addEscalationRow()">
+                                <i class="bi bi-plus"></i> Add Row
+                            </button>
+                        </div>
+
+                        <!-- ============== SECTION 3: BANK DETAILS ============== -->
+                        <div class="section-header">3. Bank Account Details</div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Bank Name <span class="required-asterisk">*</span></label>
+                                <input type="text" class="form-control" th:field="*{bankName}" maxlength="150">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Branch <span class="required-asterisk">*</span></label>
+                                <input type="text" class="form-control" th:field="*{bankBranch}" maxlength="150">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('bankBranch')}" th:errors="*{bankBranch}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Account Type <span class="required-asterisk">*</span></label>
+                                <select class="form-select" th:field="*{bankAccountType}">
+                                    <option value="">-- Select --</option>
+                                    <option th:each="item : ${accountTypes}" th:value="${item}" th:text="${item.displayName}"></option>
+                                </select>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('bankAccountType')}" th:errors="*{bankAccountType}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Account Number <span class="required-asterisk">*</span></label>
+                                <input type="text" class="form-control" th:field="*{bankAccountNumber}" maxlength="30">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('bankAccountNumber')}" th:errors="*{bankAccountNumber}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">IFSC Code <span class="required-asterisk">*</span></label>
+                                <input type="text" class="form-control text-uppercase" th:field="*{ifscCode}" id="ifscCode" maxlength="11">
+                                <small class="text-muted">Format: 4 letters, 0, 6 chars (e.g. HDFC0001234)</small>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('ifscCode')}" th:errors="*{ifscCode}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Cancelled Cheque</label>
+                                <input type="file" class="form-control" th:field="*{cancelledChequeFile}" id="cancelledChequeFile" accept=".pdf,.jpg,.jpeg">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('cancelledChequeFile')}" th:errors="*{cancelledChequeFile}"></div>
+                                <div class="text-primary mt-1" th:if="${!#strings.isEmpty(agencyForm.existingCancelledChequePath)}">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <small th:text="${agencyForm.existingCancelledChequePath}">Current file</small>
+                                </div>
+                                <input type="hidden" th:field="*{existingCancelledChequePath}">
+                            </div>
+                        </div>
+
+                        <hr class="mt-4">
+                        <div class="d-flex justify-content-end gap-2 mb-2">
+                            <a th:href="@{/master/agencies}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save"></i>
+                                <span th:text="${isEdit} ? 'Update Agency' : 'Save Agency'">Save Agency</span>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script>
+        // 1. Same As Official Address Logic
+        const sameCheck = document.getElementById('sameAsOfficialCheck');
+        const officialAddr = document.getElementById('officialAddress');
+        const permanentAddr = document.getElementById('permanentAddress');
+
+        function applySameAddress() {
+            if (sameCheck && sameCheck.checked) {
+                permanentAddr.value = officialAddr.value;
+                permanentAddr.setAttribute('readonly', 'readonly');
+            } else if (permanentAddr) {
+                permanentAddr.removeAttribute('readonly');
+            }
+        }
+
+        if (sameCheck) {
+            sameCheck.addEventListener('change', applySameAddress);
+            officialAddr.addEventListener('input', function () {
+                if (sameCheck.checked) permanentAddr.value = this.value;
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', applySameAddress);
+
+        // 2. Dynamic Escalation Row Logic
+        function addEscalationRow() {
+            const tbody = document.getElementById('escalationTBody');
+            const index = tbody.querySelectorAll('tr').length;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-center row-index">${index + 1}</td>
+                <td><input type="text" class="form-control" name="escalationMatrixEntries[${index}].contactName"></td>
+                <td><input type="text" class="form-control" maxlength="10" name="escalationMatrixEntries[${index}].mobileNumber"></td>
+                <td>
+                    <select class="form-select" name="escalationMatrixEntries[${index}].level">
+                        <option value="">Select</option>
+                        <option value="L1">L1</option>
+                        <option value="L2">L2</option>
+                        <option value="L3">L3</option>
+                    </select>
+                </td>
+                <td><input type="text" class="form-control" name="escalationMatrixEntries[${index}].designation"></td>
+                <td><input type="email" class="form-control" name="escalationMatrixEntries[${index}].companyEmailId"></td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-escalation-row" onclick="removeEscalationRow(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>`;
+            tbody.appendChild(tr);
+            updateRemoveButtons();
+        }
+
+        function removeEscalationRow(btn) {
+            const tbody = document.getElementById('escalationTBody');
+            if (tbody.querySelectorAll('tr').length <= 1) {
+                alert('At least one Escalation Matrix row is required.');
+                return;
+            }
+            btn.closest('tr').remove();
+            reindexEscalationRows();
+            updateRemoveButtons();
+        }
+
+        function reindexEscalationRows() {
+            document.getElementById('escalationTBody').querySelectorAll('tr').forEach((row, i) => {
+                const idx = row.querySelector('.row-index');
+                if (idx) idx.textContent = i + 1;
+                row.querySelectorAll('input, select').forEach(el => {
+                    if (el.name) el.name = el.name.replace(/escalationMatrixEntries\[\d+\]/, `escalationMatrixEntries[${i}]`);
+                    if (el.id) el.id = el.id.replace(/escalationMatrixEntries\d+/, `escalationMatrixEntries${i}`);
+                });
+            });
+        }
+
+        function updateRemoveButtons() {
+            const btns = document.querySelectorAll('.remove-escalation-row');
+            btns.forEach(b => b.disabled = btns.length === 1);
+        }
+
+        // 3. Auto-uppercase on key fields
+        ['panNumber', 'gstNumber', 'ifscCode'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => el.value = el.value.toUpperCase());
+        });
+
+        // 4. Client-side validation
+        function validateAgencyForm() {
+            const panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+            const gstPattern = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+            const ifscPattern = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+            const MAX_SIZE = 5 * 1024 * 1024;
+            const fileIds = ['panCopyFile', 'gstDocumentFile', 'certificateDocumentFile', 'cancelledChequeFile'];
+
+            for (const id of fileIds) {
+                const el = document.getElementById(id);
+                if (el && el.files.length > 0 && el.files[0].size > MAX_SIZE) {
+                    alert('File size must not exceed 5MB: ' + id);
+                    return false;
+                }
+            }
+
+            const pan = document.getElementById('panNumber').value.toUpperCase();
+            if (pan && !panPattern.test(pan)) { alert('Invalid PAN format. Example: ABCDE1234F'); return false; }
+
+            const gst = document.getElementById('gstNumber').value.toUpperCase();
+            if (gst && !gstPattern.test(gst)) { alert('Invalid GST format. Example: 22AAAAA0000A1Z5'); return false; }
+
+            const ifsc = document.getElementById('ifscCode').value.toUpperCase();
+            if (ifsc && !ifscPattern.test(ifsc)) { alert('Invalid IFSC format. Example: HDFC0001234'); return false; }
+
+            if (document.getElementById('escalationTBody').querySelectorAll('tr').length === 0) {
+                alert('At least one Escalation Matrix row is required.');
+                return false;
+            }
+
+            return true;
+        }
+
+        updateRemoveButtons();
+    </script>
+</body>
+
+</html>
