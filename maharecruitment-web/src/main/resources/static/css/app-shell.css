@@ -1,0 +1,349 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap');
+
+:root {
+    --app-bg: #eef3fb;
+    --sidebar-bg: #0f1b33;
+    --sidebar-bg-soft: #162748;
+    --sidebar-text: #d5dcf0;
+    --sidebar-text-active: #ffffff;
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --topbar-bg: linear-gradient(135deg, #101424 0%, #1a1f3c 100%);
+    --primary: #2e6cff;
+    --primary-soft: rgba(46, 108, 255, 0.14);
+    --panel-bg: rgba(255, 255, 255, 0.88);
+    --panel-border: rgba(255, 255, 255, 0.9);
+    --text-main: #0f1f3d;
+    --text-muted: #5d6c8a;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: "Manrope", "Segoe UI", sans-serif;
+    color: var(--text-main);
+}
+
+.app-shell {
+    min-height: 100vh;
+    display: flex;
+    background:
+        radial-gradient(860px 440px at -6% -12%, #c9dcff 0%, rgba(201, 220, 255, 0) 58%),
+        radial-gradient(820px 460px at 106% -8%, #d0f3ea 0%, rgba(208, 243, 234, 0) 54%),
+        linear-gradient(155deg, var(--app-bg) 0%, #dce7f8 100%);
+}
+
+.app-sidebar {
+    width: 280px;
+    background: linear-gradient(180deg, var(--sidebar-bg), var(--sidebar-bg-soft));
+    border-right: 1px solid var(--sidebar-border);
+    box-shadow: 8px 0 20px rgba(6, 14, 30, 0.18);
+    transition: width 0.2s ease;
+    overflow: hidden;
+}
+
+.sidebar-header {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+.sidebar-header .profile {
+    text-align: center;
+}
+
+.sidebar-header img {
+    width: 78px;
+    height: 78px;
+    object-fit: contain;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.55rem;
+}
+
+.sidebar-section-title {
+    color: #9daacc;
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin: 0;
+    padding: 0.95rem 1rem 0.4rem;
+}
+
+.app-sidebar .components {
+    padding: 0.2rem 0.75rem 1rem;
+    margin: 0;
+}
+
+.app-sidebar .components li {
+    list-style: none;
+}
+
+.app-sidebar .components li > a {
+    color: var(--sidebar-text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+    margin: 0.12rem 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.app-sidebar .components li > a:hover,
+.app-sidebar .components li > a:focus,
+.app-sidebar .components li.active > a {
+    color: var(--sidebar-text-active);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.app-sidebar .components li > a i {
+    width: 1.1rem;
+    text-align: center;
+}
+
+.app-sidebar .submenu {
+    padding-left: 1.15rem;
+    display: none;
+}
+
+.app-sidebar .submenu.open {
+    display: block;
+}
+
+.app-sidebar .submenu a {
+    font-size: 0.86rem;
+    font-weight: 500;
+    padding: 0.5rem 0.85rem;
+    color: #c4cde4;
+}
+
+.toggle-submenu .fa-caret-down {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+}
+
+.toggle-submenu.expanded .fa-caret-down {
+    transform: rotate(180deg);
+}
+
+.app-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-topbar {
+    background: var(--topbar-bg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 6px 16px rgba(14, 26, 52, 0.2);
+    padding: 0.55rem 1rem;
+}
+
+.logo-text {
+    color: #ffffff;
+    font-family: "Sora", "Manrope", sans-serif;
+    font-size: 1.05rem;
+    margin: 0 0 0 0.8rem;
+    letter-spacing: 0.3px;
+    font-weight: 700;
+}
+
+.app-nav-toggle {
+    border: 0;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 9px;
+    box-shadow: 0 6px 16px rgba(46, 108, 255, 0.28);
+}
+
+.user-profile-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.38rem 0.68rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+}
+
+.user-profile-chip:hover,
+.user-profile-chip:focus {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    background: var(--primary);
+}
+
+.user-info-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.user-name {
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.user-role-label {
+    color: #c4d1f5;
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.profile-dropdown-menu {
+    min-width: 250px;
+    border: 0;
+    border-radius: 12px;
+    margin-top: 0.7rem;
+    box-shadow: 0 16px 35px rgba(13, 24, 48, 0.22);
+}
+
+.page-main-content {
+    padding: 1rem;
+}
+
+.breadcrumb-style {
+    background: transparent;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+}
+
+.breadcrumb-style .page-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-family: "Sora", "Manrope", sans-serif;
+    color: #112c54;
+}
+
+.breadcrumb-style .breadcrumb-item + .breadcrumb-item::before {
+    color: #7488ad;
+}
+
+.breadcrumb-style .breadcrumb-item.active {
+    color: #4f638a;
+    font-weight: 600;
+}
+
+.page-contents {
+    margin-top: 1rem;
+}
+
+.add-emp-card {
+    border-radius: 16px;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    box-shadow: 0 14px 30px rgba(18, 42, 79, 0.12);
+}
+
+.add-emp-card .header {
+    border-bottom: 1px solid rgba(138, 162, 199, 0.2);
+    padding: 1rem 1.1rem;
+}
+
+.add-emp-card .header h2 {
+    margin: 0;
+    font-family: "Sora", "Manrope", sans-serif;
+    font-size: 1.2rem;
+    color: #0f2f5f;
+}
+
+.module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.module-card {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(161, 179, 210, 0.28);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.module-icon {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    margin-bottom: 0.6rem;
+}
+
+.app-shell.sidebar-collapsed .app-sidebar {
+    width: 84px;
+}
+
+.app-shell.sidebar-collapsed .sidebar-section-title,
+.app-shell.sidebar-collapsed .app-sidebar .components li > a span,
+.app-shell.sidebar-collapsed .app-sidebar .components li > a .fa-caret-down,
+.app-shell.sidebar-collapsed .app-sidebar .submenu,
+.app-shell.sidebar-collapsed .sidebar-header .profile-caption {
+    display: none;
+}
+
+@media (max-width: 991.98px) {
+    .app-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 1040;
+        transform: translateX(-100%);
+        width: 280px;
+    }
+
+    .app-shell.mobile-sidebar-open .app-sidebar {
+        transform: translateX(0);
+    }
+
+    .app-shell.mobile-sidebar-open::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 1030;
+    }
+
+    .logo-text {
+        font-size: 0.95rem;
+    }
+
+    .module-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .module-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .user-info-text {
+        display: none;
+    }
+}

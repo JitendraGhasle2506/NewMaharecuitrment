@@ -1,0 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@600;700&display=swap');
+
+:root {
+    --ink: #10233f;
+    --muted: #5a6c8e;
+    --nav-a: #0a2e59;
+    --nav-b: #115693;
+    --surface: rgba(255, 255, 255, 0.87);
+}
+
+body.role-shell {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: "Manrope", "Segoe UI", sans-serif;
+    background:
+        radial-gradient(780px 420px at -8% -12%, #b9d2ff 0%, rgba(185, 210, 255, 0) 58%),
+        radial-gradient(740px 420px at 108% 0%, #caefe9 0%, rgba(202, 239, 233, 0) 55%),
+        linear-gradient(155deg, #eef4ff 0%, #dce7f8 100%);
+}
+
+.role-nav {
+    background: linear-gradient(90deg, var(--nav-a), var(--nav-b));
+    box-shadow: 0 12px 24px rgba(10, 46, 89, 0.22);
+}
+
+.role-nav .navbar-brand {
+    color: #fff;
+}
+
+.role-hero {
+    background: linear-gradient(135deg, rgba(14, 68, 126, 0.96), rgba(16, 102, 172, 0.92));
+    color: #fff;
+    border-radius: 16px;
+    padding: 1.2rem 1.3rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.role-hero h1 {
+    margin: 0;
+    font-family: "Space Grotesk", "Manrope", sans-serif;
+    font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+}
+
+.role-hero p {
+    margin: 0.45rem 0 0;
+    opacity: 0.9;
+}
+
+.demo-badge {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    border-radius: 999px;
+    padding: 0.28rem 0.68rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.metric-card {
+    border-radius: 14px;
+    padding: 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.86);
+    background: var(--surface);
+    box-shadow: 0 8px 22px rgba(15, 40, 75, 0.11);
+}
+
+.metric-card p {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.metric-card h3 {
+    margin: 0.2rem 0 0;
+    font-size: 1.38rem;
+    font-family: "Space Grotesk", "Manrope", sans-serif;
+}
+
+.panel {
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.82);
+    background: var(--surface);
+    box-shadow: 0 10px 24px rgba(19, 43, 82, 0.12);
+    padding: 1rem;
+}
+
+.panel h4 {
+    margin: 0 0 0.8rem;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.table th {
+    text-transform: uppercase;
+    letter-spacing: 0.35px;
+    font-size: 0.78rem;
+    color: #435378;
+}
+
+@media (max-width: 1200px) {
+    .metrics-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .demo-badge {
+        position: static;
+        display: inline-block;
+        margin-top: 0.6rem;
+    }
+}

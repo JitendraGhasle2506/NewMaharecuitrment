@@ -1,418 +1,113 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
-    <title>HRMS | E-Service Book</title>
-
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-
-    <style>
-        body {
-            background: #f5f7fa;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        .page-card {
-            background: white;
-            padding: 25px 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-            margin-top: 25px;
-            animation: fadeIn 0.6s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .page-title {
-            font-size: 26px;
-            font-weight: 600;
-            color: #004aad;
-            margin-bottom: 15px;
-        }
-
-        .page-description {
-            font-size: 16px;
-            color: #444;
-        }
-
-        .card-title i {
-            margin-right: 8px;
-        }
-    </style>
+    <title>E-Service Book Module</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
 </head>
 
 <body>
 
-<!-- Breadcrumb (Dynamic) -->
-<div th:replace="~{fragments/breadcrumb :: breadcrumb}"></div>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'E-Service Book', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2>E-Service Book Module</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4" th:text="${message}">Welcome to E-Service Book Module.</p>
 
-<div class="container">
+                    <div class="module-grid">
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-user"></i></div>
+                            <h5>Personal Details</h5>
+                            <p class="text-muted">View and update personal information.</p>
+                            <a th:href="@{/eservicebook/personal-details}" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
 
-    <!-- Main Card -->
-    <div class="page-card">
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-stethoscope"></i></div>
+                            <h5>Medical Examination</h5>
+                            <p class="text-muted">Maintain employee medical verification details.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
 
-        <div class="page-title">
-            <i class="fa-solid fa-book"></i> E-Service Book Module
-        </div>
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-shield-halved"></i></div>
+                            <h5>Police Verification</h5>
+                            <p class="text-muted">Track police verification status updates.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
 
-        <p class="page-description" th:text="${message}">
-            Welcome to E-Service Book Module
-        </p>
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-graduation-cap"></i></div>
+                            <h5>Qualification Details</h5>
+                            <p class="text-muted">Manage educational and technical qualifications.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
 
-        <hr>
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-map-location-dot"></i></div>
+                            <h5>Posting Details</h5>
+                            <p class="text-muted">Track posting history and department assignment.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
 
-        <!-- All Sections -->
-        <div class="row g-3">
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-check-circle"></i></div>
+                            <h5>Probation & Confirmation</h5>
+                            <p class="text-muted">Manage probation and confirmation lifecycle.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
 
-            <!-- 1 Personal Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-user text-primary"></i> Personal Details
-                        </h5>
-                        <p class="card-text text-muted">View & update personal information.</p>
-						<a th:href="@{/eservicebook/personal-details}" class="btn btn-primary btn-sm">Open</a>
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-gavel"></i></div>
+                            <h5>Disciplinary Action</h5>
+                            <p class="text-muted">Track disciplinary proceedings and closure.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
 
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-hand-holding-dollar"></i></div>
+                            <h5>Asset & Liabilities</h5>
+                            <p class="text-muted">Capture annual assets and liabilities data.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
+
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-briefcase"></i></div>
+                            <h5>Past Experience</h5>
+                            <p class="text-muted">Store previous service and experience records.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
+
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-award"></i></div>
+                            <h5>Reward Details</h5>
+                            <p class="text-muted">Maintain achievements and recognition history.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
+
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-calendar-days"></i></div>
+                            <h5>Leave Details</h5>
+                            <p class="text-muted">View leave balances and leave transactions.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
+
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-piggy-bank"></i></div>
+                            <h5>GPF / DCPS</h5>
+                            <p class="text-muted">Manage provident fund and pension records.</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm">Open</a>
+                        </article>
                     </div>
                 </div>
             </div>
-
-            <!-- 2 Medical Examination -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-stethoscope text-success"></i> Medical Examination
-                        </h5>
-                        <p class="card-text text-muted">View medical exam details.</p>
-                        <a href="#" class="btn btn-success btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3 Police Verification -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-shield-halved text-warning"></i> Police Verification Details
-                        </h5>
-                        <p class="card-text text-muted">Track police verification status.</p>
-                        <a href="#" class="btn btn-warning btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4 Nomination Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-flag text-info"></i> Nomination Details
-                        </h5>
-                        <p class="card-text text-muted">Manage nomination records.</p>
-                        <a href="#" class="btn btn-info btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 5 Qualification Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-graduation-cap text-danger"></i> Qualification Details
-                        </h5>
-                        <p class="card-text text-muted">Educational qualification records.</p>
-                        <a href="#" class="btn btn-danger btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 6 Posting Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-map-location-dot text-dark"></i> Posting Details
-                        </h5>
-                        <p class="card-text text-muted">Track official postings.</p>
-                        <a href="#" class="btn btn-dark btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 7 Professional Exam Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-book-open text-primary"></i> Professional Exam Details
-                        </h5>
-                        <p class="card-text text-muted">Professional exam information.</p>
-                        <a href="#" class="btn btn-primary btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 8 Probation & Confirmation -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-check-circle text-success"></i> Probation & Confirmation
-                        </h5>
-                        <p class="card-text text-muted">Probation & confirmation details.</p>
-                        <a href="#" class="btn btn-success btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 9 Disciplinary Action -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-gavel text-danger"></i> Disciplinary Action
-                        </h5>
-                        <p class="card-text text-muted">Disciplinary proceedings.</p>
-                        <a href="#" class="btn btn-danger btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 10 50/55 Review -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-calendar-check text-warning"></i> 50/55 Review
-                        </h5>
-                        <p class="card-text text-muted">Review for 50/55 years.</p>
-                        <a href="#" class="btn btn-warning btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 11 Asset & Liabilities -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-hand-holding-dollar text-info"></i> Asset & Liabilities
-                        </h5>
-                        <p class="card-text text-muted">Asset & liability information.</p>
-                        <a href="#" class="btn btn-info btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 12 Annual Confidential Report -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-file-signature text-dark"></i> Annual Confidential Report
-                        </h5>
-                        <p class="card-text text-muted">ACR/Performance appraisal.</p>
-                        <a href="#" class="btn btn-dark btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 13 Family Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-users text-primary"></i> Family Details
-                        </h5>
-                        <p class="card-text text-muted">Family member information.</p>
-                        <a href="#" class="btn btn-primary btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 14 Past Experience -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-briefcase text-success"></i> Past Experience
-                        </h5>
-                        <p class="card-text text-muted">Previous employment details.</p>
-                        <a href="#" class="btn btn-success btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 15 Training Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-chalkboard-user text-warning"></i> Training Details
-                        </h5>
-                        <p class="card-text text-muted">Training history & certifications.</p>
-                        <a href="#" class="btn btn-warning btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 16 Additional Charge -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-layer-group text-info"></i> Additional Charge
-                        </h5>
-                        <p class="card-text text-muted">Additional responsibilities.</p>
-                        <a href="#" class="btn btn-info btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 17 Reward Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-award text-danger"></i> Reward Details
-                        </h5>
-                        <p class="card-text text-muted">Achievements & rewards.</p>
-                        <a href="#" class="btn btn-danger btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 18 Leave Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-calendar-days text-primary"></i> Leave Details
-                        </h5>
-                        <p class="card-text text-muted">Leave balance & history.</p>
-                        <a href="#" class="btn btn-primary btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 19 LTC Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-plane text-success"></i> LTC Details
-                        </h5>
-                        <p class="card-text text-muted">Leave Travel Concession.</p>
-                        <a href="#" class="btn btn-success btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 20 Loans & Advances -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-money-check-dollar text-warning"></i> Loans & Advances
-                        </h5>
-                        <p class="card-text text-muted">Loan & advance records.</p>
-                        <a href="#" class="btn btn-warning btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 21 GIS/GPAIS -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-shield text-info"></i> GIS / GPAIS
-                        </h5>
-                        <p class="card-text text-muted">Insurance & protection schemes.</p>
-                        <a href="#" class="btn btn-info btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 22 GPF / DCPS -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-piggy-bank text-danger"></i> GPF / DCPS
-                        </h5>
-                        <p class="card-text text-muted">Provident fund & pension details.</p>
-                        <a href="#" class="btn btn-danger btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 23 Increment & Pay Fixation -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-indian-rupee-sign text-primary"></i> Increment & Pay Fixation
-                        </h5>
-                        <p class="card-text text-muted">Pay scale, increments & fixation.</p>
-                        <a href="#" class="btn btn-primary btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 24 Bank Account Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-building-columns text-success"></i> Bank Account Details
-                        </h5>
-                        <p class="card-text text-muted">Salary bank account details.</p>
-                        <a href="#" class="btn btn-success btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 25 Complaints Details -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-comment-dots text-warning"></i> Complaints Details
-                        </h5>
-                        <p class="card-text text-muted">Registered complaints & status.</p>
-                        <a href="#" class="btn btn-warning btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 26 Submission of Data -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-upload text-dark"></i> Submission of Data
-                        </h5>
-                        <p class="card-text text-muted">Submit employee-related data.</p>
-                        <a href="#" class="btn btn-dark btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
+        </section>
+    </th:block>
 
 </body>
+
 </html>

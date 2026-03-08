@@ -3,112 +3,45 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>HRMS | Attendance</title>
-
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-
-    <style>
-        body {
-            background: #f5f7fa;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        .page-card {
-            background: white;
-            padding: 25px 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-            margin-top: 25px;
-            animation: fadeIn 0.6s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .page-title {
-            font-size: 26px;
-            font-weight: 600;
-            color: #004aad;
-            margin-bottom: 15px;
-        }
-
-        .page-description {
-            font-size: 16px;
-            color: #444;
-        }
-    </style>
+    <title>Attendance Module</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
 </head>
 
 <body>
 
-<!-- Dynamic Breadcrumb -->
-<div th:replace="~{fragments/breadcrumb :: breadcrumb}"></div>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Attendance Module', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2>Attendance Module</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4" th:text="${message}">Welcome to Attendance Module.</p>
 
+                    <div class="module-grid">
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-user-clock"></i></div>
+                            <h5>Daily Attendance</h5>
+                            <p class="text-muted mb-0">Track and verify daily workforce attendance.</p>
+                        </article>
 
-<div class="container">
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-calendar-days"></i></div>
+                            <h5>Monthly Summary</h5>
+                            <p class="text-muted mb-0">View attendance trends and monthly summaries.</p>
+                        </article>
 
-    <!-- Main Module Card -->
-    <div class="page-card">
-
-        <div class="page-title">
-            <i class="fa-solid fa-calendar-check"></i> Attendance Module
-        </div>
-
-        <p class="page-description" th:text="${message}">
-            Welcome to Attendance Module.
-        </p>
-
-        <hr>
-
-        <!-- Example Feature Cards -->
-        <div class="row g-3">
-
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-user-clock text-primary"></i> Daily Attendance
-                        </h5>
-                        <p class="card-text text-muted">Mark or verify employee daily attendance.</p>
-                        <a href="#" class="btn btn-primary btn-sm">Open</a>
+                        <article class="module-card">
+                            <div class="module-icon"><i class="fa fa-file-signature"></i></div>
+                            <h5>Attendance Reports</h5>
+                            <p class="text-muted mb-0">Generate reports for audit and compliance checks.</p>
+                        </article>
                     </div>
                 </div>
             </div>
-
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-calendar-days text-success"></i> Monthly Summary
-                        </h5>
-                        <p class="card-text text-muted">View complete monthly attendance records.</p>
-                        <a href="#" class="btn btn-success btn-sm">Open</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fa-solid fa-file-signature text-warning"></i> Attendance Reports
-                        </h5>
-                        <p class="card-text text-muted">Generate attendance reports and analytics.</p>
-                        <a href="#" class="btn btn-warning btn-sm text-white">Open</a>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-    </div>
-</div>
+        </section>
+    </th:block>
 
 </body>
+
 </html>

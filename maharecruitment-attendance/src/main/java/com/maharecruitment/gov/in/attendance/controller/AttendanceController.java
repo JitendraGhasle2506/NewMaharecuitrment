@@ -5,7 +5,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
-public class AttendanceController{
+public class AttendanceController {
     @GetMapping("/attendance")
     public String home(Model model) {
         model.addAttribute("message", "Hello HRMS ATTENDANCE Module");
@@ -16,5 +16,11 @@ public class AttendanceController{
     public String personalDetails(Model model) {
         model.addAttribute("title", "Personal Details");
         return "attendance/personal_details";
+    }
+
+    @GetMapping("/eservicebook")
+    public String eServiceBookHome(Model model) {
+        model.addAttribute("message", "Hello HRMS E-Service Book Module");
+        return "eservicebook/eservicebook_home";
     }
 }

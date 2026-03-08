@@ -47,7 +47,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"ACCESS_DENIED\"}");
+            response.getWriter().write("{\"error\":\"ACCESS_DENIED\",\"redirect\":\"" + request.getContextPath() + "/login?accessDenied=true\"}");
             return;
         }
 
@@ -93,13 +93,13 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
                                 <p class="mb-2">Your session was terminated for security reasons.</p>
                                 <p class="text-muted mb-2">Role: <strong>%s</strong></p>
                                 <p class="text-muted mb-4">URL: <strong>%s</strong></p>
-                                <a href="/login" class="btn btn-primary btn-lg px-4">Go to Login</a>
+                                <a href="%s/login?accessDenied=true" class="btn btn-primary btn-lg px-4">Go to Login</a>
                             </div>
                         </div>
                     </div>
                 </body>
                 </html>
-                """.formatted(userRole, url);
+                """.formatted(userRole, url, request.getContextPath());
 
         response.getWriter().write(html);
     }

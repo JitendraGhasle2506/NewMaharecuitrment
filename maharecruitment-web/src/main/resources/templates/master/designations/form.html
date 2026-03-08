@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${isEdit} ? 'Edit Designation' : 'Create Designation'">Designation Form</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Designations', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2 th:text="${isEdit} ? 'Edit Designation' : 'Create Designation'"></h2>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/resource-levels}">Resource Levels</a>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/designations}">Designations</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
+                    </div>
+
+                    <form th:object="${designationForm}"
+                        th:action="${isEdit} ? @{/master/designations/{id}(id=${designationId})} : @{/master/designations}"
+                        method="post" class="row g-3">
+    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
+                            <input type="text" th:field="*{category}" class="form-control" maxlength="100">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('category')}" th:errors="*{category}"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Designation Name</label>
+                            <input type="text" th:field="*{designationName}" class="form-control" maxlength="200">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('designationName')}"
+                                th:errors="*{designationName}"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Role Name</label>
+                            <input type="text" th:field="*{roleName}" class="form-control" maxlength="200">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" th:field="*{activeFlag}">
+                                <option value="Y">Active</option>
+                                <option value="N">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Educational Qualification</label>
+                            <textarea th:field="*{educationalQualification}" class="form-control" maxlength="500"
+                                rows="3"></textarea>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Certification</label>
+                            <textarea th:field="*{certification}" class="form-control" maxlength="500" rows="3"></textarea>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Applicable Levels</label>
+                            <select class="form-select" multiple th:field="*{levelIds}">
+                                <option th:each="level : ${availableLevels}" th:value="${level.levelId}"
+                                    th:text="${level.levelCode + ' - ' + level.levelName}"></option>
+                            </select>
+                            <small class="text-muted">Hold Ctrl to select multiple levels.</small>
+                        </div>
+
+                        <div class="col-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary"
+                                th:text="${isEdit} ? 'Update' : 'Save'"></button>
+                            <a th:href="@{/master/designations}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
+

@@ -19,10 +19,11 @@ public class CustomLoginFailureHandler implements AuthenticationFailureHandler {
                                         AuthenticationException exception)
             throws IOException, ServletException {
 
+        String loginUrl = request.getContextPath() + "/login";
         if (exception.getMessage().contains("Captcha")) {
-            response.sendRedirect("/login?captchaError=true");
+            response.sendRedirect(loginUrl + "?captchaError=true");
         } else {
-            response.sendRedirect("/login?error=true");
+            response.sendRedirect(loginUrl + "?error=true");
         }
     }
 }

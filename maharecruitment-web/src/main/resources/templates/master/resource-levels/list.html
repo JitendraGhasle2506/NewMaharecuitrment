@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Resource Levels</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Resource Levels', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2>Resource Level Experience Master</h2>
+                    <a class="btn btn-primary btn-sm" th:href="@{/master/resource-levels/new}">Add Resource Level</a>
+                </div>
+
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/resource-levels}">Resource Levels</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
+                    </div>
+
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <form class="row g-2 mb-3" method="get" th:action="@{/master/resource-levels}">
+                        <div class="col-auto form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="includeInactive" name="includeInactive"
+                                value="true" th:checked="${includeInactive}">
+                            <label class="form-check-label" for="includeInactive">Include inactive</label>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-secondary btn-sm" type="submit">Apply</button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Level Code</th>
+                                    <th>Level Name</th>
+                                    <th>Min Exp</th>
+                                    <th>Max Exp</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${levels.isEmpty()}">
+                                    <td colspan="7" class="text-center text-muted">No records found</td>
+                                </tr>
+                                <tr th:each="item : ${levels.content}">
+                                    <td th:text="${item.levelId}"></td>
+                                    <td th:text="${item.levelCode}"></td>
+                                    <td th:text="${item.levelName}"></td>
+                                    <td th:text="${item.minExperience}"></td>
+                                    <td th:text="${item.maxExperience}"></td>
+                                    <td>
+                                        <span class="badge"
+                                            th:classappend="${item.activeFlag == 'Y'} ? ' text-bg-success' : ' text-bg-secondary'"
+                                            th:text="${item.activeFlag == 'Y'} ? 'Active' : 'Inactive'"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:href="@{/master/resource-levels/{id}/edit(id=${item.levelId})}">Edit</a>
+                                        <form th:if="${item.activeFlag == 'Y'}" class="d-inline"
+                                            th:action="@{/master/resource-levels/{id}/delete(id=${item.levelId})}" method="post">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                                        </form>
+                                        <form th:if="${item.activeFlag != 'Y'}" class="d-inline"
+                                            th:action="@{/master/resource-levels/{id}/restore(id=${item.levelId})}" method="post">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button class="btn btn-outline-success btn-sm" type="submit">Restore</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3" th:if="${levels.totalPages > 1}">
+                        <a class="btn btn-outline-secondary btn-sm" th:if="${!levels.first}"
+                            th:href="@{/master/resource-levels(page=${levels.number - 1},size=${levels.size},includeInactive=${includeInactive})}">
+                            Previous
+                        </a>
+                        <span th:if="${levels.first}"></span>
+                        <span class="small text-muted">
+                            Page <span th:text="${levels.number + 1}"></span> of <span th:text="${levels.totalPages}"></span>
+                        </span>
+                        <a class="btn btn-outline-secondary btn-sm" th:if="${!levels.last}"
+                            th:href="@{/master/resource-levels(page=${levels.number + 1},size=${levels.size},includeInactive=${includeInactive})}">
+                            Next
+                        </a>
+                        <span th:if="${levels.last}"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
+

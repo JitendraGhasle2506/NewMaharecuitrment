@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>HR Dashboard</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
+</head>
+
+<body class="hr-shell">
+
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'HR Dashboard', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2>HR Command Center</h2>
+                </div>
+                <div class="card-body">
+                    <section class="hero-strip">
+                        <div>
+                            <h1>Human Resources Dashboard</h1>
+                            <p>Operational overview for projects, onboarding, and workforce mix.</p>
+                        </div>
+                        <span class="dummy-tag">Dummy Data</span>
+                    </section>
+
+                    <section class="kpi-grid">
+                        <article class="kpi-card">
+                            <p>Total Projects</p>
+                            <h3 th:text="${totalProjects}">0</h3>
+                        </article>
+                        <article class="kpi-card">
+                            <p>Onboarding This Month</p>
+                            <h3 th:text="${onboardingThisMonth}">0</h3>
+                        </article>
+                        <article class="kpi-card">
+                            <p>Total Employees</p>
+                            <h3 th:text="${totalEmployees}">0</h3>
+                        </article>
+                        <article class="kpi-card">
+                            <p>Pending Approvals</p>
+                            <h3 th:text="${pendingApprovals}">0</h3>
+                        </article>
+                        <article class="kpi-card">
+                            <p>Open Positions</p>
+                            <h3 th:text="${openPositions}">0</h3>
+                        </article>
+                        <article class="kpi-card">
+                            <p>Attrition Rate</p>
+                            <h3 th:text="${attritionRate}">0%</h3>
+                        </article>
+                    </section>
+
+                    <div class="row g-4 mt-1">
+                        <div class="col-lg-5">
+                            <section class="panel">
+                                <h4>Employee Mix</h4>
+                                <div class="mix-bar">
+                                    <span class="mix-internal" th:style="'width:' + ${internalPercent} + '%'"></span>
+                                    <span class="mix-external" th:style="'width:' + ${externalPercent} + '%'"></span>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2 small">
+                                    <span>Internal: <strong th:text="${internalEmployees}">0</strong></span>
+                                    <span>External: <strong th:text="${externalEmployees}">0</strong></span>
+                                </div>
+                            </section>
+
+                            <section class="panel mt-4">
+                                <h4>Department Onboarding</h4>
+                                <div class="dept-list">
+                                    <div class="dept-row" th:each="dept : ${departmentOnboarding}">
+                                        <div class="d-flex justify-content-between">
+                                            <span th:text="${dept.department}">Department</span>
+                                            <span><strong th:text="${dept.count}">0</strong>/<span
+                                                    th:text="${dept.target}">0</span></span>
+                                        </div>
+                                        <div class="progress dept-progress">
+                                            <div class="progress-bar" role="progressbar"
+                                                th:style="'width:' + ${dept.target > 0 ? (dept.count * 100) / dept.target : 0} + '%'">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-lg-7">
+                            <section class="panel">
+                                <h4>Project Workforce Snapshot</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Project Code</th>
+                                                <th>Project Name</th>
+                                                <th class="text-center">Internal</th>
+                                                <th class="text-center">External</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="project : ${projects}">
+                                                <td th:text="${project.code}">PRJ-0000</td>
+                                                <td th:text="${project.name}">Project Name</td>
+                                                <td class="text-center" th:text="${project.internal}">0</td>
+                                                <td class="text-center" th:text="${project.external}">0</td>
+                                                <td>
+                                                    <span class="badge" th:classappend="${project.status == 'In Progress'} ? ' text-bg-primary' :
+                                                              (${project.status == 'Planning'} ? ' text-bg-secondary' :
+                                                              (${project.status == 'UAT'} ? ' text-bg-success' : ' text-bg-warning'))"
+                                                        th:text="${project.status}">Status</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+</body>
+
+</html>

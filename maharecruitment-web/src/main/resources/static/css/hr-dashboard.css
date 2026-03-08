@@ -1,0 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+:root {
+    --bg-1: #ecf2ff;
+    --bg-2: #d8e4ff;
+    --ink: #10203d;
+    --muted: #5c6a86;
+    --nav-1: #082a57;
+    --nav-2: #0f4a8a;
+    --panel: rgba(255, 255, 255, 0.86);
+    --line: #d1dcf1;
+    --internal: #0f6ac7;
+    --external: #23b48c;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body.hr-shell {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: "Manrope", "Segoe UI", sans-serif;
+    background:
+        radial-gradient(820px 420px at -6% -12%, #b6ceff 0%, rgba(182, 206, 255, 0) 60%),
+        radial-gradient(700px 420px at 104% 6%, #b0efe3 0%, rgba(176, 239, 227, 0) 56%),
+        linear-gradient(150deg, var(--bg-1) 0%, var(--bg-2) 100%);
+}
+
+.hr-nav {
+    background: linear-gradient(90deg, var(--nav-1), var(--nav-2));
+    box-shadow: 0 12px 24px rgba(8, 42, 87, 0.25);
+}
+
+.hr-nav .navbar-brand {
+    color: #fff;
+}
+
+.hero-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    background: linear-gradient(125deg, rgba(9, 52, 108, 0.95), rgba(20, 94, 167, 0.93));
+    color: #fff;
+    border-radius: 18px;
+    padding: 1.25rem 1.3rem;
+    box-shadow: 0 14px 30px rgba(7, 45, 95, 0.24);
+}
+
+.hero-strip h1 {
+    margin: 0;
+    font-family: "Space Grotesk", "Manrope", sans-serif;
+    font-size: clamp(1.2rem, 2.3vw, 1.8rem);
+}
+
+.hero-strip p {
+    margin: 0.35rem 0 0;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.dummy-tag {
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.14);
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+
+.kpi-grid {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.kpi-card {
+    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 14px;
+    padding: 0.82rem 0.9rem;
+    box-shadow: 0 8px 20px rgba(17, 43, 81, 0.11);
+}
+
+.kpi-card p {
+    margin: 0;
+    font-size: 0.79rem;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.kpi-card h3 {
+    margin: 0.2rem 0 0;
+    font-family: "Space Grotesk", "Manrope", sans-serif;
+    font-size: 1.45rem;
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, 0.84);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 12px 24px rgba(16, 42, 79, 0.12);
+}
+
+.panel h4 {
+    margin: 0 0 0.8rem;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.mix-bar {
+    width: 100%;
+    display: flex;
+    height: 16px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #e9eef8;
+}
+
+.mix-internal {
+    background: linear-gradient(90deg, #0f5bb0, var(--internal));
+}
+
+.mix-external {
+    background: linear-gradient(90deg, #1f9c7b, var(--external));
+}
+
+.dept-list {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.dept-progress {
+    margin-top: 0.35rem;
+    height: 10px;
+    background: #e8eef9;
+}
+
+.dept-progress .progress-bar {
+    background: linear-gradient(90deg, var(--nav-2), #36a0ff);
+}
+
+.table th {
+    color: #3f4f6e;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border-bottom-color: var(--line);
+}
+
+.table td {
+    font-size: 0.9rem;
+    border-bottom-color: #e5ecf8;
+}
+
+@media (max-width: 1199.98px) {
+    .kpi-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .hero-strip {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 479.98px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}

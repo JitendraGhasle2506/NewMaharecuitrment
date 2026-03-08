@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${title}">Role Dashboard</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/role-dashboard.css}">
+</head>
+
+<body class="role-shell">
+
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', ${title}, ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2 th:text="${title}">Role Dashboard</h2>
+                </div>
+                <div class="card-body">
+                    <section class="role-hero">
+                        <h1 th:text="${title}">Role Dashboard</h1>
+                        <p th:text="${subtitle}">Role based landing snapshot</p>
+                        <span class="demo-badge">Dummy Data</span>
+                    </section>
+
+                    <section class="metrics-grid mt-3">
+                        <article class="metric-card">
+                            <p>Active Projects</p>
+                            <h3 th:text="${activeProjects}">0</h3>
+                        </article>
+                        <article class="metric-card">
+                            <p>New Onboarding</p>
+                            <h3 th:text="${newOnboarding}">0</h3>
+                        </article>
+                        <article class="metric-card">
+                            <p>Internal Employees</p>
+                            <h3 th:text="${internalCount}">0</h3>
+                        </article>
+                        <article class="metric-card">
+                            <p>External Employees</p>
+                            <h3 th:text="${externalCount}">0</h3>
+                        </article>
+                        <article class="metric-card">
+                            <p>Pending Approvals</p>
+                            <h3 th:text="${pendingApprovals}">0</h3>
+                        </article>
+                        <article class="metric-card">
+                            <p>Alerts</p>
+                            <h3 th:text="${alerts}">0</h3>
+                        </article>
+                    </section>
+
+                    <section class="panel mt-4">
+                        <h4>Task Snapshot</h4>
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Task</th>
+                                        <th>Owner</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="task : ${tasks}">
+                                        <td th:text="${task.name}">Task</td>
+                                        <td th:text="${task.owner}">Owner</td>
+                                        <td>
+                                            <span class="badge" th:classappend="${task.status == 'Open'} ? ' text-bg-primary' :
+                                                      (${task.status == 'In Progress'} ? ' text-bg-warning' : ' text-bg-secondary')"
+                                                th:text="${task.status}">Status</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+</body>
+
+</html>

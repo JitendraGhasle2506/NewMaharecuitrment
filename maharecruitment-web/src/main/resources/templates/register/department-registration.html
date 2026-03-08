@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Department Registration</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/captcha.css}">
+    <link rel="stylesheet" th:href="@{/css/department-registration.css}">
+</head>
+
+<body class="portal-shell">
+    <nav class="navbar navbar-expand-lg portal-nav">
+        <div class="container">
+            <a class="navbar-brand fw-semibold" th:href="@{/index}">MahaIT Recruitment</a>
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-light btn-sm" th:href="@{/login}">Back to Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="registration-main">
+        <div class="container registration-container">
+            <div class="row g-4 align-items-start">
+                <div class="col-xl-4">
+                    <section class="registration-hero">
+                        <p class="hero-chip">Public Onboarding</p>
+                        <h1>Register your department for the MahaIT recruitment workflow.</h1>
+                        <p class="hero-copy">
+                            Submit department, billing, and contact details in one place. New departments and
+                            sub-departments can be proposed directly during registration.
+                        </p>
+
+                        <div class="hero-points">
+                            <article class="hero-point">
+                                <span class="hero-point-icon"><i class="fa-solid fa-building-columns"></i></span>
+                                <div>
+                                    <h2>Department Mapping</h2>
+                                    <p>Pick an existing department or register a new department and sub-department.</p>
+                                </div>
+                            </article>
+                            <article class="hero-point">
+                                <span class="hero-point-icon"><i class="fa-solid fa-address-card"></i></span>
+                                <div>
+                                    <h2>Two Contacts</h2>
+                                    <p>Capture primary and secondary officers for operational and billing communication.</p>
+                                </div>
+                            </article>
+                            <article class="hero-point">
+                                <span class="hero-point-icon"><i class="fa-solid fa-file-shield"></i></span>
+                                <div>
+                                    <h2>Compliance Ready</h2>
+                                    <p>Attach PAN, GST, and TAN documents so approval can move without rework.</p>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="col-xl-8">
+                    <section class="registration-card">
+                        <div class="registration-card-header">
+                            <div>
+                                <p class="section-kicker">Department Registration</p>
+                                <h2>Official registration request</h2>
+                            </div>
+                            <span class="status-pill">Approval required</span>
+                        </div>
+
+                        <div th:if="${errorMessage}" class="alert alert-danger mb-4" th:text="${errorMessage}"></div>
+
+                        <form th:action="@{/register/department-registration}"
+                            th:object="${registrationForm}"
+                            method="post"
+                            enctype="multipart/form-data"
+                            class="registration-form"
+                            id="departmentRegistrationForm"
+                            th:attr="data-subdepartments-url=@{/register/sub-departments},
+                                     data-mobile-send-url=@{/register/verifications/mobile/send},
+                                     data-mobile-verify-url=@{/register/verifications/mobile/verify},
+                                     data-email-send-url=@{/register/verifications/email/send},
+                                     data-email-verify-url=@{/register/verifications/email/verify},
+                                     data-mobile-verified=${primaryMobileVerified},
+                                     data-email-verified=${primaryEmailVerified}">
+
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                            <section class="form-section">
+                                <div class="form-section-header">
+                                    <h3>Department Details</h3>
+                                    <p>Map the office and working sub-department.</p>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="departmentId">Department</label>
+                                        <select class="form-select" th:field="*{departmentId}" id="departmentId">
+                                            <option value="">Select department</option>
+                                            <option th:each="department : ${departments}"
+                                                th:value="${department.departmentId}"
+                                                th:text="${department.departmentName}"></option>
+                                            <option value="-1">Other / Not listed</option>
+                                        </select>
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('departmentId')}"
+                                            th:errors="*{departmentId}"></div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="subDeptId">Sub-department</label>
+                                        <select class="form-select" th:field="*{subDeptId}" id="subDeptId">
+                                            <option value="">Select sub-department</option>
+                                            <option th:each="subDepartment : ${subDepartments}"
+                                                th:value="${subDepartment.subDeptId}"
+                                                th:text="${subDepartment.subDeptName}"></option>
+                                            <option value="-1">Other / Not listed</option>
+                                        </select>
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('subDeptId')}"
+                                            th:errors="*{subDeptId}"></div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="newDepartmentName">New Department Name</label>
+                                        <input type="text" class="form-control" id="newDepartmentName"
+                                            th:field="*{newDepartmentName}" placeholder="Enter department name">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('newDepartmentName')}"
+                                            th:errors="*{newDepartmentName}"></div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="newSubDeptName">New Sub-department Name</label>
+                                        <input type="text" class="form-control" id="newSubDeptName"
+                                            th:field="*{newSubDeptName}" placeholder="Enter sub-department name">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('newSubDeptName')}"
+                                            th:errors="*{newSubDeptName}"></div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label" for="address">Office Address</label>
+                                        <textarea class="form-control" id="address" th:field="*{address}" rows="3"
+                                            placeholder="Enter office address"></textarea>
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('address')}"
+                                            th:errors="*{address}"></div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="form-section">
+                                <div class="form-section-header">
+                                    <h3>Primary Contact</h3>
+                                    <p>Main officer for department communication.</p>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="primaryContactName">Contact Name</label>
+                                        <input type="text" class="form-control" id="primaryContactName"
+                                            th:field="*{primaryContactName}" placeholder="Enter full name">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('primaryContactName')}"
+                                            th:errors="*{primaryContactName}"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="primaryDesignation">Designation</label>
+                                        <input type="text" class="form-control" id="primaryDesignation"
+                                            th:field="*{primaryDesignation}" placeholder="Enter designation">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('primaryDesignation')}"
+                                            th:errors="*{primaryDesignation}"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="primaryMobile">Mobile Number</label>
+                                        <div class="verification-input-group">
+                                            <input type="text" class="form-control" id="primaryMobile"
+                                                th:field="*{primaryMobile}" maxlength="10" placeholder="10 digit mobile number">
+                                            <button type="button" class="btn btn-outline-primary btn-verify"
+                                                id="sendMobileOtpBtn">Send OTP</button>
+                                        </div>
+                                        <div class="verification-row" id="mobileOtpSection">
+                                            <input type="text" class="form-control" id="mobileOtpInput" maxlength="6"
+                                                placeholder="Enter mobile OTP">
+                                            <button type="button" class="btn btn-primary btn-verify"
+                                                id="verifyMobileOtpBtn">Verify OTP</button>
+                                        </div>
+                                        <div class="verification-status" id="mobileVerificationStatus"></div>
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('primaryMobile')}"
+                                            th:errors="*{primaryMobile}"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="primaryEmail">Email Address</label>
+                                        <div class="verification-input-group">
+                                            <input type="email" class="form-control" id="primaryEmail"
+                                                th:field="*{primaryEmail}" placeholder="Enter official email">
+                                            <button type="button" class="btn btn-outline-primary btn-verify"
+                                                id="sendEmailOtpBtn">Send OTP</button>
+                                        </div>
+                                        <div class="verification-row" id="emailOtpSection">
+                                            <input type="text" class="form-control" id="emailOtpInput" maxlength="6"
+                                                placeholder="Enter email OTP">
+                                            <button type="button" class="btn btn-primary btn-verify"
+                                                id="verifyEmailOtpBtn">Verify OTP</button>
+                                        </div>
+                                        <div class="verification-status" id="emailVerificationStatus"></div>
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('primaryEmail')}"
+                                            th:errors="*{primaryEmail}"></div>
+                                    </div>
+                                    <div class="col-12">
+                                        <p class="document-note mb-0">
+                                            Primary mobile and primary email must be verified before registration can be submitted.
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="form-section">
+                                <div class="form-section-header">
+                                    <h3>Secondary Contact</h3>
+                                    <p>Backup officer for coordination and escalation.</p>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="secondaryContactName">Contact Name</label>
+                                        <input type="text" class="form-control" id="secondaryContactName"
+                                            th:field="*{secondaryContactName}" placeholder="Enter full name">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('secondaryContactName')}"
+                                            th:errors="*{secondaryContactName}"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="secondaryDesignation">Designation</label>
+                                        <input type="text" class="form-control" id="secondaryDesignation"
+                                            th:field="*{secondaryDesignation}" placeholder="Enter designation">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('secondaryDesignation')}"
+                                            th:errors="*{secondaryDesignation}"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="secondaryMobile">Mobile Number</label>
+                                        <input type="text" class="form-control" id="secondaryMobile"
+                                            th:field="*{secondaryMobile}" maxlength="10" placeholder="10 digit mobile number">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('secondaryMobile')}"
+                                            th:errors="*{secondaryMobile}"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="secondaryEmail">Email Address</label>
+                                        <input type="email" class="form-control" id="secondaryEmail"
+                                            th:field="*{secondaryEmail}" placeholder="Enter official email">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('secondaryEmail')}"
+                                            th:errors="*{secondaryEmail}"></div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="form-section">
+                                <div class="form-section-header">
+                                    <h3>Billing and Compliance</h3>
+                                    <p>Provide billing identity and supporting documents.</p>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="billDepartmentName">Department Name for Bill</label>
+                                        <input type="text" class="form-control" id="billDepartmentName"
+                                            th:field="*{billDepartmentName}" placeholder="Billing department name">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('billDepartmentName')}"
+                                            th:errors="*{billDepartmentName}"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="gstNo">GST Number</label>
+                                        <input type="text" class="form-control text-uppercase" id="gstNo"
+                                            th:field="*{gstNo}" maxlength="15" placeholder="Enter GST number">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('gstNo')}"
+                                            th:errors="*{gstNo}"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="panNo">PAN Number</label>
+                                        <input type="text" class="form-control text-uppercase" id="panNo"
+                                            th:field="*{panNo}" maxlength="10" placeholder="Enter PAN number">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('panNo')}"
+                                            th:errors="*{panNo}"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="tanNo">TAN Number</label>
+                                        <input type="text" class="form-control text-uppercase" id="tanNo"
+                                            th:field="*{tanNo}" maxlength="10" placeholder="Enter TAN number">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('tanNo')}"
+                                            th:errors="*{tanNo}"></div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="billAddress">Billing Address</label>
+                                        <textarea class="form-control" id="billAddress" th:field="*{billAddress}" rows="3"
+                                            placeholder="Enter billing address"></textarea>
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('billAddress')}"
+                                            th:errors="*{billAddress}"></div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="gstFile">GST Document</label>
+                                        <input type="file" class="form-control" id="gstFile" th:field="*{gstFile}"
+                                            accept=".pdf,.png,.jpg,.jpeg">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="panFile">PAN Document</label>
+                                        <input type="file" class="form-control" id="panFile" th:field="*{panFile}"
+                                            accept=".pdf,.png,.jpg,.jpeg">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('panFile')}"
+                                            th:errors="*{panFile}"></div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="tanFile">TAN Document</label>
+                                        <input type="file" class="form-control" id="tanFile" th:field="*{tanFile}"
+                                            accept=".pdf,.png,.jpg,.jpeg">
+                                    </div>
+                                    <div class="col-12">
+                                        <p class="document-note mb-0">
+                                            Accepted formats: PDF, PNG, JPG, JPEG. PAN document is mandatory for submission.
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="form-section">
+                                <div class="form-section-header">
+                                    <h3>Declaration</h3>
+                                    <p>Read the declaration before enabling submission.</p>
+                                </div>
+
+                                <div class="declaration-box" id="declarationBox">
+                                    <p><strong>Terms and Conditions for Department Registration</strong></p>
+                                    <p>1. All information submitted in this form must be accurate and verifiable.</p>
+                                    <p>2. Registration approval is subject to departmental review and document validation.</p>
+                                    <p>3. The submitting officer confirms authorization to represent the department.</p>
+                                    <p>4. Any false, incomplete, or misleading information can result in rejection.</p>
+                                    <p>5. Contact details submitted here will be used for recruitment platform communication.</p>
+                                    <p>6. The department is responsible for keeping billing and contact information current.</p>
+                                    <p>7. Uploaded documents must be legible and belong to the registering department.</p>
+                                    <p>8. Scroll to the end of this declaration to enable acceptance.</p>
+                                </div>
+
+                                <div class="form-check declaration-check">
+                                    <input class="form-check-input" type="checkbox" id="agreeCheckbox"
+                                        th:field="*{isTermsConditionAccepted}" disabled>
+                                    <label class="form-check-label" for="agreeCheckbox">
+                                        I have read and accept the declaration and terms.
+                                    </label>
+                                </div>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('isTermsConditionAccepted')}"
+                                    th:errors="*{isTermsConditionAccepted}"></div>
+                            </section>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary btn-submit" id="registerBtn" disabled>
+                                    Submit Registration
+                                </button>
+                                <a th:href="@{/login}" class="btn btn-outline-secondary">Back to Login</a>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer portal-footer">
+        <div class="container">
+            <div class="d-flex justify-content-between py-3 flex-wrap gap-2">
+                <span>Copyright © 2024 Maharashtra Information Technology Corporation Ltd., Government of Maharashtra, India</span>
+                <span>Department registration portal</span>
+            </div>
+        </div>
+    </footer>
+
+    <script th:src="@{/js/department-registration.js}"></script>
+</body>
+
+</html>

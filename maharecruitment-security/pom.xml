@@ -7,9 +7,13 @@
   </parent>
   <artifactId>maharecruitment-security</artifactId>
   <packaging>jar</packaging>
-  <name>maharecruitment-web</name>
-  <description>maharecruitment-web</description>
+  <name>maharecruitment-security</name>
+  <description>maharecruitment-security</description>
   <dependencies>
+  	<dependency>
+  		<groupId>org.springframework.boot</groupId>
+  		<artifactId>spring-boot-starter-security</artifactId>
+  	</dependency>
   	<!--<dependency>
   		<groupId>com.maharecruitment.gov.in</groupId>
   		<artifactId>maharecruitment-web</artifactId>
@@ -18,7 +22,7 @@
   	<dependency>
   		<groupId>com.maharecruitment.gov.in</groupId>
   		<artifactId>maharecruitment-common</artifactId>
-  		<version>0.0.1-SNAPSHOT</version>
+  		<version>${project.version}</version>
   	</dependency>
   </dependencies>
 </project>
