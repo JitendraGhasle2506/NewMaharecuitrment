@@ -145,8 +145,10 @@ public class DepartmentRegistrationPageController {
         model.addAttribute("registrationForm", form);
         model.addAttribute("departments", getDepartments());
         model.addAttribute("subDepartments", getSubDepartmentsForForm(form));
-        model.addAttribute("primaryMobileVerified", verificationService.isMobileVerified(session, form.getPrimaryMobile()));
-        model.addAttribute("primaryEmailVerified", verificationService.isEmailVerified(session, form.getPrimaryEmail()));
+        model.addAttribute("primaryMobileVerified",
+                verificationService.isMobileVerified(session, form.getPrimaryMobile()));
+        model.addAttribute("primaryEmailVerified",
+                verificationService.isEmailVerified(session, form.getPrimaryEmail()));
     }
 
     private List<DepartmentResponse> getDepartments() {
