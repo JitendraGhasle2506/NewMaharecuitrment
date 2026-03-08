@@ -76,12 +76,11 @@
                             class="registration-form"
                             id="departmentRegistrationForm"
                             th:attr="data-subdepartments-url=@{/register/sub-departments},
-                                     data-mobile-send-url=@{/register/verifications/mobile/send},
-                                     data-mobile-verify-url=@{/register/verifications/mobile/verify},
-                                     data-email-send-url=@{/register/verifications/email/send},
-                                     data-email-verify-url=@{/register/verifications/email/verify},
+                                     data-otp-send-url=@{/api/verifications/otp/send},
+                                     data-otp-verify-url=@{/api/verifications/otp/verify},
                                      data-mobile-verified=${primaryMobileVerified},
-                                     data-email-verified=${primaryEmailVerified}">
+                                     data-email-verified=${primaryEmailVerified},
+                                     data-verification-purpose=${verificationPurpose}">
 
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
@@ -359,12 +358,13 @@
     <footer class="footer portal-footer">
         <div class="container">
             <div class="d-flex justify-content-between py-3 flex-wrap gap-2">
-                <span>Copyright © 2024 Maharashtra Information Technology Corporation Ltd., Government of Maharashtra, India</span>
+                <span>Copyright (c) 2024 Maharashtra Information Technology Corporation Ltd., Government of Maharashtra, India</span>
                 <span>Department registration portal</span>
             </div>
         </div>
     </footer>
 
+    <script th:src="@{/js/otp-verification.js}"></script>
     <script th:src="@{/js/department-registration.js}"></script>
 </body>
 

@@ -1,29 +1,30 @@
 package com.maharecruitment.gov.in.web.service.verification.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
-import com.maharecruitment.gov.in.web.service.verification.RegistrationOtpNotificationService;
+import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
+import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
 
 @Service
-public class RegistrationOtpNotificationServiceImpl implements RegistrationOtpNotificationService {
+public class NotificationServiceImpl implements OtpDispatchService, AccountNotificationService {
 
-    private static final Logger log = LoggerFactory.getLogger(RegistrationOtpNotificationServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(NotificationServiceImpl.class);
 
     private final JavaMailSender mailSender;
     private final RestClient restClient;
     private final Environment environment;
 
-    public RegistrationOtpNotificationServiceImpl(
+    public NotificationServiceImpl(
             JavaMailSender mailSender,
             RestClient restClient,
             Environment environment) {
@@ -38,8 +39,6 @@ public class RegistrationOtpNotificationServiceImpl implements RegistrationOtpNo
         String smsApiUrl = getProperty("sms.api.url");
         String smsApiKey = getProperty("sms.api.key");
         String senderId = getProperty("sms.sender-id");
-
-        log.info("Generated mobile OTP for {} is {}", mobileNo, otp);
 
         if (!StringUtils.hasText(smsApiUrl) || !StringUtils.hasText(smsApiKey) || !StringUtils.hasText(senderId)) {
             log.warn("SMS gateway is not fully configured. OTP was generated but not dispatched to mobile {}.", mobileNo);

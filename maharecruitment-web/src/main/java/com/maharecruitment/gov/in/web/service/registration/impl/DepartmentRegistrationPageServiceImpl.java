@@ -23,7 +23,7 @@ import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
-import com.maharecruitment.gov.in.web.service.verification.RegistrationOtpNotificationService;
+import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 
 @Service
 @Transactional
@@ -34,7 +34,7 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
     private final DepartmentRegistrationService registrationService;
     private final DepartmentUserProvisioningService departmentUserProvisioningService;
     private final FileStorageService fileStorageService;
-    private final RegistrationOtpNotificationService notificationService;
+    private final AccountNotificationService accountNotificationService;
 
     public DepartmentRegistrationPageServiceImpl(
             DepartmentMstService departmentService,
@@ -42,13 +42,13 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
             DepartmentRegistrationService registrationService,
             DepartmentUserProvisioningService departmentUserProvisioningService,
             FileStorageService fileStorageService,
-            RegistrationOtpNotificationService notificationService) {
+            AccountNotificationService accountNotificationService) {
         this.departmentService = departmentService;
         this.subDepartmentService = subDepartmentService;
         this.registrationService = registrationService;
         this.departmentUserProvisioningService = departmentUserProvisioningService;
         this.fileStorageService = fileStorageService;
-        this.notificationService = notificationService;
+        this.accountNotificationService = accountNotificationService;
     }
 
     @Override
@@ -94,7 +94,7 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
             DepartmentRegistrationEntity registration = registrationService.registerDepartment(request);
             DepartmentUserProvisioningResult userResult = departmentUserProvisioningService.createDepartmentUser(
                     toProvisioningRequest(form, registration));
-            notificationService.sendDepartmentCredentials(
+            accountNotificationService.sendDepartmentCredentials(
                     form.getPrimaryEmail(),
                     form.getPrimaryContactName(),
                     userResult.getTemporaryPassword());

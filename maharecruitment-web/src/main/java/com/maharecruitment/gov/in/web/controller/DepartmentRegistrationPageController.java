@@ -4,14 +4,12 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -22,11 +20,10 @@ import com.maharecruitment.gov.in.master.dto.SubDepartmentResponse;
 import com.maharecruitment.gov.in.master.service.DepartmentMstService;
 import com.maharecruitment.gov.in.master.service.SubDepartmentService;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
-import com.maharecruitment.gov.in.web.dto.verification.OtpSendRequest;
-import com.maharecruitment.gov.in.web.dto.verification.OtpVerifyRequest;
-import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
+import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
-import com.maharecruitment.gov.in.web.service.verification.RegistrationVerificationService;
+import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
+import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -38,17 +35,17 @@ public class DepartmentRegistrationPageController {
     private final DepartmentMstService departmentService;
     private final SubDepartmentService subDepartmentService;
     private final DepartmentRegistrationPageService registrationPageService;
-    private final RegistrationVerificationService verificationService;
+    private final OtpVerificationService otpVerificationService;
 
     public DepartmentRegistrationPageController(
             DepartmentMstService departmentService,
             SubDepartmentService subDepartmentService,
             DepartmentRegistrationPageService registrationPageService,
-            RegistrationVerificationService verificationService) {
+            OtpVerificationService otpVerificationService) {
         this.departmentService = departmentService;
         this.subDepartmentService = subDepartmentService;
         this.registrationPageService = registrationPageService;
-        this.verificationService = verificationService;
+        this.otpVerificationService = otpVerificationService;
     }
 
     @GetMapping("/department-registration")
@@ -73,7 +70,7 @@ public class DepartmentRegistrationPageController {
 
         try {
             registrationPageService.register(form);
-            verificationService.clear(session);
+            otpVerificationService.clear(session, VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
             redirectAttributes.addAttribute("registered", "true");
             return "redirect:/login";
         } catch (RuntimeException ex) {
@@ -89,66 +86,23 @@ public class DepartmentRegistrationPageController {
         return subDepartmentService.getAll(departmentId, Pageable.unpaged()).getContent();
     }
 
-    @PostMapping("/verifications/mobile/send")
-    @ResponseBody
-    public ResponseEntity<VerificationResponse> sendMobileOtp(
-            @Valid @RequestBody OtpSendRequest request,
-            HttpSession session) {
-        try {
-            verificationService.sendMobileOtp(session, request.getReference());
-            return ResponseEntity.ok(new VerificationResponse("OTP sent to the primary mobile number.", false));
-        } catch (RuntimeException ex) {
-            return ResponseEntity.badRequest().body(new VerificationResponse(ex.getMessage(), false));
-        }
-    }
-
-    @PostMapping("/verifications/mobile/verify")
-    @ResponseBody
-    public ResponseEntity<VerificationResponse> verifyMobileOtp(
-            @Valid @RequestBody OtpVerifyRequest request,
-            HttpSession session) {
-        try {
-            verificationService.verifyMobileOtp(session, request.getReference(), request.getOtp());
-            return ResponseEntity.ok(new VerificationResponse("Primary mobile number verified successfully.", true));
-        } catch (RuntimeException ex) {
-            return ResponseEntity.badRequest().body(new VerificationResponse(ex.getMessage(), false));
-        }
-    }
-
-    @PostMapping("/verifications/email/send")
-    @ResponseBody
-    public ResponseEntity<VerificationResponse> sendEmailOtp(
-            @Valid @RequestBody OtpSendRequest request,
-            HttpSession session) {
-        try {
-            verificationService.sendEmailOtp(session, request.getReference());
-            return ResponseEntity.ok(new VerificationResponse("OTP sent to the primary email address.", false));
-        } catch (RuntimeException ex) {
-            return ResponseEntity.badRequest().body(new VerificationResponse(ex.getMessage(), false));
-        }
-    }
-
-    @PostMapping("/verifications/email/verify")
-    @ResponseBody
-    public ResponseEntity<VerificationResponse> verifyEmailOtp(
-            @Valid @RequestBody OtpVerifyRequest request,
-            HttpSession session) {
-        try {
-            verificationService.verifyEmailOtp(session, request.getReference(), request.getOtp());
-            return ResponseEntity.ok(new VerificationResponse("Primary email address verified successfully.", true));
-        } catch (RuntimeException ex) {
-            return ResponseEntity.badRequest().body(new VerificationResponse(ex.getMessage(), false));
-        }
-    }
-
     private void populateForm(Model model, DepartmentRegistrationForm form, HttpSession session) {
         model.addAttribute("registrationForm", form);
         model.addAttribute("departments", getDepartments());
         model.addAttribute("subDepartments", getSubDepartmentsForForm(form));
         model.addAttribute("primaryMobileVerified",
-                verificationService.isMobileVerified(session, form.getPrimaryMobile()));
+                otpVerificationService.isVerified(
+                        session,
+                        VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
+                        VerificationChannel.MOBILE,
+                        form.getPrimaryMobile()));
         model.addAttribute("primaryEmailVerified",
-                verificationService.isEmailVerified(session, form.getPrimaryEmail()));
+                otpVerificationService.isVerified(
+                        session,
+                        VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
+                        VerificationChannel.EMAIL,
+                        form.getPrimaryEmail()));
+        model.addAttribute("verificationPurpose", VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
     }
 
     private List<DepartmentResponse> getDepartments() {
@@ -201,13 +155,21 @@ public class DepartmentRegistrationPageController {
         }
 
         if (!bindingResult.hasFieldErrors("primaryMobile")
-                && !verificationService.isMobileVerified(session, form.getPrimaryMobile())) {
+                && !otpVerificationService.isVerified(
+                        session,
+                        VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
+                        VerificationChannel.MOBILE,
+                        form.getPrimaryMobile())) {
             bindingResult.rejectValue("primaryMobile", "registration.primaryMobileVerification",
                     "Primary mobile number must be verified through OTP.");
         }
 
         if (!bindingResult.hasFieldErrors("primaryEmail")
-                && !verificationService.isEmailVerified(session, form.getPrimaryEmail())) {
+                && !otpVerificationService.isVerified(
+                        session,
+                        VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
+                        VerificationChannel.EMAIL,
+                        form.getPrimaryEmail())) {
             bindingResult.rejectValue("primaryEmail", "registration.primaryEmailVerification",
                     "Primary email address must be verified.");
         }
