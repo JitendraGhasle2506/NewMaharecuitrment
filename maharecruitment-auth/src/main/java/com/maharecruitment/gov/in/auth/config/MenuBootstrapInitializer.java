@@ -49,15 +49,17 @@ public class MenuBootstrapInitializer implements ApplicationRunner {
             return;
         }
 
-        Set<Role> adminRoles = resolveRolesWithFallback("ADMIN", "ADMIN", "ROLE_ADMIN");
-        Set<Role> hrRoles = resolveRolesWithFallback("ROLE_HR", "HR", "ROLE_HR");
+        Role adminRole = roleRepository.findByNameIgnoreCase("ADMIN")
+                .orElseGet(this::createAdminRoleIfMissing);
+        Role hrRole = roleRepository.findByNameIgnoreCase("ROLE_HR")
+                .orElseGet(() -> createRoleIfMissing("ROLE_HR"));
 
         MstMenu adminMenu = upsertMenu(
                 "Administration",
                 null,
                 "fa fa-user-shield",
                 0,
-                adminRoles.toArray(new Role[0]));
+                adminRole);
 
         upsertSubMenu(adminMenu, "Admin Dashboard", "/admin/dashboard", "fa fa-gauge");
         upsertSubMenu(adminMenu, "Role Management", "/admin/roles", "fa fa-user-tag");
@@ -71,7 +73,7 @@ public class MenuBootstrapInitializer implements ApplicationRunner {
                 null,
                 "fa fa-database",
                 0,
-                mergeRoles(adminRoles, hrRoles).toArray(new Role[0]));
+                adminRole, hrRole);
 
         upsertSubMenu(masterMenu, "Designation Master", "/master/designations", "fa fa-id-badge");
         upsertSubMenu(masterMenu, "Resource Levels", "/master/resource-levels", "fa fa-layer-group");
@@ -91,7 +93,30 @@ public class MenuBootstrapInitializer implements ApplicationRunner {
         upsertSubMenu(departmentMenu, "Department Dashboard", "/department/home", "fa fa-gauge");
         upsertSubMenu(departmentMenu, "Department Profile", "/department/profile", "fa fa-id-card");
         upsertSubMenu(departmentMenu, "Manpower Applications", "/department/manpower/list", "fa fa-users-gear");
-        upsertSubMenu(departmentMenu, "New Manpower Application", "/department/manpower/apply", "fa fa-file-circle-plus");
+        upsertSubMenu(departmentMenu, "New Manpower Application", "/department/manpower/apply",
+                "fa fa-file-circle-plus");
+    }
+
+    private void bootstrapRoles() {
+        String[] roles = {
+                "ROLE_USER", "ROLE_AGENCY", "ROLE_HR", "ROLE_STM", "ROLE_HOD2",
+                "ROLE_HOD1", "ROLE_COO", "ROLE_PM", "ROLE_ADMIN", "ROLE_HOD3",
+                "ROLE_STM1", "ROLE_DEPARTMENT", "ROLE_AUDITOR", "ROLE_EMPLOYEE",
+                "ROLE_MAHAIT_ADMIN"
+        };
+
+        for (String roleName : roles) {
+            roleRepository.findByNameIgnoreCase(roleName)
+                    .orElseGet(() -> createRoleIfMissing(roleName));
+        }
+    }
+
+    private Role createRoleIfMissing(String roleName) {
+        Role role = new Role();
+        role.setName(roleName);
+        Role saved = roleRepository.save(role);
+        log.info("Role created: {}", saved.getName());
+        return saved;
     }
 
     private MstMenu upsertMenu(
@@ -149,37 +174,9 @@ public class MenuBootstrapInitializer implements ApplicationRunner {
         return saved;
     }
 
-    private Set<Role> resolveRolesWithFallback(String createIfMissing, String... lookupNames) {
-        Set<Role> resolvedRoles = new LinkedHashSet<>();
-        if (lookupNames != null) {
-            for (String roleName : lookupNames) {
-                if (roleName == null || roleName.isBlank()) {
-                    continue;
-                }
-                roleRepository.findByNameIgnoreCase(roleName.trim())
-                        .ifPresent(resolvedRoles::add);
-            }
-        }
-        if (resolvedRoles.isEmpty()) {
-            resolvedRoles.add(createRoleIfMissing(createIfMissing));
-        }
-        return resolvedRoles;
-    }
-
-    private Set<Role> mergeRoles(Set<Role> first, Set<Role> second) {
-        Set<Role> merged = new LinkedHashSet<>();
-        if (first != null) {
-            merged.addAll(first);
-        }
-        if (second != null) {
-            merged.addAll(second);
-        }
-        return merged;
-    }
-
-    private Role createRoleIfMissing(String roleName) {
+    private Role createAdminRoleIfMissing() {
         Role role = new Role();
-        role.setName(roleName);
+        role.setName("ADMIN");
         Role saved = roleRepository.save(role);
         log.info("Role created by menu bootstrap: {}", saved.getName());
         return saved;
