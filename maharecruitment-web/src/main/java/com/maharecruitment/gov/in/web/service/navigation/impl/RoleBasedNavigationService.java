@@ -174,7 +174,7 @@ public class RoleBasedNavigationService implements NavigationService {
         ));
 
         navItems.put("ROLE_AUDITOR", List.of(
-                new SidebarItemView("Auditor Dashboard", "fa fa-magnifying-glass-chart", "/coo/dashboard")
+                new SidebarItemView("Department Audit Request", "fa fa-magnifying-glass-chart", "/auditor/department-requests")
         ));
 
         navItems.put("ROLE_DEPARTMENT", List.of(

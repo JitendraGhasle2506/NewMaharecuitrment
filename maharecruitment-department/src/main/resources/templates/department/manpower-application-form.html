@@ -80,7 +80,7 @@
                                         <th>Level</th>
                                         <th>Monthly Rate</th>
                                         <th>Number of Manpower</th>
-                                        <th>Duration (Months)</th>
+                                        <th>Months</th>
                                         <th>Total Cost</th>
                                         <th>Action</th>
                                     </tr>
@@ -140,8 +140,28 @@
                             </table>
                         </div>
 
-                        <div class="text-end mt-2">
-                            <h5>Total Estimated Cost (INR, Excluding Taxes): <span id="grandTotalCostText">0.00</span></h5>
+                        <div class="mt-2">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered w-auto ms-auto mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <th class="text-end">Total Estimated Cost (INR, Excluding Taxes)</th>
+                                            <td class="text-end"><span id="grandTotalCostText">0.00</span></td>
+                                        </tr>
+                                    </tbody>
+                                    <tbody id="taxBreakupBody"></tbody>
+                                    <tbody>
+                                        <tr>
+                                            <th class="text-end">Total Tax (INR)</th>
+                                            <td class="text-end"><span id="totalTaxAmountText">0.00</span></td>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-end">Total Estimated Cost (INR, Including Taxes)</th>
+                                            <td class="text-end"><span id="grandTotalIncludingTaxText">0.00</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                             <input type="hidden" th:field="*{totalEstimatedCost}" id="grandTotalCostValue">
                         </div>
 
@@ -257,8 +277,26 @@
                         <tbody id="previewResourceRequirementBody"></tbody>
                     </table>
 
-                    <div class="text-end">
-                        <h5>Grand Total (INR, Excluding Taxes): <span id="previewGrandTotalCost">0.00</span></h5>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm table-bordered w-auto ms-auto mb-0">
+                            <tbody>
+                                <tr>
+                                    <th class="text-end">Grand Total (INR, Excluding Taxes)</th>
+                                    <td class="text-end"><span id="previewGrandTotalCost">0.00</span></td>
+                                </tr>
+                            </tbody>
+                            <tbody id="previewTaxBreakupBody"></tbody>
+                            <tbody>
+                                <tr>
+                                    <th class="text-end">Total Tax (INR)</th>
+                                    <td class="text-end"><span id="previewTotalTaxAmount">0.00</span></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-end">Grand Total (INR, Including Taxes)</th>
+                                    <td class="text-end"><span id="previewGrandTotalIncludingTax">0.00</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 <div class="modal-footer">

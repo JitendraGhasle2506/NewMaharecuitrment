@@ -20,17 +20,26 @@
     const actionStatusInput = document.getElementById("applicationActionStatus");
     const grandTotalCostText = document.getElementById("grandTotalCostText");
     const grandTotalCostValue = document.getElementById("grandTotalCostValue");
+    const taxBreakupBody = document.getElementById("taxBreakupBody");
+    const totalTaxAmountText = document.getElementById("totalTaxAmountText");
+    const grandTotalIncludingTaxText = document.getElementById("grandTotalIncludingTaxText");
     const workOrderFileInput = document.getElementById("workOrderFileInput");
     const workOrderValidationMessage = document.getElementById("workOrderValidationMessage");
     const existingWorkOrderFilePathInput = formElement.querySelector('[name="existingWorkOrderFilePath"]');
     const selectedWorkOrderPreview = document.getElementById("selectedWorkOrderPreview");
     const selectedWorkOrderLink = document.getElementById("selectedWorkOrderLink");
     const selectedWorkOrderName = document.getElementById("selectedWorkOrderName");
+    const previewGrandTotalCost = document.getElementById("previewGrandTotalCost");
+    const previewTaxBreakupBody = document.getElementById("previewTaxBreakupBody");
+    const previewTotalTaxAmount = document.getElementById("previewTotalTaxAmount");
+    const previewGrandTotalIncludingTax = document.getElementById("previewGrandTotalIncludingTax");
 
     const requirementRowKeys = new Set();
+    let applicableTaxRates = [];
     let selectedWorkOrderObjectUrl = null;
 
     initializeExistingRows();
+    loadApplicableTaxRates();
     recalculateGrandTotalCost();
 
     designationSelectElement?.addEventListener("change", onDesignationChange);
@@ -75,6 +84,26 @@
             })
             .catch((error) => {
                 console.error("Unable to load levels by designation.", error);
+            });
+    }
+
+    function loadApplicableTaxRates() {
+        const taxRateEndpoint = `${contextPath}/department/manpower/tax-rates`;
+        fetch(taxRateEndpoint)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Tax-rate lookup failed.");
+                }
+                return response.json();
+            })
+            .then((taxRates) => {
+                applicableTaxRates = normalizeTaxRates(taxRates);
+                recalculateGrandTotalCost();
+            })
+            .catch((error) => {
+                console.error("Unable to load applicable tax rates.", error);
+                applicableTaxRates = [];
+                recalculateGrandTotalCost();
             });
     }
 
@@ -245,6 +274,8 @@
         if (grandTotalCostValue) {
             grandTotalCostValue.value = total.toFixed(2);
         }
+
+        updateTaxSummary(total);
     }
 
     function resequenceRequirementRows() {
@@ -350,7 +381,6 @@
         const previewProjectName = document.getElementById("previewProjectName");
         const previewApplicationType = document.getElementById("previewApplicationType");
         const previewTableBody = document.getElementById("previewResourceRequirementBody");
-        const previewGrandTotalCost = document.getElementById("previewGrandTotalCost");
 
         if (!previewTableBody) {
             return true;
@@ -385,9 +415,9 @@
             previewTableBody.appendChild(previewRow);
         });
 
-        if (previewGrandTotalCost) {
-            previewGrandTotalCost.textContent = grandTotalCostText.textContent || "0.00";
-        }
+        const baseCost = Number(grandTotalCostValue?.value || 0);
+        const taxComponents = buildTaxComponents(baseCost);
+        updatePreviewTaxSummary(baseCost, taxComponents);
         return true;
     }
 
@@ -403,6 +433,87 @@
             designationSelectElement.value = "";
         }
         resetLevelSelect();
+    }
+
+    function normalizeTaxRates(taxRates) {
+        if (!Array.isArray(taxRates)) {
+            return [];
+        }
+
+        return taxRates
+            .map((taxRate) => {
+                const taxCode = String(taxRate?.taxCode || "").trim();
+                const taxName = String(taxRate?.taxName || "").trim();
+                const ratePercentage = Number(taxRate?.ratePercentage || 0);
+
+                return {
+                    taxCode,
+                    taxName,
+                    ratePercentage
+                };
+            })
+            .filter((taxRate) => taxRate.taxCode && Number.isFinite(taxRate.ratePercentage) && taxRate.ratePercentage > 0);
+    }
+
+    function updateTaxSummary(baseCost) {
+        const taxComponents = buildTaxComponents(baseCost);
+        const totalTaxAmount = taxComponents.reduce((sum, taxComponent) => sum + taxComponent.taxAmount, 0);
+        const grandTotalIncludingTax = baseCost + totalTaxAmount;
+
+        renderTaxBreakupRows(taxBreakupBody, taxComponents);
+
+        if (totalTaxAmountText) {
+            totalTaxAmountText.textContent = formatCurrency(totalTaxAmount);
+        }
+        if (grandTotalIncludingTaxText) {
+            grandTotalIncludingTaxText.textContent = formatCurrency(grandTotalIncludingTax);
+        }
+
+        updatePreviewTaxSummary(baseCost, taxComponents);
+    }
+
+    function updatePreviewTaxSummary(baseCost, taxComponents) {
+        const totalTaxAmount = taxComponents.reduce((sum, taxComponent) => sum + taxComponent.taxAmount, 0);
+        const grandTotalIncludingTax = baseCost + totalTaxAmount;
+
+        if (previewGrandTotalCost) {
+            previewGrandTotalCost.textContent = formatCurrency(baseCost);
+        }
+        renderTaxBreakupRows(previewTaxBreakupBody, taxComponents);
+        if (previewTotalTaxAmount) {
+            previewTotalTaxAmount.textContent = formatCurrency(totalTaxAmount);
+        }
+        if (previewGrandTotalIncludingTax) {
+            previewGrandTotalIncludingTax.textContent = formatCurrency(grandTotalIncludingTax);
+        }
+    }
+
+    function buildTaxComponents(baseCost) {
+        return applicableTaxRates.map((taxRate) => {
+            const taxAmount = roundToTwo((baseCost * taxRate.ratePercentage) / 100);
+            return {
+                label: taxRate.taxName || taxRate.taxCode,
+                ratePercentage: taxRate.ratePercentage,
+                taxAmount
+            };
+        });
+    }
+
+    function renderTaxBreakupRows(container, taxComponents) {
+        if (!container) {
+            return;
+        }
+
+        container.innerHTML = "";
+
+        taxComponents.forEach((taxComponent) => {
+            const taxRow = document.createElement("tr");
+            taxRow.innerHTML = `
+                <th class="text-end">${escapeHtml(taxComponent.label)} (${formatPercentage(taxComponent.ratePercentage)}%)</th>
+                <td class="text-end">${formatCurrency(taxComponent.taxAmount)}</td>
+            `;
+            container.appendChild(taxRow);
+        });
     }
 
     function hasExistingWorkOrderDocument() {
@@ -442,6 +553,14 @@
 
     function formatCurrency(value) {
         return Number(value || 0).toFixed(2);
+    }
+
+    function formatPercentage(value) {
+        return Number(value || 0).toFixed(2);
+    }
+
+    function roundToTwo(value) {
+        return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
     }
 
     function escapeHtml(value) {

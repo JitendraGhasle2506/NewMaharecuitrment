@@ -17,15 +17,15 @@ import com.maharecruitment.gov.in.auth.repository.MstMenuRepository;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 
 @Component
-@Order(40)
-public class HrDepartmentRequestMenuInitializer implements ApplicationRunner {
+@Order(41)
+public class AuditorDepartmentRequestMenuInitializer implements ApplicationRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(HrDepartmentRequestMenuInitializer.class);
+    private static final Logger log = LoggerFactory.getLogger(AuditorDepartmentRequestMenuInitializer.class);
 
     private final MstMenuRepository mstMenuRepository;
     private final RoleRepository roleRepository;
 
-    public HrDepartmentRequestMenuInitializer(
+    public AuditorDepartmentRequestMenuInitializer(
             MstMenuRepository mstMenuRepository,
             RoleRepository roleRepository) {
         this.mstMenuRepository = mstMenuRepository;
@@ -35,15 +35,15 @@ public class HrDepartmentRequestMenuInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        Role hrRole = roleRepository.findByNameIgnoreCase("ROLE_HR")
-                .or(() -> roleRepository.findByNameIgnoreCase("HR"))
-                .orElseGet(() -> createRoleIfMissing("ROLE_HR"));
+        Role auditorRole = roleRepository.findByNameIgnoreCase("ROLE_AUDITOR")
+                .or(() -> roleRepository.findByNameIgnoreCase("AUDITOR"))
+                .orElseGet(() -> createRoleIfMissing("ROLE_AUDITOR"));
 
         upsertDirectMenu(
-                "Department Request",
-                "/hr/department-requests",
-                "fa fa-building-user",
-                hrRole);
+                "Department Audit Request",
+                "/auditor/department-requests",
+                "fa fa-magnifying-glass-chart",
+                auditorRole);
     }
 
     private void upsertDirectMenu(
@@ -71,7 +71,7 @@ public class HrDepartmentRequestMenuInitializer implements ApplicationRunner {
         menu.setRoles(roles);
 
         MstMenu saved = mstMenuRepository.save(menu);
-        log.info("HR menu bootstrapped. menuId={}, menuName={}, url={}",
+        log.info("Auditor menu bootstrapped. menuId={}, menuName={}, url={}",
                 saved.getMenuId(),
                 saved.getMenuNameEnglish(),
                 saved.getUrl());
@@ -81,7 +81,7 @@ public class HrDepartmentRequestMenuInitializer implements ApplicationRunner {
         Role role = new Role();
         role.setName(roleName);
         Role saved = roleRepository.save(role);
-        log.info("Role created for HR menu bootstrap: {}", saved.getName());
+        log.info("Role created for Auditor menu bootstrap: {}", saved.getName());
         return saved;
     }
 }

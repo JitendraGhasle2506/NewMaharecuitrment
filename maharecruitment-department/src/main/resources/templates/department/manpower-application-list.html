@@ -25,7 +25,6 @@
                                 <tr>
                                     <th>Request ID</th>
                                     <th>Project Name</th>
-                                    <th>Project Code</th>
                                     <th>Application Type</th>
                                     <th>Status</th>
                                     <th>Total Estimated Cost</th>
@@ -35,12 +34,11 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(applications)}">
-                                    <td colspan="8" class="text-center text-muted">No applications found.</td>
+                                    <td colspan="7" class="text-center text-muted">No applications found.</td>
                                 </tr>
                                 <tr th:each="applicationSummary : ${applications}">
                                     <td th:text="${applicationSummary.requestId}">DPA-20260310-ABC123</td>
                                     <td th:text="${applicationSummary.projectName}">Project Name</td>
-                                    <td th:text="${applicationSummary.projectCode}">PROJECT-CODE</td>
                                     <td th:text="${#strings.replace(applicationSummary.applicationType.name(), '_', ' ')}">APPLICATION TYPE</td>
                                     <td>
                                         <span class="badge"

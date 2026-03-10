@@ -41,50 +41,42 @@ public interface DepartmentProjectApplicationRepository extends JpaRepository<De
             Long subDepartmentId,
             Collection<DepartmentApplicationStatus> applicationStatuses);
 
-    @Query("""
-            select
-                a.departmentId as departmentId,
-                count(a.departmentProjectApplicationId) as projectCount
-            from DepartmentProjectApplicationEntity a
-            where a.applicationStatus in :applicationStatuses
-            group by a.departmentId
-            """)
+    @Query(
+            "select a.departmentId as departmentId, "
+                    + "count(a.departmentProjectApplicationId) as projectCount "
+                    + "from DepartmentProjectApplicationEntity a "
+                    + "where a.applicationStatus in :applicationStatuses "
+                    + "group by a.departmentId")
     List<DepartmentProjectCountByDepartmentProjection> countProjectApplicationsByDepartment(
             @Param("applicationStatuses") Collection<DepartmentApplicationStatus> applicationStatuses);
 
-    @Query("""
-            select
-                a.subDepartmentId as subDepartmentId,
-                count(a.departmentProjectApplicationId) as projectCount
-            from DepartmentProjectApplicationEntity a
-            where a.departmentId = :departmentId
-              and a.applicationStatus in :applicationStatuses
-            group by a.subDepartmentId
-            """)
+    @Query(
+            "select a.subDepartmentId as subDepartmentId, "
+                    + "count(a.departmentProjectApplicationId) as projectCount "
+                    + "from DepartmentProjectApplicationEntity a "
+                    + "where a.departmentId = :departmentId "
+                    + "and a.applicationStatus in :applicationStatuses "
+                    + "group by a.subDepartmentId")
     List<DepartmentProjectCountBySubDepartmentProjection> countProjectApplicationsBySubDepartment(
             @Param("departmentId") Long departmentId,
             @Param("applicationStatuses") Collection<DepartmentApplicationStatus> applicationStatuses);
 
-    @Query("""
-            select
-                a.departmentId as departmentId,
-                a.subDepartmentId as subDepartmentId,
-                count(a.departmentProjectApplicationId) as projectCount
-            from DepartmentProjectApplicationEntity a
-            where a.applicationStatus in :applicationStatuses
-            group by a.departmentId, a.subDepartmentId
-            """)
+    @Query(
+            "select a.departmentId as departmentId, "
+                    + "a.subDepartmentId as subDepartmentId, "
+                    + "count(a.departmentProjectApplicationId) as projectCount "
+                    + "from DepartmentProjectApplicationEntity a "
+                    + "where a.applicationStatus in :applicationStatuses "
+                    + "group by a.departmentId, a.subDepartmentId")
     List<DepartmentProjectCountByDepartmentAndSubDepartmentProjection> countProjectApplicationsByDepartmentAndSubDepartment(
             @Param("applicationStatuses") Collection<DepartmentApplicationStatus> applicationStatuses);
 
-    @Query("""
-            select
-                a.departmentRegistrationId as departmentRegistrationId,
-                count(a.departmentProjectApplicationId) as projectCount
-            from DepartmentProjectApplicationEntity a
-            where a.applicationStatus in :applicationStatuses
-            group by a.departmentRegistrationId
-            """)
+    @Query(
+            "select a.departmentRegistrationId as departmentRegistrationId, "
+                    + "count(a.departmentProjectApplicationId) as projectCount "
+                    + "from DepartmentProjectApplicationEntity a "
+                    + "where a.applicationStatus in :applicationStatuses "
+                    + "group by a.departmentRegistrationId")
     List<DepartmentSubmittedProjectCountProjection> countSubmittedProjectsByDepartmentRegistration(
             @Param("applicationStatuses") Collection<DepartmentApplicationStatus> applicationStatuses);
 }

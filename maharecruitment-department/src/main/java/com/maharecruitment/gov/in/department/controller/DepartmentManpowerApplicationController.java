@@ -1,10 +1,12 @@
 package com.maharecruitment.gov.in.department.controller;
 
+import java.time.LocalDate;
 import java.security.Principal;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -24,10 +26,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationActivityView;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationForm;
+import com.maharecruitment.gov.in.department.dto.DepartmentTaxRateView;
 import com.maharecruitment.gov.in.department.dto.LevelOptionView;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationType;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.service.DepartmentManpowerApplicationService;
+import com.maharecruitment.gov.in.department.service.DepartmentTaxRateQueryService;
 import com.maharecruitment.gov.in.department.service.DepartmentWorkOrderStorageService;
 import com.maharecruitment.gov.in.department.service.model.WorkOrderDocumentView;
 
@@ -40,12 +44,15 @@ public class DepartmentManpowerApplicationController {
     private static final Logger log = LoggerFactory.getLogger(DepartmentManpowerApplicationController.class);
 
     private final DepartmentManpowerApplicationService manpowerApplicationService;
+    private final DepartmentTaxRateQueryService taxRateQueryService;
     private final DepartmentWorkOrderStorageService workOrderStorageService;
 
     public DepartmentManpowerApplicationController(
             DepartmentManpowerApplicationService manpowerApplicationService,
+            DepartmentTaxRateQueryService taxRateQueryService,
             DepartmentWorkOrderStorageService workOrderStorageService) {
         this.manpowerApplicationService = manpowerApplicationService;
+        this.taxRateQueryService = taxRateQueryService;
         this.workOrderStorageService = workOrderStorageService;
     }
 
@@ -125,6 +132,13 @@ public class DepartmentManpowerApplicationController {
             @RequestParam Long designationId,
             @RequestParam String levelCode) {
         return manpowerApplicationService.getMonthlyRate(designationId, levelCode).toPlainString();
+    }
+
+    @GetMapping("/tax-rates")
+    @ResponseBody
+    public List<DepartmentTaxRateView> getApplicableTaxRates(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate applicableDate) {
+        return taxRateQueryService.getApplicableTaxRates(applicableDate);
     }
 
     @GetMapping("/{applicationId}/activities")

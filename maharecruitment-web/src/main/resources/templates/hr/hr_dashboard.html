@@ -92,7 +92,6 @@
                                     <table class="table table-hover align-middle">
                                         <thead>
                                             <tr>
-                                                <th>Project Code</th>
                                                 <th>Project Name</th>
                                                 <th class="text-center">Internal</th>
                                                 <th class="text-center">External</th>
@@ -101,7 +100,6 @@
                                         </thead>
                                         <tbody>
                                             <tr th:each="project : ${projects}">
-                                                <td th:text="${project.code}">PRJ-0000</td>
                                                 <td th:text="${project.name}">Project Name</td>
                                                 <td class="text-center" th:text="${project.internal}">0</td>
                                                 <td class="text-center" th:text="${project.external}">0</td>

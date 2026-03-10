@@ -2,8 +2,13 @@ package com.maharecruitment.gov.in.department.config;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.sql.DataSource;
 
@@ -15,12 +20,15 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import com.maharecruitment.gov.in.department.entity.DepartmentApplicationActivityType;
+import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
+
 @Component
 public class DepartmentStatusConstraintInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DepartmentStatusConstraintInitializer.class);
 
-    private static final List<String> ALLOWED_STATUS_VALUES = List.of(
+    private static final List<String> LEGACY_STATUS_VALUES = List.of(
             // Legacy status values already present in existing databases.
             "DRAFT",
             "SUBMITTED",
@@ -56,22 +64,50 @@ public class DepartmentStatusConstraintInitializer implements ApplicationRunner 
         updateConstraint(
                 "department_project_application",
                 "application_status",
-                "department_project_application_application_status_check");
+                "department_project_application_application_status_check",
+                allowedStatusValues());
 
         updateConstraint(
                 "department_project_application_activity",
                 "previous_status",
-                "department_project_application_activity_previous_status_check");
+                "department_project_application_activity_previous_status_check",
+                allowedStatusValues());
 
         updateConstraint(
                 "department_project_application_activity",
                 "new_status",
-                "department_project_application_activity_new_status_check");
+                "department_project_application_activity_new_status_check",
+                allowedStatusValues());
+
+        updateConstraint(
+                "department_project_application_activity",
+                "activity_type",
+                "department_project_application_activity_activity_type_check",
+                allowedActivityTypes());
     }
 
-    private void updateConstraint(String tableName, String columnName, String constraintName) {
-        String allowedValuesSql = ALLOWED_STATUS_VALUES.stream()
-                .map(value -> "'" + value + "'")
+    private List<String> allowedStatusValues() {
+        return Stream.concat(
+                Stream.of(DepartmentApplicationStatus.values()).map(Enum::name),
+                LEGACY_STATUS_VALUES.stream())
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private List<String> allowedActivityTypes() {
+        return Stream.of(DepartmentApplicationActivityType.values())
+                .map(Enum::name)
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private void updateConstraint(
+            String tableName,
+            String columnName,
+            String constraintName,
+            List<String> desiredAllowedValues) {
+        List<String> effectiveAllowedValues = buildEffectiveAllowedValues(tableName, columnName, desiredAllowedValues);
+
+        String allowedValuesSql = effectiveAllowedValues.stream()
+                .map(value -> "'" + escapeSqlLiteral(value) + "'")
                 .collect(Collectors.joining(", "));
 
         String dropSql = "ALTER TABLE " + tableName + " DROP CONSTRAINT IF EXISTS " + constraintName;
@@ -86,6 +122,43 @@ public class DepartmentStatusConstraintInitializer implements ApplicationRunner 
             log.error("Unable to ensure constraint {} on table {}.", constraintName, tableName, ex);
             throw ex;
         }
+    }
+
+    private List<String> buildEffectiveAllowedValues(
+            String tableName,
+            String columnName,
+            List<String> desiredAllowedValues) {
+        Set<String> mergedValues = new LinkedHashSet<>();
+
+        for (String value : desiredAllowedValues) {
+            if (value != null && !value.isBlank()) {
+                mergedValues.add(value.trim().toUpperCase(Locale.ROOT));
+            }
+        }
+
+        for (String existingValue : fetchExistingValues(tableName, columnName)) {
+            if (existingValue != null && !existingValue.isBlank()) {
+                mergedValues.add(existingValue.trim().toUpperCase(Locale.ROOT));
+            }
+        }
+
+        return List.copyOf(mergedValues);
+    }
+
+    private List<String> fetchExistingValues(String tableName, String columnName) {
+        String sql = "SELECT DISTINCT " + columnName
+                + " FROM " + tableName
+                + " WHERE " + columnName + " IS NOT NULL AND TRIM(" + columnName + ") <> ''";
+        try {
+            return jdbcTemplate.queryForList(sql, String.class);
+        } catch (DataAccessException ex) {
+            log.warn("Unable to fetch existing values for {}.{} while preparing constraint.", tableName, columnName, ex);
+            return List.of();
+        }
+    }
+
+    private String escapeSqlLiteral(String value) {
+        return value.replace("'", "''");
     }
 
     private boolean isPostgreSql() {

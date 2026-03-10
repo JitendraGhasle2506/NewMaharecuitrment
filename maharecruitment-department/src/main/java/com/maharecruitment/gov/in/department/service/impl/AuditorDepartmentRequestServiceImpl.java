@@ -1,5 +1,11 @@
 package com.maharecruitment.gov.in.department.service.impl;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -21,24 +27,30 @@ import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
+import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationActivityView;
+import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectResourceRequirementEntity;
-import com.maharecruitment.gov.in.department.entity.HrReviewDecision;
+import com.maharecruitment.gov.in.department.entity.DepartmentTaxRateMasterEntity;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationActivityRepository;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
+import com.maharecruitment.gov.in.department.repository.DepartmentTaxRateMasterRepository;
 import com.maharecruitment.gov.in.department.repository.projection.DepartmentSubmittedProjectCountProjection;
+import com.maharecruitment.gov.in.department.service.AuditorDepartmentRequestService;
 import com.maharecruitment.gov.in.department.service.DepartmentManpowerApplicationService;
-import com.maharecruitment.gov.in.department.service.HrDepartmentRequestService;
-import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationActivityView;
-import com.maharecruitment.gov.in.department.service.model.HrDepartmentApplicationReviewDetailView;
-import com.maharecruitment.gov.in.department.service.model.HrDepartmentApplicationResourceRequirementView;
-import com.maharecruitment.gov.in.department.service.model.HrDepartmentSubmittedApplicationView;
-import com.maharecruitment.gov.in.department.service.model.HrDepartmentSubDepartmentRequestView;
-import com.maharecruitment.gov.in.department.service.model.HrParentDepartmentRequestView;
-import com.maharecruitment.gov.in.department.service.model.HrSubDepartmentApplicationDetailView;
-import com.maharecruitment.gov.in.department.service.model.HrSubDepartmentProjectCountView;
+import com.maharecruitment.gov.in.department.service.DepartmentProfileDocumentStorageService;
+import com.maharecruitment.gov.in.department.service.model.AuditorApplicationTaxComponentView;
+import com.maharecruitment.gov.in.department.service.model.AuditorDepartmentApplicationResourceRequirementView;
+import com.maharecruitment.gov.in.department.service.model.AuditorDepartmentApplicationReviewDetailView;
+import com.maharecruitment.gov.in.department.service.model.AuditorDepartmentRegistrationDetailView;
+import com.maharecruitment.gov.in.department.service.model.AuditorDepartmentSubDepartmentRequestView;
+import com.maharecruitment.gov.in.department.service.model.AuditorDepartmentSubmittedApplicationView;
+import com.maharecruitment.gov.in.department.service.model.AuditorParentDepartmentRequestView;
+import com.maharecruitment.gov.in.department.service.model.AuditorSubDepartmentApplicationDetailView;
+import com.maharecruitment.gov.in.department.service.model.AuditorSubDepartmentProjectCountView;
+import com.maharecruitment.gov.in.department.service.model.DepartmentProfileDocumentType;
 import com.maharecruitment.gov.in.department.service.model.WorkOrderDocumentView;
 import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.SubDepartment;
@@ -47,40 +59,49 @@ import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 
 @Service
 @Transactional(readOnly = true)
-public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestService {
+public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentRequestService {
 
-    private static final Logger log = LoggerFactory.getLogger(HrDepartmentRequestServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(AuditorDepartmentRequestServiceImpl.class);
+    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
+    private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
     private static final String UNMAPPED_SUB_DEPARTMENT = "Unmapped Sub-Department";
 
-    private static final EnumSet<DepartmentApplicationStatus> SUBMITTED_STATUSES = EnumSet.of(
-            DepartmentApplicationStatus.SUBMITTED_TO_HR,
-            DepartmentApplicationStatus.CORRECTED_BY_DEPARTMENT);
+    private static final EnumSet<DepartmentApplicationStatus> AUDITOR_QUEUE_STATUSES = EnumSet.of(
+            DepartmentApplicationStatus.HR_APPROVED,
+            DepartmentApplicationStatus.AUDITOR_REVIEW,
+            DepartmentApplicationStatus.AUDITOR_APPROVED);
 
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
     private final DepartmentProjectApplicationRepository departmentProjectApplicationRepository;
     private final DepartmentProjectApplicationActivityRepository activityRepository;
+    private final DepartmentTaxRateMasterRepository taxRateMasterRepository;
     private final DepartmentManpowerApplicationService manpowerApplicationService;
+    private final DepartmentProfileDocumentStorageService profileDocumentStorageService;
     private final DepartmentMstRepository departmentMstRepository;
     private final SubDepartmentRepository subDepartmentRepository;
 
-    public HrDepartmentRequestServiceImpl(
+    public AuditorDepartmentRequestServiceImpl(
             DepartmentRegistrationRepository departmentRegistrationRepository,
             DepartmentProjectApplicationRepository departmentProjectApplicationRepository,
             DepartmentProjectApplicationActivityRepository activityRepository,
+            DepartmentTaxRateMasterRepository taxRateMasterRepository,
             DepartmentManpowerApplicationService manpowerApplicationService,
+            DepartmentProfileDocumentStorageService profileDocumentStorageService,
             DepartmentMstRepository departmentMstRepository,
             SubDepartmentRepository subDepartmentRepository) {
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.departmentProjectApplicationRepository = departmentProjectApplicationRepository;
         this.activityRepository = activityRepository;
+        this.taxRateMasterRepository = taxRateMasterRepository;
         this.manpowerApplicationService = manpowerApplicationService;
+        this.profileDocumentStorageService = profileDocumentStorageService;
         this.departmentMstRepository = departmentMstRepository;
         this.subDepartmentRepository = subDepartmentRepository;
     }
 
     @Override
-    public List<HrParentDepartmentRequestView> getParentDepartmentRequests() {
+    public List<AuditorParentDepartmentRequestView> getParentDepartmentRequests() {
         List<DepartmentRegistrationEntity> registrations = departmentRegistrationRepository.findAll(
                 Sort.by(Sort.Direction.ASC, "departmentName"));
 
@@ -88,7 +109,7 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
             return List.of();
         }
 
-        Map<Long, Long> projectCountByRegistration = getSubmittedProjectCountByRegistration();
+        Map<Long, Long> projectCountByRegistration = getQueueProjectCountByRegistration();
 
         Map<Long, String> departmentNameFallbackById = new LinkedHashMap<>();
         Map<Long, Set<Long>> subDepartmentIdsByDepartment = new LinkedHashMap<>();
@@ -146,8 +167,8 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                         DepartmentMst::getDepartmentName,
                         (first, second) -> first));
 
-        List<HrParentDepartmentRequestView> parentDepartments = parentDepartmentIds.stream()
-                .map(departmentId -> HrParentDepartmentRequestView.builder()
+        List<AuditorParentDepartmentRequestView> parentDepartments = parentDepartmentIds.stream()
+                .map(departmentId -> AuditorParentDepartmentRequestView.builder()
                         .departmentId(departmentId)
                         .departmentName(resolveDepartmentName(
                                 departmentId,
@@ -169,12 +190,12 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                         Comparator.nullsLast(String::compareTo)))
                 .toList();
 
-        log.info("HR parent department request view loaded. parentDepartments={}", parentDepartments.size());
+        log.info("Auditor parent department queue loaded. parentDepartments={}", parentDepartments.size());
         return parentDepartments;
     }
 
     @Override
-    public HrDepartmentSubDepartmentRequestView getSubDepartmentProjectCounts(Long departmentId) {
+    public AuditorDepartmentSubDepartmentRequestView getSubDepartmentProjectCounts(Long departmentId) {
         if (departmentId == null) {
             throw new DepartmentApplicationException("Department id is required.");
         }
@@ -186,22 +207,21 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
             throw new DepartmentApplicationException("No registered department found for selected department.");
         }
 
-        Map<Long, Long> projectCountByRegistration = getSubmittedProjectCountByRegistration();
+        Map<Long, Long> projectCountByRegistration = getQueueProjectCountByRegistration();
         Map<Long, Long> projectCountBySubDepartment = new LinkedHashMap<>();
 
         Set<Long> subDepartmentIds = new LinkedHashSet<>();
-        departmentRegistrations.stream()
-                .forEach(registration -> {
-                    Long subDepartmentId = registration.getSubDeptId();
-                    subDepartmentIds.add(subDepartmentId);
+        departmentRegistrations.forEach(registration -> {
+            Long subDepartmentId = registration.getSubDeptId();
+            subDepartmentIds.add(subDepartmentId);
 
-                    Long projectCount = projectCountByRegistration.getOrDefault(
-                            registration.getDepartmentRegistrationId(),
-                            0L);
-                    projectCountBySubDepartment.put(
-                            subDepartmentId,
-                            projectCountBySubDepartment.getOrDefault(subDepartmentId, 0L) + projectCount);
-                });
+            Long projectCount = projectCountByRegistration.getOrDefault(
+                    registration.getDepartmentRegistrationId(),
+                    0L);
+            projectCountBySubDepartment.put(
+                    subDepartmentId,
+                    projectCountBySubDepartment.getOrDefault(subDepartmentId, 0L) + projectCount);
+        });
 
         Map<Long, String> subDepartmentNameById = subDepartmentRepository.findAllById(
                 subDepartmentIds.stream().filter(Objects::nonNull).toList())
@@ -211,10 +231,10 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                         SubDepartment::getSubDeptName,
                         (first, second) -> first));
 
-        List<HrSubDepartmentProjectCountView> subDepartmentViews = new ArrayList<>();
+        List<AuditorSubDepartmentProjectCountView> subDepartmentViews = new ArrayList<>();
 
         if (projectCountBySubDepartment.containsKey(null)) {
-            subDepartmentViews.add(HrSubDepartmentProjectCountView.builder()
+            subDepartmentViews.add(AuditorSubDepartmentProjectCountView.builder()
                     .subDepartmentId(null)
                     .subDepartmentName(UNMAPPED_SUB_DEPARTMENT)
                     .projectApplicationCount(projectCountBySubDepartment.get(null))
@@ -223,13 +243,13 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
 
         subDepartmentIds.stream()
                 .filter(Objects::nonNull)
-                .forEach(subDepartmentId -> subDepartmentViews.add(HrSubDepartmentProjectCountView.builder()
+                .forEach(subDepartmentId -> subDepartmentViews.add(AuditorSubDepartmentProjectCountView.builder()
                         .subDepartmentId(subDepartmentId)
                         .subDepartmentName(subDepartmentNameById.getOrDefault(subDepartmentId, "Sub-Department " + subDepartmentId))
                         .projectApplicationCount(projectCountBySubDepartment.getOrDefault(subDepartmentId, 0L))
                         .build()));
 
-        List<HrSubDepartmentProjectCountView> sortedSubDepartmentViews = subDepartmentViews.stream()
+        List<AuditorSubDepartmentProjectCountView> sortedSubDepartmentViews = subDepartmentViews.stream()
                 .sorted(Comparator.comparing(
                         subDepartment -> safeLower(subDepartment.getSubDepartmentName()),
                         Comparator.nullsLast(String::compareTo)))
@@ -240,11 +260,11 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 departmentMstRepository.findById(departmentId).map(DepartmentMst::getDepartmentName).orElse(null),
                 departmentRegistrations.get(0).getDepartmentName());
 
-        log.info("HR sub-department drill loaded. departmentId={}, subDepartments={}",
+        log.info("Auditor sub-department queue loaded. departmentId={}, subDepartments={}",
                 departmentId,
                 sortedSubDepartmentViews.size());
 
-        return HrDepartmentSubDepartmentRequestView.builder()
+        return AuditorDepartmentSubDepartmentRequestView.builder()
                 .departmentId(departmentId)
                 .departmentName(departmentName)
                 .subDepartmentProjectCounts(sortedSubDepartmentViews)
@@ -252,7 +272,7 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
     }
 
     @Override
-    public HrSubDepartmentApplicationDetailView getSubDepartmentApplications(Long departmentId, Long subDepartmentId) {
+    public AuditorSubDepartmentApplicationDetailView getSubDepartmentApplications(Long departmentId, Long subDepartmentId) {
         if (departmentId == null) {
             throw new DepartmentApplicationException("Department id is required.");
         }
@@ -279,9 +299,9 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
         List<DepartmentProjectApplicationEntity> applications = departmentProjectApplicationRepository
                 .findByDepartmentRegistrationIdInAndApplicationStatusInOrderByDepartmentProjectApplicationIdDesc(
                         registrationIds,
-                        SUBMITTED_STATUSES);
+                        AUDITOR_QUEUE_STATUSES);
 
-        List<HrDepartmentSubmittedApplicationView> applicationViews = applications.stream()
+        List<AuditorDepartmentSubmittedApplicationView> applicationViews = applications.stream()
                 .map(this::toSubmittedApplicationView)
                 .toList();
 
@@ -294,12 +314,12 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .map(SubDepartment::getSubDeptName)
                 .orElse("Sub-Department " + subDepartmentId);
 
-        log.info("HR application drill loaded. departmentId={}, subDepartmentId={}, applications={}",
+        log.info("Auditor application queue loaded. departmentId={}, subDepartmentId={}, applications={}",
                 departmentId,
                 subDepartmentId,
                 applicationViews.size());
 
-        return HrSubDepartmentApplicationDetailView.builder()
+        return AuditorSubDepartmentApplicationDetailView.builder()
                 .departmentId(departmentId)
                 .departmentName(departmentName)
                 .subDepartmentId(subDepartmentId)
@@ -309,7 +329,7 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
     }
 
     @Override
-    public HrDepartmentApplicationReviewDetailView getApplicationReviewDetail(
+    public AuditorDepartmentApplicationReviewDetailView getApplicationReviewDetail(
             Long departmentId,
             Long subDepartmentId,
             Long applicationId) {
@@ -317,6 +337,7 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 departmentId,
                 subDepartmentId,
                 applicationId);
+        DepartmentRegistrationEntity registration = findRegistrationForApplication(application);
 
         List<DepartmentRegistrationEntity> registrations = departmentRegistrationRepository
                 .findByDepartmentIdOrderByCreatedAtAsc(departmentId);
@@ -335,7 +356,7 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .map(SubDepartment::getSubDeptName)
                 .orElse("Sub-Department " + subDepartmentId);
 
-        List<HrDepartmentApplicationResourceRequirementView> requirementViews = application.getResourceRequirements()
+        List<AuditorDepartmentApplicationResourceRequirementView> requirementViews = application.getResourceRequirements()
                 .stream()
                 .map(this::toRequirementView)
                 .toList();
@@ -353,8 +374,17 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                         .actionTimestamp(activity.getActionTimestamp())
                         .build())
                 .toList();
+        AuditorDepartmentRegistrationDetailView registrationDetail = toRegistrationDetail(registration);
+        LocalDate taxApplicableDate = resolveTaxApplicableDate(application);
+        BigDecimal baseCost = toScaledAmount(application.getTotalEstimatedCost());
+        List<AuditorApplicationTaxComponentView> taxComponents = calculateTaxComponents(baseCost, taxApplicableDate);
+        BigDecimal totalTaxAmount = taxComponents.stream()
+                .map(AuditorApplicationTaxComponentView::getTaxAmount)
+                .reduce(ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalCostIncludingTax = baseCost.add(totalTaxAmount).setScale(2, RoundingMode.HALF_UP);
 
-        return HrDepartmentApplicationReviewDetailView.builder()
+        return AuditorDepartmentApplicationReviewDetailView.builder()
                 .departmentId(departmentId)
                 .departmentName(departmentName)
                 .subDepartmentId(subDepartmentId)
@@ -372,7 +402,13 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .updatedDate(application.getUpdatedDate())
                 .workOrderAvailable(StringUtils.hasText(application.getWorkOrderFilePath()))
                 .workOrderOriginalName(application.getWorkOrderOriginalName())
-                .hrActionAllowed(isHrActionAllowed(application.getApplicationStatus()))
+                .auditorActionAllowed(isAuditorActionAllowed(application.getApplicationStatus()))
+                .completionAllowed(isCompletionAllowed(application.getApplicationStatus()))
+                .taxApplicableDate(taxApplicableDate)
+                .totalTaxAmount(totalTaxAmount)
+                .totalCostIncludingTax(totalCostIncludingTax)
+                .taxComponents(taxComponents)
+                .registrationDetail(registrationDetail)
                 .resourceRequirements(requirementViews)
                 .activityTimeline(activityTimeline)
                 .build();
@@ -380,11 +416,11 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
 
     @Override
     @Transactional
-    public DepartmentApplicationStatus reviewApplicationByHr(
+    public DepartmentApplicationStatus reviewApplicationByAuditor(
             Long departmentId,
             Long subDepartmentId,
             Long applicationId,
-            HrReviewDecision decision,
+            AuditorReviewDecision decision,
             String remarks,
             String actorEmail) {
         findApplicationInRegisteredSubDepartment(departmentId, subDepartmentId, applicationId);
@@ -393,14 +429,26 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
             throw new DepartmentApplicationException("Review decision is required.");
         }
         if (isRemarksMandatory(decision) && !StringUtils.hasText(remarks)) {
-            throw new DepartmentApplicationException("Remarks are required for send back and reject decisions.");
+            throw new DepartmentApplicationException("Remarks are required for send back decision.");
         }
 
-        return manpowerApplicationService.reviewByHr(
+        return manpowerApplicationService.reviewByAuditor(
                 applicationId,
                 decision,
                 remarks,
                 actorEmail);
+    }
+
+    @Override
+    @Transactional
+    public DepartmentApplicationStatus completeApplication(
+            Long departmentId,
+            Long subDepartmentId,
+            Long applicationId,
+            String remarks,
+            String actorEmail) {
+        findApplicationInRegisteredSubDepartment(departmentId, subDepartmentId, applicationId);
+        return manpowerApplicationService.markCompleted(applicationId, remarks, actorEmail);
     }
 
     @Override
@@ -424,9 +472,33 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .build();
     }
 
-    private HrDepartmentSubmittedApplicationView toSubmittedApplicationView(
+    @Override
+    public WorkOrderDocumentView getDepartmentRegistrationDocument(
+            Long departmentId,
+            Long subDepartmentId,
+            Long applicationId,
+            DepartmentProfileDocumentType documentType) {
+        DepartmentProjectApplicationEntity application = findApplicationInRegisteredSubDepartment(
+                departmentId,
+                subDepartmentId,
+                applicationId);
+        DepartmentRegistrationEntity registration = findRegistrationForApplication(application);
+
+        String documentPath = resolveRegistrationDocumentPath(registration, documentType);
+        if (!profileDocumentStorageService.isManagedPath(documentPath)) {
+            throw new DepartmentApplicationException(documentType.name() + " document is unavailable.");
+        }
+
+        return WorkOrderDocumentView.builder()
+                .originalFileName(extractFileName(documentPath))
+                .fullPath(documentPath)
+                .contentType(resolveContentType(documentPath))
+                .build();
+    }
+
+    private AuditorDepartmentSubmittedApplicationView toSubmittedApplicationView(
             DepartmentProjectApplicationEntity applicationEntity) {
-        return HrDepartmentSubmittedApplicationView.builder()
+        return AuditorDepartmentSubmittedApplicationView.builder()
                 .departmentProjectApplicationId(applicationEntity.getDepartmentProjectApplicationId())
                 .requestId(applicationEntity.getRequestId())
                 .projectName(applicationEntity.getProjectName())
@@ -439,9 +511,9 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .build();
     }
 
-    private HrDepartmentApplicationResourceRequirementView toRequirementView(
+    private AuditorDepartmentApplicationResourceRequirementView toRequirementView(
             DepartmentProjectResourceRequirementEntity requirementEntity) {
-        return HrDepartmentApplicationResourceRequirementView.builder()
+        return AuditorDepartmentApplicationResourceRequirementView.builder()
                 .designationName(requirementEntity.getDesignationName())
                 .levelName(requirementEntity.getLevelName())
                 .monthlyRate(requirementEntity.getMonthlyRate())
@@ -451,8 +523,8 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .build();
     }
 
-    private Map<Long, Long> getSubmittedProjectCountByRegistration() {
-        return departmentProjectApplicationRepository.countSubmittedProjectsByDepartmentRegistration(SUBMITTED_STATUSES)
+    private Map<Long, Long> getQueueProjectCountByRegistration() {
+        return departmentProjectApplicationRepository.countSubmittedProjectsByDepartmentRegistration(AUDITOR_QUEUE_STATUSES)
                 .stream()
                 .filter(countProjection -> countProjection.getDepartmentRegistrationId() != null)
                 .collect(Collectors.toMap(
@@ -460,6 +532,14 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                         DepartmentSubmittedProjectCountProjection::getProjectCount,
                         Long::sum,
                         LinkedHashMap::new));
+    }
+
+    private DepartmentRegistrationEntity findRegistrationForApplication(DepartmentProjectApplicationEntity application) {
+        if (application.getDepartmentRegistrationId() == null) {
+            throw new DepartmentApplicationException("Department registration is missing for application.");
+        }
+        return departmentRegistrationRepository.findById(application.getDepartmentRegistrationId())
+                .orElseThrow(() -> new DepartmentApplicationException("Department registration not found."));
     }
 
     private DepartmentProjectApplicationEntity findApplicationInRegisteredSubDepartment(
@@ -499,13 +579,89 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
         return application;
     }
 
-    private boolean isHrActionAllowed(DepartmentApplicationStatus currentStatus) {
-        return currentStatus == DepartmentApplicationStatus.SUBMITTED_TO_HR
-                || currentStatus == DepartmentApplicationStatus.CORRECTED_BY_DEPARTMENT;
+    private boolean isAuditorActionAllowed(DepartmentApplicationStatus currentStatus) {
+        return currentStatus == DepartmentApplicationStatus.HR_APPROVED
+                || currentStatus == DepartmentApplicationStatus.AUDITOR_REVIEW;
     }
 
-    private boolean isRemarksMandatory(HrReviewDecision decision) {
-        return decision == HrReviewDecision.SEND_BACK || decision == HrReviewDecision.REJECT;
+    private boolean isCompletionAllowed(DepartmentApplicationStatus currentStatus) {
+        return currentStatus == DepartmentApplicationStatus.AUDITOR_APPROVED;
+    }
+
+    private boolean isRemarksMandatory(AuditorReviewDecision decision) {
+        return decision == AuditorReviewDecision.SEND_BACK;
+    }
+
+    private LocalDate resolveTaxApplicableDate(DepartmentProjectApplicationEntity application) {
+        if (application.getCreatedDate() != null) {
+            return application.getCreatedDate().toLocalDate();
+        }
+        return LocalDate.now();
+    }
+
+    private BigDecimal toScaledAmount(BigDecimal amount) {
+        if (amount == null) {
+            return ZERO;
+        }
+        return amount.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private List<AuditorApplicationTaxComponentView> calculateTaxComponents(
+            BigDecimal baseCost,
+            LocalDate applicableDate) {
+        List<DepartmentTaxRateMasterEntity> taxRates = taxRateMasterRepository.findApplicableTaxRates(applicableDate);
+        if (taxRates.isEmpty()) {
+            return List.of();
+        }
+
+        return taxRates.stream()
+                .filter(taxRate -> taxRate.getRatePercentage() != null && taxRate.getRatePercentage().compareTo(BigDecimal.ZERO) > 0)
+                .map(taxRate -> {
+                    BigDecimal taxAmount = baseCost
+                            .multiply(taxRate.getRatePercentage())
+                            .divide(HUNDRED, 2, RoundingMode.HALF_UP);
+
+                    return AuditorApplicationTaxComponentView.builder()
+                            .taxCode(taxRate.getTaxCode())
+                            .taxName(taxRate.getTaxName())
+                            .ratePercentage(taxRate.getRatePercentage())
+                            .taxAmount(taxAmount)
+                            .build();
+                })
+                .toList();
+    }
+
+    private AuditorDepartmentRegistrationDetailView toRegistrationDetail(DepartmentRegistrationEntity registration) {
+        String masterDepartmentName = registration.getDepartmentId() == null
+                ? null
+                : departmentMstRepository.findById(registration.getDepartmentId())
+                        .map(DepartmentMst::getDepartmentName)
+                        .orElse(null);
+        String registrationDepartmentName = resolveDepartmentName(
+                registration.getDepartmentId(),
+                masterDepartmentName,
+                registration.getDepartmentName());
+        String registrationSubDepartmentName = resolveSubDepartmentName(registration.getSubDeptId());
+
+        String gstPath = registration.getGstFilePath();
+        String panPath = registration.getPanFilePath();
+        String tanPath = registration.getTanFilePath();
+
+        return AuditorDepartmentRegistrationDetailView.builder()
+                .departmentName(registrationDepartmentName)
+                .subDepartmentName(registrationSubDepartmentName)
+                .billingDepartmentName(registration.getBillDepartmentName())
+                .billingAddress(registration.getBillAddress())
+                .gstNumber(registration.getGstNo())
+                .panNumber(registration.getPanNo())
+                .tanNumber(registration.getTanNo())
+                .gstDocumentName(extractFileName(gstPath))
+                .panDocumentName(extractFileName(panPath))
+                .tanDocumentName(extractFileName(tanPath))
+                .gstDocumentAvailable(profileDocumentStorageService.isManagedPath(gstPath))
+                .panDocumentAvailable(profileDocumentStorageService.isManagedPath(panPath))
+                .tanDocumentAvailable(profileDocumentStorageService.isManagedPath(tanPath))
+                .build();
     }
 
     private String resolveDepartmentName(Long departmentId, Map<Long, String> departmentNameMasterById,
@@ -533,6 +689,58 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
         return "Department " + departmentId;
     }
 
+    private String resolveSubDepartmentName(Long subDepartmentId) {
+        if (subDepartmentId == null) {
+            return null;
+        }
+        return subDepartmentRepository.findById(subDepartmentId)
+                .map(SubDepartment::getSubDeptName)
+                .orElse("Sub-Department " + subDepartmentId);
+    }
+
+    private String resolveRegistrationDocumentPath(
+            DepartmentRegistrationEntity registration,
+            DepartmentProfileDocumentType documentType) {
+        if (documentType == null) {
+            throw new DepartmentApplicationException("Document type is required.");
+        }
+
+        switch (documentType) {
+            case GST:
+                return registration.getGstFilePath();
+            case PAN:
+                return registration.getPanFilePath();
+            case TAN:
+                return registration.getTanFilePath();
+            default:
+                throw new DepartmentApplicationException("Unsupported document type: " + documentType);
+        }
+    }
+
+    private String resolveContentType(String fullPath) {
+        try {
+            String detected = Files.probeContentType(Paths.get(fullPath).toAbsolutePath().normalize());
+            if (StringUtils.hasText(detected)) {
+                return detected;
+            }
+        } catch (IOException ex) {
+            log.warn("Unable to detect content type for {}", fullPath, ex);
+        }
+        return "application/octet-stream";
+    }
+
+    private String extractFileName(String filePath) {
+        if (!StringUtils.hasText(filePath)) {
+            return null;
+        }
+        String normalized = filePath.trim().replace("\\", "/");
+        int index = normalized.lastIndexOf('/');
+        if (index >= 0 && index < normalized.length() - 1) {
+            return normalized.substring(index + 1);
+        }
+        return normalized;
+    }
+
     private String safeLower(String value) {
         if (value == null) {
             return null;
@@ -540,7 +748,7 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
         return value.toLowerCase(Locale.ROOT);
     }
 
-    private List<HrSubDepartmentProjectCountView> resolveSubDepartmentProjectCounts(
+    private List<AuditorSubDepartmentProjectCountView> resolveSubDepartmentProjectCounts(
             Long departmentId,
             Map<Long, Set<Long>> subDepartmentIdsByDepartment,
             Map<Long, String> subDepartmentNameById,
@@ -548,11 +756,11 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
         Map<Long, Long> projectCountBySubDepartment = projectCountByDepartmentAndSubDepartment
                 .getOrDefault(departmentId, Map.of());
 
-        List<HrSubDepartmentProjectCountView> subDepartmentViews = new ArrayList<>();
+        List<AuditorSubDepartmentProjectCountView> subDepartmentViews = new ArrayList<>();
 
         Long unmappedCount = projectCountBySubDepartment.get(null);
         if (unmappedCount != null) {
-            subDepartmentViews.add(HrSubDepartmentProjectCountView.builder()
+            subDepartmentViews.add(AuditorSubDepartmentProjectCountView.builder()
                     .subDepartmentId(null)
                     .subDepartmentName(UNMAPPED_SUB_DEPARTMENT)
                     .projectApplicationCount(unmappedCount)
@@ -566,7 +774,7 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .filter(Objects::nonNull)
                 .forEach(subDepartmentIds::add);
 
-        subDepartmentIds.forEach(subDepartmentId -> subDepartmentViews.add(HrSubDepartmentProjectCountView.builder()
+        subDepartmentIds.forEach(subDepartmentId -> subDepartmentViews.add(AuditorSubDepartmentProjectCountView.builder()
                 .subDepartmentId(subDepartmentId)
                 .subDepartmentName(subDepartmentNameById.getOrDefault(
                         subDepartmentId,

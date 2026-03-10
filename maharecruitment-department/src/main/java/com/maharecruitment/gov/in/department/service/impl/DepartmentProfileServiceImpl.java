@@ -390,11 +390,16 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
             throw new DepartmentApplicationException("Document type is required.");
         }
 
-        return switch (documentType) {
-            case GST -> registration.getGstFilePath();
-            case PAN -> registration.getPanFilePath();
-            case TAN -> registration.getTanFilePath();
-        };
+        switch (documentType) {
+            case GST:
+                return registration.getGstFilePath();
+            case PAN:
+                return registration.getPanFilePath();
+            case TAN:
+                return registration.getTanFilePath();
+            default:
+                throw new DepartmentApplicationException("Unsupported document type: " + documentType);
+        }
     }
 
     private String resolveContentType(String fullPath) {
