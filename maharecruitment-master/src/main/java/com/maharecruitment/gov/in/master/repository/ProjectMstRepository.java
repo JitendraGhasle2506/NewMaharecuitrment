@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.master.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,6 +11,12 @@ import com.maharecruitment.gov.in.master.entity.ProjectMst;
 
 @Repository
 public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
+
+    Optional<ProjectMst> findFirstByApplicationId(Long applicationId);
+
+    Optional<ProjectMst> findFirstByProjectNameIgnoreCaseAndDepartmentRegistrationId(
+            String projectName,
+            Long departmentRegistrationId);
 
     @Query("select count(p) > 0 "
             + "from ProjectMst p "

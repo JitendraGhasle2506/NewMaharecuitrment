@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.maharecruitment.gov.in.master.dto.ProjectRequest;
 import com.maharecruitment.gov.in.master.dto.ProjectResponse;
+import com.maharecruitment.gov.in.master.entity.ProjectType;
 
 public interface ProjectMstService {
 
@@ -17,4 +18,10 @@ public interface ProjectMstService {
     Page<ProjectResponse> getAll(Pageable pageable);
 
     void delete(Long projectId);
+
+    ProjectResponse upsertFromDepartmentApplication(
+            String projectName,
+            ProjectType projectType,
+            Long departmentRegistrationId,
+            Long applicationId);
 }

@@ -27,6 +27,7 @@ import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSum
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectResourceRequirementForm;
 import com.maharecruitment.gov.in.department.dto.LevelOptionView;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationActivityType;
+import com.maharecruitment.gov.in.department.entity.DepartmentApplicationType;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationActivityEntity;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
@@ -44,8 +45,10 @@ import com.maharecruitment.gov.in.department.service.model.WorkOrderDocumentView
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationMasterResponse;
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationRateResponse;
 import com.maharecruitment.gov.in.master.dto.ResourceLevelRefResponse;
+import com.maharecruitment.gov.in.master.entity.ProjectType;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationMasterService;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationRateService;
+import com.maharecruitment.gov.in.master.service.ProjectMstService;
 
 @Service
 @Transactional(readOnly = true)
@@ -62,6 +65,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     private final DepartmentProjectApplicationActivityRepository activityRepository;
     private final ManpowerDesignationMasterService designationService;
     private final ManpowerDesignationRateService designationRateService;
+    private final ProjectMstService projectMstService;
     private final UserRepository userRepository;
     private final DepartmentWorkOrderStorageService storageService;
 
@@ -70,12 +74,14 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             DepartmentProjectApplicationActivityRepository activityRepository,
             ManpowerDesignationMasterService designationService,
             ManpowerDesignationRateService designationRateService,
+            ProjectMstService projectMstService,
             UserRepository userRepository,
             DepartmentWorkOrderStorageService storageService) {
         this.applicationRepository = applicationRepository;
         this.activityRepository = activityRepository;
         this.designationService = designationService;
         this.designationRateService = designationRateService;
+        this.projectMstService = projectMstService;
         this.userRepository = userRepository;
         this.storageService = storageService;
     }
@@ -160,6 +166,10 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                     nextStatus,
                     actorContext,
                     "Application moved to " + nextStatus + " state.");
+        }
+
+        if (ACTION_SUBMIT.equals(normalizedAction)) {
+            syncProjectMaster(saved);
         }
 
         log.info(
@@ -751,7 +761,43 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             case SEND_BACK:
                 return DepartmentApplicationStatus.AUDITOR_SENT_BACK;
             default:
-                throw new DepartmentApplicationException("Unsupported auditor decision: " + decision);
+        throw new DepartmentApplicationException("Unsupported auditor decision: " + decision);
+        }
+    }
+
+    private void syncProjectMaster(DepartmentProjectApplicationEntity applicationEntity) {
+        if (applicationEntity == null) {
+            return;
+        }
+
+        if (!StringUtils.hasText(applicationEntity.getProjectName())) {
+            throw new DepartmentApplicationException("Project name is required for project master sync.");
+        }
+        if (applicationEntity.getDepartmentRegistrationId() == null) {
+            throw new DepartmentApplicationException("Department registration id is required for project master sync.");
+        }
+        if (applicationEntity.getDepartmentProjectApplicationId() == null) {
+            throw new DepartmentApplicationException("Application id is required for project master sync.");
+        }
+        if (applicationEntity.getApplicationType() == null) {
+            throw new DepartmentApplicationException("Application type is required for project master sync.");
+        }
+
+        ProjectType projectType = mapToProjectType(applicationEntity.getApplicationType());
+
+        projectMstService.upsertFromDepartmentApplication(
+                applicationEntity.getProjectName(),
+                projectType,
+                applicationEntity.getDepartmentRegistrationId(),
+                applicationEntity.getDepartmentProjectApplicationId());
+    }
+
+    private ProjectType mapToProjectType(DepartmentApplicationType applicationType) {
+        try {
+            return ProjectType.valueOf(applicationType.name());
+        } catch (IllegalArgumentException ex) {
+            throw new DepartmentApplicationException(
+                    "Unsupported application type for project master sync: " + applicationType);
         }
     }
 }

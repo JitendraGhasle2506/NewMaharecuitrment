@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.maharecruitment.gov.in.master.dto.ProjectRequest;
 import com.maharecruitment.gov.in.master.dto.ProjectResponse;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
+import com.maharecruitment.gov.in.master.entity.ProjectType;
+import com.maharecruitment.gov.in.master.exception.BusinessValidationException;
 import com.maharecruitment.gov.in.master.exception.DuplicateResourceException;
 import com.maharecruitment.gov.in.master.exception.ResourceNotFoundException;
 import com.maharecruitment.gov.in.master.mapper.ProjectMapper;
@@ -69,6 +71,43 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         ProjectMst entity = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found for id: " + projectId));
         projectRepository.delete(entity);
+    }
+
+    @Override
+    @Transactional
+    public ProjectResponse upsertFromDepartmentApplication(
+            String projectName,
+            ProjectType projectType,
+            Long departmentRegistrationId,
+            Long applicationId) {
+        if (applicationId == null) {
+            throw new BusinessValidationException("Application id is required to sync project master.");
+        }
+        if (departmentRegistrationId == null) {
+            throw new BusinessValidationException("Department registration id is required to sync project master.");
+        }
+        if (projectType == null) {
+            throw new BusinessValidationException("Project type is required to sync project master.");
+        }
+
+        String normalizedProjectName = normalizeName(projectName);
+        if (normalizedProjectName == null || normalizedProjectName.isBlank()) {
+            throw new BusinessValidationException("Project name is required to sync project master.");
+        }
+
+        ProjectMst entity = projectRepository.findFirstByApplicationId(applicationId)
+                .orElseGet(() -> projectRepository
+                        .findFirstByProjectNameIgnoreCaseAndDepartmentRegistrationId(
+                                normalizedProjectName,
+                                departmentRegistrationId)
+                        .orElseGet(ProjectMst::new));
+
+        entity.setProjectName(normalizedProjectName);
+        entity.setProjectType(projectType);
+        entity.setDepartmentRegistrationId(departmentRegistrationId);
+        entity.setApplicationId(applicationId);
+
+        return projectMapper.toResponse(projectRepository.save(entity));
     }
 
     private void mapRequestToEntity(ProjectRequest request, ProjectMst entity, String normalizedProjectName) {
