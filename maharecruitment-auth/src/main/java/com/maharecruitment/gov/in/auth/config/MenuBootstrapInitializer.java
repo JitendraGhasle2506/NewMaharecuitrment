@@ -51,13 +51,15 @@ public class MenuBootstrapInitializer implements ApplicationRunner {
 
         Role adminRole = roleRepository.findByNameIgnoreCase("ADMIN")
                 .orElseGet(this::createAdminRoleIfMissing);
+        Role hrRole = roleRepository.findByNameIgnoreCase("ROLE_HR")
+                .orElseGet(() -> createRoleIfMissing("ROLE_HR"));
 
         MstMenu adminMenu = upsertMenu(
                 "Administration",
                 null,
                 "fa fa-user-shield",
                 0,
-                adminRoles.toArray(new Role[0]));
+                adminRole);
 
         upsertSubMenu(adminMenu, "Admin Dashboard", "/admin/dashboard", "fa fa-gauge");
         upsertSubMenu(adminMenu, "Role Management", "/admin/roles", "fa fa-user-tag");
@@ -71,7 +73,7 @@ public class MenuBootstrapInitializer implements ApplicationRunner {
                 null,
                 "fa fa-database",
                 0,
-                mergeRoles(adminRoles, hrRoles).toArray(new Role[0]));
+                adminRole, hrRole);
 
         upsertSubMenu(masterMenu, "Designation Master", "/master/designations", "fa fa-id-badge");
         upsertSubMenu(masterMenu, "Resource Levels", "/master/resource-levels", "fa fa-layer-group");
