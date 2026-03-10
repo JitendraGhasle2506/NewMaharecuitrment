@@ -28,7 +28,6 @@ public class RoleLandingController {
             "/hod2/dashboard",
             "/coo/dashboard",
             "/employee/dashboard",
-            "/department/home",
             "/pension",
             "/hrms",
             "/payroll"

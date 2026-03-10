@@ -1,9 +1,9 @@
 package com.maharecruitment.gov.in.web.service.registration;
 
-import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
+import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationResult;
 
 public interface DepartmentRegistrationPageService {
 
-    DepartmentRegistrationEntity register(DepartmentRegistrationForm form);
+    DepartmentRegistrationResult register(DepartmentRegistrationForm form);
 }

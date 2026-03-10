@@ -2,11 +2,14 @@ package com.maharecruitment.gov.in.web.controller;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,9 +22,12 @@ import com.maharecruitment.gov.in.master.dto.DepartmentResponse;
 import com.maharecruitment.gov.in.master.dto.SubDepartmentResponse;
 import com.maharecruitment.gov.in.master.service.DepartmentMstService;
 import com.maharecruitment.gov.in.master.service.SubDepartmentService;
+import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
+import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationResult;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
+import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
@@ -36,16 +42,22 @@ public class DepartmentRegistrationPageController {
     private final SubDepartmentService subDepartmentService;
     private final DepartmentRegistrationPageService registrationPageService;
     private final OtpVerificationService otpVerificationService;
+    private final FileStorageService fileStorageService;
+    private final boolean otpBypassEnabled;
 
     public DepartmentRegistrationPageController(
             DepartmentMstService departmentService,
             SubDepartmentService subDepartmentService,
             DepartmentRegistrationPageService registrationPageService,
-            OtpVerificationService otpVerificationService) {
+            OtpVerificationService otpVerificationService,
+            FileStorageService fileStorageService,
+            @Value("${registration.department.otp-bypass-enabled:false}") boolean otpBypassEnabled) {
         this.departmentService = departmentService;
         this.subDepartmentService = subDepartmentService;
         this.registrationPageService = registrationPageService;
         this.otpVerificationService = otpVerificationService;
+        this.fileStorageService = fileStorageService;
+        this.otpBypassEnabled = otpBypassEnabled;
     }
 
     @GetMapping("/department-registration")
@@ -61,6 +73,7 @@ public class DepartmentRegistrationPageController {
             Model model,
             RedirectAttributes redirectAttributes,
             HttpSession session) {
+        stageUploadedFiles(form, bindingResult);
         validateDynamicSelections(form, bindingResult, session);
 
         if (bindingResult.hasErrors()) {
@@ -69,9 +82,11 @@ public class DepartmentRegistrationPageController {
         }
 
         try {
-            registrationPageService.register(form);
+            DepartmentRegistrationResult result = registrationPageService.register(form);
             otpVerificationService.clear(session, VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
             redirectAttributes.addAttribute("registered", "true");
+            redirectAttributes.addFlashAttribute("generatedUsername", result.username());
+            redirectAttributes.addFlashAttribute("generatedPassword", result.temporaryPassword());
             return "redirect:/login";
         } catch (RuntimeException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
@@ -91,17 +106,20 @@ public class DepartmentRegistrationPageController {
         model.addAttribute("departments", getDepartments());
         model.addAttribute("subDepartments", getSubDepartmentsForForm(form));
         model.addAttribute("primaryMobileVerified",
-                otpVerificationService.isVerified(
-                        session,
-                        VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
-                        VerificationChannel.MOBILE,
-                        form.getPrimaryMobile()));
+                otpBypassEnabled
+                        || otpVerificationService.isVerified(
+                                session,
+                                VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
+                                VerificationChannel.MOBILE,
+                                form.getPrimaryMobile()));
         model.addAttribute("primaryEmailVerified",
-                otpVerificationService.isVerified(
-                        session,
-                        VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
-                        VerificationChannel.EMAIL,
-                        form.getPrimaryEmail()));
+                otpBypassEnabled
+                        || otpVerificationService.isVerified(
+                                session,
+                                VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
+                                VerificationChannel.EMAIL,
+                                form.getPrimaryEmail()));
+        model.addAttribute("otpBypassEnabled", otpBypassEnabled);
         model.addAttribute("verificationPurpose", VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
     }
 
@@ -140,7 +158,9 @@ public class DepartmentRegistrationPageController {
         }
 
         if (form.getPanFile() == null || form.getPanFile().isEmpty()) {
-            bindingResult.rejectValue("panFile", "registration.panFile", "PAN document is required.");
+            if (!StringUtils.hasText(form.getUploadedPanFilePath())) {
+                bindingResult.rejectValue("panFile", "registration.panFile", "PAN document is required.");
+            }
         }
 
         if (!isBlank(form.getPrimaryEmail())
@@ -154,28 +174,102 @@ public class DepartmentRegistrationPageController {
                     "Secondary mobile must be different from primary mobile.");
         }
 
-        if (!bindingResult.hasFieldErrors("primaryMobile")
-                && !otpVerificationService.isVerified(
-                        session,
-                        VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
-                        VerificationChannel.MOBILE,
-                        form.getPrimaryMobile())) {
-            bindingResult.rejectValue("primaryMobile", "registration.primaryMobileVerification",
-                    "Primary mobile number must be verified through OTP.");
-        }
+        if (!otpBypassEnabled) {
+            if (!bindingResult.hasFieldErrors("primaryMobile")
+                    && !otpVerificationService.isVerified(
+                            session,
+                            VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
+                            VerificationChannel.MOBILE,
+                            form.getPrimaryMobile())) {
+                bindingResult.rejectValue("primaryMobile", "registration.primaryMobileVerification",
+                        "Primary mobile number must be verified through OTP.");
+            }
 
-        if (!bindingResult.hasFieldErrors("primaryEmail")
-                && !otpVerificationService.isVerified(
-                        session,
-                        VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
-                        VerificationChannel.EMAIL,
-                        form.getPrimaryEmail())) {
-            bindingResult.rejectValue("primaryEmail", "registration.primaryEmailVerification",
-                    "Primary email address must be verified.");
+            if (!bindingResult.hasFieldErrors("primaryEmail")
+                    && !otpVerificationService.isVerified(
+                            session,
+                            VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
+                            VerificationChannel.EMAIL,
+                            form.getPrimaryEmail())) {
+                bindingResult.rejectValue("primaryEmail", "registration.primaryEmailVerification",
+                        "Primary email address must be verified.");
+            }
         }
     }
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private void stageUploadedFiles(DepartmentRegistrationForm form, BindingResult bindingResult) {
+        stageDocument(
+                form.getGstFile(),
+                "department-registration/gst",
+                "gstFile",
+                "GST document",
+                form.getUploadedGstFilePath(),
+                form::setUploadedGstFilePath,
+                form::setUploadedGstFileName,
+                bindingResult);
+        if (hasFile(form.getGstFile())) {
+            form.setGstFile(null);
+        }
+
+        stageDocument(
+                form.getPanFile(),
+                "department-registration/pan",
+                "panFile",
+                "PAN document",
+                form.getUploadedPanFilePath(),
+                form::setUploadedPanFilePath,
+                form::setUploadedPanFileName,
+                bindingResult);
+        if (hasFile(form.getPanFile())) {
+            form.setPanFile(null);
+        }
+
+        stageDocument(
+                form.getTanFile(),
+                "department-registration/tan",
+                "tanFile",
+                "TAN document",
+                form.getUploadedTanFilePath(),
+                form::setUploadedTanFilePath,
+                form::setUploadedTanFileName,
+                bindingResult);
+        if (hasFile(form.getTanFile())) {
+            form.setTanFile(null);
+        }
+    }
+
+    private void stageDocument(
+            org.springframework.web.multipart.MultipartFile file,
+            String modulePath,
+            String fieldName,
+            String label,
+            String existingPath,
+            Consumer<String> pathSetter,
+            Consumer<String> nameSetter,
+            BindingResult bindingResult) {
+        if (!hasFile(file)) {
+            return;
+        }
+
+        try {
+            FileUploadResult result = fileStorageService.store(file, modulePath);
+            if (fileStorageService.isManagedPath(existingPath) && !existingPath.equals(result.fullPath())) {
+                fileStorageService.deleteQuietly(existingPath);
+            }
+
+            pathSetter.accept(result.fullPath());
+            nameSetter.accept(result.originalFileName());
+        } catch (RuntimeException ex) {
+            String message = ex.getMessage() == null ? "Upload failed." : ex.getMessage();
+            bindingResult.rejectValue(fieldName, "registration." + fieldName, label + " upload failed: " + message);
+        }
+    }
+
+    private boolean hasFile(org.springframework.web.multipart.MultipartFile file) {
+        return file != null && !file.isEmpty();
     }
 }

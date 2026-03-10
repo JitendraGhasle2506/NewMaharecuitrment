@@ -1,0 +1,77 @@
+.department-shell .department-hero {
+    align-items: center;
+    background: linear-gradient(135deg, #f1f6ff 0%, #e8f8ee 100%);
+    border: 1px solid #dde6f5;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding: 1.25rem;
+}
+
+.department-shell .department-hero h1 {
+    font-size: 1.35rem;
+    margin: 0 0 0.35rem;
+}
+
+.department-shell .department-hero p {
+    color: #516078;
+    margin: 0;
+}
+
+.department-shell .metrics-grid {
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-bottom: 1.25rem;
+}
+
+.department-shell .metric-card {
+    background: #ffffff;
+    border: 1px solid #e1e8f0;
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+}
+
+.department-shell .metric-card p {
+    color: #5e6f88;
+    font-size: 0.85rem;
+    margin: 0 0 0.4rem;
+    text-transform: uppercase;
+}
+
+.department-shell .metric-card h3 {
+    color: #15253e;
+    margin: 0;
+}
+
+.department-shell .panel {
+    background: #ffffff;
+    border: 1px solid #e1e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.department-shell .panel-header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.8rem;
+}
+
+.department-shell .panel-header h4 {
+    margin: 0;
+}
+
+.department-shell .panel-header span {
+    color: #5e6f88;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .department-shell .department-hero {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+}

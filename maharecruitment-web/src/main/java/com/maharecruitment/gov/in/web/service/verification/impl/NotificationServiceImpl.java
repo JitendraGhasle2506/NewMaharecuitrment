@@ -35,36 +35,21 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
     @Override
     public void sendMobileOtp(String mobileNo, String otp) {
-        String message = "Your MahaIT Recruitment OTP is " + otp + ". It is valid for 10 minutes.";
-        String smsApiUrl = getProperty("sms.api.url");
-        String smsApiKey = getProperty("sms.api.key");
-        String senderId = getProperty("sms.sender-id");
-
-        if (!StringUtils.hasText(smsApiUrl) || !StringUtils.hasText(smsApiKey) || !StringUtils.hasText(senderId)) {
-            log.warn("SMS gateway is not fully configured. OTP was generated but not dispatched to mobile {}.", mobileNo);
+        if (!isEnabled("notification.sms.enabled", true)) {
+            log.info("SMS dispatch is disabled. Skipping OTP SMS for mobile {}.", mobileNo);
             return;
         }
-
-        try {
-            MultiValueMap<String, String> payload = new LinkedMultiValueMap<>();
-            payload.add("apiKey", smsApiKey);
-            payload.add("senderId", senderId);
-            payload.add("mobile", mobileNo);
-            payload.add("message", message);
-
-            restClient.post()
-                    .uri(smsApiUrl)
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(payload)
-                    .retrieve()
-                    .toBodilessEntity();
-        } catch (Exception ex) {
-            throw new IllegalStateException("Failed to dispatch mobile OTP.", ex);
-        }
+        String message = "Your MahaIT Recruitment OTP is " + otp + ". It is valid for 10 minutes.";
+        sendSmsMessage(mobileNo, message, "OTP");
     }
 
     @Override
     public void sendEmailOtp(String email, String otp) {
+        if (!isEnabled("notification.email.enabled", true)) {
+            log.info("Email dispatch is disabled. Skipping OTP email for address {}.", email);
+            return;
+        }
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(getFromAddress());
         message.setTo(email);
@@ -79,34 +64,57 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
     }
 
     @Override
-    public void sendDepartmentCredentials(String email, String contactName, String temporaryPassword) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(getFromAddress());
-        message.setTo(email);
-        message.setSubject("MahaIT Recruitment Department Account Created");
-        message.setText("""
-                Dear %s,
+    public void sendDepartmentCredentials(
+            String email,
+            String mobileNo,
+            String contactName,
+            String username,
+            String temporaryPassword) {
+        if (isEnabled("notification.email.enabled", true)) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(getFromAddress());
+            message.setTo(email);
+            message.setSubject("MahaIT Recruitment Department Account Created");
+            message.setText("""
+                    Dear %s,
 
-                Your department registration has been submitted successfully and a department user account has been created.
+                    Your department registration has been submitted successfully and a department user account has been created.
 
-                Login ID: %s
-                Temporary Password: %s
+                    Login ID: %s
+                    Temporary Password: %s
 
-                Please sign in and change the password after first login.
+                    Please sign in and change the password after first login.
 
-                Regards,
-                MahaIT Recruitment
-                """.formatted(contactName, email, temporaryPassword));
+                    Regards,
+                    MahaIT Recruitment
+                    """.formatted(contactName, username, temporaryPassword));
 
-        try {
-            mailSender.send(message);
-        } catch (Exception ex) {
-            throw new IllegalStateException("Failed to send department account credentials.", ex);
+            try {
+                mailSender.send(message);
+            } catch (Exception ex) {
+                throw new IllegalStateException("Failed to send department account credentials.", ex);
+            }
+        } else {
+            log.info("Email dispatch is disabled. Skipping department credential email for {}.", email);
+        }
+
+        String smsMessage = "MahaIT Recruitment: Dept account created. Username: %s Password: %s. "
+                .formatted(username, temporaryPassword)
+                + "Please change password after first login.";
+        if (isEnabled("notification.sms.enabled", true)) {
+            sendSmsMessage(mobileNo, smsMessage, "department credentials");
+        } else {
+            log.info("SMS dispatch is disabled. Skipping department credential SMS for mobile {}.", mobileNo);
         }
     }
 
     @Override
     public void sendAgencyCredentials(String email, String contactName, String temporaryPassword) {
+        if (!isEnabled("notification.email.enabled", true)) {
+            log.info("Email dispatch is disabled. Skipping agency credential email for {}.", email);
+            return;
+        }
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(getFromAddress());
         message.setTo(email);
@@ -138,6 +146,47 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
             fromAddress = getProperty("spring.mail.username");
         }
         return fromAddress;
+    }
+
+    private void sendSmsMessage(String mobileNo, String message, String context) {
+        String smsApiUrl = getProperty("sms.api.url");
+        String smsApiKey = getProperty("sms.api.key");
+        String senderId = getProperty("sms.sender-id");
+
+        if (!StringUtils.hasText(mobileNo)) {
+            log.warn("Mobile number is missing. Unable to dispatch {} SMS.", context);
+            return;
+        }
+
+        if (!StringUtils.hasText(smsApiUrl) || !StringUtils.hasText(smsApiKey) || !StringUtils.hasText(senderId)) {
+            log.warn("SMS gateway is not fully configured. Unable to dispatch {} SMS to {}.", context, mobileNo);
+            return;
+        }
+
+        try {
+            MultiValueMap<String, String> payload = new LinkedMultiValueMap<>();
+            payload.add("apiKey", smsApiKey);
+            payload.add("senderId", senderId);
+            payload.add("mobile", mobileNo);
+            payload.add("message", message);
+
+            restClient.post()
+                    .uri(smsApiUrl)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(payload)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to dispatch " + context + " SMS.", ex);
+        }
+    }
+
+    private boolean isEnabled(String key, boolean defaultValue) {
+        String value = environment.getProperty(key);
+        if (!StringUtils.hasText(value) || value.contains("${")) {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(value.trim());
     }
 
     private String getProperty(String key) {

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.dto.DepartmentContactRequest;
 import com.maharecruitment.gov.in.auth.dto.DepartmentRegistrationRequest;
@@ -21,6 +22,7 @@ import com.maharecruitment.gov.in.master.service.DepartmentMstService;
 import com.maharecruitment.gov.in.master.service.SubDepartmentService;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
+import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationResult;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
@@ -52,7 +54,7 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
     }
 
     @Override
-    public DepartmentRegistrationEntity register(DepartmentRegistrationForm form) {
+    public DepartmentRegistrationResult register(DepartmentRegistrationForm form) {
         validateContactIndependence(form);
 
         ResolvedDepartment resolvedDepartment = resolveDepartment(form);
@@ -60,9 +62,24 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
 
         List<String> storedFiles = new ArrayList<>();
         try {
-            String gstPath = storeDocument("department-registration/gst", form.getGstFile(), false, storedFiles);
-            String panPath = storeDocument("department-registration/pan", form.getPanFile(), true, storedFiles);
-            String tanPath = storeDocument("department-registration/tan", form.getTanFile(), false, storedFiles);
+            String gstPath = storeDocument(
+                    "department-registration/gst",
+                    form.getGstFile(),
+                    form.getUploadedGstFilePath(),
+                    false,
+                    storedFiles);
+            String panPath = storeDocument(
+                    "department-registration/pan",
+                    form.getPanFile(),
+                    form.getUploadedPanFilePath(),
+                    true,
+                    storedFiles);
+            String tanPath = storeDocument(
+                    "department-registration/tan",
+                    form.getTanFile(),
+                    form.getUploadedTanFilePath(),
+                    false,
+                    storedFiles);
 
             DepartmentRegistrationRequest request = new DepartmentRegistrationRequest();
             request.setDepartmentId(resolvedDepartment.departmentId());
@@ -96,10 +113,15 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
                     toProvisioningRequest(form, registration));
             accountNotificationService.sendDepartmentCredentials(
                     form.getPrimaryEmail(),
+                    form.getPrimaryMobile(),
                     form.getPrimaryContactName(),
+                    userResult.getEmail(),
                     userResult.getTemporaryPassword());
 
-            return registration;
+            return new DepartmentRegistrationResult(
+                    registration.getDepartmentRegistrationId(),
+                    userResult.getEmail(),
+                    userResult.getTemporaryPassword());
         } catch (RuntimeException ex) {
             storedFiles.forEach(fileStorageService::deleteQuietly);
             throw ex;
@@ -148,18 +170,35 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
         }
     }
 
-    private String storeDocument(String category, org.springframework.web.multipart.MultipartFile file, boolean required,
+    private String storeDocument(
+            String category,
+            org.springframework.web.multipart.MultipartFile file,
+            String existingPath,
+            boolean required,
             List<String> storedFiles) {
-        if (file == null || file.isEmpty()) {
-            if (required) {
-                throw new IllegalArgumentException("Required document is missing.");
+        if (file != null && !file.isEmpty()) {
+            FileUploadResult result = fileStorageService.store(file, category);
+            storedFiles.add(result.fullPath());
+
+            if (fileStorageService.isManagedPath(existingPath) && !existingPath.equals(result.fullPath())) {
+                fileStorageService.deleteQuietly(existingPath);
             }
-            return null;
+
+            return result.fullPath();
         }
 
-        FileUploadResult result = fileStorageService.store(file, category);
-        storedFiles.add(result.fullPath());
-        return result.fullPath();
+        if (StringUtils.hasText(existingPath)) {
+            if (!fileStorageService.isManagedPath(existingPath)) {
+                throw new IllegalArgumentException("Invalid uploaded document reference.");
+            }
+            return existingPath;
+        }
+
+        if (required) {
+            throw new IllegalArgumentException("Required document is missing.");
+        }
+
+        return null;
     }
 
     private DepartmentContactRequest toContactRequest(

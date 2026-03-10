@@ -89,6 +89,21 @@ public class DepartmentRegistrationForm {
 
     private MultipartFile tanFile;
 
+    /**
+     * Persisted between validation round-trips because browsers cannot refill file inputs.
+     */
+    private String uploadedGstFilePath;
+
+    private String uploadedGstFileName;
+
+    private String uploadedPanFilePath;
+
+    private String uploadedPanFileName;
+
+    private String uploadedTanFilePath;
+
+    private String uploadedTanFileName;
+
     @NotNull(message = "Terms acceptance is required")
     @AssertTrue(message = "You must accept the declaration")
     private Boolean isTermsConditionAccepted;
@@ -267,6 +282,54 @@ public class DepartmentRegistrationForm {
 
     public void setTanFile(MultipartFile tanFile) {
         this.tanFile = tanFile;
+    }
+
+    public String getUploadedGstFilePath() {
+        return uploadedGstFilePath;
+    }
+
+    public void setUploadedGstFilePath(String uploadedGstFilePath) {
+        this.uploadedGstFilePath = uploadedGstFilePath;
+    }
+
+    public String getUploadedGstFileName() {
+        return uploadedGstFileName;
+    }
+
+    public void setUploadedGstFileName(String uploadedGstFileName) {
+        this.uploadedGstFileName = uploadedGstFileName;
+    }
+
+    public String getUploadedPanFilePath() {
+        return uploadedPanFilePath;
+    }
+
+    public void setUploadedPanFilePath(String uploadedPanFilePath) {
+        this.uploadedPanFilePath = uploadedPanFilePath;
+    }
+
+    public String getUploadedPanFileName() {
+        return uploadedPanFileName;
+    }
+
+    public void setUploadedPanFileName(String uploadedPanFileName) {
+        this.uploadedPanFileName = uploadedPanFileName;
+    }
+
+    public String getUploadedTanFilePath() {
+        return uploadedTanFilePath;
+    }
+
+    public void setUploadedTanFilePath(String uploadedTanFilePath) {
+        this.uploadedTanFilePath = uploadedTanFilePath;
+    }
+
+    public String getUploadedTanFileName() {
+        return uploadedTanFileName;
+    }
+
+    public void setUploadedTanFileName(String uploadedTanFileName) {
+        this.uploadedTanFileName = uploadedTanFileName;
     }
 
     public Boolean getIsTermsConditionAccepted() {

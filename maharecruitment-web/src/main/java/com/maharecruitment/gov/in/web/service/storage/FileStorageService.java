@@ -81,6 +81,26 @@ public class FileStorageService {
         }
     }
 
+    public boolean isManagedPath(String fullPath) {
+        if (!StringUtils.hasText(fullPath)) {
+            return false;
+        }
+
+        try {
+            Path baseDir = Paths.get(properties.getBasePath())
+                    .toAbsolutePath()
+                    .normalize();
+            Path candidate = Paths.get(fullPath)
+                    .toAbsolutePath()
+                    .normalize();
+
+            return candidate.startsWith(baseDir) && Files.exists(candidate) && Files.isRegularFile(candidate);
+        } catch (RuntimeException ex) {
+            log.warn("Invalid managed file path check for {}", fullPath, ex);
+            return false;
+        }
+    }
+
     private void validate(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new FileStorageException("File is empty.");

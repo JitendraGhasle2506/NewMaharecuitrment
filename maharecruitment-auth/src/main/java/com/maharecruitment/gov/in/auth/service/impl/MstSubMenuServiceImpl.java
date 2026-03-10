@@ -27,6 +27,6 @@ public class MstSubMenuServiceImpl implements MstSubMenuService {
         if (menuIds == null || menuIds.isEmpty()) {
             return List.of();
         }
-        return mstSubMenuRepository.findByMenuMenuIdInOrderByMenuMenuIdAscSubMenuIdAsc(menuIds);
+        return mstSubMenuRepository.findByMenuMenuIdInAndIsActiveOrderByMenuMenuIdAscSubMenuIdAsc(menuIds, 'Y');
     }
 }

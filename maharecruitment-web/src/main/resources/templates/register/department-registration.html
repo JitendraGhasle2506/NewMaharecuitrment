@@ -80,6 +80,7 @@
                                      data-otp-verify-url=@{/api/verifications/otp/verify},
                                      data-mobile-verified=${primaryMobileVerified},
                                      data-email-verified=${primaryEmailVerified},
+                                     data-otp-bypass-enabled=${otpBypassEnabled},
                                      data-verification-purpose=${verificationPurpose}">
 
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
@@ -201,8 +202,11 @@
                                             th:errors="*{primaryEmail}"></div>
                                     </div>
                                     <div class="col-12">
-                                        <p class="document-note mb-0">
+                                        <p class="document-note mb-0" th:if="${!otpBypassEnabled}">
                                             Primary mobile and primary email must be verified before registration can be submitted.
+                                        </p>
+                                        <p class="document-note mb-0 text-warning" th:if="${otpBypassEnabled}">
+                                            OTP verification is bypassed for testing in this environment.
                                         </p>
                                     </div>
                                 </div>
@@ -292,11 +296,23 @@
                                         <label class="form-label" for="gstFile">GST Document</label>
                                         <input type="file" class="form-control" id="gstFile" th:field="*{gstFile}"
                                             accept=".pdf,.png,.jpg,.jpeg">
+                                        <input type="hidden" th:field="*{uploadedGstFilePath}">
+                                        <input type="hidden" th:field="*{uploadedGstFileName}">
+                                        <div class="small text-success mt-1" th:if="${registrationForm.uploadedGstFileName}">
+                                            Uploaded: <span th:text="${registrationForm.uploadedGstFileName}"></span>
+                                        </div>
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('gstFile')}"
+                                            th:errors="*{gstFile}"></div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label" for="panFile">PAN Document</label>
                                         <input type="file" class="form-control" id="panFile" th:field="*{panFile}"
                                             accept=".pdf,.png,.jpg,.jpeg">
+                                        <input type="hidden" th:field="*{uploadedPanFilePath}">
+                                        <input type="hidden" th:field="*{uploadedPanFileName}">
+                                        <div class="small text-success mt-1" th:if="${registrationForm.uploadedPanFileName}">
+                                            Uploaded: <span th:text="${registrationForm.uploadedPanFileName}"></span>
+                                        </div>
                                         <div class="text-danger small" th:if="${#fields.hasErrors('panFile')}"
                                             th:errors="*{panFile}"></div>
                                     </div>
@@ -304,6 +320,13 @@
                                         <label class="form-label" for="tanFile">TAN Document</label>
                                         <input type="file" class="form-control" id="tanFile" th:field="*{tanFile}"
                                             accept=".pdf,.png,.jpg,.jpeg">
+                                        <input type="hidden" th:field="*{uploadedTanFilePath}">
+                                        <input type="hidden" th:field="*{uploadedTanFileName}">
+                                        <div class="small text-success mt-1" th:if="${registrationForm.uploadedTanFileName}">
+                                            Uploaded: <span th:text="${registrationForm.uploadedTanFileName}"></span>
+                                        </div>
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('tanFile')}"
+                                            th:errors="*{tanFile}"></div>
                                     </div>
                                     <div class="col-12">
                                         <p class="document-note mb-0">

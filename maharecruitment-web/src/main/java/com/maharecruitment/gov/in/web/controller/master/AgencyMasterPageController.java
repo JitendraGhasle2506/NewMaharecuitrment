@@ -87,6 +87,7 @@ public class AgencyMasterPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        log.info("Agency create request received for email={}", form.getOfficialEmail());
 
         sanitizeEscalationEntries(form);
         validateEscalationEntries(form, bindingResult);

@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.auth.util;
 
+import java.util.Locale;
+
 public final class AuthorityUtil {
 
     private AuthorityUtil() {
@@ -9,6 +11,11 @@ public final class AuthorityUtil {
         if (roleName == null || roleName.isBlank()) {
             return null;
         }
-        return roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+
+        String normalized = roleName.trim()
+                .replace(' ', '_')
+                .toUpperCase(Locale.ROOT);
+
+        return normalized.startsWith("ROLE_") ? normalized : "ROLE_" + normalized;
     }
 }

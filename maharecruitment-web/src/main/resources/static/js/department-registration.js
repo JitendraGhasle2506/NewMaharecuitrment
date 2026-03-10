@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const registerButton = document.getElementById("registerBtn");
     const csrfTokenInput = form.querySelector('input[name="_csrf"]');
     const verificationPurpose = form.dataset.verificationPurpose;
+    const otpBypassEnabled = form.dataset.otpBypassEnabled === "true";
 
     const primaryMobileInput = document.getElementById("primaryMobile");
     const primaryEmailInput = document.getElementById("primaryEmail");
@@ -25,6 +26,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const otherOptionValue = "-1";
     const csrfToken = csrfTokenInput ? csrfTokenInput.value : "";
+
+    const createBypassVerification = (statusElement, message) => {
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.classList.remove("is-error", "is-pending");
+            statusElement.classList.add("is-success");
+        }
+        return {
+            isVerified: () => true,
+            onChange: () => {}
+        };
+    };
+
+    const disableOtpControls = (sendButton, verifyButton, otpInput, otpSection) => {
+        if (sendButton) {
+            sendButton.disabled = true;
+        }
+        if (verifyButton) {
+            verifyButton.disabled = true;
+        }
+        if (otpInput) {
+            otpInput.disabled = true;
+            otpInput.value = "";
+        }
+        if (otpSection) {
+            otpSection.style.display = "none";
+        }
+    };
 
     const toggleField = (element, visible) => {
         const wrapper = element.closest(".col-md-6") || element.closest(".col-12") || element.parentElement;
@@ -114,37 +143,72 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleField(newSubDepartmentInput, subDepartmentSelect.value === otherOptionValue || departmentSelect.value === otherOptionValue);
     };
 
-    const mobileVerification = window.createOtpVerification({
-        purpose: verificationPurpose,
-        channel: "MOBILE",
-        referenceInput: primaryMobileInput,
+    const mobileOtpElements = {
         sendButton: document.getElementById("sendMobileOtpBtn"),
         verifyButton: document.getElementById("verifyMobileOtpBtn"),
         otpInput: document.getElementById("mobileOtpInput"),
         otpSection: document.getElementById("mobileOtpSection"),
-        statusElement: document.getElementById("mobileVerificationStatus"),
-        sendUrl: endpoints.otpSend,
-        verifyUrl: endpoints.otpVerify,
-        csrfToken,
-        initialVerified: form.dataset.mobileVerified === "true",
-        initialVerifiedMessage: "Primary mobile number already verified."
-    });
+        statusElement: document.getElementById("mobileVerificationStatus")
+    };
 
-    const emailVerification = window.createOtpVerification({
-        purpose: verificationPurpose,
-        channel: "EMAIL",
-        referenceInput: primaryEmailInput,
+    const emailOtpElements = {
         sendButton: document.getElementById("sendEmailOtpBtn"),
         verifyButton: document.getElementById("verifyEmailOtpBtn"),
         otpInput: document.getElementById("emailOtpInput"),
         otpSection: document.getElementById("emailOtpSection"),
-        statusElement: document.getElementById("emailVerificationStatus"),
-        sendUrl: endpoints.otpSend,
-        verifyUrl: endpoints.otpVerify,
-        csrfToken,
-        initialVerified: form.dataset.emailVerified === "true",
-        initialVerifiedMessage: "Primary email address already verified."
-    });
+        statusElement: document.getElementById("emailVerificationStatus")
+    };
+
+    const mobileVerification = otpBypassEnabled
+        ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP bypass enabled for testing.")
+        : window.createOtpVerification({
+            purpose: verificationPurpose,
+            channel: "MOBILE",
+            referenceInput: primaryMobileInput,
+            sendButton: mobileOtpElements.sendButton,
+            verifyButton: mobileOtpElements.verifyButton,
+            otpInput: mobileOtpElements.otpInput,
+            otpSection: mobileOtpElements.otpSection,
+            statusElement: mobileOtpElements.statusElement,
+            sendUrl: endpoints.otpSend,
+            verifyUrl: endpoints.otpVerify,
+            csrfToken,
+            initialVerified: form.dataset.mobileVerified === "true",
+            initialVerifiedMessage: "Primary mobile number already verified."
+        });
+
+    const emailVerification = otpBypassEnabled
+        ? createBypassVerification(emailOtpElements.statusElement, "Email OTP bypass enabled for testing.")
+        : window.createOtpVerification({
+            purpose: verificationPurpose,
+            channel: "EMAIL",
+            referenceInput: primaryEmailInput,
+            sendButton: emailOtpElements.sendButton,
+            verifyButton: emailOtpElements.verifyButton,
+            otpInput: emailOtpElements.otpInput,
+            otpSection: emailOtpElements.otpSection,
+            statusElement: emailOtpElements.statusElement,
+            sendUrl: endpoints.otpSend,
+            verifyUrl: endpoints.otpVerify,
+            csrfToken,
+            initialVerified: form.dataset.emailVerified === "true",
+            initialVerifiedMessage: "Primary email address already verified."
+        });
+
+    if (otpBypassEnabled) {
+        disableOtpControls(
+            mobileOtpElements.sendButton,
+            mobileOtpElements.verifyButton,
+            mobileOtpElements.otpInput,
+            mobileOtpElements.otpSection
+        );
+        disableOtpControls(
+            emailOtpElements.sendButton,
+            emailOtpElements.verifyButton,
+            emailOtpElements.otpInput,
+            emailOtpElements.otpSection
+        );
+    }
 
     const toggleSubmitState = () => {
         registerButton.disabled = !(agreeCheckbox.checked

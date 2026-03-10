@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Department Dashboard</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/department-dashboard.css}">
+</head>
+
+<body class="department-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Department', ${dashboard.departmentTitle}, ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2>Department Dashboard</h2>
+                </div>
+                <div class="card-body">
+                    <section class="department-hero">
+                        <div>
+                            <h1 th:text="${dashboard.departmentTitle}">Department</h1>
+                            <p>Operational overview for project and workforce status.</p>
+                        </div>
+                        <span class="badge text-bg-warning" th:if="${isDummyData}">Dummy Data</span>
+                    </section>
+
+                    <section class="metrics-grid">
+                        <article class="metric-card">
+                            <p>Projects Registered</p>
+                            <h3 th:text="${dashboard.registeredProjectCount}">0</h3>
+                        </article>
+                        <article class="metric-card">
+                            <p>Employees Count</p>
+                            <h3 th:text="${dashboard.employeeCount}">0</h3>
+                        </article>
+                        <article class="metric-card">
+                            <p>Current Running Projects</p>
+                            <h3 th:text="${dashboard.runningProjectCount}">0</h3>
+                        </article>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h4>Current Running Projects</h4>
+                            <span>Snapshot: <strong th:text="${#temporals.format(dashboard.snapshotDate, 'dd-MMM-yyyy')}">--</strong></span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Project Code</th>
+                                        <th>Project Name</th>
+                                        <th>Start Date</th>
+                                        <th>Allocated Employees</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="project : ${dashboard.runningProjects}">
+                                        <td th:text="${project.projectCode}">DEP-101</td>
+                                        <td th:text="${project.projectName}">Project</td>
+                                        <td th:text="${#temporals.format(project.startDate, 'dd-MMM-yyyy')}">01-Jan-2026</td>
+                                        <td th:text="${project.allocatedEmployees}">0</td>
+                                        <td><span class="badge text-bg-success" th:text="${project.status}">Running</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
