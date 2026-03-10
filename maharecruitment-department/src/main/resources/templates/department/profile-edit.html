@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Department Profile</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/department-profile.css}">
+</head>
+
+<body class="department-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Department', 'Edit Department Profile', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Edit Department Profile</h2>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/department/profile}">Back to Profile</a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <div class="profile-hero mb-3">
+                        <div>
+                            <h3 th:text="${profileForm.departmentName ?: 'Department'}">Department</h3>
+                            <p class="mb-0">
+                                Sub-department:
+                                <strong th:text="${profileForm.subDepartmentName ?: '-'}">-</strong>
+                            </p>
+                        </div>
+                    </div>
+
+                    <form th:action="@{/department/profile/update}"
+                          th:object="${profileForm}"
+                          method="post"
+                          enctype="multipart/form-data">
+
+                        <div class="section-card">
+                            <h5>Department Details</h5>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Office Address <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" th:field="*{officeAddress}" rows="3"></textarea>
+                                    <div class="text-danger small" th:errors="*{officeAddress}"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-card mt-3">
+                            <h5>Primary Contact</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Contact Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{primaryContactName}">
+                                    <div class="text-danger small" th:errors="*{primaryContactName}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Designation <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{primaryDesignation}">
+                                    <div class="text-danger small" th:errors="*{primaryDesignation}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Mobile Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{primaryMobileNumber}" maxlength="10">
+                                    <div class="text-danger small" th:errors="*{primaryMobileNumber}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Primary Email (Login Username)</label>
+                                    <input type="email" class="form-control" th:field="*{primaryEmailAddress}" readonly>
+                                    <div class="text-danger small" th:errors="*{primaryEmailAddress}"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-card mt-3">
+                            <h5>Secondary Contact</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Contact Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{secondaryContactName}">
+                                    <div class="text-danger small" th:errors="*{secondaryContactName}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Designation <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{secondaryDesignation}">
+                                    <div class="text-danger small" th:errors="*{secondaryDesignation}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Mobile Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{secondaryMobileNumber}" maxlength="10">
+                                    <div class="text-danger small" th:errors="*{secondaryMobileNumber}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" th:field="*{secondaryEmailAddress}">
+                                    <div class="text-danger small" th:errors="*{secondaryEmailAddress}"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-card mt-3">
+                            <h5>Billing and Compliance</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Department Name for Bill <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{billDepartmentName}">
+                                    <div class="text-danger small" th:errors="*{billDepartmentName}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">GST Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control text-uppercase" th:field="*{gstNumber}" maxlength="15">
+                                    <div class="text-danger small" th:errors="*{gstNumber}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">PAN Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control text-uppercase" th:field="*{panNumber}" maxlength="10">
+                                    <div class="text-danger small" th:errors="*{panNumber}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">TAN Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control text-uppercase" th:field="*{tanNumber}" maxlength="10">
+                                    <div class="text-danger small" th:errors="*{tanNumber}"></div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Billing Address <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" th:field="*{billingAddress}" rows="3"></textarea>
+                                    <div class="text-danger small" th:errors="*{billingAddress}"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-card mt-3">
+                            <h5>Registration Documents</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">GST Document</label>
+                                    <input type="file"
+                                           class="form-control profile-document-input"
+                                           th:field="*{gstDocumentFile}"
+                                           data-preview-id="gstSelectedFileName"
+                                           accept=".pdf,.png,.jpg,.jpeg">
+                                    <div class="small mt-2">
+                                        Current:
+                                        <span th:text="${profileForm.existingGstDocumentName ?: '-'}">-</span>
+                                        <a class="ms-1"
+                                           th:if="${profileForm.existingGstDocumentName != null}"
+                                           th:href="@{/department/profile/documents/gst}"
+                                           target="_blank">View</a>
+                                    </div>
+                                    <div class="small text-primary" id="gstSelectedFileName"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">PAN Document <span class="text-danger">*</span></label>
+                                    <input type="file"
+                                           class="form-control profile-document-input"
+                                           th:field="*{panDocumentFile}"
+                                           data-preview-id="panSelectedFileName"
+                                           accept=".pdf,.png,.jpg,.jpeg">
+                                    <div class="small mt-2">
+                                        Current:
+                                        <span th:text="${profileForm.existingPanDocumentName ?: '-'}">-</span>
+                                        <a class="ms-1"
+                                           th:if="${profileForm.existingPanDocumentName != null}"
+                                           th:href="@{/department/profile/documents/pan}"
+                                           target="_blank">View</a>
+                                    </div>
+                                    <div class="small text-primary" id="panSelectedFileName"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">TAN Document</label>
+                                    <input type="file"
+                                           class="form-control profile-document-input"
+                                           th:field="*{tanDocumentFile}"
+                                           data-preview-id="tanSelectedFileName"
+                                           accept=".pdf,.png,.jpg,.jpeg">
+                                    <div class="small mt-2">
+                                        Current:
+                                        <span th:text="${profileForm.existingTanDocumentName ?: '-'}">-</span>
+                                        <a class="ms-1"
+                                           th:if="${profileForm.existingTanDocumentName != null}"
+                                           th:href="@{/department/profile/documents/tan}"
+                                           target="_blank">View</a>
+                                    </div>
+                                    <div class="small text-primary" id="tanSelectedFileName"></div>
+                                </div>
+                                <div class="col-12">
+                                    <small class="text-muted">Allowed file types: PDF, PNG, JPG, JPEG. Max size: 5 MB.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">Update Profile</button>
+                            <a class="btn btn-secondary ms-1" th:href="@{/department/profile}">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script>
+        (() => {
+            const fileInputs = document.querySelectorAll('.profile-document-input');
+            fileInputs.forEach((input) => {
+                input.addEventListener('change', () => {
+                    const previewId = input.getAttribute('data-preview-id');
+                    if (!previewId) {
+                        return;
+                    }
+
+                    const previewNode = document.getElementById(previewId);
+                    if (!previewNode) {
+                        return;
+                    }
+
+                    if (!input.files || input.files.length === 0) {
+                        previewNode.textContent = '';
+                        return;
+                    }
+
+                    previewNode.textContent = 'Selected: ' + input.files[0].name;
+                });
+            });
+        })();
+    </script>
+</body>
+
+</html>

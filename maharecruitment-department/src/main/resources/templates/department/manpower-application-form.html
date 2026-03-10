@@ -149,7 +149,7 @@
 
                         <div class="row g-3">
                             <div class="col-md-12">
-                                <label class="form-label">Work Order Document</label>
+                                <label class="form-label">Work Order Document <span class="text-danger">*</span></label>
                                 <div class="mb-2" th:if="${applicationForm.existingWorkOrderFilePath != null}">
                                     <span class="badge bg-success">Current document available</span>
                                     <a class="ms-2"
@@ -163,8 +163,13 @@
                                     class="form-control"
                                     th:field="*{workOrderFile}"
                                     id="workOrderFileInput"
+                                    th:attr="required=${applicationForm.existingWorkOrderFilePath == null ? 'required' : null}"
                                     accept=".pdf,.doc,.docx">
-                                <div class="form-text">Allowed: PDF, DOC, DOCX. Max size 5 MB.</div>
+                                <div class="form-text">Mandatory. Allowed: PDF, DOC, DOCX. Max size 5 MB.</div>
+                                <div id="selectedWorkOrderPreview" class="mt-2 d-none">
+                                    <a id="selectedWorkOrderLink" href="#" target="_blank" rel="noopener">View Selected Document</a>
+                                    <small id="selectedWorkOrderName" class="text-muted ms-2"></small>
+                                </div>
                                 <div class="text-danger small" id="workOrderValidationMessage"></div>
                                 <div class="text-danger small" th:errors="*{workOrderFile}"></div>
                             </div>

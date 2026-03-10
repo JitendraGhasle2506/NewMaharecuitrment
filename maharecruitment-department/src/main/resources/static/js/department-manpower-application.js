@@ -22,8 +22,13 @@
     const grandTotalCostValue = document.getElementById("grandTotalCostValue");
     const workOrderFileInput = document.getElementById("workOrderFileInput");
     const workOrderValidationMessage = document.getElementById("workOrderValidationMessage");
+    const existingWorkOrderFilePathInput = formElement.querySelector('[name="existingWorkOrderFilePath"]');
+    const selectedWorkOrderPreview = document.getElementById("selectedWorkOrderPreview");
+    const selectedWorkOrderLink = document.getElementById("selectedWorkOrderLink");
+    const selectedWorkOrderName = document.getElementById("selectedWorkOrderName");
 
     const requirementRowKeys = new Set();
+    let selectedWorkOrderObjectUrl = null;
 
     initializeExistingRows();
     recalculateGrandTotalCost();
@@ -36,6 +41,7 @@
     saveDraftButton?.addEventListener("click", onSaveDraftClick);
     previewSubmitButton?.addEventListener("click", onPreviewSubmitClick);
     confirmSubmitButton?.addEventListener("click", onConfirmSubmitClick);
+    window.addEventListener("beforeunload", clearSelectedWorkOrderPreview);
 
     function initializeExistingRows() {
         const rows = resourceRequirementTableBody?.querySelectorAll("tr") || [];
@@ -115,6 +121,7 @@
                 requirementRowKeys.add(rowKey);
                 resequenceRequirementRows();
                 recalculateGrandTotalCost();
+                resetRequirementSelectors();
             })
             .catch((error) => {
                 console.error("Unable to fetch monthly rate.", error);
@@ -264,8 +271,13 @@
     function validateWorkOrderFile(fileInputElement) {
         const selectedFile = fileInputElement.files && fileInputElement.files[0];
         if (!selectedFile) {
-            setWorkOrderValidationMessage("");
-            return true;
+            clearSelectedWorkOrderPreview();
+            if (hasExistingWorkOrderDocument()) {
+                setWorkOrderValidationMessage("");
+                return true;
+            }
+            setWorkOrderValidationMessage("Work-order document is mandatory.");
+            return false;
         }
 
         const allowedTypes = new Set([
@@ -278,16 +290,19 @@
         if (!allowedTypes.has(selectedFile.type)) {
             setWorkOrderValidationMessage("Invalid file type. Only PDF, DOC, DOCX are allowed.");
             fileInputElement.value = "";
+            clearSelectedWorkOrderPreview();
             return false;
         }
 
         if (selectedFile.size > maxFileSizeInBytes) {
             setWorkOrderValidationMessage("File size must be less than or equal to 5 MB.");
             fileInputElement.value = "";
+            clearSelectedWorkOrderPreview();
             return false;
         }
 
         setWorkOrderValidationMessage("");
+        updateSelectedWorkOrderPreview(selectedFile);
         return true;
     }
 
@@ -298,6 +313,9 @@
     }
 
     function onSaveDraftClick() {
+        if (!validateWorkOrderFile(workOrderFileInput || { files: [] })) {
+            return;
+        }
         actionStatusInput.value = "draft";
         hiddenSubmitButton.click();
     }
@@ -378,6 +396,48 @@
             return;
         }
         levelSelectElement.innerHTML = '<option value="">Select Level</option>';
+    }
+
+    function resetRequirementSelectors() {
+        if (designationSelectElement) {
+            designationSelectElement.value = "";
+        }
+        resetLevelSelect();
+    }
+
+    function hasExistingWorkOrderDocument() {
+        if (!existingWorkOrderFilePathInput || typeof existingWorkOrderFilePathInput.value !== "string") {
+            return false;
+        }
+        return existingWorkOrderFilePathInput.value.trim().length > 0;
+    }
+
+    function updateSelectedWorkOrderPreview(selectedFile) {
+        if (!selectedWorkOrderPreview || !selectedWorkOrderLink || !selectedWorkOrderName || !selectedFile) {
+            return;
+        }
+
+        clearSelectedWorkOrderPreview();
+
+        selectedWorkOrderObjectUrl = URL.createObjectURL(selectedFile);
+        selectedWorkOrderLink.href = selectedWorkOrderObjectUrl;
+        selectedWorkOrderName.textContent = selectedFile.name || "";
+        selectedWorkOrderPreview.classList.remove("d-none");
+    }
+
+    function clearSelectedWorkOrderPreview() {
+        if (selectedWorkOrderObjectUrl) {
+            URL.revokeObjectURL(selectedWorkOrderObjectUrl);
+            selectedWorkOrderObjectUrl = null;
+        }
+
+        if (!selectedWorkOrderPreview || !selectedWorkOrderLink || !selectedWorkOrderName) {
+            return;
+        }
+
+        selectedWorkOrderLink.href = "#";
+        selectedWorkOrderName.textContent = "";
+        selectedWorkOrderPreview.classList.add("d-none");
     }
 
     function formatCurrency(value) {

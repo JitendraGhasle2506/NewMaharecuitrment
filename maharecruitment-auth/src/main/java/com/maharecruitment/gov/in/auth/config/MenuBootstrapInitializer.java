@@ -89,6 +89,7 @@ public class MenuBootstrapInitializer implements ApplicationRunner {
                 departmentRole);
 
         upsertSubMenu(departmentMenu, "Department Dashboard", "/department/home", "fa fa-gauge");
+        upsertSubMenu(departmentMenu, "Department Profile", "/department/profile", "fa fa-id-card");
         upsertSubMenu(departmentMenu, "Manpower Applications", "/department/manpower/list", "fa fa-users-gear");
         upsertSubMenu(departmentMenu, "New Manpower Application", "/department/manpower/apply", "fa fa-file-circle-plus");
     }

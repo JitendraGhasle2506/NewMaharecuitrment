@@ -1,0 +1,50 @@
+.department-shell .profile-hero {
+    align-items: center;
+    background: linear-gradient(135deg, #edf3ff 0%, #ecfbf2 100%);
+    border: 1px solid #dce6f4;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    padding: 1.1rem 1.2rem;
+}
+
+.department-shell .profile-hero h3 {
+    margin: 0 0 0.35rem;
+    font-size: 1.2rem;
+}
+
+.department-shell .profile-hero p {
+    color: #425776;
+}
+
+.department-shell .section-card {
+    background: #ffffff;
+    border: 1px solid #e1e9f3;
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.department-shell .section-card h5 {
+    border-bottom: 1px solid #edf2f8;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.55rem;
+}
+
+.department-shell .label-column {
+    color: #4e617f;
+    font-weight: 600;
+    width: 220px;
+}
+
+.department-shell .table > :not(caption) > * > * {
+    padding: 0.45rem 0.5rem;
+}
+
+@media (max-width: 992px) {
+    .department-shell .profile-hero {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+}

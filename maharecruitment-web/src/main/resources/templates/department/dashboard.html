@@ -21,7 +21,12 @@
                             <h1 th:text="${dashboard.departmentTitle}">Department</h1>
                             <p>Operational overview for project and workforce status.</p>
                         </div>
-                        <span class="badge text-bg-warning" th:if="${isDummyData}">Dummy Data</span>
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="badge text-bg-warning" th:if="${isDummyData}">Dummy Data</span>
+                            <a class="btn btn-outline-secondary btn-sm" th:href="@{/department/profile}">
+                                View Profile
+                            </a>
+                        </div>
                     </section>
 
                     <section class="metrics-grid">

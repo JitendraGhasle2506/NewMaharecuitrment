@@ -516,8 +516,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             return true;
         }
 
-        if (ACTION_SUBMIT.equals(actionStatus) && !storageService.isManagedPath(entity.getWorkOrderFilePath())) {
-            throw new DepartmentApplicationException("Work-order document is required before final submission.");
+        if (!storageService.isManagedPath(entity.getWorkOrderFilePath())) {
+            throw new DepartmentApplicationException("Work-order document is mandatory.");
         }
 
         return false;

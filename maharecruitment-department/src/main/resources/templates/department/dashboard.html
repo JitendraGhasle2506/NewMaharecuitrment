@@ -23,6 +23,9 @@
                         </div>
                         <div class="d-flex gap-2 align-items-center">
                             <span class="badge text-bg-warning" th:if="${isDummyData}">Dummy Data</span>
+                            <a class="btn btn-outline-secondary btn-sm" th:href="@{/department/profile}">
+                                View Profile
+                            </a>
                             <a class="btn btn-primary btn-sm" th:href="@{/department/manpower/list}">
                                 Manage Manpower Applications
                             </a>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Department Profile</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/department-profile.css}">
+</head>
+
+<body class="department-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Department', 'Department Profile', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Department Profile</h2>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-primary btn-sm" th:href="@{/department/profile/edit}">Update Profile</a>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/department/home}">Back to Dashboard</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+                    <div class="profile-hero">
+                        <div>
+                            <h3 th:text="${departmentProfile.departmentName ?: 'Department'}">Department</h3>
+                            <p class="mb-0 mt-1">
+                                Registered On:
+                                <strong
+                                    th:text="${departmentProfile.registeredOn != null ? #temporals.format(departmentProfile.registeredOn, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                    -
+                                </strong>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="section-card mt-3">
+                        <h5>Department Details</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-borderless mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="label-column">Department Name</th>
+                                        <td th:text="${departmentProfile.departmentName ?: '-'}">-</td>
+                                        <th class="label-column">Sub-Department Name</th>
+                                        <td th:text="${departmentProfile.subDepartmentName ?: '-'}">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="label-column">Office Address</th>
+                                        <td colspan="3" th:text="${departmentProfile.officeAddress ?: '-'}">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="section-card mt-3">
+                        <h5>Login Account Details</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-borderless mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="label-column">User Name</th>
+                                        <td th:text="${departmentProfile.loginUserName ?: '-'}">-</td>
+                                        <th class="label-column">Email</th>
+                                        <td th:text="${departmentProfile.loginUserEmail ?: '-'}">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="label-column">Mobile Number</th>
+                                        <td th:text="${departmentProfile.loginUserMobile ?: '-'}">-</td>
+                                        <th class="label-column">Terms Accepted</th>
+                                        <td th:text="${departmentProfile.termsAccepted} ? 'Yes' : 'No'">No</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-lg-6">
+                            <div class="section-card h-100">
+                                <h5>Primary Contact</h5>
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <th class="label-column">Contact Name</th>
+                                            <td
+                                                th:text="${departmentProfile.primaryContact != null ? departmentProfile.primaryContact.contactName : '-'}">
+                                                -
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="label-column">Designation</th>
+                                            <td
+                                                th:text="${departmentProfile.primaryContact != null ? departmentProfile.primaryContact.designation : '-'}">
+                                                -
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="label-column">Mobile Number</th>
+                                            <td
+                                                th:text="${departmentProfile.primaryContact != null ? departmentProfile.primaryContact.mobileNumber : '-'}">
+                                                -
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="label-column">Email</th>
+                                            <td
+                                                th:text="${departmentProfile.primaryContact != null ? departmentProfile.primaryContact.emailAddress : '-'}">
+                                                -
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="section-card h-100">
+                                <h5>Secondary Contact</h5>
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <th class="label-column">Contact Name</th>
+                                            <td
+                                                th:text="${departmentProfile.secondaryContact != null ? departmentProfile.secondaryContact.contactName : '-'}">
+                                                -
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="label-column">Designation</th>
+                                            <td
+                                                th:text="${departmentProfile.secondaryContact != null ? departmentProfile.secondaryContact.designation : '-'}">
+                                                -
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="label-column">Mobile Number</th>
+                                            <td
+                                                th:text="${departmentProfile.secondaryContact != null ? departmentProfile.secondaryContact.mobileNumber : '-'}">
+                                                -
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="label-column">Email</th>
+                                            <td
+                                                th:text="${departmentProfile.secondaryContact != null ? departmentProfile.secondaryContact.emailAddress : '-'}">
+                                                -
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card mt-3">
+                        <h5>Billing and Compliance Details</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-borderless mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="label-column">Department Name for Bill</th>
+                                        <td th:text="${departmentProfile.billDepartmentName ?: '-'}">-</td>
+                                        <th class="label-column">GST Number</th>
+                                        <td th:text="${departmentProfile.gstNumber ?: '-'}">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="label-column">PAN Number</th>
+                                        <td th:text="${departmentProfile.panNumber ?: '-'}">-</td>
+                                        <th class="label-column">TAN Number</th>
+                                        <td th:text="${departmentProfile.tanNumber ?: '-'}">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="label-column">Billing Address</th>
+                                        <td colspan="3" th:text="${departmentProfile.billingAddress ?: '-'}">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="section-card mt-3">
+                        <h5>Uploaded Registration Documents</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-borderless mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="label-column">GST Document</th>
+                                        <td>
+                                            <span th:text="${departmentProfile.gstDocumentName ?: '-'}">-</span>
+                                            <a class="ms-2"
+                                               th:if="${departmentProfile.gstDocumentName != null}"
+                                               th:href="@{/department/profile/documents/gst}"
+                                               target="_blank">View Document</a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="label-column">PAN Document</th>
+                                        <td>
+                                            <span th:text="${departmentProfile.panDocumentName ?: '-'}">-</span>
+                                            <a class="ms-2"
+                                               th:if="${departmentProfile.panDocumentName != null}"
+                                               th:href="@{/department/profile/documents/pan}"
+                                               target="_blank">View Document</a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="label-column">TAN Document</th>
+                                        <td>
+                                            <span th:text="${departmentProfile.tanDocumentName ?: '-'}">-</span>
+                                            <a class="ms-2"
+                                               th:if="${departmentProfile.tanDocumentName != null}"
+                                               th:href="@{/department/profile/documents/tan}"
+                                               target="_blank">View Document</a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
