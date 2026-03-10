@@ -67,8 +67,8 @@ public class SecurityConfig {
                                                                 "/error", "/error/**")
                                                 .permitAll()
 
-                                                .requestMatchers("/api/master/agencies/**").hasRole("ADMIN")
-                                                .requestMatchers("/master/agencies/**").hasRole("ADMIN")
+                                                // .requestMatchers("/api/master/agencies/**").hasRole("ADMIN")
+                                                // .requestMatchers("/master/agencies/**").hasRole("ADMIN")
                                                 .requestMatchers("/home", "/common/**").authenticated()
                                                 .requestMatchers("/admin/**").hasRole("ADMIN")
                                                 .requestMatchers("/hr/**", "/employees/**").hasRole("HR")
