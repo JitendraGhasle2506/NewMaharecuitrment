@@ -2,11 +2,15 @@ package com.maharecruitment.gov.in.web.controller.master;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -16,15 +20,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationMasterResponse;
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationRateRequest;
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationRateResponse;
-import com.maharecruitment.gov.in.master.dto.ResourceLevelExperienceResponse;
+import com.maharecruitment.gov.in.master.dto.ResourceLevelRefResponse;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationMasterService;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationRateService;
-import com.maharecruitment.gov.in.master.service.ResourceLevelExperienceService;
 
 import jakarta.validation.Valid;
 
@@ -32,17 +36,16 @@ import jakarta.validation.Valid;
 @RequestMapping("/master/designation-rates")
 public class DesignationRatePageController {
 
+    private static final Logger log = LoggerFactory.getLogger(DesignationRatePageController.class);
+
     private final ManpowerDesignationRateService rateService;
     private final ManpowerDesignationMasterService designationService;
-    private final ResourceLevelExperienceService resourceLevelService;
 
     public DesignationRatePageController(
             ManpowerDesignationRateService rateService,
-            ManpowerDesignationMasterService designationService,
-            ResourceLevelExperienceService resourceLevelService) {
+            ManpowerDesignationMasterService designationService) {
         this.rateService = rateService;
         this.designationService = designationService;
-        this.resourceLevelService = resourceLevelService;
     }
 
     @GetMapping
@@ -93,6 +96,12 @@ public class DesignationRatePageController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/master/designation-rates";
         }
+    }
+
+    @GetMapping("/designations/{designationId}/levels")
+    @ResponseBody
+    public ResponseEntity<List<ResourceLevelRefResponse>> levelsByDesignation(@PathVariable Long designationId) {
+        return ResponseEntity.ok(resolveMappedLevels(designationId));
     }
 
     @PostMapping
@@ -167,14 +176,33 @@ public class DesignationRatePageController {
         model.addAttribute("rateId", rateId);
         model.addAttribute("isEdit", rateId != null);
         model.addAttribute("availableDesignations", getActiveDesignations());
-        model.addAttribute("availableLevels", getActiveLevels());
+        model.addAttribute("availableLevels", resolveMappedLevels(form.getDesignationId()));
     }
 
     private List<ManpowerDesignationMasterResponse> getActiveDesignations() {
         return designationService.getAll(false, Pageable.unpaged()).getContent();
     }
 
-    private List<ResourceLevelExperienceResponse> getActiveLevels() {
-        return resourceLevelService.getAll(false, Pageable.unpaged()).getContent();
+    private List<ResourceLevelRefResponse> resolveMappedLevels(Long designationId) {
+        if (designationId == null) {
+            return List.of();
+        }
+        try {
+            ManpowerDesignationMasterResponse designation = designationService.getById(designationId, false);
+            if (designation.getLevels() == null || designation.getLevels().isEmpty()) {
+                return List.of();
+            }
+            return designation.getLevels().stream()
+                    .filter(Objects::nonNull)
+                    .sorted((first, second) -> {
+                        String firstCode = first.getLevelCode() == null ? "" : first.getLevelCode();
+                        String secondCode = second.getLevelCode() == null ? "" : second.getLevelCode();
+                        return firstCode.compareToIgnoreCase(secondCode);
+                    })
+                    .toList();
+        } catch (RuntimeException ex) {
+            log.warn("Unable to resolve mapped levels for designationId={}", designationId, ex);
+            return List.of();
+        }
     }
 }

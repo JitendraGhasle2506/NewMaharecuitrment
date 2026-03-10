@@ -2,10 +2,16 @@ package com.maharecruitment.gov.in.department.service.model;
 
 import java.time.LocalDate;
 
-public record DepartmentRunningProjectView(
-        String projectCode,
-        String projectName,
-        LocalDate startDate,
-        int allocatedEmployees,
-        String status) {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public class DepartmentRunningProjectView {
+
+    private String projectCode;
+    private String projectName;
+    private LocalDate startDate;
+    private int allocatedEmployees;
+    private String status;
 }

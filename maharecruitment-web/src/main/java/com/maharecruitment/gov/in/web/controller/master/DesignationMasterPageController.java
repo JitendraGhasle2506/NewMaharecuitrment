@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.web.controller.master;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -156,10 +157,18 @@ public class DesignationMasterPageController {
         model.addAttribute("designationForm", form);
         model.addAttribute("designationId", designationId);
         model.addAttribute("isEdit", designationId != null);
-        model.addAttribute("availableLevels", getActiveLevels());
     }
 
-    private java.util.List<ResourceLevelExperienceResponse> getActiveLevels() {
-        return resourceLevelService.getAll(false, Pageable.unpaged()).getContent();
+    @ModelAttribute("availableLevels")
+    public List<ResourceLevelExperienceResponse> availableLevels() {
+        return resourceLevelService.getAll(false, Pageable.unpaged())
+                .getContent()
+                .stream()
+                .sorted((first, second) -> {
+                    String firstCode = first.getLevelCode() == null ? "" : first.getLevelCode();
+                    String secondCode = second.getLevelCode() == null ? "" : second.getLevelCode();
+                    return firstCode.compareToIgnoreCase(secondCode);
+                })
+                .toList();
     }
 }

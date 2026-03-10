@@ -71,6 +71,11 @@
                                     th:text="${level.levelCode + ' - ' + level.levelName}"></option>
                             </select>
                             <small class="text-muted">Hold Ctrl to select multiple levels.</small>
+                            <div class="alert alert-warning mt-2 mb-0"
+                                th:if="${availableLevels == null or #lists.isEmpty(availableLevels)}">
+                                No active levels found in Resource Levels master.
+                                <a th:href="@{/master/resource-levels/new}" class="alert-link">Create Resource Level</a>.
+                            </div>
                         </div>
 
                         <div class="col-12 d-flex gap-2">

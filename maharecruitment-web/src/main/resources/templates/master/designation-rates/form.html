@@ -28,7 +28,10 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Designation</label>
-                            <select class="form-select" th:field="*{designationId}">
+                            <select id="designationSelect"
+                                class="form-select"
+                                th:field="*{designationId}"
+                                th:attr="data-levels-base-url=@{/master/designation-rates/designations}">
                                 <option value="">Select designation</option>
                                 <option th:each="d : ${availableDesignations}" th:value="${d.designationId}"
                                     th:text="${d.category + ' - ' + d.designationName}"></option>
@@ -39,12 +42,13 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Level Code</label>
-                            <select class="form-select" th:field="*{levelCode}">
+                            <select id="levelCodeSelect" class="form-select" th:field="*{levelCode}">
                                 <option value="">Select level</option>
                                 <option th:each="l : ${availableLevels}" th:value="${l.levelCode}"
                                     th:text="${l.levelCode + ' - ' + l.levelName}"></option>
                             </select>
                             <div class="text-danger small" th:if="${#fields.hasErrors('levelCode')}" th:errors="*{levelCode}"></div>
+                            <div class="text-danger small" id="levelLoadMessage"></div>
                         </div>
 
                         <div class="col-md-4">
@@ -84,6 +88,7 @@
             </div>
         </section>
     </th:block>
+    <script th:src="@{/js/master-designation-rate-form.js}"></script>
 </body>
 
 </html>

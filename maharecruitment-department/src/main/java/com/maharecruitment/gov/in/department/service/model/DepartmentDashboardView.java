@@ -3,11 +3,17 @@ package com.maharecruitment.gov.in.department.service.model;
 import java.time.LocalDate;
 import java.util.List;
 
-public record DepartmentDashboardView(
-        String departmentTitle,
-        int registeredProjectCount,
-        int employeeCount,
-        int runningProjectCount,
-        List<DepartmentRunningProjectView> runningProjects,
-        LocalDate snapshotDate) {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public class DepartmentDashboardView {
+
+    private String departmentTitle;
+    private int registeredProjectCount;
+    private int employeeCount;
+    private int runningProjectCount;
+    private List<DepartmentRunningProjectView> runningProjects;
+    private LocalDate snapshotDate;
 }

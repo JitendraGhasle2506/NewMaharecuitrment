@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Department Manpower Application</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="department-shell" th:attr="data-context-path=${contextPath}">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Department', ${applicationForm.requestId != null ? applicationForm.requestId : 'New Manpower Application'}, ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2 th:text="${applicationForm.departmentProjectApplicationId == null ? 'Create Manpower Project Application' : 'Edit Manpower Project Application'}">
+                        Create Manpower Project Application
+                    </h2>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <form id="departmentManpowerApplicationForm"
+                        th:action="@{/department/manpower/save}"
+                        th:object="${applicationForm}"
+                        method="post"
+                        enctype="multipart/form-data">
+
+                        <input type="hidden" th:field="*{departmentProjectApplicationId}">
+                        <input type="hidden" id="applicationActionStatus" name="actionStatus" value="submit">
+
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Project Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" th:field="*{projectName}" maxlength="200">
+                                <div class="text-danger small" th:errors="*{projectName}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Application Type <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{applicationType}">
+                                    <option value="">Select Application Type</option>
+                                    <option th:each="type : ${applicationTypes}"
+                                            th:value="${type}"
+                                            th:text="${#strings.replace(type.name(), '_', ' ')}"></option>
+                                </select>
+                                <div class="text-danger small" th:errors="*{applicationType}"></div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label">Designation <span class="text-danger">*</span></label>
+                                <select id="designationSelect" class="form-select">
+                                    <option value="">Select Designation</option>
+                                    <option th:each="designation : ${designationOptions}"
+                                            th:value="${designation.designationId}"
+                                            th:text="${designation.designationName}"></option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Level <span class="text-danger">*</span></label>
+                                <select id="levelSelect" class="form-select">
+                                    <option value="">Select Level</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-grid">
+                                <button type="button" class="btn btn-primary" id="addRequirementButton">Add Requirement</button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive mt-3">
+                            <table class="table table-bordered align-middle" id="resourceRequirementTable">
+                                <thead>
+                                    <tr>
+                                        <th>Designation</th>
+                                        <th>Level</th>
+                                        <th>Monthly Rate</th>
+                                        <th>Number of Manpower</th>
+                                        <th>Duration (Months)</th>
+                                        <th>Total Cost</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="requirement, stat : *{resourceRequirements}"
+                                        th:attr="data-row-key=${requirement.designationId + '_' + requirement.levelCode}">
+                                        <td>
+                                            <span th:text="${requirement.designationName}"></span>
+                                            <input type="hidden" data-field="designationId"
+                                                th:name="${'resourceRequirements[' + stat.index + '].designationId'}"
+                                                th:value="${requirement.designationId}">
+                                            <input type="hidden" data-field="designationName"
+                                                th:name="${'resourceRequirements[' + stat.index + '].designationName'}"
+                                                th:value="${requirement.designationName}">
+                                        </td>
+                                        <td>
+                                            <span th:text="${requirement.levelName}"></span>
+                                            <input type="hidden" data-field="levelCode"
+                                                th:name="${'resourceRequirements[' + stat.index + '].levelCode'}"
+                                                th:value="${requirement.levelCode}">
+                                            <input type="hidden" data-field="levelName"
+                                                th:name="${'resourceRequirements[' + stat.index + '].levelName'}"
+                                                th:value="${requirement.levelName}">
+                                        </td>
+                                        <td>
+                                            <span class="monthlyRateText" th:text="${#numbers.formatDecimal(requirement.monthlyRate, 1, 'COMMA', 2, 'POINT')}"></span>
+                                            <input type="hidden" class="monthlyRateValue"
+                                                data-field="monthlyRate"
+                                                th:name="${'resourceRequirements[' + stat.index + '].monthlyRate'}"
+                                                th:value="${requirement.monthlyRate}">
+                                        </td>
+                                        <td>
+                                            <input type="number" min="1" class="form-control requiredQuantityInput"
+                                                data-field="requiredQuantity"
+                                                th:name="${'resourceRequirements[' + stat.index + '].requiredQuantity'}"
+                                                th:value="${requirement.requiredQuantity}">
+                                        </td>
+                                        <td>
+                                            <input type="number" min="3" class="form-control durationInMonthsInput"
+                                                data-field="durationInMonths"
+                                                th:name="${'resourceRequirements[' + stat.index + '].durationInMonths'}"
+                                                th:value="${requirement.durationInMonths}">
+                                        </td>
+                                        <td>
+                                            <span class="rowTotalCostText" th:text="${#numbers.formatDecimal(requirement.totalCost, 1, 'COMMA', 2, 'POINT')}"></span>
+                                            <input type="hidden" class="rowTotalCostValue"
+                                                data-field="totalCost"
+                                                th:name="${'resourceRequirements[' + stat.index + '].totalCost'}"
+                                                th:value="${requirement.totalCost}">
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-outline-danger btn-sm removeRequirementButton">Remove</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="text-end mt-2">
+                            <h5>Total Estimated Cost (INR, Excluding Taxes): <span id="grandTotalCostText">0.00</span></h5>
+                            <input type="hidden" th:field="*{totalEstimatedCost}" id="grandTotalCostValue">
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Work Order Document</label>
+                                <div class="mb-2" th:if="${applicationForm.existingWorkOrderFilePath != null}">
+                                    <span class="badge bg-success">Current document available</span>
+                                    <a class="ms-2"
+                                        th:href="@{/department/manpower/download-work-order/{id}(id=${applicationForm.departmentProjectApplicationId})}">
+                                        View Current Document
+                                    </a>
+                                </div>
+                                <input type="hidden" th:field="*{existingWorkOrderFilePath}">
+                                <input type="hidden" th:field="*{existingWorkOrderOriginalName}">
+                                <input type="file"
+                                    class="form-control"
+                                    th:field="*{workOrderFile}"
+                                    id="workOrderFileInput"
+                                    accept=".pdf,.doc,.docx">
+                                <div class="form-text">Allowed: PDF, DOC, DOCX. Max size 5 MB.</div>
+                                <div class="text-danger small" id="workOrderValidationMessage"></div>
+                                <div class="text-danger small" th:errors="*{workOrderFile}"></div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex justify-content-center gap-2">
+                            <button type="button" class="btn btn-warning" id="saveDraftButton">Save as Draft</button>
+                            <button type="button" class="btn btn-info" id="previewSubmitButton">Preview & Submit</button>
+                            <button type="submit" class="d-none" id="hiddenFormSubmitButton"></button>
+                            <a class="btn btn-secondary" th:href="@{/department/manpower/list}">Back to List</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4" th:if="${activityTimeline != null and !#lists.isEmpty(activityTimeline)}">
+                <div class="card-header">
+                    <h5 class="mb-0">Application Activity Timeline</h5>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Activity</th>
+                                <th>Status Change</th>
+                                <th>Actor</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="activity : ${activityTimeline}">
+                                <td th:text="${#temporals.format(activity.actionTimestamp, 'dd-MMM-yyyy HH:mm')}"></td>
+                                <td th:text="${#strings.replace(activity.activityType.name(), '_', ' ')}"></td>
+                                <td>
+                                    <span th:text="${activity.previousStatus != null ? #strings.replace(activity.previousStatus.name(), '_', ' ') : '-'}"></span>
+                                    <span> -> </span>
+                                    <span th:text="${activity.newStatus != null ? #strings.replace(activity.newStatus.name(), '_', ' ') : '-'}"></span>
+                                </td>
+                                <td>
+                                    <div th:text="${activity.actorName}"></div>
+                                    <small class="text-muted" th:text="${activity.actorEmail}"></small>
+                                </td>
+                                <td th:text="${activity.activityRemarks}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <div class="modal fade" id="applicationPreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Preview Department Manpower Application</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6><b>Application Details</b></h6>
+                    <table class="table table-sm table-bordered">
+                        <tr>
+                            <th width="25%">Project Name</th>
+                            <td id="previewProjectName"></td>
+                        </tr>
+                        <tr>
+                            <th>Application Type</th>
+                            <td id="previewApplicationType"></td>
+                        </tr>
+                    </table>
+
+                    <h6 class="mt-4"><b>Resource Requirements</b></h6>
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Designation</th>
+                                <th>Level</th>
+                                <th>Rate / Month</th>
+                                <th>Number of Manpower</th>
+                                <th>Months</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewResourceRequirementBody"></tbody>
+                    </table>
+
+                    <div class="text-end">
+                        <h5>Grand Total (INR, Excluding Taxes): <span id="previewGrandTotalCost">0.00</span></h5>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Edit</button>
+                    <button type="button" class="btn btn-success" id="confirmSubmitButton">Confirm & Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/department-manpower-application.js}"></script>
+</body>
+
+</html>
