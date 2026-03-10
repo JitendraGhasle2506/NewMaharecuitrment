@@ -132,6 +132,7 @@ public class RoleBasedNavigationService implements NavigationService {
                 new SidebarItemView("Role Menu Mapping", "fa fa-diagram-project", "/admin/role-menu-mappings"),
                 new SidebarItemView("Menu Management", "fa fa-bars", "/admin/menus"),
                 new SidebarItemView("Submenu Management", "fa fa-sitemap", "/admin/submenus"),
+                new SidebarItemView("Project Master", "fa fa-folder-tree", "/master/projects"),
                 new SidebarItemView("HR Dashboard", "fa fa-users", "/hr/dashboard"),
                 new SidebarItemView("Common Module", "fa fa-layer-group", "/common"),
                 new SidebarItemView("Attendance", "fa fa-calendar-check", "/attendance"),
