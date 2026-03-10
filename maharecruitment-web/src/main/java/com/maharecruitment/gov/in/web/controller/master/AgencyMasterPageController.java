@@ -355,9 +355,9 @@ public class AgencyMasterPageController {
             String defaultMessage) {
         StringBuilder message = new StringBuilder(defaultMessage);
         if (Boolean.TRUE.equals(response.getAgencyUserCreated()) && response.getTemporaryPassword() != null) {
-            message.append(". Agency user created for ")
-                    .append(response.getProvisionedUserEmail())
-                    .append(".");
+            message.append(".<br><strong>Agency User Created:</strong><br>")
+                    .append("Username: ").append(response.getProvisionedUserEmail())
+                    .append("<br>Password: ").append(response.getTemporaryPassword());
         }
         redirectAttributes.addFlashAttribute("successMessage", message.toString());
     }
