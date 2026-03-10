@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sub-Department Project Applications</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Department Request', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Sub-Department Project Applications</h2>
+                        <small class="text-muted" th:text="${subDepartmentRequest.departmentName}">Department</small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/department-requests}">
+                        Back to Parent Departments
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Sub-Department</th>
+                                    <th class="text-center">Project Application</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(subDepartmentRequest.subDepartmentProjectCounts)}">
+                                    <td colspan="2" class="text-center text-muted">No sub-department records found.</td>
+                                </tr>
+
+                                <tr th:each="subDepartment : ${subDepartmentRequest.subDepartmentProjectCounts}">
+                                    <td th:text="${subDepartment.subDepartmentName}">Sub-Department</td>
+                                    <td class="text-center">
+                                        <a th:if="${subDepartment.subDepartmentId != null and subDepartment.projectApplicationCount > 0}"
+                                            th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(departmentId=${subDepartmentRequest.departmentId},subDepartmentId=${subDepartment.subDepartmentId})}"
+                                            th:text="${subDepartment.projectApplicationCount}">
+                                            0
+                                        </a>
+                                        <span
+                                            th:if="${subDepartment.subDepartmentId == null or subDepartment.projectApplicationCount == 0}"
+                                            th:text="${subDepartment.projectApplicationCount}">
+                                            0
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

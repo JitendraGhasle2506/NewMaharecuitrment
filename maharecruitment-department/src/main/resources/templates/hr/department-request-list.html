@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Department Request</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Department Request', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Department Request</h2>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/dashboard}">Back to HR Dashboard</a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+                    <p class="text-muted mb-3">Click "Show Sub-Departments" to view sub-department-wise project
+                        applications.</p>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Parent Department</th>
+                                    <th class="text-center">Project Application</th>
+                                    <th class="text-center">Sub-Departments</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(parentDepartmentRequests)}">
+                                    <td colspan="3" class="text-center text-muted">
+                                        No registered parent departments found.
+                                    </td>
+                                </tr>
+
+                                <th:block th:each="parentDepartment, parentStat : ${parentDepartmentRequests}">
+                                    <tr>
+                                        <td th:text="${parentDepartment.departmentName}">Department</td>
+                                        <td class="text-center" th:text="${parentDepartment.projectApplicationCount}">0
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button"
+                                                class="btn btn-outline-primary btn-sm js-parent-toggle"
+                                                th:attr="data-target=|subDepartmentRow-${parentStat.index}|">
+                                                Show Sub-Departments
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr th:id="|subDepartmentRow-${parentStat.index}|" class="d-none bg-light">
+                                        <td colspan="3">
+                                            <div class="p-2">
+                                                <table class="table table-sm table-bordered mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Sub-Department</th>
+                                                            <th class="text-center">Project Application</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr
+                                                            th:if="${#lists.isEmpty(parentDepartment.subDepartmentProjectCounts)}">
+                                                            <td colspan="2" class="text-center text-muted">
+                                                                No sub-department records found.
+                                                            </td>
+                                                        </tr>
+                                                        <tr
+                                                            th:each="subDepartment : ${parentDepartment.subDepartmentProjectCounts}">
+                                                            <td th:text="${subDepartment.subDepartmentName}">
+                                                                Sub-Department</td>
+                                                            <td class="text-center">
+                                                                <a th:if="${subDepartment.subDepartmentId != null and subDepartment.projectApplicationCount > 0}"
+                                                                    th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(departmentId=${parentDepartment.departmentId},subDepartmentId=${subDepartment.subDepartmentId})}"
+                                                                    th:text="${subDepartment.projectApplicationCount}">
+                                                                    0
+                                                                </a>
+                                                                <span
+                                                                    th:if="${subDepartment.subDepartmentId == null or subDepartment.projectApplicationCount == 0}"
+                                                                    th:text="${subDepartment.projectApplicationCount}">
+                                                                    0
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </th:block>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.js-parent-toggle').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const targetId = this.getAttribute('data-target');
+                    const targetRow = document.getElementById(targetId);
+                    if (!targetRow) {
+                        return;
+                    }
+                    const isHidden = targetRow.classList.toggle('d-none');
+                    this.textContent = isHidden ? 'Show Sub-Departments' : 'Hide Sub-Departments';
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
