@@ -5,14 +5,19 @@ import java.security.Principal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateBatchForm;
+import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateRowForm;
+import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewScheduleForm;
 import com.maharecruitment.gov.in.web.service.agency.AgencyRecruitmentNotificationPageService;
 
 @Controller
@@ -45,6 +50,10 @@ public class AgencyRecruitmentNotificationPageController {
         String actorEmail = resolveActorEmail(principal);
         try {
             model.addAttribute("detail", pageService.getNotificationDetail(actorEmail, recruitmentNotificationId));
+            model.addAttribute("submittedCandidates", pageService.getSubmittedCandidates(actorEmail, recruitmentNotificationId));
+            if (!model.containsAttribute("candidateForm")) {
+                model.addAttribute("candidateForm", buildDefaultCandidateForm());
+            }
             return "agency/recruitment-notification-detail";
         } catch (RecruitmentNotificationException ex) {
             log.warn("Unable to load notification detail. notificationId={}, actorEmail={}, reason={}",
@@ -94,10 +103,82 @@ public class AgencyRecruitmentNotificationPageController {
         return "redirect:/agency/recruitment-notifications/" + recruitmentNotificationId;
     }
 
+    @PostMapping("/{recruitmentNotificationId}/candidates")
+    public String submitCandidates(
+            @PathVariable Long recruitmentNotificationId,
+            @ModelAttribute("candidateForm") AgencyCandidateBatchForm candidateForm,
+            BindingResult bindingResult,
+            Principal principal,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        String actorEmail = resolveActorEmail(principal);
+
+        if (bindingResult.hasErrors()) {
+            try {
+                model.addAttribute("detail", pageService.getNotificationDetail(actorEmail, recruitmentNotificationId));
+                model.addAttribute("submittedCandidates",
+                        pageService.getSubmittedCandidates(actorEmail, recruitmentNotificationId));
+                model.addAttribute("errorMessage", "Please correct the candidate form values and submit again.");
+                return "agency/recruitment-notification-detail";
+            } catch (RecruitmentNotificationException ex) {
+                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                return "redirect:/agency/recruitment-notifications";
+            }
+        }
+
+        try {
+            pageService.submitCandidates(actorEmail, recruitmentNotificationId, candidateForm);
+            redirectAttributes.addFlashAttribute("successMessage", "Candidate details submitted successfully.");
+        } catch (RecruitmentNotificationException ex) {
+            log.warn("Unable to submit candidates. notificationId={}, actorEmail={}, reason={}",
+                    recruitmentNotificationId,
+                    actorEmail,
+                    ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+
+        return "redirect:/agency/recruitment-notifications/" + recruitmentNotificationId;
+    }
+
+    @PostMapping("/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/schedule-interview")
+    public String scheduleInterview(
+            @PathVariable Long recruitmentNotificationId,
+            @PathVariable Long recruitmentInterviewDetailId,
+            @ModelAttribute AgencyInterviewScheduleForm interviewScheduleForm,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+        String actorEmail = resolveActorEmail(principal);
+
+        try {
+            pageService.scheduleInterview(
+                    actorEmail,
+                    recruitmentNotificationId,
+                    recruitmentInterviewDetailId,
+                    interviewScheduleForm);
+            redirectAttributes.addFlashAttribute("successMessage", "Interview details submitted successfully.");
+        } catch (RecruitmentNotificationException ex) {
+            log.warn(
+                    "Unable to submit interview schedule. notificationId={}, candidateId={}, actorEmail={}, reason={}",
+                    recruitmentNotificationId,
+                    recruitmentInterviewDetailId,
+                    actorEmail,
+                    ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+
+        return "redirect:/agency/recruitment-notifications/" + recruitmentNotificationId;
+    }
+
     private String resolveActorEmail(Principal principal) {
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
         return principal.getName().trim();
+    }
+
+    private AgencyCandidateBatchForm buildDefaultCandidateForm() {
+        AgencyCandidateBatchForm candidateBatchForm = new AgencyCandidateBatchForm();
+        candidateBatchForm.getCandidates().add(new AgencyCandidateRowForm());
+        return candidateBatchForm;
     }
 }

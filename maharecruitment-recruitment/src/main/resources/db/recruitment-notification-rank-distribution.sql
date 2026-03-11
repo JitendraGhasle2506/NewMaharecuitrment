@@ -132,3 +132,63 @@ WHERE t.agency_id = :agencyId
   AND t.status IN ('RELEASED', 'READ', 'RESPONDED')
   AND n.status IN ('PENDING_ALLOCATION', 'IN_PROGRESS')
 ORDER BY t.notified_at DESC;
+
+-- Agency Candidate Submission and Interview Tracking Table
+CREATE TABLE recruitment_interview_detail (
+    recruitment_interview_detail_id BIGINT NOT NULL,
+    recruitment_notification_id BIGINT NOT NULL,
+    agency_id BIGINT NOT NULL,
+    recruitment_designation_vacancy_id BIGINT NOT NULL,
+    agency_user_id BIGINT NOT NULL,
+    candidate_name VARCHAR(150) NOT NULL,
+    candidate_email VARCHAR(255) NOT NULL,
+    candidate_mobile VARCHAR(15) NOT NULL,
+    candidate_education VARCHAR(255) NOT NULL,
+    total_experience NUMERIC(5,1) NOT NULL,
+    relevant_experience NUMERIC(5,1) NOT NULL,
+    joining_time VARCHAR(50) NOT NULL,
+    resume_original_name VARCHAR(255) NOT NULL,
+    resume_file_path VARCHAR(700) NOT NULL,
+    resume_file_type VARCHAR(120),
+    resume_file_size BIGINT,
+    candidate_status VARCHAR(50) NOT NULL,
+    department_shortlisted_at TIMESTAMP,
+    department_shortlisted_by_user_id BIGINT,
+    department_shortlist_remarks VARCHAR(1000),
+    interview_scheduled_at TIMESTAMP,
+    interview_scheduled_by_user_id BIGINT,
+    interview_date_time TIMESTAMP,
+    interview_time_slot VARCHAR(100),
+    interview_link VARCHAR(700),
+    interview_remarks VARCHAR(1000),
+    is_active BOOLEAN NOT NULL,
+    created_date_time TIMESTAMP NOT NULL,
+    updated_date_time TIMESTAMP NOT NULL,
+    CONSTRAINT pk_recruitment_interview_detail
+        PRIMARY KEY (recruitment_interview_detail_id),
+    CONSTRAINT fk_recruitment_interview_notification
+        FOREIGN KEY (recruitment_notification_id)
+        REFERENCES recruitment_notification (recruitment_notification_id),
+    CONSTRAINT fk_recruitment_interview_agency
+        FOREIGN KEY (agency_id)
+        REFERENCES agency_master (agency_id),
+    CONSTRAINT fk_recruitment_interview_vacancy
+        FOREIGN KEY (recruitment_designation_vacancy_id)
+        REFERENCES recruitment_designation_vacancy (recruitment_designation_vacancy_id),
+    CONSTRAINT uk_recruitment_interview_notification_agency_email
+        UNIQUE (recruitment_notification_id, agency_id, candidate_email),
+    CONSTRAINT uk_recruitment_interview_notification_agency_mobile
+        UNIQUE (recruitment_notification_id, agency_id, candidate_mobile)
+);
+
+CREATE INDEX idx_recruitment_interview_notification
+    ON recruitment_interview_detail (recruitment_notification_id);
+
+CREATE INDEX idx_recruitment_interview_agency
+    ON recruitment_interview_detail (agency_id);
+
+CREATE INDEX idx_recruitment_interview_vacancy
+    ON recruitment_interview_detail (recruitment_designation_vacancy_id);
+
+CREATE INDEX idx_recruitment_interview_status
+    ON recruitment_interview_detail (candidate_status);
