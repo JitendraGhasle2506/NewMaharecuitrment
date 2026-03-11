@@ -90,9 +90,6 @@ public class MenuBootstrapInitializer implements ApplicationRunner {
                 upsertSubMenu(masterMenu, "Designation Rates", "/master/designation-rates", "fa fa-coins");
                 upsertSubMenu(masterMenu, "Project Master", "/master/projects", "fa fa-folder-tree");
 
-                Role departmentRole = roleRepository.findByNameIgnoreCase("ROLE_DEPARTMENT")
-                                .or(() -> roleRepository.findByNameIgnoreCase("DEPARTMENT"))
-                                .orElseGet(() -> createRoleIfMissing("ROLE_DEPARTMENT"));
 
                 MstMenu departmentMenu = upsertMenu(
                                 "Department Module",

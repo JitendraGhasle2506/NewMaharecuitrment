@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <title>Advance Payment Review</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <!-- Add CSRF meta tags -->
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+</head>
+
+<body class="department-shell">
+    <th:block
+        th:replace="~{header/header :: var-sidebar-header('Advance Payment Review', 'Review Details', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Advance Payment Review</h2>
+                    <a href="javascript:history.back()" class="btn btn-secondary btn-sm">
+                        &#8592; Back
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="section-title mb-3"
+                                style="color: #2c3e50; border-left: 4px solid #3498db; padding-left: 10px;">Project
+                                Details</h5>
+                            <p class="mb-1"><strong>Request ID:</strong> <span th:text="${projectApp.requestId}"></span>
+                            </p>
+                            <p class="mb-1"><strong>Project Name:</strong> <span
+                                    th:text="${projectApp.projectName}"></span></p>
+                            <p class="mb-0"><strong>Status:</strong>
+                                <span class="badge text-bg-info" th:if="${projectApp.applicationStatus != null}"
+                                    th:text="${projectApp.applicationStatus.getStatusCode() + ' - ' + projectApp.applicationStatus.name()}"></span>
+                                <span th:if="${projectApp.applicationStatus == null}">-</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                            <h5 class="section-title mb-3"
+                                style="color: #2c3e50; border-left: 4px solid #e67e22; padding-left: 10px; display: inline-block;">
+                                Payment Details</h5>
+                            <p class="mb-1"><strong>Receipt No:</strong> <span
+                                    th:text="${payment.receiptNumber}"></span></p>
+                            <p class="mb-1"><strong>Amount:</strong> INR <span
+                                    th:text="${payment.totalAmount != null ? #numbers.formatDecimal(payment.totalAmount, 1, 'COMMA', 2, 'POINT') : '0.00'}"></span>
+                            </p>
+                            <p class="mb-0"><strong>PI Reference:</strong> <span
+                                    th:text="${payment.proformaInvoiceId}"></span></p>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5 class="section-title mb-3"
+                            style="color: #2c3e50; border-left: 4px solid #2ecc71; padding-left: 10px;">Proof of Payment
+                        </h5>
+                        <div class="alert alert-light border d-flex align-items-center justify-content-between">
+                            <span>
+                                <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                <span th:text="${payment.receiptOriginalName}"></span>
+                            </span>
+                            <a th:href="@{/department/payment/{id}/receipt(id=${payment.id})}" target="_blank"
+                                class="btn btn-sm btn-link">View Document</a>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <!-- Review Action block using separate tags for priority -->
+                    <div
+                        th:if="${payment.applicationStatus != null and (payment.applicationStatus.getStatusCode() == 2 or payment.applicationStatus.getStatusCode() == 7)}">
+                        <div class="review-section mt-4" sec:authorize="hasAnyRole('ROLE_HR', 'ROLE_AUDITOR')">
+                            <h5 class="section-title mb-3"
+                                style="color: #2c3e50; border-left: 4px solid #9b59b6; padding-left: 10px;">Review
+                                Action
+                            </h5>
+                            <form id="reviewForm">
+                                <input type="hidden" id="paymentId" th:value="${payment.id}" />
+                                <div class="row g-3">
+                                    <div class="col-md-4" th:if="${payment.applicationStatus.getStatusCode() == 2}"
+                                        sec:authorize="hasRole('ROLE_HR')">
+                                        <label class="form-label fw-semibold">HR Decision</label>
+                                        <select id="hrDecision" class="form-select">
+                                            <option value="">-- Select Decision --</option>
+                                            <option th:each="d : ${hrDecisions}" th:value="${d}" th:text="${d}">
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4" th:if="${payment.applicationStatus.getStatusCode() == 7}"
+                                        sec:authorize="hasRole('ROLE_AUDITOR')">
+                                        <label class="form-label fw-semibold">Auditor Decision</label>
+                                        <select id="auditorDecision" class="form-select">
+                                            <option value="">-- Select Decision --</option>
+                                            <option th:each="d : ${auditorDecisions}" th:value="${d}" th:text="${d}">
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-semibold">Review Remarks</label>
+                                        <textarea id="remarks" class="form-control" rows="3"
+                                            placeholder="Enter remarks..."></textarea>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <button type="button" onclick="submitReview()" class="btn btn-success px-5">
+                                        <i class="fas fa-check-circle me-1"></i> Submit Decision
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script th:inline="javascript">
+                /*<![CDATA[*/
+                function submitReview() {
+                    const paymentId = document.getElementById('paymentId').value;
+                    const remarks = document.getElementById('remarks').value;
+                    const contextPath = /*[[@{/}]]*/ '';
+                    let endpoint = "";
+                    let decision = "";
+
+                    const hrSelect = document.getElementById('hrDecision');
+                    const auditorSelect = document.getElementById('auditorDecision');
+
+                    if (hrSelect && hrSelect.offsetParent !== null) {
+                        endpoint = contextPath + "hr/department/payment/" + paymentId + "/review";
+                        decision = hrSelect.value;
+                    } else if (auditorSelect && auditorSelect.offsetParent !== null) {
+                        endpoint = contextPath + "auditor/department/payment/" + paymentId + "/review";
+                        decision = auditorSelect.value;
+                    }
+
+                    if (!decision) {
+                        alert("Please select a decision.");
+                        return;
+                    }
+
+                    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+                    fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            [csrfHeader]: csrfToken
+                        },
+                        body: JSON.stringify({
+                            decision: decision,
+                            remarks: remarks
+                        })
+                    }).then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            return response.json().then(data => {
+                                throw new Error(data.message || 'Submission failed with status ' + response.status);
+                            }).catch(() => {
+                                throw new Error('Submission failed with status ' + response.status);
+                            });
+                        }
+                    }).then(data => {
+                        alert(data.message || 'Decision submitted successfully.');
+                        if (endpoint.includes("/hr/")) {
+                            window.location.href = contextPath + "hr/department/payment/list";
+                        } else {
+                            window.location.href = contextPath + "auditor/department/payment/list";
+                        }
+                    }).catch(error => {
+                        console.error('Error:', error);
+                        alert("Error: " + error.message);
+                    });
+                }
+                /*]]>*/
+            </script>
+        </section>
+    </th:block>
+</body>
+
+</html>

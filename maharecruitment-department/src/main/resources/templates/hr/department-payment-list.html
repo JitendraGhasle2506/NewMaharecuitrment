@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Department Advance Payment Review List</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="department-shell">
+    <th:block
+        th:replace="~{header/header :: var-sidebar-header('Verification and Approval', 'Department Payments', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Department Advance Payment Review</h2>
+                    <a class="btn btn-outline-secondary btn-sm" href="javascript:history.back()">Back</a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+                    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+
+                    <p class="text-muted mb-3">Below are the advance payment requests pending your review and
+                        verification.</p>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Request ID</th>
+                                    <th>Project Name</th>
+                                    <th>Receipt Number</th>
+                                    <th>Amount (INR)</th>
+                                    <th>Status</th>
+                                    <th>Last Updated</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(payments)}">
+                                    <td colspan="8" class="text-center text-muted">
+                                        No pending advance payment requests found.
+                                    </td>
+                                </tr>
+                                <tr th:each="payment, stat : ${payments}">
+                                    <td th:text="${stat.count}"></td>
+                                    <td th:text="${payment.application != null ? payment.application.requestId : '-'}">
+                                    </td>
+                                    <td
+                                        th:text="${payment.application != null ? payment.application.projectName : '-'}">
+                                    </td>
+                                    <td th:text="${payment.receiptNumber != null ? payment.receiptNumber : '-'}"></td>
+                                    <td
+                                        th:text="${payment.totalAmount != null ? #numbers.formatDecimal(payment.totalAmount, 1, 'COMMA', 2, 'POINT') : '0.00'}">
+                                    </td>
+                                    <td>
+                                        <span th:if="${payment.applicationStatus != null}" class="badge"
+                                            th:classappend="${payment.applicationStatus.getStatusCode() == 2 ? 'badge-primary' : (payment.applicationStatus.getStatusCode() == 7 ? 'badge-info' : 'badge-secondary')}"
+                                            th:text="${payment.applicationStatus.getStatusCode() + ' - ' + payment.applicationStatus.name()}"></span>
+                                        <span th:if="${payment.applicationStatus == null}">-</span>
+                                    </td>
+                                    <td
+                                        th:text="${payment.updatedDate != null ? #temporals.format(payment.updatedDate, 'dd-MM-yyyy HH:mm') : '-'}">
+                                    </td>
+                                    <td class="text-center">
+                                        <a th:if="${payment.applicationStatus != null and payment.applicationStatus.getStatusCode() == 2}"
+                                            th:href="@{/hr/department/payment/{pId}(pId=${payment.id})}"
+                                            class="btn btn-primary btn-sm">Review</a>
+                                        <a th:if="${payment.applicationStatus != null and payment.applicationStatus.getStatusCode() == 7}"
+                                            th:href="@{/auditor/department/payment/{pId}(pId=${payment.id})}"
+                                            class="btn btn-info btn-sm">Review</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
