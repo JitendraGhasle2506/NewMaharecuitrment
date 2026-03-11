@@ -44,6 +44,12 @@ public class HrDepartmentRequestMenuInitializer implements ApplicationRunner {
                 "/hr/department-requests",
                 "fa fa-building-user",
                 hrRole);
+
+        upsertDirectMenu(
+                "Agency Rank Mapping",
+                "/hr/department-requests/agency-rank-mapping",
+                "fa fa-ranking-star",
+                hrRole);
     }
 
     private void upsertDirectMenu(

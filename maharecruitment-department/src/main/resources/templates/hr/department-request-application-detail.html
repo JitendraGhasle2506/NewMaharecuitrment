@@ -15,16 +15,24 @@
                     <div>
                         <h2 class="mb-0">Application Review</h2>
                         <small class="text-muted"
-                               th:text="${applicationReviewDetail.departmentName + ' | ' + applicationReviewDetail.subDepartmentName}">
+                            th:text="${applicationReviewDetail.departmentName + ' | ' + applicationReviewDetail.subDepartmentName}">
                             Department | Sub-Department
                         </small>
                     </div>
-                    <a class="btn btn-outline-secondary btn-sm"
-                       th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(
-                                departmentId=${applicationReviewDetail.departmentId},
-                                subDepartmentId=${applicationReviewDetail.subDepartmentId})}">
-                        Back to Applications
-                    </a>
+                    <div class="d-flex gap-2">
+                        <!-- <a class="btn btn-outline-primary btn-sm"
+                           th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/agency-ranks(
+                                    departmentId=${applicationReviewDetail.departmentId},
+                                    subDepartmentId=${applicationReviewDetail.subDepartmentId},
+                                    applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
+                            Map Agency Rank
+                        </a> -->
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(
+                                    departmentId=${applicationReviewDetail.departmentId},
+                                    subDepartmentId=${applicationReviewDetail.subDepartmentId})}">
+                            Back to Applications
+                        </a>
+                    </div>
                 </div>
 
                 <div class="card-body">
@@ -38,7 +46,7 @@
                             <th width="18%">Current Status</th>
                             <td>
                                 <span class="badge text-bg-primary"
-                                      th:text="${applicationReviewDetail.applicationStatus.statusCode + ' - ' + #strings.replace(applicationReviewDetail.applicationStatus.name(), '_', ' ')}">
+                                    th:text="${applicationReviewDetail.applicationStatus.statusCode + ' - ' + #strings.replace(applicationReviewDetail.applicationStatus.name(), '_', ' ')}">
                                     2 - SUBMITTED TO HR
                                 </span>
                             </td>
@@ -49,21 +57,25 @@
                         </tr>
                         <tr>
                             <th>Application Type</th>
-                            <td th:text="${applicationReviewDetail.applicationType != null ? #strings.replace(applicationReviewDetail.applicationType.name(), '_', ' ') : '-'}">
+                            <td
+                                th:text="${applicationReviewDetail.applicationType != null ? #strings.replace(applicationReviewDetail.applicationType.name(), '_', ' ') : '-'}">
                                 -
                             </td>
                             <th>Total Cost</th>
-                            <td th:text="${#numbers.formatDecimal(applicationReviewDetail.totalEstimatedCost != null ? applicationReviewDetail.totalEstimatedCost : 0, 1, 'COMMA', 2, 'POINT')}">
+                            <td
+                                th:text="${#numbers.formatDecimal(applicationReviewDetail.totalEstimatedCost != null ? applicationReviewDetail.totalEstimatedCost : 0, 1, 'COMMA', 2, 'POINT')}">
                                 0.00
                             </td>
                         </tr>
                         <tr>
                             <th>Created On</th>
-                            <td th:text="${applicationReviewDetail.createdDate != null ? #temporals.format(applicationReviewDetail.createdDate, 'dd-MMM-yyyy HH:mm') : '-'}">
+                            <td
+                                th:text="${applicationReviewDetail.createdDate != null ? #temporals.format(applicationReviewDetail.createdDate, 'dd-MMM-yyyy HH:mm') : '-'}">
                                 -
                             </td>
                             <th>Updated On</th>
-                            <td th:text="${applicationReviewDetail.updatedDate != null ? #temporals.format(applicationReviewDetail.updatedDate, 'dd-MMM-yyyy HH:mm') : '-'}">
+                            <td
+                                th:text="${applicationReviewDetail.updatedDate != null ? #temporals.format(applicationReviewDetail.updatedDate, 'dd-MMM-yyyy HH:mm') : '-'}">
                                 -
                             </td>
                         </tr>
@@ -74,15 +86,15 @@
                         <tr>
                             <th>Work Order</th>
                             <td colspan="3">
-                                <a th:if="${applicationReviewDetail.workOrderAvailable}"
-                                   th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/download-work-order(
+                                <a th:if="${applicationReviewDetail.workOrderAvailable}" th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/download-work-order(
                                             departmentId=${applicationReviewDetail.departmentId},
                                             subDepartmentId=${applicationReviewDetail.subDepartmentId},
                                             applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
-                                   th:text="${applicationReviewDetail.workOrderOriginalName != null ? applicationReviewDetail.workOrderOriginalName : 'View Work Order'}">
+                                    th:text="${applicationReviewDetail.workOrderOriginalName != null ? applicationReviewDetail.workOrderOriginalName : 'View Work Order'}">
                                     View Work Order
                                 </a>
-                                <span th:if="${!applicationReviewDetail.workOrderAvailable}" class="text-muted">Not uploaded</span>
+                                <span th:if="${!applicationReviewDetail.workOrderAvailable}" class="text-muted">Not
+                                    uploaded</span>
                             </td>
                         </tr>
                     </table>
@@ -107,10 +119,14 @@
                                 <tr th:each="requirement : ${applicationReviewDetail.resourceRequirements}">
                                     <td th:text="${requirement.designationName}">Designation</td>
                                     <td th:text="${requirement.levelName}">Level</td>
-                                    <td th:text="${#numbers.formatDecimal(requirement.monthlyRate != null ? requirement.monthlyRate : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                    <td
+                                        th:text="${#numbers.formatDecimal(requirement.monthlyRate != null ? requirement.monthlyRate : 0, 1, 'COMMA', 2, 'POINT')}">
+                                        0.00</td>
                                     <td th:text="${requirement.requiredQuantity}">0</td>
                                     <td th:text="${requirement.durationInMonths}">0</td>
-                                    <td th:text="${#numbers.formatDecimal(requirement.totalCost != null ? requirement.totalCost : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                    <td
+                                        th:text="${#numbers.formatDecimal(requirement.totalCost != null ? requirement.totalCost : 0, 1, 'COMMA', 2, 'POINT')}">
+                                        0.00</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -121,18 +137,15 @@
                             <h5 class="mb-0">HR Review Action</h5>
                         </div>
                         <div class="card-body">
-                            <form id="hrReviewForm"
-                                  th:action="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/review(
+                            <form id="hrReviewForm" th:action="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/review(
                                             departmentId=${applicationReviewDetail.departmentId},
                                             subDepartmentId=${applicationReviewDetail.subDepartmentId},
                                             applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
-                                  th:object="${reviewForm}"
-                                  method="post">
+                                th:object="${reviewForm}" method="post">
                                 <div class="mb-3">
                                     <label class="form-label">Review Remarks</label>
-                                    <textarea class="form-control" rows="3"
-                                              th:field="*{remarks}"
-                                              placeholder="Remarks are mandatory for Send Back and Reject decisions."></textarea>
+                                    <textarea class="form-control" rows="3" th:field="*{remarks}"
+                                        placeholder="Remarks are mandatory for Send Back and Reject decisions."></textarea>
                                     <div class="text-danger small" th:errors="*{remarks}"></div>
                                 </div>
 
@@ -156,7 +169,8 @@
                         This application is not in HR actionable state.
                     </div>
 
-                    <div class="card mt-4" th:if="${applicationReviewDetail.activityTimeline != null and !#lists.isEmpty(applicationReviewDetail.activityTimeline)}">
+                    <div class="card mt-4"
+                        th:if="${applicationReviewDetail.activityTimeline != null and !#lists.isEmpty(applicationReviewDetail.activityTimeline)}">
                         <div class="card-header">
                             <h5 class="mb-0">Application Activity Timeline</h5>
                         </div>
@@ -173,12 +187,18 @@
                                 </thead>
                                 <tbody>
                                     <tr th:each="activity : ${applicationReviewDetail.activityTimeline}">
-                                        <td th:text="${activity.actionTimestamp != null ? #temporals.format(activity.actionTimestamp, 'dd-MMM-yyyy HH:mm') : '-'}"></td>
-                                        <td th:text="${activity.activityType != null ? #strings.replace(activity.activityType.name(), '_', ' ') : '-'}"></td>
+                                        <td
+                                            th:text="${activity.actionTimestamp != null ? #temporals.format(activity.actionTimestamp, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        </td>
+                                        <td
+                                            th:text="${activity.activityType != null ? #strings.replace(activity.activityType.name(), '_', ' ') : '-'}">
+                                        </td>
                                         <td>
-                                            <span th:text="${activity.previousStatus != null ? #strings.replace(activity.previousStatus.name(), '_', ' ') : '-'}"></span>
+                                            <span
+                                                th:text="${activity.previousStatus != null ? #strings.replace(activity.previousStatus.name(), '_', ' ') : '-'}"></span>
                                             <span> -> </span>
-                                            <span th:text="${activity.newStatus != null ? #strings.replace(activity.newStatus.name(), '_', ' ') : '-'}"></span>
+                                            <span
+                                                th:text="${activity.newStatus != null ? #strings.replace(activity.newStatus.name(), '_', ' ') : '-'}"></span>
                                         </td>
                                         <td>
                                             <div th:text="${activity.actorName ?: '-'}"></div>

@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.master.repository;
 
 import java.util.Optional;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,8 +9,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
+import com.maharecruitment.gov.in.master.entity.AgencyStatus;
 
 public interface AgencyMasterRepository extends JpaRepository<AgencyMaster, Long> {
+
+    Optional<AgencyMaster> findByOfficialEmailIgnoreCase(String officialEmail);
+
+    List<AgencyMaster> findByStatusOrderByAgencyNameAsc(AgencyStatus status);
 
     @EntityGraph(attributePaths = "escalationMatrixEntries")
     @Query("""

@@ -71,6 +71,14 @@ public class RecruitmentNotificationEntity extends RecruitmentAuditable {
     @OrderBy("recruitmentDesignationVacancyId ASC")
     private List<RecruitmentDesignationVacancyEntity> designationVacancies = new ArrayList<>();
 
+    @OneToMany(mappedBy = "recruitmentNotification", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("rankNumber ASC")
+    private List<RecruitmentNotificationAgencyRankEntity> agencyRanks = new ArrayList<>();
+
+    @OneToMany(mappedBy = "recruitmentNotification", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("notifiedAt DESC")
+    private List<AgencyNotificationTrackingEntity> agencyTrackingEntries = new ArrayList<>();
+
     public void replaceDesignationVacancies(List<RecruitmentDesignationVacancyEntity> vacancies) {
         designationVacancies.clear();
         if (vacancies == null || vacancies.isEmpty()) {
@@ -88,6 +96,25 @@ public class RecruitmentNotificationEntity extends RecruitmentAuditable {
         }
         vacancy.setNotification(this);
         designationVacancies.add(vacancy);
+    }
+
+    public void replaceAgencyRanks(List<RecruitmentNotificationAgencyRankEntity> ranks) {
+        agencyRanks.clear();
+        if (ranks == null || ranks.isEmpty()) {
+            return;
+        }
+
+        for (RecruitmentNotificationAgencyRankEntity rank : ranks) {
+            addAgencyRank(rank);
+        }
+    }
+
+    public void addAgencyRank(RecruitmentNotificationAgencyRankEntity rank) {
+        if (rank == null) {
+            return;
+        }
+        rank.setRecruitmentNotification(this);
+        agencyRanks.add(rank);
     }
 
     @PrePersist
