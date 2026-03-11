@@ -21,5 +21,10 @@
       <artifactId>maharecruitment-master</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.maharecruitment.gov.in</groupId>
+      <artifactId>maharecruitment-recruitment</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 </project>

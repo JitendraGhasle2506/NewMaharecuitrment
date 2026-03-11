@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -38,6 +37,7 @@ import com.maharecruitment.gov.in.department.exception.DepartmentApplicationExce
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationActivityRepository;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.department.service.DepartmentManpowerApplicationService;
+import com.maharecruitment.gov.in.department.service.DepartmentRequestIdGenerator;
 import com.maharecruitment.gov.in.department.service.DepartmentWorkOrderStorageService;
 import com.maharecruitment.gov.in.department.service.model.DepartmentActorContext;
 import com.maharecruitment.gov.in.department.service.model.StoredDocument;
@@ -49,6 +49,9 @@ import com.maharecruitment.gov.in.master.entity.ProjectType;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationMasterService;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationRateService;
 import com.maharecruitment.gov.in.master.service.ProjectMstService;
+import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
+import com.maharecruitment.gov.in.recruitment.service.model.AuditorApprovedNotificationCommand;
+import com.maharecruitment.gov.in.recruitment.service.model.DesignationVacancyInput;
 
 @Service
 @Transactional(readOnly = true)
@@ -59,13 +62,14 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     private static final String ACTION_DRAFT = "draft";
     private static final String ACTION_SUBMIT = "submit";
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-    private static final int MAX_REQUEST_ID_RETRY = 10;
 
     private final DepartmentProjectApplicationRepository applicationRepository;
     private final DepartmentProjectApplicationActivityRepository activityRepository;
     private final ManpowerDesignationMasterService designationService;
     private final ManpowerDesignationRateService designationRateService;
     private final ProjectMstService projectMstService;
+    private final DepartmentRequestIdGenerator requestIdGenerator;
+    private final RecruitmentNotificationService recruitmentNotificationService;
     private final UserRepository userRepository;
     private final DepartmentWorkOrderStorageService storageService;
 
@@ -75,6 +79,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             ManpowerDesignationMasterService designationService,
             ManpowerDesignationRateService designationRateService,
             ProjectMstService projectMstService,
+            DepartmentRequestIdGenerator requestIdGenerator,
+            RecruitmentNotificationService recruitmentNotificationService,
             UserRepository userRepository,
             DepartmentWorkOrderStorageService storageService) {
         this.applicationRepository = applicationRepository;
@@ -82,6 +88,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         this.designationService = designationService;
         this.designationRateService = designationRateService;
         this.projectMstService = projectMstService;
+        this.requestIdGenerator = requestIdGenerator;
+        this.recruitmentNotificationService = recruitmentNotificationService;
         this.userRepository = userRepository;
         this.storageService = storageService;
     }
@@ -114,7 +122,6 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
 
         if (createOperation) {
             entity = new DepartmentProjectApplicationEntity();
-            entity.setRequestId(generateRequestId());
             entity.setDepartmentId(actorContext.getDepartmentId());
             entity.setDepartmentRegistrationId(actorContext.getDepartmentRegistrationId());
             entity.setSubDepartmentId(actorContext.getSubDepartmentId());
@@ -128,6 +135,9 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         validateEditAllowed(previousStatus, normalizedAction);
 
         mapHeader(form, entity);
+        if (createOperation) {
+            entity.setRequestId(requestIdGenerator.generate("E"));
+        }
 
         List<DepartmentProjectResourceRequirementEntity> requirements = toRequirementEntities(
                 form.getResourceRequirements(),
@@ -207,7 +217,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     }
 
     @Override
-    public List<DepartmentProjectApplicationActivityView> getApplicationActivities(Long applicationId, String actorEmail) {
+    public List<DepartmentProjectApplicationActivityView> getApplicationActivities(Long applicationId,
+            String actorEmail) {
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
         DepartmentProjectApplicationEntity application = findOwnedApplication(applicationId, actorContext);
 
@@ -307,7 +318,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         applyAudit(application, actorContext, false);
 
         DepartmentProjectApplicationEntity saved = applicationRepository.save(application);
-        recordActivity(saved, DepartmentApplicationActivityType.HR_REVIEWED, previousStatus, nextStatus, actorContext, remarks);
+        recordActivity(saved, DepartmentApplicationActivityType.HR_REVIEWED, previousStatus, nextStatus, actorContext,
+                remarks);
         recordActivity(saved,
                 DepartmentApplicationActivityType.STATUS_CHANGED,
                 previousStatus,
@@ -354,13 +366,19 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         applyAudit(application, actorContext, false);
 
         DepartmentProjectApplicationEntity saved = applicationRepository.save(application);
-        recordActivity(saved, DepartmentApplicationActivityType.AUDITOR_REVIEWED, currentStatus, nextStatus, actorContext, remarks);
+        recordActivity(saved, DepartmentApplicationActivityType.AUDITOR_REVIEWED, currentStatus, nextStatus,
+                actorContext, remarks);
         recordActivity(saved,
                 DepartmentApplicationActivityType.STATUS_CHANGED,
                 currentStatus,
                 nextStatus,
                 actorContext,
                 "Auditor decision " + decision + " applied.");
+
+        if (nextStatus == DepartmentApplicationStatus.AUDITOR_APPROVED) {
+            syncProjectMaster(saved);
+            publishRecruitmentNotification(saved);
+        }
 
         log.info("Auditor reviewed application. applicationId={}, decision={}, status={} actor={}",
                 applicationId,
@@ -399,7 +417,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 actorContext,
                 "Application marked completed.");
 
-        log.info("Application marked completed. applicationId={}, actor={}", applicationId, actorContext.getActorEmail());
+        log.info("Application marked completed. applicationId={}, actor={}", applicationId,
+                actorContext.getActorEmail());
         return DepartmentApplicationStatus.COMPLETED;
     }
 
@@ -451,7 +470,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             String actionStatus) {
         if (requirements == null || requirements.isEmpty()) {
             if (ACTION_SUBMIT.equals(actionStatus)) {
-                throw new DepartmentApplicationException("At least one resource requirement is required for submission.");
+                throw new DepartmentApplicationException(
+                        "At least one resource requirement is required for submission.");
             }
             return List.of();
         }
@@ -518,7 +538,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             DepartmentProjectApplicationEntity entity,
             String actionStatus) {
         if (form.getWorkOrderFile() != null && !form.getWorkOrderFile().isEmpty()) {
-            StoredDocument storedDocument = storageService.storeWorkOrder(form.getWorkOrderFile(), entity.getWorkOrderFilePath());
+            StoredDocument storedDocument = storageService.storeWorkOrder(form.getWorkOrderFile(),
+                    entity.getWorkOrderFilePath());
             entity.setWorkOrderOriginalName(storedDocument.getOriginalFileName());
             entity.setWorkOrderFilePath(storedDocument.getFullPath());
             entity.setWorkOrderFileType(storedDocument.getContentType());
@@ -572,7 +593,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                     || currentStatus == DepartmentApplicationStatus.CORRECTED_BY_DEPARTMENT) {
                 return DepartmentApplicationStatus.CORRECTED_BY_DEPARTMENT;
             }
-            throw new DepartmentApplicationException("Application cannot be submitted in current state: " + currentStatus);
+            throw new DepartmentApplicationException(
+                    "Application cannot be submitted in current state: " + currentStatus);
         }
 
         throw new DepartmentApplicationException("Invalid action status supplied.");
@@ -707,19 +729,6 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         entity.setUpdatedBy(actorContext.getActorEmail());
     }
 
-    private String generateRequestId() {
-        for (int attempt = 0; attempt < MAX_REQUEST_ID_RETRY; attempt++) {
-            String candidate = "DPA-" + LocalDate.now().format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)
-                    + "-"
-                    + UUID.randomUUID().toString().substring(0, 6).toUpperCase(Locale.ROOT);
-            if (!applicationRepository.existsByRequestId(candidate)) {
-                return candidate;
-            }
-        }
-
-        throw new DepartmentApplicationException("Unable to generate unique request id. Please try again.");
-    }
-
     private DepartmentApplicationStatus resolveHrDecision(
             DepartmentApplicationStatus currentStatus,
             HrReviewDecision decision) {
@@ -752,7 +761,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         }
 
         if (currentStatus != DepartmentApplicationStatus.AUDITOR_REVIEW) {
-            throw new DepartmentApplicationException("Auditor review is not allowed in current state: " + currentStatus);
+            throw new DepartmentApplicationException(
+                    "Auditor review is not allowed in current state: " + currentStatus);
         }
 
         switch (decision) {
@@ -761,7 +771,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             case SEND_BACK:
                 return DepartmentApplicationStatus.AUDITOR_SENT_BACK;
             default:
-        throw new DepartmentApplicationException("Unsupported auditor decision: " + decision);
+                throw new DepartmentApplicationException("Unsupported auditor decision: " + decision);
         }
     }
 
@@ -799,5 +809,30 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             throw new DepartmentApplicationException(
                     "Unsupported application type for project master sync: " + applicationType);
         }
+    }
+
+    private void publishRecruitmentNotification(DepartmentProjectApplicationEntity applicationEntity) {
+        if (applicationEntity == null || applicationEntity.getResourceRequirements() == null
+                || applicationEntity.getResourceRequirements().isEmpty()) {
+            throw new DepartmentApplicationException(
+                    "Resource requirements are required to generate recruitment notification.");
+        }
+
+        AuditorApprovedNotificationCommand command = AuditorApprovedNotificationCommand.builder()
+                .requestId(applicationEntity.getRequestId())
+                .departmentRegistrationId(applicationEntity.getDepartmentRegistrationId())
+                .departmentProjectApplicationId(applicationEntity.getDepartmentProjectApplicationId())
+                .designationVacancies(applicationEntity.getResourceRequirements().stream()
+                        .map(requirement -> DesignationVacancyInput.builder()
+                                .designationId(requirement.getDesignationId())
+                                .levelCode(requirement.getLevelCode())
+                                .numberOfVacancy(requirement.getRequiredQuantity() != null
+                                        ? requirement.getRequiredQuantity().longValue()
+                                        : null)
+                                .build())
+                        .toList())
+                .build();
+
+        recruitmentNotificationService.upsertFromAuditorApproval(command);
     }
 }
