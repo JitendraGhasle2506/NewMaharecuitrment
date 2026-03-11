@@ -4,11 +4,15 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
+import com.maharecruitment.gov.in.recruitment.repository.projection.DepartmentNotificationCandidateSummaryProjection;
+
+import jakarta.persistence.LockModeType;
 
 @Repository
 public interface RecruitmentInterviewDetailRepository extends JpaRepository<RecruitmentInterviewDetailEntity, Long> {
@@ -27,6 +31,44 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             @Param("recruitmentNotificationId") Long recruitmentNotificationId,
             @Param("agencyId") Long agencyId);
 
+    @Query("""
+            select n.recruitmentNotificationId as recruitmentNotificationId,
+                   n.requestId as requestId,
+                   n.departmentProjectApplicationId as departmentProjectApplicationId,
+                   p.projectName as projectName,
+                   count(c.recruitmentInterviewDetailId) as totalCandidates,
+                   coalesce(sum(case when c.candidateStatus = com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SUBMITTED_BY_AGENCY then 1 else 0 end), 0) as pendingCandidates,
+                   coalesce(sum(case when c.candidateStatus = com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT then 1 else 0 end), 0) as shortlistedCandidates,
+                   coalesce(sum(case when c.candidateStatus = com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT then 1 else 0 end), 0) as rejectedCandidates,
+                   max(c.createdDateTime) as latestSubmittedAt
+            from RecruitmentInterviewDetailEntity c
+            join c.recruitmentNotification n
+            join n.projectMst p
+            where n.departmentRegistrationId = :departmentRegistrationId
+              and c.active = true
+            group by n.recruitmentNotificationId, n.requestId, n.departmentProjectApplicationId, p.projectName
+            order by max(c.createdDateTime) desc
+            """)
+    List<DepartmentNotificationCandidateSummaryProjection> findDepartmentCandidateSummaries(
+            @Param("departmentRegistrationId") Long departmentRegistrationId);
+
+    @Query("""
+            select c
+            from RecruitmentInterviewDetailEntity c
+            join fetch c.recruitmentNotification n
+            join fetch n.projectMst p
+            join fetch c.agency agency
+            join fetch c.designationVacancy vacancy
+            left join fetch vacancy.designationMst designation
+            where n.recruitmentNotificationId = :recruitmentNotificationId
+              and n.departmentRegistrationId = :departmentRegistrationId
+              and c.active = true
+            order by c.createdDateTime desc
+            """)
+    List<RecruitmentInterviewDetailEntity> findCandidatesForDepartmentReview(
+            @Param("departmentRegistrationId") Long departmentRegistrationId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+
     boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateEmailIgnoreCase(
             Long recruitmentNotificationId,
             Long agencyId,
@@ -42,4 +84,18 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
                     Long recruitmentInterviewDetailId,
                     Long recruitmentNotificationId,
                     Long agencyId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select c
+            from RecruitmentInterviewDetailEntity c
+            where c.recruitmentInterviewDetailId = :recruitmentInterviewDetailId
+              and c.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId
+              and c.recruitmentNotification.departmentRegistrationId = :departmentRegistrationId
+              and c.active = true
+            """)
+    Optional<RecruitmentInterviewDetailEntity> findByIdForDepartmentReviewUpdate(
+            @Param("departmentRegistrationId") Long departmentRegistrationId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId);
 }

@@ -46,4 +46,15 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
             """)
     Optional<RecruitmentNotificationEntity> findWithVacanciesById(
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+
+    @Query("""
+            select notification
+            from RecruitmentNotificationEntity notification
+            join fetch notification.projectMst project
+            where notification.recruitmentNotificationId = :recruitmentNotificationId
+              and notification.departmentRegistrationId = :departmentRegistrationId
+            """)
+    Optional<RecruitmentNotificationEntity> findForDepartmentReview(
+            @Param("departmentRegistrationId") Long departmentRegistrationId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId);
 }
