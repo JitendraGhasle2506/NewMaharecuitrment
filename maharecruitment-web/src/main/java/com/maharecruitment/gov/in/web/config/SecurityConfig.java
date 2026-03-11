@@ -71,6 +71,8 @@ public class SecurityConfig {
                                                 // .requestMatchers("/master/agencies/**").hasRole("ADMIN")
                                                 .requestMatchers("/home", "/common/**").authenticated()
                                                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                                                .requestMatchers("/hr/department/payment/**")
+                                                .hasAnyRole("HR", "AUDITOR")
                                                 .requestMatchers("/hr/**", "/employees/**").hasRole("HR")
                                                 .requestMatchers("/agency/**").hasRole("AGENCY")
                                                 .requestMatchers("/user/**").hasRole("USER")
@@ -80,6 +82,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/hod2/**").hasRole("HOD2")
                                                 .requestMatchers("/coo/**").hasAnyRole("COO", "AUDITOR")
                                                 .requestMatchers("/employee/**").hasRole("EMPLOYEE")
+                                                .requestMatchers("/department/payment/*/receipt")
+                                                .hasAnyRole("DEPARTMENT", "HR", "AUDITOR")
                                                 .requestMatchers("/department/**").hasRole("DEPARTMENT")
                                                 .requestMatchers("/auditor/**").hasRole("AUDITOR")
 

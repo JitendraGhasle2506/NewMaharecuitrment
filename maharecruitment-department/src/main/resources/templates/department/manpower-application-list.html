@@ -39,23 +39,28 @@
                                 <tr th:each="applicationSummary : ${applications}">
                                     <td th:text="${applicationSummary.requestId}">DPA-20260310-ABC123</td>
                                     <td th:text="${applicationSummary.projectName}">Project Name</td>
-                                    <td th:text="${#strings.replace(applicationSummary.applicationType.name(), '_', ' ')}">APPLICATION TYPE</td>
+                                    <td
+                                        th:text="${#strings.replace(applicationSummary.applicationType.name(), '_', ' ')}">
+                                        APPLICATION TYPE</td>
                                     <td>
-                                        <span class="badge"
-                                              th:classappend="${
+                                        <span class="badge" th:classappend="${
                                                 applicationSummary.applicationStatus.name() == 'COMPLETED' ? ' text-bg-success' :
                                                 (applicationSummary.applicationStatus.name() == 'HR_REJECTED' ? ' text-bg-danger' :
                                                 (applicationSummary.applicationStatus.name() == 'HR_SENT_BACK' || applicationSummary.applicationStatus.name() == 'AUDITOR_SENT_BACK' ? ' text-bg-warning' :
                                                 (applicationSummary.applicationStatus.name() == 'DRAFT' ? ' text-bg-secondary' : ' text-bg-primary')))
                                               }"
-                                              th:text="${applicationSummary.applicationStatus.statusCode + ' - ' + #strings.replace(applicationSummary.applicationStatus.name(), '_', ' ')}">
+                                            th:text="${applicationSummary.applicationStatus.statusCode + ' - ' + #strings.replace(applicationSummary.applicationStatus.name(), '_', ' ')}">
                                             DRAFT
                                         </span>
                                     </td>
-                                    <td th:text="${#numbers.formatDecimal(applicationSummary.totalEstimatedCost != null ? applicationSummary.totalEstimatedCost : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-                                    <td th:text="${applicationSummary.updatedDate != null ? #temporals.format(applicationSummary.updatedDate, 'dd-MMM-yyyy HH:mm') : '-'}">-</td>
+                                    <td
+                                        th:text="${#numbers.formatDecimal(applicationSummary.totalEstimatedCost != null ? applicationSummary.totalEstimatedCost : 0, 1, 'COMMA', 2, 'POINT')}">
+                                        0.00</td>
+                                    <td
+                                        th:text="${applicationSummary.updatedDate != null ? #temporals.format(applicationSummary.updatedDate, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -</td>
                                     <td>
-                                        <a class="btn btn-outline-primary btn-sm"
+                                        <a class="btn btn-outline-primary btn-sm mb-1"
                                             th:href="@{/department/manpower/{id}/edit(id=${applicationSummary.departmentProjectApplicationId})}">
                                             View / Edit
                                         </a>
