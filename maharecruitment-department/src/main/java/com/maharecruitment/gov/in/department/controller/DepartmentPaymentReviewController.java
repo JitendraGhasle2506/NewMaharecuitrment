@@ -53,6 +53,7 @@ public class DepartmentPaymentReviewController {
         model.addAttribute("projectApp", projectApp);
         model.addAttribute("hrDecisions", HrReviewDecision.values());
         model.addAttribute("auditorDecisions", AuditorReviewDecision.values());
+        model.addAttribute("activities", paymentService.getActivitiesByPaymentId(paymentId));
 
         return "department/advance-payment-review";
     }

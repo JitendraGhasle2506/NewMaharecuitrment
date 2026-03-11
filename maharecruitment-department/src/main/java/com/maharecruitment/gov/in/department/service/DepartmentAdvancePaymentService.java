@@ -5,6 +5,7 @@ import java.util.List;
 import com.maharecruitment.gov.in.department.dto.AdvancePaymentForm;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
 import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
+import com.maharecruitment.gov.in.department.entity.DepartmentAdvancePaymentActivityEntity;
 import com.maharecruitment.gov.in.department.entity.DepartmentAdvancePaymentEntity;
 import com.maharecruitment.gov.in.department.entity.HrReviewDecision;
 import com.maharecruitment.gov.in.master.dto.ProformaInvoiceSummary;
@@ -36,4 +37,6 @@ public interface DepartmentAdvancePaymentService {
     AdvancePaymentForm getPaymentForReview(Long paymentId, String actorEmail);
 
     org.springframework.core.io.Resource getReceiptResource(Long paymentId, String actorEmail);
+
+    List<DepartmentAdvancePaymentActivityEntity> getActivitiesByPaymentId(Long paymentId);
 }

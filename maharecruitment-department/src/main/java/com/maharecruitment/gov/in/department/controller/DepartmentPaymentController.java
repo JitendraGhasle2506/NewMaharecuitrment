@@ -141,5 +141,9 @@ public class DepartmentPaymentController {
         model.addAttribute("payment", form); // For consistency with review page
         model.addAttribute("projectApp", projectApp);
         model.addAttribute("invoices", paymentService.getAvailableInvoices(applicationId));
+        
+        if (form.getId() != null) {
+            model.addAttribute("activities", paymentService.getActivitiesByPaymentId(form.getId()));
+        }
     }
 }

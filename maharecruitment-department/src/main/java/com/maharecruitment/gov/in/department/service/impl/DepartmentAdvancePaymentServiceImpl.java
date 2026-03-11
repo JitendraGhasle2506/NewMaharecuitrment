@@ -22,11 +22,14 @@ import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.department.dto.AdvancePaymentForm;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
 import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
+import com.maharecruitment.gov.in.department.entity.DepartmentAdvancePaymentActivityEntity;
 import com.maharecruitment.gov.in.department.entity.DepartmentAdvancePaymentEntity;
+import com.maharecruitment.gov.in.department.entity.DepartmentApplicationActivityType;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.entity.HrReviewDecision;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
+import com.maharecruitment.gov.in.department.repository.DepartmentAdvancePaymentActivityRepository;
 import com.maharecruitment.gov.in.department.repository.DepartmentAdvancePaymentRepository;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.department.service.DepartmentAdvancePaymentService;
@@ -45,16 +48,19 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     private static final String ACTION_SEND = "SEND";
 
     private final DepartmentAdvancePaymentRepository paymentRepository;
+    private final DepartmentAdvancePaymentActivityRepository activityRepository;
     private final DepartmentProjectApplicationRepository applicationRepository;
     private final UserRepository userRepository;
     private final DepartmentPaymentStorageService storageService;
 
     public DepartmentAdvancePaymentServiceImpl(
             DepartmentAdvancePaymentRepository paymentRepository,
+            DepartmentAdvancePaymentActivityRepository activityRepository,
             DepartmentProjectApplicationRepository applicationRepository,
             UserRepository userRepository,
             DepartmentPaymentStorageService storageService) {
         this.paymentRepository = paymentRepository;
+        this.activityRepository = activityRepository;
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
         this.storageService = storageService;
@@ -162,6 +168,10 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         DepartmentAdvancePaymentEntity saved = paymentRepository.save(entity);
         log.info("Advance payment record saved. id={}, status={}, actor={}", saved.getId(),
                 saved.getApplicationStatus(), actorEmail);
+
+        logActivity(saved, isNew ? DepartmentApplicationActivityType.CREATED : DepartmentApplicationActivityType.UPDATED,
+                null, saved.getApplicationStatus(), actorContext, form.getRemarks());
+
         return saved.getId();
     }
 
@@ -251,6 +261,8 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             throw new DepartmentApplicationException("Payment is not in a state that can be reviewed by HR.");
         }
 
+        DepartmentApplicationStatus oldStatus = payment.getApplicationStatus();
+
         switch (decision) {
             case APPROVE -> payment.setApplicationStatus(DepartmentApplicationStatus.AUDITOR_REVIEW);
             case REJECT -> payment.setApplicationStatus(DepartmentApplicationStatus.HR_REJECTED);
@@ -260,7 +272,11 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         payment.setRemarks(remarks);
         payment.setUpdatedBy(actorEmail);
         payment.setUpdatedDate(LocalDateTime.now());
-        paymentRepository.save(payment);
+        DepartmentAdvancePaymentEntity saved = paymentRepository.save(payment);
+
+        DepartmentActorContext actorContext = resolveActorContext(actorEmail);
+        logActivity(saved, DepartmentApplicationActivityType.HR_REVIEWED,
+                oldStatus, saved.getApplicationStatus(), actorContext, remarks);
     }
 
     @Override
@@ -273,6 +289,8 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             throw new DepartmentApplicationException("Payment is not in a state that can be reviewed by Auditor.");
         }
 
+        DepartmentApplicationStatus oldStatus = payment.getApplicationStatus();
+
         switch (decision) {
             case APPROVE -> payment.setApplicationStatus(DepartmentApplicationStatus.AUDITOR_APPROVED);
             case SEND_BACK -> payment.setApplicationStatus(DepartmentApplicationStatus.AUDITOR_SENT_BACK);
@@ -281,7 +299,11 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         payment.setRemarks(remarks);
         payment.setUpdatedBy(actorEmail);
         payment.setUpdatedDate(LocalDateTime.now());
-        paymentRepository.save(payment);
+        DepartmentAdvancePaymentEntity saved = paymentRepository.save(payment);
+
+        DepartmentActorContext actorContext = resolveActorContext(actorEmail);
+        logActivity(saved, DepartmentApplicationActivityType.AUDITOR_REVIEWED,
+                oldStatus, saved.getApplicationStatus(), actorContext, remarks);
     }
 
     @Override
@@ -381,6 +403,30 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         return storageService.loadAsResource(entity.getReceiptFilePath());
     }
 
+    @Override
+    public List<DepartmentAdvancePaymentActivityEntity> getActivitiesByPaymentId(Long paymentId) {
+        return activityRepository.findByPaymentIdOrderByActionTimestampDesc(paymentId);
+    }
+
+    private void logActivity(DepartmentAdvancePaymentEntity payment,
+            DepartmentApplicationActivityType type,
+            DepartmentApplicationStatus oldStatus,
+            DepartmentApplicationStatus newStatus,
+            DepartmentActorContext context,
+            String remarks) {
+        DepartmentAdvancePaymentActivityEntity activity = new DepartmentAdvancePaymentActivityEntity();
+        activity.setPayment(payment);
+        activity.setActivityType(type);
+        activity.setPreviousStatus(oldStatus);
+        activity.setNewStatus(newStatus);
+        activity.setActorUserId(context.getUserId());
+        activity.setActorEmail(context.getActorEmail());
+        activity.setActorName(context.getActorName());
+        activity.setActivityRemarks(remarks);
+        activity.setActionTimestamp(LocalDateTime.now());
+        activityRepository.save(activity);
+    }
+
     private void handleReceiptUpload(AdvancePaymentForm form, DepartmentAdvancePaymentEntity entity) {
         if (form.getReceiptFile() != null && !form.getReceiptFile().isEmpty()) {
             StoredDocument stored = storageService.storePaymentReceipt(form.getReceiptFile(),
@@ -415,18 +461,31 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                 .orElseThrow(() -> new DepartmentApplicationException("Project application not found."));
     }
 
-    private DepartmentActorContext resolveDepartmentActorContext(String actorEmail) {
+    private DepartmentActorContext resolveActorContext(String actorEmail) {
         User user = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
-        if (user == null || user.getDepartmentRegistrationId() == null) {
-            throw new DepartmentApplicationException("Department profile not found for user.");
+        if (user == null) {
+            throw new DepartmentApplicationException("User not found.");
         }
-        DepartmentRegistrationEntity reg = user.getDepartmentRegistrationId();
-        return DepartmentActorContext.builder()
+
+        var builder = DepartmentActorContext.builder()
                 .userId(user.getId())
                 .actorName(user.getName())
-                .actorEmail(user.getEmail())
-                .departmentId(reg.getDepartmentId())
-                .departmentRegistrationId(reg.getDepartmentRegistrationId())
-                .build();
+                .actorEmail(user.getEmail());
+
+        if (user.getDepartmentRegistrationId() != null) {
+            DepartmentRegistrationEntity reg = user.getDepartmentRegistrationId();
+            builder.departmentId(reg.getDepartmentId())
+                    .departmentRegistrationId(reg.getDepartmentRegistrationId());
+        }
+
+        return builder.build();
+    }
+
+    private DepartmentActorContext resolveDepartmentActorContext(String actorEmail) {
+        DepartmentActorContext context = resolveActorContext(actorEmail);
+        if (context.getDepartmentRegistrationId() == null) {
+            throw new DepartmentApplicationException("Department profile not found for user.");
+        }
+        return context;
     }
 }

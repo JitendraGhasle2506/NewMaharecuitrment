@@ -110,6 +110,44 @@
                             </form>
                         </div>
                     </div>
+
+                    <!-- Activity Timeline -->
+                    <div class="mt-5" th:if="${activities != null and !activities.empty}">
+                        <h5 class="section-title mb-3"
+                            style="color: #2c3e50; border-left: 4px solid #f1c40f; padding-left: 10px;">Application
+                            Activity Timeline</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover border">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Activity</th>
+                                        <th>Status Change</th>
+                                        <th>Actor</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="act : ${activities}">
+                                        <td th:text="${#temporals.format(act.actionTimestamp, 'dd-MMM-yyyy HH:mm')}"></td>
+                                        <td>
+                                            <span class="fw-bold" th:text="${act.activityType}"></span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${act.previousStatus != null}"
+                                                th:text="${act.previousStatus.name() + ' &rarr; '}"></span>
+                                            <span class="fw-bold" th:text="${act.newStatus != null ? act.newStatus.name() : '-'}"></span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold" th:text="${act.actorName}"></div>
+                                            <small class="text-muted" th:text="${act.actorEmail}"></small>
+                                        </td>
+                                        <td th:text="${act.activityRemarks}"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
