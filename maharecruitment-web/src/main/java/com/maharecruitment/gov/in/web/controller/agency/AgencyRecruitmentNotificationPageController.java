@@ -36,6 +36,24 @@ public class AgencyRecruitmentNotificationPageController {
         return "agency/recruitment-notification-list";
     }
 
+    @GetMapping("/{recruitmentNotificationId}")
+    public String notificationDetail(
+            @PathVariable Long recruitmentNotificationId,
+            Principal principal,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        String actorEmail = resolveActorEmail(principal);
+        try {
+            model.addAttribute("detail", pageService.getNotificationDetail(actorEmail, recruitmentNotificationId));
+            return "agency/recruitment-notification-detail";
+        } catch (RecruitmentNotificationException ex) {
+            log.warn("Unable to load notification detail. notificationId={}, actorEmail={}, reason={}",
+                    recruitmentNotificationId, actorEmail, ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/agency/recruitment-notifications";
+        }
+    }
+
     @PostMapping("/{recruitmentNotificationId}/read")
     public String markNotificationAsRead(
             @PathVariable Long recruitmentNotificationId,
@@ -53,7 +71,7 @@ public class AgencyRecruitmentNotificationPageController {
                     ex.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/agency/recruitment-notifications";
+        return "redirect:/agency/recruitment-notifications/" + recruitmentNotificationId;
     }
 
     @PostMapping("/{recruitmentNotificationId}/respond")
@@ -73,7 +91,7 @@ public class AgencyRecruitmentNotificationPageController {
                     ex.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/agency/recruitment-notifications";
+        return "redirect:/agency/recruitment-notifications/" + recruitmentNotificationId;
     }
 
     private String resolveActorEmail(Principal principal) {
@@ -83,4 +101,3 @@ public class AgencyRecruitmentNotificationPageController {
         return principal.getName().trim();
     }
 }
-

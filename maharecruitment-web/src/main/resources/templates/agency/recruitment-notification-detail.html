@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Notification Detail</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="agency-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Recruitment Notifications', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0" th:text="${detail.requestId}">REQ-0000</h2>
+                        <small class="text-muted" th:text="${detail.projectName != null ? detail.projectName : '-'}">
+                            Project Name
+                        </small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/recruitment-notifications}">
+                        Back to List
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <!-- Summary Table -->
+                    <table class="table table-bordered table-sm">
+                        <tr>
+                            <th width="22%">Request ID</th>
+                            <td th:text="${detail.requestId}">REQ-0000</td>
+                            <th width="20%">Notification Status</th>
+                            <td>
+                                <span class="badge text-bg-secondary"
+                                    th:text="${#strings.replace(detail.notificationStatus.name(), '_', ' ')}">
+                                    PENDING ALLOCATION
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Project Name</th>
+                            <td th:text="${detail.projectName != null ? detail.projectName : '-'}">Project</td>
+                            <th>Notified At</th>
+                            <td
+                                th:text="${detail.notifiedAt != null ? #temporals.format(detail.notifiedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                -
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Tracking Status</th>
+                            <td>
+                                <span class="badge"
+                                    th:classappend="${detail.trackingStatus.name() == 'RESPONDED'} ? ' text-bg-success' :
+                                                   (${detail.trackingStatus.name() == 'READ'} ? ' text-bg-info' : ' text-bg-primary')"
+                                    th:text="${#strings.replace(detail.trackingStatus.name(), '_', ' ')}">
+                                    RELEASED
+                                </span>
+                            </td>
+                            <!-- <th>Notified At</th>
+                            <td th:text="${detail.notifiedAt != null ? #temporals.format(detail.notifiedAt, 'dd-MMM-yyyy HH:mm') : '-'}">-</td> -->
+                        </tr>
+                    </table>
+
+                    <!-- Designation Vacancies -->
+                    <h5 class="mt-4">Designation Vacancies</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Designation</th>
+                                    <th>Level</th>
+                                    <th class="text-end">Vacancies</th>
+                                    <th class="text-end">Filled</th>
+                                    <th class="text-end">Open</th>
+                                    <th>Job Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(detail.designationVacancies)}">
+                                    <td colspan="7" class="text-center text-muted">No vacancy details available.</td>
+                                </tr>
+                                <tr th:each="vacancy, vs : ${detail.designationVacancies}">
+                                    <td th:text="${vs.count}">1</td>
+                                    <td th:text="${vacancy.designationName}">Designation</td>
+                                    <td th:text="${vacancy.levelCode}">L1</td>
+                                    <td class="text-end" th:text="${vacancy.numberOfVacancy}">0</td>
+                                    <td class="text-end" th:text="${vacancy.filledPost}">0</td>
+                                    <td class="text-end"
+                                        th:text="${vacancy.numberOfVacancy != null and vacancy.filledPost != null ? vacancy.numberOfVacancy - vacancy.filledPost : '-'}">
+                                        0
+                                    </td>
+                                    <td th:text="${vacancy.jobDescription != null ? vacancy.jobDescription : '-'}">-
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2 mt-3" th:if="${detail.trackingStatus.name() != 'RESPONDED'}">
+                        <form method="post" th:if="${detail.trackingStatus.name() == 'RELEASED'}"
+                            th:action="@{/agency/recruitment-notifications/{id}/read(id=${detail.recruitmentNotificationId})}">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" class="btn btn-outline-primary">Mark as Read</button>
+                        </form>
+
+                        <form method="post"
+                            th:action="@{/agency/recruitment-notifications/{id}/respond(id=${detail.recruitmentNotificationId})}">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" class="btn btn-success">Submit Response</button>
+                        </form>
+                    </div>
+
+                    <div class="alert alert-success mt-3 mb-0" th:if="${detail.trackingStatus.name() == 'RESPONDED'}">
+                        You have already submitted a response for this notification.
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

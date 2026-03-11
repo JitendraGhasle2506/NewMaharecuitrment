@@ -35,4 +35,15 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
     Page<RecruitmentNotificationEntity> findByStatusIn(
             Collection<RecruitmentNotificationStatus> statuses,
             Pageable pageable);
+
+    @Query("""
+            select notification
+            from RecruitmentNotificationEntity notification
+            left join fetch notification.designationVacancies vacancy
+            left join fetch vacancy.designationMst
+            left join fetch notification.projectMst
+            where notification.recruitmentNotificationId = :recruitmentNotificationId
+            """)
+    Optional<RecruitmentNotificationEntity> findWithVacanciesById(
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId);
 }

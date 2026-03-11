@@ -31,9 +31,9 @@
                                 <tr>
                                     <th>Request ID</th>
                                     <th>Project</th>
-                                    <th>Department Reg. ID</th>
+                                    <!-- <th>Department Reg. ID</th>
                                     <th>Application ID</th>
-                                    <th>Released Rank</th>
+                                    <th>Released Rank</th> -->
                                     <th>Notified At</th>
                                     <th>Tracking Status</th>
                                     <th>Notification Status</th>
@@ -42,52 +42,67 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(notifications)}">
-                                    <td colspan="9" class="text-center text-muted">
+                                    <td colspan="6" class="text-center text-muted">
                                         No recruitment notifications are currently available for your agency.
                                     </td>
                                 </tr>
 
                                 <tr th:each="item : ${notifications}">
-                                    <td th:text="${item.requestId}">REQ-0000</td>
                                     <td>
-                                        <div th:text="${item.projectName != null ? item.projectName : '-'}">Project Name</div>
-                                        <small class="text-muted" th:text="${item.projectId != null ? 'Project ID: ' + item.projectId : ''}"></small>
+                                        <a th:href="@{/agency/recruitment-notifications/{id}(id=${item.recruitmentNotificationId})}"
+                                            th:text="${item.requestId}"
+                                            class="fw-semibold">REQ-0000
+                                        </a>
                                     </td>
-                                    <td th:text="${item.departmentRegistrationId != null ? item.departmentRegistrationId : '-'}">-</td>
-                                    <td th:text="${item.departmentProjectApplicationId != null ? item.departmentProjectApplicationId : '-'}">-</td>
-                                    <td th:text="${item.releasedRank}">1</td>
-                                    <td th:text="${item.notifiedAt != null ? #temporals.format(item.notifiedAt, 'dd-MMM-yyyy HH:mm') : '-'}">-</td>
+                                    <td>
+                                        <div th:text="${item.projectName != null ? item.projectName : '-'}">Project Name
+                                        </div>
+                                        <!-- <small class="text-muted" th:text="${item.projectId != null ? 'Project ID: ' + item.projectId : ''}"></small> -->
+                                    </td>
+                                    <!-- <td
+                                        th:text="${item.departmentRegistrationId != null ? item.departmentRegistrationId : '-'}">
+                                        -</td>
+                                    <td
+                                        th:text="${item.departmentProjectApplicationId != null ? item.departmentProjectApplicationId : '-'}">
+                                        -</td>
+                                    <td th:text="${item.releasedRank}">1</td> -->
+                                    <td
+                                        th:text="${item.notifiedAt != null ? #temporals.format(item.notifiedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -</td>
                                     <td>
                                         <span class="badge"
-                                              th:classappend="${item.trackingStatus.name() == 'RESPONDED'} ? ' text-bg-success' :
+                                            th:classappend="${item.trackingStatus.name() == 'RESPONDED'} ? ' text-bg-success' :
                                                               (${item.trackingStatus.name() == 'READ'} ? ' text-bg-info' : ' text-bg-primary')"
-                                              th:text="${#strings.replace(item.trackingStatus.name(), '_', ' ')}">
+                                            th:text="${#strings.replace(item.trackingStatus.name(), '_', ' ')}">
                                             RELEASED
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge text-bg-secondary"
-                                              th:text="${#strings.replace(item.notificationStatus.name(), '_', ' ')}">
+                                            th:text="${#strings.replace(item.notificationStatus.name(), '_', ' ')}">
                                             IN PROGRESS
                                         </span>
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
-                                            <form method="post"
-                                                  th:if="${item.trackingStatus.name() == 'RELEASED'}"
-                                                  th:action="@{/agency/recruitment-notifications/{id}/read(id=${item.recruitmentNotificationId})}">
-                                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                                <button type="submit" class="btn btn-outline-primary btn-sm">Mark Read</button>
+                                            <form method="post" th:if="${item.trackingStatus.name() == 'RELEASED'}"
+                                                th:action="@{/agency/recruitment-notifications/{id}/read(id=${item.recruitmentNotificationId})}">
+                                                <input type="hidden" th:name="${_csrf.parameterName}"
+                                                    th:value="${_csrf.token}">
+                                                <button type="submit" class="btn btn-outline-primary btn-sm">Mark
+                                                    Read</button>
                                             </form>
 
-                                            <form method="post"
-                                                  th:if="${item.trackingStatus.name() != 'RESPONDED'}"
-                                                  th:action="@{/agency/recruitment-notifications/{id}/respond(id=${item.recruitmentNotificationId})}">
-                                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                                <button type="submit" class="btn btn-success btn-sm">Submit Response</button>
+                                            <form method="post" th:if="${item.trackingStatus.name() != 'RESPONDED'}"
+                                                th:action="@{/agency/recruitment-notifications/{id}/respond(id=${item.recruitmentNotificationId})}">
+                                                <input type="hidden" th:name="${_csrf.parameterName}"
+                                                    th:value="${_csrf.token}">
+                                                <button type="submit" class="btn btn-success btn-sm">Submit
+                                                    Response</button>
                                             </form>
 
-                                            <span th:if="${item.trackingStatus.name() == 'RESPONDED'}" class="badge text-bg-success">
+                                            <span th:if="${item.trackingStatus.name() == 'RESPONDED'}"
+                                                class="badge text-bg-success">
                                                 Responded
                                             </span>
                                         </div>
@@ -103,4 +118,3 @@
 </body>
 
 </html>
-

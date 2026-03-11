@@ -13,6 +13,7 @@ import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationActionService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationQueryService;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
 import com.maharecruitment.gov.in.web.service.agency.AgencyRecruitmentNotificationPageService;
 
@@ -40,6 +41,12 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     public List<AgencyVisibleNotificationView> getVisibleNotifications(String actorEmail) {
         Long agencyId = resolveAgencyId(actorEmail);
         return queryService.getVisibleNotifications(agencyId);
+    }
+
+    @Override
+    public AgencyNotificationDetailView getNotificationDetail(String actorEmail, Long recruitmentNotificationId) {
+        Long agencyId = resolveAgencyId(actorEmail);
+        return queryService.getNotificationDetail(recruitmentNotificationId, agencyId);
     }
 
     @Override
@@ -71,4 +78,3 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
         return agency.getAgencyId();
     }
 }
-
