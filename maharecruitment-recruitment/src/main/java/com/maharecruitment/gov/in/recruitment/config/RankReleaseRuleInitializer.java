@@ -5,8 +5,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +15,7 @@ import com.maharecruitment.gov.in.recruitment.repository.RankReleaseRuleReposito
 
 @Component
 @Order(60)
-public class RankReleaseRuleInitializer implements ApplicationRunner {
+public class RankReleaseRuleInitializer implements InitializingBean {
 
     private static final Logger log = LoggerFactory.getLogger(RankReleaseRuleInitializer.class);
 
@@ -28,7 +27,7 @@ public class RankReleaseRuleInitializer implements ApplicationRunner {
 
     @Override
     @Transactional
-    public void run(ApplicationArguments args) {
+    public void afterPropertiesSet() {
         seedDefaultRuleIfMissing(1, 0);
         seedDefaultRuleIfMissing(2, 3);
         seedDefaultRuleIfMissing(3, 3);

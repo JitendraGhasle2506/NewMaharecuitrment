@@ -18,6 +18,14 @@ public interface MstMenuRepository extends JpaRepository<MstMenu, Long> {
 
     Optional<MstMenu> findByMenuNameEnglishIgnoreCase(String menuNameEnglish);
 
+    @EntityGraph(attributePaths = "roles")
+    @Query("""
+            select m
+            from MstMenu m
+            where upper(m.menuNameEnglish) = upper(:menuNameEnglish)
+            """)
+    Optional<MstMenu> findByMenuNameEnglishIgnoreCaseWithRoles(@Param("menuNameEnglish") String menuNameEnglish);
+
     Optional<MstMenu> findByUrlIgnoreCase(String url);
 
     boolean existsByMenuNameEnglishIgnoreCase(String menuNameEnglish);

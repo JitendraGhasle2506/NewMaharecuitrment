@@ -13,7 +13,11 @@ import com.maharecruitment.gov.in.department.exception.DepartmentApplicationExce
 import com.maharecruitment.gov.in.department.service.DepartmentCandidateShortlistingService;
 import com.maharecruitment.gov.in.department.service.model.DepartmentActorContext;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentDepartmentCandidateReviewService;
+import com.maharecruitment.gov.in.recruitment.service.RecruitmentDepartmentInterviewWorkflowService;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlistingDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlistingProjectView;
 
@@ -22,12 +26,15 @@ import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlisti
 public class DepartmentCandidateShortlistingServiceImpl implements DepartmentCandidateShortlistingService {
 
     private final RecruitmentDepartmentCandidateReviewService candidateReviewService;
+    private final RecruitmentDepartmentInterviewWorkflowService interviewWorkflowService;
     private final UserRepository userRepository;
 
     public DepartmentCandidateShortlistingServiceImpl(
             RecruitmentDepartmentCandidateReviewService candidateReviewService,
+            RecruitmentDepartmentInterviewWorkflowService interviewWorkflowService,
             UserRepository userRepository) {
         this.candidateReviewService = candidateReviewService;
+        this.interviewWorkflowService = interviewWorkflowService;
         this.userRepository = userRepository;
     }
 
@@ -61,6 +68,68 @@ public class DepartmentCandidateShortlistingServiceImpl implements DepartmentCan
                 recruitmentInterviewDetailId,
                 reviewDecision,
                 reviewRemarks);
+    }
+
+    @Override
+    public DepartmentInterviewWorkflowDetailView getInterviewWorkflowDetail(
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId,
+            String actorEmail) {
+        DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
+        return interviewWorkflowService.getInterviewWorkflowDetail(
+                actorContext.getDepartmentRegistrationId(),
+                recruitmentNotificationId,
+                recruitmentInterviewDetailId);
+    }
+
+    @Override
+    @Transactional
+    public void requestInterviewTimeChange(
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId,
+            String changeReason,
+            String actorEmail) {
+        DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
+        interviewWorkflowService.requestInterviewTimeChange(
+                actorContext.getDepartmentRegistrationId(),
+                actorContext.getUserId(),
+                recruitmentNotificationId,
+                recruitmentInterviewDetailId,
+                changeReason);
+    }
+
+    @Override
+    @Transactional
+    public void submitInterviewAssessment(
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId,
+            DepartmentInterviewAssessmentSubmissionInput submissionInput,
+            String actorEmail) {
+        DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
+        interviewWorkflowService.submitInterviewAssessment(
+                actorContext.getDepartmentRegistrationId(),
+                actorContext.getUserId(),
+                recruitmentNotificationId,
+                recruitmentInterviewDetailId,
+                submissionInput);
+    }
+
+    @Override
+    @Transactional
+    public void applyFinalSelectionDecision(
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId,
+            DepartmentCandidateFinalDecision finalDecision,
+            String decisionRemarks,
+            String actorEmail) {
+        DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
+        interviewWorkflowService.applyFinalSelectionDecision(
+                actorContext.getDepartmentRegistrationId(),
+                actorContext.getUserId(),
+                recruitmentNotificationId,
+                recruitmentInterviewDetailId,
+                finalDecision,
+                decisionRemarks);
     }
 
     private DepartmentActorContext resolveDepartmentActorContext(String actorEmail) {

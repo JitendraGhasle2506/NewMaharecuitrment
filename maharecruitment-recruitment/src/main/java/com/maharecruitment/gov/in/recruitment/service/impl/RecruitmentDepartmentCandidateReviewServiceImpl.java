@@ -177,6 +177,12 @@ public class RecruitmentDepartmentCandidateReviewServiceImpl implements Recruitm
                 .interviewDateTime(candidate.getInterviewDateTime())
                 .interviewTimeSlot(candidate.getInterviewTimeSlot())
                 .interviewLink(candidate.getInterviewLink())
+                .interviewChangeRequested(candidate.getDepartmentInterviewChangeRequested())
+                .interviewChangeRequestedAt(candidate.getDepartmentInterviewChangeRequestedAt())
+                .assessmentSubmitted(candidate.getAssessmentSubmitted())
+                .finalDecisionStatus(candidate.getFinalDecisionStatus())
+                .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
+                .finalDecisionAt(candidate.getFinalDecisionAt())
                 .build();
     }
 

@@ -187,6 +187,9 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             throw new RecruitmentNotificationException(
                     "Interview can be scheduled only for shortlisted candidates.");
         }
+        if (StringUtils.hasText(candidateEntity.getFinalDecisionStatus())) {
+            throw new RecruitmentNotificationException("Interview schedule cannot be modified after final department decision.");
+        }
 
         candidateEntity.setInterviewDateTime(scheduleInput.getInterviewDateTime());
         candidateEntity.setInterviewTimeSlot(scheduleInput.getInterviewTimeSlot());
@@ -195,6 +198,10 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         candidateEntity.setInterviewScheduledAt(LocalDateTime.now());
         candidateEntity.setInterviewScheduledByUserId(agencyUserId);
         candidateEntity.setCandidateStatus(RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY);
+        candidateEntity.setDepartmentInterviewChangeRequested(false);
+        candidateEntity.setDepartmentInterviewChangeReason(null);
+        candidateEntity.setDepartmentInterviewChangeRequestedAt(null);
+        candidateEntity.setDepartmentInterviewChangeRequestedByUserId(null);
         interviewDetailRepository.save(candidateEntity);
     }
 
@@ -315,6 +322,13 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .interviewDateTime(candidate.getInterviewDateTime())
                 .interviewTimeSlot(candidate.getInterviewTimeSlot())
                 .interviewLink(candidate.getInterviewLink())
+                .interviewChangeRequested(candidate.getDepartmentInterviewChangeRequested())
+                .interviewChangeReason(candidate.getDepartmentInterviewChangeReason())
+                .interviewChangeRequestedAt(candidate.getDepartmentInterviewChangeRequestedAt())
+                .assessmentSubmitted(candidate.getAssessmentSubmitted())
+                .finalDecisionStatus(candidate.getFinalDecisionStatus())
+                .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
+                .finalDecisionAt(candidate.getFinalDecisionAt())
                 .createdDateTime(candidate.getCreatedDateTime())
                 .build();
     }

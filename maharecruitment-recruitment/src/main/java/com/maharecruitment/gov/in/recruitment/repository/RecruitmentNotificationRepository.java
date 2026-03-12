@@ -24,11 +24,9 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
     Optional<RecruitmentNotificationEntity> findByRequestIdIgnoreCase(String requestId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-            select notification
-            from RecruitmentNotificationEntity notification
-            where notification.recruitmentNotificationId = :recruitmentNotificationId
-            """)
+    @Query("select notification "
+            + "from RecruitmentNotificationEntity notification "
+            + "where notification.recruitmentNotificationId = :recruitmentNotificationId")
     Optional<RecruitmentNotificationEntity> findByIdForUpdate(
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
 
@@ -36,24 +34,20 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
             Collection<RecruitmentNotificationStatus> statuses,
             Pageable pageable);
 
-    @Query("""
-            select notification
-            from RecruitmentNotificationEntity notification
-            left join fetch notification.designationVacancies vacancy
-            left join fetch vacancy.designationMst
-            left join fetch notification.projectMst
-            where notification.recruitmentNotificationId = :recruitmentNotificationId
-            """)
+    @Query("select notification "
+            + "from RecruitmentNotificationEntity notification "
+            + "left join fetch notification.designationVacancies vacancy "
+            + "left join fetch vacancy.designationMst "
+            + "left join fetch notification.projectMst "
+            + "where notification.recruitmentNotificationId = :recruitmentNotificationId")
     Optional<RecruitmentNotificationEntity> findWithVacanciesById(
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
 
-    @Query("""
-            select notification
-            from RecruitmentNotificationEntity notification
-            join fetch notification.projectMst project
-            where notification.recruitmentNotificationId = :recruitmentNotificationId
-              and notification.departmentRegistrationId = :departmentRegistrationId
-            """)
+    @Query("select notification "
+            + "from RecruitmentNotificationEntity notification "
+            + "join fetch notification.projectMst project "
+            + "where notification.recruitmentNotificationId = :recruitmentNotificationId "
+            + "and notification.departmentRegistrationId = :departmentRegistrationId")
     Optional<RecruitmentNotificationEntity> findForDepartmentReview(
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);

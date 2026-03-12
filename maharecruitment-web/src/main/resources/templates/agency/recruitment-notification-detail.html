@@ -215,6 +215,7 @@
                                     <th>Designation</th>
                                     <th>Experience</th>
                                     <th>Status</th>
+                                    <th>Department Feedback</th>
                                     <th>Resume</th>
                                     <th>Interview Details</th>
                                     <th>Action</th>
@@ -222,7 +223,7 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(submittedCandidates)}">
-                                    <td colspan="8" class="text-center text-muted">
+                                    <td colspan="9" class="text-center text-muted">
                                         No candidates submitted yet.
                                     </td>
                                 </tr>
@@ -248,6 +249,34 @@
                                                 (${candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' text-bg-info' : ' text-bg-primary'))"
                                             th:text="${#strings.replace(candidate.candidateStatus.name(), '_', ' ')}">
                                             SUBMITTED BY AGENCY
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div th:if="${candidate.interviewChangeRequested == true}">
+                                            <span class="badge text-bg-warning">Time Change Requested</span>
+                                            <div>
+                                                <small class="text-muted"
+                                                    th:text="${candidate.interviewChangeReason != null ? candidate.interviewChangeReason : '-'}">
+                                                    Reason
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div th:if="${candidate.assessmentSubmitted == true}">
+                                            <span class="badge text-bg-secondary">Assessment Submitted</span>
+                                        </div>
+                                        <div th:if="${candidate.finalDecisionStatus != null}">
+                                            <span class="badge"
+                                                th:classappend="${candidate.finalDecisionStatus == 'SELECTED'} ? ' text-bg-success' : ' text-bg-danger'"
+                                                th:text="${candidate.finalDecisionStatus}">
+                                                SELECTED
+                                            </span>
+                                            <div th:if="${candidate.finalDecisionRemarks != null}">
+                                                <small class="text-muted" th:text="${candidate.finalDecisionRemarks}">Remarks</small>
+                                            </div>
+                                        </div>
+                                        <span class="text-muted"
+                                              th:if="${candidate.interviewChangeRequested != true and candidate.assessmentSubmitted != true and candidate.finalDecisionStatus == null}">
+                                            -
                                         </span>
                                     </td>
                                     <td class="text-center">
@@ -277,7 +306,7 @@
                                     </td>
                                     <td>
                                         <form method="post"
-                                            th:if="${candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT' or candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'}"
+                                            th:if="${(candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT' or candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY') and candidate.finalDecisionStatus == null}"
                                             th:action="@{/agency/recruitment-notifications/{notificationId}/candidates/{candidateId}/schedule-interview(
                                                 notificationId=${detail.recruitmentNotificationId},
                                                 candidateId=${candidate.recruitmentInterviewDetailId})}">
@@ -308,6 +337,10 @@
                                         <span class="text-muted"
                                             th:if="${candidate.candidateStatus.name() != 'SHORTLISTED_BY_DEPARTMENT' and candidate.candidateStatus.name() != 'INTERVIEW_SCHEDULED_BY_AGENCY'}">
                                             Waiting for department shortlist
+                                        </span>
+                                        <span class="text-muted"
+                                            th:if="${(candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT' or candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY') and candidate.finalDecisionStatus != null}">
+                                            Final decision completed
                                         </span>
                                     </td>
                                 </tr>

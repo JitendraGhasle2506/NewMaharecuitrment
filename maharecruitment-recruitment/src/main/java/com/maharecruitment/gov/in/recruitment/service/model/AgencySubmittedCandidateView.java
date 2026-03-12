@@ -46,5 +46,19 @@ public class AgencySubmittedCandidateView {
 
     private String interviewLink;
 
+    private Boolean interviewChangeRequested;
+
+    private String interviewChangeReason;
+
+    private LocalDateTime interviewChangeRequestedAt;
+
+    private Boolean assessmentSubmitted;
+
+    private String finalDecisionStatus;
+
+    private String finalDecisionRemarks;
+
+    private LocalDateTime finalDecisionAt;
+
     private LocalDateTime createdDateTime;
 }

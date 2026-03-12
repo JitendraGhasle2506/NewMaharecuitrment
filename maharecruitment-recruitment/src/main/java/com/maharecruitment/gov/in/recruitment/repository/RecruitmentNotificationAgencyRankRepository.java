@@ -14,14 +14,12 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationAgen
 public interface RecruitmentNotificationAgencyRankRepository
         extends JpaRepository<RecruitmentNotificationAgencyRankEntity, Long> {
 
-    @Query("""
-            select mapping
-            from RecruitmentNotificationAgencyRankEntity mapping
-            join fetch mapping.recruitmentNotification notification
-            join fetch mapping.agency agency
-            left join fetch notification.projectMst project
-            order by mapping.assignedDate desc, mapping.recruitmentNotificationAgencyRankId desc
-            """)
+    @Query("select mapping "
+            + "from RecruitmentNotificationAgencyRankEntity mapping "
+            + "join fetch mapping.recruitmentNotification notification "
+            + "join fetch mapping.agency agency "
+            + "left join fetch notification.projectMst project "
+            + "order by mapping.assignedDate desc, mapping.recruitmentNotificationAgencyRankId desc")
     List<RecruitmentNotificationAgencyRankEntity> findAllWithNotificationAndAgency();
 
     List<RecruitmentNotificationAgencyRankEntity>
@@ -38,19 +36,15 @@ public interface RecruitmentNotificationAgencyRankRepository
                     Long recruitmentNotificationId,
                     Long agencyId);
 
-    @Query("""
-            select min(mapping.rankNumber)
-            from RecruitmentNotificationAgencyRankEntity mapping
-            where mapping.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId
-            """)
+    @Query("select min(mapping.rankNumber) "
+            + "from RecruitmentNotificationAgencyRankEntity mapping "
+            + "where mapping.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId")
     Integer findMinimumRankByNotificationId(@Param("recruitmentNotificationId") Long recruitmentNotificationId);
 
-    @Query("""
-            select min(mapping.rankNumber)
-            from RecruitmentNotificationAgencyRankEntity mapping
-            where mapping.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId
-              and mapping.rankNumber > :currentRank
-            """)
+    @Query("select min(mapping.rankNumber) "
+            + "from RecruitmentNotificationAgencyRankEntity mapping "
+            + "where mapping.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
+            + "and mapping.rankNumber > :currentRank")
     Integer findNextHigherRankByNotificationId(
             @Param("recruitmentNotificationId") Long recruitmentNotificationId,
             @Param("currentRank") Integer currentRank);

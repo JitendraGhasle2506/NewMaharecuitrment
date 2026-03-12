@@ -5,8 +5,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +17,7 @@ import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 
 @Component
 @Order(42)
-public class DepartmentCandidateShortlistingMenuInitializer implements ApplicationRunner {
+public class DepartmentCandidateShortlistingMenuInitializer implements InitializingBean {
 
     private static final Logger log = LoggerFactory.getLogger(DepartmentCandidateShortlistingMenuInitializer.class);
 
@@ -34,7 +33,7 @@ public class DepartmentCandidateShortlistingMenuInitializer implements Applicati
 
     @Override
     @Transactional
-    public void run(ApplicationArguments args) {
+    public void afterPropertiesSet() {
         Role departmentRole = roleRepository.findByNameIgnoreCase("ROLE_DEPARTMENT")
                 .or(() -> roleRepository.findByNameIgnoreCase("DEPARTMENT"))
                 .orElseGet(() -> createRoleIfMissing("ROLE_DEPARTMENT"));
@@ -51,7 +50,8 @@ public class DepartmentCandidateShortlistingMenuInitializer implements Applicati
             String url,
             String iconClass,
             Role roleToAssign) {
-        MstMenu menu = mstMenuRepository.findByMenuNameEnglishIgnoreCase(menuName)
+        MstMenu menu = mstMenuRepository.findByMenuNameEnglishIgnoreCaseWithRoles(menuName)
+                .or(() -> mstMenuRepository.findByMenuNameEnglishIgnoreCase(menuName))
                 .orElseGet(MstMenu::new);
 
         menu.setMenuNameEnglish(menuName);

@@ -18,7 +18,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -167,9 +166,6 @@ public class RecruitmentInterviewDetailEntity extends RecruitmentAuditable {
 
     @Column(name = "final_decision_remarks", length = 1000)
     private String finalDecisionRemarks;
-
-    @OneToOne(mappedBy = "recruitmentInterviewDetail", fetch = FetchType.LAZY, orphanRemoval = true)
-    private RecruitmentAssessmentFeedbackEntity assessmentFeedback;
 
     @Column(name = "is_active", nullable = false)
     private Boolean active = true;

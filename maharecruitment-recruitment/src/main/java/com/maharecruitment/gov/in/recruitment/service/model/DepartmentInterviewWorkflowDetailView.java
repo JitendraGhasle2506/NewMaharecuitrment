@@ -10,33 +10,39 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class DepartmentSubmittedCandidateView {
+public class DepartmentInterviewWorkflowDetailView {
 
+    private Long recruitmentNotificationId;
+    private Long departmentProjectApplicationId;
     private Long recruitmentInterviewDetailId;
-    private Long agencyId;
-    private String agencyName;
     private Long designationVacancyId;
-    private String designationName;
-    private String levelCode;
+    private String requestId;
+    private String projectName;
+    private String agencyName;
     private String candidateName;
     private String candidateEmail;
     private String candidateMobile;
     private String candidateEducation;
+    private String designationName;
+    private String levelCode;
     private BigDecimal totalExperience;
     private BigDecimal relevantExperience;
     private String joiningTime;
-    private String resumeOriginalName;
-    private String resumeFilePath;
     private RecruitmentCandidateStatus candidateStatus;
-    private String departmentShortlistRemarks;
-    private LocalDateTime submittedAt;
     private LocalDateTime interviewDateTime;
     private String interviewTimeSlot;
     private String interviewLink;
+    private String interviewRemarks;
     private Boolean interviewChangeRequested;
+    private String interviewChangeReason;
     private LocalDateTime interviewChangeRequestedAt;
     private Boolean assessmentSubmitted;
     private String finalDecisionStatus;
     private String finalDecisionRemarks;
     private LocalDateTime finalDecisionAt;
+    private Long vacancyCount;
+    private Long filledVacancyCount;
+    private Long remainingVacancyCount;
+    private boolean selectionAllowed;
+    private DepartmentInterviewAssessmentView assessment;
 }
