@@ -14,8 +14,7 @@ import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -24,7 +23,7 @@ import com.maharecruitment.gov.in.department.entity.DepartmentApplicationActivit
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 
 @Component
-public class DepartmentStatusConstraintInitializer implements ApplicationRunner {
+public class DepartmentStatusConstraintInitializer implements InitializingBean {
 
     private static final Logger log = LoggerFactory.getLogger(DepartmentStatusConstraintInitializer.class);
 
@@ -55,7 +54,7 @@ public class DepartmentStatusConstraintInitializer implements ApplicationRunner 
     }
 
     @Override
-    public void run(ApplicationArguments args) {
+    public void afterPropertiesSet() {
         if (!isPostgreSql()) {
             log.info("Department status constraint bootstrap skipped for non-PostgreSQL datasource.");
             return;

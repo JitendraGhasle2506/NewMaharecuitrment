@@ -143,7 +143,12 @@ public class RoleBasedNavigationService implements NavigationService {
         ));
 
         navItems.put("ROLE_HR", List.of(
-                new SidebarItemView("HR Dashboard", "fa fa-users", "/hr/dashboard")
+                new SidebarItemView("HR Dashboard", "fa fa-users", "/hr/dashboard"),
+                new SidebarItemView("Department Request", "fa fa-building-user", "/hr/department-requests"),
+                new SidebarItemView(
+                        "Agency Rank Mapping",
+                        "fa fa-ranking-star",
+                        "/hr/department-requests/agency-rank-mapping")
         ));
 
         navItems.put("ROLE_USER", List.of(
@@ -151,7 +156,8 @@ public class RoleBasedNavigationService implements NavigationService {
         ));
 
         navItems.put("ROLE_AGENCY", List.of(
-                new SidebarItemView("Agency Dashboard", "fa fa-briefcase", "/agency/dashboard")
+                new SidebarItemView("Agency Dashboard", "fa fa-briefcase", "/agency/dashboard"),
+                new SidebarItemView("Recruitment Notifications", "fa fa-bell", "/agency/recruitment-notifications")
         ));
 
         navItems.put("ROLE_STM", List.of(
@@ -182,7 +188,8 @@ public class RoleBasedNavigationService implements NavigationService {
                 new SidebarItemView("Department Home", "fa fa-building", "/department/home"),
                 new SidebarItemView("Department Profile", "fa fa-id-card", "/department/profile"),
                 new SidebarItemView("Manpower Applications", "fa fa-users-gear", "/department/manpower/list"),
-                new SidebarItemView("New Manpower Application", "fa fa-file-circle-plus", "/department/manpower/apply")
+                new SidebarItemView("New Manpower Application", "fa fa-file-circle-plus", "/department/manpower/apply"),
+                new SidebarItemView("Project Name", "fa fa-list-check", "/department/candidate-shortlisting/projects")
         ));
 
         navItems.put("ROLE_EMPLOYEE", List.of(

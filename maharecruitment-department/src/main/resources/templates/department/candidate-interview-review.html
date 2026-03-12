@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Interview Review</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .workflow-tile {
+            border: 1px solid #dbe5f3;
+            border-radius: 12px;
+            background: #fff;
+            padding: 12px 14px;
+        }
+
+        .workflow-tile .label {
+            color: #5e6e8f;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .35px;
+        }
+
+        .workflow-tile .value {
+            color: #163868;
+            font-size: 20px;
+            font-weight: 800;
+            margin-top: 3px;
+            line-height: 1.2;
+        }
+
+        .section-card {
+            border: 1px solid #dbe5f3;
+            border-radius: 12px;
+            background: #fff;
+            margin-bottom: 14px;
+        }
+
+        .section-card .section-head {
+            border-bottom: 1px solid #e8eef8;
+            padding: 12px 14px;
+            font-weight: 700;
+            color: #163868;
+            background: #f7faff;
+        }
+
+        .section-card .section-body {
+            padding: 14px;
+        }
+
+        .badge-soft {
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid transparent;
+            display: inline-block;
+        }
+
+        .badge-soft-info {
+            background: #e7f8fe;
+            color: #0b6f90;
+            border-color: #b8e6f2;
+        }
+
+        .badge-soft-success {
+            background: #e8fbef;
+            color: #1f7a39;
+            border-color: #bde7cb;
+        }
+
+        .badge-soft-warning {
+            background: #fff6e2;
+            color: #8b6300;
+            border-color: #f0dea8;
+        }
+
+        .badge-soft-danger {
+            background: #ffecee;
+            color: #b42335;
+            border-color: #f0c1c7;
+        }
+
+        .assessment-form-shell {
+            border: 1px solid #d9e4f6;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #fbfdff 0%, #f7faff 100%);
+            padding: 14px;
+        }
+
+        .assessment-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .assessment-title {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 800;
+            color: #163868;
+        }
+
+        .assessment-section-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #4d5f80;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+            margin: 10px 0 6px;
+        }
+
+        .assessment-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .assessment-col-4 {
+            grid-column: span 4;
+        }
+
+        .assessment-col-6 {
+            grid-column: span 6;
+        }
+
+        .assessment-col-12 {
+            grid-column: span 12;
+        }
+
+        .assessment-marking-table thead th {
+            background: #e5e7eb;
+            color: #374151;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: .3px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .assessment-marking-table tbody td {
+            vertical-align: middle;
+            background: #f8fafc;
+        }
+
+        .assessment-marking-table .sr-cell {
+            width: 90px;
+            text-align: center;
+            font-weight: 700;
+            color: #374151;
+        }
+
+        .assessment-marking-table .criteria-cell {
+            text-align: center;
+            font-weight: 700;
+            color: #374151;
+            text-transform: uppercase;
+        }
+
+        .assessment-marking-table .max-mark-cell {
+            text-align: center;
+            font-weight: 700;
+            color: #374151;
+        }
+
+        .assessment-marking-table .remarks-select {
+            min-width: 150px;
+        }
+
+        .assessment-marking-table .meta-row td {
+            background: #eef2f7;
+        }
+
+        .assessment-marking-table .meta-label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #374151;
+            text-align: center;
+        }
+
+        .assessment-help {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 6px;
+        }
+
+        .assessment-panel-table thead th {
+            background: #eef4ff;
+            color: #1f3f73;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .25px;
+        }
+
+        .assessment-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #dbe5f3;
+        }
+
+        @media (max-width: 992px) {
+            .workflow-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .assessment-col-4,
+            .assessment-col-6 {
+                grid-column: span 6;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .workflow-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .assessment-col-4,
+            .assessment-col-6,
+            .assessment-col-12 {
+                grid-column: span 12;
+            }
+        }
+    </style>
+</head>
+
+<body class="department-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Department', 'Project Name', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Interview Review And Assessment</h2>
+                        <small class="text-muted"
+                            th:text="${'Request ID: ' + (workflowDetail.requestId != null ? workflowDetail.requestId : '-')}">
+                            Request ID
+                        </small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm"
+                       th:href="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates(
+                        recruitmentNotificationId=${workflowDetail.recruitmentNotificationId})}">
+                        Back to Candidate List
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="workflow-grid">
+                        <div class="workflow-tile">
+                            <div class="label">Project</div>
+                            <div class="value"
+                                th:text="${workflowDetail.projectName != null ? workflowDetail.projectName : '-'}">
+                                Project
+                            </div>
+                        </div>
+                        <div class="workflow-tile">
+                            <div class="label">Candidate</div>
+                            <div class="value"
+                                th:text="${workflowDetail.candidateName != null ? workflowDetail.candidateName : '-'}">
+                                Candidate
+                            </div>
+                            <small class="text-muted"
+                                th:text="${(workflowDetail.candidateEmail != null ? workflowDetail.candidateEmail : '-') + ' | ' + (workflowDetail.candidateMobile != null ? workflowDetail.candidateMobile : '-')}">
+                                Email | Mobile
+                            </small>
+                        </div>
+                        <div class="workflow-tile">
+                            <div class="label">Vacancy</div>
+                            <div class="value"
+                                th:text="${(workflowDetail.filledVacancyCount != null ? workflowDetail.filledVacancyCount : 0) + ' / ' + (workflowDetail.vacancyCount != null ? workflowDetail.vacancyCount : 0)}">
+                                0 / 0
+                            </div>
+                            <small class="text-muted"
+                                th:text="${'Remaining: ' + (workflowDetail.remainingVacancyCount != null ? workflowDetail.remainingVacancyCount : 0)}">
+                                Remaining: 0
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <div class="section-head">Interview Schedule</div>
+                        <div class="section-body">
+                            <table class="table table-bordered table-sm mb-0">
+                                <tr>
+                                    <th width="20%">Agency</th>
+                                    <td th:text="${workflowDetail.agencyName != null ? workflowDetail.agencyName : '-'}">Agency</td>
+                                    <th width="20%">Designation</th>
+                                    <td th:text="${(workflowDetail.designationName != null ? workflowDetail.designationName : '-') + ' | ' + (workflowDetail.levelCode != null ? workflowDetail.levelCode : '-')}">
+                                        Designation
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <td>
+                                        <span class="badge-soft badge-soft-info"
+                                              th:text="${#strings.replace(workflowDetail.candidateStatus.name(), '_', ' ')}">
+                                            INTERVIEW SCHEDULED BY AGENCY
+                                        </span>
+                                    </td>
+                                    <th>Interview Date Time</th>
+                                    <td th:text="${workflowDetail.interviewDateTime != null ? #temporals.format(workflowDetail.interviewDateTime, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Time Slot</th>
+                                    <td th:text="${workflowDetail.interviewTimeSlot != null ? workflowDetail.interviewTimeSlot : '-'}">-</td>
+                                    <th>Interview Link</th>
+                                    <td>
+                                        <a th:if="${workflowDetail.interviewLink != null and !#strings.isEmpty(workflowDetail.interviewLink)}"
+                                           th:href="${workflowDetail.interviewLink}" target="_blank">Join Interview</a>
+                                        <span th:if="${workflowDetail.interviewLink == null or #strings.isEmpty(workflowDetail.interviewLink)}" class="text-muted">-</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Interview Remarks</th>
+                                    <td colspan="3" th:text="${workflowDetail.interviewRemarks != null ? workflowDetail.interviewRemarks : '-'}">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <div class="section-head">Request Interview Time Change</div>
+                        <div class="section-body">
+                            <div th:if="${workflowDetail.interviewChangeRequested == true}" class="alert alert-warning">
+                                Time change already requested:
+                                <span th:text="${workflowDetail.interviewChangeReason != null ? workflowDetail.interviewChangeReason : '-'}">Reason</span>
+                            </div>
+
+                            <form method="post"
+                                  th:if="${workflowDetail.finalDecisionStatus == null}"
+                                  th:action="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/request-time-change(
+                                    recruitmentNotificationId=${workflowDetail.recruitmentNotificationId},
+                                    recruitmentInterviewDetailId=${workflowDetail.recruitmentInterviewDetailId})}"
+                                  th:object="${interviewTimeChangeForm}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <div class="mb-2">
+                                    <label class="form-label">Change Request Reason <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" th:field="*{changeReason}" rows="2"
+                                              maxlength="1000" placeholder="Reason for requesting reschedule"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-outline-warning btn-sm">Send Time Change Request</button>
+                            </form>
+
+                            <div th:if="${workflowDetail.finalDecisionStatus != null}" class="text-muted">
+                                Final decision already submitted. Interview schedule cannot be modified.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <div class="section-head">Submit Assessment Report</div>
+                        <div class="section-body">
+                            <form method="post"
+                                  th:if="${workflowDetail.finalDecisionStatus == null}"
+                                  th:action="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/assessment(
+                                    recruitmentNotificationId=${workflowDetail.recruitmentNotificationId},
+                                    recruitmentInterviewDetailId=${workflowDetail.recruitmentInterviewDetailId})}"
+                                  th:object="${assessmentForm}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <div class="assessment-form-shell">
+                                    <div class="assessment-title-row">
+                                        <h6 class="assessment-title">Interview Assessment Sheet</h6>
+                                        <span class="badge-soft badge-soft-info">Scale: 0 to 5</span>
+                                    </div>
+
+                                    <div class="assessment-section-label">Interview And Candidate Details</div>
+                                    <div class="assessment-grid">
+                                        <div class="assessment-col-6">
+                                            <label class="form-label">Interview Authority</label>
+                                            <input type="text" class="form-control" th:field="*{interviewAuthority}" maxlength="255" readonly>
+                                        </div>
+                                        <div class="assessment-col-6">
+                                            <label class="form-label">Interview Date Time</label>
+                                            <input type="datetime-local" class="form-control" name="interviewDateTime"
+                                                th:value="${assessmentForm.interviewDateTime != null ? #temporals.format(assessmentForm.interviewDateTime, 'yyyy-MM-dd''T''HH:mm') : ''}" readonly>
+                                        </div>
+                                        <div class="assessment-col-4">
+                                            <label class="form-label">Mobile</label>
+                                            <input type="text" class="form-control" th:field="*{mobile}" maxlength="15" readonly>
+                                        </div>
+                                        <div class="assessment-col-4">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" class="form-control" th:field="*{email}" maxlength="255" readonly>
+                                        </div>
+                                        <div class="assessment-col-4">
+                                            <label class="form-label">Alternate Email</label>
+                                            <input type="email" class="form-control" th:field="*{alternateEmail}" maxlength="255" readonly>
+                                        </div>
+                                        <div class="assessment-col-6">
+                                            <label class="form-label">Qualification</label>
+                                            <input type="text" class="form-control" th:field="*{qualification}" maxlength="255" readonly>
+                                        </div>
+                                        <div class="assessment-col-6">
+                                            <label class="form-label">Total Experience (Years)</label>
+                                            <input type="number" class="form-control" th:field="*{totalExperience}" min="0" step="0.1" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="assessment-section-label">Interview Assessment Marking</div>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm mb-0 assessment-marking-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>SR NO</th>
+                                                    <th>INTERVIEW CRITERIA</th>
+                                                    <th>MARKS</th>
+                                                    <th>REMARKS</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="sr-cell">1</td>
+                                                    <td class="criteria-cell">COMMUNICATION SKILLS</td>
+                                                    <td class="max-mark-cell">5</td>
+                                                    <td>
+                                                        <select class="form-control remarks-select" th:field="*{communicationSkillMarks}" required>
+                                                            <option th:each="score : ${#numbers.sequence(0,5)}"
+                                                                    th:value="${score}" th:text="${score}">
+                                                            </option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="sr-cell">3</td>
+                                                    <td class="criteria-cell">TECHNICAL SKILLS</td>
+                                                    <td class="max-mark-cell">5</td>
+                                                    <td>
+                                                        <select class="form-control remarks-select" th:field="*{technicalSkillMarks}" required>
+                                                            <option th:each="score : ${#numbers.sequence(0,5)}"
+                                                                    th:value="${score}" th:text="${score}">
+                                                            </option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="sr-cell">4</td>
+                                                    <td class="criteria-cell">PROJECT EXPERIENCE</td>
+                                                    <td class="max-mark-cell">5</td>
+                                                    <td>
+                                                        <select class="form-control remarks-select" th:field="*{relevantExperienceMarks}" required>
+                                                            <option th:each="score : ${#numbers.sequence(0,5)}"
+                                                                    th:value="${score}" th:text="${score}">
+                                                            </option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr class="meta-row">
+                                                    <td></td>
+                                                    <td>
+                                                        <label class="meta-label">Remarks:</label>
+                                                        <textarea class="form-control" th:field="*{assessmentRemarks}" rows="2" maxlength="1000"
+                                                                  placeholder="Candidate strengths, concerns, and observations"></textarea>
+                                                    </td>
+                                                    <td>
+                                                        <label class="meta-label">Grade :</label>
+                                                        <select class="form-control" th:field="*{interviewerGrade}" required>
+                                                            <option value="">Select Grade</option>
+                                                            <option value="A">A</option>
+                                                            <option value="B">B</option>
+                                                            <option value="C">C</option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <label class="meta-label">Recommendation Status:</label>
+                                                        <select class="form-control" th:field="*{recommendationStatus}" required>
+                                                            <option value="">Select Recommendation</option>
+                                                            <option value="RECOMMENDED">Recommended</option>
+                                                            <option value="NOT_RECOMMENDED">Not Recommended</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="assessment-help">Select marks from 0 to 5 for each criteria.</div>
+
+                                    <div class="assessment-grid mt-2">
+                                        <div class="assessment-col-12">
+                                            <label class="form-label">Final Remarks</label>
+                                            <textarea class="form-control" th:field="*{finalRemarks}" rows="3" maxlength="1000"
+                                                      placeholder="Final recommendation note for approval flow"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="assessment-section-label">Interview Panel Members (Minimum 2, Maximum 5)</div>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm mb-0 assessment-panel-table">
+                                            <thead>
+                                                <tr>
+                                                    <th width="70">#</th>
+                                                    <th>Panel Member Name</th>
+                                                    <th>Panel Member Designation</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:each="panelMember, memberStat : *{panelMembers}">
+                                                    <td th:text="${memberStat.count}">1</td>
+                                                    <td>
+                                                        <input type="text" class="form-control"
+                                                               th:field="*{panelMembers[__${memberStat.index}__].panelMemberName}"
+                                                               th:required="${memberStat.index < 2}"
+                                                               th:placeholder="${memberStat.index < 2 ? 'Required' : 'Optional'}"
+                                                               maxlength="150">
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" class="form-control"
+                                                               th:field="*{panelMembers[__${memberStat.index}__].panelMemberDesignation}"
+                                                               th:required="${memberStat.index < 2}"
+                                                               th:placeholder="${memberStat.index < 2 ? 'Required' : 'Optional'}"
+                                                               maxlength="150">
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="assessment-actions">
+                                        <button type="submit" class="btn btn-success btn-sm"
+                                                th:text="${workflowDetail.assessmentSubmitted == true ? 'Update Assessment' : 'Submit Assessment'}">
+                                            Submit Assessment
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <div th:if="${workflowDetail.finalDecisionStatus != null}" class="text-muted">
+                                Final decision already submitted. Assessment is locked.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card" th:if="${workflowDetail.assessment != null}">
+                        <div class="section-head">Submitted Assessment Snapshot</div>
+                        <div class="section-body">
+                            <table class="table table-bordered table-sm mb-0">
+                                <tr>
+                                    <th width="25%">Interview Authority</th>
+                                    <td th:text="${workflowDetail.assessment.interviewAuthority != null ? workflowDetail.assessment.interviewAuthority : '-'}">-</td>
+                                    <th width="25%">Submitted At</th>
+                                    <td th:text="${workflowDetail.assessment.submittedAt != null ? #temporals.format(workflowDetail.assessment.submittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Marks (Comm/Tech/Rel-Exp)</th>
+                                    <td th:text="${(workflowDetail.assessment.communicationSkillMarks != null ? workflowDetail.assessment.communicationSkillMarks : 0) + ' / ' + (workflowDetail.assessment.technicalSkillMarks != null ? workflowDetail.assessment.technicalSkillMarks : 0) + ' / ' + (workflowDetail.assessment.relevantExperienceMarks != null ? workflowDetail.assessment.relevantExperienceMarks : 0)}">
+                                        0 / 0 / 0
+                                    </td>
+                                    <th>Grade / Recommendation</th>
+                                    <td th:text="${(workflowDetail.assessment.interviewerGrade != null ? workflowDetail.assessment.interviewerGrade : '-') + ' / ' + (workflowDetail.assessment.recommendationStatus != null ? workflowDetail.assessment.recommendationStatus : '-')}">
+                                        - / -
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Assessment Remarks</th>
+                                    <td colspan="3" th:text="${workflowDetail.assessment.assessmentRemarks != null ? workflowDetail.assessment.assessmentRemarks : '-'}">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <div class="section-head">Final Selection Decision</div>
+                        <div class="section-body">
+                            <div class="mb-2">
+                                <span class="badge-soft badge-soft-success"
+                                      th:if="${workflowDetail.finalDecisionStatus == 'SELECTED'}">
+                                    SELECTED
+                                </span>
+                                <span class="badge-soft badge-soft-danger"
+                                      th:if="${workflowDetail.finalDecisionStatus == 'REJECTED'}">
+                                    REJECTED
+                                </span>
+                                <span class="badge-soft badge-soft-warning"
+                                      th:if="${workflowDetail.finalDecisionStatus == null}">
+                                    PENDING DECISION
+                                </span>
+                            </div>
+
+                            <div class="alert alert-warning"
+                                 th:if="${workflowDetail.selectionAllowed == false and workflowDetail.finalDecisionStatus != 'SELECTED'}">
+                                All vacancies are filled for this designation and level. You cannot select more candidates.
+                            </div>
+
+                            <form method="post"
+                                  th:if="${workflowDetail.assessmentSubmitted == true}"
+                                  th:action="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/final-decision(
+                                    recruitmentNotificationId=${workflowDetail.recruitmentNotificationId},
+                                    recruitmentInterviewDetailId=${workflowDetail.recruitmentInterviewDetailId})}"
+                                  th:object="${finalDecisionForm}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label">Decision <span class="text-danger">*</span></label>
+                                        <select class="form-select" th:field="*{finalDecision}" required>
+                                            <option value="">Select Decision</option>
+                                            <option th:value="${T(com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision).SELECT}"
+                                                    th:disabled="${workflowDetail.selectionAllowed == false and workflowDetail.finalDecisionStatus != 'SELECTED'}">
+                                                Select
+                                            </option>
+                                            <option th:value="${T(com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision).REJECT}">
+                                                Reject
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-8 mb-2">
+                                        <label class="form-label">Decision Remarks</label>
+                                        <textarea class="form-control" th:field="*{decisionRemarks}" maxlength="1000"
+                                                  rows="2" placeholder="Optional remarks for final decision"></textarea>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">Save Final Decision</button>
+                            </form>
+
+                            <div th:if="${workflowDetail.assessmentSubmitted != true}" class="text-muted">
+                                Submit assessment report before final decision.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

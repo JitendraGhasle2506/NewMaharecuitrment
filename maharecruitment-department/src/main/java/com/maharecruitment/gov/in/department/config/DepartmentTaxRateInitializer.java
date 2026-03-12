@@ -9,8 +9,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +19,7 @@ import com.maharecruitment.gov.in.department.repository.DepartmentTaxRateMasterR
 
 @Component
 @Order(42)
-public class DepartmentTaxRateInitializer implements ApplicationRunner {
+public class DepartmentTaxRateInitializer implements InitializingBean {
 
     private static final Logger log = LoggerFactory.getLogger(DepartmentTaxRateInitializer.class);
 
@@ -38,7 +37,7 @@ public class DepartmentTaxRateInitializer implements ApplicationRunner {
 
     @Override
     @Transactional
-    public void run(ApplicationArguments args) {
+    public void afterPropertiesSet() {
         FinancialYear currentFinancialYear = resolveCurrentFinancialYear();
 
         List<TaxRateSeed> taxRatesToSeed = List.of(

@@ -5,8 +5,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +17,7 @@ import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 
 @Component
 @Order(40)
-public class HrDepartmentRequestMenuInitializer implements ApplicationRunner {
+public class HrDepartmentRequestMenuInitializer implements InitializingBean {
 
     private static final Logger log = LoggerFactory.getLogger(HrDepartmentRequestMenuInitializer.class);
 
@@ -34,7 +33,7 @@ public class HrDepartmentRequestMenuInitializer implements ApplicationRunner {
 
     @Override
     @Transactional
-    public void run(ApplicationArguments args) {
+    public void afterPropertiesSet() {
         Role hrRole = roleRepository.findByNameIgnoreCase("ROLE_HR")
                 .or(() -> roleRepository.findByNameIgnoreCase("HR"))
                 .orElseGet(() -> createRoleIfMissing("ROLE_HR"));
@@ -44,6 +43,12 @@ public class HrDepartmentRequestMenuInitializer implements ApplicationRunner {
                 "/hr/department-requests",
                 "fa fa-building-user",
                 hrRole);
+
+        upsertDirectMenu(
+                "Agency Rank Mapping",
+                "/hr/department-requests/agency-rank-mapping",
+                "fa fa-ranking-star",
+                hrRole);
     }
 
     private void upsertDirectMenu(
@@ -51,7 +56,8 @@ public class HrDepartmentRequestMenuInitializer implements ApplicationRunner {
             String url,
             String iconClass,
             Role roleToAssign) {
-        MstMenu menu = mstMenuRepository.findByMenuNameEnglishIgnoreCase(menuName)
+        MstMenu menu = mstMenuRepository.findByMenuNameEnglishIgnoreCaseWithRoles(menuName)
+                .or(() -> mstMenuRepository.findByMenuNameEnglishIgnoreCase(menuName))
                 .orElseGet(MstMenu::new);
 
         menu.setMenuNameEnglish(menuName);

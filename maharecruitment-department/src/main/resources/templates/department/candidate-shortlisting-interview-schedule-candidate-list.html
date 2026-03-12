@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Interview Schedule Candidates</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .summary-tile {
+            background: #ffffff;
+            border: 1px solid #dbe5f3;
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .summary-tile .label {
+            color: #5e6e8f;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+        .summary-tile .value {
+            color: #0f2f5f;
+            font-size: 20px;
+            font-weight: 800;
+            margin-top: 2px;
+            line-height: 1.15;
+        }
+
+        .table thead th {
+            white-space: nowrap;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .35px;
+            color: #415778;
+            background: #f4f8ff;
+        }
+
+        .candidate-name {
+            font-weight: 700;
+            color: #163868;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c7f9d;
+            padding: 18px 8px;
+        }
+
+        @media (max-width: 1200px) {
+            .summary-strip {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 576px) {
+            .summary-strip {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body class="department-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Department', 'Project Name', ~{::section})}">
+        <section th:with="totalRows=${#lists.size(interviewScheduleCandidates)}">
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0" th:text="${pageTitle}">Available For Interview Schedule</h2>
+                        <small class="text-muted"
+                               th:text="${selectedRecruitmentNotificationId != null ? 'Project-wise list' : 'All projects list'}">
+                            Candidate list
+                        </small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-outline-primary btn-sm"
+                           th:if="${selectedRecruitmentNotificationId != null}"
+                           th:href="@{/department/candidate-shortlisting/interview-schedule-candidates}">
+                            View All
+                        </a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/department/candidate-shortlisting/projects}">
+                            Back to Projects
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="summary-strip">
+                        <div class="summary-tile">
+                            <div class="label">Candidates</div>
+                            <div class="value" th:text="${totalRows}">0</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Stage</div>
+                            <div class="value">INTERVIEW SCHEDULED</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Status</div>
+                            <div class="value">Submitted By Agency</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Scope</div>
+                            <div class="value" th:text="${selectedRecruitmentNotificationId != null ? 'Project' : 'Department'}">Department</div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Request ID</th>
+                                    <th>Project</th>
+                                    <th>Agency</th>
+                                    <th>Candidate</th>
+                                    <th>Designation</th>
+                                    <th>Experience</th>
+                                    <th>Interview Date &amp; Time</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(interviewScheduleCandidates)}">
+                                    <td colspan="9" class="empty-state">
+                                        No candidates available for interview schedule.
+                                    </td>
+                                </tr>
+                                <tr th:each="candidate, stat : ${interviewScheduleCandidates}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td th:text="${candidate.requestId != null ? candidate.requestId : '-'}">REQ</td>
+                                    <td th:text="${candidate.projectName != null ? candidate.projectName : '-'}">Project</td>
+                                    <td th:text="${candidate.agencyName != null ? candidate.agencyName : '-'}">Agency</td>
+                                    <td>
+                                        <div class="candidate-name" th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">Candidate</div>
+                                        <div class="text-muted small"
+                                             th:text="${(candidate.candidateEmail != null ? candidate.candidateEmail : '-') + ' | ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '-')}">
+                                            email | mobile
+                                        </div>
+                                    </td>
+                                    <td th:text="${(candidate.designationName != null ? candidate.designationName : '-') + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">
+                                        Designation | Level
+                                    </td>
+                                    <td>
+                                        <span th:text="${candidate.totalExperience != null ? candidate.totalExperience : 0}">0</span>
+                                        /
+                                        <span th:text="${candidate.relevantExperience != null ? candidate.relevantExperience : 0}">0</span>
+                                    </td>
+                                    <td th:text="${candidate.interviewDateTime != null ? #temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex flex-wrap justify-content-center" style="gap:6px;">
+                                            <a class="btn btn-outline-success btn-sm"
+                                               th:if="${candidate.interviewLink != null and !#strings.isEmpty(candidate.interviewLink) and !(candidate.finalDecisionStatus != null and candidate.finalDecisionStatus.toUpperCase() == 'SELECTED')}"
+                                               th:href="${candidate.interviewLink}"
+                                               target="_blank">
+                                                Join Interview
+                                            </a>
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary btn-sm"
+                                                    th:if="${candidate.interviewLink == null or #strings.isEmpty(candidate.interviewLink) or (candidate.finalDecisionStatus != null and candidate.finalDecisionStatus.toUpperCase() == 'SELECTED')}"
+                                                    disabled>
+                                                Meeting Link Disabled
+                                            </button>
+
+                                            <a class="btn btn-outline-primary btn-sm"
+                                               th:href="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/interview-review(
+                                                    recruitmentNotificationId=${candidate.recruitmentNotificationId},
+                                                    recruitmentInterviewDetailId=${candidate.recruitmentInterviewDetailId})}">
+                                                Open Interview Workflow
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Agency Rank Mapping</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Agency Rank Mapping', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Agency Rank Mapping</h2>
+                        <small class="text-muted"
+                            th:text="${agencyRankMappingView.departmentName + ' | ' + agencyRankMappingView.subDepartmentName}">
+                            Department | Sub-Department
+                        </small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm"
+                        th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}(
+                                departmentId=${agencyRankMappingView.departmentId},
+                                subDepartmentId=${agencyRankMappingView.subDepartmentId},
+                                applicationId=${agencyRankMappingView.departmentProjectApplicationId})}">
+                        Back to Application
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <table class="table table-bordered table-sm mb-4">
+                        <tr>
+                            <th width="20%">Request ID</th>
+                            <td th:text="${agencyRankMappingView.requestId}">REQ-000</td>
+                            <th width="20%">Project Name</th>
+                            <td th:text="${agencyRankMappingView.projectName}">Project</td>
+                        </tr>
+                        <tr>
+                            <th>Recruitment Notification ID</th>
+                            <td
+                                th:text="${agencyRankMappingView.recruitmentNotificationId != null ? agencyRankMappingView.recruitmentNotificationId : '-'}">
+                                -
+                            </td>
+                            <th>Notification Status</th>
+                            <td
+                                th:text="${agencyRankMappingView.recruitmentNotificationStatus != null ? #strings.replace(agencyRankMappingView.recruitmentNotificationStatus.name(), '_', ' ') : '-'}">
+                                -
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="alert alert-warning mb-0"
+                        th:if="${!agencyRankMappingView.recruitmentNotificationAvailable}">
+                        Recruitment notification is not created yet for this request. Please complete auditor approval
+                        first, then map ranks to agencies.
+                    </div>
+
+                    <form th:if="${agencyRankMappingView.recruitmentNotificationAvailable}" th:action="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/agency-ranks(
+                                departmentId=${agencyRankMappingView.departmentId},
+                                subDepartmentId=${agencyRankMappingView.subDepartmentId},
+                                applicationId=${agencyRankMappingView.departmentProjectApplicationId})}"
+                        th:object="${rankMappingForm}" method="post" id="rankMappingForm">
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Rank Configuration</h5>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="addRowButton">
+                                Add Row
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle" id="rankMappingTable">
+                                <thead>
+                                    <tr>
+                                        <th width="60%">Agency</th>
+                                        <th width="20%">Rank</th>
+                                        <th width="20%">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="rank-row" th:each="row, rowStat : *{rankRows}">
+                                        <td>
+                                            <select class="form-select agency-select"
+                                                th:name="|rankRows[${rowStat.index}].agencyId|">
+                                                <option value="">-- Select Agency --</option>
+                                                <option th:each="agencyOption : ${agencyRankMappingView.agencyOptions}"
+                                                    th:value="${agencyOption.agencyId}"
+                                                    th:text="${agencyOption.agencyName + ' (' + agencyOption.officialEmail + ')'}"
+                                                    th:selected="${row.agencyId != null and row.agencyId == agencyOption.agencyId}">
+                                                </option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control rank-input" min="1"
+                                                th:name="|rankRows[${rowStat.index}].rankNumber|"
+                                                th:value="${row.rankNumber}">
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-outline-danger btn-sm remove-row">
+                                                Remove
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-success">Save Rank Mapping</button>
+                        </div>
+
+                        <select class="d-none" id="agencyOptionsTemplate">
+                            <option value="">-- Select Agency --</option>
+                            <option th:each="agencyOption : ${agencyRankMappingView.agencyOptions}"
+                                th:value="${agencyOption.agencyId}"
+                                th:text="${agencyOption.agencyName + ' (' + agencyOption.officialEmail + ')'}">
+                            </option>
+                        </select>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:if="${agencyRankMappingView.recruitmentNotificationAvailable}">
+        (function () {
+            const tableBody = document.querySelector('#rankMappingTable tbody');
+            const addRowButton = document.getElementById('addRowButton');
+            const optionsTemplate = document.getElementById('agencyOptionsTemplate');
+
+            function resequenceRows() {
+                const rows = tableBody.querySelectorAll('tr.rank-row');
+                rows.forEach((row, index) => {
+                    const agencySelect = row.querySelector('.agency-select');
+                    const rankInput = row.querySelector('.rank-input');
+                    agencySelect.name = `rankRows[${index}].agencyId`;
+                    rankInput.name = `rankRows[${index}].rankNumber`;
+                });
+            }
+
+            function addRow() {
+                const row = document.createElement('tr');
+                row.classList.add('rank-row');
+                row.innerHTML = `
+                    <td>
+                        <select class="form-select agency-select">
+                            ${optionsTemplate.innerHTML}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control rank-input" min="1">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-row">Remove</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+                resequenceRows();
+            }
+
+            tableBody.addEventListener('click', function (event) {
+                if (!event.target.classList.contains('remove-row')) {
+                    return;
+                }
+                const rows = tableBody.querySelectorAll('tr.rank-row');
+                if (rows.length <= 1) {
+                    return;
+                }
+                event.target.closest('tr.rank-row').remove();
+                resequenceRows();
+            });
+
+            addRowButton.addEventListener('click', addRow);
+            resequenceRows();
+        })();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Agency Rank Mapping</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Agency Rank Mapping', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Agency Rank Mapping</h2>
+                        <small class="text-muted">All agency rank assignments for recruitment notifications</small>
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Notification ID</th>
+                                    <th>Request ID</th>
+                                    <th>Project Name</th>
+                                    <th>Department</th>
+                                    <th>Sub-Department</th>
+                                    <th>Agency</th>
+                                    <th class="text-center">Rank</th>
+                                    <th>Assigned On</th>
+                                    <!-- <th class="text-center">Action</th> -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    th:if="${rankMappingListView == null or #lists.isEmpty(rankMappingListView.rankMappings)}">
+                                    <td colspan="9" class="text-center text-muted">
+                                        No agency rank mapping records found.
+                                    </td>
+                                </tr>
+
+                                <tr th:each="rankMapping : ${rankMappingListView.rankMappings}">
+                                    <td
+                                        th:text="${rankMapping.recruitmentNotificationId != null ? rankMapping.recruitmentNotificationId : '-'}">
+                                        -
+                                    </td>
+                                    <td th:text="${rankMapping.requestId != null ? rankMapping.requestId : '-'}">REQ-000
+                                    </td>
+                                    <td th:text="${rankMapping.projectName}">Project Name</td>
+                                    <td th:text="${rankMapping.departmentName}">Department</td>
+                                    <td th:text="${rankMapping.subDepartmentName}">Sub-Department</td>
+                                    <td>
+                                        <div th:text="${rankMapping.agencyName}">Agency Name</div>
+                                        <small class="text-muted"
+                                            th:text="${rankMapping.agencyEmail != null ? rankMapping.agencyEmail : '-'}">
+                                            agency@example.com
+                                        </small>
+                                    </td>
+                                    <td class="text-center" th:text="${rankMapping.rankNumber}">1</td>
+                                    <td
+                                        th:text="${rankMapping.assignedDate != null ? #temporals.format(rankMapping.assignedDate, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                    <!-- <td class="text-center">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:if="${rankMapping.applicationContextAvailable}" th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/agency-ranks(
+                                                    departmentId=${rankMapping.departmentId},
+                                                    subDepartmentId=${rankMapping.subDepartmentId},
+                                                    applicationId=${rankMapping.departmentProjectApplicationId},
+                                                    backTo='menu')}">
+                                            Open
+                                        </a>
+                                        <span class="text-muted" th:if="${!rankMapping.applicationContextAvailable}">
+                                            Unavailable
+                                        </span>
+                                    </td> -->
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

@@ -22,10 +22,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.department.dto.HrDepartmentReviewForm;
+import com.maharecruitment.gov.in.department.dto.HrAgencyRankMappingForm;
+import com.maharecruitment.gov.in.department.dto.HrAgencyRankRowForm;
 import com.maharecruitment.gov.in.department.entity.HrReviewDecision;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.service.DepartmentWorkOrderStorageService;
+import com.maharecruitment.gov.in.department.service.HrAgencyRankMappingService;
 import com.maharecruitment.gov.in.department.service.HrDepartmentRequestService;
+import com.maharecruitment.gov.in.department.service.model.HrAgencyRankMappingListView;
+import com.maharecruitment.gov.in.department.service.model.HrAgencyRankMappingView;
 import com.maharecruitment.gov.in.department.service.model.HrDepartmentApplicationReviewDetailView;
 import com.maharecruitment.gov.in.department.service.model.WorkOrderDocumentView;
 
@@ -39,12 +44,15 @@ public class HrDepartmentRequestController {
 
     private final HrDepartmentRequestService hrDepartmentRequestService;
     private final DepartmentWorkOrderStorageService workOrderStorageService;
+    private final HrAgencyRankMappingService hrAgencyRankMappingService;
 
     public HrDepartmentRequestController(
             HrDepartmentRequestService hrDepartmentRequestService,
-            DepartmentWorkOrderStorageService workOrderStorageService) {
+            DepartmentWorkOrderStorageService workOrderStorageService,
+            HrAgencyRankMappingService hrAgencyRankMappingService) {
         this.hrDepartmentRequestService = hrDepartmentRequestService;
         this.workOrderStorageService = workOrderStorageService;
+        this.hrAgencyRankMappingService = hrAgencyRankMappingService;
     }
 
     @GetMapping
@@ -63,6 +71,27 @@ public class HrDepartmentRequestController {
             model.addAttribute("parentDepartmentRequests", List.of());
         }
         return "hr/department-request-list";
+    }
+
+    @GetMapping("/agency-rank-mapping")
+    public String agencyRankMappingMenuEntry(Model model) {
+        try {
+            HrAgencyRankMappingListView listView = hrAgencyRankMappingService.getAgencyRankMappingListView();
+            model.addAttribute("rankMappingListView", listView);
+        } catch (DepartmentApplicationException ex) {
+            log.warn("Unable to load HR agency rank mappings list. reason={}", ex.getMessage());
+            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("rankMappingListView", HrAgencyRankMappingListView.builder()
+                    .rankMappings(List.of())
+                    .build());
+        } catch (Exception ex) {
+            log.error("Unexpected error while loading HR agency rank mappings list.", ex);
+            model.addAttribute("errorMessage", "Unable to load agency rank mappings right now. Please try again.");
+            model.addAttribute("rankMappingListView", HrAgencyRankMappingListView.builder()
+                    .rankMappings(List.of())
+                    .build());
+        }
+        return "hr/department-request-agency-rank-list";
     }
 
     @GetMapping("/{departmentId}/subdepartments")
@@ -210,6 +239,70 @@ public class HrDepartmentRequestController {
                 .body(resource);
     }
 
+    @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/agency-ranks")
+    public String agencyRankMapping(
+            @PathVariable Long departmentId,
+            @PathVariable Long subDepartmentId,
+            @PathVariable Long applicationId,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        try {
+            HrAgencyRankMappingView rankMappingView = hrAgencyRankMappingService.getRankMappingView(
+                    departmentId,
+                    subDepartmentId,
+                    applicationId);
+            model.addAttribute("agencyRankMappingView", rankMappingView);
+
+            if (!model.containsAttribute("rankMappingForm")) {
+                model.addAttribute("rankMappingForm", buildRankMappingForm(rankMappingView));
+            }
+
+            return "hr/department-request-agency-rank-mapping";
+        } catch (DepartmentApplicationException ex) {
+            log.warn(
+                    "Unable to load HR agency rank mapping page. departmentId={}, subDepartmentId={}, applicationId={}, reason={}",
+                    departmentId,
+                    subDepartmentId,
+                    applicationId,
+                    ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/hr/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
+                    + "/applications/" + applicationId;
+        }
+    }
+
+    @PostMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/agency-ranks")
+    public String saveAgencyRankMapping(
+            @PathVariable Long departmentId,
+            @PathVariable Long subDepartmentId,
+            @PathVariable Long applicationId,
+            @ModelAttribute("rankMappingForm") HrAgencyRankMappingForm rankMappingForm,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        try {
+            hrAgencyRankMappingService.assignAgencyRanks(
+                    departmentId,
+                    subDepartmentId,
+                    applicationId,
+                    rankMappingForm != null ? rankMappingForm.getRankRows() : List.of());
+
+            redirectAttributes.addFlashAttribute("successMessage", "Agency rank mapping saved successfully.");
+            return "redirect:/hr/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
+                    + "/applications/" + applicationId + "/agency-ranks";
+        } catch (DepartmentApplicationException ex) {
+            HrAgencyRankMappingView rankMappingView = hrAgencyRankMappingService.getRankMappingView(
+                    departmentId,
+                    subDepartmentId,
+                    applicationId);
+            model.addAttribute("agencyRankMappingView", rankMappingView);
+            model.addAttribute("errorMessage", ex.getMessage());
+            if (rankMappingForm == null) {
+                model.addAttribute("rankMappingForm", buildRankMappingForm(rankMappingView));
+            }
+            return "hr/department-request-agency-rank-mapping";
+        }
+    }
+
     private void populateReviewModel(Model model, HrDepartmentApplicationReviewDetailView reviewDetail) {
         model.addAttribute("applicationReviewDetail", reviewDetail);
     }
@@ -224,4 +317,22 @@ public class HrDepartmentRequestController {
     private boolean isRemarksMandatory(HrReviewDecision decision) {
         return decision == HrReviewDecision.SEND_BACK || decision == HrReviewDecision.REJECT;
     }
+
+    private HrAgencyRankMappingForm buildRankMappingForm(HrAgencyRankMappingView rankMappingView) {
+        HrAgencyRankMappingForm form = new HrAgencyRankMappingForm();
+        if (rankMappingView == null || rankMappingView.getAssignedAgencyRanks() == null
+                || rankMappingView.getAssignedAgencyRanks().isEmpty()) {
+            form.getRankRows().add(new HrAgencyRankRowForm());
+            return form;
+        }
+
+        rankMappingView.getAssignedAgencyRanks().forEach(assignedRank -> {
+            HrAgencyRankRowForm row = new HrAgencyRankRowForm();
+            row.setAgencyId(assignedRank.getAgencyId());
+            row.setRankNumber(assignedRank.getRankNumber());
+            form.getRankRows().add(row);
+        });
+        return form;
+    }
+
 }
