@@ -89,6 +89,7 @@ public class DepartmentCandidateShortlistingController {
     @GetMapping("/projects/{recruitmentNotificationId}/candidates")
     public String candidateList(
             @PathVariable Long recruitmentNotificationId,
+            @org.springframework.web.bind.annotation.RequestParam(name = "status", required = false) String status,
             Model model,
             Principal principal,
             RedirectAttributes redirectAttributes) {
@@ -99,6 +100,7 @@ public class DepartmentCandidateShortlistingController {
                     recruitmentNotificationId,
                     actorEmail);
             model.addAttribute("shortlistingDetail", detailView);
+            model.addAttribute("initialStatusFilter", status);
             return "department/candidate-shortlisting-candidate-list";
         } catch (DepartmentApplicationException ex) {
             log.warn("Unable to load department shortlisting detail. notificationId={}, reason={}",

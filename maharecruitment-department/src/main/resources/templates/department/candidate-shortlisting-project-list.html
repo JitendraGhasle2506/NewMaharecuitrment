@@ -158,7 +158,7 @@
                             <div class="value" th:text="${totalCandidates}">0</div>
                         </div>
                         <div class="summary-tile">
-                            <div class="label">Pending Review</div>
+                            <div class="label">Remaining For Review</div>
                             <div class="value" th:text="${pendingCandidates}">0</div>
                         </div>
                         <div class="summary-tile">
@@ -186,7 +186,7 @@
                                     <th>Request ID</th>
                                     <th>Project Name</th>
                                     <th class="text-end">Submitted Candidates</th>
-                                    <th class="text-end">Pending Review</th>
+                                    <th class="text-end">Remaining For Review</th>
                                     <th class="text-end">Shortlisted</th>
                                     <th class="text-end">Rejected</th>
                                     <th class="text-end">Assessment Submitted</th>
@@ -216,12 +216,22 @@
                                               th:text="${project.totalCandidates != null ? project.totalCandidates : 0}">0</span>
                                     </td>
                                     <td class="text-end">
-                                        <span class="count-pill count-pending"
-                                              th:text="${project.pendingCandidates != null ? project.pendingCandidates : 0}">0</span>
+                                        <a class="count-pill count-pending"
+                                           th:href="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates(
+                                                recruitmentNotificationId=${project.recruitmentNotificationId},
+                                                status='PENDING_REVIEW')}"
+                                           th:text="${project.pendingCandidates != null ? project.pendingCandidates : 0}">
+                                            0
+                                        </a>
                                     </td>
                                     <td class="text-end">
-                                        <span class="count-pill count-shortlisted"
-                                              th:text="${project.shortlistedCandidates != null ? project.shortlistedCandidates : 0}">0</span>
+                                        <a class="count-pill count-shortlisted"
+                                           th:href="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates(
+                                                recruitmentNotificationId=${project.recruitmentNotificationId},
+                                                status='SHORTLISTED_REVIEW')}"
+                                           th:text="${project.shortlistedCandidates != null ? project.shortlistedCandidates : 0}">
+                                            0
+                                        </a>
                                     </td>
                                     <td class="text-end">
                                         <span class="count-pill count-rejected"

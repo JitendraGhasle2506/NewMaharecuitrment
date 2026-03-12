@@ -205,6 +205,8 @@
                             <div class="col-md-4">
                                 <select id="statusFilterSelect" class="form-select form-select-sm">
                                     <option value="">All Status</option>
+                                    <option value="PENDING_REVIEW">Pending Review</option>
+                                    <option value="SHORTLISTED_REVIEW">Shortlisted For Action</option>
                                     <option value="SUBMITTED_BY_AGENCY">Submitted By Agency</option>
                                     <option value="SHORTLISTED_BY_DEPARTMENT">Shortlisted By Department</option>
                                     <option value="REJECTED_BY_DEPARTMENT">Rejected By Department</option>
@@ -243,6 +245,7 @@
 
                                 <tr th:each="candidate, stat : ${shortlistingDetail.candidates}"
                                     th:attr="data-status=${candidate.candidateStatus.name()},
+                                             data-final-decision=${candidate.finalDecisionStatus != null ? candidate.finalDecisionStatus : ''},
                                              data-search=${(candidate.candidateName != null ? candidate.candidateName : '') + ' ' + (candidate.agencyName != null ? candidate.agencyName : '') + ' ' + (candidate.candidateEmail != null ? candidate.candidateEmail : '') + ' ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '')}">
                                     <td th:text="${stat.count}">1</td>
                                     <td>
@@ -374,6 +377,7 @@
 
     <script th:inline="javascript">
         const contextPath = /*[[@{/}]]*/ '/';
+        const initialStatusFilter = /*[[${initialStatusFilter != null ? initialStatusFilter : ''}]]*/ '';
 
         function openManagedDocument(path) {
             if (!path) {
@@ -406,9 +410,17 @@
 
                     rows.forEach((row) => {
                         const rowStatus = row.getAttribute('data-status') || '';
+                        const rowFinalDecision = row.getAttribute('data-final-decision') || '';
                         const rowSearch = (row.getAttribute('data-search') || '').toLowerCase();
 
-                        const statusMatch = !selectedStatus || rowStatus === selectedStatus;
+                        let statusMatch = !selectedStatus || rowStatus === selectedStatus;
+                        if (selectedStatus === 'PENDING_REVIEW') {
+                            statusMatch = rowStatus === 'SUBMITTED_BY_AGENCY';
+                        } else if (selectedStatus === 'SHORTLISTED_REVIEW') {
+                            statusMatch = (rowStatus === 'SHORTLISTED_BY_DEPARTMENT'
+                                    || rowStatus === 'INTERVIEW_SCHEDULED_BY_AGENCY')
+                                    && rowFinalDecision !== 'SELECTED';
+                        }
                         const textMatch = !searchTerm || rowSearch.includes(searchTerm);
                         const visible = statusMatch && textMatch;
 
@@ -430,6 +442,11 @@
                     statusFilter.value = '';
                     applyFilters();
                 });
+
+                if (initialStatusFilter) {
+                    statusFilter.value = initialStatusFilter;
+                }
+                applyFilters();
             }
 
             document.querySelectorAll('.review-form').forEach((form) => {
