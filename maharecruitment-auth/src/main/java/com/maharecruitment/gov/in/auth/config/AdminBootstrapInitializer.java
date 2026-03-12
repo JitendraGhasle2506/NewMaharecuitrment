@@ -42,6 +42,15 @@ public class AdminBootstrapInitializer implements ApplicationRunner {
     @Value("${app.bootstrap.admin.password:ifms123}")
     private String adminPassword;
 
+    @Value("${app.bootstrap.hr.username:hr@mahait.org}")
+    private String hrUsername;
+
+    @Value("${app.bootstrap.hr.name:HR Manager}")
+    private String hrName;
+
+    @Value("${app.bootstrap.hr.password:ifms123}")
+    private String hrPassword;
+
     public AdminBootstrapInitializer(
             RoleRepository roleRepository,
             UserRepository userRepository,
@@ -92,6 +101,42 @@ public class AdminBootstrapInitializer implements ApplicationRunner {
                 log.info("Existing admin user '{}' updated with ADMIN role.", normalizedUsername);
             } else {
                 log.info("Admin bootstrap completed; user '{}' already present.", normalizedUsername);
+            }
+        }
+
+        bootstrapHrUser();
+    }
+
+    private void bootstrapHrUser() {
+        String normalizedHrUsername = normalizeRequired(hrUsername, "HR username");
+        String normalizedHrName = normalizeRequired(hrName, "HR name");
+        String resolvedHrPassword = normalizeRequired(hrPassword, "HR password");
+
+        Role hrRole = roleRepository.findByNameIgnoreCase("ROLE_HR")
+                .orElseThrow(() -> new IllegalStateException("ROLE_HR should have been bootstrapped."));
+
+        User existingHr = userRepository.findByEmailIgnoreCase(normalizedHrUsername).orElse(null);
+        if (existingHr == null) {
+            User hr = new User();
+            hr.setName(normalizedHrName);
+            hr.setEmail(normalizedHrUsername);
+            hr.setPassword(passwordEncoder.encode(resolvedHrPassword));
+            hr.setRoles(new ArrayList<>(List.of(hrRole)));
+            userRepository.save(hr);
+            log.warn("Bootstrap HR user created with username='{}'. Change password immediately.",
+                    normalizedHrUsername);
+        } else {
+            if (existingHr.getRoles() == null) {
+                existingHr.setRoles(new ArrayList<>());
+            }
+            boolean hasHrRole = existingHr.getRoles().stream()
+                    .anyMatch(role -> "ROLE_HR".equalsIgnoreCase(role.getName()));
+            if (!hasHrRole) {
+                existingHr.getRoles().add(hrRole);
+                userRepository.save(existingHr);
+                log.info("Existing HR user '{}' updated with ROLE_HR role.", normalizedHrUsername);
+            } else {
+                log.info("HR bootstrap completed; user '{}' already present.", normalizedHrUsername);
             }
         }
     }
