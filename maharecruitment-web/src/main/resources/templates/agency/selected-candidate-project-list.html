@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Selected Candidate Projects</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="agency-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Selected Candidate Projects', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Selected Candidate Projects</h2>
+                        <small class="text-muted">Request ID and Project wise selected candidate summary</small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/recruitment-notifications}">
+                        Back to Notifications
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Request ID</th>
+                                    <th>Project</th>
+                                    <th class="text-end">Selected Candidates</th>
+                                    <th>Latest Decision Date</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(selectedProjects)}">
+                                    <td colspan="6" class="text-center text-muted">No selected candidates found.</td>
+                                </tr>
+                                <tr th:each="item, stat : ${selectedProjects}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td th:text="${item.requestId != null ? item.requestId : '-'}">REQ-0000</td>
+                                    <td th:text="${item.projectName != null ? item.projectName : '-'}">Project</td>
+                                    <td class="text-end" th:text="${item.selectedCandidatesCount != null ? item.selectedCandidatesCount : 0}">0</td>
+                                    <td
+                                        th:text="${item.latestDecisionAt != null ? #temporals.format(item.latestDecisionAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                    <td class="text-center">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:href="@{/agency/selected-candidates/{recruitmentNotificationId}(recruitmentNotificationId=${item.recruitmentNotificationId})}">
+                                            Open Selected Candidates
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

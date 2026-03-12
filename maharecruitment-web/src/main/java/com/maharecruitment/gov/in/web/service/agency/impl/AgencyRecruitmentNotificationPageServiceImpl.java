@@ -19,6 +19,8 @@ import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificat
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateInterviewScheduleInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
@@ -84,6 +86,18 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     public List<AgencySubmittedCandidateView> getSubmittedCandidates(String actorEmail, Long recruitmentNotificationId) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         return candidateService.getSubmittedCandidates(recruitmentNotificationId, context.agencyId());
+    }
+
+    @Override
+    public List<AgencySelectedCandidateProjectView> getSelectedCandidateProjects(String actorEmail) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return candidateService.getSelectedCandidateProjects(context.agencyId());
+    }
+
+    @Override
+    public List<AgencySelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return candidateService.getSelectedCandidates(context.agencyId(), recruitmentNotificationId);
     }
 
     @Override
