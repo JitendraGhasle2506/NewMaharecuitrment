@@ -214,6 +214,7 @@
                                     <th>Candidate</th>
                                     <th>Designation</th>
                                     <th>Experience</th>
+                                    <th>Joining Time</th>
                                     <th>Status</th>
                                     <th>Department Feedback</th>
                                     <th>Resume</th>
@@ -223,7 +224,7 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(submittedCandidates)}">
-                                    <td colspan="9" class="text-center text-muted">
+                                    <td colspan="10" class="text-center text-muted">
                                         No candidates submitted yet.
                                     </td>
                                 </tr>
@@ -242,6 +243,7 @@
                                         <span th:text="${candidate.totalExperience}">0</span> /
                                         <span th:text="${candidate.relevantExperience}">0</span>
                                     </td>
+                                    <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
                                     <td>
                                         <span class="badge"
                                             th:classappend="${candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT'} ? ' text-bg-success' :

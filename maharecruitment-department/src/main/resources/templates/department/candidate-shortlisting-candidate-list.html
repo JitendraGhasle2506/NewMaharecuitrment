@@ -231,6 +231,7 @@
                                     <th>Candidate</th>
                                     <th>Designation</th>
                                     <th>Experience</th>
+                                    <th>Joining Time</th>
                                     <th>Status</th>
                                     <th>Resume</th>
                                     <th>Interview Details</th>
@@ -239,7 +240,7 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(shortlistingDetail.candidates)}">
-                                    <td colspan="9" class="empty-state">
+                                    <td colspan="10" class="empty-state">
                                         No candidates submitted for this project.
                                     </td>
                                 </tr>
@@ -248,7 +249,7 @@
                                     th:attr="data-status=${candidate.candidateStatus.name()},
                                              data-assessment-submitted=${candidate.assessmentSubmitted == true},
                                              data-final-decision=${candidate.finalDecisionStatus != null ? candidate.finalDecisionStatus : ''},
-                                             data-search=${(candidate.candidateName != null ? candidate.candidateName : '') + ' ' + (candidate.agencyName != null ? candidate.agencyName : '') + ' ' + (candidate.candidateEmail != null ? candidate.candidateEmail : '') + ' ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '')}">
+                                             data-search=${(candidate.candidateName != null ? candidate.candidateName : '') + ' ' + (candidate.agencyName != null ? candidate.agencyName : '') + ' ' + (candidate.candidateEmail != null ? candidate.candidateEmail : '') + ' ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '') + ' ' + (candidate.joiningTime != null ? candidate.joiningTime : '')}">
                                     <td th:text="${stat.count}">1</td>
                                     <td>
                                         <div class="candidate-name" th:text="${candidate.agencyName != null ? candidate.agencyName : '-'}">
@@ -274,6 +275,7 @@
                                         /
                                         <span th:text="${candidate.relevantExperience != null ? candidate.relevantExperience : 0}">0</span>
                                     </td>
+                                    <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
                                     <td>
                                         <span class="status-chip"
                                               th:classappend="${candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT'} ? ' status-shortlisted' :
