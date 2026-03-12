@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Advance Payment Detail</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="department-shell">
+    <th:block
+        th:replace="~{header/header :: var-sidebar-header('Advance Payment', 'Advance Payment Detail', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Advance Payment Detail</h2>
+                    <a th:href="@{/department/payment/list}" class="btn btn-secondary btn-sm">
+                        &#8592; Back to List
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <!-- Project Details Section -->
+                    <div class="mb-4" th:if="${projectApp != null}">
+                        <h5 class="section-title mb-3"
+                            style="color: #2c3e50; border-left: 4px solid #3498db; padding-left: 10px;">Project Details
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="text-muted small d-block">Request ID</label>
+                                <strong th:text="${projectApp.requestId}"></strong>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="text-muted small d-block">Project Name</label>
+                                <strong th:text="${projectApp.projectName}"></strong>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="text-muted small d-block">Project Code</label>
+                                <strong th:text="${projectApp.projectCode}"></strong>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="text-muted small d-block">Current Status</label>
+                                <span class="badge text-bg-info" th:if="${projectApp.applicationStatus != null}"
+                                    th:text="${projectApp.applicationStatus.statusCode + ' - ' + #strings.replace(projectApp.applicationStatus.name(), '_', ' ')}"></span>
+                                <span th:if="${projectApp.applicationStatus == null}">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form th:action="@{/department/payment/save}" th:object="${paymentForm}" method="post"
+                        enctype="multipart/form-data">
+                        <input type="hidden" th:field="*{id}" />
+                        <input type="hidden" th:field="*{departmentProjectApplicationId}" />
+                        <input type="hidden" th:field="*{departmentRegistrationId}" />
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Proforma Invoice <span
+                                        class="text-danger">*</span></label>
+                                <select th:field="*{proformaInvoiceId}" class="form-select" required>
+                                    <option value="">-- Select PI --</option>
+                                    <option th:each="pi : ${invoices}" th:value="${pi.piNumber}"
+                                        th:text="${pi.piNumber + ' (Amount: ' + pi.piAmount + ')'}"></option>
+                                </select>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('proformaInvoiceId')}"
+                                    th:errors="*{proformaInvoiceId}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Receipt Number <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" th:field="*{receiptNumber}" class="form-control"
+                                    placeholder="Enter Receipt Number" required />
+                                <div class="text-danger small" th:if="${#fields.hasErrors('receiptNumber')}"
+                                    th:errors="*{receiptNumber}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Total Amount Paid (INR) <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" step="0.01" th:field="*{totalAmount}" class="form-control"
+                                    placeholder="0.00" required />
+                                <div class="text-danger small" th:if="${#fields.hasErrors('totalAmount')}"
+                                    th:errors="*{totalAmount}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Proof of Payment (Receipt Copy) <span
+                                        class="text-danger">*</span></label>
+                                <input type="file" th:field="*{receiptFile}" class="form-control"
+                                    th:required="${paymentForm.id == null}" />
+                                <small class="text-muted" th:if="${paymentForm.receiptOriginalName != null}">Current:
+                                    <span th:text="${paymentForm.receiptOriginalName}"></span>
+                                    <a th:href="@{/department/payment/{id}/receipt(id=${paymentForm.id})}"
+                                        target="_blank" class="ms-1 text-decoration-none">
+                                        <i class="fas fa-external-link-alt"></i> View
+                                    </a>
+                                </small>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('receiptFile')}"
+                                    th:errors="*{receiptFile}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Remarks</label>
+                                <textarea th:field="*{remarks}" class="form-control" rows="3"
+                                    placeholder="Additional details..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex justify-content-center gap-3"
+                            th:if="${paymentForm.id == null or paymentForm.applicationStatus == T(com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus).DRAFT or paymentForm.applicationStatus == T(com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus).HR_SENT_BACK or paymentForm.applicationStatus == T(com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus).AUDITOR_SENT_BACK}">
+                            <button type="submit" name="actionStatus" value="save" class="btn btn-outline-info px-4">
+                                <i class="fas fa-save me-1"></i> Save as Draft
+                            </button>
+                            <button type="submit" name="actionStatus" value="send" class="btn btn-primary px-4">
+                                <i class="fas fa-paper-plane me-1"></i> Submit for Verification
+                            </button>
+                        </div>
+                        <div class="mt-4 text-center"
+                            th:unless="${paymentForm.id == null or paymentForm.applicationStatus == T(com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus).DRAFT or paymentForm.applicationStatus == T(com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus).HR_SENT_BACK or paymentForm.applicationStatus == T(com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus).AUDITOR_SENT_BACK}">
+                            <div class="alert alert-info d-inline-block">
+                                <i class="fas fa-info-circle me-1"></i> This record has been submitted and is currently
+                                in review. It cannot be modified.
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

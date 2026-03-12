@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <title>Advance Payment List</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="department-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Payment List', 'Advance Payment List', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Advance Payment List</h2>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+                        <span th:text="${successMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+
+                    <!-- Eligible Projects for New Advance Payment -->
+                    <div class="mb-5">
+                        <h4 class="section-title mb-3"
+                            style="color: #2c3e50; border-left: 4px solid #3498db; padding-left: 10px;">
+                            Initiate New Advance Payment
+                        </h4>
+                        <p class="text-muted mb-3">The projects listed below have completed the manpower phase and are
+                            ready for advance payment initiation.</p>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Request ID</th>
+                                        <th>Project Name</th>
+                                        <th>Total Estimated Cost</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="proj, stat : ${eligibleProjects}">
+                                        <td th:text="${stat.count}"></td>
+                                        <td th:text="${proj.requestId}"></td>
+                                        <td th:text="${proj.projectName}"></td>
+                                        <td
+                                            th:text="${proj.totalEstimatedCost != null ? #numbers.formatDecimal(proj.totalEstimatedCost, 1, 'COMMA', 2, 'POINT') : '0.00'}">
+                                        </td>
+                                        <td>
+                                            <a th:href="@{/department/payment/apply/{applicationId}(applicationId=${proj.departmentProjectApplicationId})}"
+                                                class="btn btn-sm btn-primary">
+                                                Initiate Payment
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(eligibleProjects)}">
+                                        <td colspan="5" class="text-center text-muted">No projects currently eligible
+                                            for advance payment.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr class="my-5" />
+
+                    <h4 class="section-title mb-3"
+                        style="color: #2c3e50; border-left: 4px solid #e67e22; padding-left: 10px;">
+                        Existing Advance Payment Records
+                    </h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Request ID</th>
+                                    <th>Project Name</th>
+                                    <th>Receipt No</th>
+                                    <th>Amount (INR)</th>
+                                    <th>Status</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="payment, stat : ${payments}">
+                                    <td th:text="${stat.count}"></td>
+                                    <td th:text="${payment.application != null ? payment.application.requestId : '-'}">
+                                    </td>
+                                    <td
+                                        th:text="${payment.application != null ? payment.application.projectName : '-'}">
+                                    </td>
+                                    <td th:text="${payment.receiptNumber}"></td>
+                                    <td
+                                        th:text="${payment.totalAmount != null ? #numbers.formatDecimal(payment.totalAmount, 1, 'COMMA', 2, 'POINT') : '0.00'}">
+                                    </td>
+                                    <td>
+                                        <span class="badge" th:if="${payment.applicationStatus != null}"
+                                            th:classappend="${payment.applicationStatus.getStatusCode() == 1 ? 'text-bg-secondary' : (payment.applicationStatus.getStatusCode() == 2 ? 'text-bg-primary' : (payment.applicationStatus.getStatusCode() == 9 ? 'text-bg-success' : 'text-bg-info'))}"
+                                            th:text="${payment.applicationStatus.getStatusCode() + ' - ' + payment.applicationStatus.name()}"></span>
+                                        <span th:if="${payment.applicationStatus == null}">-</span>
+                                    </td>
+                                    <td th:text="${#temporals.format(payment.updatedDate, 'dd-MMM-yyyy HH:mm')}"></td>
+                                    <td>
+                                        <a th:if="${payment.applicationStatus != null and (payment.applicationStatus.getStatusCode() == 1 or payment.applicationStatus.getStatusCode() == 3 or payment.applicationStatus.getStatusCode() == 8)}"
+                                            th:href="@{/department/payment/{id}/edit(id=${payment.id})}"
+                                            class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <a th:if="${payment.applicationStatus != null and (payment.applicationStatus.getStatusCode() == 9)}"
+                                            th:href="@{/department/payment/{id}/view(id=${payment.id})}"
+                                            class="btn btn-sm btn-outline-info">View</a>
+                                        <span
+                                            th:unless="${payment.applicationStatus != null and (payment.applicationStatus.getStatusCode() == 1 or payment.applicationStatus.getStatusCode() == 3 or payment.applicationStatus.getStatusCode() == 8 or payment.applicationStatus.getStatusCode() == 9)}">
+                                            -
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(payments)}">
+                                    <td colspan="8" class="text-center text-muted">No advance payment records found.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
