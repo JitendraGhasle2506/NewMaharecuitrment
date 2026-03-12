@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
+import com.maharecruitment.gov.in.recruitment.repository.projection.AgencySelectedCandidateProjectSummaryProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.DepartmentNotificationCandidateSummaryProjection;
 
 import jakarta.persistence.LockModeType;
@@ -27,6 +28,49 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "order by candidate.recruitmentInterviewDetailId desc")
     List<RecruitmentInterviewDetailEntity> findActiveCandidatesByNotificationAndAgency(
             @Param("recruitmentNotificationId") Long recruitmentNotificationId,
+            @Param("agencyId") Long agencyId);
+
+    @Query("select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where candidate.agency.agencyId = :agencyId "
+            + "and candidate.active = true "
+            + "and candidate.finalDecisionStatus = 'SELECTED' "
+            + "order by candidate.finalDecisionAt desc, candidate.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findSelectedCandidatesByAgency(@Param("agencyId") Long agencyId);
+
+    @Query("select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where candidate.agency.agencyId = :agencyId "
+            + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
+            + "and candidate.active = true "
+            + "and candidate.finalDecisionStatus = 'SELECTED' "
+            + "order by candidate.finalDecisionAt desc, candidate.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findSelectedCandidatesByAgencyAndNotification(
+            @Param("agencyId") Long agencyId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+
+    @Query("select n.recruitmentNotificationId as recruitmentNotificationId, "
+            + "n.requestId as requestId, "
+            + "p.projectName as projectName, "
+            + "count(c.recruitmentInterviewDetailId) as selectedCandidatesCount, "
+            + "max(c.finalDecisionAt) as latestDecisionAt "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join c.recruitmentNotification n "
+            + "join n.projectMst p "
+            + "where c.agency.agencyId = :agencyId "
+            + "and c.active = true "
+            + "and c.finalDecisionStatus = 'SELECTED' "
+            + "group by n.recruitmentNotificationId, n.requestId, p.projectName "
+            + "order by max(c.finalDecisionAt) desc")
+    List<AgencySelectedCandidateProjectSummaryProjection> findSelectedCandidateProjectSummariesByAgency(
             @Param("agencyId") Long agencyId);
 
     @Query("select n.recruitmentNotificationId as recruitmentNotificationId, "

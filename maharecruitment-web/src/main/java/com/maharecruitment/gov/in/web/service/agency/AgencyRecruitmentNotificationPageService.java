@@ -3,6 +3,8 @@ package com.maharecruitment.gov.in.web.service.agency;
 import java.util.List;
 
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateBatchForm;
@@ -19,6 +21,10 @@ public interface AgencyRecruitmentNotificationPageService {
     void submitResponse(String actorEmail, Long recruitmentNotificationId);
 
     List<AgencySubmittedCandidateView> getSubmittedCandidates(String actorEmail, Long recruitmentNotificationId);
+
+    List<AgencySelectedCandidateProjectView> getSelectedCandidateProjects(String actorEmail);
+
+    List<AgencySelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId);
 
     void submitCandidates(String actorEmail, Long recruitmentNotificationId, AgencyCandidateBatchForm candidateBatchForm);
 

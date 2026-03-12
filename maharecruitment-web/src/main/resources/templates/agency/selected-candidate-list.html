@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Selected Candidates</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="agency-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Selected Candidates', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Selected Candidates</h2>
+                        <small class="text-muted">Selected candidates for the selected request and project</small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/selected-candidates}">
+                        Back to Requests
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Request ID</th>
+                                    <th>Project</th>
+                                    <th>Candidate</th>
+                                    <th>Designation</th>
+                                    <th>Experience</th>
+                                    <th>Joining Time</th>
+                                    <th>Interview</th>
+                                    <th>Decision Date</th>
+                                    <th>Resume</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(selectedCandidates)}">
+                                    <td colspan="11" class="text-center text-muted">No selected candidates found.</td>
+                                </tr>
+
+                                <tr th:each="candidate, stat : ${selectedCandidates}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td th:text="${candidate.requestId != null ? candidate.requestId : '-'}">REQ-0000</td>
+                                    <td th:text="${candidate.projectName != null ? candidate.projectName : '-'}">Project</td>
+                                    <td>
+                                        <div th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">Candidate</div>
+                                        <small class="text-muted"
+                                            th:text="${(candidate.candidateEmail != null ? candidate.candidateEmail : '-') + ' | ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '-')}">
+                                            email | mobile
+                                        </small>
+                                    </td>
+                                    <td th:text="${(candidate.designationName != null ? candidate.designationName : '-') + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">
+                                        Designation | Level
+                                    </td>
+                                    <td>
+                                        <span th:text="${candidate.totalExperience != null ? candidate.totalExperience : 0}">0</span>
+                                        /
+                                        <span th:text="${candidate.relevantExperience != null ? candidate.relevantExperience : 0}">0</span>
+                                    </td>
+                                    <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
+                                    <td>
+                                        <div th:if="${candidate.interviewDateTime != null}">
+                                            <div th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
+                                                01-Apr-2026 10:30
+                                            </div>
+                                            <small class="text-muted"
+                                                th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : '-'}">
+                                                Slot
+                                            </small>
+                                            <div th:if="${candidate.interviewLink != null and !#strings.isEmpty(candidate.interviewLink)}">
+                                                <a th:href="${candidate.interviewLink}" target="_blank">Join Link</a>
+                                            </div>
+                                        </div>
+                                        <span th:if="${candidate.interviewDateTime == null}" class="text-muted">-</span>
+                                    </td>
+                                    <td
+                                        th:text="${candidate.finalDecisionAt != null ? #temporals.format(candidate.finalDecisionAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            th:if="${candidate.resumeFilePath != null}"
+                                            th:attr="data-path=${candidate.resumeFilePath}"
+                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                            View
+                                        </button>
+                                        <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:href="@{/agency/recruitment-notifications/{id}(id=${candidate.recruitmentNotificationId})}">
+                                            Open Notification
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:inline="javascript">
+        const contextPath = /*[[@{/}]]*/ '/';
+
+        function openManagedDocument(path) {
+            if (!path) {
+                return;
+            }
+            try {
+                const encodedPath = encodeURIComponent(btoa(path));
+                window.open(contextPath + "documents/view?path=" + encodedPath, "_blank");
+            } catch (error) {
+                alert("Unable to open resume document.");
+            }
+        }
+    </script>
+</body>
+
+</html>

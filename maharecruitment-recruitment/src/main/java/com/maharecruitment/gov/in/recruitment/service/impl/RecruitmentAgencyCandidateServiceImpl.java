@@ -27,6 +27,8 @@ import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyCandidate
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationActionService;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateInterviewScheduleInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateSubmissionInput;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
 
 @Service
@@ -62,6 +64,45 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         return interviewDetailRepository.findActiveCandidatesByNotificationAndAgency(recruitmentNotificationId, agencyId)
                 .stream()
                 .map(this::toSubmittedCandidateView)
+                .toList();
+    }
+
+    @Override
+    public List<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId) {
+        requirePositiveId(agencyId, "Agency id is required.");
+
+        return interviewDetailRepository.findSelectedCandidatesByAgency(agencyId)
+                .stream()
+                .map(this::toSelectedCandidateView)
+                .toList();
+    }
+
+    @Override
+    public List<AgencySelectedCandidateProjectView> getSelectedCandidateProjects(Long agencyId) {
+        requirePositiveId(agencyId, "Agency id is required.");
+
+        return interviewDetailRepository.findSelectedCandidateProjectSummariesByAgency(agencyId)
+                .stream()
+                .map(summary -> AgencySelectedCandidateProjectView.builder()
+                        .recruitmentNotificationId(summary.getRecruitmentNotificationId())
+                        .requestId(summary.getRequestId())
+                        .projectName(summary.getProjectName())
+                        .selectedCandidatesCount(summary.getSelectedCandidatesCount() == null
+                                ? 0L
+                                : summary.getSelectedCandidatesCount())
+                        .latestDecisionAt(summary.getLatestDecisionAt())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId, Long recruitmentNotificationId) {
+        requirePositiveId(agencyId, "Agency id is required.");
+        requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
+
+        return interviewDetailRepository.findSelectedCandidatesByAgencyAndNotification(agencyId, recruitmentNotificationId)
+                .stream()
+                .map(this::toSelectedCandidateView)
                 .toList();
     }
 
@@ -330,6 +371,41 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
                 .finalDecisionAt(candidate.getFinalDecisionAt())
                 .createdDateTime(candidate.getCreatedDateTime())
+                .build();
+    }
+
+    private AgencySelectedCandidateView toSelectedCandidateView(RecruitmentInterviewDetailEntity candidate) {
+        String designationName = candidate.getDesignationVacancy() != null
+                && candidate.getDesignationVacancy().getDesignationMst() != null
+                        ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
+                        : "-";
+
+        return AgencySelectedCandidateView.builder()
+                .recruitmentNotificationId(candidate.getRecruitmentNotification() != null
+                        ? candidate.getRecruitmentNotification().getRecruitmentNotificationId()
+                        : null)
+                .requestId(candidate.getRecruitmentNotification() != null
+                        ? candidate.getRecruitmentNotification().getRequestId()
+                        : null)
+                .projectName(candidate.getRecruitmentNotification() != null
+                        && candidate.getRecruitmentNotification().getProjectMst() != null
+                                ? candidate.getRecruitmentNotification().getProjectMst().getProjectName()
+                                : "-")
+                .recruitmentInterviewDetailId(candidate.getRecruitmentInterviewDetailId())
+                .candidateName(candidate.getCandidateName())
+                .candidateEmail(candidate.getCandidateEmail())
+                .candidateMobile(candidate.getCandidateMobile())
+                .designationName(designationName)
+                .levelCode(candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null)
+                .totalExperience(candidate.getTotalExperience())
+                .relevantExperience(candidate.getRelevantExperience())
+                .joiningTime(candidate.getJoiningTime())
+                .resumeFilePath(candidate.getResumeFilePath())
+                .interviewDateTime(candidate.getInterviewDateTime())
+                .interviewTimeSlot(candidate.getInterviewTimeSlot())
+                .interviewLink(candidate.getInterviewLink())
+                .finalDecisionAt(candidate.getFinalDecisionAt())
+                .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
                 .build();
     }
 
