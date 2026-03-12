@@ -51,6 +51,15 @@ public class AdminBootstrapInitializer implements ApplicationRunner {
     @Value("${app.bootstrap.hr.password:ifms123}")
     private String hrPassword;
 
+    @Value("${app.bootstrap.auditor.username:auditor@mahait.org}")
+    private String auditorUsername;
+
+    @Value("${app.bootstrap.auditor.name:Auditor User}")
+    private String auditorName;
+
+    @Value("${app.bootstrap.auditor.password:ifms123}")
+    private String auditorPassword;
+
     public AdminBootstrapInitializer(
             RoleRepository roleRepository,
             UserRepository userRepository,
@@ -105,6 +114,41 @@ public class AdminBootstrapInitializer implements ApplicationRunner {
         }
 
         bootstrapHrUser();
+        bootstrapAuditorUser();
+    }
+
+    private void bootstrapAuditorUser() {
+        String normalizedAuditorUsername = normalizeRequired(auditorUsername, "Auditor username");
+        String normalizedAuditorName = normalizeRequired(auditorName, "Auditor name");
+        String resolvedAuditorPassword = normalizeRequired(auditorPassword, "Auditor password");
+
+        Role auditorRole = roleRepository.findByNameIgnoreCase("ROLE_AUDITOR")
+                .orElseThrow(() -> new IllegalStateException("ROLE_AUDITOR should have been bootstrapped."));
+
+        User existingAuditor = userRepository.findByEmailIgnoreCase(normalizedAuditorUsername).orElse(null);
+        if (existingAuditor == null) {
+            User auditor = new User();
+            auditor.setName(normalizedAuditorName);
+            auditor.setEmail(normalizedAuditorUsername);
+            auditor.setPassword(passwordEncoder.encode(resolvedAuditorPassword));
+            auditor.setRoles(new ArrayList<>(List.of(auditorRole)));
+            userRepository.save(auditor);
+            log.warn("Bootstrap Auditor user created with username='{}'. Change password immediately.",
+                    normalizedAuditorUsername);
+        } else {
+            if (existingAuditor.getRoles() == null) {
+                existingAuditor.setRoles(new ArrayList<>());
+            }
+            boolean hasAuditorRole = existingAuditor.getRoles().stream()
+                    .anyMatch(role -> "ROLE_AUDITOR".equalsIgnoreCase(role.getName()));
+            if (!hasAuditorRole) {
+                existingAuditor.getRoles().add(auditorRole);
+                userRepository.save(existingAuditor);
+                log.info("Existing Auditor user '{}' updated with ROLE_AUDITOR role.", normalizedAuditorUsername);
+            } else {
+                log.info("Auditor bootstrap completed; user '{}' already present.", normalizedAuditorUsername);
+            }
+        }
     }
 
     private void bootstrapHrUser() {
