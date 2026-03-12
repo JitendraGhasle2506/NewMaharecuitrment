@@ -207,6 +207,7 @@
                                     <option value="">All Status</option>
                                     <option value="PENDING_REVIEW">Pending Review</option>
                                     <option value="SHORTLISTED_REVIEW">Shortlisted For Action</option>
+                                    <option value="ASSESSMENT_PENDING_FINAL_DECISION">Assessment Pending Final Decision</option>
                                     <option value="SUBMITTED_BY_AGENCY">Submitted By Agency</option>
                                     <option value="SHORTLISTED_BY_DEPARTMENT">Shortlisted By Department</option>
                                     <option value="REJECTED_BY_DEPARTMENT">Rejected By Department</option>
@@ -245,6 +246,7 @@
 
                                 <tr th:each="candidate, stat : ${shortlistingDetail.candidates}"
                                     th:attr="data-status=${candidate.candidateStatus.name()},
+                                             data-assessment-submitted=${candidate.assessmentSubmitted == true},
                                              data-final-decision=${candidate.finalDecisionStatus != null ? candidate.finalDecisionStatus : ''},
                                              data-search=${(candidate.candidateName != null ? candidate.candidateName : '') + ' ' + (candidate.agencyName != null ? candidate.agencyName : '') + ' ' + (candidate.candidateEmail != null ? candidate.candidateEmail : '') + ' ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '')}">
                                     <td th:text="${stat.count}">1</td>
@@ -283,8 +285,8 @@
                                         <div th:if="${candidate.departmentShortlistRemarks != null}" class="remarks-note">
                                             <span th:text="${'Remarks: ' + candidate.departmentShortlistRemarks}">Remarks</span>
                                         </div>
-                                        <div th:if="${candidate.assessmentSubmitted == true}" class="remarks-note text-success">
-                                            Assessment submitted
+                                        <div th:if="${candidate.assessmentSubmitted == true and candidate.finalDecisionStatus == null}" class="remarks-note text-success">
+                                            Assessment submitted and pending final decision
                                         </div>
                                         <div th:if="${candidate.finalDecisionStatus != null}" class="remarks-note">
                                             <span class="badge"
@@ -410,6 +412,7 @@
 
                     rows.forEach((row) => {
                         const rowStatus = row.getAttribute('data-status') || '';
+                        const rowAssessmentSubmitted = row.getAttribute('data-assessment-submitted') || 'false';
                         const rowFinalDecision = row.getAttribute('data-final-decision') || '';
                         const rowSearch = (row.getAttribute('data-search') || '').toLowerCase();
 
@@ -420,6 +423,8 @@
                             statusMatch = (rowStatus === 'SHORTLISTED_BY_DEPARTMENT'
                                     || rowStatus === 'INTERVIEW_SCHEDULED_BY_AGENCY')
                                     && rowFinalDecision !== 'SELECTED';
+                        } else if (selectedStatus === 'ASSESSMENT_PENDING_FINAL_DECISION') {
+                            statusMatch = rowAssessmentSubmitted === 'true' && !rowFinalDecision;
                         }
                         const textMatch = !searchTerm || rowSearch.includes(searchTerm);
                         const visible = statusMatch && textMatch;

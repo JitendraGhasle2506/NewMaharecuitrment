@@ -20,7 +20,7 @@ public interface DepartmentNotificationCandidateSummaryProjection {
 
     Long getRejectedCandidates();
 
-    Long getAssessmentSubmittedCandidates();
+    Long getAssessmentPendingFinalDecisionCandidates();
 
     Long getSelectedCandidates();
 

@@ -133,7 +133,7 @@
                           pendingCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![pendingCandidates != null ? pendingCandidates : 0])},
                           shortlistedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![shortlistedCandidates != null ? shortlistedCandidates : 0])},
                           rejectedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![rejectedCandidates != null ? rejectedCandidates : 0])},
-                          assessmentSubmittedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![assessmentSubmittedCandidates != null ? assessmentSubmittedCandidates : 0])},
+                          assessmentPendingFinalDecisionCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![assessmentPendingFinalDecisionCandidates != null ? assessmentPendingFinalDecisionCandidates : 0])},
                           selectedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![selectedCandidates != null ? selectedCandidates : 0])}">
             <div class="card add-emp-card">
                 <div class="header d-flex justify-content-between align-items-center">
@@ -166,8 +166,8 @@
                             <div class="value" th:text="${shortlistedCandidates}">0</div>
                         </div>
                         <div class="summary-tile">
-                            <div class="label">Assessment Submitted</div>
-                            <div class="value" th:text="${assessmentSubmittedCandidates}">0</div>
+                            <div class="label">Assessment Pending Final Decision</div>
+                            <div class="value" th:text="${assessmentPendingFinalDecisionCandidates}">0</div>
                         </div>
                         <div class="summary-tile">
                             <div class="label">Selected Candidates</div>
@@ -189,7 +189,7 @@
                                     <th class="text-end">Remaining For Review</th>
                                     <th class="text-end">Shortlisted</th>
                                     <th class="text-end">Rejected</th>
-                                    <th class="text-end">Assessment Submitted</th>
+                                    <th class="text-end">Assessment Pending Final Decision</th>
                                     <th class="text-end">Selected</th>
                                     <th>Last Submitted At</th>
                                     <th class="text-center">Action</th>
@@ -238,8 +238,13 @@
                                               th:text="${project.rejectedCandidates != null ? project.rejectedCandidates : 0}">0</span>
                                     </td>
                                     <td class="text-end">
-                                        <span class="count-pill count-assessment"
-                                              th:text="${project.assessmentSubmittedCandidates != null ? project.assessmentSubmittedCandidates : 0}">0</span>
+                                        <a class="count-pill count-assessment"
+                                           th:href="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates(
+                                                recruitmentNotificationId=${project.recruitmentNotificationId},
+                                                status='ASSESSMENT_PENDING_FINAL_DECISION')}"
+                                           th:text="${project.assessmentPendingFinalDecisionCandidates != null ? project.assessmentPendingFinalDecisionCandidates : 0}">
+                                            0
+                                        </a>
                                     </td>
                                     <td class="text-end">
                                         <a class="count-pill count-selected"

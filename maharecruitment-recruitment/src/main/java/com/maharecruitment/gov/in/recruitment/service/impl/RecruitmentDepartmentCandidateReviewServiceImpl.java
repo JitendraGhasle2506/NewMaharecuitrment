@@ -57,9 +57,9 @@ public class RecruitmentDepartmentCandidateReviewServiceImpl implements Recruitm
                         .shortlistedCandidates(
                                 summary.getShortlistedCandidates() == null ? 0L : summary.getShortlistedCandidates())
                         .rejectedCandidates(summary.getRejectedCandidates() == null ? 0L : summary.getRejectedCandidates())
-                        .assessmentSubmittedCandidates(summary.getAssessmentSubmittedCandidates() == null
+                        .assessmentPendingFinalDecisionCandidates(summary.getAssessmentPendingFinalDecisionCandidates() == null
                                 ? 0L
-                                : summary.getAssessmentSubmittedCandidates())
+                                : summary.getAssessmentPendingFinalDecisionCandidates())
                         .selectedCandidates(summary.getSelectedCandidates() == null ? 0L : summary.getSelectedCandidates())
                         .latestSubmittedAt(summary.getLatestSubmittedAt())
                         .build())
