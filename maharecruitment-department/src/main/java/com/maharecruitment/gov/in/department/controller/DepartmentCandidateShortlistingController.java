@@ -29,6 +29,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewA
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentSelectedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlistingDetailView;
 
 import jakarta.validation.Valid;
@@ -51,6 +52,38 @@ public class DepartmentCandidateShortlistingController {
         String actorEmail = resolveActorEmail(principal);
         model.addAttribute("projectQueue", shortlistingService.getProjectQueue(actorEmail));
         return "department/candidate-shortlisting-project-list";
+    }
+
+    @GetMapping("/selected-candidates")
+    public String selectedCandidateList(
+            @RequestParam(name = "recruitmentNotificationId", required = false) Long recruitmentNotificationId,
+            Model model,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+        String actorEmail = resolveActorEmail(principal);
+
+        try {
+            List<DepartmentSelectedCandidateView> selectedCandidates = shortlistingService.getSelectedCandidates(
+                    actorEmail,
+                    recruitmentNotificationId);
+            model.addAttribute("selectedCandidates", selectedCandidates);
+            model.addAttribute("selectedRecruitmentNotificationId", recruitmentNotificationId);
+            model.addAttribute("selectedCandidatesTitle",
+                    recruitmentNotificationId == null ? "All Selected Candidates" : "Selected Candidates (Project)");
+            return "department/candidate-shortlisting-selected-candidate-list";
+        } catch (DepartmentApplicationException ex) {
+            log.warn("Unable to load selected candidates. recruitmentNotificationId={}, reason={}",
+                    recruitmentNotificationId,
+                    ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/department/candidate-shortlisting/projects";
+        } catch (RuntimeException ex) {
+            log.error("Unexpected error while loading selected candidates. recruitmentNotificationId={}",
+                    recruitmentNotificationId,
+                    ex);
+            redirectAttributes.addFlashAttribute("errorMessage", "Unable to load selected candidates right now.");
+            return "redirect:/department/candidate-shortlisting/projects";
+        }
     }
 
     @GetMapping("/projects/{recruitmentNotificationId}/candidates")

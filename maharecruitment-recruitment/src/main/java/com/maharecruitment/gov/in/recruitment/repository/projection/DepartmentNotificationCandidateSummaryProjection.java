@@ -20,5 +20,9 @@ public interface DepartmentNotificationCandidateSummaryProjection {
 
     Long getRejectedCandidates();
 
+    Long getAssessmentSubmittedCandidates();
+
+    Long getSelectedCandidates();
+
     LocalDateTime getLatestSubmittedAt();
 }

@@ -18,6 +18,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateF
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentSelectedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlistingDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlistingProjectView;
 
@@ -48,6 +49,14 @@ public class DepartmentCandidateShortlistingServiceImpl implements DepartmentCan
     public DepartmentShortlistingDetailView getShortlistingDetail(Long recruitmentNotificationId, String actorEmail) {
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
         return candidateReviewService.getDepartmentShortlistingDetail(
+                actorContext.getDepartmentRegistrationId(),
+                recruitmentNotificationId);
+    }
+
+    @Override
+    public List<DepartmentSelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId) {
+        DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
+        return candidateReviewService.getSelectedCandidates(
                 actorContext.getDepartmentRegistrationId(),
                 recruitmentNotificationId);
     }

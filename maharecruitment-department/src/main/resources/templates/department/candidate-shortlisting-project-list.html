@@ -81,6 +81,18 @@
             border: 1px solid #f0c1c7;
         }
 
+        .count-assessment {
+            background: #e7f8fe;
+            color: #0b6f90;
+            border: 1px solid #b8e6f2;
+        }
+
+        .count-selected {
+            background: #e8fbef;
+            color: #1f7a39;
+            border: 1px solid #bde7cb;
+        }
+
         .project-name {
             font-weight: 700;
             color: #163868;
@@ -120,7 +132,9 @@
         <section th:with="totalCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![totalCandidates != null ? totalCandidates : 0])},
                           pendingCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![pendingCandidates != null ? pendingCandidates : 0])},
                           shortlistedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![shortlistedCandidates != null ? shortlistedCandidates : 0])},
-                          rejectedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![rejectedCandidates != null ? rejectedCandidates : 0])}">
+                          rejectedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![rejectedCandidates != null ? rejectedCandidates : 0])},
+                          assessmentSubmittedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![assessmentSubmittedCandidates != null ? assessmentSubmittedCandidates : 0])},
+                          selectedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![selectedCandidates != null ? selectedCandidates : 0])}">
             <div class="card add-emp-card">
                 <div class="header d-flex justify-content-between align-items-center">
                     <div>
@@ -151,6 +165,18 @@
                             <div class="label">Shortlisted</div>
                             <div class="value" th:text="${shortlistedCandidates}">0</div>
                         </div>
+                        <div class="summary-tile">
+                            <div class="label">Assessment Submitted</div>
+                            <div class="value" th:text="${assessmentSubmittedCandidates}">0</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Selected Candidates</div>
+                            <div class="value">
+                                <a th:href="@{/department/candidate-shortlisting/selected-candidates}"
+                                   th:text="${selectedCandidates}"
+                                   style="color: inherit; text-decoration: none;">0</a>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="table-responsive">
@@ -163,13 +189,15 @@
                                     <th class="text-end">Pending Review</th>
                                     <th class="text-end">Shortlisted</th>
                                     <th class="text-end">Rejected</th>
+                                    <th class="text-end">Assessment Submitted</th>
+                                    <th class="text-end">Selected</th>
                                     <th>Last Submitted At</th>
                                     <th class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(projectQueue)}">
-                                    <td colspan="8" class="empty-state">
+                                    <td colspan="10" class="empty-state">
                                         No submitted candidates available for shortlisting.
                                     </td>
                                 </tr>
@@ -198,6 +226,18 @@
                                     <td class="text-end">
                                         <span class="count-pill count-rejected"
                                               th:text="${project.rejectedCandidates != null ? project.rejectedCandidates : 0}">0</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="count-pill count-assessment"
+                                              th:text="${project.assessmentSubmittedCandidates != null ? project.assessmentSubmittedCandidates : 0}">0</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a class="count-pill count-selected"
+                                           th:href="@{/department/candidate-shortlisting/selected-candidates(
+                                            recruitmentNotificationId=${project.recruitmentNotificationId})}"
+                                           th:text="${project.selectedCandidates != null ? project.selectedCandidates : 0}">
+                                            0
+                                        </a>
                                     </td>
                                     <td th:text="${project.latestSubmittedAt != null ? #temporals.format(project.latestSubmittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
                                         -

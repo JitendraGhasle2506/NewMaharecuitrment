@@ -6,6 +6,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateF
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentSelectedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlistingDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlistingProjectView;
 
@@ -14,6 +15,10 @@ public interface DepartmentCandidateShortlistingService {
     List<DepartmentShortlistingProjectView> getProjectQueue(String actorEmail);
 
     DepartmentShortlistingDetailView getShortlistingDetail(Long recruitmentNotificationId, String actorEmail);
+
+    List<DepartmentSelectedCandidateView> getSelectedCandidates(
+            String actorEmail,
+            Long recruitmentNotificationId);
 
     void reviewCandidate(
             Long recruitmentNotificationId,

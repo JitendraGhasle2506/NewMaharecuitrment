@@ -43,6 +43,10 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "coalesce(sum(case when c.candidateStatus = "
             + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT "
             + "then 1 else 0 end), 0) as rejectedCandidates, "
+            + "coalesce(sum(case when c.assessmentSubmitted = true then 1 else 0 end), 0) "
+            + "as assessmentSubmittedCandidates, "
+            + "coalesce(sum(case when c.finalDecisionStatus = 'SELECTED' then 1 else 0 end), 0) "
+            + "as selectedCandidates, "
             + "max(c.createdDateTime) as latestSubmittedAt "
             + "from RecruitmentInterviewDetailEntity c "
             + "join c.recruitmentNotification n "
@@ -127,4 +131,34 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId,
             @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where n.departmentRegistrationId = :departmentRegistrationId "
+            + "and c.active = true "
+            + "and c.finalDecisionStatus = 'SELECTED' "
+            + "order by c.finalDecisionAt desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findSelectedCandidatesForDepartment(
+            @Param("departmentRegistrationId") Long departmentRegistrationId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where n.departmentRegistrationId = :departmentRegistrationId "
+            + "and n.recruitmentNotificationId = :recruitmentNotificationId "
+            + "and c.active = true "
+            + "and c.finalDecisionStatus = 'SELECTED' "
+            + "order by c.finalDecisionAt desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findSelectedCandidatesForDepartmentByNotification(
+            @Param("departmentRegistrationId") Long departmentRegistrationId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId);
 }

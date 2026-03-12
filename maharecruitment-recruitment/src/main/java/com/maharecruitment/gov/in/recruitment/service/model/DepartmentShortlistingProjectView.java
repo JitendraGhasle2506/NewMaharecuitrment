@@ -17,5 +17,7 @@ public class DepartmentShortlistingProjectView {
     private Long pendingCandidates;
     private Long shortlistedCandidates;
     private Long rejectedCandidates;
+    private Long assessmentSubmittedCandidates;
+    private Long selectedCandidates;
     private LocalDateTime latestSubmittedAt;
 }
