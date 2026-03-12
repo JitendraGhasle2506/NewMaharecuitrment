@@ -189,31 +189,26 @@
                                     <tr>
                                         <th class="label-column">GST Document</th>
                                         <td>
-                                            <span th:text="${departmentProfile.gstDocumentName ?: '-'}">-</span>
-                                            <a class="ms-2"
-                                               th:if="${departmentProfile.gstDocumentName != null}"
-                                               th:href="@{/department/profile/documents/gst}"
-                                               target="_blank">View Document</a>
+
+                                            <a class="ms-2" th:if="${departmentProfile.gstDocumentName != null}"
+                                                th:href="@{/department/profile/documents/gst}" target="_blank">View
+                                                Document</a>
                                         </td>
                                     </tr>
                                     <tr>
                                         <th class="label-column">PAN Document</th>
                                         <td>
-                                            <span th:text="${departmentProfile.panDocumentName ?: '-'}">-</span>
-                                            <a class="ms-2"
-                                               th:if="${departmentProfile.panDocumentName != null}"
-                                               th:href="@{/department/profile/documents/pan}"
-                                               target="_blank">View Document</a>
+                                            <a class="ms-2" th:if="${departmentProfile.panDocumentName != null}"
+                                                th:href="@{/department/profile/documents/pan}" target="_blank">View
+                                                Document</a>
                                         </td>
                                     </tr>
                                     <tr>
                                         <th class="label-column">TAN Document</th>
                                         <td>
-                                            <span th:text="${departmentProfile.tanDocumentName ?: '-'}">-</span>
-                                            <a class="ms-2"
-                                               th:if="${departmentProfile.tanDocumentName != null}"
-                                               th:href="@{/department/profile/documents/tan}"
-                                               target="_blank">View Document</a>
+                                            <a class="ms-2" th:if="${departmentProfile.tanDocumentName != null}"
+                                                th:href="@{/department/profile/documents/tan}" target="_blank">View
+                                                Document</a>
                                         </td>
                                     </tr>
                                 </tbody>

@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 
 @Component
+@Order(1)
 public class AdminBootstrapInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(AdminBootstrapInitializer.class);
@@ -25,6 +28,7 @@ public class AdminBootstrapInitializer implements ApplicationRunner {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     @Value("${app.bootstrap.admin.enabled:true}")
     private boolean enabled;
@@ -41,10 +45,12 @@ public class AdminBootstrapInitializer implements ApplicationRunner {
     public AdminBootstrapInitializer(
             RoleRepository roleRepository,
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            JdbcTemplate jdbcTemplate) {
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -55,12 +61,14 @@ public class AdminBootstrapInitializer implements ApplicationRunner {
             return;
         }
 
+        bootstrapRoles();
+
         String normalizedUsername = normalizeRequired(adminUsername, "Admin username");
         String normalizedAdminName = normalizeRequired(adminName, "Admin name");
         String resolvedPassword = normalizeRequired(adminPassword, "Admin password");
 
         Role adminRole = roleRepository.findByNameIgnoreCase("ADMIN")
-                .orElseGet(this::createAdminRole);
+                .orElseThrow(() -> new IllegalStateException("ADMIN role should have been bootstrapped."));
 
         User existingAdmin = userRepository.findByEmailIgnoreCase(normalizedUsername).orElse(null);
         if (existingAdmin == null) {
@@ -70,31 +78,42 @@ public class AdminBootstrapInitializer implements ApplicationRunner {
             admin.setPassword(passwordEncoder.encode(resolvedPassword));
             admin.setRoles(new ArrayList<>(List.of(adminRole)));
             userRepository.save(admin);
-            log.warn("Bootstrap admin user created with username='{}'. Change password immediately.", normalizedUsername);
-            return;
-        }
-
-        if (existingAdmin.getRoles() == null) {
-            existingAdmin.setRoles(new ArrayList<>());
-        }
-
-        boolean hasAdminRole = existingAdmin.getRoles().stream()
-                .anyMatch(role -> "ADMIN".equalsIgnoreCase(role.getName()));
-        if (!hasAdminRole) {
-            existingAdmin.getRoles().add(adminRole);
-            userRepository.save(existingAdmin);
-            log.info("Existing admin user '{}' updated with ADMIN role.", normalizedUsername);
+            log.warn("Bootstrap admin user created with username='{}'. Change password immediately.",
+                    normalizedUsername);
         } else {
-            log.info("Admin bootstrap completed; user '{}' already present.", normalizedUsername);
+            if (existingAdmin.getRoles() == null) {
+                existingAdmin.setRoles(new ArrayList<>());
+            }
+            boolean hasAdminRole = existingAdmin.getRoles().stream()
+                    .anyMatch(role -> "ADMIN".equalsIgnoreCase(role.getName()));
+            if (!hasAdminRole) {
+                existingAdmin.getRoles().add(adminRole);
+                userRepository.save(existingAdmin);
+                log.info("Existing admin user '{}' updated with ADMIN role.", normalizedUsername);
+            } else {
+                log.info("Admin bootstrap completed; user '{}' already present.", normalizedUsername);
+            }
         }
     }
 
-    private Role createAdminRole() {
-        Role role = new Role();
-        role.setName("ADMIN");
-        Role saved = roleRepository.save(role);
-        log.info("Bootstrap role created: {}", saved.getName());
-        return saved;
+    private void bootstrapRoles() {
+        String[] roles = {
+                "ADMIN", "ROLE_ADMIN", "ROLE_USER", "ROLE_AGENCY", "ROLE_HR",
+                "ROLE_STM", "ROLE_HOD2", "ROLE_HOD1", "ROLE_COO", "ROLE_PM",
+                "ROLE_HOD3", "ROLE_STM1", "ROLE_DEPARTMENT", "ROLE_AUDITOR",
+                "ROLE_EMPLOYEE", "ROLE_MAHAIT_ADMIN"
+        };
+
+        for (String roleName : roles) {
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM roles WHERE UPPER(name) = UPPER(?)",
+                    Integer.class, roleName);
+
+            if (count != null && count == 0) {
+                jdbcTemplate.update("INSERT INTO roles (name) VALUES (?)", roleName);
+                log.info("Bootstrapped role: {}", roleName);
+            }
+        }
     }
 
     private String normalizeRequired(String value, String label) {

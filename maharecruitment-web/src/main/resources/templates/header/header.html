@@ -43,8 +43,7 @@
                         <a th:href="${menuItem.isSubMenu == 0 ? '#' :
                                      (menuItem.url != null ?
                                      (menuItem.url.startsWith('/') ? contextPath + menuItem.url : contextPath + '/' + menuItem.url)
-                                     : '#')}"
-                            th:classappend="${menuItem.isSubMenu == 0} ? 'toggle-submenu' : ''"
+                                     : '#')}" th:classappend="${menuItem.isSubMenu == 0} ? 'toggle-submenu' : ''"
                             th:attr="data-target=${'submenu-' + menuItem.menuId}">
                             <i th:class="${menuItem.icon}"></i>
                             <span th:text="${menuItem.menuNameEnglish}"></span>
@@ -53,7 +52,8 @@
 
                         <ul class="list-unstyled submenu" th:id="${'submenu-' + menuItem.menuId}"
                             th:if="${menuItem.isSubMenu == 0 and session.submenus != null}">
-                            <li th:each="subItem : ${session.submenus}" th:if="${subItem.menu.menuId == menuItem.menuId}">
+                            <li th:each="subItem : ${session.submenus}"
+                                th:if="${subItem.menu.menuId == menuItem.menuId}">
                                 <a th:href="${subItem.url != null ?
                                              (subItem.url.startsWith('/') ? contextPath + subItem.url : contextPath + '/' + subItem.url)
                                              : '#'}">
@@ -77,7 +77,8 @@
             <div id="content" class="app-content">
                 <nav class="navbar navbar-expand-lg app-topbar">
                     <div class="container-fluid">
-                        <button type="button" id="sidebarCollapse" class="btn app-nav-toggle" aria-label="Toggle sidebar">
+                        <button type="button" id="sidebarCollapse" class="btn app-nav-toggle"
+                            aria-label="Toggle sidebar">
                             <i class="fas fa-align-left"></i>
                         </button>
 
@@ -85,8 +86,8 @@
 
                         <ul class="nav navbar-nav ms-auto align-items-center gap-2">
                             <li class="nav-item dropdown" th:if="${session.SESSION_USER != null}">
-                                <a class="nav-link dropdown-toggle user-profile-chip" href="#" id="navbarDropdown" role="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle user-profile-chip" href="#" id="navbarDropdown"
+                                    role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span class="user-avatar">
                                         <i class="fas fa-user"></i>
                                     </span>
@@ -96,10 +97,12 @@
                                     </span>
                                 </a>
 
-                                <div class="dropdown-menu dropdown-menu-end profile-dropdown-menu" aria-labelledby="navbarDropdown">
+                                <div class="dropdown-menu dropdown-menu-end profile-dropdown-menu"
+                                    aria-labelledby="navbarDropdown">
                                     <div class="dropdown-header">
                                         <div class="fw-semibold" th:text="${session.SESSION_USER.name}">User Name</div>
-                                        <small class="text-muted" th:text="${session.SESSION_USER.email}">email@domain.com</small>
+                                        <small class="text-muted"
+                                            th:text="${session.SESSION_USER.email}">email@domain.com</small>
                                     </div>
                                     <div class="dropdown-divider"></div>
                                     <form th:action="@{/logout}" method="post" class="px-3 py-2">
@@ -125,7 +128,8 @@
                         <li class="breadcrumb-item">
                             <h4 class="page-title" th:text="${pageTitle != null ? pageTitle : 'Home'}">Home</h4>
                         </li>
-                        <li class="breadcrumb-item active" th:text="${menuTitle != null ? menuTitle : 'Dashboard'}">Menu Name</li>
+                        <li class="breadcrumb-item active" th:text="${menuTitle != null ? menuTitle : 'Dashboard'}">Menu
+                            Name</li>
                     </ul>
 
                     <div class="page-contents">

@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.auth.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -50,7 +51,7 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
             return createAgencyUser(request, email, agencyRole);
         }
 
-        if (!previousEmail.equals(email) && userRepository.existsByEmailIgnoreCase(email)) {
+        if (!Objects.equals(previousEmail, email) && userRepository.existsByEmailIgnoreCase(email)) {
             throw new IllegalArgumentException("A user account already exists for the updated agency official email.");
         }
 
