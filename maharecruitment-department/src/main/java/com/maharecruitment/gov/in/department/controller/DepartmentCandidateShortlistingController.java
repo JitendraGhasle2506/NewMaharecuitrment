@@ -27,6 +27,7 @@ import com.maharecruitment.gov.in.department.service.DepartmentCandidateShortlis
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentPanelMemberInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewScheduleAvailableCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentSelectedCandidateView;
@@ -82,6 +83,41 @@ public class DepartmentCandidateShortlistingController {
                     recruitmentNotificationId,
                     ex);
             redirectAttributes.addFlashAttribute("errorMessage", "Unable to load selected candidates right now.");
+            return "redirect:/department/candidate-shortlisting/projects";
+        }
+    }
+
+    @GetMapping("/interview-schedule-candidates")
+    public String interviewScheduleAvailableCandidateList(
+            @RequestParam(name = "recruitmentNotificationId", required = false) Long recruitmentNotificationId,
+            Model model,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+        String actorEmail = resolveActorEmail(principal);
+
+        try {
+            List<DepartmentInterviewScheduleAvailableCandidateView> candidates =
+                    shortlistingService.getCandidatesAvailableForInterviewSchedule(
+                            actorEmail,
+                            recruitmentNotificationId);
+            model.addAttribute("interviewScheduleCandidates", candidates);
+            model.addAttribute("selectedRecruitmentNotificationId", recruitmentNotificationId);
+            model.addAttribute("pageTitle",
+                    recruitmentNotificationId == null
+                            ? "Available For Interview Schedule (All Projects)"
+                            : "Available For Interview Schedule (Project)");
+            return "department/candidate-shortlisting-interview-schedule-candidate-list";
+        } catch (DepartmentApplicationException ex) {
+            log.warn("Unable to load interview schedule available candidates. recruitmentNotificationId={}, reason={}",
+                    recruitmentNotificationId,
+                    ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/department/candidate-shortlisting/projects";
+        } catch (RuntimeException ex) {
+            log.error("Unexpected error while loading interview schedule available candidates. recruitmentNotificationId={}",
+                    recruitmentNotificationId,
+                    ex);
+            redirectAttributes.addFlashAttribute("errorMessage", "Unable to load interview schedule candidate list.");
             return "redirect:/department/candidate-shortlisting/projects";
         }
     }

@@ -18,6 +18,7 @@ public class DepartmentShortlistingProjectView {
     private Long shortlistedCandidates;
     private Long rejectedCandidates;
     private Long assessmentPendingFinalDecisionCandidates;
+    private Long availableForInterviewScheduleCandidates;
     private Long selectedCandidates;
     private LocalDateTime latestSubmittedAt;
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewScheduleAvailableCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentSelectedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlistingDetailView;
@@ -17,6 +18,10 @@ public interface DepartmentCandidateShortlistingService {
     DepartmentShortlistingDetailView getShortlistingDetail(Long recruitmentNotificationId, String actorEmail);
 
     List<DepartmentSelectedCandidateView> getSelectedCandidates(
+            String actorEmail,
+            Long recruitmentNotificationId);
+
+    List<DepartmentInterviewScheduleAvailableCandidateView> getCandidatesAvailableForInterviewSchedule(
             String actorEmail,
             Long recruitmentNotificationId);
 

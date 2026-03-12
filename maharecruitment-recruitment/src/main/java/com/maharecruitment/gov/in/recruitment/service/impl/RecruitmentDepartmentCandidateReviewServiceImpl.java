@@ -18,6 +18,7 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotification
 import com.maharecruitment.gov.in.recruitment.repository.projection.DepartmentNotificationCandidateSummaryProjection;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentDepartmentCandidateReviewService;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewScheduleAvailableCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentSelectedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlistingDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentShortlistingProjectView;
@@ -60,6 +61,9 @@ public class RecruitmentDepartmentCandidateReviewServiceImpl implements Recruitm
                         .assessmentPendingFinalDecisionCandidates(summary.getAssessmentPendingFinalDecisionCandidates() == null
                                 ? 0L
                                 : summary.getAssessmentPendingFinalDecisionCandidates())
+                        .availableForInterviewScheduleCandidates(summary.getAvailableForInterviewScheduleCandidates() == null
+                                ? 0L
+                                : summary.getAvailableForInterviewScheduleCandidates())
                         .selectedCandidates(summary.getSelectedCandidates() == null ? 0L : summary.getSelectedCandidates())
                         .latestSubmittedAt(summary.getLatestSubmittedAt())
                         .build())
@@ -109,6 +113,26 @@ public class RecruitmentDepartmentCandidateReviewServiceImpl implements Recruitm
 
         return selectedCandidates.stream()
                 .map(this::toSelectedCandidateView)
+                .toList();
+    }
+
+    @Override
+    public List<DepartmentInterviewScheduleAvailableCandidateView> getCandidatesAvailableForInterviewSchedule(
+            Long departmentRegistrationId,
+            Long recruitmentNotificationId) {
+        requirePositiveId(departmentRegistrationId, "Department registration id is required.");
+        if (recruitmentNotificationId != null) {
+            requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
+        }
+
+        List<RecruitmentInterviewDetailEntity> candidates = recruitmentNotificationId == null
+                ? interviewDetailRepository.findInterviewScheduleAvailableCandidatesForDepartment(departmentRegistrationId)
+                : interviewDetailRepository.findInterviewScheduleAvailableCandidatesForDepartmentByNotification(
+                        departmentRegistrationId,
+                        recruitmentNotificationId);
+
+        return candidates.stream()
+                .map(this::toInterviewScheduleAvailableView)
                 .toList();
     }
 
@@ -240,6 +264,40 @@ public class RecruitmentDepartmentCandidateReviewServiceImpl implements Recruitm
                 .resumeFilePath(candidate.getResumeFilePath())
                 .interviewDateTime(candidate.getInterviewDateTime())
                 .finalDecisionAt(candidate.getFinalDecisionAt())
+                .build();
+    }
+
+    private DepartmentInterviewScheduleAvailableCandidateView toInterviewScheduleAvailableView(
+            RecruitmentInterviewDetailEntity candidate) {
+        String designationName = candidate.getDesignationVacancy() != null
+                && candidate.getDesignationVacancy().getDesignationMst() != null
+                        ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
+                        : "-";
+
+        return DepartmentInterviewScheduleAvailableCandidateView.builder()
+                .recruitmentNotificationId(candidate.getRecruitmentNotification() != null
+                        ? candidate.getRecruitmentNotification().getRecruitmentNotificationId()
+                        : null)
+                .requestId(candidate.getRecruitmentNotification() != null
+                        ? candidate.getRecruitmentNotification().getRequestId()
+                        : null)
+                .projectName(candidate.getRecruitmentNotification() != null
+                        && candidate.getRecruitmentNotification().getProjectMst() != null
+                                ? candidate.getRecruitmentNotification().getProjectMst().getProjectName()
+                                : "-")
+                .recruitmentInterviewDetailId(candidate.getRecruitmentInterviewDetailId())
+                .agencyName(candidate.getAgency() != null ? candidate.getAgency().getAgencyName() : "-")
+                .candidateName(candidate.getCandidateName())
+                .candidateEmail(candidate.getCandidateEmail())
+                .candidateMobile(candidate.getCandidateMobile())
+                .designationName(designationName)
+                .levelCode(candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null)
+                .totalExperience(candidate.getTotalExperience())
+                .relevantExperience(candidate.getRelevantExperience())
+                .resumeFilePath(candidate.getResumeFilePath())
+                .interviewDateTime(candidate.getInterviewDateTime())
+                .interviewLink(candidate.getInterviewLink())
+                .finalDecisionStatus(candidate.getFinalDecisionStatus())
                 .build();
     }
 

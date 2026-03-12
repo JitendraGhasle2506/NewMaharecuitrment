@@ -22,6 +22,8 @@ public interface DepartmentNotificationCandidateSummaryProjection {
 
     Long getAssessmentPendingFinalDecisionCandidates();
 
+    Long getAvailableForInterviewScheduleCandidates();
+
     Long getSelectedCandidates();
 
     LocalDateTime getLatestSubmittedAt();

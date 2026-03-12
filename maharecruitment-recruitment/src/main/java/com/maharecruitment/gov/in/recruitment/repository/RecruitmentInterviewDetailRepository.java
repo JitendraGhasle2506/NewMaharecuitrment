@@ -44,6 +44,12 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "then 1 else 0 end), 0) as rejectedCandidates, "
             + "coalesce(sum(case when c.assessmentSubmitted = true and c.finalDecisionStatus is null then 1 else 0 end), 0) "
             + "as assessmentPendingFinalDecisionCandidates, "
+            + "coalesce(sum(case when c.candidateStatus = "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+            + "and c.departmentShortlistedAt is not null "
+            + "and c.interviewDateTime is not null "
+            + "and c.finalDecisionStatus is null then 1 else 0 end), 0) "
+            + "as availableForInterviewScheduleCandidates, "
             + "coalesce(sum(case when c.finalDecisionStatus = 'SELECTED' then 1 else 0 end), 0) "
             + "as selectedCandidates, "
             + "max(c.createdDateTime) as latestSubmittedAt "
@@ -158,6 +164,44 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "and c.finalDecisionStatus = 'SELECTED' "
             + "order by c.finalDecisionAt desc, c.createdDateTime desc")
     List<RecruitmentInterviewDetailEntity> findSelectedCandidatesForDepartmentByNotification(
+            @Param("departmentRegistrationId") Long departmentRegistrationId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where n.departmentRegistrationId = :departmentRegistrationId "
+            + "and c.active = true "
+            + "and c.candidateStatus = "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+            + "and c.departmentShortlistedAt is not null "
+            + "and c.interviewDateTime is not null "
+            + "and c.finalDecisionStatus is null "
+            + "order by c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findInterviewScheduleAvailableCandidatesForDepartment(
+            @Param("departmentRegistrationId") Long departmentRegistrationId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where n.departmentRegistrationId = :departmentRegistrationId "
+            + "and n.recruitmentNotificationId = :recruitmentNotificationId "
+            + "and c.active = true "
+            + "and c.candidateStatus = "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+            + "and c.departmentShortlistedAt is not null "
+            + "and c.interviewDateTime is not null "
+            + "and c.finalDecisionStatus is null "
+            + "order by c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findInterviewScheduleAvailableCandidatesForDepartmentByNotification(
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
 }
