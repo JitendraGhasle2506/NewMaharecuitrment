@@ -8,7 +8,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.maharecruitment.gov.in.department.entity.DepartmentApplicationType;
 import com.maharecruitment.gov.in.department.entity.DepartmentRequestSequenceEntity;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.repository.DepartmentRequestSequenceRepository;
@@ -29,7 +28,6 @@ public class DepartmentRequestIdGeneratorImpl implements DepartmentRequestIdGene
     @Override
     @Transactional
     public String generate(String applicationType) {
-        // String typeCode = resolveTypeCode(applicationType);
         LocalDate requestDate = LocalDate.now();
 
         DepartmentRequestSequenceEntity sequenceEntity = requestSequenceRepository
@@ -69,21 +67,4 @@ public class DepartmentRequestIdGeneratorImpl implements DepartmentRequestIdGene
         }
     }
 
-    private String resolveTypeCode(DepartmentApplicationType applicationType) {
-        if (applicationType == null) {
-            throw new DepartmentApplicationException("Application type is required for request-id generation.");
-        }
-
-        // Requested business format: REQ-YYYYMMDD-E/I####.
-        // I -> new implementation, E -> maintenance/enhancement.
-        switch (applicationType) {
-            case NEW_DEVELOPMENT:
-                return "I";
-            case MAINTENANCE_AND_ENHANCEMENT:
-                return "E";
-            default:
-                throw new DepartmentApplicationException(
-                        "Unsupported application type for request-id generation: " + applicationType);
-        }
-    }
 }

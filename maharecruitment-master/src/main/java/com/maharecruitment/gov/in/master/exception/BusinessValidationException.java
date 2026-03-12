@@ -1,7 +1,7 @@
 package com.maharecruitment.gov.in.master.exception;
 
-@SuppressWarnings("serial")
 public class BusinessValidationException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
     public BusinessValidationException(String message) {
         super(message);

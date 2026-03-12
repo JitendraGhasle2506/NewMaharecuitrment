@@ -530,8 +530,7 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
                 .collect(Collectors.toMap(
                         DepartmentSubmittedProjectCountProjection::getDepartmentRegistrationId,
                         DepartmentSubmittedProjectCountProjection::getProjectCount,
-                        Long::sum,
-                        LinkedHashMap::new));
+                        (v1, v2) -> (v1 != null ? v1 : 0L) + (v2 != null ? v2 : 0L),                        LinkedHashMap::new));
     }
 
     private DepartmentRegistrationEntity findRegistrationForApplication(DepartmentProjectApplicationEntity application) {
