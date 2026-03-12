@@ -5,11 +5,152 @@
     <meta charset="UTF-8">
     <title>Submitted Candidates</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .summary-tile {
+            background: #ffffff;
+            border: 1px solid #dbe5f3;
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .summary-tile .label {
+            color: #5e6e8f;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+        .summary-tile .value {
+            color: #0f2f5f;
+            font-size: 20px;
+            font-weight: 800;
+            margin-top: 2px;
+            line-height: 1.15;
+        }
+
+        .toolbar-panel {
+            background: #f6f9ff;
+            border: 1px solid #dbe5f3;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+
+        .table thead th {
+            white-space: nowrap;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .35px;
+            color: #415778;
+            background: #f4f8ff;
+        }
+
+        .candidate-name {
+            font-weight: 700;
+            color: #173868;
+        }
+
+        .meta-line {
+            color: #6c7f9d;
+            font-size: 12px;
+        }
+
+        .status-chip {
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid transparent;
+            display: inline-block;
+        }
+
+        .status-submitted {
+            background: #eaf1ff;
+            color: #27477d;
+            border-color: #c5d6f5;
+        }
+
+        .status-shortlisted {
+            background: #e8fbef;
+            color: #1f7a39;
+            border-color: #bde7cb;
+        }
+
+        .status-rejected {
+            background: #ffecee;
+            color: #b42335;
+            border-color: #f0c1c7;
+        }
+
+        .status-scheduled {
+            background: #e7f8fe;
+            color: #0b6f90;
+            border-color: #b8e6f2;
+        }
+
+        .remarks-note {
+            margin-top: 4px;
+            color: #5d6e8b;
+            font-size: 12px;
+        }
+
+        .resume-button {
+            min-width: 80px;
+        }
+
+        .action-form .form-control {
+            border-radius: 9px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c7f9d;
+            padding: 18px 8px;
+        }
+
+        .filter-empty {
+            display: none;
+            margin-top: 10px;
+            color: #6c7f9d;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        @media (max-width: 1200px) {
+            .summary-strip {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .summary-strip {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 576px) {
+            .summary-strip {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body class="department-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('Department', 'Project Name', ~{::section})}">
-        <section>
+        <section th:with="totalRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates) : 0},
+                          pendingRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates.?[candidateStatus.name() == 'SUBMITTED_BY_AGENCY']) : 0},
+                          shortlistedRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates.?[candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT']) : 0},
+                          rejectedRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates.?[candidateStatus.name() == 'REJECTED_BY_DEPARTMENT']) : 0},
+                          scheduledRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates.?[candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY']) : 0}">
             <div class="card add-emp-card">
                 <div class="header d-flex justify-content-between align-items-center">
                     <div>
@@ -30,8 +171,56 @@
                     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
+                    <div class="summary-strip">
+                        <div class="summary-tile">
+                            <div class="label">Total Candidates</div>
+                            <div class="value" th:text="${totalRows}">0</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Pending Review</div>
+                            <div class="value" th:text="${pendingRows}">0</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Shortlisted</div>
+                            <div class="value" th:text="${shortlistedRows}">0</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Rejected</div>
+                            <div class="value" th:text="${rejectedRows}">0</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Interview Scheduled</div>
+                            <div class="value" th:text="${scheduledRows}">0</div>
+                        </div>
+                    </div>
+
+                    <div class="toolbar-panel">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-6">
+                                <input id="candidateSearchInput"
+                                       type="text"
+                                       class="form-control form-control-sm"
+                                       placeholder="Search by candidate, agency, email, mobile">
+                            </div>
+                            <div class="col-md-4">
+                                <select id="statusFilterSelect" class="form-select form-select-sm">
+                                    <option value="">All Status</option>
+                                    <option value="SUBMITTED_BY_AGENCY">Submitted By Agency</option>
+                                    <option value="SHORTLISTED_BY_DEPARTMENT">Shortlisted By Department</option>
+                                    <option value="REJECTED_BY_DEPARTMENT">Rejected By Department</option>
+                                    <option value="INTERVIEW_SCHEDULED_BY_AGENCY">Interview Scheduled By Agency</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="clearFilterButton">
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle mb-0">
+                        <table id="departmentCandidateTable" class="table table-bordered table-hover align-middle mb-0">
                             <thead>
                                 <tr>
                                     <th>#</th>
@@ -47,25 +236,29 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(shortlistingDetail.candidates)}">
-                                    <td colspan="9" class="text-center text-muted">
+                                    <td colspan="9" class="empty-state">
                                         No candidates submitted for this project.
                                     </td>
                                 </tr>
 
-                                <tr th:each="candidate, stat : ${shortlistingDetail.candidates}">
+                                <tr th:each="candidate, stat : ${shortlistingDetail.candidates}"
+                                    th:attr="data-status=${candidate.candidateStatus.name()},
+                                             data-search=${(candidate.candidateName != null ? candidate.candidateName : '') + ' ' + (candidate.agencyName != null ? candidate.agencyName : '') + ' ' + (candidate.candidateEmail != null ? candidate.candidateEmail : '') + ' ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '')}">
                                     <td th:text="${stat.count}">1</td>
-                                    <td th:text="${candidate.agencyName != null ? candidate.agencyName : '-'}">Agency Name</td>
                                     <td>
-                                        <div th:text="${candidate.candidateName}">Candidate</div>
-                                        <small class="text-muted"
+                                        <div class="candidate-name" th:text="${candidate.agencyName != null ? candidate.agencyName : '-'}">
+                                            Agency Name
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="candidate-name" th:text="${candidate.candidateName}">Candidate</div>
+                                        <div class="meta-line"
                                                th:text="${candidate.candidateEmail + ' | ' + candidate.candidateMobile}">
                                             email | mobile
-                                        </small>
-                                        <div>
-                                            <small class="text-muted"
+                                        </div>
+                                        <div class="meta-line"
                                                    th:text="${candidate.candidateEducation != null ? candidate.candidateEducation : '-'}">
                                                 Qualification
-                                            </small>
                                         </div>
                                     </td>
                                     <td th:text="${candidate.designationName + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">
@@ -77,37 +270,37 @@
                                         <span th:text="${candidate.relevantExperience != null ? candidate.relevantExperience : 0}">0</span>
                                     </td>
                                     <td>
-                                        <span class="badge"
-                                              th:classappend="${candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT'} ? ' text-bg-success' :
-                                                (${candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT'} ? ' text-bg-danger' :
-                                                (${candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' text-bg-info' : ' text-bg-primary'))"
+                                        <span class="status-chip"
+                                              th:classappend="${candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT'} ? ' status-shortlisted' :
+                                                (${candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT'} ? ' status-rejected' :
+                                                (${candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' status-scheduled' : ' status-submitted'))"
                                               th:text="${#strings.replace(candidate.candidateStatus.name(), '_', ' ')}">
                                             SUBMITTED BY AGENCY
                                         </span>
-                                        <div th:if="${candidate.departmentShortlistRemarks != null}" class="mt-1">
-                                            <small class="text-muted"
-                                                   th:text="${'Remarks: ' + candidate.departmentShortlistRemarks}">Remarks</small>
+                                        <div th:if="${candidate.departmentShortlistRemarks != null}" class="remarks-note">
+                                            <span th:text="${'Remarks: ' + candidate.departmentShortlistRemarks}">Remarks</span>
                                         </div>
                                     </td>
                                     <td class="text-center">
                                         <button type="button"
-                                                class="btn btn-outline-secondary btn-sm"
+                                                class="btn btn-outline-secondary btn-sm resume-button"
                                                 th:if="${candidate.resumeFilePath != null}"
                                                 th:attr="data-path=${candidate.resumeFilePath}"
                                                 onclick="openManagedDocument(this.getAttribute('data-path'))">
-                                            View
+                                            <i class="fa fa-eye me-1"></i>View
                                         </button>
                                         <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>
                                     </td>
                                     <td>
                                         <div th:if="${candidate.interviewDateTime != null}">
-                                            <div th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
+                                            <div class="candidate-name"
+                                                 th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
                                                 01-Apr-2026 10:30
                                             </div>
-                                            <small class="text-muted"
+                                            <div class="meta-line"
                                                    th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : '-'}">
                                                 Time Slot
-                                            </small>
+                                            </div>
                                             <div th:if="${candidate.interviewLink != null}">
                                                 <a th:href="${candidate.interviewLink}" target="_blank">Join Link</a>
                                             </div>
@@ -116,6 +309,7 @@
                                     </td>
                                     <td>
                                         <form method="post"
+                                              class="action-form review-form"
                                               th:if="${candidate.candidateStatus.name() != 'INTERVIEW_SCHEDULED_BY_AGENCY'}"
                                               th:action="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/review(
                                                 recruitmentNotificationId=${shortlistingDetail.recruitmentNotificationId},
@@ -132,13 +326,13 @@
                                                         class="btn btn-outline-success btn-sm"
                                                         name="decision"
                                                         value="SHORTLIST">
-                                                    Shortlist
+                                                    <i class="fa fa-check me-1"></i>Shortlist
                                                 </button>
                                                 <button type="submit"
                                                         class="btn btn-outline-danger btn-sm"
                                                         name="decision"
                                                         value="REJECT">
-                                                    Reject
+                                                    <i class="fa fa-ban me-1"></i>Reject
                                                 </button>
                                             </div>
                                         </form>
@@ -150,6 +344,10 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <div id="candidateFilterEmptyMessage" class="filter-empty">
+                        No candidates match the selected search/filter.
                     </div>
                 </div>
             </div>
@@ -172,6 +370,71 @@
                 alert("Unable to open resume document.");
             }
         }
+
+        (function () {
+            const searchInput = document.getElementById('candidateSearchInput');
+            const statusFilter = document.getElementById('statusFilterSelect');
+            const clearButton = document.getElementById('clearFilterButton');
+            const table = document.getElementById('departmentCandidateTable');
+            const emptyMessage = document.getElementById('candidateFilterEmptyMessage');
+
+            if (searchInput && statusFilter && clearButton && table) {
+                const rows = Array.from(table.querySelectorAll('tbody tr[data-status]'));
+
+                const applyFilters = () => {
+                    const searchTerm = (searchInput.value || '').trim().toLowerCase();
+                    const selectedStatus = statusFilter.value || '';
+                    let visibleCount = 0;
+
+                    rows.forEach((row) => {
+                        const rowStatus = row.getAttribute('data-status') || '';
+                        const rowSearch = (row.getAttribute('data-search') || '').toLowerCase();
+
+                        const statusMatch = !selectedStatus || rowStatus === selectedStatus;
+                        const textMatch = !searchTerm || rowSearch.includes(searchTerm);
+                        const visible = statusMatch && textMatch;
+
+                        row.style.display = visible ? '' : 'none';
+                        if (visible) {
+                            visibleCount++;
+                        }
+                    });
+
+                    if (emptyMessage) {
+                        emptyMessage.style.display = rows.length > 0 && visibleCount === 0 ? 'block' : 'none';
+                    }
+                };
+
+                searchInput.addEventListener('input', applyFilters);
+                statusFilter.addEventListener('change', applyFilters);
+                clearButton.addEventListener('click', () => {
+                    searchInput.value = '';
+                    statusFilter.value = '';
+                    applyFilters();
+                });
+            }
+
+            document.querySelectorAll('.review-form').forEach((form) => {
+                form.addEventListener('submit', (event) => {
+                    const submitter = event.submitter;
+                    if (!submitter) {
+                        return;
+                    }
+
+                    const decision = submitter.value;
+                    const remarksField = form.querySelector('input[name="remarks"]');
+                    const remarks = remarksField ? remarksField.value.trim() : '';
+
+                    if (decision === 'REJECT' && !remarks) {
+                        event.preventDefault();
+                        alert('Remarks are mandatory for reject decision.');
+                        if (remarksField) {
+                            remarksField.focus();
+                        }
+                    }
+                });
+            });
+        })();
     </script>
 </body>
 

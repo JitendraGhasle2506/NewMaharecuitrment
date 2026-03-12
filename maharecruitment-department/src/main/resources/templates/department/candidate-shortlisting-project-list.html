@@ -5,11 +5,122 @@
     <meta charset="UTF-8">
     <title>Project Name</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .summary-tile {
+            background: #ffffff;
+            border: 1px solid #dbe5f3;
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .summary-tile .label {
+            color: #5e6e8f;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+        .summary-tile .value {
+            color: #0f2f5f;
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-top: 2px;
+        }
+
+        .request-pill {
+            background: #eef4ff;
+            color: #2f4b83;
+            border: 1px solid #c9d9f4;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .count-pill {
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            min-width: 44px;
+            text-align: center;
+        }
+
+        .count-total {
+            background: #edf2ff;
+            color: #2b3d63;
+            border: 1px solid #d4def3;
+        }
+
+        .count-pending {
+            background: #fff6e2;
+            color: #8b6300;
+            border: 1px solid #f0dea8;
+        }
+
+        .count-shortlisted {
+            background: #e8fbef;
+            color: #1f7a39;
+            border: 1px solid #bde7cb;
+        }
+
+        .count-rejected {
+            background: #ffecee;
+            color: #b42335;
+            border: 1px solid #f0c1c7;
+        }
+
+        .project-name {
+            font-weight: 700;
+            color: #163868;
+        }
+
+        .table thead th {
+            white-space: nowrap;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .35px;
+            color: #415778;
+            background: #f4f8ff;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c7f9d;
+            padding: 18px 8px;
+        }
+
+        @media (max-width: 991px) {
+            .summary-strip {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 576px) {
+            .summary-strip {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body class="department-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('Department', 'Project Name', ~{::section})}">
-        <section>
+        <section th:with="totalCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![totalCandidates != null ? totalCandidates : 0])},
+                          pendingCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![pendingCandidates != null ? pendingCandidates : 0])},
+                          shortlistedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![shortlistedCandidates != null ? shortlistedCandidates : 0])},
+                          rejectedCandidates=${#lists.isEmpty(projectQueue) ? 0 : #aggregates.sum(projectQueue.![rejectedCandidates != null ? rejectedCandidates : 0])}">
             <div class="card add-emp-card">
                 <div class="header d-flex justify-content-between align-items-center">
                     <div>
@@ -22,6 +133,25 @@
                 <div class="card-body">
                     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="summary-strip">
+                        <div class="summary-tile">
+                            <div class="label">Total Projects</div>
+                            <div class="value" th:text="${#lists.size(projectQueue)}">0</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Candidates Submitted</div>
+                            <div class="value" th:text="${totalCandidates}">0</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Pending Review</div>
+                            <div class="value" th:text="${pendingCandidates}">0</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="label">Shortlisted</div>
+                            <div class="value" th:text="${shortlistedCandidates}">0</div>
+                        </div>
+                    </div>
 
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover align-middle mb-0">
@@ -39,34 +169,44 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(projectQueue)}">
-                                    <td colspan="8" class="text-center text-muted">
+                                    <td colspan="8" class="empty-state">
                                         No submitted candidates available for shortlisting.
                                     </td>
                                 </tr>
 
                                 <tr th:each="project : ${projectQueue}">
-                                    <td th:text="${project.requestId}">REQ-0000</td>
-                                    <td th:text="${project.projectName != null ? project.projectName : '-'}">Project</td>
-                                    <td class="text-end" th:text="${project.totalCandidates != null ? project.totalCandidates : 0}">
-                                        0
+                                    <td>
+                                        <span class="request-pill" th:text="${project.requestId}">REQ-0000</span>
                                     </td>
-                                    <td class="text-end" th:text="${project.pendingCandidates != null ? project.pendingCandidates : 0}">
-                                        0
+                                    <td>
+                                        <div class="project-name" th:text="${project.projectName != null ? project.projectName : '-'}">
+                                            Project
+                                        </div>
                                     </td>
-                                    <td class="text-end" th:text="${project.shortlistedCandidates != null ? project.shortlistedCandidates : 0}">
-                                        0
+                                    <td class="text-end">
+                                        <span class="count-pill count-total"
+                                              th:text="${project.totalCandidates != null ? project.totalCandidates : 0}">0</span>
                                     </td>
-                                    <td class="text-end" th:text="${project.rejectedCandidates != null ? project.rejectedCandidates : 0}">
-                                        0
+                                    <td class="text-end">
+                                        <span class="count-pill count-pending"
+                                              th:text="${project.pendingCandidates != null ? project.pendingCandidates : 0}">0</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="count-pill count-shortlisted"
+                                              th:text="${project.shortlistedCandidates != null ? project.shortlistedCandidates : 0}">0</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="count-pill count-rejected"
+                                              th:text="${project.rejectedCandidates != null ? project.rejectedCandidates : 0}">0</span>
                                     </td>
                                     <td th:text="${project.latestSubmittedAt != null ? #temporals.format(project.latestSubmittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
                                         -
                                     </td>
                                     <td class="text-center">
-                                        <a class="btn btn-outline-primary btn-sm"
+                                        <a class="btn btn-primary btn-sm"
                                            th:href="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates(
                                             recruitmentNotificationId=${project.recruitmentNotificationId})}">
-                                            View Candidates
+                                            Open Shortlisting
                                         </a>
                                     </td>
                                 </tr>

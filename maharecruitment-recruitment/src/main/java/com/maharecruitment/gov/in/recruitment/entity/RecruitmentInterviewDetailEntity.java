@@ -18,6 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -134,6 +135,42 @@ public class RecruitmentInterviewDetailEntity extends RecruitmentAuditable {
     @Column(name = "interview_remarks", length = 1000)
     private String interviewRemarks;
 
+    @Column(name = "department_interview_change_requested", nullable = false)
+    private Boolean departmentInterviewChangeRequested = false;
+
+    @Column(name = "department_interview_change_reason", length = 1000)
+    private String departmentInterviewChangeReason;
+
+    @Column(name = "department_interview_change_requested_at")
+    private LocalDateTime departmentInterviewChangeRequestedAt;
+
+    @Column(name = "department_interview_change_requested_by_user_id")
+    private Long departmentInterviewChangeRequestedByUserId;
+
+    @Column(name = "assessment_submitted", nullable = false)
+    private Boolean assessmentSubmitted = false;
+
+    @Column(name = "assessment_submitted_at")
+    private LocalDateTime assessmentSubmittedAt;
+
+    @Column(name = "assessment_submitted_by_user_id")
+    private Long assessmentSubmittedByUserId;
+
+    @Column(name = "final_decision_status", length = 20)
+    private String finalDecisionStatus;
+
+    @Column(name = "final_decision_at")
+    private LocalDateTime finalDecisionAt;
+
+    @Column(name = "final_decision_by_user_id")
+    private Long finalDecisionByUserId;
+
+    @Column(name = "final_decision_remarks", length = 1000)
+    private String finalDecisionRemarks;
+
+    @OneToOne(mappedBy = "recruitmentInterviewDetail", fetch = FetchType.LAZY, orphanRemoval = true)
+    private RecruitmentAssessmentFeedbackEntity assessmentFeedback;
+
     @Column(name = "is_active", nullable = false)
     private Boolean active = true;
 
@@ -152,10 +189,15 @@ public class RecruitmentInterviewDetailEntity extends RecruitmentAuditable {
         interviewLink = normalizeText(interviewLink);
         interviewRemarks = normalizeText(interviewRemarks);
         departmentShortlistRemarks = normalizeText(departmentShortlistRemarks);
+        departmentInterviewChangeReason = normalizeText(departmentInterviewChangeReason);
+        finalDecisionStatus = normalizeText(finalDecisionStatus);
+        finalDecisionRemarks = normalizeText(finalDecisionRemarks);
 
         if (candidateStatus == null) {
             candidateStatus = RecruitmentCandidateStatus.SUBMITTED_BY_AGENCY;
         }
+        departmentInterviewChangeRequested = !Boolean.FALSE.equals(departmentInterviewChangeRequested);
+        assessmentSubmitted = !Boolean.FALSE.equals(assessmentSubmitted);
         active = !Boolean.FALSE.equals(active);
     }
 
