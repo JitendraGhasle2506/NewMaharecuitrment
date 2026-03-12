@@ -155,10 +155,18 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
 
         DepartmentProjectApplicationEntity saved = applicationRepository.save(entity);
 
-        DepartmentApplicationActivityType activityType = createOperation
-                ? DepartmentApplicationActivityType.CREATED
-                : DepartmentApplicationActivityType.UPDATED;
-        recordActivity(saved, activityType, previousStatus, nextStatus, actorContext, form.getRemarks());
+        if (createOperation) {
+            recordActivity(saved, DepartmentApplicationActivityType.CREATED, previousStatus, nextStatus, actorContext, form.getRemarks());
+        } else if (previousStatus != nextStatus) {
+            recordActivity(saved,
+                    DepartmentApplicationActivityType.STATUS_CHANGED,
+                    previousStatus,
+                    nextStatus,
+                    actorContext,
+                    "Application moved to " + nextStatus.getDisplayName() + ".");
+        } else if (!workOrderUploaded) {
+            recordActivity(saved, DepartmentApplicationActivityType.UPDATED, previousStatus, nextStatus, actorContext, form.getRemarks());
+        }
 
         if (workOrderUploaded) {
             recordActivity(saved,
@@ -167,15 +175,6 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                     nextStatus,
                     actorContext,
                     "Work-order document uploaded or replaced.");
-        }
-
-        if (previousStatus != nextStatus) {
-            recordActivity(saved,
-                    DepartmentApplicationActivityType.STATUS_CHANGED,
-                    previousStatus,
-                    nextStatus,
-                    actorContext,
-                    "Application moved to " + nextStatus + " state.");
         }
 
         if (ACTION_SUBMIT.equals(normalizedAction)) {
@@ -325,7 +324,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 previousStatus,
                 nextStatus,
                 actorContext,
-                "HR decision " + decision + " applied.");
+                "HR decision " + decision + " applied. (" + nextStatus.getDisplayName() + ")");
 
         log.info("HR reviewed application. applicationId={}, decision={}, status={} actor={}",
                 applicationId,
@@ -357,7 +356,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                     DepartmentApplicationStatus.HR_APPROVED,
                     DepartmentApplicationStatus.AUDITOR_REVIEW,
                     actorContext,
-                    "Application moved to auditor review.");
+                    "Application moved to " + DepartmentApplicationStatus.AUDITOR_REVIEW.getDisplayName() + ".");
             currentStatus = DepartmentApplicationStatus.AUDITOR_REVIEW;
         }
 
@@ -373,7 +372,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 currentStatus,
                 nextStatus,
                 actorContext,
-                "Auditor decision " + decision + " applied.");
+                "Auditor decision " + decision + " applied. (" + nextStatus.getDisplayName() + ")");
 
         if (nextStatus == DepartmentApplicationStatus.AUDITOR_APPROVED) {
             syncProjectMaster(saved);

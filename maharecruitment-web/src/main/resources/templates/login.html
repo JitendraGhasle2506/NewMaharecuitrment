@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -85,18 +85,18 @@
                             <div class="form-group mb-3">
                                 <div class="cpmain">
                                     <fieldset class="captchaMain">
-                                        <span id="SuccessMessage" style="display: none;" class="success"></span>
-                                        <input type="text" id="UserCaptchaCode" onkeyup="myFunction();"
-                                            class="CaptchaTxtField form-control" maxlength="6"
-                                            placeholder="Enter Captcha - Case Sensitive" required>
-                                        <span id="WrongCaptchaError" class="error"></span>
                                         <div class="CaptchaWrap">
                                             <div id="CaptchaImageCode" class="CaptchaTxtField">
                                                 <canvas id="CapCode" class="capcode" width="300" height="80"></canvas>
                                             </div>
-                                            <input type="button" class="ReloadBtn" onclick="CreateCaptcha();"
-                                                aria-label="Reload captcha">
+                                            <button type="button" class="ReloadBtn" onclick="CreateCaptcha();"
+                                                aria-label="Reload captcha"></button>
                                         </div>
+                                        <input type="text" id="UserCaptchaCode" onkeyup="myFunction();"
+                                            class="CaptchaTxtField form-control mt-3" maxlength="6"
+                                            placeholder="Enter Captcha - Case Sensitive" required>
+                                        <span id="WrongCaptchaError" class="error mt-1 d-block"></span>
+                                        <span id="SuccessMessage" style="display: none;" class="success mt-1 d-block"></span>
                                     </fieldset>
                                 </div>
                             </div>

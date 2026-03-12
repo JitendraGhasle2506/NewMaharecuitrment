@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap');
 
 :root {
     --ink: #0f172a;
@@ -174,7 +174,7 @@ label.control-label {
     display: flex;
     align-items: center;
     gap: 0.72rem;
-    margin-top: 0.72rem;
+    margin-bottom: 0.75rem;
 }
 
 .capcode {
@@ -194,6 +194,9 @@ label.control-label {
     background: linear-gradient(140deg, var(--brand), var(--brand-2));
     color: #ffffff;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .ReloadBtn::before {

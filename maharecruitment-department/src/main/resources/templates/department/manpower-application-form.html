@@ -225,9 +225,9 @@
                                 <td th:text="${#temporals.format(activity.actionTimestamp, 'dd-MMM-yyyy HH:mm')}"></td>
                                 <td th:text="${#strings.replace(activity.activityType.name(), '_', ' ')}"></td>
                                 <td>
-                                    <span th:text="${activity.previousStatus != null ? #strings.replace(activity.previousStatus.name(), '_', ' ') : '-'}"></span>
+                                    <span th:text="${activity.previousStatus != null ? activity.previousStatus.displayName : '-'}"></span>
                                     <span> -> </span>
-                                    <span th:text="${activity.newStatus != null ? #strings.replace(activity.newStatus.name(), '_', ' ') : '-'}"></span>
+                                    <span th:text="${activity.newStatus != null ? activity.newStatus.displayName : '-'}"></span>
                                 </td>
                                 <td>
                                     <div th:text="${activity.actorName}"></div>
