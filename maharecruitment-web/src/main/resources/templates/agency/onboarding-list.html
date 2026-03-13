@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Onboarding</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="agency-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Onboarding', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Onboarding Ready Candidates</h2>
+                        <small class="text-muted">
+                            Only selected candidates with submitted pre-onboarding details appear here.
+                        </small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/selected-candidates}">
+                        Open Selected Candidates
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Request ID</th>
+                                    <th>Project</th>
+                                    <th>Department</th>
+                                    <th>Candidate</th>
+                                    <th>Designation</th>
+                                    <th>Joining Date</th>
+                                    <th>Onboarding Date</th>
+                                    <th>Submitted At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(onboardingCandidates)}">
+                                    <td colspan="10" class="text-center text-muted">
+                                        No candidates are available for onboarding yet.
+                                    </td>
+                                </tr>
+                                <tr th:each="candidate, stat : ${onboardingCandidates}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td th:text="${candidate.requestId() != null ? candidate.requestId() : '-'}">REQ-0001</td>
+                                    <td th:text="${candidate.projectName() != null ? candidate.projectName() : '-'}">Project A</td>
+                                    <td>
+                                        <div th:text="${candidate.departmentName() != null ? candidate.departmentName() : '-'}">Department</div>
+                                        <small class="text-muted"
+                                            th:text="${candidate.subDepartmentName() != null ? candidate.subDepartmentName() : '-'}">
+                                            Sub Department
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div th:text="${candidate.candidateName() != null ? candidate.candidateName() : '-'}">Candidate</div>
+                                        <small class="text-muted"
+                                            th:text="${(candidate.candidateEmail() != null ? candidate.candidateEmail() : '-') + ' | ' + (candidate.candidateMobile() != null ? candidate.candidateMobile() : '-')}">
+                                            email | mobile
+                                        </small>
+                                    </td>
+                                    <td th:text="${(candidate.designationName() != null ? candidate.designationName() : '-') + ' | ' + (candidate.levelCode() != null ? candidate.levelCode() : '-')}">
+                                        Designation | Level
+                                    </td>
+                                    <td th:text="${candidate.joiningDate() != null ? #temporals.format(candidate.joiningDate(), 'dd-MMM-yyyy') : '-'}">
+                                        01-Apr-2026
+                                    </td>
+                                    <td th:text="${candidate.onboardingDate() != null ? #temporals.format(candidate.onboardingDate(), 'dd-MMM-yyyy') : '-'}">
+                                        05-Apr-2026
+                                    </td>
+                                    <td th:text="${candidate.preOnboardingSubmittedAt() != null ? #temporals.format(candidate.preOnboardingSubmittedAt(), 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        01-Apr-2026 10:30
+                                    </td>
+                                    <td class="text-center">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:href="@{/agency/onboarding/pre/{id}(id=${candidate.recruitmentInterviewDetailId()})}">
+                                            Review Pre-Onboarding
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

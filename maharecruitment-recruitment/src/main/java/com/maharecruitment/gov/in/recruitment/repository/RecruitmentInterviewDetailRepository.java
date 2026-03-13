@@ -36,6 +36,7 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "join fetch notification.projectMst project "
             + "join fetch candidate.designationVacancy vacancy "
             + "left join fetch vacancy.designationMst designation "
+            + "left join fetch candidate.preOnboarding preOnboarding "
             + "where candidate.agency.agencyId = :agencyId "
             + "and candidate.active = true "
             + "and candidate.finalDecisionStatus = 'SELECTED' "
@@ -48,6 +49,7 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "join fetch notification.projectMst project "
             + "join fetch candidate.designationVacancy vacancy "
             + "left join fetch vacancy.designationMst designation "
+            + "left join fetch candidate.preOnboarding preOnboarding "
             + "where candidate.agency.agencyId = :agencyId "
             + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
             + "and candidate.active = true "
@@ -137,6 +139,22 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
                     Long recruitmentInterviewDetailId,
                     Long recruitmentNotificationId,
                     Long agencyId);
+
+    @Query("select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch candidate.agency agency "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "left join fetch candidate.preOnboarding preOnboarding "
+            + "where candidate.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and candidate.agency.agencyId = :agencyId "
+            + "and candidate.active = true "
+            + "and candidate.finalDecisionStatus = 'SELECTED'")
+    Optional<RecruitmentInterviewDetailEntity> findSelectedCandidateByIdAndAgency(
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId,
+            @Param("agencyId") Long agencyId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c "

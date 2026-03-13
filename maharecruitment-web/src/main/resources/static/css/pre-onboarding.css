@@ -1,0 +1,114 @@
+.pre-onboarding-card .section-block {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 20px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+}
+
+.pre-onboarding-card .section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: #16324f;
+}
+
+.pre-onboarding-card .form-label {
+    font-weight: 600;
+    color: #334155;
+}
+
+.readonly-field {
+    background-color: #f8fafc;
+}
+
+.employment-row {
+    border: 1px solid #dbe4f0;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+    background: #ffffff;
+}
+
+.employment-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.experience-summary {
+    margin-top: 18px;
+    border-left: 4px solid #198754;
+    border-radius: 10px;
+    background: #eefbf3;
+    padding: 16px;
+    display: grid;
+    gap: 14px;
+}
+
+.experience-highlight {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #198754;
+    margin-top: 6px;
+}
+
+.summary-inputs {
+    margin: 0;
+}
+
+.check-card {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    min-height: 100%;
+    border: 1px solid #dbe4f0;
+    border-radius: 12px;
+    background: #ffffff;
+    padding: 12px 14px;
+    cursor: pointer;
+}
+
+.check-card input[type="checkbox"] {
+    margin-top: 4px;
+}
+
+.check-card strong {
+    color: #dc2626;
+}
+
+.verification-box {
+    border: 1px solid #bfdbfe;
+    border-left: 4px solid #2563eb;
+    border-radius: 12px;
+    background: #eff6ff;
+    padding: 14px;
+}
+
+.verification-card {
+    border: 0;
+    background: transparent;
+    padding: 0;
+}
+
+.existing-file {
+    margin-top: 8px;
+}
+
+#submitBtn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+@media (max-width: 767.98px) {
+    .pre-onboarding-card .section-block {
+        padding: 14px;
+    }
+
+    .employment-row-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

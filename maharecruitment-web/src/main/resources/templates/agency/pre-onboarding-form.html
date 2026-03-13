@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Pre-Onboarding Form</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/pre-onboarding.css}" />
+</head>
+<body class="agency-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Onboarding', ~{::section})}">
+        <section>
+            <div class="card add-emp-card pre-onboarding-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Pre-Onboarding Form</h2>
+                        <small class="text-muted">The agency must submit this form before the selected candidate becomes available in onboarding.</small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/selected-candidates/{id}(id=${preOnboardingForm.recruitmentNotificationId})}">Back to Selected Candidates</a>
+                </div>
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+                    <form id="preOnboardingForm" th:action="@{/agency/onboarding/pre/{id}(id=${preOnboardingForm.recruitmentInterviewDetailId})}" method="post" th:object="${preOnboardingForm}" enctype="multipart/form-data">
+                        <input type="hidden" th:field="*{preOnboardingId}" />
+                        <input type="hidden" th:field="*{recruitmentInterviewDetailId}" />
+                        <input type="hidden" th:field="*{recruitmentNotificationId}" />
+
+                        <div class="section-block">
+                            <h5 class="section-title">Personal Details</h5>
+                            <div class="row">
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{name}" required />
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" th:field="*{email}" required />
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Mobile <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{mobile}" pattern="[0-9]{10,15}" required />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" th:field="*{dob}" required />
+                                </div>
+                                <div class="col-md-8 form-group">
+                                    <label class="form-label">Address <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" th:field="*{address}" rows="2" required></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-block">
+                            <h5 class="section-title">Job Details</h5>
+                            <div class="row">
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Request ID</label>
+                                    <input type="text" class="form-control readonly-field" th:field="*{requestId}" readonly />
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Project</label>
+                                    <input type="text" class="form-control readonly-field" th:field="*{projectName}" readonly />
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Agency Name</label>
+                                    <input type="text" class="form-control readonly-field" th:field="*{agencyName}" readonly />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Department</label>
+                                    <input type="text" class="form-control readonly-field" th:field="*{department}" readonly />
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Sub Department</label>
+                                    <input type="text" class="form-control readonly-field" th:field="*{subDeptName}" readonly />
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Designation</label>
+                                    <input type="text" class="form-control readonly-field" th:field="*{designation}" readonly />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Level Code</label>
+                                    <input type="text" class="form-control readonly-field" th:field="*{levelCode}" readonly />
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Joining Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" th:field="*{joiningDate}" required />
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label class="form-label">Onboarding Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" th:field="*{onboardingDate}" required />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-block">
+                            <h5 class="section-title">KYC Details</h5>
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label">Aadhaar Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{aadhaar}" maxlength="12" pattern="[0-9]{12}" placeholder="Enter 12-digit Aadhaar number" required />
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label">Upload Aadhaar Document</label>
+                                    <input type="file" class="form-control" th:field="*{aadhaarFile}" accept=".pdf,.jpg,.jpeg,.png" />
+                                    <small class="text-muted">PDF, JPG, PNG up to 10MB</small>
+                                    <div class="existing-file" th:if="${preOnboardingForm.existingAadhaarFilePath}">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" th:attr="data-path=${preOnboardingForm.existingAadhaarFilePath}" onclick="openManagedDocument(this.getAttribute('data-path'))">View Existing Aadhaar</button>
+                                        <small class="d-block text-muted mt-1" th:text="${preOnboardingForm.existingAadhaarFileName}">aadhaar.pdf</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label">PAN Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" th:field="*{pan}" maxlength="10" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" placeholder="ABCDE1234F" style="text-transform: uppercase;" required />
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label">Upload PAN Document</label>
+                                    <input type="file" class="form-control" th:field="*{panFile}" accept=".pdf,.jpg,.jpeg,.png" />
+                                    <small class="text-muted">PDF, JPG, PNG up to 10MB</small>
+                                    <div class="existing-file" th:if="${preOnboardingForm.existingPanFilePath}">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" th:attr="data-path=${preOnboardingForm.existingPanFilePath}" onclick="openManagedDocument(this.getAttribute('data-path'))">View Existing PAN</button>
+                                        <small class="d-block text-muted mt-1" th:text="${preOnboardingForm.existingPanFileName}">pan.pdf</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-block">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h5 class="section-title mb-0">Previous Employment Details</h5>
+                                <button type="button" id="addEmploymentBtn" class="btn btn-outline-primary btn-sm">Add Previous Employment</button>
+                            </div>
+                            <div class="alert alert-info mt-3 mb-3" th:if="${preOnboardingForm.minExperienceYears != null}">
+                                Minimum experience required for level <strong th:text="${preOnboardingForm.levelCode}">L1</strong>:
+                                <strong th:text="${preOnboardingForm.minExperienceYears.stripTrailingZeros().toPlainString()}">0</strong> year(s).
+                            </div>
+                            <p class="text-muted mb-3">Add at least one employment entry. Total experience is calculated automatically from the dates below.</p>
+                            <div id="employmentValidationMessage" class="alert alert-danger d-none mb-3"></div>
+
+                            <div id="employmentContainer">
+                                <div class="employment-row" th:each="employment, stat : *{previousEmployments}">
+                                    <div class="employment-row-header">
+                                        <strong class="employment-row-title" th:text="${'Employment #' + (stat.index + 1)}">Employment #1</strong>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" data-remove-employment>Remove</button>
+                                    </div>
+                                    <input type="hidden" th:field="*{previousEmployments[__${stat.index}__].preOnboardingEmploymentId}" />
+                                    <div class="row">
+                                        <div class="col-md-4 form-group">
+                                            <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" th:field="*{previousEmployments[__${stat.index}__].companyName}" />
+                                        </div>
+                                        <div class="col-md-3 form-group">
+                                            <label class="form-label">Designation</label>
+                                            <input type="text" class="form-control" th:field="*{previousEmployments[__${stat.index}__].designation}" />
+                                        </div>
+                                        <div class="col-md-2 form-group">
+                                            <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control experience-date" th:field="*{previousEmployments[__${stat.index}__].startDate}" />
+                                        </div>
+                                        <div class="col-md-3 form-group">
+                                            <label class="form-label">End Date <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control experience-date" th:field="*{previousEmployments[__${stat.index}__].endDate}" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <template id="employmentRowTemplate">
+                                <div class="employment-row">
+                                    <div class="employment-row-header">
+                                        <strong class="employment-row-title">Employment #__rowNumber__</strong>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" data-remove-employment>Remove</button>
+                                    </div>
+                                    <input type="hidden" name="previousEmployments[__index__].preOnboardingEmploymentId" />
+                                    <div class="row">
+                                        <div class="col-md-4 form-group">
+                                            <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" name="previousEmployments[__index__].companyName" />
+                                        </div>
+                                        <div class="col-md-3 form-group">
+                                            <label class="form-label">Designation</label>
+                                            <input type="text" class="form-control" name="previousEmployments[__index__].designation" />
+                                        </div>
+                                        <div class="col-md-2 form-group">
+                                            <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control experience-date" name="previousEmployments[__index__].startDate" />
+                                        </div>
+                                        <div class="col-md-3 form-group">
+                                            <label class="form-label">End Date <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control experience-date" name="previousEmployments[__index__].endDate" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div class="experience-summary">
+                                <div>
+                                    <strong>Total Experience</strong>
+                                    <div id="totalExperienceDisplay" class="experience-highlight">
+                                        <span th:text="${preOnboardingForm.totalExperienceYears}">0</span> year(s)
+                                        <span th:text="${preOnboardingForm.totalExperienceMonths}">0</span> month(s)
+                                    </div>
+                                </div>
+                                <div class="row g-3 summary-inputs">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Years</label>
+                                        <input type="number" class="form-control readonly-field" id="totalExperienceYears" th:field="*{totalExperienceYears}" readonly />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Months</label>
+                                        <input type="number" class="form-control readonly-field" id="totalExperienceMonths" th:field="*{totalExperienceMonths}" readonly />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <div class="col-md-12 form-group">
+                                    <label class="form-label">Upload Experience / Relieving Documents</label>
+                                    <input type="file" class="form-control" th:field="*{experienceDoc}" accept=".pdf,.jpg,.jpeg,.png" />
+                                    <small class="text-muted">Upload a single combined PDF or image set document up to 10MB.</small>
+                                    <div class="existing-file" th:if="${preOnboardingForm.existingExperienceDocFilePath}">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" th:attr="data-path=${preOnboardingForm.existingExperienceDocFilePath}" onclick="openManagedDocument(this.getAttribute('data-path'))">View Existing Experience Document</button>
+                                        <small class="d-block text-muted mt-1" th:text="${preOnboardingForm.existingExperienceDocFileName}">experience.pdf</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-block">
+                            <h5 class="section-title">Candidate Photo</h5>
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label">Upload Passport Size Photo</label>
+                                    <input type="file" class="form-control" th:field="*{uploadImage}" accept=".jpg,.jpeg,.png" />
+                                    <small class="text-muted">JPG, PNG up to 10MB</small>
+                                    <div class="existing-file" th:if="${preOnboardingForm.existingPhotoFilePath}">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" th:attr="data-path=${preOnboardingForm.existingPhotoFilePath}" onclick="openManagedDocument(this.getAttribute('data-path'))">View Existing Photo</button>
+                                        <small class="d-block text-muted mt-1" th:text="${preOnboardingForm.existingPhotoFileName}">photo.png</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-block">
+                            <h5 class="section-title">Document Checklist</h5>
+                            <p class="text-muted mb-3">Required items must be verified before the form can be submitted.</p>
+                            <div class="row checklist-grid">
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docEducationalCert}" data-required-doc="true" /><span>Educational Certificates <strong>*</strong></span></label></div>
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docExperienceLetter}" data-required-doc="true" /><span>Experience Letter <strong>*</strong></span></label></div>
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docRelievingLetter}" /><span>Relieving Letter</span></label></div>
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docPayslips}" /><span>Last 3 Months Payslips</span></label></div>
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docDeclarationForm}" /><span>Declaration Form</span></label></div>
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docNda}" /><span>Non-Disclosure Agreement</span></label></div>
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docMedicalFitness}" data-required-doc="true" /><span>Medical Fitness Certificate <strong>*</strong></span></label></div>
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docAddressProof}" /><span>Address Proof</span></label></div>
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docPassportPhoto}" /><span>Passport Size Photo</span></label></div>
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docAadhaar}" data-required-doc="true" /><span>Aadhaar Card <strong>*</strong></span></label></div>
+                                <div class="col-md-4 mb-3"><label class="check-card"><input type="checkbox" th:field="*{docPan}" data-required-doc="true" /><span>PAN Card <strong>*</strong></span></label></div>
+                            </div>
+                        </div>
+
+                        <div class="verification-box">
+                            <label class="check-card verification-card mb-0">
+                                <input type="checkbox" id="agencyFlag" th:field="*{agencyFlag}" />
+                                <span>I confirm that the agency has verified the candidate details and original documents for onboarding. <strong>*</strong></span>
+                            </label>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a class="btn btn-outline-secondary" th:href="@{/agency/selected-candidates/{id}(id=${preOnboardingForm.recruitmentNotificationId})}">Cancel</a>
+                            <button type="submit" id="submitBtn" class="btn btn-primary">Submit Pre-Onboarding</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </th:block>
+    <script th:inline="javascript">
+        window.preOnboardingConfig = { contextPath: /*[[@{/}]]*/ '/' };
+    </script>
+    <script th:src="@{/js/pre-onboarding.js}"></script>
+</body>
+</html>

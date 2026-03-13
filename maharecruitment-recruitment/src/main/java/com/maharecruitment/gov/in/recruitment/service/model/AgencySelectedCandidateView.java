@@ -28,4 +28,6 @@ public class AgencySelectedCandidateView {
     private String interviewLink;
     private LocalDateTime finalDecisionAt;
     private String finalDecisionRemarks;
+    private boolean preOnboardingCompleted;
+    private LocalDateTime preOnboardingSubmittedAt;
 }

@@ -406,6 +406,9 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .interviewLink(candidate.getInterviewLink())
                 .finalDecisionAt(candidate.getFinalDecisionAt())
                 .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
+                .preOnboardingCompleted(candidate.getPreOnboarding() != null)
+                .preOnboardingSubmittedAt(
+                        candidate.getPreOnboarding() != null ? candidate.getPreOnboarding().getSubmittedAt() : null)
                 .build();
     }
 

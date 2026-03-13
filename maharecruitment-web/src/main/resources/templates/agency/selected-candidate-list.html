@@ -39,12 +39,13 @@
                                     <th>Interview</th>
                                     <th>Decision Date</th>
                                     <th>Resume</th>
+                                    <th>Pre-Onboarding</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(selectedCandidates)}">
-                                    <td colspan="11" class="text-center text-muted">No selected candidates found.</td>
+                                    <td colspan="12" class="text-center text-muted">No selected candidates found.</td>
                                 </tr>
 
                                 <tr th:each="candidate, stat : ${selectedCandidates}">
@@ -96,10 +97,36 @@
                                         <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>
                                     </td>
                                     <td class="text-center">
-                                        <a class="btn btn-outline-primary btn-sm"
-                                            th:href="@{/agency/recruitment-notifications/{id}(id=${candidate.recruitmentNotificationId})}">
-                                            Open Notification
-                                        </a>
+                                        <span class="badge bg-success" th:if="${candidate.preOnboardingCompleted}">
+                                            Completed
+                                        </span>
+                                        <div th:if="${candidate.preOnboardingCompleted and candidate.preOnboardingSubmittedAt != null}"
+                                            class="small text-muted mt-1"
+                                            th:text="${#temporals.format(candidate.preOnboardingSubmittedAt, 'dd-MMM-yyyy HH:mm')}">
+                                            01-Apr-2026 10:30
+                                        </div>
+                                        <span class="badge bg-warning text-dark"
+                                            th:if="${!candidate.preOnboardingCompleted}">
+                                            Pending
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                            <a class="btn btn-outline-primary btn-sm"
+                                                th:href="@{/agency/onboarding/pre/{id}(id=${candidate.recruitmentInterviewDetailId})}"
+                                                th:text="${candidate.preOnboardingCompleted ? 'Edit Pre-Onboarding' : 'Fill Pre-Onboarding'}">
+                                                Fill Pre-Onboarding
+                                            </a>
+                                            <a class="btn btn-outline-secondary btn-sm"
+                                                th:href="@{/agency/recruitment-notifications/{id}(id=${candidate.recruitmentNotificationId})}">
+                                                Open Notification
+                                            </a>
+                                            <a class="btn btn-success btn-sm"
+                                                th:if="${candidate.preOnboardingCompleted}"
+                                                th:href="@{/agency/onboarding}">
+                                                Onboarding Ready
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
