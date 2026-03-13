@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -13,6 +16,7 @@ import org.springframework.util.StringUtils;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
@@ -24,8 +28,6 @@ import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
-import java.util.Comparator;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -36,18 +38,21 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     private final SubDepartmentRepository subDepartmentRepository;
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
+    private final DepartmentProjectApplicationRepository projectApplicationRepository;
 
     public HROnboardingPageServiceImpl(
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
             DepartmentRegistrationRepository departmentRegistrationRepository,
             SubDepartmentRepository subDepartmentRepository,
             UserRepository userRepository,
-            EmployeeRepository employeeRepository) {
+            EmployeeRepository employeeRepository,
+            DepartmentProjectApplicationRepository projectApplicationRepository) {
         this.preOnboardingRepository = preOnboardingRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.userRepository = userRepository;
         this.employeeRepository = employeeRepository;
+        this.projectApplicationRepository = projectApplicationRepository;
     }
 
     @Override
@@ -187,7 +192,25 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         employee.setDesignation(interview.getDesignationVacancy().getDesignationMst());
         employee.setLevelCode(interview.getDesignationVacancy().getLevelCode());
 
-        if (notification.getDepartmentRegistrationId() != null) {
+        // Recruitment Type Logic
+        String requestId = notification.getRequestId();
+        boolean isExternal = requestId != null && requestId.contains("-E");
+        employee.setRecruitmentType(isExternal ? "EXTERNAL" : "INTERNAL");
+
+        if (isExternal && notification.getDepartmentProjectApplicationId() != null) {
+            projectApplicationRepository.findById(notification.getDepartmentProjectApplicationId())
+                    .ifPresent(app -> {
+                        if (app.getDepartmentRegistrationId() != null) {
+                            departmentRegistrationRepository.findById(app.getDepartmentRegistrationId())
+                                    .ifPresent(reg -> {
+                                        employee.setDepartmentRegistration(reg);
+                                        if (reg.getSubDeptId() != null) {
+                                            subDepartmentRepository.findById(reg.getSubDeptId()).ifPresent(employee::setSubDepartment);
+                                        }
+                                    });
+                        }
+                    });
+        } else if (notification.getDepartmentRegistrationId() != null) {
             departmentRegistrationRepository.findById(notification.getDepartmentRegistrationId())
                     .ifPresent(reg -> {
                         employee.setDepartmentRegistration(reg);
@@ -206,11 +229,19 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     }
 
     @Override
-    public List<EmployeeListView> getOnboardedEmployees() {
-        return employeeRepository.findAll().stream()
+    public Page<EmployeeListView> getOnboardedEmployees(String recruitmentType, Pageable pageable) {
+        Page<EmployeeEntity> employees;
+        if (StringUtils.hasText(recruitmentType) && !"ALL".equalsIgnoreCase(recruitmentType)) {
+            employees = employeeRepository.findByRecruitmentType(recruitmentType.toUpperCase(), pageable);
+        } else {
+            employees = employeeRepository.findAll(pageable);
+        }
+
+        List<EmployeeListView> dtos = employees.getContent().stream()
                 .map(this::toEmployeeListView)
-                .sorted(Comparator.comparing(EmployeeListView::employeeId).reversed())
-                .collect(Collectors.toList());
+                .toList();
+        
+        return new PageImpl<>(dtos, pageable, employees.getTotalElements());
     }
 
     private EmployeeListView toEmployeeListView(EmployeeEntity entity) {
@@ -226,6 +257,8 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 designationName,
                 deptName,
                 entity.getJoiningDate(),
+                entity.getRecruitmentType(),
+                entity.getAgency() != null ? entity.getAgency().getAgencyName() : "-",
                 entity.getStatus());
     }
 

@@ -323,6 +323,80 @@
                             </div>
                         </div>
 
+                        <div class="section-block">
+                            <h5 class="section-title">Document Checklist</h5>
+                            <p class="text-muted mb-4" th:if="${!preOnboardingForm.hrFlow}">Please verify that the candidate has provided the following documents.</p>
+                            <p class="text-muted mb-4" th:if="${preOnboardingForm.hrFlow}">Documents verified by the agency:</p>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docEducationalCert}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>Educational Certificates</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docExperienceLetter}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>Experience Letter</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docRelievingLetter}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>Relieving Letter</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docPayslips}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>Salary Payslips</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docDeclarationForm}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>Declaration Form</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docNda}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>NDA Document</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docMedicalFitness}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>Medical Fitness Cert</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docAddressProof}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>Address Proof</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docPassportPhoto}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>Passport Photo</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docAadhaar}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>Aadhaar Copy</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="check-card">
+                                        <input type="checkbox" th:field="*{docPan}" th:disabled="*{hrFlow}" data-required-doc="true" />
+                                        <span>PAN Card Copy</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="section-block" th:if="${preOnboardingForm.hrFlow}">
                             <h5 class="section-title text-primary">HR Onboarding Verification</h5>
                             <div class="row">

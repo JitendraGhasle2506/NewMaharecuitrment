@@ -11,5 +11,7 @@ public record EmployeeListView(
         String designation,
         String department,
         LocalDate joiningDate,
+        String recruitmentType,
+        String agencyName,
         String status) {
 }

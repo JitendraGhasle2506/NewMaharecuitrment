@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.web.service.hr;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
@@ -13,5 +15,5 @@ public interface HROnboardingPageService {
 
     void saveOnboarding(Long preOnboardingId, AgencyPreOnboardingForm form, String actorEmail);
 
-    List<EmployeeListView> getOnboardedEmployees();
+    Page<EmployeeListView> getOnboardedEmployees(String recruitmentType, Pageable pageable);
 }

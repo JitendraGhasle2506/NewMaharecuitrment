@@ -57,6 +57,16 @@
                         <h2 class="mb-0">Onboarded Employees</h2>
                         <p class="text-muted mb-0">List of all formal employees onboarded through the portal.</p>
                     </div>
+                    <div class="filter-group">
+                        <form th:action="@{/hr/employees}" method="get" class="d-flex align-items-center gap-2">
+                            <label class="form-label mb-0 me-2 text-muted fw-bold small text-uppercase">Recruitment Type:</label>
+                            <select name="type" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 150px;">
+                                <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
+                                <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
+                                <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
+                            </select>
+                        </form>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div th:if="${successMessage}" class="alert alert-success m-3" th:text="${successMessage}"></div>
@@ -67,9 +77,12 @@
                                 <tr>
                                     <th class="ps-4">Employee Information</th>
                                     <th>Employee Code</th>
+                                    <th>Full Name</th>
+                                    <th>Agency</th>
                                     <th>Department</th>
                                     <th>Designation</th>
                                     <th>Joining Date</th>
+                                    <th>Type</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -89,9 +102,16 @@
                                         <span class="badge bg-secondary-subtle text-secondary-emphasis"
                                             th:text="${emp.employeeCode}">EMP001</span>
                                     </td>
+                                    <td th:text="${emp.fullName}">Full Name</td>
+                                    <td th:text="${emp.agencyName}">Agency</td>
                                     <td th:text="${emp.department}">Department</td>
                                     <td th:text="${emp.designation}">Designation</td>
                                     <td th:text="${#temporals.format(emp.joiningDate, 'dd-MM-yyyy')}">01-01-2024</td>
+                                    <td>
+                                        <span th:if="${emp.recruitmentType == 'INTERNAL'}" class="badge bg-info">Internal</span>
+                                        <span th:if="${emp.recruitmentType == 'EXTERNAL'}" class="badge bg-secondary">External</span>
+                                        <span th:if="${emp.recruitmentType == null}" class="badge bg-light text-dark">-</span>
+                                    </td>
                                     <td>
                                         <span class="status-badge status-active" th:text="${emp.status}">ACTIVE</span>
                                     </td>
@@ -103,6 +123,35 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="card-footer bg-white border-top-0 px-4 py-3" th:if="${employeePage.totalPages > 1}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-muted small">
+                                Showing <span th:text="${employeePage.number * employeePage.size + 1}">1</span> 
+                                to <span th:text="${(employeePage.number + 1) * employeePage.size > employeePage.totalElements ? employeePage.totalElements : (employeePage.number + 1) * employeePage.size}">10</span> 
+                                of <span th:text="${employeePage.totalElements}">50</span> employees
+                            </div>
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item" th:classappend="${employeePage.first} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/hr/employees(type=${currentType}, page=${employeePage.number - 1})}" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item" th:each="i : ${#numbers.sequence(0, employeePage.totalPages - 1)}"
+                                        th:classappend="${i == employeePage.number} ? 'active'">
+                                        <a class="page-link" th:href="@{/hr/employees(type=${currentType}, page=${i})}" th:text="${i + 1}">1</a>
+                                    </li>
+                                    <li class="page-item" th:classappend="${employeePage.last} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/hr/employees(type=${currentType}, page=${employeePage.number + 1})}" aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                 </div>
             </div>
