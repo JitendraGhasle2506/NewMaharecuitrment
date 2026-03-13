@@ -15,12 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
 import com.maharecruitment.gov.in.master.entity.AgencyStatus;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
-import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationAgencyRankEntity;
-import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
-import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus;
+import com.maharecruitment.gov.in.recruitment.entity.AgencyGlobalRankEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
-import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationAgencyRankRepository;
-import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
+import com.maharecruitment.gov.in.recruitment.repository.AgencyGlobalRankRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationRankAssignmentService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationRankReleaseService;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyRankAssignmentCommand;
@@ -30,18 +27,15 @@ import com.maharecruitment.gov.in.recruitment.service.model.AgencyRankAssignment
 public class RecruitmentNotificationRankAssignmentServiceImpl
         implements RecruitmentNotificationRankAssignmentService {
 
-    private final RecruitmentNotificationRepository notificationRepository;
-    private final RecruitmentNotificationAgencyRankRepository agencyRankRepository;
+    private final AgencyGlobalRankRepository agencyGlobalRankRepository;
     private final AgencyMasterRepository agencyRepository;
     private final RecruitmentNotificationRankReleaseService rankReleaseService;
 
     public RecruitmentNotificationRankAssignmentServiceImpl(
-            RecruitmentNotificationRepository notificationRepository,
-            RecruitmentNotificationAgencyRankRepository agencyRankRepository,
+            AgencyGlobalRankRepository agencyGlobalRankRepository,
             AgencyMasterRepository agencyRepository,
             RecruitmentNotificationRankReleaseService rankReleaseService) {
-        this.notificationRepository = notificationRepository;
-        this.agencyRankRepository = agencyRankRepository;
+        this.agencyGlobalRankRepository = agencyGlobalRankRepository;
         this.agencyRepository = agencyRepository;
         this.rankReleaseService = rankReleaseService;
     }
@@ -49,35 +43,24 @@ public class RecruitmentNotificationRankAssignmentServiceImpl
     @Override
     @Transactional
     public void assignAgencyRanks(Long recruitmentNotificationId, List<AgencyRankAssignmentCommand> assignments) {
-        validateInput(recruitmentNotificationId, assignments);
-
-        RecruitmentNotificationEntity notification = notificationRepository
-                .findByIdForUpdate(recruitmentNotificationId)
-                .orElseThrow(() -> new RecruitmentNotificationException(
-                        "Recruitment notification not found for id: " + recruitmentNotificationId));
-
-        if (notification.getStatus() == RecruitmentNotificationStatus.CLOSED) {
-            throw new RecruitmentNotificationException("Cannot assign agency ranks for a closed notification.");
-        }
+        validateInput(assignments);
 
         Map<Long, AgencyMaster> agencyById = loadAndValidateAgencies(assignments);
-        List<RecruitmentNotificationAgencyRankEntity> existingMappings = agencyRankRepository
-                .findByRecruitmentNotificationRecruitmentNotificationIdOrderByRankNumberAscAgencyAgencyIdAsc(
-                        recruitmentNotificationId);
-        Map<Long, RecruitmentNotificationAgencyRankEntity> existingByAgencyId = mapByAgency(existingMappings);
+        List<AgencyGlobalRankEntity> existingMappings = agencyGlobalRankRepository
+                .findAllWithAgencyOrderByRankNumberAscAgencyAgencyIdAsc();
+        Map<Long, AgencyGlobalRankEntity> existingByAgencyId = mapByAgency(existingMappings);
 
         Set<Long> requestedAgencyIds = new HashSet<>();
-        List<RecruitmentNotificationAgencyRankEntity> entitiesToSave = new ArrayList<>();
+        List<AgencyGlobalRankEntity> entitiesToSave = new ArrayList<>();
         LocalDateTime assignedAt = LocalDateTime.now();
 
         for (AgencyRankAssignmentCommand assignment : assignments) {
             Long agencyId = assignment.getAgencyId();
             requestedAgencyIds.add(agencyId);
 
-            RecruitmentNotificationAgencyRankEntity entity = existingByAgencyId.get(agencyId);
+            AgencyGlobalRankEntity entity = existingByAgencyId.get(agencyId);
             if (entity == null) {
-                entity = new RecruitmentNotificationAgencyRankEntity();
-                entity.setRecruitmentNotification(notification);
+                entity = new AgencyGlobalRankEntity();
                 entity.setAgency(agencyById.get(agencyId));
             }
 
@@ -86,29 +69,25 @@ public class RecruitmentNotificationRankAssignmentServiceImpl
             entitiesToSave.add(entity);
         }
 
-        List<RecruitmentNotificationAgencyRankEntity> entitiesToDelete = existingMappings.stream()
+        List<AgencyGlobalRankEntity> entitiesToDelete = existingMappings.stream()
                 .filter(existing -> !requestedAgencyIds.contains(existing.getAgency().getAgencyId()))
                 .toList();
         if (!entitiesToDelete.isEmpty()) {
-            agencyRankRepository.deleteAll(entitiesToDelete);
+            agencyGlobalRankRepository.deleteAll(entitiesToDelete);
         }
 
-        agencyRankRepository.saveAll(entitiesToSave);
+        agencyGlobalRankRepository.saveAll(entitiesToSave);
 
-        if (notification.getStatus() == RecruitmentNotificationStatus.PENDING_ALLOCATION) {
-            notification.setStatus(RecruitmentNotificationStatus.IN_PROGRESS);
-            notificationRepository.save(notification);
+        if (recruitmentNotificationId != null) {
+            rankReleaseService.releaseEligibleRanksForNotification(recruitmentNotificationId);
+        } else {
+            rankReleaseService.releaseEligibleNotifications();
         }
-
-        rankReleaseService.releaseEligibleRanksForNotification(recruitmentNotificationId);
     }
 
-    private void validateInput(Long recruitmentNotificationId, List<AgencyRankAssignmentCommand> assignments) {
-        if (recruitmentNotificationId == null) {
-            throw new RecruitmentNotificationException("Recruitment notification id is required.");
-        }
+    private void validateInput(List<AgencyRankAssignmentCommand> assignments) {
         if (assignments == null || assignments.isEmpty()) {
-            throw new RecruitmentNotificationException("At least one agency rank assignment is required.");
+            throw new RecruitmentNotificationException("At least one global agency rank assignment is required.");
         }
 
         Set<Long> uniqueAgencyIds = new HashSet<>();
@@ -129,10 +108,10 @@ public class RecruitmentNotificationRankAssignmentServiceImpl
         }
     }
 
-    private Map<Long, RecruitmentNotificationAgencyRankEntity> mapByAgency(
-            List<RecruitmentNotificationAgencyRankEntity> mappings) {
-        Map<Long, RecruitmentNotificationAgencyRankEntity> mappingByAgency = new HashMap<>();
-        for (RecruitmentNotificationAgencyRankEntity mapping : mappings) {
+    private Map<Long, AgencyGlobalRankEntity> mapByAgency(
+            List<AgencyGlobalRankEntity> mappings) {
+        Map<Long, AgencyGlobalRankEntity> mappingByAgency = new HashMap<>();
+        for (AgencyGlobalRankEntity mapping : mappings) {
             mappingByAgency.put(mapping.getAgency().getAgencyId(), mapping);
         }
         return mappingByAgency;
@@ -158,7 +137,7 @@ public class RecruitmentNotificationRankAssignmentServiceImpl
         for (AgencyMaster agency : agencyById.values()) {
             if (agency.getStatus() != AgencyStatus.ACTIVE) {
                 throw new RecruitmentNotificationException(
-                        "Inactive agency cannot be assigned in notification rank mapping: "
+                        "Inactive agency cannot be assigned in global rank mapping: "
                                 + agency.getAgencyName()
                                 + " (id="
                                 + agency.getAgencyId()

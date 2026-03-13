@@ -45,9 +45,27 @@ public class HrDepartmentRequestMenuInitializer implements InitializingBean {
                 hrRole);
 
         upsertDirectMenu(
-                "Agency Rank Mapping",
-                "/hr/department-requests/agency-rank-mapping",
+                "Global Agency Rank Mapping",
+                "/hr/department-requests/global-agency-rank-mapping",
                 "fa fa-ranking-star",
+                hrRole);
+
+        upsertDirectMenu(
+                "Global Agency Rank Overview",
+                "/hr/department-requests/agency-rank-mapping",
+                "fa fa-table-list",
+                hrRole);
+
+        upsertDirectMenu(
+                "Rank Release Overview",
+                "/hr/department-requests/rank-release-overview",
+                "fa fa-hourglass-half",
+                hrRole);
+
+        upsertDirectMenu(
+                "Rank Release Rules",
+                "/hr/department-requests/rank-release-rules",
+                "fa fa-list-check",
                 hrRole);
     }
 
@@ -56,7 +74,8 @@ public class HrDepartmentRequestMenuInitializer implements InitializingBean {
             String url,
             String iconClass,
             Role roleToAssign) {
-        MstMenu menu = mstMenuRepository.findByMenuNameEnglishIgnoreCaseWithRoles(menuName)
+        MstMenu menu = mstMenuRepository.findByUrlIgnoreCaseWithRoles(url)
+                .or(() -> mstMenuRepository.findByMenuNameEnglishIgnoreCaseWithRoles(menuName))
                 .or(() -> mstMenuRepository.findByMenuNameEnglishIgnoreCase(menuName))
                 .orElseGet(MstMenu::new);
 

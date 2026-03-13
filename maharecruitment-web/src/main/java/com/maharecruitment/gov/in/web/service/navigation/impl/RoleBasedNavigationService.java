@@ -146,9 +146,21 @@ public class RoleBasedNavigationService implements NavigationService {
                 new SidebarItemView("HR Dashboard", "fa fa-users", "/hr/dashboard"),
                 new SidebarItemView("Department Request", "fa fa-building-user", "/hr/department-requests"),
                 new SidebarItemView(
-                        "Agency Rank Mapping",
+                        "Global Agency Rank Mapping",
                         "fa fa-ranking-star",
-                        "/hr/department-requests/agency-rank-mapping")
+                        "/hr/department-requests/global-agency-rank-mapping"),
+                new SidebarItemView(
+                        "Global Agency Rank Overview",
+                        "fa fa-table-list",
+                        "/hr/department-requests/agency-rank-mapping"),
+                new SidebarItemView(
+                        "Rank Release Overview",
+                        "fa fa-hourglass-half",
+                        "/hr/department-requests/rank-release-overview"),
+                new SidebarItemView(
+                        "Rank Release Rules",
+                        "fa fa-list-check",
+                        "/hr/department-requests/rank-release-rules")
         ));
 
         navItems.put("ROLE_USER", List.of(

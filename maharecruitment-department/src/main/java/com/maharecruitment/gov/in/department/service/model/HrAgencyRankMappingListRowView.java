@@ -35,5 +35,15 @@ public class HrAgencyRankMappingListRowView {
 
     private LocalDateTime assignedDate;
 
+    private Integer delayFromPreviousRankDays;
+
+    private LocalDateTime eligibleOn;
+
+    private LocalDateTime releasedOn;
+
+    private String releaseStatusCode;
+
+    private String releaseStatusLabel;
+
     private boolean applicationContextAvailable;
 }

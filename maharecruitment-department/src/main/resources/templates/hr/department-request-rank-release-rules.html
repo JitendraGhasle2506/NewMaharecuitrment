@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Rank Release Rules</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Rank Release Rules', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Rank Release Rules</h2>
+                        <small class="text-muted">Configured delay rules used for automatic rank-wise notification release</small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/department-requests/rank-release-overview}">
+                        Back to Overview
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Rank</th>
+                                    <th class="text-center">Delay From Previous (Days)</th>
+                                    <th class="text-center">Release After (Days)</th>
+                                    <th class="text-center">Effective Delay (Days)</th>
+                                    <th>Effective From</th>
+                                    <th>Effective To</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    th:if="${rankReleaseRuleListView == null or #lists.isEmpty(rankReleaseRuleListView.rules)}">
+                                    <td colspan="7" class="text-center text-muted">
+                                        No rank release rules found.
+                                    </td>
+                                </tr>
+
+                                <tr th:each="rule : ${rankReleaseRuleListView.rules}">
+                                    <td class="text-center" th:text="${rule.rankNumber}">1</td>
+                                    <td class="text-center"
+                                        th:text="${rule.delayFromPreviousRankDays != null ? rule.delayFromPreviousRankDays : '-'}">
+                                        0
+                                    </td>
+                                    <td class="text-center"
+                                        th:text="${rule.releaseAfterDays != null ? rule.releaseAfterDays : '-'}">
+                                        0
+                                    </td>
+                                    <td class="text-center"
+                                        th:text="${rule.effectiveDelayDays != null ? rule.effectiveDelayDays : '-'}">
+                                        0
+                                    </td>
+                                    <td th:text="${rule.effectiveFrom != null ? #temporals.format(rule.effectiveFrom, 'dd-MMM-yyyy') : '-'}">
+                                        -
+                                    </td>
+                                    <td th:text="${rule.effectiveTo != null ? #temporals.format(rule.effectiveTo, 'dd-MMM-yyyy') : '-'}">
+                                        -
+                                    </td>
+                                    <td>
+                                        <span class="badge"
+                                            th:classappend="${rule.active} ? ' text-bg-success' : ' text-bg-secondary'"
+                                            th:text="${rule.active ? 'Active' : 'Inactive'}">
+                                            Active
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

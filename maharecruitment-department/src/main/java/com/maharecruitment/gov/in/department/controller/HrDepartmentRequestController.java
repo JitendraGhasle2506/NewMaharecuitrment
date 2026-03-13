@@ -32,6 +32,7 @@ import com.maharecruitment.gov.in.department.service.HrDepartmentRequestService;
 import com.maharecruitment.gov.in.department.service.model.HrAgencyRankMappingListView;
 import com.maharecruitment.gov.in.department.service.model.HrAgencyRankMappingView;
 import com.maharecruitment.gov.in.department.service.model.HrDepartmentApplicationReviewDetailView;
+import com.maharecruitment.gov.in.department.service.model.HrRankReleaseRuleListView;
 import com.maharecruitment.gov.in.department.service.model.WorkOrderDocumentView;
 
 import jakarta.validation.Valid;
@@ -92,6 +93,101 @@ public class HrDepartmentRequestController {
                     .build());
         }
         return "hr/department-request-agency-rank-list";
+    }
+
+    @GetMapping("/global-agency-rank-mapping")
+    public String globalAgencyRankMapping(Model model) {
+        try {
+            HrAgencyRankMappingView rankMappingView = hrAgencyRankMappingService.getGlobalRankMappingView();
+            model.addAttribute("agencyRankMappingView", rankMappingView);
+            if (!model.containsAttribute("rankMappingForm")) {
+                model.addAttribute("rankMappingForm", buildRankMappingForm(rankMappingView));
+            }
+        } catch (DepartmentApplicationException ex) {
+            log.warn("Unable to load global agency rank mapping page. reason={}", ex.getMessage());
+            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("agencyRankMappingView", HrAgencyRankMappingView.builder()
+                    .agencyOptions(List.of())
+                    .assignedAgencyRanks(List.of())
+                    .build());
+            if (!model.containsAttribute("rankMappingForm")) {
+                model.addAttribute("rankMappingForm", new HrAgencyRankMappingForm());
+            }
+        } catch (Exception ex) {
+            log.error("Unexpected error while loading global agency rank mapping page.", ex);
+            model.addAttribute("errorMessage", "Unable to load global agency rank mapping right now. Please try again.");
+            model.addAttribute("agencyRankMappingView", HrAgencyRankMappingView.builder()
+                    .agencyOptions(List.of())
+                    .assignedAgencyRanks(List.of())
+                    .build());
+            if (!model.containsAttribute("rankMappingForm")) {
+                model.addAttribute("rankMappingForm", new HrAgencyRankMappingForm());
+            }
+        }
+        return "hr/global-agency-rank-mapping";
+    }
+
+    @PostMapping("/global-agency-rank-mapping")
+    public String saveGlobalAgencyRankMapping(
+            @ModelAttribute("rankMappingForm") HrAgencyRankMappingForm rankMappingForm,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        try {
+            hrAgencyRankMappingService.assignGlobalAgencyRanks(
+                    rankMappingForm != null ? rankMappingForm.getRankRows() : List.of());
+            redirectAttributes.addFlashAttribute("successMessage", "Global agency rank mapping saved successfully.");
+            return "redirect:/hr/department-requests/global-agency-rank-mapping";
+        } catch (DepartmentApplicationException ex) {
+            HrAgencyRankMappingView rankMappingView = hrAgencyRankMappingService.getGlobalRankMappingView();
+            model.addAttribute("agencyRankMappingView", rankMappingView);
+            model.addAttribute("errorMessage", ex.getMessage());
+            if (rankMappingForm == null) {
+                model.addAttribute("rankMappingForm", buildRankMappingForm(rankMappingView));
+            }
+            return "hr/global-agency-rank-mapping";
+        }
+    }
+
+    @GetMapping("/rank-release-overview")
+    public String rankReleaseOverview(Model model) {
+        try {
+            HrAgencyRankMappingListView listView = hrAgencyRankMappingService.getRankReleaseOverviewListView();
+            model.addAttribute("rankReleaseListView", listView);
+        } catch (DepartmentApplicationException ex) {
+            log.warn("Unable to load HR rank release overview. reason={}", ex.getMessage());
+            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("rankReleaseListView", HrAgencyRankMappingListView.builder()
+                    .rankMappings(List.of())
+                    .build());
+        } catch (Exception ex) {
+            log.error("Unexpected error while loading HR rank release overview.", ex);
+            model.addAttribute("errorMessage", "Unable to load rank release overview right now. Please try again.");
+            model.addAttribute("rankReleaseListView", HrAgencyRankMappingListView.builder()
+                    .rankMappings(List.of())
+                    .build());
+        }
+        return "hr/department-request-rank-release-overview";
+    }
+
+    @GetMapping("/rank-release-rules")
+    public String rankReleaseRules(Model model) {
+        try {
+            HrRankReleaseRuleListView rulesView = hrAgencyRankMappingService.getRankReleaseRuleListView();
+            model.addAttribute("rankReleaseRuleListView", rulesView);
+        } catch (DepartmentApplicationException ex) {
+            log.warn("Unable to load HR rank release rules. reason={}", ex.getMessage());
+            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("rankReleaseRuleListView", HrRankReleaseRuleListView.builder()
+                    .rules(List.of())
+                    .build());
+        } catch (Exception ex) {
+            log.error("Unexpected error while loading HR rank release rules.", ex);
+            model.addAttribute("errorMessage", "Unable to load rank release rules right now. Please try again.");
+            model.addAttribute("rankReleaseRuleListView", HrRankReleaseRuleListView.builder()
+                    .rules(List.of())
+                    .build());
+        }
+        return "hr/department-request-rank-release-rules";
     }
 
     @GetMapping("/{departmentId}/subdepartments")

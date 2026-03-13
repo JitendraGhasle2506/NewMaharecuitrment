@@ -54,4 +54,12 @@ public interface AgencyNotificationTrackingRepository extends JpaRepository<Agen
             @Param("agencyId") Long agencyId,
             @Param("trackingStatuses") Collection<AgencyNotificationTrackingStatus> trackingStatuses,
             @Param("notificationStatuses") Collection<RecruitmentNotificationStatus> notificationStatuses);
+
+    @Query("select tracking "
+            + "from AgencyNotificationTrackingEntity tracking "
+            + "join fetch tracking.recruitmentNotification notification "
+            + "join fetch tracking.agency agency "
+            + "where notification.recruitmentNotificationId in :recruitmentNotificationIds")
+    List<AgencyNotificationTrackingEntity> findByRecruitmentNotificationIds(
+            @Param("recruitmentNotificationIds") Collection<Long> recruitmentNotificationIds);
 }

@@ -12,16 +12,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.maharecruitment.gov.in.recruitment.entity.AgencyGlobalRankEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RankReleaseRuleEntity;
-import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationAgencyRankEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.repository.AgencyGlobalRankRepository;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RankReleaseRuleRepository;
-import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationAgencyRankRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationRankReleaseService;
 
@@ -37,17 +37,17 @@ public class RecruitmentNotificationRankReleaseServiceImpl implements Recruitmen
             RecruitmentNotificationStatus.IN_PROGRESS);
 
     private final RecruitmentNotificationRepository notificationRepository;
-    private final RecruitmentNotificationAgencyRankRepository agencyRankRepository;
+    private final AgencyGlobalRankRepository agencyGlobalRankRepository;
     private final RankReleaseRuleRepository rankReleaseRuleRepository;
     private final AgencyNotificationTrackingRepository trackingRepository;
 
     public RecruitmentNotificationRankReleaseServiceImpl(
             RecruitmentNotificationRepository notificationRepository,
-            RecruitmentNotificationAgencyRankRepository agencyRankRepository,
+            AgencyGlobalRankRepository agencyGlobalRankRepository,
             RankReleaseRuleRepository rankReleaseRuleRepository,
             AgencyNotificationTrackingRepository trackingRepository) {
         this.notificationRepository = notificationRepository;
-        this.agencyRankRepository = agencyRankRepository;
+        this.agencyGlobalRankRepository = agencyGlobalRankRepository;
         this.rankReleaseRuleRepository = rankReleaseRuleRepository;
         this.trackingRepository = trackingRepository;
     }
@@ -125,9 +125,9 @@ public class RecruitmentNotificationRankReleaseServiceImpl implements Recruitmen
 
     private Integer resolveNextRank(Long recruitmentNotificationId, Integer currentRank) {
         if (currentRank == null) {
-            return agencyRankRepository.findMinimumRankByNotificationId(recruitmentNotificationId);
+            return agencyGlobalRankRepository.findMinimumRank();
         }
-        return agencyRankRepository.findNextHigherRankByNotificationId(recruitmentNotificationId, currentRank);
+        return agencyGlobalRankRepository.findNextHigherRank(currentRank);
     }
 
     private boolean isRankEligibleForRelease(
@@ -160,17 +160,15 @@ public class RecruitmentNotificationRankReleaseServiceImpl implements Recruitmen
             Integer rankNumber,
             LocalDateTime releaseTimestamp) {
         Long recruitmentNotificationId = notification.getRecruitmentNotificationId();
-        List<RecruitmentNotificationAgencyRankEntity> mappings = agencyRankRepository
-                .findByRecruitmentNotificationRecruitmentNotificationIdAndRankNumberOrderByAgencyAgencyIdAsc(
-                        recruitmentNotificationId,
-                        rankNumber);
+        List<AgencyGlobalRankEntity> mappings = agencyGlobalRankRepository
+                .findByRankNumberWithAgencyOrderByAgencyAgencyIdAsc(rankNumber);
 
         if (mappings.isEmpty()) {
             return 0;
         }
 
         int releasedAgencyCount = 0;
-        for (RecruitmentNotificationAgencyRankEntity mapping : mappings) {
+        for (AgencyGlobalRankEntity mapping : mappings) {
             Long agencyId = mapping.getAgency().getAgencyId();
             if (trackingRepository.existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId(
                     recruitmentNotificationId,

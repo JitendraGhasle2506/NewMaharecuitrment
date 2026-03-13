@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Rank Release Overview</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Rank Release Overview', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Rank Release Overview</h2>
+                        <small class="text-muted">Global rank order + delay rules -> notification-wise release status</small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/department-requests/rank-release-rules}">
+                        View Rules
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <div class="alert alert-info mb-3">
+                        <strong>How it works:</strong>
+                        Rank 1 is immediate for each notification. Higher ranks wait based on configured delay from
+                        previous released rank.
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Notification ID</th>
+                                    <th>Request ID</th>
+                                    <th>Project Name</th>
+                                    <th>Agency</th>
+                                    <th class="text-center">Rank</th>
+                                    <th class="text-center">Delay (Days)</th>
+                                    <th>Eligible On</th>
+                                    <th>Released On</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    th:if="${rankReleaseListView == null or #lists.isEmpty(rankReleaseListView.rankMappings)}">
+                                    <td colspan="9" class="text-center text-muted">
+                                        No rank release records found.
+                                    </td>
+                                </tr>
+
+                                <tr th:each="row : ${rankReleaseListView.rankMappings}">
+                                    <td
+                                        th:text="${row.recruitmentNotificationId != null ? row.recruitmentNotificationId : '-'}">
+                                        -
+                                    </td>
+                                    <td th:text="${row.requestId != null ? row.requestId : '-'}">REQ-000</td>
+                                    <td th:text="${row.projectName}">Project Name</td>
+                                    <td>
+                                        <div th:text="${row.agencyName}">Agency Name</div>
+                                        <small class="text-muted" th:text="${row.agencyEmail != null ? row.agencyEmail : '-'}">
+                                            agency@example.com
+                                        </small>
+                                    </td>
+                                    <td class="text-center" th:text="${row.rankNumber}">1</td>
+                                    <td class="text-center"
+                                        th:text="${row.delayFromPreviousRankDays != null ? row.delayFromPreviousRankDays : '-'}">
+                                        0
+                                    </td>
+                                    <td
+                                        th:text="${row.eligibleOn != null ? #temporals.format(row.eligibleOn, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                    <td
+                                        th:text="${row.releasedOn != null ? #temporals.format(row.releasedOn, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                    <td>
+                                        <span class="badge"
+                                            th:classappend="${row.releaseStatusCode == 'RELEASED'} ? ' text-bg-success' :
+                                                            (${row.releaseStatusCode == 'ELIGIBLE'} ? ' text-bg-primary' :
+                                                            (${row.releaseStatusCode == 'WAITING_DATE' or row.releaseStatusCode == 'WAITING_PREVIOUS'} ? ' text-bg-warning' : ' text-bg-danger'))"
+                                            th:text="${row.releaseStatusLabel != null ? row.releaseStatusLabel : '-'}">
+                                            Status
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

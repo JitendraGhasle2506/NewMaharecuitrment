@@ -9,6 +9,28 @@
 --   Keep PK columns as BIGINT and apply vendor-specific identity/sequence strategy at deployment time.
 --   This keeps table/constraint/query design ANSI-compatible across PostgreSQL, MySQL, Oracle, SQL Server.
 
+CREATE TABLE agency_global_rank (
+    agency_global_rank_id BIGINT NOT NULL,
+    agency_id BIGINT NOT NULL,
+    rank_number INTEGER NOT NULL,
+    assigned_date TIMESTAMP NOT NULL,
+    created_date_time TIMESTAMP NOT NULL,
+    updated_date_time TIMESTAMP NOT NULL,
+    CONSTRAINT pk_agency_global_rank
+        PRIMARY KEY (agency_global_rank_id),
+    CONSTRAINT fk_agency_global_rank_agency
+        FOREIGN KEY (agency_id)
+        REFERENCES agency_master (agency_id),
+    CONSTRAINT uk_agency_global_rank_agency
+        UNIQUE (agency_id)
+);
+
+CREATE INDEX idx_agency_global_rank_agency
+    ON agency_global_rank (agency_id);
+
+CREATE INDEX idx_agency_global_rank_rank
+    ON agency_global_rank (rank_number);
+
 CREATE TABLE recruitment_notification_agency_rank (
     recruitment_notification_agency_rank_id BIGINT NOT NULL,
     recruitment_notification_id BIGINT NOT NULL,
