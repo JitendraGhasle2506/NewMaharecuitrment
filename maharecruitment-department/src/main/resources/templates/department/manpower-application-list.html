@@ -49,7 +49,7 @@
                                                 (applicationSummary.applicationStatus.name() == 'HR_SENT_BACK' || applicationSummary.applicationStatus.name() == 'AUDITOR_SENT_BACK' ? ' text-bg-warning' :
                                                 (applicationSummary.applicationStatus.name() == 'DRAFT' ? ' text-bg-secondary' : ' text-bg-primary')))
                                               }"
-                                            th:text="${applicationSummary.applicationStatus.statusCode + ' - ' + #strings.replace(applicationSummary.applicationStatus.name(), '_', ' ')}">
+                                            th:text="${applicationSummary.applicationStatus.statusCode + ' - ' + applicationSummary.applicationStatus.displayName}">
                                             DRAFT
                                         </span>
                                     </td>
