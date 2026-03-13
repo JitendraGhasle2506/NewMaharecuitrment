@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.recruitment.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,4 +43,11 @@ public interface AgencyCandidatePreOnboardingRepository extends JpaRepository<Ag
             + "order by preOnboarding.submittedAt desc, preOnboarding.updatedDateTime desc")
     List<AgencyCandidatePreOnboardingEntity> findOnboardingReadyCandidatesByAgency(
             @Param("agencyId") Long agencyId);
+
+    @Query("select preOnboarding "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "join fetch preOnboarding.interviewDetail candidate "
+            + "where candidate.recruitmentInterviewDetailId in :interviewDetailIds")
+    List<AgencyCandidatePreOnboardingEntity> findByInterviewDetailIds(
+            @Param("interviewDetailIds") Collection<Long> interviewDetailIds);
 }

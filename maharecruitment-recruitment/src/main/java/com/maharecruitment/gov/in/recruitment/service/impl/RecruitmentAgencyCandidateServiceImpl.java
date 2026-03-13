@@ -3,9 +3,11 @@ package com.maharecruitment.gov.in.recruitment.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
+import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacancyEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
@@ -20,6 +23,7 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEnti
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
@@ -39,6 +43,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
     private final RecruitmentDesignationVacancyRepository designationVacancyRepository;
     private final RecruitmentNotificationRepository notificationRepository;
     private final AgencyNotificationTrackingRepository trackingRepository;
+    private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
     private final RecruitmentAgencyNotificationActionService agencyNotificationActionService;
 
     public RecruitmentAgencyCandidateServiceImpl(
@@ -46,11 +51,13 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             RecruitmentDesignationVacancyRepository designationVacancyRepository,
             RecruitmentNotificationRepository notificationRepository,
             AgencyNotificationTrackingRepository trackingRepository,
+            AgencyCandidatePreOnboardingRepository preOnboardingRepository,
             RecruitmentAgencyNotificationActionService agencyNotificationActionService) {
         this.interviewDetailRepository = interviewDetailRepository;
         this.designationVacancyRepository = designationVacancyRepository;
         this.notificationRepository = notificationRepository;
         this.trackingRepository = trackingRepository;
+        this.preOnboardingRepository = preOnboardingRepository;
         this.agencyNotificationActionService = agencyNotificationActionService;
     }
 
@@ -71,9 +78,14 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
     public List<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId) {
         requirePositiveId(agencyId, "Agency id is required.");
 
-        return interviewDetailRepository.findSelectedCandidatesByAgency(agencyId)
+        List<RecruitmentInterviewDetailEntity> selectedCandidates = interviewDetailRepository.findSelectedCandidatesByAgency(agencyId);
+        Map<Long, AgencyCandidatePreOnboardingEntity> preOnboardingByCandidateId = loadPreOnboardingMap(selectedCandidates);
+
+        return selectedCandidates
                 .stream()
-                .map(this::toSelectedCandidateView)
+                .map(candidate -> toSelectedCandidateView(
+                        candidate,
+                        preOnboardingByCandidateId.get(candidate.getRecruitmentInterviewDetailId())))
                 .toList();
     }
 
@@ -100,9 +112,15 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         requirePositiveId(agencyId, "Agency id is required.");
         requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
 
-        return interviewDetailRepository.findSelectedCandidatesByAgencyAndNotification(agencyId, recruitmentNotificationId)
+        List<RecruitmentInterviewDetailEntity> selectedCandidates = interviewDetailRepository
+                .findSelectedCandidatesByAgencyAndNotification(agencyId, recruitmentNotificationId);
+        Map<Long, AgencyCandidatePreOnboardingEntity> preOnboardingByCandidateId = loadPreOnboardingMap(selectedCandidates);
+
+        return selectedCandidates
                 .stream()
-                .map(this::toSelectedCandidateView)
+                .map(candidate -> toSelectedCandidateView(
+                        candidate,
+                        preOnboardingByCandidateId.get(candidate.getRecruitmentInterviewDetailId())))
                 .toList();
     }
 
@@ -374,7 +392,28 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .build();
     }
 
-    private AgencySelectedCandidateView toSelectedCandidateView(RecruitmentInterviewDetailEntity candidate) {
+    private Map<Long, AgencyCandidatePreOnboardingEntity> loadPreOnboardingMap(
+            List<RecruitmentInterviewDetailEntity> candidates) {
+        Map<Long, AgencyCandidatePreOnboardingEntity> preOnboardingByCandidateId = new HashMap<>();
+        if (candidates == null || candidates.isEmpty()) {
+            return preOnboardingByCandidateId;
+        }
+
+        List<Long> candidateIds = candidates.stream()
+                .map(RecruitmentInterviewDetailEntity::getRecruitmentInterviewDetailId)
+                .toList();
+
+        preOnboardingRepository.findByInterviewDetailIds(candidateIds)
+                .forEach(preOnboarding -> preOnboardingByCandidateId.put(
+                        preOnboarding.getInterviewDetail().getRecruitmentInterviewDetailId(),
+                        preOnboarding));
+
+        return preOnboardingByCandidateId;
+    }
+
+    private AgencySelectedCandidateView toSelectedCandidateView(
+            RecruitmentInterviewDetailEntity candidate,
+            AgencyCandidatePreOnboardingEntity preOnboarding) {
         String designationName = candidate.getDesignationVacancy() != null
                 && candidate.getDesignationVacancy().getDesignationMst() != null
                         ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
@@ -406,9 +445,8 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .interviewLink(candidate.getInterviewLink())
                 .finalDecisionAt(candidate.getFinalDecisionAt())
                 .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
-                .preOnboardingCompleted(candidate.getPreOnboarding() != null)
-                .preOnboardingSubmittedAt(
-                        candidate.getPreOnboarding() != null ? candidate.getPreOnboarding().getSubmittedAt() : null)
+                .preOnboardingCompleted(preOnboarding != null)
+                .preOnboardingSubmittedAt(preOnboarding != null ? preOnboarding.getSubmittedAt() : null)
                 .build();
     }
 
