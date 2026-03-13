@@ -50,4 +50,17 @@ public interface AgencyCandidatePreOnboardingRepository extends JpaRepository<Ag
             + "where candidate.recruitmentInterviewDetailId in :interviewDetailIds")
     List<AgencyCandidatePreOnboardingEntity> findByInterviewDetailIds(
             @Param("interviewDetailIds") Collection<Long> interviewDetailIds);
+
+    @Query("select preOnboarding "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "join fetch preOnboarding.interviewDetail candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch candidate.agency agency "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where preOnboarding.submittedAt is not null "
+            + "and preOnboarding.hrVerified = false "
+            + "order by preOnboarding.submittedAt asc")
+    List<AgencyCandidatePreOnboardingEntity> findPendingHROnboarding();
 }

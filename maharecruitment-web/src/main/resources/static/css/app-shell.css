@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap');
 
 :root {
-    --app-bg: #eef3fb;
-    --sidebar-bg: #0f1b33;
-    --sidebar-bg-soft: #162748;
-    --sidebar-text: #d5dcf0;
+    --app-bg: #f1f5f9;
+    --sidebar-bg: #0f172a;
+    --sidebar-bg-soft: #1e293b;
+    --sidebar-text: #94a3b8;
     --sidebar-text-active: #ffffff;
-    --sidebar-border: rgba(255, 255, 255, 0.08);
-    --topbar-bg: linear-gradient(135deg, #101424 0%, #1a1f3c 100%);
-    --primary: #2e6cff;
-    --primary-soft: rgba(46, 108, 255, 0.14);
-    --panel-bg: rgba(255, 255, 255, 0.88);
-    --panel-border: rgba(255, 255, 255, 0.9);
-    --text-main: #0f1f3d;
-    --text-muted: #5d6c8a;
+    --sidebar-border: rgba(255, 255, 255, 0.05);
+    --topbar-bg: #ffffff;
+    --primary: #2563eb;
+    --primary-soft: rgba(37, 99, 235, 0.1);
+    --panel-bg: #ffffff;
+    --panel-border: #e2e8f0;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
 }
 
 * {
@@ -29,15 +29,13 @@ body {
     margin: 0;
     font-family: "Manrope", "Segoe UI", sans-serif;
     color: var(--text-main);
+    background-color: var(--app-bg);
 }
 
 .app-shell {
     min-height: 100vh;
     display: flex;
-    background:
-        radial-gradient(860px 440px at -6% -12%, #c9dcff 0%, rgba(201, 220, 255, 0) 58%),
-        radial-gradient(820px 460px at 106% -8%, #d0f3ea 0%, rgba(208, 243, 234, 0) 54%),
-        linear-gradient(155deg, var(--app-bg) 0%, #dce7f8 100%);
+    background: var(--app-bg);
 }
 
 .app-sidebar {
@@ -146,41 +144,41 @@ body {
 
 .app-topbar {
     background: var(--topbar-bg);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 6px 16px rgba(14, 26, 52, 0.2);
-    padding: 0.55rem 1rem;
+    border-bottom: 1px solid var(--panel-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    padding: 0.65rem 1.25rem;
 }
 
 .logo-text {
-    color: #ffffff;
+    color: #0f172a;
     font-family: "Sora", "Manrope", sans-serif;
-    font-size: 1.05rem;
-    margin: 0 0 0 0.8rem;
-    letter-spacing: 0.3px;
+    font-size: 1.1rem;
+    margin: 0 0 0 1rem;
+    letter-spacing: -0.01em;
     font-weight: 700;
 }
 
-.app-nav-toggle {
+.nav-toggle {
     border: 0;
-    background: var(--primary);
-    color: #fff;
+    background: #f1f5f9;
+    color: #1e293b;
     border-radius: 9px;
-    box-shadow: 0 6px 16px rgba(46, 108, 255, 0.28);
+    padding: 0.5rem 0.75rem;
 }
 
 .user-profile-chip {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
-    padding: 0.38rem 0.68rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    gap: 0.75rem;
+    padding: 0.45rem 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
     border-radius: 999px;
 }
 
 .user-profile-chip:hover,
-.user-profile-chip:focus {
-    background: rgba(255, 255, 255, 0.2);
+.profile-dropdown-trigger[aria-expanded="true"] .user-profile-chip {
+    background: #f1f5f9;
 }
 
 .user-avatar {
@@ -200,16 +198,16 @@ body {
 }
 
 .user-name {
-    color: #ffffff;
-    font-size: 0.78rem;
+    color: #0f172a;
+    font-size: 0.85rem;
     font-weight: 700;
 }
 
-.user-role-label {
-    color: #c4d1f5;
-    font-size: 0.64rem;
+.user-role {
+    color: #64748b;
+    font-size: 0.68rem;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
+    letter-spacing: 0.02em;
 }
 
 .profile-dropdown-menu {
@@ -346,4 +344,95 @@ body {
     .user-info-text {
         display: none;
     }
+}
+
+/* Global Form Improvements */
+.form-control,
+.form-select {
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    padding: 0.65rem 0.9rem !important;
+    font-size: 0.94rem !important;
+    background-color: #ffffff !important;
+    transition: all 0.2s ease !important;
+    color: #1e293b !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+    outline: none !important;
+}
+
+.form-label {
+    font-weight: 600 !important;
+    color: #334155 !important;
+    margin-bottom: 0.45rem !important;
+    font-size: 0.9rem !important;
+}
+
+/* Custom Checkbox Styling */
+.form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.15rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.form-check-label {
+    cursor: pointer;
+    padding-left: 0.35rem;
+    font-size: 0.94rem;
+    color: #334155;
+    font-weight: 500;
+}
+
+/* Header & Section Styling */
+.section-title {
+    font-family: "Sora", "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #1e293b;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary-soft);
+    display: inline-block;
+}
+
+.table thead th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.btn {
+    border-radius: 10px;
+    padding: 0.6rem 1.25rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    border: 0;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
 }

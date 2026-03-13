@@ -110,5 +110,14 @@ public class AgencyPreOnboardingForm {
 
     private BigDecimal minExperienceYears;
 
+    private boolean hrFlow;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate hrOnboardingDate;
+
+    private String hrOnboardingLocation;
+
+    private boolean hrVerified;
+
     private List<AgencyPreOnboardingEmploymentForm> previousEmployments = new ArrayList<>();
 }
