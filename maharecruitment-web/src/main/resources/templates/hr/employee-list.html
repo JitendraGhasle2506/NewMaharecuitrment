@@ -77,6 +77,7 @@
                                 <tr>
                                     <th class="ps-4">Employee Information</th>
                                     <th>Employee Code</th>
+                                    <th>Request ID</th>
                                     <th>Full Name</th>
                                     <th>Agency</th>
                                     <th>Department</th>
@@ -102,6 +103,7 @@
                                         <span class="badge bg-secondary-subtle text-secondary-emphasis"
                                             th:text="${emp.employeeCode}">EMP001</span>
                                     </td>
+                                    <td th:text="${emp.requestId}">REQ-001</td>
                                     <td th:text="${emp.fullName}">Full Name</td>
                                     <td th:text="${emp.agencyName}">Agency</td>
                                     <td th:text="${emp.department}">Department</td>

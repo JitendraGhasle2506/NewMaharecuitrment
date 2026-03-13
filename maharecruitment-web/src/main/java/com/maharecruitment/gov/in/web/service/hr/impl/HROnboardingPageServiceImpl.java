@@ -191,6 +191,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         employee.setAgency(interview.getAgency());
         employee.setDesignation(interview.getDesignationVacancy().getDesignationMst());
         employee.setLevelCode(interview.getDesignationVacancy().getLevelCode());
+        employee.setRequestId(notification.getRequestId());
 
         // Recruitment Type Logic
         String requestId = notification.getRequestId();
@@ -251,6 +252,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         return new EmployeeListView(
                 entity.getEmployeeId(),
                 entity.getEmployeeCode(),
+                entity.getRequestId(),
                 entity.getFullName(),
                 entity.getEmail(),
                 entity.getMobile(),
