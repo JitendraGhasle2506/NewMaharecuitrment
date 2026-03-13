@@ -178,6 +178,21 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
+    @Column(name = "hr_onboarding_date")
+    private LocalDate hrOnboardingDate;
+
+    @Column(name = "hr_onboarding_location", length = 255)
+    private String hrOnboardingLocation;
+
+    @Column(name = "hr_verified", nullable = false)
+    private Boolean hrVerified = false;
+
+    @Column(name = "hr_user_id")
+    private Long hrUserId;
+
+    @Column(name = "onboarded_at")
+    private LocalDateTime onboardedAt;
+
     @OneToMany(mappedBy = "preOnboarding", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("startDate asc, preOnboardingEmploymentId asc")
     private List<AgencyCandidatePreOnboardingEmploymentEntity> previousEmployments = new ArrayList<>();
@@ -235,6 +250,8 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
         docAadhaar = Boolean.TRUE.equals(docAadhaar);
         docPan = Boolean.TRUE.equals(docPan);
         agencyVerified = Boolean.TRUE.equals(agencyVerified);
+        hrVerified = Boolean.TRUE.equals(hrVerified);
+        hrOnboardingLocation = normalizeText(hrOnboardingLocation);
 
         if (submittedAt == null) {
             submittedAt = LocalDateTime.now();

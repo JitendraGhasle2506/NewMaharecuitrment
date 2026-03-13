@@ -24,10 +24,10 @@ body.portal-shell {
     min-height: 100vh;
     color: var(--ink);
     font-family: "Manrope", "Segoe UI", sans-serif;
-    background:
-        radial-gradient(900px 480px at -10% -20%, #96c5ff 0%, rgba(150, 197, 255, 0) 62%),
-        radial-gradient(780px 420px at 110% 12%, #80e4d6 0%, rgba(128, 228, 214, 0) 58%),
-        linear-gradient(160deg, #f4f8ff 0%, #e8eef8 58%, #dfe8f5 100%);
+    background-color: #f1f5f9;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.03) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.03) 0px, transparent 50%);
 }
 
 .portal-nav {
@@ -152,16 +152,21 @@ label.control-label {
 }
 
 .form-control {
-    border: 1px solid var(--line);
+    border: 1.5px solid var(--line);
     border-radius: 12px;
-    min-height: 44px;
-    padding: 0.62rem 0.8rem;
-    font-size: 0.95rem;
+    min-height: 50px;
+    padding: 0.7rem 1.1rem;
+    font-size: 0.98rem;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+    color: var(--ink);
 }
 
 .form-control:focus {
-    border-color: #77acf3;
-    box-shadow: 0 0 0 0.2rem rgba(13, 116, 199, 0.15);
+    border-color: var(--brand);
+    box-shadow: 0 0 0 4px rgba(0, 87, 168, 0.1);
+    background-color: #fff;
+    outline: none;
 }
 
 .captchaMain {

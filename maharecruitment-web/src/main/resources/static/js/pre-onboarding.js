@@ -13,9 +13,16 @@
     const employmentValidationMessage = document.getElementById("employmentValidationMessage");
     const submitBtn = document.getElementById("submitBtn");
     const requiredCheckboxSelector = "[data-required-doc='true'], #agencyFlag";
+    
+    // Core inputs for validation
     const mobileInput = form.querySelector("[name='mobile']");
-    const joiningDateInput = form.querySelector("[name='joiningDate']");
-    const onboardingDateInput = form.querySelector("[name='onboardingDate']");
+    const joiningDateInput = document.getElementById("joiningDate");
+    const onboardingDateInput = document.getElementById("onboardingDate");
+    const dobInput = document.getElementById("dob");
+    const panInput = document.getElementById("pan");
+    const aadhaarInput = form.querySelector("[name='aadhaar']");
+    const hrFlowInput = form.querySelector("[name='hrFlow']");
+    const hrFlow = hrFlowInput && hrFlowInput.value === "true";
 
     function attachRowEvents(row) {
         row.querySelectorAll(".experience-date").forEach(function (input) {
@@ -26,6 +33,7 @@
             input.addEventListener("input", function () {
                 clearEmploymentFieldValidity(row);
                 validateEmploymentRows();
+                checkFormValidity();
             });
         });
 
@@ -104,6 +112,15 @@
             return;
         }
         field.setCustomValidity(message || "");
+        if (message) {
+            field.classList.add("is-invalid");
+            field.classList.remove("is-valid");
+        } else if (field.value.trim() !== "") {
+            field.classList.remove("is-invalid");
+            field.classList.add("is-valid");
+        } else {
+            field.classList.remove("is-invalid", "is-valid");
+        }
     }
 
     function clearEmploymentFieldValidity(row) {
@@ -112,6 +129,7 @@
         }
         row.querySelectorAll("input").forEach(function (field) {
             setFieldValidity(field, "");
+            field.classList.remove("is-invalid", "is-valid");
         });
     }
 
@@ -337,43 +355,97 @@
     }
 
     function validateJoiningAndOnboardingDates() {
-        if (!joiningDateInput || !onboardingDateInput) {
-            return true;
-        }
-
+        if (!joiningDateInput || !onboardingDateInput) return true;
+        
         setFieldValidity(onboardingDateInput, "");
-        if (!joiningDateInput.value || !onboardingDateInput.value) {
-            return true;
-        }
+        if (!joiningDateInput.value || !onboardingDateInput.value) return true;
 
         if (onboardingDateInput.value < joiningDateInput.value) {
             setFieldValidity(onboardingDateInput, "Onboarding date cannot be before joining date.");
             return false;
         }
 
+        setFieldValidity(joiningDateInput, "");
         return true;
     }
 
     function validateMobile() {
-        if (!mobileInput) {
-            return true;
-        }
-
-        const mobileValue = mobileInput.value.trim();
+        if (!mobileInput) return true;
+        const value = mobileInput.value.trim();
         setFieldValidity(mobileInput, "");
-        if (!mobileValue) {
-            return true;
-        }
-
-        if (!/^[0-9]{10,15}$/.test(mobileValue)) {
+        if (!value) return true;
+        if (!/^[0-9]{10,15}$/.test(value)) {
             setFieldValidity(mobileInput, "Mobile number must be 10 to 15 digits.");
             return false;
         }
+        return true;
+    }
 
+    function validateDOB() {
+        if (!dobInput) return true;
+        const value = dobInput.value;
+        setFieldValidity(dobInput, "");
+        if (!value) return true;
+        
+        const dob = new Date(value + "T00:00:00");
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+        
+        if (age < 18) {
+            setFieldValidity(dobInput, "Candidate must be at least 18 years old.");
+            return false;
+        }
+        return true;
+    }
+
+    function validatePAN() {
+        if (!panInput) return true;
+        const value = panInput.value.toUpperCase().trim();
+        panInput.value = value; // Auto-capitalize
+        setFieldValidity(panInput, "");
+        if (!value) return true;
+        
+        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value)) {
+            setFieldValidity(panInput, "Invalid PAN format (e.g., ABCDE1234F).");
+            return false;
+        }
+        return true;
+    }
+
+    function validateAadhaar() {
+        if (!aadhaarInput) return true;
+        const value = aadhaarInput.value.trim();
+        setFieldValidity(aadhaarInput, "");
+        if (!value) return true;
+        
+        if (!/^[0-9]{12}$/.test(value)) {
+            setFieldValidity(aadhaarInput, "Aadhaar must be exactly 12 digits.");
+            return false;
+        }
         return true;
     }
 
     function checkFormValidity() {
+        if (hrFlow) {
+            const hrLoc = document.getElementById("hrOnboardingLocation");
+            const hrDate = document.getElementById("hrOnboardingDate");
+            const hrCheck = document.getElementById("hrVerified");
+            
+            const locValid = hrLoc && hrLoc.value.trim() !== "";
+            const dateValid = hrDate && hrDate.value !== "";
+            const checkValid = hrCheck && hrCheck.checked;
+            
+            if (hrLoc) setFieldValidity(hrLoc, locValid ? "" : "Location is required.");
+            if (hrDate) setFieldValidity(hrDate, dateValid ? "" : "Date is required.");
+            
+            submitBtn.disabled = !locValid || !dateValid || !checkValid;
+            return;
+        }
+
         const requiredChecks = Array.from(form.querySelectorAll(requiredCheckboxSelector));
         const requiredDocsComplete = requiredChecks.every(function (checkbox) {
             return checkbox.checked;
@@ -381,7 +453,13 @@
         const employmentValid = validateEmploymentRows().valid;
         const datesValid = validateJoiningAndOnboardingDates();
         const mobileValid = validateMobile();
-        submitBtn.disabled = !requiredDocsComplete || !employmentValid || !datesValid || !mobileValid;
+        const dobValid = validateDOB();
+        const panValid = validatePAN();
+        const aadhaarValid = validateAadhaar();
+        
+        const isBasicValid = form.checkValidity();
+
+        submitBtn.disabled = !requiredDocsComplete || !employmentValid || !datesValid || !mobileValid || !dobValid || !panValid || !aadhaarValid || !isBasicValid;
     }
 
     function openManagedDocument(path) {
@@ -404,6 +482,7 @@
         addEmploymentBtn.addEventListener("click", function () {
             addEmploymentRow();
             reindexEmploymentRows();
+            checkFormValidity();
         });
     }
 
@@ -411,46 +490,41 @@
         checkbox.addEventListener("change", checkFormValidity);
     });
 
-    if (joiningDateInput) {
-        joiningDateInput.addEventListener("change", checkFormValidity);
+    [joiningDateInput, onboardingDateInput, dobInput].forEach(function (el) {
+        if (el) {
+            el.addEventListener("change", checkFormValidity);
+        }
+    });
+
+    [mobileInput, panInput, aadhaarInput].forEach(function (el) {
+        if (el) {
+            el.addEventListener("input", checkFormValidity);
+        }
+    });
+
+    if (hrFlow) {
+        const hrLoc = document.getElementById("hrOnboardingLocation");
+        const hrDate = document.getElementById("hrOnboardingDate");
+        const hrCheck = document.getElementById("hrVerified");
+        [hrLoc, hrDate].forEach(el => el && el.addEventListener("input", checkFormValidity));
+        if (hrCheck) hrCheck.addEventListener("change", checkFormValidity);
     }
-    if (onboardingDateInput) {
-        onboardingDateInput.addEventListener("change", checkFormValidity);
-    }
-    if (mobileInput) {
-        mobileInput.addEventListener("input", checkFormValidity);
+
+    if (panInput) {
+        panInput.addEventListener("input", function() {
+            this.value = this.value.toUpperCase();
+        });
     }
 
     form.addEventListener("submit", function (event) {
-        const employmentValidation = validateEmploymentRows();
-        const datesValid = validateJoiningAndOnboardingDates();
-        const mobileValid = validateMobile();
-
-        if (!employmentValidation.valid) {
+        checkFormValidity();
+        if (submitBtn.disabled || !form.reportValidity()) {
             event.preventDefault();
-            if (employmentValidation.invalidField) {
-                employmentValidation.invalidField.reportValidity();
-                employmentValidation.invalidField.focus();
+            const firstError = form.querySelector(".is-invalid, :invalid");
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+                firstError.focus();
             }
-            return;
-        }
-
-        if (!datesValid) {
-            event.preventDefault();
-            onboardingDateInput.reportValidity();
-            onboardingDateInput.focus();
-            return;
-        }
-
-        if (!mobileValid) {
-            event.preventDefault();
-            mobileInput.reportValidity();
-            mobileInput.focus();
-            return;
-        }
-
-        if (!form.reportValidity()) {
-            event.preventDefault();
         }
     });
 
