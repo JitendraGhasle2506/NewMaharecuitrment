@@ -170,10 +170,10 @@
                                         id="panNumber" maxlength="10" placeholder="ABCDE1234F">
                                     <input type="file" class="form-control" th:field="*{panCopyFile}" id="panCopyFile"
                                         accept=".pdf,.jpg,.jpeg,.png">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('panCopyFile')}"
+                                    th:errors="*{panCopyFile}"></div>
                                 </div>
                                 <small class="text-muted">Format: ABCDE1234F. Upload PDF/Image (Max 5MB).</small>
-                                <div class="text-danger small" th:if="${#fields.hasErrors('panCopyFile')}"
-                                    th:errors="*{panCopyFile}"></div>
                                 <div class="text-primary mt-1 d-flex align-items-center gap-2"
                                     th:if="${!#strings.isEmpty(agencyForm.existingPanCopyPath)}">
                                     <i class="bi bi-file-earmark-check"></i>
@@ -193,10 +193,10 @@
                                         id="gstNumber" maxlength="15" placeholder="22AAAAA0000A1Z5">
                                     <input type="file" class="form-control" th:field="*{gstDocumentFile}"
                                         id="gstDocumentFile" accept=".pdf,.jpg,.jpeg,.png">
+                                        <div class="text-danger small" th:if="${#fields.hasErrors('gstDocumentFile')}"
+                                    th:errors="*{gstDocumentFile}"></div>
                                 </div>
                                 <small class="text-muted">15-digit GST number. Upload PDF/Image (Max 5MB).</small>
-                                <div class="text-danger small" th:if="${#fields.hasErrors('gstDocumentFile')}"
-                                    th:errors="*{gstDocumentFile}"></div>
                                 <div class="text-primary mt-1 d-flex align-items-center gap-2"
                                     th:if="${!#strings.isEmpty(agencyForm.existingGstDocumentPath)}">
                                     <i class="bi bi-file-earmark-check"></i>
@@ -352,7 +352,7 @@
                             </div>
 
                             <div class="col-md-4">
-                                <label class="form-label">Cancelled Cheque</label>
+                                <label class="form-label">Cancelled Cheque <span class="required-asterisk">*</span></label>
                                 <input type="file" class="form-control" th:field="*{cancelledChequeFile}"
                                     id="cancelledChequeFile" accept=".pdf,.jpg,.jpeg">
                                 <div class="text-danger small" th:if="${#fields.hasErrors('cancelledChequeFile')}"
