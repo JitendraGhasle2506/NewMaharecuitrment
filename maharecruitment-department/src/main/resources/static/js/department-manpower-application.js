@@ -45,6 +45,7 @@
     designationSelectElement?.addEventListener("change", onDesignationChange);
     addRequirementButton?.addEventListener("click", onAddRequirementClick);
     resourceRequirementTableBody?.addEventListener("input", onResourceTableInput);
+    resourceRequirementTableBody?.addEventListener("change", onResourceTableChange);
     resourceRequirementTableBody?.addEventListener("click", onResourceTableClick);
     workOrderFileInput?.addEventListener("change", onWorkOrderFileChange);
     saveDraftButton?.addEventListener("click", onSaveDraftClick);
@@ -208,7 +209,23 @@
             return;
         }
 
-        recalculateRowTotalCost(rowElement);
+        recalculateRowTotalCost(rowElement, false);
+        recalculateGrandTotalCost();
+    }
+
+    function onResourceTableChange(event) {
+        const changedElement = event.target;
+        if (!changedElement.classList.contains("requiredQuantityInput")
+            && !changedElement.classList.contains("durationInMonthsInput")) {
+            return;
+        }
+
+        const rowElement = changedElement.closest("tr");
+        if (!rowElement) {
+            return;
+        }
+
+        recalculateRowTotalCost(rowElement, true);
         recalculateGrandTotalCost();
     }
 
@@ -233,22 +250,26 @@
         recalculateGrandTotalCost();
     }
 
-    function recalculateRowTotalCost(rowElement) {
+    function recalculateRowTotalCost(rowElement, normalizeInputs = true) {
         const quantityInput = rowElement.querySelector(".requiredQuantityInput");
         const durationInput = rowElement.querySelector(".durationInMonthsInput");
         const monthlyRateInput = rowElement.querySelector(".monthlyRateValue");
         const rowTotalCostText = rowElement.querySelector(".rowTotalCostText");
         const rowTotalCostValue = rowElement.querySelector(".rowTotalCostValue");
 
-        const quantity = Math.max(1, Number(quantityInput?.value || 1));
-        const durationInMonths = Math.max(MINIMUM_DURATION_IN_MONTHS, Number(durationInput?.value || MINIMUM_DURATION_IN_MONTHS));
+        const rawQuantity = Number(quantityInput?.value);
+        const rawDurationInMonths = Number(durationInput?.value);
+        const quantity = Number.isFinite(rawQuantity) && rawQuantity > 0 ? Math.max(1, rawQuantity) : 0;
+        const durationInMonths = Number.isFinite(rawDurationInMonths) && rawDurationInMonths > 0
+            ? Math.max(MINIMUM_DURATION_IN_MONTHS, rawDurationInMonths)
+            : 0;
         const monthlyRate = Number(monthlyRateInput?.value || 0);
         const totalCost = quantity * durationInMonths * monthlyRate;
 
-        if (quantityInput) {
+        if (normalizeInputs && quantityInput) {
             quantityInput.value = quantity;
         }
-        if (durationInput) {
+        if (normalizeInputs && durationInput) {
             durationInput.value = durationInMonths;
         }
         if (rowTotalCostText) {

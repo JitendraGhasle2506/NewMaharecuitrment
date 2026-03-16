@@ -290,6 +290,18 @@
                         </div>
                     </div>
 
+                    <div class="alert alert-info">
+                        Vacancy is counted only after HR onboarding is completed. Department can keep selected candidates ready,
+                        and the selected candidate becomes locked after onboarding.
+                    </div>
+
+                    <div class="alert alert-success"
+                         th:if="${workflowDetail.onboardingCompleted}">
+                        Candidate already onboarded on
+                        <span th:text="${workflowDetail.onboardedAt != null ? #temporals.format(workflowDetail.onboardedAt, 'dd-MMM-yyyy HH:mm') : '-'}">-</span>.
+                        Final decision is locked.
+                    </div>
+
                     <div class="section-card">
                         <div class="section-head">Interview Schedule</div>
                         <div class="section-body">
@@ -590,13 +602,8 @@
                                 </span>
                             </div>
 
-                            <div class="alert alert-warning"
-                                 th:if="${workflowDetail.selectionAllowed == false and workflowDetail.finalDecisionStatus != 'SELECTED'}">
-                                All vacancies are filled for this designation and level. You cannot select more candidates.
-                            </div>
-
                             <form method="post"
-                                  th:if="${workflowDetail.assessmentSubmitted == true}"
+                                  th:if="${workflowDetail.assessmentSubmitted == true and !workflowDetail.onboardingCompleted}"
                                   th:action="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/final-decision(
                                     recruitmentNotificationId=${workflowDetail.recruitmentNotificationId},
                                     recruitmentInterviewDetailId=${workflowDetail.recruitmentInterviewDetailId})}"
@@ -608,7 +615,7 @@
                                         <select class="form-select" th:field="*{finalDecision}" required>
                                             <option value="">Select Decision</option>
                                             <option th:value="${T(com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision).SELECT}"
-                                                    th:disabled="${workflowDetail.selectionAllowed == false and workflowDetail.finalDecisionStatus != 'SELECTED'}">
+                                                    >
                                                 Select
                                             </option>
                                             <option th:value="${T(com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision).REJECT}">
@@ -627,6 +634,9 @@
 
                             <div th:if="${workflowDetail.assessmentSubmitted != true}" class="text-muted">
                                 Submit assessment report before final decision.
+                            </div>
+                            <div th:if="${workflowDetail.assessmentSubmitted == true and workflowDetail.onboardingCompleted}" class="text-muted">
+                                Candidate is already onboarded. Final decision cannot be changed now.
                             </div>
                         </div>
                     </div>

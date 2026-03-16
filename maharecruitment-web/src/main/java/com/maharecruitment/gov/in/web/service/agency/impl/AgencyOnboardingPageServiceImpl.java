@@ -130,13 +130,17 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     @Override
     @Transactional
     public void savePreOnboarding(String actorEmail, Long recruitmentInterviewDetailId, AgencyPreOnboardingForm form) {
+        if (form == null) {
+            throw new RecruitmentNotificationException("Pre-onboarding form is required.");
+        }
+
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         RecruitmentInterviewDetailEntity candidate = loadSelectedCandidate(recruitmentInterviewDetailId, context.agencyId());
         AgencyCandidatePreOnboardingEntity existing = preOnboardingRepository
                 .findByInterviewDetailIdAndAgencyIdForForm(recruitmentInterviewDetailId, context.agencyId())
                 .orElse(null);
 
-        List<NormalizedEmployment> employmentRows = normalizeEmploymentRows(form != null ? form.getPreviousEmployments() : null);
+        List<NormalizedEmployment> employmentRows = normalizeEmploymentRows(form.getPreviousEmployments());
         BigDecimal minExperienceYears = resolveMinExperienceYears(
                 candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null);
         ExperienceBreakdown experience = calculateExperience(employmentRows);
@@ -379,9 +383,6 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             List<NormalizedEmployment> employmentRows,
             ExperienceBreakdown experience,
             BigDecimal minExperienceYears) {
-        if (form == null) {
-            throw new RecruitmentNotificationException("Pre-onboarding form is required.");
-        }
         if (!StringUtils.hasText(form.getName())) {
             throw new RecruitmentNotificationException("Candidate name is required.");
         }

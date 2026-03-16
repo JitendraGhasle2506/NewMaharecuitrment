@@ -116,9 +116,14 @@
                                         <option value="">-- Select Designation --</option>
                                         <option th:each="vacancy : ${detail.designationVacancies}"
                                             th:value="${vacancy.vacancyId}"
-                                            th:text="${vacancy.designationName + ' | ' + vacancy.levelCode + ' | Open: ' + (vacancy.numberOfVacancy != null and vacancy.filledPost != null ? vacancy.numberOfVacancy - vacancy.filledPost : 0)}">
+                                            th:attr="data-open-count=${vacancy.numberOfVacancy != null and vacancy.filledPost != null ? vacancy.numberOfVacancy - vacancy.filledPost : 0},
+                                                     data-min-exp=${vacancy.minExperience != null ? vacancy.minExperience : ''},
+                                                     data-max-exp=${vacancy.maxExperience != null ? vacancy.maxExperience : ''}"
+                                            th:disabled="${vacancy.numberOfVacancy != null and vacancy.filledPost != null and vacancy.numberOfVacancy - vacancy.filledPost <= 0}"
+                                            th:text="${vacancy.designationName + ' | ' + vacancy.levelCode + ' | Open: ' + (vacancy.numberOfVacancy != null and vacancy.filledPost != null ? vacancy.numberOfVacancy - vacancy.filledPost : 0) + (vacancy.minExperience != null or vacancy.maxExperience != null ? ' | Exp: ' + (vacancy.minExperience != null ? vacancy.minExperience.stripTrailingZeros().toPlainString() : '0') + '-' + (vacancy.maxExperience != null ? vacancy.maxExperience.stripTrailingZeros().toPlainString() : 'Any') + ' yrs' : '')}">
                                         </option>
                                     </select>
+                                    <small id="designationVacancyHelpText" class="text-muted d-block mt-1"></small>
                                 </td>
                             </tr>
                         </table>
@@ -200,7 +205,7 @@
                         </div>
 
                         <div class="text-end">
-                            <button type="submit" class="btn btn-success">Submit Candidates</button>
+                            <button type="submit" class="btn btn-success" id="submitCandidatesButton">Submit Candidates</button>
                         </div>
                     </form>
 
@@ -336,8 +341,18 @@
                                             </div>
                                             <button type="submit" class="btn btn-outline-success btn-sm">Save Interview</button>
                                         </form>
+                                        <form method="post"
+                                            th:if="${candidate.withdrawAllowed}"
+                                            th:action="@{/agency/recruitment-notifications/{notificationId}/candidates/{candidateId}/withdraw(
+                                                notificationId=${detail.recruitmentNotificationId},
+                                                candidateId=${candidate.recruitmentInterviewDetailId})}"
+                                            class="d-inline">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                onclick="return confirm('Withdraw this candidate submission?')">Withdraw</button>
+                                        </form>
                                         <span class="text-muted"
-                                            th:if="${candidate.candidateStatus.name() != 'SHORTLISTED_BY_DEPARTMENT' and candidate.candidateStatus.name() != 'INTERVIEW_SCHEDULED_BY_AGENCY'}">
+                                            th:if="${candidate.candidateStatus.name() != 'SHORTLISTED_BY_DEPARTMENT' and candidate.candidateStatus.name() != 'INTERVIEW_SCHEDULED_BY_AGENCY' and !candidate.withdrawAllowed}">
                                             Waiting for department shortlist
                                         </span>
                                         <span class="text-muted"

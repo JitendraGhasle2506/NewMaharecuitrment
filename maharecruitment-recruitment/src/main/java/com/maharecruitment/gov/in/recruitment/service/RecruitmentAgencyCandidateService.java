@@ -31,4 +31,9 @@ public interface RecruitmentAgencyCandidateService {
             Long agencyId,
             Long agencyUserId,
             AgencyCandidateInterviewScheduleInput scheduleInput);
+
+    void withdrawCandidate(
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId,
+            Long agencyId);
 }

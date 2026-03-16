@@ -169,6 +169,30 @@ public class AgencyRecruitmentNotificationPageController {
         return "redirect:/agency/recruitment-notifications/" + recruitmentNotificationId;
     }
 
+    @PostMapping("/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/withdraw")
+    public String withdrawCandidate(
+            @PathVariable Long recruitmentNotificationId,
+            @PathVariable Long recruitmentInterviewDetailId,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+        String actorEmail = resolveActorEmail(principal);
+
+        try {
+            pageService.withdrawCandidate(actorEmail, recruitmentNotificationId, recruitmentInterviewDetailId);
+            redirectAttributes.addFlashAttribute("successMessage", "Candidate withdrawn successfully.");
+        } catch (RecruitmentNotificationException ex) {
+            log.warn(
+                    "Unable to withdraw candidate. notificationId={}, candidateId={}, actorEmail={}, reason={}",
+                    recruitmentNotificationId,
+                    recruitmentInterviewDetailId,
+                    actorEmail,
+                    ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+
+        return "redirect:/agency/recruitment-notifications/" + recruitmentNotificationId;
+    }
+
     private String resolveActorEmail(Principal principal) {
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new RecruitmentNotificationException("Authenticated user is required.");

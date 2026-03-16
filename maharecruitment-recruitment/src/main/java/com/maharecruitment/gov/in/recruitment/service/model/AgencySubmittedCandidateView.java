@@ -61,4 +61,6 @@ public class AgencySubmittedCandidateView {
     private LocalDateTime finalDecisionAt;
 
     private LocalDateTime createdDateTime;
+
+    private boolean withdrawAllowed;
 }

@@ -173,6 +173,25 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
                         .build());
     }
 
+    @Override
+    @Transactional
+    public void withdrawCandidate(
+            String actorEmail,
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        String resumeFilePath = candidateService.getSubmittedCandidates(recruitmentNotificationId, context.agencyId())
+                .stream()
+                .filter(candidate -> recruitmentInterviewDetailId.equals(candidate.getRecruitmentInterviewDetailId()))
+                .map(AgencySubmittedCandidateView::getResumeFilePath)
+                .findFirst()
+                .orElse(null);
+        candidateService.withdrawCandidate(recruitmentNotificationId, recruitmentInterviewDetailId, context.agencyId());
+        if (StringUtils.hasText(resumeFilePath)) {
+            fileStorageService.deleteQuietly(resumeFilePath);
+        }
+    }
+
     private void validateBatchForm(AgencyCandidateBatchForm candidateBatchForm) {
         if (candidateBatchForm == null) {
             throw new RecruitmentNotificationException("Candidate form is required.");

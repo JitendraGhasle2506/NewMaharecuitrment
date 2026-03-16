@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.maharecruitment.gov.in.master.entity.ResourceLevelExperience;
+import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
@@ -45,6 +47,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
     private final AgencyNotificationTrackingRepository trackingRepository;
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
     private final RecruitmentAgencyNotificationActionService agencyNotificationActionService;
+    private final ResourceLevelExperienceRepository resourceLevelExperienceRepository;
 
     public RecruitmentAgencyCandidateServiceImpl(
             RecruitmentInterviewDetailRepository interviewDetailRepository,
@@ -52,13 +55,15 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             RecruitmentNotificationRepository notificationRepository,
             AgencyNotificationTrackingRepository trackingRepository,
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
-            RecruitmentAgencyNotificationActionService agencyNotificationActionService) {
+            RecruitmentAgencyNotificationActionService agencyNotificationActionService,
+            ResourceLevelExperienceRepository resourceLevelExperienceRepository) {
         this.interviewDetailRepository = interviewDetailRepository;
         this.designationVacancyRepository = designationVacancyRepository;
         this.notificationRepository = notificationRepository;
         this.trackingRepository = trackingRepository;
         this.preOnboardingRepository = preOnboardingRepository;
         this.agencyNotificationActionService = agencyNotificationActionService;
+        this.resourceLevelExperienceRepository = resourceLevelExperienceRepository;
     }
 
     @Override
@@ -158,6 +163,23 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Selected designation is not part of this recruitment notification."));
 
+        long vacancyCount = safePositive(designationVacancy.getNumberOfVacancy());
+        long filledCount = preOnboardingRepository
+                .countByInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndOnboardedAtIsNotNull(
+                        designationVacancyId);
+        long remainingCount = Math.max(vacancyCount - filledCount, 0L);
+
+        if (remainingCount <= 0) {
+            throw new RecruitmentNotificationException(
+                    "All vacancies are already filled for this designation and level. Candidate submission is no longer allowed.");
+        }
+
+        ResourceLevelExperience levelExperience = designationVacancy.getLevelCode() == null
+                ? null
+                : resourceLevelExperienceRepository
+                        .findByLevelCodeIgnoreCaseAndActiveFlagIgnoreCase(designationVacancy.getLevelCode(), "Y")
+                        .orElse(null);
+
         Set<String> emailSet = new LinkedHashSet<>();
         Set<String> mobileSet = new LinkedHashSet<>();
         List<RecruitmentInterviewDetailEntity> candidatesToPersist = new ArrayList<>();
@@ -165,7 +187,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         for (int index = 0; index < candidateInputs.size(); index++) {
             AgencyCandidateSubmissionInput normalizedInput = normalizeCandidateInput(candidateInputs.get(index));
             int rowNumber = index + 1;
-            validateCandidateInput(normalizedInput, rowNumber);
+            validateCandidateInput(normalizedInput, rowNumber, levelExperience);
 
             String normalizedEmail = normalizedInput.getEmail().toLowerCase(Locale.ROOT);
             if (!emailSet.add(normalizedEmail)) {
@@ -264,6 +286,43 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         interviewDetailRepository.save(candidateEntity);
     }
 
+    @Override
+    @Transactional
+    public void withdrawCandidate(
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId,
+            Long agencyId) {
+        requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
+        requirePositiveId(recruitmentInterviewDetailId, "Candidate id is required.");
+        requirePositiveId(agencyId, "Agency id is required.");
+
+        ensureNotificationReleasedForAgency(recruitmentNotificationId, agencyId);
+
+        RecruitmentInterviewDetailEntity candidateEntity = interviewDetailRepository
+                .findByRecruitmentInterviewDetailIdAndRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId(
+                        recruitmentInterviewDetailId,
+                        recruitmentNotificationId,
+                        agencyId)
+                .orElseThrow(() -> new RecruitmentNotificationException("Candidate record not found for this notification."));
+
+        if (!Boolean.TRUE.equals(candidateEntity.getActive())) {
+            throw new RecruitmentNotificationException("Candidate has already been withdrawn.");
+        }
+        if (candidateEntity.getCandidateStatus() != RecruitmentCandidateStatus.SUBMITTED_BY_AGENCY) {
+            throw new RecruitmentNotificationException(
+                    "Candidate can be withdrawn only before department review starts.");
+        }
+        if (candidateEntity.getDepartmentShortlistedAt() != null
+                || candidateEntity.getInterviewDateTime() != null
+                || Boolean.TRUE.equals(candidateEntity.getAssessmentSubmitted())
+                || StringUtils.hasText(candidateEntity.getFinalDecisionStatus())) {
+            throw new RecruitmentNotificationException(
+                    "Candidate can no longer be withdrawn because department processing has already started.");
+        }
+
+        interviewDetailRepository.delete(candidateEntity);
+    }
+
     private AgencyNotificationTrackingEntity ensureNotificationReleasedForAgency(
             Long recruitmentNotificationId,
             Long agencyId) {
@@ -304,7 +363,10 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .build();
     }
 
-    private void validateCandidateInput(AgencyCandidateSubmissionInput input, int rowNumber) {
+    private void validateCandidateInput(
+            AgencyCandidateSubmissionInput input,
+            int rowNumber,
+            ResourceLevelExperience levelExperience) {
         if (!StringUtils.hasText(input.getCandidateName())) {
             throw new RecruitmentNotificationException("Candidate name is required in row " + rowNumber + ".");
         }
@@ -333,6 +395,20 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         if (input.getRelevantExperience().compareTo(input.getTotalExperience()) > 0) {
             throw new RecruitmentNotificationException(
                     "Relevant experience cannot be greater than total experience in row " + rowNumber + ".");
+        }
+        if (levelExperience != null && levelExperience.getMinExperience() != null
+                && input.getTotalExperience().compareTo(levelExperience.getMinExperience()) < 0) {
+            throw new RecruitmentNotificationException(
+                    "Total experience must be at least "
+                            + levelExperience.getMinExperience().stripTrailingZeros().toPlainString()
+                            + " year(s) in row " + rowNumber + ".");
+        }
+        if (levelExperience != null && levelExperience.getMaxExperience() != null
+                && input.getTotalExperience().compareTo(levelExperience.getMaxExperience()) > 0) {
+            throw new RecruitmentNotificationException(
+                    "Total experience must not exceed "
+                            + levelExperience.getMaxExperience().stripTrailingZeros().toPlainString()
+                            + " year(s) in row " + rowNumber + ".");
         }
         if (!StringUtils.hasText(input.getJoiningTime())) {
             throw new RecruitmentNotificationException("Joining time is required in row " + rowNumber + ".");
@@ -389,6 +465,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
                 .finalDecisionAt(candidate.getFinalDecisionAt())
                 .createdDateTime(candidate.getCreatedDateTime())
+                .withdrawAllowed(isWithdrawAllowed(candidate))
                 .build();
     }
 
@@ -454,6 +531,20 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         if (value == null || value < 1) {
             throw new RecruitmentNotificationException(message);
         }
+    }
+
+    private boolean isWithdrawAllowed(RecruitmentInterviewDetailEntity candidate) {
+        return candidate != null
+                && Boolean.TRUE.equals(candidate.getActive())
+                && candidate.getCandidateStatus() == RecruitmentCandidateStatus.SUBMITTED_BY_AGENCY
+                && candidate.getDepartmentShortlistedAt() == null
+                && candidate.getInterviewDateTime() == null
+                && !Boolean.TRUE.equals(candidate.getAssessmentSubmitted())
+                && !StringUtils.hasText(candidate.getFinalDecisionStatus());
+    }
+
+    private long safePositive(Long value) {
+        return value == null || value < 0 ? 0L : value;
     }
 
     private String trim(String value) {

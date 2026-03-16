@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.service.model;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingStatus;
@@ -45,6 +46,8 @@ public class AgencyNotificationDetailView {
         private String levelCode;
         private Long numberOfVacancy;
         private Long filledPost;
+        private BigDecimal minExperience;
+        private BigDecimal maxExperience;
         private String jobDescription;
     }
 }

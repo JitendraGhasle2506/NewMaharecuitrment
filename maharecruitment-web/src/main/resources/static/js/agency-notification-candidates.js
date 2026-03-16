@@ -19,8 +19,10 @@
     var tableBody = document.getElementById("candidateInputTableBody");
     var addRowButton = document.getElementById("addCandidateRowButton");
     var designationSelect = document.getElementById("designationVacancySelect");
+    var submitButton = document.getElementById("submitCandidatesButton");
+    var designationHelpText = document.getElementById("designationVacancyHelpText");
 
-    if (!form || !tableBody || !addRowButton || !designationSelect) {
+    if (!form || !tableBody || !addRowButton || !designationSelect || !submitButton) {
         return;
     }
 
@@ -77,6 +79,10 @@
     }
 
     addRowButton.addEventListener("click", function () {
+        if (!hasOpenVacancy()) {
+            alert("Selected designation is already fully filled. You cannot add more candidates.");
+            return;
+        }
         var index = tableBody.querySelectorAll(".candidate-input-row").length;
         tableBody.appendChild(createRow(index));
     });
@@ -152,9 +158,107 @@
         return valid;
     }
 
+    function getSelectedOpenCount() {
+        var selectedOption = designationSelect.options[designationSelect.selectedIndex];
+        if (!selectedOption) {
+            return 0;
+        }
+
+        var openCount = parseInt(selectedOption.getAttribute("data-open-count") || "0", 10);
+        return Number.isNaN(openCount) ? 0 : openCount;
+    }
+
+    function hasOpenVacancy() {
+        return getSelectedOpenCount() > 0;
+    }
+
+    function getSelectedExperienceRange() {
+        var selectedOption = designationSelect.options[designationSelect.selectedIndex];
+        if (!selectedOption) {
+            return { min: null, max: null };
+        }
+
+        var minExp = selectedOption.getAttribute("data-min-exp");
+        var maxExp = selectedOption.getAttribute("data-max-exp");
+
+        return {
+            min: minExp === null || minExp === "" ? null : parseFloat(minExp),
+            max: maxExp === null || maxExp === "" ? null : parseFloat(maxExp)
+        };
+    }
+
+    function updateVacancyState() {
+        if (!designationSelect.value) {
+            addRowButton.disabled = false;
+            submitButton.disabled = false;
+            if (designationHelpText) {
+                designationHelpText.textContent = "";
+            }
+            return;
+        }
+
+        var openCount = getSelectedOpenCount();
+        var experienceRange = getSelectedExperienceRange();
+        var isOpen = openCount > 0;
+
+        addRowButton.disabled = !isOpen;
+        submitButton.disabled = !isOpen;
+
+        if (!designationHelpText) {
+            return;
+        }
+
+        if (!isOpen) {
+            designationHelpText.textContent = "All vacancies are already filled for this designation and level.";
+            return;
+        }
+
+        var rangeText = "";
+        if (experienceRange.min !== null || experienceRange.max !== null) {
+            var minText = experienceRange.min !== null ? experienceRange.min : "0";
+            var maxText = experienceRange.max !== null ? experienceRange.max : "Any";
+            rangeText = " Required total experience: " + minText + " to " + maxText + " year(s).";
+        }
+
+        designationHelpText.textContent = "Remaining open vacancies: " + openCount + "." + rangeText;
+    }
+
+    function validateExperienceRangeRows() {
+        var valid = true;
+        var experienceRange = getSelectedExperienceRange();
+
+        tableBody.querySelectorAll(".candidate-input-row").forEach(function (row, index) {
+            var rowNumber = index + 1;
+            var totalExp = parseFloat(row.querySelector(".total-exp-input").value || "0");
+
+            if (experienceRange.min !== null && totalExp < experienceRange.min) {
+                alert("Total experience must be at least " + experienceRange.min + " year(s) in row " + rowNumber + ".");
+                valid = false;
+                return;
+            }
+
+            if (experienceRange.max !== null && totalExp > experienceRange.max) {
+                alert("Total experience must not exceed " + experienceRange.max + " year(s) in row " + rowNumber + ".");
+                valid = false;
+                return;
+            }
+        });
+
+        return valid;
+    }
+
+    designationSelect.addEventListener("change", updateVacancyState);
+    updateVacancyState();
+
     form.addEventListener("submit", function (event) {
         if (!designationSelect.value) {
             alert("Please select designation.");
+            event.preventDefault();
+            return;
+        }
+
+        if (!hasOpenVacancy()) {
+            alert("All vacancies are already filled for the selected designation and level.");
             event.preventDefault();
             return;
         }
@@ -176,6 +280,9 @@
             valid = false;
         }
         if (!validateExperienceRows()) {
+            valid = false;
+        }
+        if (!validateExperienceRangeRows()) {
             valid = false;
         }
 

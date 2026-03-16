@@ -40,6 +40,8 @@ public class DepartmentInterviewWorkflowDetailView {
     private String finalDecisionStatus;
     private String finalDecisionRemarks;
     private LocalDateTime finalDecisionAt;
+    private boolean onboardingCompleted;
+    private LocalDateTime onboardedAt;
     private Long vacancyCount;
     private Long filledVacancyCount;
     private Long remainingVacancyCount;

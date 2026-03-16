@@ -15,8 +15,8 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacancyEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentAssessmentFeedbackRepository;
-import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentDepartmentInterviewWorkflowService;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision;
@@ -37,15 +37,15 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
 
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository;
-    private final RecruitmentDesignationVacancyRepository designationVacancyRepository;
+    private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
 
     public RecruitmentDepartmentInterviewWorkflowServiceImpl(
             RecruitmentInterviewDetailRepository interviewDetailRepository,
             RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository,
-            RecruitmentDesignationVacancyRepository designationVacancyRepository) {
+            AgencyCandidatePreOnboardingRepository preOnboardingRepository) {
         this.interviewDetailRepository = interviewDetailRepository;
         this.assessmentFeedbackRepository = assessmentFeedbackRepository;
-        this.designationVacancyRepository = designationVacancyRepository;
+        this.preOnboardingRepository = preOnboardingRepository;
     }
 
     @Override
@@ -68,9 +68,12 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
         long vacancyCount = safePositive(vacancy != null ? vacancy.getNumberOfVacancy() : null);
         long filledCount = safePositive(vacancy != null ? vacancy.getFillPost() : null);
         long remainingCount = Math.max(vacancyCount - filledCount, 0L);
+        var preOnboarding = preOnboardingRepository.findByInterviewDetailRecruitmentInterviewDetailId(
+                recruitmentInterviewDetailId).orElse(null);
+        boolean onboardingCompleted = preOnboarding != null && preOnboarding.getOnboardedAt() != null;
 
         String finalDecisionStatus = normalizeUpper(candidate.getFinalDecisionStatus());
-        boolean selectionAllowed = remainingCount > 0 || FINAL_DECISION_SELECTED.equals(finalDecisionStatus);
+        boolean selectionAllowed = true;
 
         return DepartmentInterviewWorkflowDetailView.builder()
                 .recruitmentNotificationId(recruitmentNotificationId)
@@ -105,6 +108,8 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
                 .finalDecisionStatus(finalDecisionStatus)
                 .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
                 .finalDecisionAt(candidate.getFinalDecisionAt())
+                .onboardingCompleted(onboardingCompleted)
+                .onboardedAt(preOnboarding != null ? preOnboarding.getOnboardedAt() : null)
                 .vacancyCount(vacancyCount)
                 .filledVacancyCount(filledCount)
                 .remainingVacancyCount(remainingCount)
@@ -266,6 +271,10 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
         if (!Boolean.TRUE.equals(candidate.getAssessmentSubmitted())) {
             throw new RecruitmentNotificationException("Submit assessment report before final selection decision.");
         }
+        if (isCandidateOnboarded(recruitmentInterviewDetailId)) {
+            throw new RecruitmentNotificationException(
+                    "Candidate is already onboarded. Final decision is locked and cannot be changed.");
+        }
 
         RecruitmentDesignationVacancyEntity candidateVacancy = candidate.getDesignationVacancy();
         if (candidateVacancy == null) {
@@ -274,29 +283,13 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
         if (candidateVacancy.getRecruitmentDesignationVacancyId() == null) {
             throw new RecruitmentNotificationException("Candidate vacancy id is missing.");
         }
-        RecruitmentDesignationVacancyEntity vacancy = designationVacancyRepository.findByIdForFinalDecisionUpdate(
-                candidateVacancy.getRecruitmentDesignationVacancyId(),
-                recruitmentNotificationId).orElseThrow(
-                        () -> new RecruitmentNotificationException("Designation vacancy mapping not found."));
 
         String previousDecision = normalizeUpper(candidate.getFinalDecisionStatus());
-        long filledCount = safePositive(vacancy.getFillPost());
-        long vacancyCount = safePositive(vacancy.getNumberOfVacancy());
 
         if (finalDecision == DepartmentCandidateFinalDecision.SELECT) {
-            if (!FINAL_DECISION_SELECTED.equals(previousDecision)) {
-                if (filledCount >= vacancyCount) {
-                    throw new RecruitmentNotificationException(
-                            "All vacancies are already filled for this designation and level.");
-                }
-                vacancy.setFillPost(filledCount + 1);
-            }
             candidate.setFinalDecisionStatus(FINAL_DECISION_SELECTED);
             candidate.setCandidateStatus(RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY);
         } else {
-            if (FINAL_DECISION_SELECTED.equals(previousDecision) && filledCount > 0) {
-                vacancy.setFillPost(filledCount - 1);
-            }
             candidate.setFinalDecisionStatus(FINAL_DECISION_REJECTED);
             candidate.setCandidateStatus(RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT);
         }
@@ -305,7 +298,6 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
         candidate.setFinalDecisionByUserId(departmentUserId);
         candidate.setFinalDecisionRemarks(normalizeText(decisionRemarks));
 
-        designationVacancyRepository.save(vacancy);
         interviewDetailRepository.save(candidate);
 
         log.info(
@@ -325,6 +317,12 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
                 recruitmentNotificationId,
                 recruitmentInterviewDetailId).orElseThrow(
                         () -> new RecruitmentNotificationException("Candidate record not found for this department."));
+    }
+
+    private boolean isCandidateOnboarded(Long recruitmentInterviewDetailId) {
+        return preOnboardingRepository.findByInterviewDetailRecruitmentInterviewDetailId(recruitmentInterviewDetailId)
+                .map(preOnboarding -> preOnboarding.getOnboardedAt() != null)
+                .orElse(false);
     }
 
     private DepartmentInterviewAssessmentView toAssessmentView(RecruitmentAssessmentFeedbackEntity assessment) {

@@ -40,6 +40,7 @@ public interface AgencyCandidatePreOnboardingRepository extends JpaRepository<Ag
             + "where candidate.agency.agencyId = :agencyId "
             + "and candidate.active = true "
             + "and candidate.finalDecisionStatus = 'SELECTED' "
+            + "and preOnboarding.onboardedAt is null "
             + "order by preOnboarding.submittedAt desc, preOnboarding.updatedDateTime desc")
     List<AgencyCandidatePreOnboardingEntity> findOnboardingReadyCandidatesByAgency(
             @Param("agencyId") Long agencyId);
@@ -63,4 +64,10 @@ public interface AgencyCandidatePreOnboardingRepository extends JpaRepository<Ag
             + "and preOnboarding.hrVerified = false "
             + "order by preOnboarding.submittedAt asc")
     List<AgencyCandidatePreOnboardingEntity> findPendingHROnboarding();
+
+    Optional<AgencyCandidatePreOnboardingEntity> findByInterviewDetailRecruitmentInterviewDetailId(
+            Long recruitmentInterviewDetailId);
+
+    long countByInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndOnboardedAtIsNotNull(
+            Long recruitmentDesignationVacancyId);
 }

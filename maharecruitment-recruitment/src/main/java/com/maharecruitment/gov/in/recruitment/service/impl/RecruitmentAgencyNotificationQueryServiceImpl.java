@@ -6,6 +6,8 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.maharecruitment.gov.in.master.entity.ResourceLevelExperience;
+import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepository;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingStatus;
@@ -13,6 +15,7 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacan
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationQueryService;
@@ -36,14 +39,20 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
     private final AgencyNotificationTrackingRepository trackingRepository;
     private final AgencyMasterRepository agencyRepository;
     private final RecruitmentNotificationRepository notificationRepository;
+    private final ResourceLevelExperienceRepository resourceLevelExperienceRepository;
+    private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
 
     public RecruitmentAgencyNotificationQueryServiceImpl(
             AgencyNotificationTrackingRepository trackingRepository,
             AgencyMasterRepository agencyRepository,
-            RecruitmentNotificationRepository notificationRepository) {
+            RecruitmentNotificationRepository notificationRepository,
+            ResourceLevelExperienceRepository resourceLevelExperienceRepository,
+            AgencyCandidatePreOnboardingRepository preOnboardingRepository) {
         this.trackingRepository = trackingRepository;
         this.agencyRepository = agencyRepository;
         this.notificationRepository = notificationRepository;
+        this.resourceLevelExperienceRepository = resourceLevelExperienceRepository;
+        this.preOnboardingRepository = preOnboardingRepository;
     }
 
     @Override
@@ -140,12 +149,24 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
         String designationName = vacancy.getDesignationMst() != null
                 ? vacancy.getDesignationMst().getDesignationName()
                 : "-";
+        ResourceLevelExperience levelExperience = vacancy.getLevelCode() == null
+                ? null
+                : resourceLevelExperienceRepository
+                        .findByLevelCodeIgnoreCaseAndActiveFlagIgnoreCase(vacancy.getLevelCode(), "Y")
+                        .orElse(null);
+        long onboardedCount = vacancy.getRecruitmentDesignationVacancyId() == null
+                ? 0L
+                : preOnboardingRepository
+                        .countByInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndOnboardedAtIsNotNull(
+                                vacancy.getRecruitmentDesignationVacancyId());
         return DesignationVacancyView.builder()
                 .vacancyId(vacancy.getRecruitmentDesignationVacancyId())
                 .designationName(designationName)
                 .levelCode(vacancy.getLevelCode())
                 .numberOfVacancy(vacancy.getNumberOfVacancy())
-                .filledPost(vacancy.getFillPost())
+                .filledPost(onboardedCount)
+                .minExperience(levelExperience != null ? levelExperience.getMinExperience() : null)
+                .maxExperience(levelExperience != null ? levelExperience.getMaxExperience() : null)
                 .jobDescription(vacancy.getJobDescription())
                 .build();
     }

@@ -33,4 +33,9 @@ public interface AgencyRecruitmentNotificationPageService {
             Long recruitmentNotificationId,
             Long recruitmentInterviewDetailId,
             AgencyInterviewScheduleForm interviewScheduleForm);
+
+    void withdrawCandidate(
+            String actorEmail,
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId);
 }

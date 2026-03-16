@@ -20,9 +20,11 @@ import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplica
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacancyEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingEmploymentForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
@@ -39,6 +41,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
     private final DepartmentProjectApplicationRepository projectApplicationRepository;
+    private final RecruitmentDesignationVacancyRepository designationVacancyRepository;
 
     public HROnboardingPageServiceImpl(
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
@@ -46,13 +49,15 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             SubDepartmentRepository subDepartmentRepository,
             UserRepository userRepository,
             EmployeeRepository employeeRepository,
-            DepartmentProjectApplicationRepository projectApplicationRepository) {
+            DepartmentProjectApplicationRepository projectApplicationRepository,
+            RecruitmentDesignationVacancyRepository designationVacancyRepository) {
         this.preOnboardingRepository = preOnboardingRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.userRepository = userRepository;
         this.employeeRepository = employeeRepository;
         this.projectApplicationRepository = projectApplicationRepository;
+        this.designationVacancyRepository = designationVacancyRepository;
     }
 
     @Override
@@ -162,13 +167,40 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         if (!form.isHrVerified()) {
             throw new RecruitmentNotificationException("HR Verification is required.");
         }
+        if (entity.getOnboardedAt() != null) {
+            throw new RecruitmentNotificationException("Candidate is already onboarded.");
+        }
+
+        var interview = entity.getInterviewDetail();
+        var notification = interview.getRecruitmentNotification();
+        if (interview.getDesignationVacancy() == null
+                || interview.getDesignationVacancy().getRecruitmentDesignationVacancyId() == null) {
+            throw new RecruitmentNotificationException("Candidate vacancy mapping is missing.");
+        }
+
+        RecruitmentDesignationVacancyEntity vacancy = designationVacancyRepository.findByIdForFinalDecisionUpdate(
+                interview.getDesignationVacancy().getRecruitmentDesignationVacancyId(),
+                notification.getRecruitmentNotificationId()).orElseThrow(
+                        () -> new RecruitmentNotificationException("Designation vacancy mapping not found."));
+        long filledCount = preOnboardingRepository
+                .countByInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndOnboardedAtIsNotNull(
+                        interview.getDesignationVacancy().getRecruitmentDesignationVacancyId());
+        long vacancyCount = vacancy.getNumberOfVacancy() == null || vacancy.getNumberOfVacancy() < 0
+                ? 0L
+                : vacancy.getNumberOfVacancy();
+        if (filledCount >= vacancyCount) {
+            throw new RecruitmentNotificationException(
+                    "All vacancies are already filled for this designation and level. This candidate cannot be onboarded.");
+        }
 
         entity.setHrOnboardingDate(form.getHrOnboardingDate());
         entity.setHrOnboardingLocation(form.getHrOnboardingLocation().trim());
         entity.setHrVerified(true);
         entity.setHrUserId(user.getId());
         entity.setOnboardedAt(LocalDateTime.now());
+        vacancy.setFillPost(filledCount + 1);
 
+        designationVacancyRepository.save(vacancy);
         preOnboardingRepository.save(entity);
 
         // CREATE EMPLOYEE RECORD
@@ -184,9 +216,6 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         employee.setOnboardingDate(entity.getOnboardingDate());
         employee.setPanNumber(entity.getPanNumber());
         employee.setAadhaarNumber(entity.getAadhaarNumber());
-
-        var interview = entity.getInterviewDetail();
-        var notification = interview.getRecruitmentNotification();
 
         employee.setAgency(interview.getAgency());
         employee.setDesignation(interview.getDesignationVacancy().getDesignationMst());
