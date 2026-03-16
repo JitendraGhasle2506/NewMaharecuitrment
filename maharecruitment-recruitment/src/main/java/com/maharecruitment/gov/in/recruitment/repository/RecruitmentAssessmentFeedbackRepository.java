@@ -12,6 +12,9 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentFeedba
 @Repository
 public interface RecruitmentAssessmentFeedbackRepository extends JpaRepository<RecruitmentAssessmentFeedbackEntity, Long> {
 
+    Optional<RecruitmentAssessmentFeedbackEntity> findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(
+            Long recruitmentInterviewDetailId);
+
     @Query("select feedback "
             + "from RecruitmentAssessmentFeedbackEntity feedback "
             + "left join fetch feedback.panelMembers panelMember "

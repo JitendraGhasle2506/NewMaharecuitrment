@@ -16,4 +16,8 @@ public interface HROnboardingPageService {
     void saveOnboarding(Long preOnboardingId, AgencyPreOnboardingForm form, String actorEmail);
 
     Page<EmployeeListView> getOnboardedEmployees(String recruitmentType, Pageable pageable);
+
+    Page<EmployeeListView> getEmployeesByStatus(String recruitmentType, String status, Pageable pageable);
+
+    void markEmployeeResigned(Long employeeId);
 }

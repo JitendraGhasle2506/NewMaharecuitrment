@@ -30,4 +30,5 @@ public class AgencySelectedCandidateView {
     private String finalDecisionRemarks;
     private boolean preOnboardingCompleted;
     private LocalDateTime preOnboardingSubmittedAt;
+    private boolean withdrawAllowed;
 }

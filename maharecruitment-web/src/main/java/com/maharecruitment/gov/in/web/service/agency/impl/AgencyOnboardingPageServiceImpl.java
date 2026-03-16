@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.web.service.agency.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
@@ -29,13 +30,17 @@ import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepos
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEmploymentEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingEmploymentForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
+import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardedEmployeeView;
 import com.maharecruitment.gov.in.web.service.agency.AgencyOnboardingPageService;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
@@ -52,6 +57,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     private final AgencyMasterRepository agencyMasterRepository;
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
+    private final EmployeeRepository employeeRepository;
+    private final RecruitmentDesignationVacancyRepository designationVacancyRepository;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
     private final SubDepartmentRepository subDepartmentRepository;
     private final ResourceLevelExperienceRepository resourceLevelExperienceRepository;
@@ -62,6 +69,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             AgencyMasterRepository agencyMasterRepository,
             RecruitmentInterviewDetailRepository interviewDetailRepository,
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
+            EmployeeRepository employeeRepository,
+            RecruitmentDesignationVacancyRepository designationVacancyRepository,
             DepartmentRegistrationRepository departmentRegistrationRepository,
             SubDepartmentRepository subDepartmentRepository,
             ResourceLevelExperienceRepository resourceLevelExperienceRepository,
@@ -70,6 +79,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         this.agencyMasterRepository = agencyMasterRepository;
         this.interviewDetailRepository = interviewDetailRepository;
         this.preOnboardingRepository = preOnboardingRepository;
+        this.employeeRepository = employeeRepository;
+        this.designationVacancyRepository = designationVacancyRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.resourceLevelExperienceRepository = resourceLevelExperienceRepository;
@@ -252,6 +263,59 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 .stream()
                 .map(preOnboarding -> toOnboardingCandidateView(preOnboarding, departmentInfoCache))
                 .toList();
+    }
+
+    @Override
+    public List<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail) {
+        return getEmployeesByStatus(actorEmail, "ACTIVE");
+    }
+
+    @Override
+    public List<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "ACTIVE";
+        return employeeRepository.findByAgencyAgencyIdAndStatusOrderByOnboardingDateDescEmployeeIdDesc(
+                        context.agencyId(),
+                        normalizedStatus)
+                .stream()
+                .map(this::toOnboardedEmployeeView)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void markEmployeeResigned(String actorEmail, Long employeeId) {
+        if (employeeId == null || employeeId < 1) {
+            throw new RecruitmentNotificationException("Employee id is required.");
+        }
+
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        EmployeeEntity employee = employeeRepository.findByEmployeeIdAndAgencyAgencyId(employeeId, context.agencyId())
+                .orElseThrow(() -> new RecruitmentNotificationException("Employee not found for this agency."));
+        if ("RESIGNED".equalsIgnoreCase(employee.getStatus())) {
+            throw new RecruitmentNotificationException("Employee is already marked as resigned.");
+        }
+        if (employee.getPreOnboarding() == null
+                || employee.getPreOnboarding().getInterviewDetail() == null
+                || employee.getPreOnboarding().getInterviewDetail().getDesignationVacancy() == null
+                || employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() == null) {
+            throw new RecruitmentNotificationException("Employee vacancy mapping is missing.");
+        }
+
+        var interview = employee.getPreOnboarding().getInterviewDetail();
+        var vacancy = designationVacancyRepository.findByIdForFinalDecisionUpdate(
+                interview.getDesignationVacancy().getRecruitmentDesignationVacancyId(),
+                interview.getRecruitmentNotification().getRecruitmentNotificationId()).orElseThrow(
+                        () -> new RecruitmentNotificationException("Employee vacancy mapping not found."));
+        long filledCount = vacancy.getFillPost() == null || vacancy.getFillPost() < 0 ? 0L : vacancy.getFillPost();
+        if (filledCount > 0) {
+            vacancy.setFillPost(filledCount - 1);
+            designationVacancyRepository.save(vacancy);
+        }
+
+        employee.setStatus("RESIGNED");
+        employee.setResignationDate(LocalDate.now());
+        employeeRepository.save(employee);
     }
 
     private void applyExistingPreOnboarding(
@@ -576,6 +640,47 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 preOnboarding.getJoiningDate(),
                 preOnboarding.getOnboardingDate(),
                 preOnboarding.getSubmittedAt());
+    }
+
+    private AgencyOnboardedEmployeeView toOnboardedEmployeeView(EmployeeEntity employee) {
+        String projectName = DEFAULT_VALUE;
+        if (employee.getPreOnboarding() != null
+                && employee.getPreOnboarding().getInterviewDetail() != null
+                && employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() != null
+                && employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst() != null) {
+            projectName = employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification()
+                    .getProjectMst().getProjectName();
+        }
+
+        String departmentName = employee.getDepartmentRegistration() != null
+                && StringUtils.hasText(employee.getDepartmentRegistration().getDepartmentName())
+                        ? employee.getDepartmentRegistration().getDepartmentName()
+                        : DEFAULT_VALUE;
+        String subDepartmentName = employee.getSubDepartment() != null
+                && StringUtils.hasText(employee.getSubDepartment().getSubDeptName())
+                        ? employee.getSubDepartment().getSubDeptName()
+                        : DEFAULT_VALUE;
+        String designationName = employee.getDesignation() != null
+                && StringUtils.hasText(employee.getDesignation().getDesignationName())
+                        ? employee.getDesignation().getDesignationName()
+                        : DEFAULT_VALUE;
+
+        return new AgencyOnboardedEmployeeView(
+                employee.getEmployeeId(),
+                employee.getEmployeeCode(),
+                employee.getRequestId(),
+                projectName,
+                departmentName,
+                subDepartmentName,
+                employee.getFullName(),
+                employee.getEmail(),
+                employee.getMobile(),
+                designationName,
+                employee.getLevelCode(),
+                employee.getJoiningDate(),
+                employee.getOnboardingDate(),
+                employee.getResignationDate(),
+                employee.getStatus());
     }
 
     private DepartmentInfo resolveDepartmentInfo(Long departmentRegistrationId) {
