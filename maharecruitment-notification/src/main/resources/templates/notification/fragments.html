@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<body>
+    <th:block th:fragment="notificationItems">
+        <ul class="notification-list">
+            <li class="notification-empty-item" th:if="${#lists.isEmpty(notifications)}">
+                No notifications available.
+            </li>
+            <li class="notification-item"
+                th:each="n : ${notifications}"
+                th:classappend="${n.unread} ? ' is-unread'">
+                <a class="notification-link"
+                   th:href="${contextPath + n.redirectUrl}"
+                   th:attr="data-notification-id=${n.id},data-redirect-url=${contextPath + n.redirectUrl}">
+                    <div class="notification-item-title-row">
+                        <span class="notification-item-title" th:text="${n.title}">Notification title</span>
+                        <span class="notification-item-time"
+                              th:text="${n.createdAt != null ? #temporals.format(n.createdAt, 'dd MMM yyyy HH:mm') : ''}"></span>
+                    </div>
+                    <div class="notification-item-message" th:text="${n.message}">Notification message</div>
+                    <span class="notification-item-action"
+                          th:if="${n.actionRequired}">Action required</span>
+                </a>
+            </li>
+        </ul>
+    </th:block>
+</body>
+
+</html>

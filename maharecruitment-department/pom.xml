@@ -26,5 +26,10 @@
       <artifactId>maharecruitment-recruitment</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.maharecruitment.gov.in</groupId>
+      <artifactId>maharecruitment-notification</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 </project>

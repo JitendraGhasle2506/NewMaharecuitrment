@@ -52,6 +52,9 @@ import com.maharecruitment.gov.in.master.service.ProjectMstService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
 import com.maharecruitment.gov.in.recruitment.service.model.AuditorApprovedNotificationCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.DesignationVacancyInput;
+import com.project.notification.dto.NotificationCreateRequest;
+import com.project.notification.service.NotificationModules;
+import com.project.notification.service.NotificationService;
 
 @Service
 @Transactional(readOnly = true)
@@ -61,6 +64,14 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
 
     private static final String ACTION_DRAFT = "draft";
     private static final String ACTION_SUBMIT = "submit";
+    private static final String ROLE_HR = "ROLE_HR";
+    private static final String ROLE_HR_ALT = "HR";
+    private static final String ROLE_AUDITOR = "ROLE_AUDITOR";
+    private static final String ROLE_AUDITOR_ALT = "AUDITOR";
+    private static final String ROLE_DEPARTMENT = "ROLE_DEPARTMENT";
+    private static final String ROLE_DEPARTMENT_ALT = "DEPARTMENT";
+    private static final String ROLE_USER = "ROLE_USER";
+    private static final String ROLE_USER_ALT = "USER";
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
     private final DepartmentProjectApplicationRepository applicationRepository;
@@ -70,6 +81,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     private final ProjectMstService projectMstService;
     private final DepartmentRequestIdGenerator requestIdGenerator;
     private final RecruitmentNotificationService recruitmentNotificationService;
+    private final NotificationService notificationService;
     private final UserRepository userRepository;
     private final DepartmentWorkOrderStorageService storageService;
 
@@ -81,6 +93,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             ProjectMstService projectMstService,
             DepartmentRequestIdGenerator requestIdGenerator,
             RecruitmentNotificationService recruitmentNotificationService,
+            NotificationService notificationService,
             UserRepository userRepository,
             DepartmentWorkOrderStorageService storageService) {
         this.applicationRepository = applicationRepository;
@@ -90,6 +103,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         this.projectMstService = projectMstService;
         this.requestIdGenerator = requestIdGenerator;
         this.recruitmentNotificationService = recruitmentNotificationService;
+        this.notificationService = notificationService;
         this.userRepository = userRepository;
         this.storageService = storageService;
     }
@@ -179,6 +193,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
 
         if (ACTION_SUBMIT.equals(normalizedAction)) {
             syncProjectMaster(saved);
+            notifyHrOnApplicationSubmit(saved);
         }
 
         log.info(
@@ -325,6 +340,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 nextStatus,
                 actorContext,
                 "HR decision " + decision + " applied. (" + nextStatus.getDisplayName() + ")");
+        notifyDepartmentAfterHrReview(saved, decision, remarks);
+        notifyAuditorAfterHrReview(saved, decision, remarks);
 
         log.info("HR reviewed application. applicationId={}, decision={}, status={} actor={}",
                 applicationId,
@@ -373,6 +390,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 nextStatus,
                 actorContext,
                 "Auditor decision " + decision + " applied. (" + nextStatus.getDisplayName() + ")");
+        notifyDepartmentAfterAuditorReview(saved, decision, remarks);
 
         if (nextStatus == DepartmentApplicationStatus.AUDITOR_APPROVED) {
             syncProjectMaster(saved);
@@ -833,5 +851,272 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 .build();
 
         recruitmentNotificationService.upsertFromAuditorApproval(command);
+    }
+
+    private void notifyHrOnApplicationSubmit(DepartmentProjectApplicationEntity applicationEntity) {
+        if (applicationEntity == null || applicationEntity.getDepartmentProjectApplicationId() == null) {
+            return;
+        }
+
+        List<Long> hrUserIds = resolveUserIdsByRoleNames(ROLE_HR, ROLE_HR_ALT);
+        if (hrUserIds.isEmpty()) {
+            log.warn("No HR users found to notify for applicationId={}, requestId={}",
+                    applicationEntity.getDepartmentProjectApplicationId(),
+                    applicationEntity.getRequestId());
+            return;
+        }
+
+        String requestId = StringUtils.hasText(applicationEntity.getRequestId())
+                ? applicationEntity.getRequestId()
+                : "N/A";
+        String projectName = StringUtils.hasText(applicationEntity.getProjectName())
+                ? applicationEntity.getProjectName()
+                : "Department project";
+
+        String message = "Request " + requestId + " for project " + projectName
+                + " has been submitted and is awaiting HR review.";
+
+        notificationService.createNotification(NotificationCreateRequest.builder()
+                .eventType("MANPOWER_REQUEST_SUBMITTED")
+                .title("New manpower request submitted")
+                .message(message)
+                .referenceId(applicationEntity.getDepartmentProjectApplicationId())
+                .module(NotificationModules.HR_DEPARTMENT_REQUESTS)
+                .userIds(hrUserIds)
+                .actionRequired(true)
+                .build());
+
+        log.info("Notification pushed to HR users. applicationId={}, recipients={}",
+                applicationEntity.getDepartmentProjectApplicationId(),
+                hrUserIds.size());
+    }
+
+    private void notifyDepartmentAfterHrReview(
+            DepartmentProjectApplicationEntity applicationEntity,
+            HrReviewDecision decision,
+            String remarks) {
+        if (applicationEntity == null || decision == null) {
+            return;
+        }
+
+        if (decision != HrReviewDecision.REJECT && decision != HrReviewDecision.SEND_BACK) {
+            return;
+        }
+
+        List<Long> recipientUserIds = resolveDepartmentRecipientUserIds(applicationEntity);
+        if (recipientUserIds.isEmpty()) {
+            return;
+        }
+
+        String requestId = StringUtils.hasText(applicationEntity.getRequestId())
+                ? applicationEntity.getRequestId()
+                : "N/A";
+        String projectName = StringUtils.hasText(applicationEntity.getProjectName())
+                ? applicationEntity.getProjectName()
+                : "Department project";
+
+        boolean actionRequired = decision == HrReviewDecision.SEND_BACK;
+        String title = actionRequired
+                ? "Manpower request sent back by HR"
+                : "Manpower request rejected by HR";
+        String eventType = actionRequired
+                ? "MANPOWER_REQUEST_HR_SENT_BACK"
+                : "MANPOWER_REQUEST_HR_REJECTED";
+
+        String baseMessage = actionRequired
+                ? "Request " + requestId + " for project " + projectName + " has been sent back by HR for correction."
+                : "Request " + requestId + " for project " + projectName + " has been rejected by HR.";
+        String message = StringUtils.hasText(remarks)
+                ? baseMessage + " Remarks: " + remarks.trim()
+                : baseMessage;
+
+        notificationService.createNotification(NotificationCreateRequest.builder()
+                .eventType(eventType)
+                .title(title)
+                .message(message)
+                .referenceId(applicationEntity.getDepartmentProjectApplicationId())
+                .module(NotificationModules.DEPARTMENT_MANPOWER)
+                .userIds(recipientUserIds)
+                .actionRequired(actionRequired)
+                .build());
+    }
+
+    private void notifyAuditorAfterHrReview(
+            DepartmentProjectApplicationEntity applicationEntity,
+            HrReviewDecision decision,
+            String remarks) {
+        if (applicationEntity == null || decision == null || decision != HrReviewDecision.APPROVE) {
+            return;
+        }
+
+        List<Long> auditorUserIds = resolveUserIdsByRoleNames(ROLE_AUDITOR, ROLE_AUDITOR_ALT);
+        if (auditorUserIds.isEmpty()) {
+            log.warn("No Auditor users found to notify for HR-approved applicationId={}, requestId={}",
+                    applicationEntity.getDepartmentProjectApplicationId(),
+                    applicationEntity.getRequestId());
+            return;
+        }
+
+        String requestId = StringUtils.hasText(applicationEntity.getRequestId())
+                ? applicationEntity.getRequestId()
+                : "N/A";
+        String projectName = StringUtils.hasText(applicationEntity.getProjectName())
+                ? applicationEntity.getProjectName()
+                : "Department project";
+
+        String baseMessage = "Request " + requestId + " for project " + projectName
+                + " has been approved by HR and is pending auditor review.";
+        String message = StringUtils.hasText(remarks)
+                ? baseMessage + " HR remarks: " + remarks.trim()
+                : baseMessage;
+
+        notificationService.createNotification(NotificationCreateRequest.builder()
+                .eventType("MANPOWER_REQUEST_HR_APPROVED")
+                .title("Manpower request pending auditor review")
+                .message(message)
+                .referenceId(applicationEntity.getDepartmentProjectApplicationId())
+                .module(NotificationModules.AUDITOR_DEPARTMENT_REQUESTS)
+                .userIds(auditorUserIds)
+                .actionRequired(true)
+                .build());
+
+        log.info("Notification pushed to Auditor users. applicationId={}, recipients={}",
+                applicationEntity.getDepartmentProjectApplicationId(),
+                auditorUserIds.size());
+    }
+
+    private void notifyDepartmentAfterAuditorReview(
+            DepartmentProjectApplicationEntity applicationEntity,
+            AuditorReviewDecision decision,
+            String remarks) {
+        if (applicationEntity == null || decision == null) {
+            return;
+        }
+
+        if (decision != AuditorReviewDecision.SEND_BACK && decision != AuditorReviewDecision.APPROVE) {
+            return;
+        }
+
+        List<Long> recipientUserIds = resolveDepartmentRecipientUserIds(applicationEntity);
+        if (recipientUserIds.isEmpty()) {
+            return;
+        }
+
+        String requestId = StringUtils.hasText(applicationEntity.getRequestId())
+                ? applicationEntity.getRequestId()
+                : "N/A";
+        String projectName = StringUtils.hasText(applicationEntity.getProjectName())
+                ? applicationEntity.getProjectName()
+                : "Department project";
+
+        boolean actionRequired = decision == AuditorReviewDecision.SEND_BACK;
+        String eventType = actionRequired
+                ? "MANPOWER_REQUEST_AUDITOR_SENT_BACK"
+                : "MANPOWER_REQUEST_AUDITOR_APPROVED";
+        String title = actionRequired
+                ? "Manpower request sent back by Auditor"
+                : "Manpower request approved by Auditor";
+
+        String baseMessage = actionRequired
+                ? "Request " + requestId + " for project " + projectName
+                        + " has been sent back by Auditor for corrections."
+                : "Request " + requestId + " for project " + projectName
+                        + " has been approved by Auditor.";
+        String message = StringUtils.hasText(remarks)
+                ? baseMessage + " Auditor remarks: " + remarks.trim()
+                : baseMessage;
+
+        notificationService.createNotification(NotificationCreateRequest.builder()
+                .eventType(eventType)
+                .title(title)
+                .message(message)
+                .referenceId(applicationEntity.getDepartmentProjectApplicationId())
+                .module(NotificationModules.DEPARTMENT_MANPOWER)
+                .userIds(recipientUserIds)
+                .actionRequired(actionRequired)
+                .build());
+    }
+
+    private List<Long> resolveDepartmentRecipientUserIds(DepartmentProjectApplicationEntity applicationEntity) {
+        List<Long> recipients = new ArrayList<>();
+
+        if (applicationEntity.getDepartmentRegistrationId() != null) {
+            List<Long> departmentUserIds = resolveDepartmentUserIdsByRoleNames(
+                    applicationEntity.getDepartmentRegistrationId(),
+                    ROLE_DEPARTMENT,
+                    ROLE_DEPARTMENT_ALT,
+                    ROLE_USER,
+                    ROLE_USER_ALT);
+            if (departmentUserIds != null && !departmentUserIds.isEmpty()) {
+                recipients.addAll(departmentUserIds);
+            }
+
+            if (recipients.isEmpty()) {
+                List<Long> linkedUserIds = userRepository.findDistinctUserIdsByDepartmentRegistrationId(
+                        applicationEntity.getDepartmentRegistrationId());
+                if (linkedUserIds != null && !linkedUserIds.isEmpty()) {
+                    recipients.addAll(linkedUserIds);
+                }
+            }
+        }
+
+        if (StringUtils.hasText(applicationEntity.getCreatedBy())) {
+            User creatorUser = userRepository.findByEmailIgnoreCase(applicationEntity.getCreatedBy()).orElse(null);
+            if (creatorUser != null && creatorUser.getId() != null) {
+                recipients.add(creatorUser.getId());
+            }
+        }
+
+        List<Long> distinctRecipients = recipients.stream().distinct().toList();
+        if (distinctRecipients.isEmpty()) {
+            log.warn("No department recipients resolved for applicationId={}, requestId={}, departmentRegistrationId={}",
+                    applicationEntity.getDepartmentProjectApplicationId(),
+                    applicationEntity.getRequestId(),
+                    applicationEntity.getDepartmentRegistrationId());
+        } else {
+            log.info("Department recipients resolved for applicationId={}, recipients={}",
+                    applicationEntity.getDepartmentProjectApplicationId(),
+                    distinctRecipients.size());
+        }
+
+        return distinctRecipients;
+    }
+
+    private List<Long> resolveUserIdsByRoleNames(String... roleNames) {
+        List<Long> userIds = new ArrayList<>();
+        if (roleNames == null || roleNames.length == 0) {
+            return userIds;
+        }
+
+        for (String roleName : roleNames) {
+            if (!StringUtils.hasText(roleName)) {
+                continue;
+            }
+            List<Long> matchedIds = userRepository.findDistinctUserIdsByRoleName(roleName);
+            if (matchedIds != null && !matchedIds.isEmpty()) {
+                userIds.addAll(matchedIds);
+            }
+        }
+        return userIds.stream().distinct().toList();
+    }
+
+    private List<Long> resolveDepartmentUserIdsByRoleNames(Long departmentRegistrationId, String... roleNames) {
+        List<Long> userIds = new ArrayList<>();
+        if (departmentRegistrationId == null || roleNames == null || roleNames.length == 0) {
+            return userIds;
+        }
+
+        for (String roleName : roleNames) {
+            if (!StringUtils.hasText(roleName)) {
+                continue;
+            }
+            List<Long> matchedIds = userRepository.findDistinctUserIdsByDepartmentRegistrationIdAndRoleName(
+                    departmentRegistrationId,
+                    roleName);
+            if (matchedIds != null && !matchedIds.isEmpty()) {
+                userIds.addAll(matchedIds);
+            }
+        }
+        return userIds.stream().distinct().toList();
     }
 }

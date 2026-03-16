@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Notification', 'All Notifications', ~{::section})}">
+        <section>
+            <div class="add-emp-card">
+                <div class="header">
+                    <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                        <h2 class="mb-0">
+                            Portal Notifications
+                            <span class="badge text-bg-primary ms-2">Unread: <span id="notificationPageUnreadCount">0</span></span>
+                            <span class="badge text-bg-warning ms-1">Unseen: <span id="notificationPageUnseenCount">0</span></span>
+                            <span class="badge text-bg-secondary ms-1">Total: <span id="notificationPageTotalCount">0</span></span>
+                        </h2>
+                        <a class="btn btn-outline-primary btn-sm"
+                           th:href="${homePageUrl != null ? homePageUrl : (contextPath + '/home')}">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </a>
+                    </div>
+                </div>
+                <div class="p-3" id="notificationPageList" th:replace="~{notification/fragments :: notificationItems}">
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
