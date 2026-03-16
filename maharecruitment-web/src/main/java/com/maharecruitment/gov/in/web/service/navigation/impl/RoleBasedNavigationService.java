@@ -170,6 +170,7 @@ public class RoleBasedNavigationService implements NavigationService {
 
         navItems.put("ROLE_AGENCY", List.of(
                 new SidebarItemView("Agency Dashboard", "fa fa-briefcase", "/agency/dashboard"),
+                new SidebarItemView("Agency Profile", "fa fa-id-card", "/agency/profile"),
                 new SidebarItemView("Recruitment Notifications", "fa fa-bell", "/agency/recruitment-notifications"),
                 new SidebarItemView("Selected Candidates", "fa fa-user-check", "/agency/selected-candidates"),
                 new SidebarItemView("Onboarded Employees", "fa fa-id-card", "/agency/onboarding"),
