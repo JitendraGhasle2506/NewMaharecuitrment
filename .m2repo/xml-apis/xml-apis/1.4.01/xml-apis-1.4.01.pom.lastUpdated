@@ -1,0 +1,4 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Mon Mar 16 15:26:31 IST 2026
+@default-central-https\://repo.maven.apache.org/maven2/.lastUpdated=1773654991369
+https\://repo.maven.apache.org/maven2/.error=Could not transfer artifact xml-apis\:xml-apis\:pom\:1.4.01 from/to central (https\://repo.maven.apache.org/maven2)\: E\:\\NewMaharecruitment08March2026\\NewMaharecuitrment\\.m2repo\\xml-apis\\xml-apis\\1.4.01\\xml-apis-1.4.01.pom.1195057280522389402.tmp.4038517900447800671.tmp
