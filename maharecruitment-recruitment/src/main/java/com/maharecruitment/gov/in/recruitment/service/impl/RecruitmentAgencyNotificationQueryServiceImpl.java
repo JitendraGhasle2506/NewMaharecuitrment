@@ -17,6 +17,7 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStat
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationQueryService;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
@@ -41,18 +42,21 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
     private final RecruitmentNotificationRepository notificationRepository;
     private final ResourceLevelExperienceRepository resourceLevelExperienceRepository;
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
+    private final EmployeeRepository employeeRepository;
 
     public RecruitmentAgencyNotificationQueryServiceImpl(
             AgencyNotificationTrackingRepository trackingRepository,
             AgencyMasterRepository agencyRepository,
             RecruitmentNotificationRepository notificationRepository,
             ResourceLevelExperienceRepository resourceLevelExperienceRepository,
-            AgencyCandidatePreOnboardingRepository preOnboardingRepository) {
+            AgencyCandidatePreOnboardingRepository preOnboardingRepository,
+            EmployeeRepository employeeRepository) {
         this.trackingRepository = trackingRepository;
         this.agencyRepository = agencyRepository;
         this.notificationRepository = notificationRepository;
         this.resourceLevelExperienceRepository = resourceLevelExperienceRepository;
         this.preOnboardingRepository = preOnboardingRepository;
+        this.employeeRepository = employeeRepository;
     }
 
     @Override
@@ -156,9 +160,10 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                         .orElse(null);
         long onboardedCount = vacancy.getRecruitmentDesignationVacancyId() == null
                 ? 0L
-                : preOnboardingRepository
-                        .countByInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndOnboardedAtIsNotNull(
-                                vacancy.getRecruitmentDesignationVacancyId());
+                : employeeRepository
+                        .countByPreOnboardingInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndStatusIgnoreCase(
+                                vacancy.getRecruitmentDesignationVacancyId(),
+                                "ACTIVE");
         return DesignationVacancyView.builder()
                 .vacancyId(vacancy.getRecruitmentDesignationVacancyId())
                 .designationName(designationName)

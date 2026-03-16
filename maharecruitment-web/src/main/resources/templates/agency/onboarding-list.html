@@ -13,14 +13,14 @@
             <div class="card add-emp-card">
                 <div class="header d-flex justify-content-between align-items-center">
                     <div>
-                        <h2 class="mb-0">Onboarding Ready Candidates</h2>
-                        <small class="text-muted">
-                            Only selected candidates with submitted pre-onboarding details appear here.
+                        <h2 class="mb-0" th:text="${pageTitle != null ? pageTitle : 'Onboarded Employees'}">Onboarded
+                            Employees</h2>
+                        <small class="text-muted"
+                            th:text="${pageSubtitle != null ? pageSubtitle : 'Agency-wise onboarded employee list.'}">
+                            Agency-wise onboarded employee list.
                         </small>
                     </div>
-                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/selected-candidates}">
-                        Open Selected Candidates
-                    </a>
+
                 </div>
 
                 <div class="card-body">
@@ -32,58 +32,85 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
+                                    <th>Employee Code</th>
                                     <th>Request ID</th>
                                     <th>Project</th>
                                     <th>Department</th>
-                                    <th>Candidate</th>
+                                    <th>Employee</th>
                                     <th>Designation</th>
                                     <th>Joining Date</th>
                                     <th>Onboarding Date</th>
-                                    <th>Submitted At</th>
-                                    <th>Action</th>
+                                    <th th:if="${currentStatus == 'RESIGNED'}">Resignation Date</th>
+                                    <th>Status</th>
+                                    <th th:if="${currentStatus == 'ACTIVE'}">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr th:if="${#lists.isEmpty(onboardingCandidates)}">
-                                    <td colspan="10" class="text-center text-muted">
-                                        No candidates are available for onboarding yet.
+                                <tr th:if="${#lists.isEmpty(onboardedEmployees)}">
+                                    <td th:colspan="${currentStatus == 'ACTIVE'} ? 11 : 11"
+                                        class="text-center text-muted">
+                                        No onboarded employees found for this agency.
                                     </td>
                                 </tr>
-                                <tr th:each="candidate, stat : ${onboardingCandidates}">
+                                <tr th:each="employee, stat : ${onboardedEmployees}">
                                     <td th:text="${stat.count}">1</td>
-                                    <td th:text="${candidate.requestId() != null ? candidate.requestId() : '-'}">REQ-0001</td>
-                                    <td th:text="${candidate.projectName() != null ? candidate.projectName() : '-'}">Project A</td>
+                                    <td th:text="${employee.employeeCode() != null ? employee.employeeCode() : '-'}">
+                                        EMP000001</td>
+                                    <td th:text="${employee.requestId() != null ? employee.requestId() : '-'}">REQ-0001
+                                    </td>
+                                    <td th:text="${employee.projectName() != null ? employee.projectName() : '-'}">
+                                        Project A</td>
                                     <td>
-                                        <div th:text="${candidate.departmentName() != null ? candidate.departmentName() : '-'}">Department</div>
+                                        <div
+                                            th:text="${employee.departmentName() != null ? employee.departmentName() : '-'}">
+                                            Department</div>
                                         <small class="text-muted"
-                                            th:text="${candidate.subDepartmentName() != null ? candidate.subDepartmentName() : '-'}">
+                                            th:text="${employee.subDepartmentName() != null ? employee.subDepartmentName() : '-'}">
                                             Sub Department
                                         </small>
                                     </td>
                                     <td>
-                                        <div th:text="${candidate.candidateName() != null ? candidate.candidateName() : '-'}">Candidate</div>
+                                        <div
+                                            th:text="${employee.candidateName() != null ? employee.candidateName() : '-'}">
+                                            Employee</div>
                                         <small class="text-muted"
-                                            th:text="${(candidate.candidateEmail() != null ? candidate.candidateEmail() : '-') + ' | ' + (candidate.candidateMobile() != null ? candidate.candidateMobile() : '-')}">
+                                            th:text="${(employee.candidateEmail() != null ? employee.candidateEmail() : '-') + ' | ' + (employee.candidateMobile() != null ? employee.candidateMobile() : '-')}">
                                             email | mobile
                                         </small>
                                     </td>
-                                    <td th:text="${(candidate.designationName() != null ? candidate.designationName() : '-') + ' | ' + (candidate.levelCode() != null ? candidate.levelCode() : '-')}">
+                                    <td
+                                        th:text="${(employee.designationName() != null ? employee.designationName() : '-') + ' | ' + (employee.levelCode() != null ? employee.levelCode() : '-')}">
                                         Designation | Level
                                     </td>
-                                    <td th:text="${candidate.joiningDate() != null ? #temporals.format(candidate.joiningDate(), 'dd-MMM-yyyy') : '-'}">
+                                    <td
+                                        th:text="${employee.joiningDate() != null ? #temporals.format(employee.joiningDate(), 'dd-MMM-yyyy') : '-'}">
                                         01-Apr-2026
                                     </td>
-                                    <td th:text="${candidate.onboardingDate() != null ? #temporals.format(candidate.onboardingDate(), 'dd-MMM-yyyy') : '-'}">
+                                    <td
+                                        th:text="${employee.onboardingDate() != null ? #temporals.format(employee.onboardingDate(), 'dd-MMM-yyyy') : '-'}">
                                         05-Apr-2026
                                     </td>
-                                    <td th:text="${candidate.preOnboardingSubmittedAt() != null ? #temporals.format(candidate.preOnboardingSubmittedAt(), 'dd-MMM-yyyy HH:mm') : '-'}">
-                                        01-Apr-2026 10:30
+                                    <td th:if="${currentStatus == 'RESIGNED'}"
+                                        th:text="${employee.resignationDate() != null ? #temporals.format(employee.resignationDate(), 'dd-MMM-yyyy') : '-'}">
+                                        16-Mar-2026
                                     </td>
-                                    <td class="text-center">
-                                        <a class="btn btn-outline-primary btn-sm"
-                                            th:href="@{/agency/onboarding/pre/{id}(id=${candidate.recruitmentInterviewDetailId()})}">
-                                            Review Pre-Onboarding
-                                        </a>
+                                    <td>
+                                        <span class="badge text-bg-success"
+                                            th:classappend="${employee.status() != null and employee.status() == 'RESIGNED'} ? ' text-bg-danger' : ' text-bg-success'"
+                                            th:text="${employee.status() != null ? employee.status() : 'ACTIVE'}">
+                                            ACTIVE
+                                        </span>
+                                    </td>
+                                    <td th:if="${currentStatus == 'ACTIVE'}">
+                                        <form method="post"
+                                            th:action="@{/agency/onboarding/{employeeId}/resign(employeeId=${employee.employeeId()})}">
+                                            <input type="hidden" th:name="${_csrf.parameterName}"
+                                                th:value="${_csrf.token}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                onclick="return confirm('Mark this employee as resigned and reopen the vacancy?')">
+                                                Mark Resigned
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             </tbody>

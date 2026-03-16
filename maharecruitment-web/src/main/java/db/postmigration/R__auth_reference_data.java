@@ -111,58 +111,87 @@ public class R__auth_reference_data extends BaseJavaMigration {
 
         Map<String, Long> roleIds = loadRoleIds(jdbcTemplate);
 
-        Long adminMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Administration", null, "fa fa-user-shield", 0,
+        Long adminMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Administration", null,
+                "fa fa-user-shield", 0,
                 roleIds.get("ROLE_ADMIN"), roleIds.get("ADMIN"));
         upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Admin Dashboard", "/admin/dashboard", "fa fa-gauge");
         upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Role Management", "/admin/roles", "fa fa-user-tag");
         upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "User Management", "/admin/users", "fa fa-users-cog");
-        upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Role Menu Mapping", "/admin/role-menu-mappings", "fa fa-diagram-project");
+        upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Role Menu Mapping", "/admin/role-menu-mappings",
+                "fa fa-diagram-project");
         upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Menu Management", "/admin/menus", "fa fa-bars");
-        upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Submenu Management", "/admin/submenus", "fa fa-sitemap");
+        upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Submenu Management", "/admin/submenus",
+                "fa fa-sitemap");
 
-        Long masterMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Master Management", null, "fa fa-database", 0,
+        Long masterMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Master Management", null,
+                "fa fa-database", 0,
                 roleIds.get("ROLE_ADMIN"), roleIds.get("ADMIN"), roleIds.get("ROLE_HR"));
-        upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Designation Master", "/master/designations", "fa fa-id-badge");
-        upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Resource Levels", "/master/resource-levels", "fa fa-layer-group");
-        upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Designation Rates", "/master/designation-rates", "fa fa-coins");
-        upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Project Master", "/master/projects", "fa fa-folder-tree");
+        upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Designation Master", "/master/designations",
+                "fa fa-id-badge");
+        upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Resource Levels", "/master/resource-levels",
+                "fa fa-layer-group");
+        upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Designation Rates", "/master/designation-rates",
+                "fa fa-coins");
+        upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Project Master", "/master/projects",
+                "fa fa-folder-tree");
 
-        Long departmentMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Department Module", null, "fa fa-building", 0,
+        Long departmentMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Department Module", null,
+                "fa fa-building", 0,
                 roleIds.get("ROLE_DEPARTMENT"));
-        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Department Dashboard", "/department/home", "fa fa-gauge");
-        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Department Profile", "/department/profile", "fa fa-id-card");
-        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Manpower Applications", "/department/manpower/list", "fa fa-users-gear");
-        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Advance Payments", "/department/payment/list", "fa fa-credit-card");
+        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Department Dashboard", "/department/home",
+                "fa fa-gauge");
+        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Department Profile", "/department/profile",
+                "fa fa-id-card");
+        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Manpower Applications",
+                "/department/manpower/list", "fa fa-users-gear");
+        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Advance Payments", "/department/payment/list",
+                "fa fa-credit-card");
 
-        Long reviewMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Verification & Approval", null, "fa fa-check-to-slot", 0,
+        Long reviewMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Verification & Approval", null,
+                "fa fa-check-to-slot", 0,
                 roleIds.get("ROLE_HR"), roleIds.get("ROLE_AUDITOR"));
-        upsertSubMenu(jdbcTemplate, subMenuTable, reviewMenuId, "Department Payments", "/hr/department/payment/list", "fa fa-receipt");
+        upsertSubMenu(jdbcTemplate, subMenuTable, reviewMenuId, "Department Payments", "/hr/department/payment/list",
+                "fa fa-receipt");
 
         upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Agency List", "/master/agencies", "fa fa-building",
                 roleIds.get("ROLE_ADMIN"), roleIds.get("ADMIN"), roleIds.get("ROLE_HR"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Department Request", "/hr/department-requests", "fa fa-building-user",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Department Request", "/hr/department-requests",
+                "fa fa-building-user",
                 roleIds.get("ROLE_HR"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Global Agency Rank Mapping", "/hr/department-requests/global-agency-rank-mapping",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Global Agency Rank Mapping",
+                "/hr/department-requests/global-agency-rank-mapping",
                 "fa fa-ranking-star", roleIds.get("ROLE_HR"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Global Agency Rank Overview", "/hr/department-requests/agency-rank-mapping",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Global Agency Rank Overview",
+                "/hr/department-requests/agency-rank-mapping",
                 "fa fa-table-list", roleIds.get("ROLE_HR"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Rank Release Overview", "/hr/department-requests/rank-release-overview",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Rank Release Overview",
+                "/hr/department-requests/rank-release-overview",
                 "fa fa-hourglass-half", roleIds.get("ROLE_HR"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Rank Release Rules", "/hr/department-requests/rank-release-rules",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Rank Release Rules",
+                "/hr/department-requests/rank-release-rules",
                 "fa fa-list-check", roleIds.get("ROLE_HR"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Department Audit Request", "/auditor/department-requests",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Department Audit Request",
+                "/auditor/department-requests",
                 "fa fa-magnifying-glass-chart", roleIds.get("ROLE_AUDITOR"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Project Name", "/department/candidate-shortlisting/projects",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Project Name",
+                "/department/candidate-shortlisting/projects",
                 "fa fa-list-check", roleIds.get("ROLE_DEPARTMENT"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Pending Onboarding", "/hr/onboarding", "fa fa-user-check",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Pending Onboarding", "/hr/onboarding",
+                "fa fa-user-check",
                 roleIds.get("ROLE_HR"));
         upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Onboarded Employees", "/hr/employees", "fa fa-users",
                 roleIds.get("ROLE_HR"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Recruitment Notifications", "/agency/recruitment-notifications", "fa fa-bell",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Recruitment Notifications",
+                "/agency/recruitment-notifications", "fa fa-bell",
                 roleIds.get("ROLE_AGENCY"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Selected Candidates", "/agency/selected-candidates", "fa fa-user-check",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Selected Candidates", "/agency/selected-candidates",
+                "fa fa-user-check",
                 roleIds.get("ROLE_AGENCY"));
-        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Onboarding", "/agency/onboarding", "fa fa-id-card",
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Onboarded Employees", "/agency/onboarding",
+                "fa fa-id-card",
+                roleIds.get("ROLE_AGENCY"));
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Resignation", "/agency/onboarding/resigned",
+                "fa fa-user-minus",
                 roleIds.get("ROLE_AGENCY"));
     }
 
@@ -174,13 +203,15 @@ public class R__auth_reference_data extends BaseJavaMigration {
         return roleIds;
     }
 
-    private Long upsertMenu(JdbcTemplate jdbcTemplate, String menuTable, String menuRoleTable, String name, String url, String icon,
+    private Long upsertMenu(JdbcTemplate jdbcTemplate, String menuTable, String menuRoleTable, String name, String url,
+            String icon,
             int isSubMenu, Long... roleIds) {
         String menuTableRef = sqlIdentifier(menuTable);
         String menuRoleTableRef = sqlIdentifier(menuRoleTable);
         Long menuId = queryForLong(
                 jdbcTemplate,
-                "select menu_id from " + menuTableRef + " where upper(menu_name_english) = upper(?) fetch first 1 row only",
+                "select menu_id from " + menuTableRef
+                        + " where upper(menu_name_english) = upper(?) fetch first 1 row only",
                 name);
         if (menuId == null && url != null) {
             menuId = queryForLong(
@@ -191,7 +222,8 @@ public class R__auth_reference_data extends BaseJavaMigration {
 
         if (menuId == null) {
             jdbcTemplate.update(
-                    "insert into " + menuTableRef + " (menu_name_english, menu_name_marathi, is_active, icon, url, is_sub_menu, created_date, updated_date) "
+                    "insert into " + menuTableRef
+                            + " (menu_name_english, menu_name_marathi, is_active, icon, url, is_sub_menu, created_date, updated_date) "
                             + "values (?, ?, 'Y', ?, ?, ?, current_timestamp, current_timestamp)",
                     name,
                     name,
@@ -200,11 +232,13 @@ public class R__auth_reference_data extends BaseJavaMigration {
                     isSubMenu);
             menuId = queryForLong(
                     jdbcTemplate,
-                    "select menu_id from " + menuTableRef + " where upper(menu_name_english) = upper(?) fetch first 1 row only",
+                    "select menu_id from " + menuTableRef
+                            + " where upper(menu_name_english) = upper(?) fetch first 1 row only",
                     name);
         } else {
             jdbcTemplate.update(
-                    "update " + menuTableRef + " set menu_name_english = ?, menu_name_marathi = ?, is_active = 'Y', icon = ?, url = ?, "
+                    "update " + menuTableRef
+                            + " set menu_name_english = ?, menu_name_marathi = ?, is_active = 'Y', icon = ?, url = ?, "
                             + "is_sub_menu = ?, updated_date = current_timestamp where menu_id = ?",
                     name,
                     name,
@@ -225,19 +259,22 @@ public class R__auth_reference_data extends BaseJavaMigration {
                         menuId,
                         roleId);
                 if (count != null && count == 0) {
-                    jdbcTemplate.update("insert into " + menuRoleTableRef + " (menu_id, id) values (?, ?)", menuId, roleId);
+                    jdbcTemplate.update("insert into " + menuRoleTableRef + " (menu_id, id) values (?, ?)", menuId,
+                            roleId);
                 }
             }
         }
         return menuId;
     }
 
-    private void upsertDirectMenu(JdbcTemplate jdbcTemplate, String menuTable, String menuRoleTable, String name, String url, String icon,
+    private void upsertDirectMenu(JdbcTemplate jdbcTemplate, String menuTable, String menuRoleTable, String name,
+            String url, String icon,
             Long... roleIds) {
         upsertMenu(jdbcTemplate, menuTable, menuRoleTable, name, url, icon, 1, roleIds);
     }
 
-    private void upsertSubMenu(JdbcTemplate jdbcTemplate, String subMenuTable, Long menuId, String name, String url, String icon) {
+    private void upsertSubMenu(JdbcTemplate jdbcTemplate, String subMenuTable, Long menuId, String name, String url,
+            String icon) {
         if (menuId == null) {
             return;
         }
@@ -245,13 +282,15 @@ public class R__auth_reference_data extends BaseJavaMigration {
         String subMenuTableRef = sqlIdentifier(subMenuTable);
         Long subMenuId = queryForLong(
                 jdbcTemplate,
-                "select sub_menu_id from " + subMenuTableRef + " where menu_id = ? and upper(sub_menu_name_english) = upper(?) fetch first 1 row only",
+                "select sub_menu_id from " + subMenuTableRef
+                        + " where menu_id = ? and upper(sub_menu_name_english) = upper(?) fetch first 1 row only",
                 menuId,
                 name);
 
         if (subMenuId == null) {
             jdbcTemplate.update(
-                    "insert into " + subMenuTableRef + " (sub_menu_id, menu_id, sub_menu_name_english, controller_name, url, sub_menu_name_marathi, icon, is_active) "
+                    "insert into " + subMenuTableRef
+                            + " (sub_menu_id, menu_id, sub_menu_name_english, controller_name, url, sub_menu_name_marathi, icon, is_active) "
                             + "values (nextval('mstsubmenu_seq'), ?, ?, ?, ?, ?, ?, ?)",
                     menuId,
                     name,
@@ -262,7 +301,8 @@ public class R__auth_reference_data extends BaseJavaMigration {
                     "Y");
         } else {
             jdbcTemplate.update(
-                    "update " + subMenuTableRef + " set menu_id = ?, sub_menu_name_english = ?, controller_name = ?, url = ?, "
+                    "update " + subMenuTableRef
+                            + " set menu_id = ?, sub_menu_name_english = ?, controller_name = ?, url = ?, "
                             + "sub_menu_name_marathi = ?, icon = ?, is_active = ? where sub_menu_id = ?",
                     menuId,
                     name,
@@ -307,7 +347,8 @@ public class R__auth_reference_data extends BaseJavaMigration {
 
         try (Statement statement = connection.createStatement();
                 ResultSet rs = statement.executeQuery(
-                        "select 1 from information_schema.tables where lower(table_name) = lower('" + tableName + "')")) {
+                        "select 1 from information_schema.tables where lower(table_name) = lower('" + tableName
+                                + "')")) {
             return rs.next();
         } catch (SQLException ex) {
             return false;

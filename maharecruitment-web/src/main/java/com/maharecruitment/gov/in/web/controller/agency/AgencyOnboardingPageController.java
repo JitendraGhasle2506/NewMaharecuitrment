@@ -32,7 +32,20 @@ public class AgencyOnboardingPageController {
     @GetMapping
     public String onboardingReadyCandidates(Principal principal, Model model) {
         String actorEmail = resolveActorEmail(principal);
-        model.addAttribute("onboardingCandidates", onboardingPageService.getOnboardingReadyCandidates(actorEmail));
+        model.addAttribute("onboardedEmployees", onboardingPageService.getOnboardedEmployees(actorEmail));
+        model.addAttribute("currentStatus", "ACTIVE");
+        model.addAttribute("pageTitle", "Onboarded Employees");
+        model.addAttribute("pageSubtitle", "Agency-wise active onboarded employees.");
+        return "agency/onboarding-list";
+    }
+
+    @GetMapping("/resigned")
+    public String resignedEmployees(Principal principal, Model model) {
+        String actorEmail = resolveActorEmail(principal);
+        model.addAttribute("onboardedEmployees", onboardingPageService.getEmployeesByStatus(actorEmail, "RESIGNED"));
+        model.addAttribute("currentStatus", "RESIGNED");
+        model.addAttribute("pageTitle", "Resigned Employees");
+        model.addAttribute("pageSubtitle", "Agency employees who resigned and reopened their vacancy.");
         return "agency/onboarding-list";
     }
 
@@ -92,6 +105,21 @@ public class AgencyOnboardingPageController {
             model.addAttribute("preOnboardingForm", form);
             return "agency/pre-onboarding-form";
         }
+    }
+
+    @PostMapping("/{employeeId}/resign")
+    public String resignEmployee(
+            @PathVariable Long employeeId,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+        String actorEmail = resolveActorEmail(principal);
+        try {
+            onboardingPageService.markEmployeeResigned(actorEmail, employeeId);
+            redirectAttributes.addFlashAttribute("successMessage", "Employee marked as resigned successfully.");
+        } catch (RecruitmentNotificationException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/agency/onboarding";
     }
 
     private void mergeReadonlyFields(AgencyPreOnboardingForm source, AgencyPreOnboardingForm target) {

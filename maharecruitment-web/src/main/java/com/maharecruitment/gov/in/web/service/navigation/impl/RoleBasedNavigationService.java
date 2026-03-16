@@ -160,7 +160,8 @@ public class RoleBasedNavigationService implements NavigationService {
                 new SidebarItemView(
                         "Rank Release Rules",
                         "fa fa-list-check",
-                        "/hr/department-requests/rank-release-rules")
+                        "/hr/department-requests/rank-release-rules"),
+                new SidebarItemView("Onboarded Employees", "fa fa-users", "/hr/employees")
         ));
 
         navItems.put("ROLE_USER", List.of(
@@ -171,7 +172,8 @@ public class RoleBasedNavigationService implements NavigationService {
                 new SidebarItemView("Agency Dashboard", "fa fa-briefcase", "/agency/dashboard"),
                 new SidebarItemView("Recruitment Notifications", "fa fa-bell", "/agency/recruitment-notifications"),
                 new SidebarItemView("Selected Candidates", "fa fa-user-check", "/agency/selected-candidates"),
-                new SidebarItemView("Onboarding", "fa fa-id-card", "/agency/onboarding")
+                new SidebarItemView("Onboarded Employees", "fa fa-id-card", "/agency/onboarding"),
+                new SidebarItemView("Resignation", "fa fa-user-minus", "/agency/onboarding/resigned")
         ));
 
         navItems.put("ROLE_STM", List.of(

@@ -26,6 +26,8 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStat
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentAssessmentFeedbackRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
@@ -46,6 +48,8 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
     private final RecruitmentNotificationRepository notificationRepository;
     private final AgencyNotificationTrackingRepository trackingRepository;
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
+    private final EmployeeRepository employeeRepository;
+    private final RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository;
     private final RecruitmentAgencyNotificationActionService agencyNotificationActionService;
     private final ResourceLevelExperienceRepository resourceLevelExperienceRepository;
 
@@ -55,6 +59,8 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             RecruitmentNotificationRepository notificationRepository,
             AgencyNotificationTrackingRepository trackingRepository,
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
+            EmployeeRepository employeeRepository,
+            RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository,
             RecruitmentAgencyNotificationActionService agencyNotificationActionService,
             ResourceLevelExperienceRepository resourceLevelExperienceRepository) {
         this.interviewDetailRepository = interviewDetailRepository;
@@ -62,6 +68,8 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         this.notificationRepository = notificationRepository;
         this.trackingRepository = trackingRepository;
         this.preOnboardingRepository = preOnboardingRepository;
+        this.employeeRepository = employeeRepository;
+        this.assessmentFeedbackRepository = assessmentFeedbackRepository;
         this.agencyNotificationActionService = agencyNotificationActionService;
         this.resourceLevelExperienceRepository = resourceLevelExperienceRepository;
     }
@@ -75,6 +83,10 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
 
         return interviewDetailRepository.findActiveCandidatesByNotificationAndAgency(recruitmentNotificationId, agencyId)
                 .stream()
+                .filter(candidate -> !employeeRepository
+                        .existsByPreOnboardingInterviewDetailRecruitmentInterviewDetailIdAndStatusIgnoreCase(
+                                candidate.getRecruitmentInterviewDetailId(),
+                                "RESIGNED"))
                 .map(this::toSubmittedCandidateView)
                 .toList();
     }
@@ -164,9 +176,10 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                         "Selected designation is not part of this recruitment notification."));
 
         long vacancyCount = safePositive(designationVacancy.getNumberOfVacancy());
-        long filledCount = preOnboardingRepository
-                .countByInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndOnboardedAtIsNotNull(
-                        designationVacancyId);
+        long filledCount = employeeRepository
+                .countByPreOnboardingInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndStatusIgnoreCase(
+                        designationVacancyId,
+                        "ACTIVE");
         long remainingCount = Math.max(vacancyCount - filledCount, 0L);
 
         if (remainingCount <= 0) {
@@ -304,21 +317,22 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                         recruitmentNotificationId,
                         agencyId)
                 .orElseThrow(() -> new RecruitmentNotificationException("Candidate record not found for this notification."));
+        AgencyCandidatePreOnboardingEntity preOnboarding = preOnboardingRepository
+                .findByInterviewDetailRecruitmentInterviewDetailId(recruitmentInterviewDetailId)
+                .orElse(null);
 
         if (!Boolean.TRUE.equals(candidateEntity.getActive())) {
             throw new RecruitmentNotificationException("Candidate has already been withdrawn.");
         }
-        if (candidateEntity.getCandidateStatus() != RecruitmentCandidateStatus.SUBMITTED_BY_AGENCY) {
-            throw new RecruitmentNotificationException(
-                    "Candidate can be withdrawn only before department review starts.");
+        if (preOnboarding != null && preOnboarding.getOnboardedAt() != null) {
+            throw new RecruitmentNotificationException("Candidate is already onboarded and cannot be withdrawn.");
         }
-        if (candidateEntity.getDepartmentShortlistedAt() != null
-                || candidateEntity.getInterviewDateTime() != null
-                || Boolean.TRUE.equals(candidateEntity.getAssessmentSubmitted())
-                || StringUtils.hasText(candidateEntity.getFinalDecisionStatus())) {
-            throw new RecruitmentNotificationException(
-                    "Candidate can no longer be withdrawn because department processing has already started.");
+
+        if (preOnboarding != null) {
+            preOnboardingRepository.delete(preOnboarding);
         }
+        assessmentFeedbackRepository.findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(
+                recruitmentInterviewDetailId).ifPresent(assessmentFeedbackRepository::delete);
 
         interviewDetailRepository.delete(candidateEntity);
     }
@@ -524,6 +538,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
                 .preOnboardingCompleted(preOnboarding != null)
                 .preOnboardingSubmittedAt(preOnboarding != null ? preOnboarding.getSubmittedAt() : null)
+                .withdrawAllowed(isWithdrawAllowed(candidate, preOnboarding))
                 .build();
     }
 
@@ -534,13 +549,19 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
     }
 
     private boolean isWithdrawAllowed(RecruitmentInterviewDetailEntity candidate) {
+        AgencyCandidatePreOnboardingEntity preOnboarding = candidate == null
+                ? null
+                : preOnboardingRepository.findByInterviewDetailRecruitmentInterviewDetailId(
+                        candidate.getRecruitmentInterviewDetailId()).orElse(null);
+        return isWithdrawAllowed(candidate, preOnboarding);
+    }
+
+    private boolean isWithdrawAllowed(
+            RecruitmentInterviewDetailEntity candidate,
+            AgencyCandidatePreOnboardingEntity preOnboarding) {
         return candidate != null
                 && Boolean.TRUE.equals(candidate.getActive())
-                && candidate.getCandidateStatus() == RecruitmentCandidateStatus.SUBMITTED_BY_AGENCY
-                && candidate.getDepartmentShortlistedAt() == null
-                && candidate.getInterviewDateTime() == null
-                && !Boolean.TRUE.equals(candidate.getAssessmentSubmitted())
-                && !StringUtils.hasText(candidate.getFinalDecisionStatus());
+                && (preOnboarding == null || preOnboarding.getOnboardedAt() == null);
     }
 
     private long safePositive(Long value) {
