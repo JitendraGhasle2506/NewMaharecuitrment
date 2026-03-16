@@ -61,7 +61,7 @@
         </root>
     </springProfile>
 
-    <springProfile name="!local & !uat & !prod">
+    <springProfile name="!local &amp; !uat &amp; !prod">
         <root level="${ROOT_LOG_LEVEL}">
             <appender-ref ref="CONSOLE" />
             <appender-ref ref="ASYNC_FILE" />
