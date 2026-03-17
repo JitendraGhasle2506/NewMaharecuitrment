@@ -3,6 +3,8 @@ package com.maharecruitment.gov.in.web.service.master.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -11,9 +13,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.master.dto.AgencyEscalationMatrixRequest;
+import com.maharecruitment.gov.in.master.dto.AgencyEscalationMatrixResponse;
 import com.maharecruitment.gov.in.master.dto.AgencyMasterRequest;
 import com.maharecruitment.gov.in.master.dto.AgencyMasterResponse;
+import com.maharecruitment.gov.in.master.entity.AgencyMaster;
 import com.maharecruitment.gov.in.master.entity.AgencyStatus;
+import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.master.service.AgencyMasterService;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.master.AgencyEscalationMatrixForm;
@@ -25,6 +30,9 @@ import com.maharecruitment.gov.in.web.service.verification.AccountNotificationSe
 @Service
 @Transactional
 public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
+	
+	@Autowired
+	AgencyMasterRepository agencyMasterRepository;
 
     private final AgencyMasterService agencyMasterService;
     private final FileStorageService fileStorageService;
@@ -166,5 +174,37 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
         }
 
         throw new IllegalArgumentException(documentLabel + " is required.");
+    }
+
+    public AgencyMasterResponse getAgencyProfile(String email) {
+
+        AgencyMaster agency = agencyMasterRepository.getAgencyProfile(email);
+
+        AgencyMasterResponse response = new AgencyMasterResponse();
+
+        BeanUtils.copyProperties(agency, response);
+        if (agency.getEscalationMatrixEntries() != null) {
+
+            List<AgencyEscalationMatrixResponse> escalationList =
+                    agency.getEscalationMatrixEntries()
+                            .stream()
+                            .map(e -> {
+                                AgencyEscalationMatrixResponse r =
+                                        new AgencyEscalationMatrixResponse();
+
+                                r.setContactName(e.getContactName());
+                                r.setMobileNumber(e.getMobileNumber());
+                                r.setLevel(e.getLevel());
+                                r.setDesignation(e.getDesignation());
+                                r.setCompanyEmailId(e.getCompanyEmailId());
+
+                                return r;
+                            })
+                            .toList();
+
+            response.setEscalationMatrixEntries(escalationList);
+        }
+
+        return response;
     }
 }

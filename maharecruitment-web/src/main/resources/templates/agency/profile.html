@@ -2,35 +2,256 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Agency Profile</title>
-    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+<meta charset="UTF-8">
+<title>Agency Profile</title>
+<style>
+button.btn.btn-link.btn-sm.p-0.text-decoration-none.position-absolute {
+	bottom: 15px;
+}
+
+.section-header {
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+	font-weight: 600;
+}
+</style>
+<th:block th:replace="~{header/header :: var-files-header}"></th:block>
 </head>
 
 <body>
-    <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Profile', ~{::section})}">
-        <section>
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Agency Profile</h5>
-                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/dashboard}">
+	<th:block
+		th:replace="~{header/header :: var-sidebar-header('Agency', 'Profile', ~{::section})}">
+		<section>
+			<div class="card shadow-sm border-0">
+				<div
+					class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+					<h5 class="mb-0">Agency Profile</h5>
+					<!--  <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/dashboard}">
                         Back to Dashboard
-                    </a>
-                </div>
-                <div class="card-body">
+                    </a> -->
+				</div>
+				<div class="card-body">
+					<form id="agencyProfileForm" th:object="${agencyMasterResponse}"
+						method="post" enctype="multipart/form-data">
+						<input type="hidden" th:name="${_csrf.parameterName}"
+							th:value="${_csrf.token}">
+
+						<!-- ============== SECTION 1: AGENCY BASIC DETAILS ============== -->
+						<div class="section-header">1. Agency Basic Details</div>
+
+						<div class="row g-3">
+							<div class="col-md-4">
+								<label class="form-label">Agency Name </label> <label
+									class="form-control" th:text="*{agencyName}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">Official Email ID</label> <label
+									class="form-control" th:text="*{officialEmail}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">Telephone Number </label> <label
+									class="form-control" th:text="*{telephoneNumber}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">Agency Type </label> <label
+									class="form-control" th:text="*{agencyType}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">Entity Type</label> <label
+									class="form-control" th:text="*{entityType}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">MSME Registered </label> <label
+									class="form-control" th:text="*{msmeRegistered} ? 'Yes' : 'No'"></label>
+							</div>
+
+							<div class="col-md-6">
+								<label class="form-label">Official Address </label> <label
+									class="form-control" rows="3" th:text="*{officialAddress}"></label>
+							</div>
+
+							<div class="col-md-6">
+								<label class="form-label">Permanent Address </label> <label
+									class="form-control" rows="3" th:text="*{permanentAddress}"></label>
+							</div>
+
+
+							<div class="col-md-4">
+								<label class="form-label">Contact Person Name</label> <label
+									class="form-control" th:text="*{contactPersonName}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">Contact Person Mobile</label> <label
+									class="form-control" th:text="*{contactPersonMobileNo}"></label>
+							</div>
+
+							<div class="col-md-4"></div>
+
+							<!-- Documents -->
+							<div class="col-md-3 ">
+								<label class="form-label">PAN Number </label> <label
+									class="form-control text-uppercase" th:text="*{panNumber}"></label>
+							</div>
+							<div class="col-md-1 position-relative">
+								<button type="button"
+									class="btn btn-link btn-sm p-0 text-decoration-none position-absolute"
+									th:data-path="*{panCopyPath}"
+									onclick="viewDocument(this.dataset.path)">
+									<i class="bi bi-eye"></i> View
+								</button>
+							</div>
+							<div class="col-md-3 ">
+								<label class="form-label">GST Number</label> <label
+									class="form-control text-uppercase" th:text="*{gstNumber}"></label>
+							</div>
+							<div class="col-md-1 position-relative">
+
+								<button type="button"
+									class="btn btn-link btn-sm p-0 text-decoration-none position-absolute"
+									th:data-path="*{gstDocumentPath}"
+									onclick="viewDocument(this.dataset.path)">
+									<i class="bi bi-eye"></i> View
+								</button>
+
+							</div>
+
+							<div class="col-md-3">
+								<label class="form-label">Certificate of Incorporation
+									Number</label> <label class="form-control"
+									th:text="*{certificateNumber}"></label>
+
+							</div>
+							<div class="col-md-1 position-relative">
+
+								<button type="button"
+									class="btn btn-link btn-sm p-0 text-decoration-none position-absolute"
+									th:data-path="*{certificateDocumentPath}"
+									onclick="viewDocument(this.dataset.path)">
+									<i class="bi bi-eye"></i> View
+								</button>
+
+							</div>
+						</div>
+						<div class="col-12">
+							<hr>
+						</div>
+						<!-- ============== SECTION 2: ESCALATION MATRIX ============== -->
+						<div class="section-header">2. Escalation Matrix</div>
+
+						<div class="border rounded p-3 mb-4">
+							<div class="table-responsive">
+								<table
+									class="table table-bordered table-hover align-middle mb-2"
+									id="escalationTable">
+									<thead class="table-light">
+										<tr>
+											<th style="width: 60px;">Sr No</th>
+											<th>Name <span class="required-asterisk">*</span></th>
+											<th>Mobile <span class="required-asterisk">*</span></th>
+											<th style="width: 100px;">Level <span
+												class="required-asterisk">*</span></th>
+											<th>Designation</th>
+											<th>Company Email</th>
+										</tr>
+									</thead>
+									<tbody id="escalationTBody">
+										<tr th:each="entry, rowStat : *{escalationMatrixEntries}">
+											<td th:text="${rowStat.count}"></td>
+											<td th:text="${entry.contactName}"></td>
+											<td th:text="${entry.mobileNumber}"></td>
+											<td th:text="${entry.level}"></td>
+											<td th:text="${entry.designation}"></td>
+											<td th:text="${entry.companyEmailId}"></td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+						<div class="col-12">
+							<hr>
+						</div>
+						<!-- ============== SECTION 3: BANK DETAILS ============== -->
+						<div class="section-header">3. Bank Account Details</div>
+
+						<div class="row g-3">
+							<div class="col-md-4">
+								<label class="form-label">Bank Name </label> <label
+									class="form-control" th:text="*{bankName}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">Branch </label> <label
+									class="form-control" th:text="*{bankBranch}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">Account Type </label> <label
+									class="form-control" th:text="*{bankAccountType}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">Account Number</label> <label
+									class="form-control" th:text="*{bankAccountNumber}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">IFSC Code </label> <label
+									class="form-control text-uppercase" th:text="*{ifscCode}"></label>
+							</div>
+
+							<div class="col-md-4">
+								<label class="form-label">Cancelled Cheque <span
+									class="required-asterisk">*</span></label><label class="form-control">
+									<button type="button"
+										class="btn btn-link btn-sm p-0 text-decoration-none"
+										th:data-path="*{cancelledChequePath}"
+										onclick="viewDocument(this.dataset.path)">
+										<i class="bi bi-eye"></i> View
+									</button>
+								</label>
+							</div>
+
+						</div>
+
+						<hr class="mt-4">
+					</form>
+				</div>
+				<!--  <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label text-muted mb-1">Name</label>
+                            <label class="form-label text-muted mb-1">Agency Name </label>
                             <div class="fw-semibold" th:text="${profileName}">Agency User</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted mb-1">Email</label>
+                            <label class="form-label text-muted mb-1">Official Email ID </label>
                             <div class="fw-semibold" th:text="${profileEmail}">agency@example.com</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted mb-1">Mobile</label>
+                            <label class="form-label text-muted mb-1">Telephone Number </label>
                             <div class="fw-semibold" th:text="${profileMobile}">-</div>
                         </div>
+	                        <div class="col-md-6">
+	                            <label class="form-label text-muted mb-1">Agency Type</label>
+	                            <div class="fw-semibold" th:text="${profileMobile}">-</div>
+	                        </div>
+	                        <div class="col-md-6">
+	                            <label class="form-label text-muted mb-1">MSME Registered </label>
+	                            <div class="fw-semibold" th:text="${profileMobile}">-</div>
+	                        </div>
+	                        <div class="col-md-6">
+	                            <label class="form-label text-muted mb-1">Official Address</label>
+	                            <div class="fw-semibold" th:text="${profileMobile}">-</div>
+	                        </div>
+	                        <div class="col-md-6">
+	                            <label class="form-label text-muted mb-1">Permanent Address</label>
+	                            <div class="fw-semibold" th:text="${profileMobile}">-</div>
+	                        </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted mb-1">Roles</label>
                             <div>
@@ -39,10 +260,20 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
-    </th:block>
+                </div> -->
+			</div>
+		</section>
+	</th:block>
+	<script>
+	   // 0. File Viewing Logic
+        function viewDocument(path) {
+            if (!path) return;
+            const contextPath = '[[@{/}]]';
+            const encodedPath = encodeURIComponent(btoa(path));
+            const viewUrl = `${contextPath}documents/view?path=${encodedPath}`;
+            window.open(viewUrl, '_blank');
+        }
+	  </script>
 </body>
 
 </html>

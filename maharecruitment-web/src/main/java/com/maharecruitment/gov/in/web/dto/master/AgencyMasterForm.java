@@ -53,12 +53,14 @@ public class AgencyMasterForm {
     @Pattern(regexp = "^[A-Z]{5}[0-9]{4}[A-Z]$", message = "PAN number format is invalid")
     private String panNumber;
 
+    @NotNull(message = "PAN Copy File is Required")
     private MultipartFile panCopyFile;
 
     @NotBlank(message = "Certificate of incorporation number is required")
     @Size(max = 100, message = "Certificate number must not exceed 100 characters")
     private String certificateNumber;
 
+    @NotNull(message = "Certificate Document File is required")
     private MultipartFile certificateDocumentFile;
 
     @NotBlank(message = "GST number is required")
@@ -67,6 +69,7 @@ public class AgencyMasterForm {
             message = "GST number format is invalid")
     private String gstNumber;
 
+    @NotNull(message = "GST File is Required")
     private MultipartFile gstDocumentFile;
 
     @NotBlank(message = "Contact person name is required")
@@ -105,6 +108,7 @@ public class AgencyMasterForm {
     @Pattern(regexp = "^[A-Z]{4}0[A-Z0-9]{6}$", message = "IFSC code format is invalid")
     private String ifscCode;
 
+    @NotNull(message = "Cancelled Cheque File is required")
     private MultipartFile cancelledChequeFile;
 
     private String existingPanCopyPath;

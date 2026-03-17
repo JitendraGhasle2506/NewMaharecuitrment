@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import java.util.List;
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> {
@@ -24,4 +25,6 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     long countByPreOnboardingInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndStatusIgnoreCase(
             Long recruitmentDesignationVacancyId,
             String status);
+    List<EmployeeEntity> findByDepartmentRegistration_DepartmentRegistrationId(Long id);
+    List<EmployeeEntity> findByDepartmentRegistration_DepartmentRegistrationIdAndRecruitmentType(Long id, String recruitmentType);
 }

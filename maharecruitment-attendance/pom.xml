@@ -9,4 +9,26 @@
   <packaging>jar</packaging>
   <name>maharecruitment-attendance</name>
   <description>maharecruitment-attendance</description>
+  <dependencies>
+  	<dependency>
+  		<groupId>com.maharecruitment.gov.in</groupId>
+  		<artifactId>maharecruitment-agency</artifactId>
+  		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>com.maharecruitment.gov.in</groupId>
+  		<artifactId>maharecruitment-master</artifactId>
+  		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>com.maharecruitment.gov.in</groupId>
+  		<artifactId>maharecruitment-recruitment</artifactId>
+  		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>com.maharecruitment.gov.in</groupId>
+  		<artifactId>maharecruitment-department</artifactId>
+  		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+  </dependencies>
 </project>
