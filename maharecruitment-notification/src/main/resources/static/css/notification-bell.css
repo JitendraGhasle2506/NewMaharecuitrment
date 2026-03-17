@@ -6,21 +6,21 @@
     position: relative;
     width: 42px;
     height: 42px;
-    border: 1px solid #dbe3ef;
+    border: 1px solid #d4dee8;
     border-radius: 50%;
     background: #f8fbff;
-    color: #1d4e89;
+    color: #1f4f78;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .notification-bell-button:hover {
-    background: #eef5ff;
+    background: #edf4fb;
 }
 
 .notification-bell-button[aria-expanded="true"] {
-    background: #e7f0ff;
-    border-color: #b8d1f6;
+    background: #e9f2fb;
+    border-color: #bcd0e6;
 }
 
 .notification-bell-icon {
@@ -58,7 +58,7 @@
     max-height: 460px;
     overflow: hidden;
     background: #ffffff;
-    border: 1px solid #dbe3ef;
+    border: 1px solid #d4dee8;
     border-radius: 14px;
     box-shadow: 0 22px 45px rgba(17, 36, 66, 0.24);
     display: none;
@@ -74,9 +74,9 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.8rem 0.95rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #d4dee8;
     font-weight: 700;
-    color: #0f172a;
+    color: #1b2b3b;
 }
 
 .notification-view-all-link {
@@ -97,7 +97,7 @@
 }
 
 .notification-item {
-    border-bottom: 1px solid #edf2f8;
+    border-bottom: 1px solid #e6edf5;
 }
 
 .notification-item:last-child {
@@ -105,7 +105,7 @@
 }
 
 .notification-item.is-unread {
-    background: #f4f9ff;
+    background: #eef3f7;
 }
 
 .notification-link {
@@ -116,7 +116,7 @@
 }
 
 .notification-link:hover {
-    background: #f8fbff;
+    background: #eef3f7;
 }
 
 .notification-item-title-row {
@@ -129,19 +129,19 @@
 .notification-item-title {
     font-weight: 700;
     font-size: 0.9rem;
-    color: #0f172a;
+    color: #1b2b3b;
 }
 
 .notification-item-time {
     font-size: 0.72rem;
-    color: #64748b;
+    color: #5f7287;
     white-space: nowrap;
 }
 
 .notification-item-message {
     margin-top: 0.3rem;
     font-size: 0.82rem;
-    color: #334155;
+    color: #334f6d;
 }
 
 .notification-item-action {
@@ -152,12 +152,13 @@
     padding: 0.18rem 0.5rem;
     font-size: 0.7rem;
     font-weight: 700;
-    color: #854d0e;
-    background: #fef9c3;
+    color: #0c6e5c;
+    background: rgba(15, 139, 141, 0.14);
 }
 
 .notification-empty-item {
     padding: 1rem 0.9rem;
-    color: #64748b;
+    color: #5f7287;
     font-size: 0.85rem;
 }
+

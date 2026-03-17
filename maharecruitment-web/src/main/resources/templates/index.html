@@ -1,52 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>MahaIT Recruitment Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- Bootstrap CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <style>
-        body {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            min-height: 100vh;
-        }
-        .hero {
-            margin-top: 10%;
-        }
-        .portal-card {
-            border-radius: 12px;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="/css/landing.css">
 </head>
-<body>
 
-<div class="container hero text-center">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow portal-card p-4">
-                <h1 class="mb-3">Welcome to MahaIT Recruitment Portal</h1>
-                <p class="text-muted">
-                    A centralized platform for Recruitment, Attendance, Invoice & HR Management  
-                    for Government Departments and Empaneled Agencies.
-                </p>
-
-                <div class="d-flex justify-content-center gap-3 mt-4">
-                    <a href="/login" class="btn btn-primary px-4">Login</a>
-                    <a href="/about" class="btn btn-outline-secondary px-4">About Portal</a>
-                </div>
-
-                <hr>
-
-                <small class="text-muted">
-                    Government of Maharashtra | MahaIT  
-                </small>
+<body class="landing-shell">
+    <header class="landing-topbar">
+        <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <a href="/index" class="brand-link">MahaIT Recruitment</a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="/register/department-registration" class="btn btn-outline-light btn-sm px-3">Register Department</a>
+                <a href="/login" class="btn btn-light btn-sm px-3">Login</a>
             </div>
         </div>
-    </div>
-</div>
+    </header>
 
+    <main class="landing-main">
+        <div class="container">
+            <section class="landing-hero row g-4 align-items-stretch">
+                <div class="col-lg-7">
+                    <article class="hero-panel-main">
+                        <p class="hero-badge">Government of Maharashtra</p>
+                        <h1>Modern recruitment operations for departments and agencies</h1>
+                        <p class="hero-description">
+                            A centralized digital platform for recruitment workflows, onboarding visibility, and secure role-based coordination.
+                        </p>
+                        <div class="hero-actions d-flex gap-2 flex-wrap">
+                            <a href="/login" class="btn btn-primary btn-lg px-4">Access Portal</a>
+                            <a href="/register/department-registration" class="btn btn-outline-primary btn-lg px-4">New Department Registration</a>
+                        </div>
+                    </article>
+                </div>
+                <div class="col-lg-5">
+                    <aside class="hero-panel-side h-100">
+                        <h2>Platform Highlights</h2>
+                        <ul class="highlight-list">
+                            <li><i class="fa-solid fa-shield-halved"></i><span>Secure authentication and role-based access</span></li>
+                            <li><i class="fa-solid fa-diagram-project"></i><span>Unified department and agency workflows</span></li>
+                            <li><i class="fa-solid fa-clock-rotate-left"></i><span>Real-time onboarding and project visibility</span></li>
+                            <li><i class="fa-solid fa-file-invoice"></i><span>Integrated billing and compliance records</span></li>
+                        </ul>
+                    </aside>
+                </div>
+            </section>
+
+            <section class="feature-grid">
+                <article class="feature-card">
+                    <i class="fa-solid fa-users-gear"></i>
+                    <h3>Recruitment Management</h3>
+                    <p>Track notification, candidate onboarding, and project staffing from one workflow.</p>
+                </article>
+                <article class="feature-card">
+                    <i class="fa-solid fa-building-columns"></i>
+                    <h3>Department Governance</h3>
+                    <p>Submit and validate department requests with approval-ready records and audit trails.</p>
+                </article>
+                <article class="feature-card">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <h3>Operational Dashboards</h3>
+                    <p>Monitor project status, employee movement, and pending actions through clear insights.</p>
+                </article>
+            </section>
+
+            <section class="metric-strip row g-3">
+                <div class="col-sm-4">
+                    <div class="metric-tile">
+                        <h4>One Portal</h4>
+                        <p>Single entry point for departments, HR teams, and agencies.</p>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="metric-tile">
+                        <h4>Secure By Design</h4>
+                        <p>Controlled access with policy-driven user roles and auditability.</p>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="metric-tile">
+                        <h4>Always Available</h4>
+                        <p>Web-first architecture designed for continuous operations.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="landing-footer">
+        <div class="container d-flex flex-wrap justify-content-between gap-2 py-3">
+            <span>Copyright &copy; 2026 Maharashtra Information Technology Corporation Ltd.</span>
+            <span>Government of Maharashtra, India</span>
+        </div>
+    </footer>
 </body>
+
 </html>

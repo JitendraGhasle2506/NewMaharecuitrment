@@ -1,110 +1,122 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@600;700&display=swap');
-
 :root {
-    --ink: #10233f;
-    --muted: #5a6c8e;
-    --nav-a: #0a2e59;
-    --nav-b: #115693;
-    --surface: rgba(255, 255, 255, 0.87);
+    --role-ink: #1b2b3b;
+    --role-muted: #5f7287;
+    --role-card-bg: #ffffff;
+    --role-border: #d4dee8;
+    --role-brand: #1f4f78;
+    --role-brand-strong: #163a59;
+    --role-accent: #0f8b8d;
+    --role-shadow: 0 8px 20px rgba(16, 38, 67, 0.1);
 }
 
 body.role-shell {
     margin: 0;
     min-height: 100vh;
-    color: var(--ink);
-    font-family: "Manrope", "Segoe UI", sans-serif;
-    background:
-        radial-gradient(780px 420px at -8% -12%, #b9d2ff 0%, rgba(185, 210, 255, 0) 58%),
-        radial-gradient(740px 420px at 108% 0%, #caefe9 0%, rgba(202, 239, 233, 0) 55%),
-        linear-gradient(155deg, #eef4ff 0%, #dce7f8 100%);
+    color: var(--role-ink);
+    font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(145deg, #ffffff 0%, #eef3f7 100%);
 }
 
 .role-nav {
-    background: linear-gradient(90deg, var(--nav-a), var(--nav-b));
-    box-shadow: 0 12px 24px rgba(10, 46, 89, 0.22);
+    background: linear-gradient(90deg, #1a3c5a, #2a678f);
+    box-shadow: 0 10px 20px rgba(13, 63, 112, 0.18);
 }
 
 .role-nav .navbar-brand {
-    color: #fff;
+    color: #ffffff;
 }
 
 .role-hero {
-    background: linear-gradient(135deg, rgba(14, 68, 126, 0.96), rgba(16, 102, 172, 0.92));
-    color: #fff;
-    border-radius: 16px;
-    padding: 1.2rem 1.3rem;
+    background: linear-gradient(135deg, var(--role-brand), var(--role-brand-strong));
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    color: #ffffff;
+    border-radius: 14px;
+    padding: 1.15rem 1.2rem;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 12px 24px rgba(8, 49, 92, 0.24);
 }
 
 .role-hero h1 {
     margin: 0;
-    font-family: "Space Grotesk", "Manrope", sans-serif;
-    font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+    font-size: clamp(1.3rem, 2.1vw, 1.7rem);
+    font-weight: 700;
+    font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
 
 .role-hero p {
     margin: 0.45rem 0 0;
-    opacity: 0.9;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.92);
 }
 
 .demo-badge {
     position: absolute;
     right: 1rem;
     top: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.42);
+    border: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: 999px;
-    padding: 0.28rem 0.68rem;
-    font-size: 0.8rem;
+    padding: 0.26rem 0.66rem;
+    font-size: 0.78rem;
     font-weight: 700;
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 0.72rem;
 }
 
 .metric-card {
-    border-radius: 14px;
-    padding: 0.8rem;
-    border: 1px solid rgba(255, 255, 255, 0.86);
-    background: var(--surface);
-    box-shadow: 0 8px 22px rgba(15, 40, 75, 0.11);
+    border-radius: 12px;
+    padding: 0.85rem 0.9rem;
+    border: 1px solid var(--role-border);
+    background: var(--role-card-bg);
+    box-shadow: var(--role-shadow);
 }
 
 .metric-card p {
     margin: 0;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 700;
-    color: var(--muted);
+    text-transform: uppercase;
+    color: var(--role-muted);
+    letter-spacing: 0.03em;
 }
 
 .metric-card h3 {
-    margin: 0.2rem 0 0;
-    font-size: 1.38rem;
-    font-family: "Space Grotesk", "Manrope", sans-serif;
+    margin: 0.28rem 0 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1b2b3b;
 }
 
 .panel {
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.82);
-    background: var(--surface);
-    box-shadow: 0 10px 24px rgba(19, 43, 82, 0.12);
+    border-radius: 14px;
+    border: 1px solid var(--role-border);
+    background: var(--role-card-bg);
+    box-shadow: var(--role-shadow);
     padding: 1rem;
 }
 
 .panel h4 {
     margin: 0 0 0.8rem;
     font-size: 1rem;
-    font-weight: 800;
+    font-weight: 700;
+    color: #1b2b3b;
+    font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
 
 .table th {
     text-transform: uppercase;
-    letter-spacing: 0.35px;
-    font-size: 0.78rem;
-    color: #435378;
+    letter-spacing: 0.04em;
+    font-size: 0.8rem;
+    color: #3f5772;
+}
+
+.table td {
+    font-size: 0.9rem;
 }
 
 @media (max-width: 1200px) {
@@ -124,3 +136,4 @@ body.role-shell {
         margin-top: 0.6rem;
     }
 }
+
