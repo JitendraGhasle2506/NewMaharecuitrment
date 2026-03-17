@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.maharecruitment.gov.in.master.dto.AgencyMasterResponse;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
 import com.maharecruitment.gov.in.master.entity.AgencyStatus;
 
@@ -52,4 +53,11 @@ public interface AgencyMasterRepository extends JpaRepository<AgencyMaster, Long
               and (:excludeId is null or a.agencyId <> :excludeId)
             """)
     boolean existsByGstNumberExcludingId(@Param("gstNumber") String gstNumber, @Param("excludeId") Long excludeId);
+    @Query("""
+    	       SELECT a
+    	       FROM AgencyMaster a
+    	       LEFT JOIN FETCH a.escalationMatrixEntries e
+    	       WHERE a.officialEmail = :email
+    	       """)
+    	AgencyMaster getAgencyProfile(@Param("email") String email);
 }

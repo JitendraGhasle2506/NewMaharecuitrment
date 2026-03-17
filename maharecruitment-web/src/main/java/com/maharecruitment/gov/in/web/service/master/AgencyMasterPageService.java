@@ -18,4 +18,6 @@ public interface AgencyMasterPageService {
     AgencyMasterResponse update(Long agencyId, AgencyMasterForm form);
 
     AgencyMasterResponse updateStatus(Long agencyId, AgencyStatus status);
+
+	AgencyMasterResponse getAgencyProfile(String name);
 }
