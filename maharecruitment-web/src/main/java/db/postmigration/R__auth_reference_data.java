@@ -146,7 +146,8 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 "/department/manpower/list", "fa fa-users-gear");
         upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Advance Payments", "/department/payment/list",
                 "fa fa-credit-card");
-
+        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "External Employee Attendance Register", "/department/extAttendance",
+                "fa fa-id-card");
         Long reviewMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Verification & Approval", null,
                 "fa fa-check-to-slot", 0,
                 roleIds.get("ROLE_HR"), roleIds.get("ROLE_AUDITOR"));
