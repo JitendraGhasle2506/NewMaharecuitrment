@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.master.service.impl;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -93,4 +95,10 @@ public class DepartmentMstServiceImpl implements DepartmentMstService {
     private String normalizeName(String value) {
         return value == null ? null : value.trim();
     }
+
+	@Override
+	public List<DepartmentMst> getAllDepartment() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
