@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>External Employee Attendance Report</title>
+	<th:block th:replace="~{header/header :: var-files-header}"></th:block>
+	<style>
+		.attendance-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 20px;
+			font-size: 11px;
+		}
+
+		.attendance-table th,
+		.attendance-table td {
+			border: 1px solid #ddd;
+			padding: 4px 5px;
+			text-align: center;
+			min-width: 30px;
+		}
+
+		.attendance-table th {
+			background-color: #f2f2f2;
+		}
+
+		.status-present {
+			color: #00b050;
+			font-weight: bold;
+		}
+
+		.status-absent {
+			color: rgb(255, 0, 0);
+			font-weight: bold;
+		}
+
+		.status-holiday {
+			color: #0b5ed7;
+			font-weight: bold;
+		}
+
+		.status-weekoff {
+			color: #444444;
+			font-weight: bold;
+		}
+
+		.status-leave {
+			color: #556b2f;
+			font-weight: bold;
+		}
+
+		.status-tour {
+			color: #9c27b0;
+			font-weight: bold;
+		}
+
+		.filter-section {
+			margin-bottom: 20px;
+			padding: 15px;
+			background-color: #f9f9f9;
+			border-radius: 5px;
+		}
+
+		.attendance-legend {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 40px;
+			margin: 25px 0;
+			padding: 10px;
+			justify-content: center;
+		}
+
+		.legend-item {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			font-size: 14px;
+			font-weight: 500;
+			color: #333;
+		}
+
+		.legend-circle {
+			width: 24px;
+			height: 24px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: #fff;
+			font-weight: 800;
+			font-size: 12px;
+		}
+
+		.circle-present { background-color: #00b050; }
+		.circle-absent { background-color: rgb(255, 0, 0); }
+		.circle-holiday { background-color: #2196f3; }
+		.circle-leave { background-color: #556b2f; }
+		.circle-tour { background-color: #9c27b0; }
+		.circle-weekoff { background-color: #e0e0e0; color: #444; }
+		.circle-future { background-color: #eeeeee; color: #bdbdbd; }
+
+		.search-container {
+			display: flex;
+			align-items: center;
+			background: #fff;
+			border: 1px solid #ced4da;
+			border-radius: 4px;
+			padding: 2px 10px;
+			margin-left: auto;
+			width: 250px;
+			margin-bottom: 15px;
+		}
+
+		.search-container i {
+			color: #6c757d;
+			margin-right: 8px;
+		}
+
+		.search-container input {
+			border: none;
+			outline: none;
+			width: 100%;
+			padding: 5px 0;
+			font-size: 13px;
+		}
+		
+		#btnExport {
+			margin-bottom: 15px;
+		}
+	</style>
+</head>
+
+<body>
+	<th:block
+		th:replace="~{header/header :: var-sidebar-header('External Employee Attendance Report', 'Attendance', ~{::section})}">
+		<section>
+
+			<div class="page-main-content">
+				<ul class="breadcrumb breadcrumb-style ">
+					<li class="breadcrumb-item">
+						<h4 class="page-title">Attendance</h4>
+					</li>
+					<li class="breadcrumb-item active">External Employee Report</li>
+				</ul>
+				<div class="page-contents">
+					<div class="card">
+						<div class="header">
+							<h2>External Employee Attendance Report</h2>
+						</div>
+						<div class="body">
+							<div class="filter-section">
+								<form th:action="@{/hr/attendanceReport}" method="post" class="row">
+									<div class="col-md-2">
+										<label>Department:</label>
+										<select name="regDeptId" id="regDeptId" class="form-control" onchange="fetchProjects(this.value)">
+											<option value="">All Departments</option>
+											<option th:each="dept : ${registrationDepartments}" th:value="${dept.departmentRegistrationId}"
+												th:text="${dept.departmentName}"
+												th:selected="${dept.departmentRegistrationId == selectedRegDept}"></option>
+										</select>
+									</div>
+									<div class="col-md-2">
+										<label>Project:</label>
+										<select name="projectId" id="projectId" class="form-control">
+											<option value="">All Projects</option>
+											<option th:each="proj : ${projectList}" th:value="${proj.departmentProjectApplicationId}"
+												th:text="${proj.projectName}"
+												th:selected="${proj.departmentProjectApplicationId == selectedProject}"></option>
+										</select>
+									</div>
+									<div class="col-md-2">
+										<label>Agency:</label>
+										<select name="agencyId" class="form-control">
+											<option value="">All Agencies</option>
+											<option th:each="agency : ${agencyList}" th:value="${agency.agencyId}"
+												th:text="${agency.agencyName}"
+												th:selected="${agency.agencyId == selectedAgency}"></option>
+										</select>
+									</div>
+									<div class="col-md-2">
+										<label>Month:</label>
+										<select name="month" class="form-control" required>
+											<option th:each="entry : ${monthNames}" th:value="${entry.key}"
+												th:text="${entry.value}" th:selected="${entry.key == selectedMonth}">
+											</option>
+										</select>
+									</div>
+									<div class="col-md-2">
+										<label>Year:</label>
+										<select name="year" class="form-control" required>
+											<option th:each="y : ${#numbers.sequence(2020, 2030)}" th:value="${y}"
+												th:text="${y}" th:selected="${y == selectedYear}"></option>
+										</select>
+									</div>
+									<div class="col-md-2" style="margin-top: 25px;">
+										<button type="submit" class="btn btn-primary">Fetch</button>
+									</div>
+								</form>
+							</div>
+
+							<div th:if="${reportData != null and !reportData.isEmpty()}">
+								<div class="attendance-legend">
+									<div class="legend-item">
+										<div class="legend-circle circle-present">P</div>
+										<span>Present</span>
+									</div>
+									<div class="legend-item">
+										<div class="legend-circle circle-absent">A</div>
+										<span>Absent</span>
+									</div>
+									<div class="legend-item">
+										<div class="legend-circle circle-weekoff">W</div>
+										<span>Week OFF</span>
+									</div>
+									<div class="legend-item">
+										<div class="legend-circle circle-holiday">H</div>
+										<span>Holiday</span>
+									</div>
+									<div class="legend-item">
+										<div class="legend-circle circle-leave">L</div>
+										<span>Leave</span>
+									</div>
+									<div class="legend-item">
+										<div class="legend-circle circle-tour">T</div>
+										<span>Tour</span>
+									</div>
+								</div>
+
+								<div class="d-flex justify-content-between align-items-center">
+									<button type="button" id="btnExport" class="btn btn-success" onclick="exportTableToExcel('attendanceTable', 'Attendance_Report')">
+										<i class="fas fa-file-excel"></i> Export to Excel
+									</button>
+									
+									<div class="search-container">
+										<i class="fas fa-search"></i>
+										<input type="text" id="employeeSearch" placeholder="Search Name or Designation...">
+									</div>
+								</div>
+
+								<div style="overflow-x: auto;">
+									<table class="attendance-table" id="attendanceTable">
+										<thead>
+											<tr>
+												<th>Request ID</th>
+												<th>Employee Name</th>
+												<th>Designation</th>
+												<th>Department</th>
+												<th>Sub-Department</th>
+												<th>Project</th>
+												<th>Level</th>
+												<th>Agency Name</th>
+												<th th:each="day : ${#numbers.sequence(1, daysInMonth)}"
+													th:text="${day < 10 ? '0' + day : day}"></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="emp : ${reportData}">
+												<td th:text="${emp.requestId}"></td>
+												<td style="text-align: left; white-space: nowrap;" th:text="${emp.employeeName}"></td>
+												<td th:text="${emp.designation}"></td>
+												<td th:text="${emp.department}"></td>
+												<td th:text="${emp.subDepartment}"></td>
+												<td th:text="${emp.projectName}"></td>
+												<td th:text="${emp.level}"></td>
+												<td th:text="${emp.agencyName}"></td>
+												
+												<td th:each="day : ${#numbers.sequence(1, daysInMonth)}"
+													th:with="status=${emp.dailyStatus != null ? emp.dailyStatus.get(day) : ''}"
+													th:class="${status == 'P' ? 'status-present' : 
+															   (status == 'A' ? 'status-absent' : 
+															   (status == 'W' ? 'status-weekoff' : 
+															   (status == 'L' ? 'status-leave' : 
+															   (status == 'T' ? 'status-tour' : 
+															   (status == 'H' ? 'status-holiday' : '')))))}">
+													<span th:text="${status}"></span>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+							<div th:if="${reportData != null and reportData.isEmpty()}" class="alert alert-info"
+								style="margin-top: 20px;">
+								No attendance records found for the selected filters.
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+			<script th:inline="javascript">
+				$(document).ready(function () {
+					// Client-side search filter
+					$('#employeeSearch').on('keyup', function () {
+						var value = $(this).val().toLowerCase();
+						$('#attendanceTable tbody tr').filter(function () {
+							var name = $(this).find('td:nth-child(2)').text().toLowerCase();
+							var designation = $(this).find('td:nth-child(3)').text().toLowerCase();
+							$(this).toggle(name.indexOf(value) > -1 || designation.indexOf(value) > -1);
+						});
+					});
+				});
+
+				function fetchProjects(deptRegId) {
+					var projectSelect = $('#projectId');
+					projectSelect.empty();
+					projectSelect.append('<option value="">All Projects</option>');
+					
+					if (deptRegId) {
+						$.ajax({
+							url: /*[[@{/hr/getProjects}]]*/ '/hr/getProjects',
+							type: 'GET',
+							data: { deptRegId: deptRegId },
+							success: function (data) {
+								if (data && data.length > 0) {
+									$.each(data, function (index, project) {
+										projectSelect.append('<option value="' + project.departmentProjectApplicationId + '">' + project.projectName + '</option>');
+									});
+								}
+							},
+							error: function () {
+								console.error('Error fetching projects');
+							}
+						});
+					}
+				}
+				
+				function exportTableToExcel(tableID, filename = ''){
+					var downloadLink;
+					var dataType = 'application/vnd.ms-excel';
+					var tableSelect = document.getElementById(tableID);
+					var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
+					
+					filename = filename?filename+'.xls':'excel_data.xls';
+					downloadLink = document.createElement("a");
+					document.body.appendChild(downloadLink);
+					
+					if(navigator.msSaveOrOpenBlob){
+						var blob = new Blob(['\ufeff', tableHTML], {
+							type: dataType
+						});
+						navigator.msSaveOrOpenBlob( blob, filename);
+					}else{
+						downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
+						downloadLink.download = filename;
+						downloadLink.click();
+					}
+				}
+			</script>
+		</section>
+	</th:block>
+</body>
+
+</html>
