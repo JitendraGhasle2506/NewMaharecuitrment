@@ -146,8 +146,8 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 "/department/manpower/list", "fa fa-users-gear");
         upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Advance Payments", "/department/payment/list",
                 "fa fa-credit-card");
-        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "External Employee Attendance Register", "/department/extAttendance",
-                "fa fa-id-card");
+        upsertSubMenu(jdbcTemplate, subMenuTable, departmentMenuId, "Attendence Reports", "/department/extAttendance",
+                "fa fa-calendar-check");
         Long reviewMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Verification & Approval", null,
                 "fa fa-check-to-slot", 0,
                 roleIds.get("ROLE_HR"), roleIds.get("ROLE_AUDITOR"));
@@ -177,6 +177,9 @@ public class R__auth_reference_data extends BaseJavaMigration {
         upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Project Name",
                 "/department/candidate-shortlisting/projects",
                 "fa fa-list-check", roleIds.get("ROLE_DEPARTMENT"));
+        upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Attendence Reports",
+                "/department/extAttendance",
+                "fa fa-calendar-check", roleIds.get("ROLE_DEPARTMENT"));
         upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Pending Onboarding", "/hr/onboarding",
                 "fa fa-user-check",
                 roleIds.get("ROLE_HR"));
@@ -290,6 +293,14 @@ public class R__auth_reference_data extends BaseJavaMigration {
                         + " where menu_id = ? and upper(sub_menu_name_english) = upper(?) fetch first 1 row only",
                 menuId,
                 name);
+        if (subMenuId == null && url != null) {
+            subMenuId = queryForLong(
+                    jdbcTemplate,
+                    "select sub_menu_id from " + subMenuTableRef
+                            + " where menu_id = ? and upper(url) = upper(?) fetch first 1 row only",
+                    menuId,
+                    url);
+        }
 
         if (subMenuId == null) {
             jdbcTemplate.update(

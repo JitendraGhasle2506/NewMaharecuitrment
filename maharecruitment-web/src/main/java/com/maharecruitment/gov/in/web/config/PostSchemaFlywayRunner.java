@@ -22,6 +22,7 @@ import db.postmigration.V5__auth_agency_resigned_menu_backfill;
 import db.postmigration.V6__auth_agency_resignation_menu_fix;
 import db.postmigration.V7__recruitment_pre_onboarding_hr_columns_fix;
 import db.postmigration.V8__auth_agency_profile_menu_backfill;
+import db.postmigration.V10__auth_department_attendance_reports_menu_backfill;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -42,6 +43,7 @@ public class PostSchemaFlywayRunner {
                 .dataSource(dataSource)
                 .baselineOnMigrate(true)
                 .table("flyway_post_schema_history")
+                .ignoreMigrationPatterns("*:missing")
                 .javaMigrations(
                         new R__department_and_recruitment_schema(),
                         new R__master_reference_data(),
@@ -53,7 +55,8 @@ public class PostSchemaFlywayRunner {
                         new V5__auth_agency_resigned_menu_backfill(),
                         new V6__auth_agency_resignation_menu_fix(),
                         new V7__recruitment_pre_onboarding_hr_columns_fix(),
-                        new V8__auth_agency_profile_menu_backfill())
+                        new V8__auth_agency_profile_menu_backfill(),
+                        new V10__auth_department_attendance_reports_menu_backfill())
                 .load()
                 .migrate();
         LOGGER.info("Post-schema Flyway migrations completed");
