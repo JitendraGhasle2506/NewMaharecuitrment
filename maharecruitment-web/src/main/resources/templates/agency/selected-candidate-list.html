@@ -126,6 +126,17 @@
                                                 th:href="@{/agency/onboarding}">
                                                 Onboarding Ready
                                             </a>
+                                            <form method="post"
+                                                th:if="${candidate.withdrawAllowed}"
+                                                th:action="@{/agency/selected-candidates/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/withdraw(
+                                                    recruitmentNotificationId=${candidate.recruitmentNotificationId},
+                                                    recruitmentInterviewDetailId=${candidate.recruitmentInterviewDetailId})}">
+                                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                    onclick="return confirm('Withdraw and delete this candidate application?')">
+                                                    Withdraw
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>

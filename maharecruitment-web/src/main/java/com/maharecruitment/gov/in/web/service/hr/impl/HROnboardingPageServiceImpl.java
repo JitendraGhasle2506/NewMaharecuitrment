@@ -182,9 +182,10 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 interview.getDesignationVacancy().getRecruitmentDesignationVacancyId(),
                 notification.getRecruitmentNotificationId()).orElseThrow(
                         () -> new RecruitmentNotificationException("Designation vacancy mapping not found."));
-        long filledCount = preOnboardingRepository
-                .countByInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndOnboardedAtIsNotNull(
-                        interview.getDesignationVacancy().getRecruitmentDesignationVacancyId());
+        long filledCount = employeeRepository
+                .countByPreOnboardingInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndStatusIgnoreCase(
+                        interview.getDesignationVacancy().getRecruitmentDesignationVacancyId(),
+                        "ACTIVE");
         long vacancyCount = vacancy.getNumberOfVacancy() == null || vacancy.getNumberOfVacancy() < 0
                 ? 0L
                 : vacancy.getNumberOfVacancy();
@@ -260,11 +261,20 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
 
     @Override
     public Page<EmployeeListView> getOnboardedEmployees(String recruitmentType, Pageable pageable) {
+        return getEmployeesByStatus(recruitmentType, "ACTIVE", pageable);
+    }
+
+    @Override
+    public Page<EmployeeListView> getEmployeesByStatus(String recruitmentType, String status, Pageable pageable) {
         Page<EmployeeEntity> employees;
+        String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "ACTIVE";
         if (StringUtils.hasText(recruitmentType) && !"ALL".equalsIgnoreCase(recruitmentType)) {
-            employees = employeeRepository.findByRecruitmentType(recruitmentType.toUpperCase(), pageable);
+            employees = employeeRepository.findByRecruitmentTypeAndStatus(
+                    recruitmentType.toUpperCase(),
+                    normalizedStatus,
+                    pageable);
         } else {
-            employees = employeeRepository.findAll(pageable);
+            employees = employeeRepository.findByStatus(normalizedStatus, pageable);
         }
 
         List<EmployeeListView> dtos = employees.getContent().stream()
@@ -272,6 +282,40 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 .toList();
         
         return new PageImpl<>(dtos, pageable, employees.getTotalElements());
+    }
+
+    @Override
+    @Transactional
+    public void markEmployeeResigned(Long employeeId) {
+        if (employeeId == null || employeeId < 1) {
+            throw new RecruitmentNotificationException("Employee id is required.");
+        }
+
+        EmployeeEntity employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RecruitmentNotificationException("Employee not found."));
+        if ("RESIGNED".equalsIgnoreCase(employee.getStatus())) {
+            throw new RecruitmentNotificationException("Employee is already marked as resigned.");
+        }
+        if (employee.getPreOnboarding() == null
+                || employee.getPreOnboarding().getInterviewDetail() == null
+                || employee.getPreOnboarding().getInterviewDetail().getDesignationVacancy() == null
+                || employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() == null) {
+            throw new RecruitmentNotificationException("Employee vacancy mapping is missing.");
+        }
+
+        var interview = employee.getPreOnboarding().getInterviewDetail();
+        var vacancy = designationVacancyRepository.findByIdForFinalDecisionUpdate(
+                interview.getDesignationVacancy().getRecruitmentDesignationVacancyId(),
+                interview.getRecruitmentNotification().getRecruitmentNotificationId()).orElseThrow(
+                        () -> new RecruitmentNotificationException("Employee vacancy mapping not found."));
+        long filledCount = vacancy.getFillPost() == null || vacancy.getFillPost() < 0 ? 0L : vacancy.getFillPost();
+        if (filledCount > 0) {
+            vacancy.setFillPost(filledCount - 1);
+            designationVacancyRepository.save(vacancy);
+        }
+
+        employee.setStatus("RESIGNED");
+        employeeRepository.save(employee);
     }
 
     private EmployeeListView toEmployeeListView(EmployeeEntity entity) {
