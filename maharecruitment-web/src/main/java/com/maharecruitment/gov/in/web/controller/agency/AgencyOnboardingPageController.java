@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
@@ -110,11 +111,12 @@ public class AgencyOnboardingPageController {
     @PostMapping("/{employeeId}/resign")
     public String resignEmployee(
             @PathVariable Long employeeId,
+            @RequestParam("resignationDate") java.time.LocalDate resignationDate,
             Principal principal,
             RedirectAttributes redirectAttributes) {
         String actorEmail = resolveActorEmail(principal);
         try {
-            onboardingPageService.markEmployeeResigned(actorEmail, employeeId);
+            onboardingPageService.markEmployeeResigned(actorEmail, employeeId, resignationDate);
             redirectAttributes.addFlashAttribute("successMessage", "Employee marked as resigned successfully.");
         } catch (RecruitmentNotificationException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
