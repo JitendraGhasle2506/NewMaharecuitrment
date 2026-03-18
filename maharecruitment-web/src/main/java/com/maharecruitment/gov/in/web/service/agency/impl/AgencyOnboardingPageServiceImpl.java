@@ -3,7 +3,6 @@ package com.maharecruitment.gov.in.web.service.agency.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
@@ -40,8 +39,8 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDet
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingEmploymentForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
-import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardedEmployeeView;
 import com.maharecruitment.gov.in.web.service.agency.AgencyOnboardingPageService;
+import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardedEmployeeView;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 
@@ -90,13 +89,15 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     @Override
     public AgencyPreOnboardingForm loadPreOnboardingForm(String actorEmail, Long recruitmentInterviewDetailId) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        RecruitmentInterviewDetailEntity candidate = loadSelectedCandidate(recruitmentInterviewDetailId, context.agencyId());
+        RecruitmentInterviewDetailEntity candidate = loadSelectedCandidate(recruitmentInterviewDetailId,
+                context.agencyId());
         AgencyCandidatePreOnboardingEntity existing = preOnboardingRepository
                 .findByInterviewDetailIdAndAgencyIdForForm(recruitmentInterviewDetailId, context.agencyId())
                 .orElse(null);
 
         AgencyPreOnboardingForm form = new AgencyPreOnboardingForm();
-        DepartmentInfo departmentInfo = resolveDepartmentInfo(candidate.getRecruitmentNotification().getDepartmentRegistrationId());
+        DepartmentInfo departmentInfo = resolveDepartmentInfo(
+                candidate.getRecruitmentNotification().getDepartmentRegistrationId());
         BigDecimal minExperienceYears = resolveMinExperienceYears(
                 candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null);
 
@@ -118,8 +119,10 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 && candidate.getDesignationVacancy().getDesignationMst() != null
                         ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
                         : DEFAULT_VALUE);
-        form.setLevelCode(candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null);
-        form.setAgencyName(candidate.getAgency() != null ? candidate.getAgency().getAgencyName() : context.agencyName());
+        form.setLevelCode(
+                candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null);
+        form.setAgencyName(
+                candidate.getAgency() != null ? candidate.getAgency().getAgencyName() : context.agencyName());
         form.setMinExperienceYears(minExperienceYears);
 
         if (existing != null) {
@@ -146,7 +149,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         }
 
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        RecruitmentInterviewDetailEntity candidate = loadSelectedCandidate(recruitmentInterviewDetailId, context.agencyId());
+        RecruitmentInterviewDetailEntity candidate = loadSelectedCandidate(recruitmentInterviewDetailId,
+                context.agencyId());
         AgencyCandidatePreOnboardingEntity existing = preOnboardingRepository
                 .findByInterviewDetailIdAndAgencyIdForForm(recruitmentInterviewDetailId, context.agencyId())
                 .orElse(null);
@@ -275,8 +279,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "ACTIVE";
         return employeeRepository.findByAgencyAgencyIdAndStatusOrderByOnboardingDateDescEmployeeIdDesc(
-                        context.agencyId(),
-                        normalizedStatus)
+                context.agencyId(),
+                normalizedStatus)
                 .stream()
                 .map(this::toOnboardedEmployeeView)
                 .toList();
@@ -300,8 +304,9 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 .orElseThrow(() -> new RecruitmentNotificationException("Employee not found for this agency."));
 
         if (employee.getJoiningDate() != null && resignationDate.isBefore(employee.getJoiningDate())) {
-            throw new RecruitmentNotificationException("Resignation date cannot be before joining date (" + 
-                employee.getJoiningDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy")) + ").");
+            throw new RecruitmentNotificationException("Resignation date cannot be before joining date (" +
+                    employee.getJoiningDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy"))
+                    + ").");
         }
 
         if ("RESIGNED".equalsIgnoreCase(employee.getStatus())) {
@@ -390,7 +395,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                         "Selected candidate not found or not available for pre-onboarding."));
     }
 
-    private List<NormalizedEmployment> normalizeEmploymentRows(List<AgencyPreOnboardingEmploymentForm> employmentForms) {
+    private List<NormalizedEmployment> normalizeEmploymentRows(
+            List<AgencyPreOnboardingEmploymentForm> employmentForms) {
         List<NormalizedEmployment> normalizedRows = new ArrayList<>();
         if (employmentForms == null || employmentForms.isEmpty()) {
             return normalizedRows;
@@ -413,13 +419,16 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
 
             int rowNumber = index + 1;
             if (!StringUtils.hasText(row.getCompanyName())) {
-                throw new RecruitmentNotificationException("Company name is required for employment row " + rowNumber + ".");
+                throw new RecruitmentNotificationException(
+                        "Company name is required for employment row " + rowNumber + ".");
             }
             if (row.getStartDate() == null) {
-                throw new RecruitmentNotificationException("Start date is required for employment row " + rowNumber + ".");
+                throw new RecruitmentNotificationException(
+                        "Start date is required for employment row " + rowNumber + ".");
             }
             if (row.getEndDate() == null) {
-                throw new RecruitmentNotificationException("End date is required for employment row " + rowNumber + ".");
+                throw new RecruitmentNotificationException(
+                        "End date is required for employment row " + rowNumber + ".");
             }
             if (row.getEndDate().isBefore(row.getStartDate())) {
                 throw new RecruitmentNotificationException(
@@ -659,7 +668,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         if (employee.getPreOnboarding() != null
                 && employee.getPreOnboarding().getInterviewDetail() != null
                 && employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() != null
-                && employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst() != null) {
+                && employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification()
+                        .getProjectMst() != null) {
             projectName = employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification()
                     .getProjectMst().getProjectName();
         }
@@ -713,7 +723,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         String subDepartmentName = registration.getSubDeptId() == null
                 ? DEFAULT_VALUE
                 : subDepartmentRepository.findById(registration.getSubDeptId())
-                        .map(value -> StringUtils.hasText(value.getSubDeptName()) ? value.getSubDeptName() : DEFAULT_VALUE)
+                        .map(value -> StringUtils.hasText(value.getSubDeptName()) ? value.getSubDeptName()
+                                : DEFAULT_VALUE)
                         .orElse(DEFAULT_VALUE);
 
         return new DepartmentInfo(departmentName, subDepartmentName);
