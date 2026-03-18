@@ -284,14 +284,26 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
 
     @Override
     @Transactional
-    public void markEmployeeResigned(String actorEmail, Long employeeId) {
+    public void markEmployeeResigned(String actorEmail, Long employeeId, LocalDate resignationDate) {
         if (employeeId == null || employeeId < 1) {
             throw new RecruitmentNotificationException("Employee id is required.");
+        }
+        if (resignationDate == null) {
+            throw new RecruitmentNotificationException("Resignation date is required.");
+        }
+        if (resignationDate.isAfter(LocalDate.now())) {
+            throw new RecruitmentNotificationException("Resignation date cannot be in the future.");
         }
 
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         EmployeeEntity employee = employeeRepository.findByEmployeeIdAndAgencyAgencyId(employeeId, context.agencyId())
                 .orElseThrow(() -> new RecruitmentNotificationException("Employee not found for this agency."));
+
+        if (employee.getJoiningDate() != null && resignationDate.isBefore(employee.getJoiningDate())) {
+            throw new RecruitmentNotificationException("Resignation date cannot be before joining date (" + 
+                employee.getJoiningDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy")) + ").");
+        }
+
         if ("RESIGNED".equalsIgnoreCase(employee.getStatus())) {
             throw new RecruitmentNotificationException("Employee is already marked as resigned.");
         }
@@ -314,7 +326,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         }
 
         employee.setStatus("RESIGNED");
-        employee.setResignationDate(LocalDate.now());
+        employee.setResignationDate(resignationDate);
         employeeRepository.save(employee);
     }
 

@@ -16,7 +16,7 @@ public interface AgencyOnboardingPageService {
 
     List<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status);
 
-    void markEmployeeResigned(String actorEmail, Long employeeId);
+    void markEmployeeResigned(String actorEmail, Long employeeId, java.time.LocalDate resignationDate);
 
     List<AgencyOnboardingCandidateView> getOnboardingReadyCandidates(String actorEmail);
 }
