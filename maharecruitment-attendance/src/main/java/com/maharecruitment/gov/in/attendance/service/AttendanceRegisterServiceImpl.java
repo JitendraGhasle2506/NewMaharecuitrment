@@ -39,8 +39,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	@Autowired
 	private HolidayRepository holidayRepository;
 	@Autowired
-	
+
 	private AttendanceLockRepository attendanceLockRepository;
+
 	@Override
 	public AttendanceRegisterDTO getEmployeeDetails(Long id,
 			LocalDate startDate,
@@ -465,7 +466,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	}
 
 	@Override
-	public List<AttendanceReportDTO> getExternalAttendanceReportData(Long regId, Long agencyId, Integer month, Integer year,
+	public List<AttendanceReportDTO> getExternalAttendanceReportData(Long regId, Long agencyId, Integer month,
+			Integer year,
 			Long projectId) {
 
 		LocalDate startDate = LocalDate.of(year, month, 1);
@@ -475,8 +477,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				.map(h -> h.getHolidayDate().getDayOfMonth())
 				.collect(Collectors.toSet());
 
-		List<com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection> projections = attendanceRegisterRepo.getExternalAttendanceReportNative(regId,
-				agencyId, projectId, month, year);
+		List<com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection> projections = attendanceRegisterRepo
+				.getExternalAttendanceReportNative(regId,
+						agencyId, projectId, month, year);
 
 		return projections.stream().map(p -> {
 			AttendanceReportDTO dto = new AttendanceReportDTO();
@@ -505,47 +508,78 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		}).collect(Collectors.toList());
 	}
 
-	private String getExternalProjectionDayStatus(com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection p, int day) {
+	private String getExternalProjectionDayStatus(
+			com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection p, int day) {
 		switch (day) {
-			case 1: return p.getD1();
-			case 2: return p.getD2();
-			case 3: return p.getD3();
-			case 4: return p.getD4();
-			case 5: return p.getD5();
-			case 6: return p.getD6();
-			case 7: return p.getD7();
-			case 8: return p.getD8();
-			case 9: return p.getD9();
-			case 10: return p.getD10();
-			case 11: return p.getD11();
-			case 12: return p.getD12();
-			case 13: return p.getD13();
-			case 14: return p.getD14();
-			case 15: return p.getD15();
-			case 16: return p.getD16();
-			case 17: return p.getD17();
-			case 18: return p.getD18();
-			case 19: return p.getD19();
-			case 20: return p.getD20();
-			case 21: return p.getD21();
-			case 22: return p.getD22();
-			case 23: return p.getD23();
-			case 24: return p.getD24();
-			case 25: return p.getD25();
-			case 26: return p.getD26();
-			case 27: return p.getD27();
-			case 28: return p.getD28();
-			case 29: return p.getD29();
-			case 30: return p.getD30();
-			case 31: return p.getD31();
-			default: return null;
+			case 1:
+				return p.getD1();
+			case 2:
+				return p.getD2();
+			case 3:
+				return p.getD3();
+			case 4:
+				return p.getD4();
+			case 5:
+				return p.getD5();
+			case 6:
+				return p.getD6();
+			case 7:
+				return p.getD7();
+			case 8:
+				return p.getD8();
+			case 9:
+				return p.getD9();
+			case 10:
+				return p.getD10();
+			case 11:
+				return p.getD11();
+			case 12:
+				return p.getD12();
+			case 13:
+				return p.getD13();
+			case 14:
+				return p.getD14();
+			case 15:
+				return p.getD15();
+			case 16:
+				return p.getD16();
+			case 17:
+				return p.getD17();
+			case 18:
+				return p.getD18();
+			case 19:
+				return p.getD19();
+			case 20:
+				return p.getD20();
+			case 21:
+				return p.getD21();
+			case 22:
+				return p.getD22();
+			case 23:
+				return p.getD23();
+			case 24:
+				return p.getD24();
+			case 25:
+				return p.getD25();
+			case 26:
+				return p.getD26();
+			case 27:
+				return p.getD27();
+			case 28:
+				return p.getD28();
+			case 29:
+				return p.getD29();
+			case 30:
+				return p.getD30();
+			case 31:
+				return p.getD31();
+			default:
+				return null;
 		}
 	}
 
-
 	@Override
 	public void lockAttendance(Long departmentId, int month, int year) {
-		// TODO Auto-generated method stub
 		com.maharecruitment.gov.in.attendance.entity.AttendanceLockEntity lock = attendanceLockRepository
 				.findByDeptRegIdAndMonthAndYear(departmentId, month, year)
 				.orElse(new com.maharecruitment.gov.in.attendance.entity.AttendanceLockEntity());
@@ -562,7 +596,6 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 	@Override
 	public boolean isAttendanceLocked(Long departmentId, int month, int year) {
-		// TODO Auto-generated method stub
 		Optional<com.maharecruitment.gov.in.attendance.entity.AttendanceLockEntity> lockOpt = attendanceLockRepository
 				.findByDeptRegIdAndMonthAndYear(departmentId, month, year);
 
@@ -575,7 +608,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		LocalDate cutoffDate = LocalDate.of(year, month, 1).plusMonths(1).withDayOfMonth(15);
 
 		if (today.isAfter(cutoffDate)) {
-			// Only lock if data exists in database (as per user request: "data which is not there it will not be locked")
+			// Only lock if data exists in database (as per user request: "data which is not
+			// there it will not be locked")
 			return attendanceRegisterRepo.existsByDeptRegIdAndMonthAndYear(departmentId, month, year);
 		}
 

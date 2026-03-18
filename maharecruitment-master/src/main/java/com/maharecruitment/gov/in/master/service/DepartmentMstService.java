@@ -2,7 +2,6 @@ package com.maharecruitment.gov.in.master.service;
 
 import java.util.List;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -22,5 +21,5 @@ public interface DepartmentMstService {
 
     void delete(Long departmentId);
 
-	public List<DepartmentMst> getAllDepartment();
+    public List<DepartmentMst> getAllDepartment();
 }

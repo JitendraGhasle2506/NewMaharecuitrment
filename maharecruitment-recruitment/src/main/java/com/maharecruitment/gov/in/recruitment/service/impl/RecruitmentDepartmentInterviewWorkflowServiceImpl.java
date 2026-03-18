@@ -27,7 +27,8 @@ import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewA
 
 @Service
 @Transactional(readOnly = true)
-public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements RecruitmentDepartmentInterviewWorkflowService {
+public class RecruitmentDepartmentInterviewWorkflowServiceImpl
+        implements RecruitmentDepartmentInterviewWorkflowService {
 
     private static final Logger log = LoggerFactory.getLogger(RecruitmentDepartmentInterviewWorkflowServiceImpl.class);
 
@@ -55,10 +56,12 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
             Long recruitmentInterviewDetailId) {
         validateIds(departmentRegistrationId, recruitmentNotificationId, recruitmentInterviewDetailId);
 
-        RecruitmentInterviewDetailEntity candidate = interviewDetailRepository.findByIdForDepartmentInterviewWorkflowView(
-                departmentRegistrationId,
-                recruitmentNotificationId,
-                recruitmentInterviewDetailId).orElseThrow(
+        RecruitmentInterviewDetailEntity candidate = interviewDetailRepository
+                .findByIdForDepartmentInterviewWorkflowView(
+                        departmentRegistrationId,
+                        recruitmentNotificationId,
+                        recruitmentInterviewDetailId)
+                .orElseThrow(
                         () -> new RecruitmentNotificationException("Candidate record not found for this department."));
         RecruitmentAssessmentFeedbackEntity assessment = assessmentFeedbackRepository.findByCandidateForDepartment(
                 departmentRegistrationId,
@@ -77,7 +80,8 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
 
         return DepartmentInterviewWorkflowDetailView.builder()
                 .recruitmentNotificationId(recruitmentNotificationId)
-                .departmentProjectApplicationId(candidate.getRecruitmentNotification().getDepartmentProjectApplicationId())
+                .departmentProjectApplicationId(
+                        candidate.getRecruitmentNotification().getDepartmentProjectApplicationId())
                 .recruitmentInterviewDetailId(candidate.getRecruitmentInterviewDetailId())
                 .designationVacancyId(vacancy != null ? vacancy.getRecruitmentDesignationVacancyId() : null)
                 .requestId(candidate.getRecruitmentNotification().getRequestId())
@@ -140,7 +144,8 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
                 recruitmentInterviewDetailId);
 
         if (candidate.getCandidateStatus() != RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY) {
-            throw new RecruitmentNotificationException("Interview change can be requested only after interview scheduling.");
+            throw new RecruitmentNotificationException(
+                    "Interview change can be requested only after interview scheduling.");
         }
         if (candidate.getInterviewDateTime() == null) {
             throw new RecruitmentNotificationException("Interview date/time is not scheduled yet.");
@@ -188,7 +193,8 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
             throw new RecruitmentNotificationException(
                     "Final decision is already taken for this candidate. Assessment cannot be modified.");
         }
-        if (candidate.getDesignationVacancy() == null || candidate.getDesignationVacancy().getDesignationMst() == null) {
+        if (candidate.getDesignationVacancy() == null
+                || candidate.getDesignationVacancy().getDesignationMst() == null) {
             throw new RecruitmentNotificationException("Candidate designation vacancy mapping is missing.");
         }
 
@@ -284,8 +290,6 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
             throw new RecruitmentNotificationException("Candidate vacancy id is missing.");
         }
 
-        String previousDecision = normalizeUpper(candidate.getFinalDecisionStatus());
-
         if (finalDecision == DepartmentCandidateFinalDecision.SELECT) {
             candidate.setFinalDecisionStatus(FINAL_DECISION_SELECTED);
             candidate.setCandidateStatus(RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY);
@@ -330,8 +334,8 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
             return null;
         }
 
-        List<DepartmentInterviewAssessmentView.DepartmentInterviewAssessmentPanelMemberView> panelMemberViews =
-                assessment.getPanelMembers() == null
+        List<DepartmentInterviewAssessmentView.DepartmentInterviewAssessmentPanelMemberView> panelMemberViews = assessment
+                .getPanelMembers() == null
                         ? List.of()
                         : assessment.getPanelMembers().stream()
                                 .map(panelMember -> DepartmentInterviewAssessmentView.DepartmentInterviewAssessmentPanelMemberView
@@ -426,7 +430,8 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl implements Recrui
         }
     }
 
-    private void validateIds(Long departmentRegistrationId, Long recruitmentNotificationId, Long recruitmentInterviewDetailId) {
+    private void validateIds(Long departmentRegistrationId, Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId) {
         requirePositiveId(departmentRegistrationId, "Department registration id is required.");
         requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
         requirePositiveId(recruitmentInterviewDetailId, "Candidate id is required.");

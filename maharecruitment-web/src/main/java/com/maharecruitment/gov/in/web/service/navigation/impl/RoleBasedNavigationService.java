@@ -204,7 +204,7 @@ public class RoleBasedNavigationService implements NavigationService {
                                                 "/department/manpower/apply"),
                                 new SidebarItemView("Attendence Reports", "fa fa-calendar-check",
                                                 "/department/extAttendance"),
-                                new SidebarItemView("Project Name", "fa fa-list-check",
+                                new SidebarItemView("Candidate Shortlisting", "fa fa-list-check",
                                                 "/department/candidate-shortlisting/projects")));
 
                 navItems.put("ROLE_EMPLOYEE", List.of(

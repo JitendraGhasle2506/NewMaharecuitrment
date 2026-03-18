@@ -183,7 +183,7 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Department Audit Request",
                                 "/auditor/department-requests",
                                 "fa fa-magnifying-glass-chart", roleIds.get("ROLE_AUDITOR"));
-                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Project Name",
+                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Candidate Shortlisting",
                                 "/department/candidate-shortlisting/projects",
                                 "fa fa-list-check", roleIds.get("ROLE_DEPARTMENT"));
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Attendence Reports",

@@ -1,97 +1,288 @@
+:root {
+    --bg-main: #f4f7fb;
+    --card-surface: #ffffff;
+    --text-primary: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+
+    --primary-color: #4f46e5;
+    --primary-color-soft: rgba(79, 70, 229, 0.1);
+    
+    --indigo: #6366f1;
+    --indigo-soft: rgba(99, 102, 241, 0.12);
+    
+    --emerald: #10b981;
+    --emerald-soft: rgba(16, 185, 129, 0.12);
+    
+    --amber: #f59e0b;
+    --amber-soft: rgba(245, 158, 11, 0.12);
+    
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.03);
+    
+    --glass-bg: rgba(255, 255, 255, 0.85);
+}
+
 .department-shell {
-    font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-    color: #1b2b3b;
+    background-color: var(--bg-main);
+    font-family: 'Inter', "Public Sans", "Segoe UI", Roboto, sans-serif;
+    color: var(--text-primary);
 }
 
-.department-shell .department-hero {
-    align-items: center;
-    background: linear-gradient(135deg, #ffffff 0%, #eef3f7 100%);
-    border: 1px solid #d4dee8;
-    border-radius: 12px;
+.dashboard-wrapper {
+    padding: 1.5rem 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Header styling */
+.dashboard-title-group {
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 1.2rem;
-    padding: 1.1rem 1.2rem;
+    align-items: center;
+    gap: 1.25rem;
 }
 
-.department-shell .department-hero h1 {
-    font-size: 1.45rem;
-    font-weight: 700;
-    margin: 0 0 0.35rem;
-    color: #1b2b3b;
+.icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.header-icon {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #312e81 100%);
+    color: white;
+    font-size: 1.35rem;
+    box-shadow: var(--shadow-md);
+}
+
+.dashboard-title {
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    font-size: 1.7rem;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
 
-.department-shell .department-hero p {
-    color: #5f7287;
-    font-size: 0.94rem;
-    margin: 0;
+/* Base card styling */
+.premium-card {
+    background: var(--card-surface);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
 
-.department-shell .metrics-grid {
-    display: grid;
-    gap: 0.8rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    margin-bottom: 1.2rem;
+.premium-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+    border-color: rgba(79, 70, 229, 0.25);
 }
 
-.department-shell .metric-card {
-    background: #ffffff;
-    border: 1px solid #d4dee8;
-    border-radius: 10px;
-    padding: 0.9rem 1rem;
-    box-shadow: 0 8px 18px rgba(17, 39, 67, 0.08);
+/* Metric Cards */
+.metric-card {
+    padding: 1.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
 }
 
-.department-shell .metric-card p {
-    color: #5f7287;
-    font-size: 0.8rem;
+.metric-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
+
+.premium-card:hover .metric-icon {
+    transform: scale(1.08);
+}
+
+.bg-indigo-soft { background-color: var(--indigo-soft); }
+.text-indigo { color: var(--indigo); border-color: var(--indigo-soft); }
+
+.bg-emerald-soft { background-color: var(--emerald-soft); }
+.text-emerald { color: var(--emerald); border-color: var(--emerald-soft); }
+
+.bg-amber-soft { background-color: var(--amber-soft); }
+.text-amber { color: var(--amber); border-color: var(--amber-soft); }
+
+.metric-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-label {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.85rem;
     font-weight: 700;
-    letter-spacing: 0.03em;
-    margin: 0 0 0.35rem;
+    color: var(--text-muted);
     text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.department-shell .metric-card h3 {
-    color: #1b2b3b;
-    font-size: 1.34rem;
-    font-weight: 700;
+.metric-value {
     margin: 0;
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.1;
 }
 
-.department-shell .panel {
-    background: #ffffff;
-    border: 1px solid #d4dee8;
-    border-radius: 12px;
-    padding: 1rem;
-    box-shadow: 0 8px 18px rgba(17, 39, 67, 0.08);
-}
-
-.department-shell .panel-header {
+/* Badges */
+.custom-badge {
+    padding: 0.4rem 0.85rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-flex;
     align-items: center;
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.8rem;
+    letter-spacing: 0.02em;
+    border-width: 1px;
+    border-style: solid;
+    border-color: transparent;
 }
 
-.department-shell .panel-header h4 {
-    color: #1b2b3b;
+.badge-warning {
+    background-color: var(--amber-soft);
+    color: #b45309;
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.badge-success {
+    background-color: var(--emerald-soft);
+    color: #047857;
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.badge-secondary {
+    background-color: #f1f5f9;
+    color: var(--text-muted);
+    border-color: #e2e8f0;
+}
+
+/* Premium Button */
+.premium-btn {
+    background: var(--primary-color);
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+    color: white;
+}
+
+.premium-btn:hover {
+    background: #4338ca;
+    box-shadow: 0 4px 8px rgba(79, 70, 229, 0.4);
+    transform: translateY(-1px);
+    color: white;
+}
+
+/* Table Card Panel Options */
+.list-icon {
+    width: 36px;
+    height: 36px;
+    background: #f1f5f9;
+    color: var(--text-muted);
     font-size: 1rem;
-    font-weight: 700;
-    margin: 0;
+    border-radius: 10px;
+}
+
+.panel-title {
+    font-size: 1.2rem;
+    color: var(--text-primary);
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
 
-.department-shell .panel-header span {
-    color: #5f7287;
-    font-size: 0.84rem;
+/* Table styling */
+.premium-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
 }
 
+.premium-table thead th {
+    background-color: rgba(241, 245, 249, 0.5);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1.1rem 0.75rem;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.premium-table tbody td {
+    padding: 1.25rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: background-color 0.2s ease;
+}
+
+.premium-table tbody tr:hover td {
+    background-color: #f8fafc;
+}
+
+.premium-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.project-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.bg-primary-soft {
+    background-color: var(--primary-color-soft);
+    color: var(--primary-color);
+}
+
+.project-name-text {
+    letter-spacing: -0.01em;
+}
+
+.snapshot-info {
+    background-color: #f8fafc;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 0.85rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+}
+
+/* Custom scrollbar for table container if needed */
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+.table-responsive::-webkit-scrollbar-track {
+    background-color: #f1f5f9;
+}
 @media (max-width: 768px) {
-    .department-shell .department-hero {
-        align-items: flex-start;
+    .dashboard-title-group {
         flex-direction: column;
-        gap: 0.7rem;
+        align-items: flex-start;
+        gap: 0.75rem;
     }
 }
-

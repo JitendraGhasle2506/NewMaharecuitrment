@@ -96,9 +96,8 @@ public class DepartmentMstServiceImpl implements DepartmentMstService {
         return value == null ? null : value.trim();
     }
 
-	@Override
-	public List<DepartmentMst> getAllDepartment() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public List<DepartmentMst> getAllDepartment() {
+        return null;
+    }
 }

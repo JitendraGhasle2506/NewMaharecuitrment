@@ -145,7 +145,7 @@
 </head>
 
 <body class="department-shell">
-    <th:block th:replace="~{header/header :: var-sidebar-header('Department', 'Project Name', ~{::section})}">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Department', 'Candidate Shortlisting', ~{::section})}">
         <section th:with="totalRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates) : 0},
                           pendingRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates.?[candidateStatus.name() == 'SUBMITTED_BY_AGENCY']) : 0},
                           shortlistedRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates.?[candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT']) : 0},
@@ -155,7 +155,7 @@
                 <div class="header d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="mb-0" th:text="${shortlistingDetail.projectName != null ? shortlistingDetail.projectName : 'Project'}">
-                            Project Name
+                            Candidate Shortlisting
                         </h2>
                         <small class="text-muted"
                                th:text="${'Request ID: ' + (shortlistingDetail.requestId != null ? shortlistingDetail.requestId : '-')}">

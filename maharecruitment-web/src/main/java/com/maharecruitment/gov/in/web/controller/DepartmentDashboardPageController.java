@@ -33,7 +33,6 @@ public class DepartmentDashboardPageController {
                 sessionUser != null ? sessionUser.name() : null);
 
         model.addAttribute("dashboard", dashboard);
-        model.addAttribute("isDummyData", true);
         return "department/dashboard";
     }
 
