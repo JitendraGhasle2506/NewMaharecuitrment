@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
+import com.maharecruitment.gov.in.department.repository.DepartmentAdvancePaymentRepository;
 import com.maharecruitment.gov.in.department.service.DepartmentDashboardService;
 import com.maharecruitment.gov.in.department.service.model.DepartmentDashboardView;
 import com.maharecruitment.gov.in.department.service.model.DepartmentRunningProjectView;
@@ -22,12 +23,15 @@ public class DepartmentDashboardServiceImpl implements DepartmentDashboardServic
 
     private final DepartmentProjectApplicationRepository projectApplicationRepository;
     private final EmployeeRepository employeeRepository;
+    private final DepartmentAdvancePaymentRepository advancePaymentRepository;
 
     public DepartmentDashboardServiceImpl(
             DepartmentProjectApplicationRepository projectApplicationRepository,
-            EmployeeRepository employeeRepository) {
+            EmployeeRepository employeeRepository,
+            DepartmentAdvancePaymentRepository advancePaymentRepository) {
         this.projectApplicationRepository = projectApplicationRepository;
         this.employeeRepository = employeeRepository;
+        this.advancePaymentRepository = advancePaymentRepository;
     }
 
     @Override
@@ -58,6 +62,9 @@ public class DepartmentDashboardServiceImpl implements DepartmentDashboardServic
                 ? departmentDisplayName.trim() + " Department"
                 : "Department";
 
+        // Calculate pending payments: projects approved by auditor but not yet paid (including advance payment)
+        List<Long> initiatedAppIds = advancePaymentRepository.findApplicationIdsByDepartmentRegistrationId(departmentRegistrationId);
+
         // Map running projects to view objects
         List<DepartmentRunningProjectView> runningProjects = runningProjectsEntities.stream()
                 .map(p -> new DepartmentRunningProjectView(
@@ -65,14 +72,21 @@ public class DepartmentDashboardServiceImpl implements DepartmentDashboardServic
                         p.getProjectName(),
                         p.getCreatedDate() != null ? p.getCreatedDate().toLocalDate() : LocalDate.now(),
                         (int) employees.stream().filter(e -> Objects.equals(e.getRequestId(), p.getRequestId())).count(),
-                        p.getApplicationStatus().getDisplayName()))
+                        p.getApplicationStatus().getDisplayName(),
+                        !initiatedAppIds.contains(p.getDepartmentProjectApplicationId()),
+                        p.getDepartmentProjectApplicationId()))
                 .collect(Collectors.toList());
+
+        int pendingPaymentCount = (int) runningProjectsEntities.stream()
+                .filter(p -> !initiatedAppIds.contains(p.getDepartmentProjectApplicationId()))
+                .count();
 
         return new DepartmentDashboardView(
                 title,
                 registeredProjectCount,
                 employeeCount,
                 runningProjectCount,
+                pendingPaymentCount,
                 runningProjects,
                 LocalDate.now());
     }

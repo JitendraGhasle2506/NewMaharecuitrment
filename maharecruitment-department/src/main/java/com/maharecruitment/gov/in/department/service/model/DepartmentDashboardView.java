@@ -14,6 +14,7 @@ public class DepartmentDashboardView {
     private int registeredProjectCount;
     private int employeeCount;
     private int runningProjectCount;
+    private int pendingPaymentCount;
     private List<DepartmentRunningProjectView> runningProjects;
     private LocalDate snapshotDate;
 }

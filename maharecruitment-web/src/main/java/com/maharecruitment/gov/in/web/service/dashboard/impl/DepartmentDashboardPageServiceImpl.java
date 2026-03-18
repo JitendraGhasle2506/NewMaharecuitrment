@@ -45,25 +45,34 @@ public class DepartmentDashboardPageServiceImpl implements DepartmentDashboardPa
                         "Contract Staff Onboarding",
                         LocalDate.now().minusDays(35),
                         18 + (int) (seed % 5),
-                        "Running"),
+                        "Running",
+                        true,
+                        101L + seed % 10),
                 new DepartmentRunningProjectView(
                         "DEP-" + (210 + seed % 20),
                         "Field Deployment Phase-2",
                         LocalDate.now().minusDays(21),
                         14 + (int) (seed % 7),
-                        "Running"),
+                        "Running",
+                        false,
+                        201L + seed % 10),
                 new DepartmentRunningProjectView(
                         "DEP-" + (310 + seed % 20),
                         "Back-office Verification",
                         LocalDate.now().minusDays(9),
                         10 + (int) (seed % 4),
-                        "Running"));
+                        "Running",
+                        true,
+                        301L + seed % 10));
+
+        int pendingPaymentCount = 1 + (int) (seed % 4);
 
         return new DepartmentDashboardView(
                 resolveDepartmentTitle(departmentDisplayName),
                 registeredProjectCount,
                 employeeCount,
                 runningProjectCount,
+                pendingPaymentCount,
                 runningProjects,
                 LocalDate.now());
     }

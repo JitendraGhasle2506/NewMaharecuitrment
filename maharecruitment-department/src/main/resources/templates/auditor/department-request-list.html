@@ -3,88 +3,132 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Department Audit Request</title>
+    <title>Department Audit Request | Auditor Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/hr-department-requests.css}">
 </head>
 
 <body class="hr-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('Auditor', 'Department Audit Request', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
-                    <h2 class="mb-0">Department Audit Request</h2>
-                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/auditor/department-requests}">Refresh</a>
+        <section class="hr-request-container">
+            <!-- Header & Summary Section -->
+            <div class="row mb-4 align-items-center">
+                <div class="col-md-6">
+                    <div class="dept-info">
+                        <div class="dept-icon shadow-sm">
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                        <div>
+                            <h2 class="fw-bold text-dark mb-1">Department Audit Queue</h2>
+                            <p class="text-muted small mb-0">Monitor and verify department resource requests</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
-                    <p class="text-muted mb-3">Click "Show Sub-Departments" to audit department queue applications.</p>
+                <div class="col-md-6 text-md-end">
+                    <a class="btn btn-premium btn-sm px-3" th:href="@{/auditor/department-requests}">
+                        <i class="fa-solid fa-rotate me-2"></i>Refresh Queue
+                    </a>
+                </div>
+            </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Parent Department</th>
-                                    <th class="text-center">Queue Applications</th>
-                                    <th class="text-center">Sub-Departments</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:if="${#lists.isEmpty(parentDepartmentRequests)}">
-                                    <td colspan="3" class="text-center text-muted">
-                                        No parent departments found for auditor queue.
-                                    </td>
-                                </tr>
+            <!-- Summary Statistics -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3 th:text="${#lists.size(parentDepartmentRequests)}">0</h3>
+                            <p>Parent Departments</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-success bg-opacity-10 text-success">
+                            <i class="fa-solid fa-file-invoice"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3 th:text="${#aggregates.sum(parentDepartmentRequests.![projectApplicationCount])}">0</h3>
+                            <p>Pending Applications</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-info bg-opacity-10 text-info">
+                            <i class="fa-solid fa-diagram-project"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3 th:text="${#aggregates.sum(parentDepartmentRequests.![#lists.size(subDepartmentProjectCounts)])}">0</h3>
+                            <p>Sub-Department Groups</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                                <th:block th:each="parentDepartment, parentStat : ${parentDepartmentRequests}">
-                                    <tr>
-                                        <td th:text="${parentDepartment.departmentName}">Department</td>
-                                        <td class="text-center" th:text="${parentDepartment.projectApplicationCount}">0</td>
-                                        <td class="text-center">
-                                            <button type="button"
-                                                    class="btn btn-outline-primary btn-sm js-parent-toggle"
-                                                    th:attr="data-target=|subDepartmentRow-${parentStat.index}|">
-                                                Show Sub-Departments
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr th:id="|subDepartmentRow-${parentStat.index}|" class="d-none bg-light">
-                                        <td colspan="3">
-                                            <div class="p-2">
-                                                <table class="table table-sm table-bordered mb-0">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Sub-Department</th>
-                                                            <th class="text-center">Queue Applications</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr th:if="${#lists.isEmpty(parentDepartment.subDepartmentProjectCounts)}">
-                                                            <td colspan="2" class="text-center text-muted">
-                                                                No sub-department records found.
-                                                            </td>
-                                                        </tr>
-                                                        <tr th:each="subDepartment : ${parentDepartment.subDepartmentProjectCounts}">
-                                                            <td th:text="${subDepartment.subDepartmentName}">Sub-Department</td>
-                                                            <td class="text-center">
-                                                                <a th:if="${subDepartment.subDepartmentId != null and subDepartment.projectApplicationCount > 0}"
-                                                                   th:href="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(departmentId=${parentDepartment.departmentId},subDepartmentId=${subDepartment.subDepartmentId})}"
-                                                                   th:text="${subDepartment.projectApplicationCount}">
-                                                                    0
-                                                                </a>
-                                                                <span th:if="${subDepartment.subDepartmentId == null or subDepartment.projectApplicationCount == 0}"
-                                                                      th:text="${subDepartment.projectApplicationCount}">
-                                                                    0
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </th:block>
-                            </tbody>
-                        </table>
+            <!-- Search Bar -->
+            <div class="search-container mb-4">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="deptSearchInput" class="form-control" 
+                       placeholder="Search by Department or Sub-Department name...">
+            </div>
+
+            <div class="alert alert-danger shadow-sm border-0" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+            <!-- Department List (Accordion) -->
+            <div id="departmentAccordion" class="row g-3">
+                <div th:if="${#lists.isEmpty(parentDepartmentRequests)}" class="col-12 text-center py-5">
+                    <div class="text-muted">
+                        <i class="fa-solid fa-folder-open fa-3x mb-3 opacity-25"></i>
+                        <p class="fs-5">No department requests found in your audit queue.</p>
+                    </div>
+                </div>
+
+                <div th:each="parentDepartment, parentStat : ${parentDepartmentRequests}" 
+                     class="col-12 dept-accordion-item" 
+                     th:attr="data-dept-name=${parentDepartment.departmentName}">
+                    <div class="dept-card p-3 d-flex justify-content-between align-items-center js-toggle-subdepts" 
+                         th:attr="data-target=|subDepts-${parentStat.index}|">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-chevron-right me-3 text-muted transition-all"></i>
+                            <div>
+                                <h5 class="mb-0 fw-bold text-dark" th:text="${parentDepartment.departmentName}">Department Name</h5>
+                                <span class="badge badge-premium text-bg-light border text-primary mt-1" 
+                                      th:text="${parentDepartment.projectApplicationCount + ' Pending Applications'}">
+                                    0 Pending
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="text-muted small">Sub-Departments</div>
+                            <div class="fw-bold" th:text="${#lists.size(parentDepartment.subDepartmentProjectCounts)}">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-Departments Grid -->
+                    <div th:id="|subDepts-${parentStat.index}|" class="subdept-container row g-3 mt-1">
+                        <div th:each="subDept : ${parentDepartment.subDepartmentProjectCounts}" 
+                             class="col-md-6 col-lg-4 subdept-card-wrapper"
+                             th:attr="data-subdept-name=${subDept.subDepartmentName}">
+                            <div class="subdept-card h-100">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h6 class="fw-bold text-dark mb-0 pe-2" th:text="${subDept.subDepartmentName}">Sub-Department Name</h6>
+                                    <span class="badge rounded-pill bg-primary border-0" th:text="${subDept.projectApplicationCount}">0</span>
+                                </div>
+                                <div class="mt-auto pt-2 border-top">
+                                    <a th:if="${subDept.subDepartmentId != null and subDept.projectApplicationCount > 0}"
+                                       th:href="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(departmentId=${parentDepartment.departmentId},subDepartmentId=${subDept.subDepartmentId})}"
+                                       class="btn btn-link btn-sm p-0 text-decoration-none fw-bold text-primary">
+                                        View Applications <i class="fa-solid fa-arrow-right list-arrow ms-1"></i>
+                                    </a>
+                                    <span th:if="${subDept.projectApplicationCount == 0}" class="text-muted small">
+                                        No active requests
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -93,15 +137,65 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('.js-parent-toggle').forEach(function (button) {
-                button.addEventListener('click', function () {
+            // Accordion Toggle
+            const togglers = document.querySelectorAll('.js-toggle-subdepts');
+            togglers.forEach(toggler => {
+                toggler.addEventListener('click', function() {
                     const targetId = this.getAttribute('data-target');
-                    const targetRow = document.getElementById(targetId);
-                    if (!targetRow) {
-                        return;
+                    const target = document.getElementById(targetId);
+                    const icon = this.querySelector('.fa-chevron-right');
+                    
+                    const isOpen = target.classList.contains('active');
+                    
+                    // Close all others
+                    document.querySelectorAll('.subdept-container.active').forEach(active => {
+                        if (active !== target) {
+                            active.classList.remove('active');
+                            const activeToggler = document.querySelector(`[data-target="${active.id}"]`);
+                            activeToggler.querySelector('.fa-chevron-right').style.transform = 'rotate(0deg)';
+                        }
+                    });
+
+                    if (isOpen) {
+                        target.classList.remove('active');
+                        icon.style.transform = 'rotate(0deg)';
+                    } else {
+                        target.classList.add('active');
+                        icon.style.transform = 'rotate(90deg)';
                     }
-                    const isHidden = targetRow.classList.toggle('d-none');
-                    this.textContent = isHidden ? 'Show Sub-Departments' : 'Hide Sub-Departments';
+                });
+            });
+
+            // Search Filter
+            const searchInput = document.getElementById('deptSearchInput');
+            searchInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                const deptItems = document.querySelectorAll('.dept-accordion-item');
+                
+                deptItems.forEach(item => {
+                    const deptName = item.getAttribute('data-dept-name').toLowerCase();
+                    const subDepts = item.querySelectorAll('.subdept-card-wrapper');
+                    let subDeptMatch = false;
+                    
+                    subDepts.forEach(sub => {
+                        const subName = sub.getAttribute('data-subdept-name').toLowerCase();
+                        if (subName.includes(query)) {
+                            sub.style.display = 'block';
+                            subDeptMatch = true;
+                        } else {
+                            sub.style.display = 'none';
+                        }
+                    });
+
+                    if (deptName.includes(query) || subDeptMatch) {
+                        item.style.display = 'block';
+                        // If parent matches but sub-departments don't, show all sub-departments
+                        if (deptName.includes(query)) {
+                            subDepts.forEach(sub => sub.style.display = 'block');
+                        }
+                    } else {
+                        item.style.display = 'none';
+                    }
                 });
             });
         });

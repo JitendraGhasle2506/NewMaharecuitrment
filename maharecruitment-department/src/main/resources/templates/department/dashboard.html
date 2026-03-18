@@ -26,10 +26,10 @@
                             <a class="btn btn-outline-secondary btn-sm" th:href="@{/department/profile}">
                                 View Profile
                             </a>
-                            <a class="btn btn-primary btn-sm" th:href="@{/department/manpower/list}">
-                                Manage Manpower Applications
-                            </a>
-                        </div>
+                                <a class="btn btn-primary btn-sm" th:href="@{/department/manpower/list}">
+                                    Manage Manpower Applications
+                                </a>
+                            </div>
                     </section>
 
                     <section class="metrics-grid">
@@ -45,11 +45,20 @@
                             <p>Current Running Projects</p>
                             <h3 th:text="${dashboard.runningProjectCount}">0</h3>
                         </article>
+                        <article class="metric-card highlight-metric">
+                            <p>Pending Payment</p>
+                            <h3 th:text="${dashboard.pendingPaymentCount}">0</h3>
+                        </article>
                     </section>
 
                     <section class="panel">
                         <div class="panel-header">
-                            <h4>Current Running Projects</h4>
+                            <div class="d-flex align-items-center">
+                                <h4>Current Running Projects</h4>
+                                <a class="btn btn-warning btn-sm fw-bold ms-3 px-3 shadow-sm" th:href="@{/department/payment/list}">
+                                    <i class="fa-solid fa-credit-card me-1"></i> Advance Payment
+                                </a>
+                            </div>
                             <span>Snapshot: <strong th:text="${#temporals.format(dashboard.snapshotDate, 'dd-MMM-yyyy')}">--</strong></span>
                         </div>
                         <div class="table-responsive">
@@ -60,6 +69,7 @@
                                         <th>Start Date</th>
                                         <th>Allocated Employees</th>
                                         <th>Status</th>
+                                        <th>Advance Payment</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -68,6 +78,16 @@
                                         <td th:text="${#temporals.format(project.startDate, 'dd-MMM-yyyy')}">01-Jan-2026</td>
                                         <td th:text="${project.allocatedEmployees}">0</td>
                                         <td><span class="badge text-bg-success" th:text="${project.status}">Running</span></td>
+                                        <td>
+                                            <a th:if="${project.paymentPending}" 
+                                               class="btn btn-warning btn-sm fw-bold shadow-sm"
+                                               th:href="@{'/department/payment/apply/' + ${project.applicationId}}">
+                                               <i class="fa-solid fa-credit-card me-1"></i> Pay Now
+                                            </a>
+                                            <span th:unless="${project.paymentPending}" class="text-success small fw-bold">
+                                                <i class="fa-solid fa-check-circle me-1"></i> Paid
+                                            </span>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>

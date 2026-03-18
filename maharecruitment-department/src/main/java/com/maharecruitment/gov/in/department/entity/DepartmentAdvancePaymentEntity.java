@@ -68,4 +68,7 @@ public class DepartmentAdvancePaymentEntity extends Auditable {
 
     @Column(name = "remarks", length = 1000)
     private String remarks;
+
+    @Column(name = "utr_number", length = 100)
+    private String utrNumber;
 }

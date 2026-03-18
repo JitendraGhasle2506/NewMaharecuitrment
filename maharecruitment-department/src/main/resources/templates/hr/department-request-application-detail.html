@@ -3,218 +3,221 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Application Review</title>
+    <title>Application Review | HR Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/hr-department-requests.css}">
+    <style>
+        .info-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #718096; margin-bottom: 0.25rem; font-weight: 600; }
+        .info-value { font-size: 1rem; color: #2d3748; font-weight: 500; }
+        .detail-card { border: 1px solid #edf2f7; border-radius: 12px; height: 100%; transition: all 0.2s; }
+        .detail-card:hover { border-color: #cbd5e0; background-color: #fcfcfc; }
+        .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #e2e8f0; padding-bottom: 1.5rem; }
+        .timeline-item::before { content: ''; position: absolute; left: -7px; top: 0; width: 12px; height: 12px; border-radius: 50%; background: #3182ce; border: 2px solid #fff; }
+        .timeline-item:last-child { border-left-color: transparent; }
+        .review-section { background: #f8fafc; border-top: 1px solid #e2e8f0; margin: 0 -1.5rem -1.5rem -1.5rem; padding: 1.5rem; }
+    </style>
 </head>
 
 <body class="hr-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Department Request', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="mb-0">Application Review</h2>
-                        <small class="text-muted"
-                            th:text="${applicationReviewDetail.departmentName + ' | ' + applicationReviewDetail.subDepartmentName}">
-                            Department | Sub-Department
-                        </small>
+        <section class="hr-request-container">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="dept-info">
+                    <div class="dept-icon shadow-sm">
+                        <i class="fa-solid fa-clipboard-check"></i>
                     </div>
-                    <div class="d-flex gap-2">
-                        <!-- <a class="btn btn-outline-primary btn-sm"
-                           th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/agency-ranks(
-                                    departmentId=${applicationReviewDetail.departmentId},
-                                    subDepartmentId=${applicationReviewDetail.subDepartmentId},
-                                    applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
-                            Map Agency Rank
-                        </a> -->
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(
-                                    departmentId=${applicationReviewDetail.departmentId},
-                                    subDepartmentId=${applicationReviewDetail.subDepartmentId})}">
-                            Back to Applications
-                        </a>
+                    <div>
+                        <h2 class="fw-bold text-dark mb-1">Application Review</h2>
+                        <p class="text-muted small mb-0" th:text="${applicationReviewDetail.departmentName + ' | ' + applicationReviewDetail.subDepartmentName}">
+                            Department | Sub-Department
+                        </p>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-outline-secondary btn-sm px-3" th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(
+                                departmentId=${applicationReviewDetail.departmentId},
+                                subDepartmentId=${applicationReviewDetail.subDepartmentId})}">
+                        <i class="fa fa-arrow-left me-2"></i>Back to Applications
+                    </a>
+                </div>
+            </div>
+
+            <div class="alert alert-success shadow-sm border-0" th:if="${successMessage}" th:text="${successMessage}"></div>
+            <div class="alert alert-danger shadow-sm border-0" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+            <div class="row g-4">
+                <!-- Main Details Card -->
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h5 class="mb-0 fw-bold">Project Information</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4 mb-4">
+                                <div class="col-md-6">
+                                    <div class="info-label">Request ID</div>
+                                    <div class="info-value fw-bold text-primary" th:text="${applicationReviewDetail.requestId}">DPA-0000</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-label">Current Status</div>
+                                    <span class="badge badge-premium text-bg-primary"
+                                          th:text="${applicationReviewDetail.applicationStatus.statusCode + ' - ' + #strings.replace(applicationReviewDetail.applicationStatus.name(), '_', ' ')}">
+                                        SUBMITTED TO HR
+                                    </span>
+                                </div>
+                                <div class="col-12">
+                                    <div class="info-label">Project Name</div>
+                                    <div class="info-value fs-5 fw-bold" th:text="${applicationReviewDetail.projectName}">Project Name</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-label">Application Type</div>
+                                    <div class="info-value" th:text="${applicationReviewDetail.applicationType != null ? #strings.replace(applicationReviewDetail.applicationType.name(), '_', ' ') : '-'}">Type</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-label">Total Estimated Cost</div>
+                                    <div class="info-value fw-bold text-success">
+                                        ₹ <span th:text="${#numbers.formatDecimal(applicationReviewDetail.totalEstimatedCost != null ? applicationReviewDetail.totalEstimatedCost : 0, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="info-label">Remarks from Sub-Department</div>
+                                    <div class="p-3 bg-light rounded-3 text-muted small" th:text="${applicationReviewDetail.remarks ?: 'No remarks provided.'}">Remarks</div>
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold mb-3 mt-5"><i class="fa fa-users me-2"></i>Resource Requirements</h6>
+                            <div class="table-responsive rounded-3 border">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr class="small text-uppercase">
+                                            <th>Designation</th>
+                                            <th>Level</th>
+                                            <th class="text-end">Rate</th>
+                                            <th class="text-center">Qty</th>
+                                            <th class="text-center">Months</th>
+                                            <th class="text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="small">
+                                        <tr th:if="${#lists.isEmpty(applicationReviewDetail.resourceRequirements)}">
+                                            <td colspan="6" class="text-center py-4 text-muted">No resource requirements found.</td>
+                                        </tr>
+                                        <tr th:each="requirement : ${applicationReviewDetail.resourceRequirements}">
+                                            <td class="fw-semibold" th:text="${requirement.designationName}">Designation</td>
+                                            <td th:text="${requirement.levelName}">Level</td>
+                                            <td class="text-end" th:text="${#numbers.formatDecimal(requirement.monthlyRate != null ? requirement.monthlyRate : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-center" th:text="${requirement.requiredQuantity}">0</td>
+                                            <td class="text-center" th:text="${requirement.durationInMonths}">0</td>
+                                            <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(requirement.totalCost != null ? requirement.totalCost : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- HR Action Section -->
+                        <div class="card-footer p-4 border-0" th:if="${applicationReviewDetail.hrActionAllowed}">
+                            <div class="review-section rounded-bottom-4 shadow-sm border border-top-0">
+                                <h5 class="fw-bold mb-3">Review Action</h5>
+                                <form id="hrReviewForm" th:action="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/review(
+                                                departmentId=${applicationReviewDetail.departmentId},
+                                                subDepartmentId=${applicationReviewDetail.subDepartmentId},
+                                                applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
+                                    th:object="${reviewForm}" method="post">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-muted">Review Remarks</label>
+                                        <textarea class="form-control border-0 shadow-sm" rows="3" th:field="*{remarks}"
+                                            placeholder="Provide your feedback here... (Mandatory for Send Back/Reject)"></textarea>
+                                        <div class="text-danger small mt-1" th:errors="*{remarks}"></div>
+                                    </div>
+
+                                    <div class="d-flex gap-3">
+                                        <button type="submit" class="btn btn-success px-4 fw-bold" name="decision" value="APPROVE">
+                                            <i class="fa fa-check me-2"></i>Approve
+                                        </button>
+                                        <button type="submit" class="btn btn-warning px-4 fw-bold" name="decision" value="SEND_BACK">
+                                            <i class="fa fa-reply me-2"></i>Send Back
+                                        </button>
+                                        <button type="submit" class="btn btn-danger px-4 fw-bold" name="decision" value="REJECT">
+                                            <i class="fa fa-times me-2"></i>Reject
+                                        </button>
+                                    </div>
+                                    <div class="text-danger small mt-2" th:errors="*{decision}"></div>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card-footer p-4 border-0 text-center" th:if="${!applicationReviewDetail.hrActionAllowed}">
+                            <div class="alert alert-info d-inline-block border-0 px-4 py-2 small mb-0">
+                                <i class="fa fa-info-circle me-2"></i>This application is currently not in an HR actionable state.
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card-body">
-                    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
-                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
-
-                    <table class="table table-bordered table-sm">
-                        <tr>
-                            <th width="22%">Request ID</th>
-                            <td th:text="${applicationReviewDetail.requestId}">DPA-0000</td>
-                            <th width="18%">Current Status</th>
-                            <td>
-                                <span class="badge text-bg-primary"
-                                    th:text="${applicationReviewDetail.applicationStatus.statusCode + ' - ' + #strings.replace(applicationReviewDetail.applicationStatus.name(), '_', ' ')}">
-                                    2 - SUBMITTED TO HR
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Project Name</th>
-                            <td colspan="3" th:text="${applicationReviewDetail.projectName}">Project</td>
-                        </tr>
-                        <tr>
-                            <th>Application Type</th>
-                            <td
-                                th:text="${applicationReviewDetail.applicationType != null ? #strings.replace(applicationReviewDetail.applicationType.name(), '_', ' ') : '-'}">
-                                -
-                            </td>
-                            <th>Total Cost</th>
-                            <td
-                                th:text="${#numbers.formatDecimal(applicationReviewDetail.totalEstimatedCost != null ? applicationReviewDetail.totalEstimatedCost : 0, 1, 'COMMA', 2, 'POINT')}">
-                                0.00
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Created On</th>
-                            <td
-                                th:text="${applicationReviewDetail.createdDate != null ? #temporals.format(applicationReviewDetail.createdDate, 'dd-MMM-yyyy HH:mm') : '-'}">
-                                -
-                            </td>
-                            <th>Updated On</th>
-                            <td
-                                th:text="${applicationReviewDetail.updatedDate != null ? #temporals.format(applicationReviewDetail.updatedDate, 'dd-MMM-yyyy HH:mm') : '-'}">
-                                -
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Remarks</th>
-                            <td colspan="3" th:text="${applicationReviewDetail.remarks ?: '-'}">-</td>
-                        </tr>
-                        <tr>
-                            <th>Work Order</th>
-                            <td colspan="3">
-                                <a th:if="${applicationReviewDetail.workOrderAvailable}" th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/download-work-order(
-                                            departmentId=${applicationReviewDetail.departmentId},
-                                            subDepartmentId=${applicationReviewDetail.subDepartmentId},
-                                            applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
-                                    th:text="${applicationReviewDetail.workOrderOriginalName != null ? applicationReviewDetail.workOrderOriginalName : 'View Work Order'}">
-                                    View Work Order
-                                </a>
-                                <span th:if="${!applicationReviewDetail.workOrderAvailable}" class="text-muted">Not
-                                    uploaded</span>
-                            </td>
-                        </tr>
-                    </table>
-
-                    <h5 class="mt-4">Resource Requirements</h5>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Designation</th>
-                                    <th>Level</th>
-                                    <th>Monthly Rate</th>
-                                    <th>Number of Manpower</th>
-                                    <th>Months</th>
-                                    <th>Total Cost</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:if="${#lists.isEmpty(applicationReviewDetail.resourceRequirements)}">
-                                    <td colspan="6" class="text-center text-muted">No resource requirements found.</td>
-                                </tr>
-                                <tr th:each="requirement : ${applicationReviewDetail.resourceRequirements}">
-                                    <td th:text="${requirement.designationName}">Designation</td>
-                                    <td th:text="${requirement.levelName}">Level</td>
-                                    <td
-                                        th:text="${#numbers.formatDecimal(requirement.monthlyRate != null ? requirement.monthlyRate : 0, 1, 'COMMA', 2, 'POINT')}">
-                                        0.00</td>
-                                    <td th:text="${requirement.requiredQuantity}">0</td>
-                                    <td th:text="${requirement.durationInMonths}">0</td>
-                                    <td
-                                        th:text="${#numbers.formatDecimal(requirement.totalCost != null ? requirement.totalCost : 0, 1, 'COMMA', 2, 'POINT')}">
-                                        0.00</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="card mt-4" th:if="${applicationReviewDetail.hrActionAllowed}">
-                        <div class="card-header">
-                            <h5 class="mb-0">HR Review Action</h5>
+                <!-- Sidebar Details -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h5 class="mb-0 fw-bold">Metadata & Documents</h5>
                         </div>
-                        <div class="card-body">
-                            <form id="hrReviewForm" th:action="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/review(
-                                            departmentId=${applicationReviewDetail.departmentId},
-                                            subDepartmentId=${applicationReviewDetail.subDepartmentId},
-                                            applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
-                                th:object="${reviewForm}" method="post">
-                                <div class="mb-3">
-                                    <label class="form-label">Review Remarks</label>
-                                    <textarea class="form-control" rows="3" th:field="*{remarks}"
-                                        placeholder="Remarks are mandatory for Send Back and Reject decisions."></textarea>
-                                    <div class="text-danger small" th:errors="*{remarks}"></div>
+                        <div class="card-body p-4">
+                            <div class="mb-4">
+                                <div class="info-label">Work Order Document</div>
+                                <div class="mt-2">
+                                    <a th:if="${applicationReviewDetail.workOrderAvailable}" 
+                                       th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/download-work-order(
+                                                departmentId=${applicationReviewDetail.departmentId},
+                                                subDepartmentId=${applicationReviewDetail.subDepartmentId},
+                                                applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
+                                       class="btn btn-sm btn-light border w-100 text-start py-2">
+                                        <i class="fa fa-file-pdf text-danger me-2"></i>
+                                        <span class="text-truncate d-inline-block align-middle" style="max-width: 80%" th:text="${applicationReviewDetail.workOrderOriginalName != null ? applicationReviewDetail.workOrderOriginalName : 'View Project Document'}">Document</span>
+                                    </a>
+                                    <div th:if="${!applicationReviewDetail.workOrderAvailable}" class="text-muted small">
+                                        <i class="fa fa-exclamation-triangle me-2"></i>No document uploaded
+                                    </div>
                                 </div>
-
-                                <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-success" name="decision" value="APPROVE">
-                                        Approve
-                                    </button>
-                                    <button type="submit" class="btn btn-warning" name="decision" value="SEND_BACK">
-                                        Send Back
-                                    </button>
-                                    <button type="submit" class="btn btn-danger" name="decision" value="REJECT">
-                                        Reject
-                                    </button>
+                            </div>
+                            <hr class="opacity-25">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="info-label">Created On</div>
+                                    <div class="small fw-semibold" th:text="${applicationReviewDetail.createdDate != null ? #temporals.format(applicationReviewDetail.createdDate, 'dd MMM yy HH:mm') : '-'}">-</div>
                                 </div>
-                                <div class="text-danger small mt-2" th:errors="*{decision}"></div>
-                            </form>
+                                <div class="col-6">
+                                    <div class="info-label">Last Updated</div>
+                                    <div class="small fw-semibold" th:text="${applicationReviewDetail.updatedDate != null ? #temporals.format(applicationReviewDetail.updatedDate, 'dd MMM yy HH:mm') : '-'}">-</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="alert alert-info mt-4 mb-0" th:if="${!applicationReviewDetail.hrActionAllowed}">
-                        This application is not in HR actionable state.
-                    </div>
-
-                    <div class="card mt-4"
-                        th:if="${applicationReviewDetail.activityTimeline != null and !#lists.isEmpty(applicationReviewDetail.activityTimeline)}">
-                        <div class="card-header">
-                            <h5 class="mb-0">Application Activity Timeline</h5>
+                    <!-- Activity Timeline -->
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden" 
+                         th:if="${applicationReviewDetail.activityTimeline != null and !#lists.isEmpty(applicationReviewDetail.activityTimeline)}">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h5 class="mb-0 fw-bold">Recent Activity</h5>
                         </div>
-                        <div class="card-body table-responsive">
-                            <table class="table table-sm table-bordered mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Timestamp</th>
-                                        <th>Activity</th>
-                                        <th>Status Change</th>
-                                        <th>Actor</th>
-                                        <th>Remarks</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="activity : ${applicationReviewDetail.activityTimeline}">
-                                        <td
-                                            th:text="${activity.actionTimestamp != null ? #temporals.format(activity.actionTimestamp, 'dd-MMM-yyyy HH:mm') : '-'}">
-                                        </td>
-                                        <td
-                                            th:text="${activity.activityType != null ? #strings.replace(activity.activityType.name(), '_', ' ') : '-'}">
-                                        </td>
-                                        <td>
-                                            <span
-                                                th:text="${activity.previousStatus != null ? #strings.replace(activity.previousStatus.name(), '_', ' ') : '-'}"></span>
-                                            <span> -> </span>
-                                            <span
-                                                th:text="${activity.newStatus != null ? #strings.replace(activity.newStatus.name(), '_', ' ') : '-'}"></span>
-                                        </td>
-                                        <td>
-                                            <div th:text="${activity.actorName ?: '-'}"></div>
-                                            <small class="text-muted" th:text="${activity.actorEmail ?: '-'}"></small>
-                                        </td>
-                                        <td th:text="${activity.activityRemarks ?: '-'}"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="card-body p-4">
+                            <div class="timeline">
+                                <div th:each="activity : ${applicationReviewDetail.activityTimeline}" class="timeline-item">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="small fw-bold text-dark" th:text="${activity.activityType != null ? #strings.replace(activity.activityType.name(), '_', ' ') : '-'}">Activity</span>
+                                        <span class="text-muted" style="font-size: 0.7rem;" th:text="${activity.actionTimestamp != null ? #temporals.format(activity.actionTimestamp, 'dd MMM HH:mm') : '-'}">Time</span>
+                                    </div>
+                                    <div class="text-muted small mt-1">
+                                        By: <span class="fw-semibold" th:text="${activity.actorName}">Actor</span>
+                                    </div>
+                                    <div class="p-2 bg-light rounded mt-2 small text-muted italic" th:if="${activity.activityRemarks}" th:text="${activity.activityRemarks}">Remarks</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
     </th:block>
-
 </body>
 
-</html>
+</html>

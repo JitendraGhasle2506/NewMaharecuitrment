@@ -34,7 +34,7 @@
 
             <!-- Metrics Grid -->
             <div class="row g-4 mb-4">
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                     <div class="metric-card premium-card">
                         <div class="metric-icon bg-indigo-soft text-indigo">
                             <i class="fa-regular fa-folder-open"></i>
@@ -45,7 +45,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                     <div class="metric-card premium-card">
                         <div class="metric-icon bg-emerald-soft text-emerald">
                             <i class="fa-solid fa-users"></i>
@@ -56,7 +56,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                     <div class="metric-card premium-card">
                         <div class="metric-icon bg-amber-soft text-amber">
                             <i class="fa-solid fa-rocket"></i>
@@ -67,6 +67,18 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-12 col-md-3">
+                    <div class="metric-card premium-card highlight-metric-card">
+                        <div class="metric-icon bg-rose-soft text-rose">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                        <div class="metric-details">
+                            <p class="metric-label">Pending Payment</p>
+                            <h3 class="metric-value text-rose" th:text="${dashboard.pendingPaymentCount}">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
             </div>
 
             <!-- Table Panel -->
@@ -78,6 +90,10 @@
                             <i class="fa-solid fa-list-check"></i>
                         </div>
                         <h5 class="mb-0 fw-bold panel-title">Current Running Projects</h5>
+                        <a class="btn btn-warning btn-sm fw-bold ms-3 px-3 shadow-sm"
+                            th:href="@{/department/payment/list}">
+                            <i class="fa-solid fa-credit-card me-1"></i> Advance Payment
+                        </a>
                     </div>
                     <div class="snapshot-info d-flex align-items-center">
                         <i class="fa-regular fa-calendar-alt me-2 text-muted"></i>
@@ -95,6 +111,7 @@
                                     <th>Start Date</th>
                                     <th>Allocated Employees</th>
                                     <th class="pe-4">Status</th>
+                                    <th class="pe-4">Advance Payment</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -131,9 +148,19 @@
                                                 th:text="${project.status}">Status</span>
                                         </span>
                                     </td>
+                                    <td class="pe-4">
+                                        <a th:if="${project.paymentPending}" 
+                                           class="btn btn-warning btn-sm fw-bold shadow-sm"
+                                           th:href="@{'/department/payment/apply/' + ${project.applicationId}}">
+                                           <i class="fa-solid fa-credit-card me-1"></i> Pay Now
+                                        </a>
+                                        <span th:unless="${project.paymentPending}" class="text-success small fw-bold">
+                                            <i class="fa-solid fa-check-circle me-1"></i> Paid
+                                        </span>
+                                    </td>
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(dashboard.runningProjects)}">
-                                    <td colspan="4" class="text-center py-5 text-muted">
+                                    <td colspan="5" class="text-center py-5 text-muted">
                                         <div class="empty-state">
                                             <i class="fa-regular fa-folder-open mb-3"
                                                 style="font-size: 2.5rem; color: #cbd5e1;"></i>
