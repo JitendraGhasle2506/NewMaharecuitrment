@@ -181,6 +181,8 @@
     font-weight: 700;
     color: #243758;
     margin-bottom: 0.45rem;
+    font-size: var(--form-label-font-size, 0.95rem);
+    font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
 }
 
 .registration-form .form-control,
@@ -189,6 +191,9 @@
     border-radius: 10px;
     border: 1px solid var(--registration-line);
     padding: 0.62rem 0.8rem;
+    font-size: var(--form-control-font-size, 1rem);
+    font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
+    line-height: 1.5;
 }
 
 .registration-form textarea.form-control {

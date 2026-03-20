@@ -190,7 +190,8 @@ body.portal-shell {
 
 label.control-label {
     font-weight: 700;
-    font-size: 0.88rem;
+    font-size: var(--form-label-font-size, 0.95rem);
+    font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
     color: #223252;
 }
 
@@ -199,7 +200,9 @@ label.control-label {
     border-radius: 10px;
     min-height: 46px;
     padding: 0.62rem 0.88rem;
-    font-size: 0.94rem;
+    font-size: var(--form-control-font-size, 1rem);
+    font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
+    line-height: 1.5;
     background-color: #ffffff;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     color: var(--portal-ink);

@@ -180,11 +180,11 @@
 
 .form-horizontal .form-label,
 .form-horizontal .control-label {
-    font-family: "Public Sans", sans-serif;
+    font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
     font-weight: 600;
     color: #243758;
     margin-bottom: 0.5rem;
-    font-size: 0.9rem;
+    font-size: var(--form-label-font-size, 0.95rem);
 }
 
 .form-horizontal .form-control {
@@ -192,7 +192,9 @@
     border-radius: 10px;
     border: 1px solid var(--login-line);
     padding: 0.62rem 1rem;
-    font-size: 0.95rem;
+    font-size: var(--form-control-font-size, 1rem);
+    font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
+    line-height: 1.5;
     transition: all 0.2s ease;
 }
 
