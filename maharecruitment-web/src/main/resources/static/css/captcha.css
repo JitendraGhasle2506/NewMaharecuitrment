@@ -36,6 +36,9 @@ body.portal-shell {
     background: linear-gradient(90deg, var(--sidebar-bg, #1a3c5a) 0%, #235d83 56%, var(--sidebar-bg-soft, #2a678f) 100%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 10px 22px rgba(4, 49, 95, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 1020;
 }
 
 .portal-nav .navbar-brand {

@@ -282,17 +282,23 @@
     outline-offset: 2px;
 }
 
+.table-responsive {
+    scrollbar-color: var(--scrollbar-thumb, #b1c4d8) var(--scrollbar-track, #edf3f9);
+    scrollbar-width: thin;
+}
+
 .table-responsive::-webkit-scrollbar {
-    height: 6px;
+    height: 8px;
 }
 
 .table-responsive::-webkit-scrollbar-thumb {
-    background-color: #c5d2e0;
+    background-color: var(--scrollbar-thumb, #b1c4d8);
+    border: 1px solid var(--scrollbar-track, #edf3f9);
     border-radius: 10px;
 }
 
 .table-responsive::-webkit-scrollbar-track {
-    background-color: #eff4f9;
+    background-color: var(--scrollbar-track, #edf3f9);
 }
 
 @media (max-width: 991px) {

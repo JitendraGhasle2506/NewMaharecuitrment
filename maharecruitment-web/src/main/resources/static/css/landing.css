@@ -29,6 +29,9 @@ body.landing-shell {
     border-bottom: 1px solid rgba(255, 255, 255, 0.14);
     box-shadow: 0 10px 20px rgba(9, 47, 88, 0.2);
     padding: 0.8rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1020;
 }
 
 .brand-link {

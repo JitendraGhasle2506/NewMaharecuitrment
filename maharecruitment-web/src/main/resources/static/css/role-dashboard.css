@@ -20,6 +20,9 @@ body.role-shell {
 .role-nav {
     background: linear-gradient(90deg, var(--sidebar-bg, #1a3c5a), var(--sidebar-bg-soft, #2a678f));
     box-shadow: 0 10px 20px rgba(13, 63, 112, 0.18);
+    position: sticky;
+    top: 0;
+    z-index: 1020;
 }
 
 .role-nav .navbar-brand {
