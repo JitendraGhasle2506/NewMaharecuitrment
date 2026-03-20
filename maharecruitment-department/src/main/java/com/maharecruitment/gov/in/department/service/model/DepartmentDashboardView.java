@@ -11,6 +11,7 @@ import lombok.Getter;
 public class DepartmentDashboardView {
 
     private String departmentTitle;
+    private String subDepartmentName;
     private int registeredProjectCount;
     private int employeeCount;
     private int runningProjectCount;

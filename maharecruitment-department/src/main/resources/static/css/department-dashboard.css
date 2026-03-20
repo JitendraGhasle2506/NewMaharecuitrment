@@ -1,106 +1,327 @@
+:root {
+    --bg-main: #f3f6fb;
+    --card-surface: #ffffff;
+    --text-primary: #102033;
+    --text-muted: #64748b;
+    --border-color: #dce6f1;
+
+    --primary-color: #0f5ea8;
+    --primary-color-dark: #0b4d8b;
+    --primary-color-soft: rgba(15, 94, 168, 0.12);
+
+    --indigo: #4f46e5;
+    --indigo-soft: rgba(79, 70, 229, 0.14);
+
+    --emerald: #0f9f6f;
+    --emerald-soft: rgba(15, 159, 111, 0.14);
+
+    --amber: #d97706;
+    --amber-soft: rgba(217, 119, 6, 0.14);
+
+    --rose: #be123c;
+    --rose-soft: rgba(190, 18, 60, 0.14);
+
+    --shadow-sm: 0 2px 8px rgba(16, 32, 51, 0.04);
+    --shadow-md: 0 8px 18px rgba(16, 32, 51, 0.08);
+}
+
 .department-shell {
-    font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-    color: #1b2b3b;
+    background-color: var(--bg-main);
+    font-family: "Public Sans", "Noto Sans", "Segoe UI", sans-serif;
+    color: var(--text-primary);
 }
 
-.department-shell .department-hero {
-    align-items: center;
-    background: linear-gradient(135deg, #ffffff 0%, #eef3f7 100%);
-    border: 1px solid #d4dee8;
-    border-radius: 12px;
+.dashboard-wrapper {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 2rem;
+}
+
+.premium-card {
+    background: var(--card-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.premium-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.dashboard-header {
+    padding: 1.2rem 1.3rem;
+}
+
+.dashboard-title-group {
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 1.2rem;
-    padding: 1.1rem 1.2rem;
+    align-items: center;
+    gap: 1rem;
+    min-width: 280px;
 }
 
-.department-shell .department-hero h1 {
-    font-size: 1.45rem;
-    font-weight: 700;
-    margin: 0 0 0.35rem;
-    color: #1b2b3b;
+.icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.header-icon {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+    color: #fff;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.dashboard-title {
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 800;
+    font-size: 1.55rem;
+    line-height: 1.2;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
 
-.department-shell .department-hero p {
-    color: #5f7287;
-    font-size: 0.94rem;
+.dept-meta-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: baseline;
     margin: 0;
 }
 
-.department-shell .metrics-grid {
-    display: grid;
-    gap: 0.8rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    margin-bottom: 1.2rem;
+.dept-meta-label {
+    color: var(--text-muted);
+    font-size: 0.93rem;
+    font-weight: 600;
 }
 
-.department-shell .metric-card {
-    background: #ffffff;
-    border: 1px solid #d4dee8;
-    border-radius: 10px;
-    padding: 0.9rem 1rem;
-    box-shadow: 0 8px 18px rgba(17, 39, 67, 0.08);
+.dept-meta-value {
+    color: var(--text-primary);
+    font-size: 0.96rem;
+    font-weight: 800;
 }
 
-.department-shell .metric-card p {
-    color: #5f7287;
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    margin: 0 0 0.35rem;
+.subtitle-copy {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    max-width: 62ch;
+}
+
+.dashboard-actions {
+    justify-content: flex-end;
+}
+
+.premium-btn {
+    background: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    color: #fff;
+}
+
+.premium-btn:hover {
+    background: var(--primary-color-dark);
+    border-color: var(--primary-color-dark);
+    color: #fff;
+}
+
+.metric-card {
+    padding: 1.1rem 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    height: 100%;
+    min-height: 120px;
+}
+
+.metric-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.bg-indigo-soft { background-color: var(--indigo-soft); }
+.text-indigo { color: var(--indigo); }
+
+.bg-emerald-soft { background-color: var(--emerald-soft); }
+.text-emerald { color: var(--emerald); }
+
+.bg-amber-soft { background-color: var(--amber-soft); }
+.text-amber { color: var(--amber); }
+
+.bg-rose-soft { background-color: var(--rose-soft); }
+.text-rose { color: var(--rose); }
+
+.metric-details {
+    min-width: 0;
+}
+
+.metric-label {
+    margin: 0 0 0.2rem;
+    font-size: 0.76rem;
+    color: var(--text-muted);
     text-transform: uppercase;
-}
-
-.department-shell .metric-card h3 {
-    color: #1b2b3b;
-    font-size: 1.34rem;
+    letter-spacing: 0.06em;
     font-weight: 700;
+}
+
+.metric-value {
     margin: 0;
+    font-size: 1.95rem;
+    font-weight: 800;
+    line-height: 1.1;
 }
 
-.department-shell .panel {
-    background: #ffffff;
-    border: 1px solid #d4dee8;
-    border-radius: 12px;
-    padding: 1rem;
-    box-shadow: 0 8px 18px rgba(17, 39, 67, 0.08);
-}
-
-.department-shell .panel-header {
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.8rem;
-}
-
-.department-shell .panel-header h4 {
-    color: #1b2b3b;
+.list-icon {
+    width: 36px;
+    height: 36px;
+    background: #edf3fb;
+    color: var(--primary-color);
     font-size: 1rem;
-    font-weight: 700;
-    margin: 0;
+    border-radius: 10px;
+}
+
+.panel-title {
+    color: var(--text-primary);
+    font-size: 1.12rem;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
 
-.department-shell .panel-header span {
-    color: #5f7287;
-    font-size: 0.84rem;
+.snapshot-info {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: #f8fbff;
+    padding: 0.45rem 0.75rem;
 }
 
-.department-shell .metric-card.highlight-metric {
-    background: #fff8e1;
-    border-color: #ffca28;
+.premium-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
-.department-shell .metric-card.highlight-metric h3 {
-    color: #f57c00;
+.premium-table thead th {
+    background: #f6f9fd;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    padding: 0.95rem 0.75rem;
 }
 
-@media (max-width: 768px) {
-    .department-shell .department-hero {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 0.7rem;
+.premium-table tbody td {
+    border-bottom: 1px solid #edf2f8;
+    color: var(--text-primary);
+    font-size: 0.93rem;
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+}
+
+.premium-table tbody tr:hover td {
+    background: #fbfdff;
+}
+
+.premium-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.project-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-primary-soft {
+    background-color: var(--primary-color-soft);
+    color: var(--primary-color);
+}
+
+.project-name-text {
+    line-height: 1.3;
+}
+
+.custom-badge {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 0.36rem 0.78rem;
+}
+
+.badge-success {
+    background-color: var(--emerald-soft);
+    color: #047857;
+    border-color: rgba(15, 159, 111, 0.22);
+}
+
+.badge-secondary {
+    background-color: #f1f5f9;
+    color: #54657b;
+    border-color: #dbe4ee;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background-color: #c5d2e0;
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background-color: #eff4f9;
+}
+
+@media (max-width: 991px) {
+    .dashboard-actions {
+        width: 100%;
+        justify-content: flex-start;
     }
 }
 
+@media (max-width: 768px) {
+    .dashboard-wrapper {
+        padding: 1rem 0.75rem 1.5rem;
+    }
+
+    .dashboard-title-group {
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .header-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+    }
+
+    .dashboard-title {
+        font-size: 1.3rem;
+    }
+
+    .dashboard-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .metric-value {
+        font-size: 1.7rem;
+    }
+}

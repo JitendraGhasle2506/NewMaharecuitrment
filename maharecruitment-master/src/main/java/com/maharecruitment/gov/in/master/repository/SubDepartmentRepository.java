@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.master.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +15,8 @@ import com.maharecruitment.gov.in.master.entity.SubDepartment;
 public interface SubDepartmentRepository extends JpaRepository<SubDepartment, Long> {
 
     Page<SubDepartment> findByDepartmentDepartmentId(Long departmentId, Pageable pageable);
+
+    Optional<SubDepartment> findBySubDeptIdAndDepartmentDepartmentId(Long subDeptId, Long departmentId);
 
     boolean existsByDepartmentDepartmentId(Long departmentId);
 
