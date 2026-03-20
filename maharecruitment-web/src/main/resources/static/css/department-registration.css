@@ -3,13 +3,13 @@
 :root {
     --registration-card-bg: rgba(255, 255, 255, 0.92);
     --registration-border: rgba(255, 255, 255, 0.84);
-    --registration-line: #d4dee8;
-    --registration-text: #1b2b3b;
-    --registration-muted: #5f7287;
-    --registration-brand: #1f4f78;
-    --registration-brand-deep: #163a59;
+    --registration-line: var(--panel-border, #d4dee8);
+    --registration-text: var(--text-main, #1b2b3b);
+    --registration-muted: var(--text-muted, #5f7287);
+    --registration-brand: var(--primary, #1f4f78);
+    --registration-brand-deep: var(--primary-strong, #163a59);
     --registration-accent: #0f8b8d;
-    --registration-highlight: rgba(31, 79, 120, 0.1);
+    --registration-highlight: var(--primary-soft, rgba(31, 79, 120, 0.12));
 }
 
 .registration-main {
@@ -179,7 +179,7 @@
 
 .registration-form .form-label {
     font-weight: 700;
-    color: #243758;
+    color: var(--registration-text);
     margin-bottom: 0.45rem;
     font-size: var(--form-label-font-size, 0.95rem);
     font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
@@ -213,7 +213,7 @@
     border-radius: 16px;
     background: #f9fbff;
     padding: 1rem;
-    color: #30415f;
+    color: #355274;
 }
 
 .declaration-check {
@@ -290,6 +290,14 @@
     box-shadow: none;
 }
 
+.registration-form .form-control:focus-visible,
+.registration-form .form-select:focus-visible,
+.btn-submit:focus-visible,
+.btn-verify:focus-visible {
+    outline: 2px solid var(--registration-brand);
+    outline-offset: 2px;
+}
+
 @media (max-width: 1199.98px) {
     .registration-hero {
         position: static;
@@ -328,6 +336,15 @@
 
     .btn-submit {
         width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .registration-hero,
+    .registration-card,
+    .form-section {
+        animation: none;
+        transition: none;
     }
 }
 

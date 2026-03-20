@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Merriweather+Sans:wght@600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --landing-ink: #1b2b3b;
-    --landing-muted: #5f7287;
-    --landing-brand: #1f4f78;
-    --landing-brand-strong: #163a59;
+    --landing-ink: var(--text-main, #1b2b3b);
+    --landing-muted: var(--text-muted, #5f7287);
+    --landing-brand: var(--primary, #1f4f78);
+    --landing-brand-strong: var(--primary-strong, #163a59);
     --landing-accent: #0f8b8d;
-    --landing-line: #d4dee8;
+    --landing-line: var(--panel-border, #d4dee8);
 }
 
 * {
@@ -21,11 +21,11 @@ body.landing-shell {
     background:
         radial-gradient(620px 300px at -6% -8%, rgba(31, 79, 120, 0.13), transparent 62%),
         radial-gradient(560px 300px at 106% 0%, rgba(15, 139, 141, 0.12), transparent 56%),
-        linear-gradient(165deg, #ffffff 0%, #eef3f7 100%);
+        linear-gradient(165deg, #ffffff 0%, var(--app-bg, #eef3f7) 100%);
 }
 
 .landing-topbar {
-    background: linear-gradient(90deg, #1a3c5a 0%, #235d83 56%, #2a678f 100%);
+    background: linear-gradient(90deg, var(--sidebar-bg, #1a3c5a) 0%, #235d83 56%, var(--sidebar-bg-soft, #2a678f) 100%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.14);
     box-shadow: 0 10px 20px rgba(9, 47, 88, 0.2);
     padding: 0.8rem 0;
@@ -68,7 +68,7 @@ body.landing-shell {
     border-radius: 999px;
     border: 1px solid rgba(31, 79, 120, 0.26);
     background: rgba(31, 79, 120, 0.1);
-    color: #163a59;
+    color: var(--landing-brand-strong);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-size: 0.76rem;
@@ -81,7 +81,7 @@ body.landing-shell {
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
     font-size: clamp(1.75rem, 2.65vw, 2.55rem);
     line-height: 1.2;
-    color: #173960;
+    color: var(--landing-brand-strong);
 }
 
 .hero-description {
@@ -95,7 +95,7 @@ body.landing-shell {
     margin: 0 0 0.95rem;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
     font-size: 1.15rem;
-    color: #173960;
+    color: var(--landing-brand-strong);
 }
 
 .highlight-list {
@@ -114,7 +114,7 @@ body.landing-shell {
     border-radius: 12px;
     border: 1px solid var(--landing-line);
     background: #f7fafe;
-    color: #284564;
+    color: #355274;
     font-size: 0.9rem;
 }
 
@@ -159,7 +159,7 @@ body.landing-shell {
     margin: 0 0 0.3rem;
     font-size: 1rem;
     font-weight: 700;
-    color: #173960;
+    color: var(--landing-brand-strong);
 }
 
 .feature-card p {
@@ -178,7 +178,7 @@ body.landing-shell {
 .metric-tile h4 {
     margin: 0 0 0.24rem;
     font-size: 0.96rem;
-    color: #173960;
+    color: var(--landing-brand-strong);
     font-weight: 700;
 }
 
@@ -192,7 +192,7 @@ body.landing-shell {
     margin-top: 0.4rem;
     border-top: 1px solid rgba(177, 194, 215, 0.72);
     background: rgba(255, 255, 255, 0.78);
-    color: #33506f;
+    color: #355274;
     font-size: 0.83rem;
 }
 
@@ -209,14 +209,14 @@ body.landing-shell {
 
 .btn.btn-outline-primary {
     border-color: rgba(31, 79, 120, 0.56);
-    color: #0e4b87;
+    color: var(--landing-brand);
 }
 
 .btn.btn-outline-primary:hover,
 .btn.btn-outline-primary:focus {
     border-color: var(--landing-brand);
     background: rgba(31, 79, 120, 0.08);
-    color: #0a3c72;
+    color: var(--landing-brand-strong);
 }
 
 @keyframes liftIn {
@@ -249,6 +249,22 @@ body.landing-shell {
 
     .feature-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+.brand-link:focus-visible,
+.btn.btn-primary:focus-visible,
+.btn.btn-outline-primary:focus-visible {
+    outline: 2px solid var(--landing-brand);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-panel-main,
+    .hero-panel-side,
+    .feature-card {
+        animation: none;
+        transition: none;
     }
 }
 

@@ -10,14 +10,15 @@
 
 <body class="hr-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Department Request', ~{::section})}">
-        <section class="hr-request-container">
+        <section class="hr-request-container hr-request-summary-page">
             <!-- Header Section -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
+            <div class="page-hero mb-4">
+                <div class="page-hero-copy">
+                    <p class="page-hero-kicker mb-1">HR Operations</p>
                     <h2 class="fw-bold text-dark mb-1">Department Request Summary</h2>
-                    <p class="text-muted small mb-0">Manage and review project applications from various departments.</p>
+                    <p class="text-muted mb-0">Track project demand across departments and review sub-department application workload in one place.</p>
                 </div>
-                <a class="btn btn-outline-secondary btn-sm px-3" th:href="@{/hr/dashboard}">
+                <a class="btn btn-outline-secondary btn-sm px-3 page-back-btn" th:href="@{/hr/dashboard}">
                     <i class="fa fa-arrow-left me-2"></i>Back to Dashboard
                 </a>
             </div>
@@ -58,12 +59,12 @@
             </div>
 
             <!-- Search & Filter Bar -->
-            <div class="d-flex justify-content-between align-items-center mb-4 g-3 flex-wrap">
-                <div class="search-wrapper flex-grow-1 me-3">
+            <div class="toolbar-card d-flex justify-content-between align-items-center mb-4 g-3 flex-wrap">
+                <div class="search-wrapper summary-search-wrap">
                     <i class="fa fa-search"></i>
-                    <input type="text" id="deptSearch" class="form-control search-input" placeholder="Search by department or sub-department name...">
+                    <input type="text" id="deptSearch" class="form-control search-input" placeholder="Search by department or sub-department name..." aria-label="Search departments">
                 </div>
-                <div class="text-muted small">
+                <div class="results-meta text-muted small">
                     Showing <span class="fw-bold text-dark" th:text="${#lists.size(parentDepartmentRequests)}">0</span> Departments
                 </div>
             </div>
@@ -76,24 +77,30 @@
                     <p>There are currently no registered parent departments with applications.</p>
                 </div>
 
-                <div th:each="parentDepartment, parentStat : ${parentDepartmentRequests}" class="dept-item shadow-sm">
+                <div id="noSearchResults" class="empty-state d-none">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <h4>No Matching Department</h4>
+                    <p>Try searching with another department or sub-department keyword.</p>
+                </div>
+
+                <div th:each="parentDepartment, parentStat : ${parentDepartmentRequests}" class="dept-item summary-dept-item shadow-sm">
                     <!-- Dept Header -->
-                    <div class="dept-header js-dept-toggle" th:attr="data-target=|subDepts-${parentStat.index}|">
+                    <div class="dept-header summary-dept-header js-dept-toggle" th:attr="data-target=|subDepts-${parentStat.index}|">
                         <div class="dept-info">
                             <div class="dept-icon">
                                 <i class="fa-solid fa-building-user"></i>
                             </div>
-                            <div>
+                            <div class="dept-meta">
                                 <div class="dept-name" th:text="${parentDepartment.departmentName}">Department Name</div>
-                                <div class="text-muted small" th:text="${#lists.size(parentDepartment.subDepartmentProjectCounts) + ' Sub-Departments'}">0 Sub-Departments</div>
+                                <div class="dept-sub-label text-muted small" th:text="${#lists.size(parentDepartment.subDepartmentProjectCounts) + ' Sub-Departments'}">0 Sub-Departments</div>
                             </div>
                         </div>
                         <div class="dept-stats">
-                            <div class="stat-group">
+                            <div class="stat-group stat-group-pill">
                                 <span class="stat-value" th:text="${parentDepartment.projectApplicationCount}">0</span>
                                 <span class="stat-label">Applications</span>
                             </div>
-                            <div class="ms-3">
+                            <div class="dept-chevron ms-3">
                                 <i class="fa fa-chevron-down text-muted transition-icon"></i>
                             </div>
                         </div>
@@ -107,8 +114,11 @@
                             </div>
                             
                             <div th:each="subDepartment : ${parentDepartment.subDepartmentProjectCounts}" class="sub-dept-card">
-                                <div class="sub-dept-name" th:text="${subDepartment.subDepartmentName}">Sub-Department Name</div>
-                                <div>
+                                <div class="sub-dept-main">
+                                    <span class="sub-dept-dot" aria-hidden="true"></span>
+                                    <div class="sub-dept-name" th:text="${subDepartment.subDepartmentName}">Sub-Department Name</div>
+                                </div>
+                                <div class="sub-dept-action">
                                     <a th:if="${subDepartment.subDepartmentId != null and subDepartment.projectApplicationCount > 0}"
                                        th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(departmentId=${parentDepartment.departmentId},subDepartmentId=${subDepartment.subDepartmentId})}"
                                        class="app-count-link shadow-sm">
@@ -138,6 +148,10 @@
                     
                     if (targetContainer) {
                         const isShowing = targetContainer.classList.toggle('show');
+                        const deptItem = this.closest('.dept-item');
+                        if (deptItem) {
+                            deptItem.classList.toggle('open', isShowing);
+                        }
                         if (icon) {
                             icon.style.transform = isShowing ? 'rotate(180deg)' : 'rotate(0deg)';
                             icon.style.transition = 'transform 0.3s ease';
@@ -149,9 +163,15 @@
             // Search Functionality
             const searchInput = document.getElementById('deptSearch');
             const deptItems = document.querySelectorAll('.dept-item');
+            const noSearchResults = document.getElementById('noSearchResults');
+
+            if (!searchInput) {
+                return;
+            }
 
             searchInput.addEventListener('input', function () {
                 const query = this.value.toLowerCase().trim();
+                let visibleCount = 0;
 
                 deptItems.forEach(item => {
                     const deptName = item.querySelector('.dept-name').textContent.toLowerCase();
@@ -159,23 +179,40 @@
                     
                     const matchesDept = deptName.includes(query);
                     const matchesSubDept = subDepts.some(sd => sd.includes(query));
+                    const icon = item.querySelector('.transition-icon');
+                    const container = item.querySelector('.sub-dept-container');
 
                     if (matchesDept || matchesSubDept) {
-                        item.style.display = 'block';
+                        item.style.display = '';
+                        visibleCount++;
                         // If searching sub-depts, might be helpful to auto-expand
                         if (query.length > 2 && matchesSubDept && !matchesDept) {
-                           const container = item.querySelector('.sub-dept-container');
-                           if(container) container.classList.add('show');
-                           const icon = item.querySelector('.transition-icon');
-                           if(icon) icon.style.transform = 'rotate(180deg)';
+                           if (container) {
+                               container.classList.add('show');
+                           }
+                           item.classList.add('open');
+                           if (icon) {
+                               icon.style.transform = 'rotate(180deg)';
+                           }
+                        } else if (query.length === 0 && container) {
+                            container.classList.remove('show');
+                            item.classList.remove('open');
+                            if (icon) {
+                                icon.style.transform = 'rotate(0deg)';
+                            }
                         }
                     } else {
                         item.style.display = 'none';
                     }
                 });
+
+                if (noSearchResults) {
+                    const shouldShowNoResult = query.length > 0 && visibleCount === 0 && deptItems.length > 0;
+                    noSearchResults.classList.toggle('d-none', !shouldShowNoResult);
+                }
             });
         });
     </script>
 </body>
 
-</html>
+</html>

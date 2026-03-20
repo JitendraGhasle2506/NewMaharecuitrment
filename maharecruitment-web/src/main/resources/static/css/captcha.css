@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Merriweather+Sans:wght@600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --portal-ink: #1b2b3b;
-    --portal-muted: #5f7287;
-    --portal-brand: #1f4f78;
-    --portal-brand-strong: #163a59;
+    --portal-ink: var(--text-main, #1b2b3b);
+    --portal-muted: var(--text-muted, #5f7287);
+    --portal-brand: var(--primary, #1f4f78);
+    --portal-brand-strong: var(--primary-strong, #163a59);
     --portal-accent: #0f8b8d;
-    --portal-surface: #ffffff;
+    --portal-surface: var(--panel-bg, #ffffff);
     --portal-surface-soft: rgba(255, 255, 255, 0.9);
-    --portal-line: #d4dee8;
+    --portal-line: var(--panel-border, #d4dee8);
     --portal-danger: #c62828;
     --portal-ok: #0f8b8d;
 }
@@ -29,11 +29,11 @@ body.portal-shell {
     background:
         radial-gradient(620px 300px at -4% -6%, rgba(31, 79, 120, 0.13), transparent 60%),
         radial-gradient(560px 300px at 104% 0%, rgba(15, 139, 141, 0.12), transparent 55%),
-        linear-gradient(160deg, #ffffff 0%, #eef3f7 100%);
+        linear-gradient(160deg, #ffffff 0%, var(--app-bg, #eef3f7) 100%);
 }
 
 .portal-nav {
-    background: linear-gradient(90deg, #1a3c5a 0%, #235d83 56%, #2a678f 100%);
+    background: linear-gradient(90deg, var(--sidebar-bg, #1a3c5a) 0%, #235d83 56%, var(--sidebar-bg-soft, #2a678f) 100%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 10px 22px rgba(4, 49, 95, 0.2);
 }
@@ -173,7 +173,7 @@ body.portal-shell {
     margin: 0;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
     font-size: 1.52rem;
-    color: #1b2b3b;
+    color: var(--portal-ink);
 }
 
 .auth-subtext {
@@ -192,7 +192,7 @@ label.control-label {
     font-weight: 700;
     font-size: var(--form-label-font-size, 0.95rem);
     font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
-    color: #223252;
+    color: var(--portal-ink);
 }
 
 .form-control {
@@ -284,7 +284,7 @@ label.control-label {
 .portal-footer {
     margin-top: 0.4rem;
     font-size: 0.83rem;
-    color: #314863;
+    color: #355274;
     background: rgba(255, 255, 255, 0.78);
     border-top: 1px solid rgba(183, 199, 228, 0.8);
     backdrop-filter: blur(6px);
@@ -336,6 +336,23 @@ label.control-label {
 
     .trust-strip {
         gap: 0.4rem;
+    }
+}
+
+.ReloadBtn:focus-visible,
+.btn-login:focus-visible,
+.form-control:focus-visible {
+    outline: 2px solid var(--portal-brand);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-panel,
+    .auth-card,
+    .ReloadBtn,
+    .btn-login {
+        animation: none;
+        transition: none;
     }
 }
 

@@ -1,10 +1,10 @@
 :root {
-    --role-ink: #1b2b3b;
-    --role-muted: #5f7287;
-    --role-card-bg: #ffffff;
-    --role-border: #d4dee8;
-    --role-brand: #1f4f78;
-    --role-brand-strong: #163a59;
+    --role-ink: var(--text-main, #1b2b3b);
+    --role-muted: var(--text-muted, #5f7287);
+    --role-card-bg: var(--panel-bg, #ffffff);
+    --role-border: var(--panel-border, #d4dee8);
+    --role-brand: var(--primary, #1f4f78);
+    --role-brand-strong: var(--primary-strong, #163a59);
     --role-accent: #0f8b8d;
     --role-shadow: 0 8px 20px rgba(16, 38, 67, 0.1);
 }
@@ -14,11 +14,11 @@ body.role-shell {
     min-height: 100vh;
     color: var(--role-ink);
     font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-    background: linear-gradient(145deg, #ffffff 0%, #eef3f7 100%);
+    background: linear-gradient(145deg, #ffffff 0%, var(--app-bg, #eef3f7) 100%);
 }
 
 .role-nav {
-    background: linear-gradient(90deg, #1a3c5a, #2a678f);
+    background: linear-gradient(90deg, var(--sidebar-bg, #1a3c5a), var(--sidebar-bg-soft, #2a678f));
     box-shadow: 0 10px 20px rgba(13, 63, 112, 0.18);
 }
 
@@ -89,7 +89,7 @@ body.role-shell {
     margin: 0.28rem 0 0;
     font-size: 1.35rem;
     font-weight: 700;
-    color: #1b2b3b;
+    color: var(--role-ink);
 }
 
 .panel {
@@ -104,7 +104,7 @@ body.role-shell {
     margin: 0 0 0.8rem;
     font-size: 1rem;
     font-weight: 700;
-    color: #1b2b3b;
+    color: var(--role-ink);
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
 
@@ -112,7 +112,7 @@ body.role-shell {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     font-size: 0.8rem;
-    color: #3f5772;
+    color: #355274;
 }
 
 .table td {
@@ -134,6 +134,13 @@ body.role-shell {
         position: static;
         display: inline-block;
         margin-top: 0.6rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .metric-card,
+    .panel {
+        transition: none;
     }
 }
 

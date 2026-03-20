@@ -1,13 +1,13 @@
 :root {
-    --bg-main: #f3f6fb;
-    --card-surface: #ffffff;
-    --text-primary: #102033;
-    --text-muted: #64748b;
-    --border-color: #dce6f1;
+    --bg-main: var(--app-bg, #eef3f7);
+    --card-surface: var(--panel-bg, #ffffff);
+    --dashboard-text: var(--text-main, #1b2b3b);
+    --dashboard-muted: var(--text-muted, #5f7287);
+    --border-color: var(--panel-border, #d4dee8);
 
-    --primary-color: #0f5ea8;
-    --primary-color-dark: #0b4d8b;
-    --primary-color-soft: rgba(15, 94, 168, 0.12);
+    --primary-color: var(--primary, #1f4f78);
+    --primary-color-dark: var(--primary-strong, #163a59);
+    --primary-color-soft: var(--primary-soft, rgba(31, 79, 120, 0.12));
 
     --indigo: #4f46e5;
     --indigo-soft: rgba(79, 70, 229, 0.14);
@@ -28,7 +28,7 @@
 .department-shell {
     background-color: var(--bg-main);
     font-family: "Public Sans", "Noto Sans", "Segoe UI", sans-serif;
-    color: var(--text-primary);
+    color: var(--dashboard-text);
 }
 
 .dashboard-wrapper {
@@ -79,7 +79,7 @@
 
 .dashboard-title {
     margin: 0;
-    color: var(--text-primary);
+    color: var(--dashboard-text);
     font-weight: 800;
     font-size: 1.55rem;
     line-height: 1.2;
@@ -95,19 +95,19 @@
 }
 
 .dept-meta-label {
-    color: var(--text-muted);
+    color: var(--dashboard-muted);
     font-size: 0.93rem;
     font-weight: 600;
 }
 
 .dept-meta-value {
-    color: var(--text-primary);
+    color: var(--dashboard-text);
     font-size: 0.96rem;
     font-weight: 800;
 }
 
 .subtitle-copy {
-    color: var(--text-muted);
+    color: var(--dashboard-muted);
     font-size: 0.92rem;
     max-width: 62ch;
 }
@@ -167,7 +167,7 @@
 .metric-label {
     margin: 0 0 0.2rem;
     font-size: 0.76rem;
-    color: var(--text-muted);
+    color: var(--dashboard-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-weight: 700;
@@ -190,7 +190,7 @@
 }
 
 .panel-title {
-    color: var(--text-primary);
+    color: var(--dashboard-text);
     font-size: 1.12rem;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
@@ -212,7 +212,7 @@
     background: #f6f9fd;
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
-    color: var(--text-muted);
+    color: var(--dashboard-muted);
     font-size: 0.76rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -222,7 +222,7 @@
 
 .premium-table tbody td {
     border-bottom: 1px solid #edf2f8;
-    color: var(--text-primary);
+    color: var(--dashboard-text);
     font-size: 0.93rem;
     padding: 1rem 0.75rem;
     vertical-align: middle;
@@ -276,6 +276,12 @@
     border-color: #dbe4ee;
 }
 
+.premium-btn:focus-visible,
+.premium-table a:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 .table-responsive::-webkit-scrollbar {
     height: 6px;
 }
@@ -323,5 +329,12 @@
 
     .metric-value {
         font-size: 1.7rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .premium-card,
+    .premium-btn {
+        transition: none;
     }
 }

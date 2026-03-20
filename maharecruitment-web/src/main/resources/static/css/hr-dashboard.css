@@ -1,12 +1,12 @@
 :root {
-    --hr-ink: #1b2b3b;
-    --hr-muted: #5f7287;
-    --hr-panel: #ffffff;
-    --hr-line: #d4dee8;
+    --hr-ink: var(--text-main, #1b2b3b);
+    --hr-muted: var(--text-muted, #5f7287);
+    --hr-panel: var(--panel-bg, #ffffff);
+    --hr-line: var(--panel-border, #d4dee8);
     --hr-shadow: 0 9px 22px rgba(18, 39, 67, 0.1);
-    --hr-brand: #1f4f78;
-    --hr-brand-strong: #163a59;
-    --hr-internal: #1f4f78;
+    --hr-brand: var(--primary, #1f4f78);
+    --hr-brand-strong: var(--primary-strong, #163a59);
+    --hr-internal: var(--primary, #1f4f78);
     --hr-external: #0f8b8d;
 }
 
@@ -19,11 +19,11 @@ body.hr-shell {
     min-height: 100vh;
     color: var(--hr-ink);
     font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-    background: linear-gradient(145deg, #ffffff 0%, #eef3f7 100%);
+    background: linear-gradient(145deg, #ffffff 0%, var(--app-bg, #eef3f7) 100%);
 }
 
 .hr-nav {
-    background: linear-gradient(90deg, #1a3c5a, #2a678f);
+    background: linear-gradient(90deg, var(--sidebar-bg, #1a3c5a), var(--sidebar-bg-soft, #2a678f));
     box-shadow: 0 10px 20px rgba(13, 63, 112, 0.18);
 }
 
@@ -93,7 +93,7 @@ body.hr-shell {
     margin: 0.24rem 0 0;
     font-size: 1.38rem;
     font-weight: 700;
-    color: #1b2b3b;
+    color: var(--hr-ink);
 }
 
 .panel {
@@ -108,7 +108,7 @@ body.hr-shell {
     margin: 0 0 0.8rem;
     font-size: 1rem;
     font-weight: 700;
-    color: #1b2b3b;
+    color: var(--hr-ink);
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
 
@@ -145,11 +145,18 @@ body.hr-shell {
 }
 
 .table th {
-    color: #375477;
+    color: #355274;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     border-bottom-color: var(--hr-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kpi-card,
+    .panel {
+        transition: none;
+    }
 }
 
 .table td {

@@ -3,13 +3,13 @@
 :root {
     --login-card-bg: rgba(255, 255, 255, 0.92);
     --login-border: rgba(255, 255, 255, 0.84);
-    --login-line: #d4dee8;
-    --login-text: #1b2b3b;
-    --login-muted: #5f7287;
-    --login-brand: #1f4f78;
-    --login-brand-deep: #163a59;
+    --login-line: var(--panel-border, #d4dee8);
+    --login-text: var(--text-main, #1b2b3b);
+    --login-muted: var(--text-muted, #5f7287);
+    --login-brand: var(--primary, #1f4f78);
+    --login-brand-deep: var(--primary-strong, #163a59);
     --login-accent: #0f8b8d;
-    --login-highlight: rgba(31, 79, 120, 0.1);
+    --login-highlight: var(--primary-soft, rgba(31, 79, 120, 0.12));
 }
 
 .login-main {
@@ -182,7 +182,7 @@
 .form-horizontal .control-label {
     font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
     font-weight: 600;
-    color: #243758;
+    color: var(--login-text);
     margin-bottom: 0.5rem;
     font-size: var(--form-label-font-size, 0.95rem);
 }
@@ -303,6 +303,14 @@
     border-left: 4px solid #d97706;
 }
 
+.btn-login:focus-visible,
+.btn-outline-secondary:focus-visible,
+.ReloadBtn:focus-visible,
+.form-horizontal .form-control:focus-visible {
+    outline: 2px solid var(--login-brand);
+    outline-offset: 2px;
+}
+
 @media (max-width: 991.98px) {
     .auth-card {
         padding: 2rem 1.5rem;
@@ -326,5 +334,16 @@
 
     .auth-card {
         border-radius: 20px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-panel,
+    .auth-card,
+    .btn-login,
+    .btn-outline-secondary,
+    .ReloadBtn {
+        animation: none;
+        transition: none;
     }
 }
