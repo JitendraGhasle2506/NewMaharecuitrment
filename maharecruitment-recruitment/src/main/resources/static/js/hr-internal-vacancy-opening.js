@@ -12,7 +12,7 @@
     const requirementTableBody = document.querySelector("#internalRequirementTable tbody");
     const addRequirementButton = document.getElementById("addRequirementButton");
     const interviewAuthorityRoleContainerElement = document.getElementById("interviewAuthorityRoleIds");
-    const interviewAuthorityUserSelectElement = document.getElementById("interviewAuthorityUserIds");
+    const interviewAuthorityUserContainerElement = document.getElementById("interviewAuthorityUserIds");
 
     const requirementRowKeys = new Set();
 
@@ -140,7 +140,7 @@
 
     function onInterviewAuthorityRolesChange() {
         const selectedRoleIds = getCheckedValues("interviewAuthorityRoleIds");
-        const retainedAuthorityIds = new Set(getSelectedValues(interviewAuthorityUserSelectElement));
+        const retainedAuthorityIds = new Set(getCheckedValues("interviewAuthorityUserIds"));
 
         if (selectedRoleIds.length === 0) {
             resetInterviewAuthorityUsers();
@@ -192,37 +192,54 @@
     }
 
     function resetInterviewAuthorityUsers() {
-        if (!interviewAuthorityUserSelectElement) {
+        if (!interviewAuthorityUserContainerElement) {
             return;
         }
-        interviewAuthorityUserSelectElement.innerHTML = "";
+        interviewAuthorityUserContainerElement.innerHTML = `
+            <div class="text-muted small">
+                Select interview authority roles first. Matching users will appear here.
+            </div>
+        `;
     }
 
     function populateInterviewAuthorityUsers(users, retainedAuthorityIds) {
-        if (!interviewAuthorityUserSelectElement) {
+        if (!interviewAuthorityUserContainerElement) {
             return;
         }
 
-        resetInterviewAuthorityUsers();
-        users.forEach((user) => {
-            const optionElement = document.createElement("option");
-            optionElement.value = user.userId;
-            optionElement.textContent = user.displayLabel;
-            if (retainedAuthorityIds.has(String(user.userId))) {
-                optionElement.selected = true;
-            }
-            interviewAuthorityUserSelectElement.appendChild(optionElement);
-        });
-    }
-
-    function getSelectedValues(selectElement) {
-        if (!selectElement) {
-            return [];
+        interviewAuthorityUserContainerElement.innerHTML = "";
+        if (!Array.isArray(users) || users.length === 0) {
+            interviewAuthorityUserContainerElement.innerHTML = `
+                <div class="text-muted small">
+                    No users are available for the selected interview authority roles.
+                </div>
+            `;
+            return;
         }
 
-        return Array.from(selectElement.selectedOptions || [])
-            .map((optionElement) => optionElement.value)
-            .filter((value) => value);
+        users.forEach((user) => {
+            const wrapperElement = document.createElement("div");
+            wrapperElement.className = "form-check mb-2";
+
+            const inputElement = document.createElement("input");
+            inputElement.type = "checkbox";
+            inputElement.className = "form-check-input";
+            inputElement.name = "interviewAuthorityUserIds";
+            inputElement.id = `interviewAuthorityUserIds_${user.userId}`;
+            inputElement.value = user.userId;
+            if (retainedAuthorityIds.has(String(user.userId))) {
+                inputElement.checked = true;
+            }
+
+            const labelElement = document.createElement("label");
+            labelElement.className = "form-check-label";
+            labelElement.htmlFor = inputElement.id;
+            labelElement.textContent = user.displayLabel;
+
+            wrapperElement.appendChild(inputElement);
+            wrapperElement.appendChild(labelElement);
+            interviewAuthorityUserContainerElement.appendChild(wrapperElement);
+        });
     }
 
     function getCheckedValues(fieldName) {
