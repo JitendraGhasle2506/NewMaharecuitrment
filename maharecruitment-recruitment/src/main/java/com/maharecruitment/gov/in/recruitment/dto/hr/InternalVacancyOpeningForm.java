@@ -24,4 +24,10 @@ public class InternalVacancyOpeningForm {
     @Valid
     @Size(min = 1, message = "Add at least one designation requirement.")
     private List<InternalVacancyRequirementForm> requirements = new ArrayList<>();
+
+    @Size(min = 1, message = "Select at least one interview authority role.")
+    private List<Long> interviewAuthorityRoleIds = new ArrayList<>();
+
+    @Size(min = 1, message = "Select at least one interview authority.")
+    private List<Long> interviewAuthorityUserIds = new ArrayList<>();
 }

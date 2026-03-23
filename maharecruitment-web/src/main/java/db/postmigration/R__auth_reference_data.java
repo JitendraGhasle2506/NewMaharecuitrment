@@ -31,13 +31,9 @@ public class R__auth_reference_data extends BaseJavaMigration {
 
         private void seedRoles(JdbcTemplate jdbcTemplate) {
                 List<String> roles = List.of(
-                                "ADMIN", "ROLE_ADMIN", "ROLE_USER", "ROLE_AGENCY", "ROLE_HR",
-                                "ROLE_STM", "ROLE_HOD2", "ROLE_HOD1", "ROLE_COO", "ROLE_PM",
-                                "ROLE_HOD3", "ROLE_STM1", "ROLE_DEPARTMENT", "ROLE_AUDITOR",
-                                "ROLE_EMPLOYEE", "ROLE_MAHAIT_ADMIN",
-                                "ROLE_COMMON_MANAGER", "ROLE_ATTENDANCE_MANAGER",
-                                "ROLE_ESERVICEBOOK_MANAGER", "ROLE_PENSION_MANAGER",
-                                "ROLE_HRMS_MANAGER", "ROLE_PAYROLL_MANAGER");
+                                "ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AGENCY", "ROLE_ADMIN",
+                                "ROLE_USER", "ROLE_STM", "ROLE_HOD", "ROLE_COO",
+                                "ROLE_PM", "ROLE_AUDITOR", "ROLE_EMPLOYEE");
 
                 for (String role : roles) {
                         Integer count = jdbcTemplate.queryForObject(
@@ -51,7 +47,7 @@ public class R__auth_reference_data extends BaseJavaMigration {
         }
 
         private void seedUsers(JdbcTemplate jdbcTemplate) {
-                upsertUser(jdbcTemplate, "admin", "System Admin", "ADMIN");
+                upsertUser(jdbcTemplate, "admin", "System Admin", "ROLE_ADMIN");
                 upsertUser(jdbcTemplate, "hr@mahait.org", "HR Manager", "ROLE_HR");
                 upsertUser(jdbcTemplate, "auditor@mahait.org", "Auditor User", "ROLE_AUDITOR");
         }
@@ -116,7 +112,7 @@ public class R__auth_reference_data extends BaseJavaMigration {
 
                 Long adminMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Administration", null,
                                 "fa fa-user-shield", 0,
-                                roleIds.get("ROLE_ADMIN"), roleIds.get("ADMIN"));
+                                roleIds.get("ROLE_ADMIN"));
                 upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Admin Dashboard", "/admin/dashboard",
                                 "fa fa-gauge");
                 upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Role Management", "/admin/roles",
@@ -145,7 +141,7 @@ public class R__auth_reference_data extends BaseJavaMigration {
 
                 Long masterMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Master Management", null,
                                 "fa fa-database", 0,
-                                roleIds.get("ROLE_ADMIN"), roleIds.get("ADMIN"), roleIds.get("ROLE_HR"));
+                                roleIds.get("ROLE_ADMIN"), roleIds.get("ROLE_HR"));
                 upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Designation Master", "/master/designations",
                                 "fa fa-id-badge");
                 upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Resource Levels", "/master/resource-levels",
@@ -182,7 +178,7 @@ public class R__auth_reference_data extends BaseJavaMigration {
 
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Agency List", "/master/agencies",
                                 "fa fa-building",
-                                roleIds.get("ROLE_ADMIN"), roleIds.get("ADMIN"), roleIds.get("ROLE_HR"));
+                                roleIds.get("ROLE_ADMIN"), roleIds.get("ROLE_HR"));
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "User Dashboard",
                                 "/user/dashboard",
                                 "fa fa-user",
@@ -255,12 +251,9 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "PM Dashboard", "/pm/dashboard",
                                 "fa fa-diagram-project",
                                 roleIds.get("ROLE_PM"));
-                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "HOD-1 Dashboard", "/hod1/dashboard",
+                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "HOD Dashboard", "/hod1/dashboard",
                                 "fa fa-user-tie",
-                                roleIds.get("ROLE_HOD1"));
-                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "HOD-2 Dashboard", "/hod2/dashboard",
-                                "fa fa-user-gear",
-                                roleIds.get("ROLE_HOD2"));
+                                roleIds.get("ROLE_HOD"));
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "COO Dashboard", "/coo/dashboard",
                                 "fa fa-chart-line",
                                 roleIds.get("ROLE_COO"));
@@ -268,24 +261,6 @@ public class R__auth_reference_data extends BaseJavaMigration {
                                 "/employee/dashboard",
                                 "fa fa-id-badge",
                                 roleIds.get("ROLE_EMPLOYEE"));
-                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Common Module", "/common",
-                                "fa fa-layer-group",
-                                roleIds.get("ROLE_COMMON_MANAGER"));
-                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Attendance Module", "/attendance",
-                                "fa fa-calendar-check",
-                                roleIds.get("ROLE_ATTENDANCE_MANAGER"));
-                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "E-Service Book", "/eservicebook",
-                                "fa fa-book",
-                                roleIds.get("ROLE_ESERVICEBOOK_MANAGER"));
-                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Pension Module", "/pension",
-                                "fa fa-file-invoice-dollar",
-                                roleIds.get("ROLE_PENSION_MANAGER"));
-                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "HRMS Module", "/hrms",
-                                "fa fa-people-group",
-                                roleIds.get("ROLE_HRMS_MANAGER"));
-                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Payroll Module", "/payroll",
-                                "fa fa-money-check-dollar",
-                                roleIds.get("ROLE_PAYROLL_MANAGER"));
         }
 
         private Map<String, Long> loadRoleIds(JdbcTemplate jdbcTemplate) {

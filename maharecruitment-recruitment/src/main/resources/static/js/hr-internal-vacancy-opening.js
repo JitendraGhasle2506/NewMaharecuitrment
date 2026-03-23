@@ -11,6 +11,8 @@
     const levelSelectElement = document.getElementById("levelSelect");
     const requirementTableBody = document.querySelector("#internalRequirementTable tbody");
     const addRequirementButton = document.getElementById("addRequirementButton");
+    const interviewAuthorityRoleContainerElement = document.getElementById("interviewAuthorityRoleIds");
+    const interviewAuthorityUserSelectElement = document.getElementById("interviewAuthorityUserIds");
 
     const requirementRowKeys = new Set();
 
@@ -19,6 +21,7 @@
     designationSelectElement?.addEventListener("change", onDesignationChange);
     addRequirementButton?.addEventListener("click", onAddRequirementClick);
     requirementTableBody?.addEventListener("click", onRequirementTableClick);
+    interviewAuthorityRoleContainerElement?.addEventListener("change", onInterviewAuthorityRolesChange);
 
     function initializeExistingRows() {
         const rows = requirementTableBody?.querySelectorAll("tr") || [];
@@ -135,6 +138,35 @@
         resequenceRequirementRows();
     }
 
+    function onInterviewAuthorityRolesChange() {
+        const selectedRoleIds = getCheckedValues("interviewAuthorityRoleIds");
+        const retainedAuthorityIds = new Set(getSelectedValues(interviewAuthorityUserSelectElement));
+
+        if (selectedRoleIds.length === 0) {
+            resetInterviewAuthorityUsers();
+            return;
+        }
+
+        const queryString = selectedRoleIds
+            .map((roleId) => `roleIds=${encodeURIComponent(roleId)}`)
+            .join("&");
+
+        fetch(`${contextPath}/hr/internal-vacancies/interview-authorities?${queryString}`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Interview authority lookup failed.");
+                }
+                return response.json();
+            })
+            .then((users) => {
+                populateInterviewAuthorityUsers(users, retainedAuthorityIds);
+            })
+            .catch((error) => {
+                console.error("Unable to load interview authorities.", error);
+                alert("Unable to load interview authorities for the selected roles.");
+            });
+    }
+
     function resequenceRequirementRows() {
         const rows = requirementTableBody?.querySelectorAll("tr") || [];
         rows.forEach((row, index) => {
@@ -157,6 +189,46 @@
             designationSelectElement.value = "";
         }
         resetLevelSelect();
+    }
+
+    function resetInterviewAuthorityUsers() {
+        if (!interviewAuthorityUserSelectElement) {
+            return;
+        }
+        interviewAuthorityUserSelectElement.innerHTML = "";
+    }
+
+    function populateInterviewAuthorityUsers(users, retainedAuthorityIds) {
+        if (!interviewAuthorityUserSelectElement) {
+            return;
+        }
+
+        resetInterviewAuthorityUsers();
+        users.forEach((user) => {
+            const optionElement = document.createElement("option");
+            optionElement.value = user.userId;
+            optionElement.textContent = user.displayLabel;
+            if (retainedAuthorityIds.has(String(user.userId))) {
+                optionElement.selected = true;
+            }
+            interviewAuthorityUserSelectElement.appendChild(optionElement);
+        });
+    }
+
+    function getSelectedValues(selectElement) {
+        if (!selectElement) {
+            return [];
+        }
+
+        return Array.from(selectElement.selectedOptions || [])
+            .map((optionElement) => optionElement.value)
+            .filter((value) => value);
+    }
+
+    function getCheckedValues(fieldName) {
+        return Array.from(document.querySelectorAll(`input[name="${fieldName}"]:checked`))
+            .map((checkboxElement) => checkboxElement.value)
+            .filter((value) => value);
     }
 
     function escapeHtml(value) {

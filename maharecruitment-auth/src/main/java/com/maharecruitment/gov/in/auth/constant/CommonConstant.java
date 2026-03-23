@@ -22,20 +22,11 @@ public final class CommonConstant {
         roleTargetUrlMap.put("ROLE_AGENCY", "/agency/dashboard");
         roleTargetUrlMap.put("ROLE_STM", "/stm/dashboard");
         roleTargetUrlMap.put("ROLE_PM", "/pm/dashboard");
-        roleTargetUrlMap.put("ROLE_HOD1", "/hod1/dashboard");
-        roleTargetUrlMap.put("ROLE_HOD2", "/hod2/dashboard");
+        roleTargetUrlMap.put("ROLE_HOD", "/hod1/dashboard");
         roleTargetUrlMap.put("ROLE_COO", "/coo/dashboard");
         roleTargetUrlMap.put("ROLE_AUDITOR", "/auditor/department-requests");
         roleTargetUrlMap.put("ROLE_DEPARTMENT", "/department/home");
         roleTargetUrlMap.put("ROLE_EMPLOYEE", "/employee/dashboard");
-
-        // Existing project module roles
-        roleTargetUrlMap.put("ROLE_COMMON_MANAGER", "/common");
-        roleTargetUrlMap.put("ROLE_ATTENDANCE_MANAGER", "/attendance");
-        roleTargetUrlMap.put("ROLE_ESERVICEBOOK_MANAGER", "/eservicebook");
-        roleTargetUrlMap.put("ROLE_PENSION_MANAGER", "/pension");
-        roleTargetUrlMap.put("ROLE_HRMS_MANAGER", "/hrms");
-        roleTargetUrlMap.put("ROLE_PAYROLL_MANAGER", "/payroll");
 
         return Map.copyOf(roleTargetUrlMap);
     }

@@ -51,6 +51,35 @@
                             </div>
                         </div>
 
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label d-block">Interview Authority Roles <span class="text-danger">*</span></label>
+                                <div id="interviewAuthorityRoleIds" class="border rounded p-3 bg-light-subtle">
+                                    <div class="form-check mb-2" th:each="role : ${interviewAuthorityRoleOptions}">
+                                        <input class="form-check-input" type="checkbox"
+                                            th:field="*{interviewAuthorityRoleIds}"
+                                            th:value="${role.roleId}">
+                                        <label class="form-check-label"
+                                            th:for="${#ids.prev('interviewAuthorityRoleIds')}"
+                                            th:text="${role.roleLabel + ' (' + role.roleName + ')'}"></label>
+                                    </div>
+                                </div>
+                                <div class="form-text">Select one or more roles to load interview authorities.</div>
+                                <div class="text-danger small" th:errors="*{interviewAuthorityRoleIds}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Interview Authorities <span class="text-danger">*</span></label>
+                                <select id="interviewAuthorityUserIds" class="form-select" multiple
+                                    th:field="*{interviewAuthorityUserIds}">
+                                    <option th:each="user : ${interviewAuthorityUserOptions}"
+                                        th:value="${user.userId}"
+                                        th:text="${user.displayLabel}"></option>
+                                </select>
+                                <div class="form-text">Select one or more users who will conduct the interviews.</div>
+                                <div class="text-danger small" th:errors="*{interviewAuthorityUserIds}"></div>
+                            </div>
+                        </div>
+
                         <hr class="my-4">
 
                         <div class="row g-3 align-items-end">

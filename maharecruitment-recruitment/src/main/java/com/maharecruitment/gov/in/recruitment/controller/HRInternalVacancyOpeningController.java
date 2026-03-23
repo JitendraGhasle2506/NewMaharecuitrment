@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.controller;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -24,6 +25,7 @@ import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatu
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyCandidateReviewService;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningLevelOptionView;
@@ -34,7 +36,7 @@ import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/hr/internal-vacancies")
-@PreAuthorize("hasAnyAuthority('ROLE_HR', 'HR')")
+@PreAuthorize("hasAuthority('ROLE_HR')")
 public class HRInternalVacancyOpeningController {
 
     private static final Logger log = LoggerFactory.getLogger(HRInternalVacancyOpeningController.class);
@@ -138,11 +140,25 @@ public class HRInternalVacancyOpeningController {
         return internalVacancyOpeningService.getLevelsByDesignation(designationId);
     }
 
+    @GetMapping("/interview-authorities")
+    @ResponseBody
+    public List<InternalVacancyInterviewAuthorityUserOptionView> getInterviewAuthorities(
+            @RequestParam(name = "roleIds", required = false) List<Long> roleIds) {
+        return internalVacancyOpeningService.getAvailableInterviewAuthorities(roleIds);
+    }
+
     private void populateFormModel(Model model, InternalVacancyOpeningForm openingForm, boolean isEdit) {
         model.addAttribute("openingForm", openingForm);
         model.addAttribute("isEdit", isEdit);
         model.addAttribute("projectOptions", internalVacancyOpeningService.getAvailableInternalProjects());
         model.addAttribute("designationOptions", internalVacancyOpeningService.getAvailableDesignations());
+        model.addAttribute("interviewAuthorityRoleOptions", internalVacancyOpeningService.getAvailableInterviewAuthorityRoles());
+        model.addAttribute(
+                "interviewAuthorityUserOptions",
+                internalVacancyOpeningService.getAvailableInterviewAuthorities(
+                        openingForm.getInterviewAuthorityRoleIds() == null
+                                ? List.of()
+                                : openingForm.getInterviewAuthorityRoleIds()));
     }
 
     private InternalVacancyOpeningCommand toCommand(
@@ -162,6 +178,14 @@ public class HRInternalVacancyOpeningController {
                                 .numberOfVacancy(requirement.getNumberOfVacancy())
                                 .build())
                         .toList())
+                .interviewAuthorityRoleIds(
+                        openingForm.getInterviewAuthorityRoleIds() == null
+                                ? List.of()
+                                : new ArrayList<>(openingForm.getInterviewAuthorityRoleIds()))
+                .interviewAuthorityUserIds(
+                        openingForm.getInterviewAuthorityUserIds() == null
+                                ? List.of()
+                                : new ArrayList<>(openingForm.getInterviewAuthorityUserIds()))
                 .build();
     }
 

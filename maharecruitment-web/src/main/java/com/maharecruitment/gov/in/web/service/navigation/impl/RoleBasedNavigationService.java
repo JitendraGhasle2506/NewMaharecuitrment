@@ -23,18 +23,11 @@ public class RoleBasedNavigationService implements NavigationService {
                         "ROLE_COO",
                         "ROLE_DEPARTMENT",
                         "ROLE_EMPLOYEE",
-                        "ROLE_HOD1",
-                        "ROLE_HOD2",
+                        "ROLE_HOD",
                         "ROLE_PM",
                         "ROLE_STM",
                         "ROLE_AGENCY",
-                        "ROLE_USER",
-                        "ROLE_COMMON_MANAGER",
-                        "ROLE_ATTENDANCE_MANAGER",
-                        "ROLE_ESERVICEBOOK_MANAGER",
-                        "ROLE_PENSION_MANAGER",
-                        "ROLE_HRMS_MANAGER",
-                        "ROLE_PAYROLL_MANAGER");
+                        "ROLE_USER");
 
         @Override
         public String resolveHomeUrl(List<String> roles) {
@@ -83,15 +76,8 @@ public class RoleBasedNavigationService implements NavigationService {
 
                 String role = authority.substring(5);
                 return switch (role) {
-                        case "HOD1" -> "HOD-1";
-                        case "HOD2" -> "HOD-2";
+                        case "HOD" -> "HOD";
                         case "COO" -> "COO";
-                        case "HRMS_MANAGER" -> "HRMS Manager";
-                        case "PAYROLL_MANAGER" -> "Payroll Manager";
-                        case "COMMON_MANAGER" -> "Common Manager";
-                        case "ATTENDANCE_MANAGER" -> "Attendance Manager";
-                        case "ESERVICEBOOK_MANAGER" -> "E-Service Book Manager";
-                        case "PENSION_MANAGER" -> "Pension Manager";
                         default -> role.replace('_', ' ');
                 };
         }

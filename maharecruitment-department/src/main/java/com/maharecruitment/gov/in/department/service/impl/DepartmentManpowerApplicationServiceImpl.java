@@ -69,13 +69,9 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     private static final String ACTION_DRAFT = "draft";
     private static final String ACTION_SUBMIT = "submit";
     private static final String ROLE_HR = "ROLE_HR";
-    private static final String ROLE_HR_ALT = "HR";
     private static final String ROLE_AUDITOR = "ROLE_AUDITOR";
-    private static final String ROLE_AUDITOR_ALT = "AUDITOR";
     private static final String ROLE_DEPARTMENT = "ROLE_DEPARTMENT";
-    private static final String ROLE_DEPARTMENT_ALT = "DEPARTMENT";
     private static final String ROLE_USER = "ROLE_USER";
-    private static final String ROLE_USER_ALT = "USER";
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
     private final DepartmentProjectApplicationRepository applicationRepository;
@@ -333,7 +329,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             String remarks,
             String actorEmail) {
         DepartmentActorContext actorContext = resolveWorkflowActorContext(actorEmail);
-        ensureActorHasRole(actorContext.getActorEmail(), "ROLE_HR", "HR");
+        ensureActorHasRole(actorContext.getActorEmail(), ROLE_HR);
 
         DepartmentProjectApplicationEntity application = findApplicationById(applicationId);
         DepartmentApplicationStatus previousStatus = application.getApplicationStatus();
@@ -370,7 +366,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             String remarks,
             String actorEmail) {
         DepartmentActorContext actorContext = resolveWorkflowActorContext(actorEmail);
-        ensureActorHasRole(actorContext.getActorEmail(), "ROLE_AUDITOR", "AUDITOR");
+        ensureActorHasRole(actorContext.getActorEmail(), ROLE_AUDITOR);
 
         DepartmentProjectApplicationEntity application = findApplicationById(applicationId);
         DepartmentApplicationStatus currentStatus = application.getApplicationStatus();
@@ -424,7 +420,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             String remarks,
             String actorEmail) {
         DepartmentActorContext actorContext = resolveWorkflowActorContext(actorEmail);
-        ensureActorHasRole(actorContext.getActorEmail(), "ROLE_AUDITOR", "AUDITOR");
+        ensureActorHasRole(actorContext.getActorEmail(), ROLE_AUDITOR);
 
         DepartmentProjectApplicationEntity application = findApplicationById(applicationId);
         if (application.getApplicationStatus() != DepartmentApplicationStatus.AUDITOR_APPROVED) {
@@ -939,7 +935,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             return;
         }
 
-        List<Long> hrUserIds = resolveUserIdsByRoleNames(ROLE_HR, ROLE_HR_ALT);
+        List<Long> hrUserIds = resolveUserIdsByRoleNames(ROLE_HR);
         if (hrUserIds.isEmpty()) {
             log.warn("No HR users found to notify for applicationId={}, requestId={}",
                     applicationEntity.getDepartmentProjectApplicationId(),
@@ -1030,7 +1026,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             return;
         }
 
-        List<Long> auditorUserIds = resolveUserIdsByRoleNames(ROLE_AUDITOR, ROLE_AUDITOR_ALT);
+        List<Long> auditorUserIds = resolveUserIdsByRoleNames(ROLE_AUDITOR);
         if (auditorUserIds.isEmpty()) {
             log.warn("No Auditor users found to notify for HR-approved applicationId={}, requestId={}",
                     applicationEntity.getDepartmentProjectApplicationId(),
@@ -1125,9 +1121,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             List<Long> departmentUserIds = resolveDepartmentUserIdsByRoleNames(
                     applicationEntity.getDepartmentRegistrationId(),
                     ROLE_DEPARTMENT,
-                    ROLE_DEPARTMENT_ALT,
-                    ROLE_USER,
-                    ROLE_USER_ALT);
+                    ROLE_USER);
             if (departmentUserIds != null && !departmentUserIds.isEmpty()) {
                 recipients.addAll(departmentUserIds);
             }

@@ -74,6 +74,14 @@ public class InternalVacancyOpeningEntity extends RecruitmentAuditable {
     @OrderBy("internalVacancyOpeningRequirementId ASC")
     private List<InternalVacancyOpeningRequirementEntity> requirements = new ArrayList<>();
 
+    @OneToMany(mappedBy = "opening", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("internalVacancyInterviewRoleId ASC")
+    private List<InternalVacancyInterviewRoleEntity> interviewRoles = new ArrayList<>();
+
+    @OneToMany(mappedBy = "opening", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("internalVacancyInterviewAuthorityId ASC")
+    private List<InternalVacancyInterviewAuthorityEntity> interviewAuthorities = new ArrayList<>();
+
     public void replaceRequirements(List<InternalVacancyOpeningRequirementEntity> requirementEntities) {
         requirements.clear();
         if (requirementEntities == null || requirementEntities.isEmpty()) {
@@ -91,6 +99,44 @@ public class InternalVacancyOpeningEntity extends RecruitmentAuditable {
         }
         requirement.setOpening(this);
         requirements.add(requirement);
+    }
+
+    public void replaceInterviewRoles(List<InternalVacancyInterviewRoleEntity> roleAssignments) {
+        interviewRoles.clear();
+        if (roleAssignments == null || roleAssignments.isEmpty()) {
+            return;
+        }
+
+        for (InternalVacancyInterviewRoleEntity roleAssignment : roleAssignments) {
+            addInterviewRole(roleAssignment);
+        }
+    }
+
+    public void addInterviewRole(InternalVacancyInterviewRoleEntity roleAssignment) {
+        if (roleAssignment == null) {
+            return;
+        }
+        roleAssignment.setOpening(this);
+        interviewRoles.add(roleAssignment);
+    }
+
+    public void replaceInterviewAuthorities(List<InternalVacancyInterviewAuthorityEntity> authorityAssignments) {
+        interviewAuthorities.clear();
+        if (authorityAssignments == null || authorityAssignments.isEmpty()) {
+            return;
+        }
+
+        for (InternalVacancyInterviewAuthorityEntity authorityAssignment : authorityAssignments) {
+            addInterviewAuthority(authorityAssignment);
+        }
+    }
+
+    public void addInterviewAuthority(InternalVacancyInterviewAuthorityEntity authorityAssignment) {
+        if (authorityAssignment == null) {
+            return;
+        }
+        authorityAssignment.setOpening(this);
+        interviewAuthorities.add(authorityAssignment);
     }
 
     @PrePersist

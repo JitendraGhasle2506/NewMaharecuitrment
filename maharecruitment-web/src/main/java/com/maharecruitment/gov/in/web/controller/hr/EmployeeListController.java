@@ -15,7 +15,7 @@ import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
 
 @Controller
 @RequestMapping("/hr/employees")
-@PreAuthorize("hasRole('HR')")
+@PreAuthorize("hasAuthority('ROLE_HR')")
 public class EmployeeListController {
 
     private final HROnboardingPageService hrOnboardingPageService;

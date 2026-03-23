@@ -351,10 +351,10 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                 .collect(Collectors.toSet());
 
         List<DepartmentApplicationStatus> statuses = new ArrayList<>();
-        if (roles.contains("ROLE_HR") || roles.contains("HR")) {
+        if (roles.contains("ROLE_HR")) {
             statuses.add(DepartmentApplicationStatus.SUBMITTED_TO_HR);
         }
-        if (roles.contains("ROLE_AUDITOR") || roles.contains("AUDITOR")) {
+        if (roles.contains("ROLE_AUDITOR")) {
             statuses.add(DepartmentApplicationStatus.AUDITOR_REVIEW);
         }
 
@@ -378,9 +378,9 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                 .collect(Collectors.toSet());
 
         boolean isAuthorized = false;
-        if (roles.contains("ROLE_HR") || roles.contains("HR")) {
+        if (roles.contains("ROLE_HR")) {
             isAuthorized = true;
-        } else if (roles.contains("ROLE_AUDITOR") || roles.contains("AUDITOR")) {
+        } else if (roles.contains("ROLE_AUDITOR")) {
             isAuthorized = true;
         } else if (user.getDepartmentRegistrationId() != null
                 && entity.getDepartmentRegistrationId()
@@ -423,9 +423,9 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                 .collect(Collectors.toSet());
 
         boolean isAuthorized = false;
-        if (roles.contains("ROLE_HR") || roles.contains("HR")) {
+        if (roles.contains("ROLE_HR")) {
             isAuthorized = true;
-        } else if (roles.contains("ROLE_AUDITOR") || roles.contains("AUDITOR")) {
+        } else if (roles.contains("ROLE_AUDITOR")) {
             isAuthorized = true;
         } else if (user.getDepartmentRegistrationId() != null
                 && entity.getDepartmentRegistrationId()

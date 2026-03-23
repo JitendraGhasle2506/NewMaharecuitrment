@@ -17,4 +17,6 @@ public class InternalVacancyOpeningCommand {
     private String actorEmail;
     private InternalVacancyOpeningStatus targetStatus;
     private List<InternalVacancyRequirementCommand> requirements;
+    private List<Long> interviewAuthorityRoleIds;
+    private List<Long> interviewAuthorityUserIds;
 }

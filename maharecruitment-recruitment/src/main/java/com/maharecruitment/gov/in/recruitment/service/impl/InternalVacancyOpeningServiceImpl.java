@@ -20,6 +20,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.maharecruitment.gov.in.auth.entity.Role;
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.RoleRepository;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationMasterResponse;
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationRateResponse;
 import com.maharecruitment.gov.in.master.dto.ResourceLevelRefResponse;
@@ -33,6 +37,8 @@ import com.maharecruitment.gov.in.master.service.ManpowerDesignationMasterServic
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationRateService;
 import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyOpeningForm;
 import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyRequirementForm;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyInterviewAuthorityEntity;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyInterviewRoleEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningRequirementEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
@@ -41,6 +47,8 @@ import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyOpeningR
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentRequestIdGenerator;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityRoleOptionView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalProjectOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningLevelOptionView;
@@ -54,12 +62,26 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
 
     private static final Logger log = LoggerFactory.getLogger(InternalVacancyOpeningServiceImpl.class);
     private static final String INTERNAL_REQUEST_TYPE = "I";
+    private static final Set<String> CANONICAL_INTERVIEW_AUTHORITY_ROLES = Set.of(
+            "ROLE_DEPARTMENT",
+            "ROLE_HR",
+            "ROLE_AGENCY",
+            "ROLE_ADMIN",
+            "ROLE_USER",
+            "ROLE_STM",
+            "ROLE_HOD",
+            "ROLE_COO",
+            "ROLE_PM",
+            "ROLE_AUDITOR",
+            "ROLE_EMPLOYEE");
 
     private final InternalVacancyOpeningRepository internalVacancyOpeningRepository;
     private final ProjectMstRepository projectRepository;
     private final ManpowerDesignationMasterRepository designationRepository;
     private final ManpowerDesignationMasterService designationService;
     private final ManpowerDesignationRateService designationRateService;
+    private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
     private final RecruitmentRequestIdGenerator recruitmentRequestIdGenerator;
     private final RecruitmentNotificationService recruitmentNotificationService;
 
@@ -69,6 +91,8 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             ManpowerDesignationMasterRepository designationRepository,
             ManpowerDesignationMasterService designationService,
             ManpowerDesignationRateService designationRateService,
+            RoleRepository roleRepository,
+            UserRepository userRepository,
             RecruitmentRequestIdGenerator recruitmentRequestIdGenerator,
             RecruitmentNotificationService recruitmentNotificationService) {
         this.internalVacancyOpeningRepository = internalVacancyOpeningRepository;
@@ -76,6 +100,8 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         this.designationRepository = designationRepository;
         this.designationService = designationService;
         this.designationRateService = designationRateService;
+        this.roleRepository = roleRepository;
+        this.userRepository = userRepository;
         this.recruitmentRequestIdGenerator = recruitmentRequestIdGenerator;
         this.recruitmentNotificationService = recruitmentNotificationService;
     }
@@ -93,6 +119,13 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         List<InternalVacancyOpeningRequirementEntity> requirementEntities = buildRequirementEntities(
                 command.getRequirements(),
                 designationById);
+        List<Role> interviewRoles = resolveInterviewRoles(command.getInterviewAuthorityRoleIds());
+        List<User> interviewAuthorities = resolveInterviewAuthorities(
+                command.getInterviewAuthorityUserIds(),
+                interviewRoles);
+        List<InternalVacancyInterviewRoleEntity> interviewRoleEntities = buildInterviewRoleEntities(interviewRoles);
+        List<InternalVacancyInterviewAuthorityEntity> interviewAuthorityEntities = buildInterviewAuthorityEntities(
+                interviewAuthorities);
 
         boolean isEdit = command.getInternalVacancyOpeningId() != null;
         InternalVacancyOpeningEntity entity = isEdit
@@ -108,7 +141,12 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         entity.setStatus(targetStatus);
         entity.setRemarks(normalizeOptionalText(command.getRemarks()));
         entity.setUpdatedByEmail(actorEmail);
-        replaceRequirements(entity, requirementEntities, isEdit);
+        replaceChildCollections(
+                entity,
+                requirementEntities,
+                interviewRoleEntities,
+                interviewAuthorityEntities,
+                isEdit);
 
         InternalVacancyOpeningEntity saved = targetStatus == InternalVacancyOpeningStatus.OPEN
                 ? internalVacancyOpeningRepository.saveAndFlush(entity)
@@ -123,7 +161,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .sum();
 
         log.info(
-                "Internal vacancy opening saved. operation={}, requestId={}, openingId={}, status={}, projectId={}, projectName={}, designationCount={}, totalVacancies={}, actor={}",
+                "Internal vacancy opening saved. operation={}, requestId={}, openingId={}, status={}, projectId={}, projectName={}, designationCount={}, totalVacancies={}, interviewRoleCount={}, interviewAuthorityCount={}, actor={}",
                 isEdit ? "UPDATE" : "CREATE",
                 saved.getRequestId(),
                 saved.getInternalVacancyOpeningId(),
@@ -132,6 +170,8 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 project.getProjectName(),
                 saved.getRequirements().size(),
                 totalVacancies,
+                saved.getInterviewRoles().size(),
+                saved.getInterviewAuthorities().size(),
                 actorEmail);
 
         return InternalVacancyOpeningResult.builder()
@@ -158,6 +198,14 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         form.setRemarks(entity.getRemarks());
         form.setRequirements(entity.getRequirements().stream()
                 .map(this::toRequirementForm)
+                .toList());
+        form.setInterviewAuthorityRoleIds(entity.getInterviewRoles().stream()
+                .map(roleAssignment -> roleAssignment.getRole().getId())
+                .distinct()
+                .toList());
+        form.setInterviewAuthorityUserIds(entity.getInterviewAuthorities().stream()
+                .map(authorityAssignment -> authorityAssignment.getUser().getId())
+                .distinct()
                 .toList());
         return form;
     }
@@ -194,6 +242,41 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .map(level -> InternalVacancyOpeningLevelOptionView.builder()
                         .levelCode(level.getLevelCode())
                         .levelName(level.getLevelName())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<InternalVacancyInterviewAuthorityRoleOptionView> getAvailableInterviewAuthorityRoles() {
+        return roleRepository.findAllByOrderByNameAsc().stream()
+                .filter(role -> StringUtils.hasText(role.getName()))
+                .filter(role -> CANONICAL_INTERVIEW_AUTHORITY_ROLES.contains(
+                        role.getName().trim().toUpperCase(Locale.ROOT)))
+                .map(role -> InternalVacancyInterviewAuthorityRoleOptionView.builder()
+                        .roleId(role.getId())
+                        .roleName(role.getName())
+                        .roleLabel(toRoleLabel(role.getName()))
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<InternalVacancyInterviewAuthorityUserOptionView> getAvailableInterviewAuthorities(List<Long> roleIds) {
+        List<Long> normalizedRoleIds = normalizePositiveIds(roleIds);
+        if (normalizedRoleIds.isEmpty()) {
+            return List.of();
+        }
+
+        return userRepository.findDistinctUsersByRoleIds(normalizedRoleIds).stream()
+                .sorted(Comparator
+                        .comparing((User user) -> normalizeSortText(user.getName()))
+                        .thenComparing(user -> normalizeSortText(user.getEmail())))
+                .map(user -> InternalVacancyInterviewAuthorityUserOptionView.builder()
+                        .userId(user.getId())
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .mobileNo(user.getMobileNo())
+                        .displayLabel(buildInterviewAuthorityLabel(user))
                         .build())
                 .toList();
     }
@@ -339,6 +422,91 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         return entities;
     }
 
+    private List<Role> resolveInterviewRoles(List<Long> roleIds) {
+        List<Long> normalizedRoleIds = normalizePositiveIds(roleIds);
+        if (normalizedRoleIds.isEmpty()) {
+            throw new RecruitmentNotificationException("At least one interview authority role is required.");
+        }
+
+        Map<Long, Role> rolesById = roleRepository.findAllById(normalizedRoleIds).stream()
+                .filter(role -> StringUtils.hasText(role.getName()))
+                .collect(Collectors.toMap(
+                        Role::getId,
+                        role -> role,
+                        (left, right) -> left,
+                        LinkedHashMap::new));
+
+        if (rolesById.size() != normalizedRoleIds.size()) {
+            Set<Long> missingIds = new LinkedHashSet<>(normalizedRoleIds);
+            missingIds.removeAll(rolesById.keySet());
+            throw new RecruitmentNotificationException("Interview authority roles not found for ids: " + missingIds);
+        }
+
+        return normalizedRoleIds.stream()
+                .map(rolesById::get)
+                .toList();
+    }
+
+    private List<User> resolveInterviewAuthorities(List<Long> userIds, List<Role> selectedRoles) {
+        List<Long> normalizedUserIds = normalizePositiveIds(userIds);
+        if (normalizedUserIds.isEmpty()) {
+            throw new RecruitmentNotificationException("At least one interview authority is required.");
+        }
+
+        Map<Long, User> usersById = userRepository.findAllWithRolesByIdIn(normalizedUserIds).stream()
+                .collect(Collectors.toMap(
+                        User::getId,
+                        user -> user,
+                        (left, right) -> left,
+                        LinkedHashMap::new));
+
+        if (usersById.size() != normalizedUserIds.size()) {
+            Set<Long> missingIds = new LinkedHashSet<>(normalizedUserIds);
+            missingIds.removeAll(usersById.keySet());
+            throw new RecruitmentNotificationException("Interview authorities not found for user ids: " + missingIds);
+        }
+
+        Set<Long> selectedRoleIds = selectedRoles.stream()
+                .map(Role::getId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        List<User> users = normalizedUserIds.stream()
+                .map(usersById::get)
+                .toList();
+        for (User user : users) {
+            boolean matchesSelectedRoles = user.getRoles() != null && user.getRoles().stream()
+                    .map(Role::getId)
+                    .anyMatch(selectedRoleIds::contains);
+            if (!matchesSelectedRoles) {
+                throw new RecruitmentNotificationException(
+                        "Selected interview authority does not belong to the chosen roles: "
+                                + buildInterviewAuthorityLabel(user));
+            }
+        }
+
+        return users;
+    }
+
+    private List<InternalVacancyInterviewRoleEntity> buildInterviewRoleEntities(List<Role> roles) {
+        return roles.stream()
+                .map(role -> {
+                    InternalVacancyInterviewRoleEntity entity = new InternalVacancyInterviewRoleEntity();
+                    entity.setRole(role);
+                    return entity;
+                })
+                .toList();
+    }
+
+    private List<InternalVacancyInterviewAuthorityEntity> buildInterviewAuthorityEntities(List<User> users) {
+        return users.stream()
+                .map(user -> {
+                    InternalVacancyInterviewAuthorityEntity entity = new InternalVacancyInterviewAuthorityEntity();
+                    entity.setUser(user);
+                    return entity;
+                })
+                .toList();
+    }
+
     private void validateRequirement(InternalVacancyRequirementCommand requirement) {
         if (requirement == null) {
             throw new RecruitmentNotificationException("Invalid designation requirement row.");
@@ -399,15 +567,21 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .orElse(entity.getLevelCode());
     }
 
-    private void replaceRequirements(
+    private void replaceChildCollections(
             InternalVacancyOpeningEntity entity,
             List<InternalVacancyOpeningRequirementEntity> requirementEntities,
+            List<InternalVacancyInterviewRoleEntity> interviewRoleEntities,
+            List<InternalVacancyInterviewAuthorityEntity> interviewAuthorityEntities,
             boolean isEdit) {
         if (isEdit) {
             entity.replaceRequirements(List.of());
+            entity.replaceInterviewRoles(List.of());
+            entity.replaceInterviewAuthorities(List.of());
             internalVacancyOpeningRepository.saveAndFlush(entity);
         }
         entity.replaceRequirements(requirementEntities);
+        entity.replaceInterviewRoles(interviewRoleEntities);
+        entity.replaceInterviewAuthorities(interviewAuthorityEntities);
     }
 
     private String normalizeActorEmail(String actorEmail) {
@@ -422,5 +596,47 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             return null;
         }
         return value.trim();
+    }
+
+    private List<Long> normalizePositiveIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+
+        return ids.stream()
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+    }
+
+    private String buildInterviewAuthorityLabel(User user) {
+        String name = normalizeOptionalText(user.getName());
+        String email = normalizeOptionalText(user.getEmail());
+        if (name == null && email == null) {
+            return "User ID " + user.getId();
+        }
+        if (name == null) {
+            return email;
+        }
+        if (email == null) {
+            return name;
+        }
+        return name + " (" + email + ")";
+    }
+
+    private String toRoleLabel(String roleName) {
+        if (!StringUtils.hasText(roleName)) {
+            return "Role";
+        }
+
+        String normalizedRoleName = roleName.trim();
+        String withoutPrefix = normalizedRoleName.startsWith("ROLE_")
+                ? normalizedRoleName.substring(5)
+                : normalizedRoleName;
+        return withoutPrefix.replace('_', ' ');
+    }
+
+    private String normalizeSortText(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 }
