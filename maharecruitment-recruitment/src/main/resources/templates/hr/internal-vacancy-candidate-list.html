@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Internal Vacancy Candidates</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Internal Vacancy Candidates', ~{::section})}">
+        <section
+            th:with="submittedCount=${candidateListView != null and candidateListView.candidates != null ? #lists.size(candidateListView.candidates) : 0},
+                     scheduledCount=${candidateListView != null and candidateListView.candidates != null ? #lists.size(candidateListView.candidates.?[candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY']) : 0}">
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0" th:text="${candidateListView != null ? candidateListView.requestId : 'Internal Vacancy Candidates'}">
+                            REQ-0000
+                        </h2>
+                        <small class="text-muted"
+                            th:text="${candidateListView != null ? (candidateListView.projectName != null ? candidateListView.projectName : '-') : '-'}">
+                            Project Name
+                        </small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/internal-vacancies}">
+                        Back to Openings
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <table class="table table-bordered table-sm mb-4">
+                        <tr>
+                            <th width="20%">Request ID</th>
+                            <td th:text="${candidateListView != null ? candidateListView.requestId : '-'}">REQ-0000</td>
+                            <th width="20%">Notification Status</th>
+                            <td>
+                                <span class="badge text-bg-secondary"
+                                    th:text="${candidateListView != null and candidateListView.notificationStatus != null ? #strings.replace(candidateListView.notificationStatus.name(), '_', ' ') : '-'}">
+                                    IN PROGRESS
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Project Name</th>
+                            <td th:text="${candidateListView != null and candidateListView.projectName != null ? candidateListView.projectName : '-'}">
+                                Project
+                            </td>
+                            <th>Candidate Summary</th>
+                            <td
+                                th:text="${'Submitted: ' + submittedCount + ' | Interview Scheduled: ' + scheduledCount}">
+                                Submitted: 0 | Interview Scheduled: 0
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Agency</th>
+                                    <th>Candidate</th>
+                                    <th>Designation</th>
+                                    <th>Experience</th>
+                                    <th>Joining Time</th>
+                                    <th>Status</th>
+                                    <th>Submitted At</th>
+                                    <th>Interview</th>
+                                    <th>Final Decision</th>
+                                    <th>Resume</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${candidateListView == null or #lists.isEmpty(candidateListView.candidates)}">
+                                    <td colspan="11" class="text-center text-muted">
+                                        No agency-submitted candidates are available for this request id yet.
+                                    </td>
+                                </tr>
+
+                                <tr th:each="candidate, stat : ${candidateListView.candidates}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td>
+                                        <div th:text="${candidate.agencyName != null ? candidate.agencyName : '-'}">Agency</div>
+                                        <small class="text-muted"
+                                            th:text="${candidate.agencyId != null ? 'Agency ID: ' + candidate.agencyId : '-'}">
+                                            Agency ID: 1
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">Candidate</div>
+                                        <small class="text-muted"
+                                            th:text="${(candidate.candidateEmail != null ? candidate.candidateEmail : '-') + ' | ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '-')}">
+                                            email | mobile
+                                        </small>
+                                    </td>
+                                    <td
+                                        th:text="${(candidate.designationName != null ? candidate.designationName : '-') + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">
+                                        Designation | Level
+                                    </td>
+                                    <td>
+                                        <span th:text="${candidate.totalExperience != null ? candidate.totalExperience : 0}">0</span>
+                                        /
+                                        <span th:text="${candidate.relevantExperience != null ? candidate.relevantExperience : 0}">0</span>
+                                    </td>
+                                    <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
+                                    <td>
+                                        <span class="badge"
+                                            th:classappend="${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' text-bg-info' : ' text-bg-primary'"
+                                            th:text="${candidate.candidateStatus != null ? #strings.replace(candidate.candidateStatus.name(), '_', ' ') : '-'}">
+                                            SUBMITTED BY AGENCY
+                                        </span>
+                                        <div class="small text-muted mt-1"
+                                            th:if="${candidate.interviewChangeRequested == true}">
+                                            Interview change requested
+                                        </div>
+                                        <div class="small text-muted"
+                                            th:if="${candidate.assessmentSubmitted == true}">
+                                            Assessment submitted
+                                        </div>
+                                    </td>
+                                    <td
+                                        th:text="${candidate.submittedAt != null ? #temporals.format(candidate.submittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                    <td>
+                                        <div th:if="${candidate.interviewDateTime != null}">
+                                            <div
+                                                th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
+                                                01-Apr-2026 10:30
+                                            </div>
+                                            <small class="text-muted"
+                                                th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : '-'}">
+                                                Slot
+                                            </small>
+                                            <div
+                                                th:if="${candidate.interviewLink != null and !#strings.isEmpty(candidate.interviewLink)}">
+                                                <a th:href="${candidate.interviewLink}" target="_blank">Join Link</a>
+                                            </div>
+                                        </div>
+                                        <span th:if="${candidate.interviewDateTime == null}" class="text-muted">-</span>
+                                    </td>
+                                    <td>
+                                        <div th:if="${candidate.finalDecisionStatus != null}">
+                                            <span class="badge"
+                                                th:classappend="${candidate.finalDecisionStatus == 'SELECTED'} ? ' text-bg-success' : ' text-bg-danger'"
+                                                th:text="${candidate.finalDecisionStatus}">
+                                                SELECTED
+                                            </span>
+                                            <div class="small text-muted"
+                                                th:if="${candidate.finalDecisionAt != null}"
+                                                th:text="${#temporals.format(candidate.finalDecisionAt, 'dd-MMM-yyyy HH:mm')}">
+                                                01-Apr-2026 10:30
+                                            </div>
+                                            <div class="small text-muted"
+                                                th:if="${candidate.finalDecisionRemarks != null}"
+                                                th:text="${candidate.finalDecisionRemarks}">
+                                                Remarks
+                                            </div>
+                                        </div>
+                                        <span th:if="${candidate.finalDecisionStatus == null}" class="text-muted">-</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            th:if="${candidate.resumeFilePath != null}"
+                                            th:attr="data-path=${candidate.resumeFilePath}"
+                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                            View
+                                        </button>
+                                        <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:inline="javascript">
+        const contextPath = /*[[@{/}]]*/ '/';
+
+        function openManagedDocument(path) {
+            if (!path) {
+                return;
+            }
+            try {
+                const encodedPath = encodeURIComponent(btoa(path));
+                window.open(contextPath + "documents/view?path=" + encodedPath, "_blank");
+            } catch (error) {
+                alert("Unable to open resume document.");
+            }
+        }
+    </script>
+</body>
+
+</html>

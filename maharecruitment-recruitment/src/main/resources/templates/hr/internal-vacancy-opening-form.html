@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Internal Vacancy Opening</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="department-shell" th:attr="data-context-path=${contextPath}">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Internal Vacancy Opening', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2 th:text="${isEdit ? 'Edit Internal Vacancy Draft' : 'Create Internal Vacancy Opening'}"></h2>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+                    <div class="alert alert-warning" th:if="${#lists.isEmpty(projectOptions)}">
+                        No internal projects are available in Project Master. Create an internal project first.
+                    </div>
+
+                    <form id="internalVacancyOpeningForm"
+                        th:action="@{/hr/internal-vacancies}"
+                        th:object="${openingForm}"
+                        method="post">
+                        <input type="hidden" th:field="*{internalVacancyOpeningId}">
+
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Project Name <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{projectId}">
+                                    <option value="">Select Internal Project</option>
+                                    <option th:each="project : ${projectOptions}"
+                                            th:value="${project.projectId}"
+                                            th:text="${project.projectName}"></option>
+                                </select>
+                                <div class="form-text">
+                                    Projects are loaded from Project Master entries that are not linked to department applications.
+                                </div>
+                                <div class="text-danger small" th:errors="*{projectId}"></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-12">
+                                <label class="form-label">Remarks</label>
+                                <textarea class="form-control" th:field="*{remarks}" maxlength="1000" rows="3"></textarea>
+                                <div class="text-danger small" th:errors="*{remarks}"></div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label">Designation <span class="text-danger">*</span></label>
+                                <select id="designationSelect" class="form-select">
+                                    <option value="">Select Designation</option>
+                                    <option th:each="designation : ${designationOptions}"
+                                            th:value="${designation.designationId}"
+                                            th:text="${designation.designationName}"></option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Level <span class="text-danger">*</span></label>
+                                <select id="levelSelect" class="form-select">
+                                    <option value="">Select Level</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-grid">
+                                <button type="button" class="btn btn-primary" id="addRequirementButton">Add Designation</button>
+                            </div>
+                        </div>
+
+                        <div class="text-danger small mt-2" th:if="${#fields.hasErrors('requirements')}" th:errors="*{requirements}"></div>
+
+                        <div class="table-responsive mt-3">
+                            <table class="table table-bordered align-middle" id="internalRequirementTable">
+                                <thead>
+                                    <tr>
+                                        <th>Designation</th>
+                                        <th>Level</th>
+                                        <th>Vacancies</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="requirement, stat : *{requirements}"
+                                        th:attr="data-row-key=${requirement.designationId + '_' + requirement.levelCode}">
+                                        <td>
+                                            <span th:text="${requirement.designationName}"></span>
+                                            <input type="hidden" data-field="designationId"
+                                                th:name="${'requirements[' + stat.index + '].designationId'}"
+                                                th:value="${requirement.designationId}">
+                                            <input type="hidden" data-field="designationName"
+                                                th:name="${'requirements[' + stat.index + '].designationName'}"
+                                                th:value="${requirement.designationName}">
+                                        </td>
+                                        <td>
+                                            <span th:text="${requirement.levelName}"></span>
+                                            <input type="hidden" data-field="levelCode"
+                                                th:name="${'requirements[' + stat.index + '].levelCode'}"
+                                                th:value="${requirement.levelCode}">
+                                            <input type="hidden" data-field="levelName"
+                                                th:name="${'requirements[' + stat.index + '].levelName'}"
+                                                th:value="${requirement.levelName}">
+                                        </td>
+                                        <td>
+                                            <input type="number" min="1" class="form-control numberOfVacancyInput"
+                                                data-field="numberOfVacancy"
+                                                th:name="${'requirements[' + stat.index + '].numberOfVacancy'}"
+                                                th:value="${requirement.numberOfVacancy}">
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-outline-danger btn-sm removeRequirementButton">Remove</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-4 d-flex justify-content-center gap-2">
+                            <button type="submit" name="action" value="draft" class="btn btn-outline-primary"
+                                th:text="${isEdit ? 'Update Draft' : 'Save Draft'}"></button>
+                            <button type="submit" name="action" value="submit" class="btn btn-primary"
+                                th:text="${isEdit ? 'Submit Draft' : 'Submit Vacancy Opening'}"></button>
+                            <a class="btn btn-secondary" th:href="@{/hr/internal-vacancies}">Back to List</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:src="@{/js/hr-internal-vacancy-opening.js}"></script>
+</body>
+
+</html>

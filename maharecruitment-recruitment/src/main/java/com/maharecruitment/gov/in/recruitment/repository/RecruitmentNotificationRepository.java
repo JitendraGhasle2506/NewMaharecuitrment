@@ -23,6 +23,9 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
 
     Optional<RecruitmentNotificationEntity> findByRequestIdIgnoreCase(String requestId);
 
+    Optional<RecruitmentNotificationEntity> findByInternalVacancyOpeningInternalVacancyOpeningId(
+            Long internalVacancyOpeningId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select notification "
             + "from RecruitmentNotificationEntity notification "

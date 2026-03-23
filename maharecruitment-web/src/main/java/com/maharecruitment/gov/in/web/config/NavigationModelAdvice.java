@@ -1,7 +1,6 @@
 package com.maharecruitment.gov.in.web.config;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -39,10 +38,6 @@ public class NavigationModelAdvice {
 
         model.addAttribute("homePageUrl", homeUrl);
         model.addAttribute("contextPath", contextPath);
-        model.addAttribute("sidebarItems", navigationService.resolveSidebarItems(resolvedRoles)
-                .stream()
-                .map(item -> item.withUrl(toContextAwareUrl(contextPath, item.url())))
-                .collect(Collectors.toList()));
         model.addAttribute("primaryRoleLabel", navigationService.resolvePrimaryRoleLabel(resolvedRoles));
     }
 

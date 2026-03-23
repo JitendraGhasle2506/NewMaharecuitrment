@@ -18,6 +18,7 @@ import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationActivityType;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 
 public class R__department_and_recruitment_schema extends BaseJavaMigration {
 
@@ -31,6 +32,7 @@ public class R__department_and_recruitment_schema extends BaseJavaMigration {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(new SingleConnectionDataSource(connection, true));
         ensureRecruitmentInterviewColumns(connection, jdbcTemplate);
         ensureDepartmentConstraints(connection, jdbcTemplate);
+        ensureInternalVacancyOpeningSchema(connection, jdbcTemplate);
     }
 
     private void ensureRecruitmentInterviewColumns(Connection connection, JdbcTemplate jdbcTemplate) {
@@ -98,6 +100,86 @@ public class R__department_and_recruitment_schema extends BaseJavaMigration {
                 "activity_type",
                 "department_project_application_activity_activity_type_check",
                 allowedActivities);
+    }
+
+    private void ensureInternalVacancyOpeningSchema(Connection connection, JdbcTemplate jdbcTemplate) {
+        jdbcTemplate.execute("""
+                create table if not exists recruitment_request_sequence (
+                    recruitment_request_sequence_id bigserial primary key,
+                    sequence_date date not null,
+                    request_type_code varchar(1) not null,
+                    last_sequence integer not null default 0,
+                    constraint uk_recruitment_request_sequence_date_type
+                        unique (sequence_date, request_type_code)
+                )
+                """);
+        jdbcTemplate.execute(
+                "create index if not exists idx_recruitment_request_sequence_date_type "
+                        + "on recruitment_request_sequence (sequence_date, request_type_code)");
+
+        jdbcTemplate.execute("""
+                create table if not exists internal_vacancy_opening (
+                    internal_vacancy_opening_id bigserial primary key,
+                    request_id varchar(32) not null,
+                    project_id bigint not null,
+                    status varchar(20) not null,
+                    remarks varchar(1000),
+                    created_by_email varchar(255) not null,
+                    updated_by_email varchar(255) not null,
+                    created_date_time timestamp not null default current_timestamp,
+                    updated_date_time timestamp not null default current_timestamp,
+                    constraint uk_internal_vacancy_opening_request_id unique (request_id),
+                    constraint fk_internal_vacancy_opening_project
+                        foreign key (project_id) references project_mst(project_id)
+                )
+                """);
+        jdbcTemplate.execute(
+                "create index if not exists idx_internal_vacancy_opening_request_id "
+                        + "on internal_vacancy_opening (request_id)");
+        jdbcTemplate.execute(
+                "create index if not exists idx_internal_vacancy_opening_project "
+                        + "on internal_vacancy_opening (project_id)");
+        jdbcTemplate.execute(
+                "create index if not exists idx_internal_vacancy_opening_status "
+                        + "on internal_vacancy_opening (status)");
+
+        jdbcTemplate.execute("""
+                create table if not exists internal_vacancy_opening_requirement (
+                    internal_vacancy_opening_requirement_id bigserial primary key,
+                    internal_vacancy_opening_id bigint not null,
+                    designation_id bigint not null,
+                    level_code varchar(10) not null,
+                    monthly_rate numeric(14,2) not null,
+                    number_of_vacancy bigint not null,
+                    filled_positions bigint not null default 0,
+                    constraint uk_internal_vacancy_opening_requirement_row
+                        unique (internal_vacancy_opening_id, designation_id, level_code),
+                    constraint fk_internal_vacancy_opening_requirement_opening
+                        foreign key (internal_vacancy_opening_id)
+                        references internal_vacancy_opening(internal_vacancy_opening_id)
+                        on delete cascade,
+                    constraint fk_internal_vacancy_opening_requirement_designation
+                        foreign key (designation_id) references manpower_designation_master(designation_id)
+                )
+                """);
+        jdbcTemplate.execute(
+                "create index if not exists idx_internal_vacancy_opening_requirement_opening "
+                        + "on internal_vacancy_opening_requirement (internal_vacancy_opening_id)");
+        jdbcTemplate.execute(
+                "create index if not exists idx_internal_vacancy_opening_requirement_designation "
+                        + "on internal_vacancy_opening_requirement (designation_id)");
+
+        if (tableExists(connection, "internal_vacancy_opening")) {
+            List<String> allowedStatuses = Stream.of(InternalVacancyOpeningStatus.values())
+                    .map(Enum::name)
+                    .toList();
+            updateConstraint(
+                    jdbcTemplate,
+                    "internal_vacancy_opening",
+                    "status",
+                    "internal_vacancy_opening_status_check",
+                    allowedStatuses);
+        }
     }
 
     private List<String> merge(List<String> first, List<String> second) {

@@ -42,7 +42,7 @@
                         </a>
                     </li>
 
-                    <li th:if="${session.menus != null}" th:each="menuItem : ${session.menus}" class="menu-item">
+                    <li th:each="menuItem : ${session.menus}" class="menu-item">
                         <a th:href="${menuItem.isSubMenu == 0 ? '#' :
                                      (menuItem.url != null ?
                                      (menuItem.url.startsWith('/') ? contextPath + menuItem.url : contextPath + '/' + menuItem.url)
@@ -65,14 +65,6 @@
                                 </a>
                             </li>
                         </ul>
-                    </li>
-
-                    <li th:if="${session.menus == null || #lists.isEmpty(session.menus)}"
-                        th:each="item : ${sidebarItems}">
-                        <a th:href="${item.url}">
-                            <i th:class="${item.iconClass}"></i>
-                            <span th:text="${item.label}"></span>
-                        </a>
                     </li>
                 </ul>
             </nav>

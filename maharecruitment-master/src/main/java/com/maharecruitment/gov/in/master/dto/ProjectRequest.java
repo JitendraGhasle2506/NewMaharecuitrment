@@ -1,10 +1,10 @@
 package com.maharecruitment.gov.in.master.dto;
 
+import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 import com.maharecruitment.gov.in.master.entity.ProjectType;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,9 +23,6 @@ public class ProjectRequest {
     @NotNull(message = "Project type is required")
     private ProjectType projectType;
 
-    @Positive(message = "Department registration id must be positive")
-    private Long departmentRegistrationId;
-
-    @Positive(message = "Application id must be positive")
-    private Long applicationId;
+    @NotNull(message = "Project scope is required")
+    private ProjectScopeType projectScopeType;
 }

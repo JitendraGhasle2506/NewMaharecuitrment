@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Internal Vacancy Openings</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Internal Vacancy Openings', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Internal Vacancy Openings</h2>
+                    <a class="btn btn-primary" th:href="@{/hr/internal-vacancies/new}">Create Opening</a>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Project Name</th>
+                                    <th>Status</th>
+                                    <th>Created At</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(openings)}">
+                                    <td colspan="5" class="text-center text-muted">No internal vacancy openings created yet.</td>
+                                </tr>
+                                <tr th:each="opening : ${openings}">
+                                    <td>
+                                        <a th:if="${opening.status.name() == 'OPEN'}"
+                                            th:href="@{/hr/internal-vacancies/request/{requestId}/candidates(requestId=${opening.requestId})}"
+                                            th:text="${opening.requestId}"></a>
+                                        <span th:if="${opening.status.name() != 'OPEN'}"
+                                            th:text="${opening.requestId}"></span>
+                                    </td>
+                                    <td th:text="${opening.projectName}"></td>
+                                    <td th:text="${opening.status}"></td>
+                                    <td th:text="${#temporals.format(opening.createdDateTime, 'dd-MMM-yyyy HH:mm')}"></td>
+                                    <td class="text-center">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:if="${opening.status.name() == 'DRAFT'}"
+                                            th:href="@{/hr/internal-vacancies/{id}/edit(id=${opening.internalVacancyOpeningId})}">
+                                            Edit
+                                        </a>
+                                        <a class="btn btn-outline-secondary btn-sm"
+                                            th:if="${opening.status.name() == 'OPEN'}"
+                                            th:href="@{/hr/internal-vacancies/request/{requestId}/candidates(requestId=${opening.requestId})}">
+                                            Candidates
+                                        </a>
+                                        <span class="text-muted small" th:if="${opening.status.name() != 'DRAFT' and opening.status.name() != 'OPEN'}">Locked</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

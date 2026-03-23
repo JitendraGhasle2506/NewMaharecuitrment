@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.maharecruitment.gov.in.master.dto.ProjectRequest;
 import com.maharecruitment.gov.in.master.dto.ProjectResponse;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
+import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 import com.maharecruitment.gov.in.master.entity.ProjectType;
 import com.maharecruitment.gov.in.master.exception.BusinessValidationException;
 import com.maharecruitment.gov.in.master.exception.DuplicateResourceException;
@@ -32,7 +33,7 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     @Transactional
     public ProjectResponse create(ProjectRequest request) {
         String projectName = normalizeName(request.getProjectName());
-        ensureUniqueProject(projectName, request.getDepartmentRegistrationId(), null);
+        ensureUniqueProject(projectName, null, null);
 
         ProjectMst entity = new ProjectMst();
         mapRequestToEntity(request, entity, projectName);
@@ -47,7 +48,7 @@ public class ProjectMstServiceImpl implements ProjectMstService {
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found for id: " + projectId));
 
         String projectName = normalizeName(request.getProjectName());
-        ensureUniqueProject(projectName, request.getDepartmentRegistrationId(), projectId);
+        ensureUniqueProject(projectName, entity.getDepartmentRegistrationId(), projectId);
         mapRequestToEntity(request, entity, projectName);
 
         return projectMapper.toResponse(projectRepository.save(entity));
@@ -104,6 +105,7 @@ public class ProjectMstServiceImpl implements ProjectMstService {
 
         entity.setProjectName(normalizedProjectName);
         entity.setProjectType(projectType);
+        entity.setProjectScopeType(ProjectScopeType.EXTERNAL);
         entity.setDepartmentRegistrationId(departmentRegistrationId);
         entity.setApplicationId(applicationId);
 
@@ -114,8 +116,18 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         entity.setProjectName(normalizedProjectName);
         entity.setProjectDesc(normalizeDescription(request.getProjectDesc()));
         entity.setProjectType(request.getProjectType());
-        entity.setDepartmentRegistrationId(request.getDepartmentRegistrationId());
-        entity.setApplicationId(request.getApplicationId());
+        entity.setProjectScopeType(resolveProjectScopeType(request.getProjectScopeType(), entity.getApplicationId()));
+    }
+
+    private ProjectScopeType resolveProjectScopeType(ProjectScopeType projectScopeType, Long applicationId) {
+        if (projectScopeType == null) {
+            throw new BusinessValidationException("Project scope is required.");
+        }
+        if (applicationId != null && projectScopeType != ProjectScopeType.EXTERNAL) {
+            throw new BusinessValidationException(
+                    "Projects linked to department applications must remain external.");
+        }
+        return projectScopeType;
     }
 
     private void ensureUniqueProject(String projectName, Long departmentRegistrationId, Long excludeId) {

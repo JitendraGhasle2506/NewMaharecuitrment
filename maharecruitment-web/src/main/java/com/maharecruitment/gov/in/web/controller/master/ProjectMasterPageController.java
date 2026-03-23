@@ -16,6 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.master.dto.ProjectRequest;
 import com.maharecruitment.gov.in.master.dto.ProjectResponse;
+import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 import com.maharecruitment.gov.in.master.entity.ProjectType;
 import com.maharecruitment.gov.in.master.service.ProjectMstService;
 
@@ -45,7 +46,10 @@ public class ProjectMasterPageController {
 
     @GetMapping("/new")
     public String createForm(Model model) {
-        populateForm(model, new ProjectRequest(), null);
+        ProjectRequest form = new ProjectRequest();
+        form.setProjectType(ProjectType.NEW_DEVELOPMENT);
+        form.setProjectScopeType(ProjectScopeType.INTERNAL);
+        populateForm(model, form, null);
         return "master/projects/form";
     }
 
@@ -57,8 +61,7 @@ public class ProjectMasterPageController {
             form.setProjectName(existing.getProjectName());
             form.setProjectDesc(existing.getProjectDesc());
             form.setProjectType(existing.getProjectType());
-            form.setDepartmentRegistrationId(existing.getDepartmentRegistrationId());
-            form.setApplicationId(existing.getApplicationId());
+            form.setProjectScopeType(existing.getProjectScopeType());
 
             populateForm(model, form, projectId);
             return "master/projects/form";
@@ -129,5 +132,6 @@ public class ProjectMasterPageController {
         model.addAttribute("projectId", projectId);
         model.addAttribute("isEdit", projectId != null);
         model.addAttribute("projectTypes", ProjectType.values());
+        model.addAttribute("projectScopeTypes", ProjectScopeType.values());
     }
 }

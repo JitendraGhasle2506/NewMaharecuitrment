@@ -122,6 +122,35 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
 
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and n.internalVacancyOpening is not null "
+            + "and c.active = true "
+            + "order by case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacancyByRequestId(
+            @Param("requestId") String requestId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where n.internalVacancyOpening is not null "
+            + "and c.active = true "
+            + "order by upper(n.requestId) asc, "
+            + "case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacancies();
+
     boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateEmailIgnoreCase(
             Long recruitmentNotificationId,
             Long agencyId,

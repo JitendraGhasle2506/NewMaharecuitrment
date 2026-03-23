@@ -18,6 +18,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -37,6 +38,7 @@ import lombok.Setter;
         indexes = {
                 @Index(name = "idx_recruitment_notification_request_id", columnList = "request_id"),
                 @Index(name = "idx_recruitment_notification_dep_reg", columnList = "department_registration_id"),
+                @Index(name = "idx_recruitment_notification_internal_vacancy", columnList = "internal_vacancy_opening_id"),
                 @Index(name = "idx_recruitment_notification_status", columnList = "status")
         })
 @Getter
@@ -53,11 +55,15 @@ public class RecruitmentNotificationEntity extends RecruitmentAuditable {
     @Column(name = "request_id", nullable = false, length = 32)
     private String requestId;
 
-    @Column(name = "department_registration_id", nullable = false)
+    @Column(name = "department_registration_id")
     private Long departmentRegistrationId;
 
-    @Column(name = "department_project_application_id", nullable = false)
+    @Column(name = "department_project_application_id")
     private Long departmentProjectApplicationId;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "internal_vacancy_opening_id")
+    private InternalVacancyOpeningEntity internalVacancyOpening;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "project_id", nullable = false)
