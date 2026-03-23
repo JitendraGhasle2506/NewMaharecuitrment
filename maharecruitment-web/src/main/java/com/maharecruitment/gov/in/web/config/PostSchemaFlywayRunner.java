@@ -32,6 +32,7 @@ import db.postmigration.V16__project_scope_type_backfill;
 import db.postmigration.V17__internal_vacancy_draft_status_support;
 import db.postmigration.V18__recruitment_notification_internal_vacancy_support;
 import db.postmigration.V19__auth_hr_all_candidate_details_menu_backfill;
+import db.postmigration.V20__internal_vacancy_interview_panel_support;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -74,7 +75,8 @@ public class PostSchemaFlywayRunner {
                         new V16__project_scope_type_backfill(),
                         new V17__internal_vacancy_draft_status_support(),
                         new V18__recruitment_notification_internal_vacancy_support(),
-                        new V19__auth_hr_all_candidate_details_menu_backfill())
+                        new V19__auth_hr_all_candidate_details_menu_backfill(),
+                        new V20__internal_vacancy_interview_panel_support())
                 .load()
                 .migrate();
         LOGGER.info("Post-schema Flyway migrations completed");
