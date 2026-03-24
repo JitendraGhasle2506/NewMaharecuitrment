@@ -62,18 +62,10 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
 
     private static final Logger log = LoggerFactory.getLogger(InternalVacancyOpeningServiceImpl.class);
     private static final String INTERNAL_REQUEST_TYPE = "I";
-    private static final Set<String> CANONICAL_INTERVIEW_AUTHORITY_ROLES = Set.of(
-            "ROLE_DEPARTMENT",
-            "ROLE_HR",
-            "ROLE_AGENCY",
-            "ROLE_ADMIN",
-            "ROLE_USER",
-            "ROLE_STM",
+    private static final List<String> ALLOWED_INTERVIEW_AUTHORITY_ROLE_NAMES = List.of(
             "ROLE_HOD",
-            "ROLE_COO",
             "ROLE_PM",
-            "ROLE_AUDITOR",
-            "ROLE_EMPLOYEE");
+            "ROLE_STM");
 
     private final InternalVacancyOpeningRepository internalVacancyOpeningRepository;
     private final ProjectMstRepository projectRepository;
@@ -248,10 +240,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
 
     @Override
     public List<InternalVacancyInterviewAuthorityRoleOptionView> getAvailableInterviewAuthorityRoles() {
-        return roleRepository.findAllByOrderByNameAsc().stream()
-                .filter(role -> StringUtils.hasText(role.getName()))
-                .filter(role -> CANONICAL_INTERVIEW_AUTHORITY_ROLES.contains(
-                        role.getName().trim().toUpperCase(Locale.ROOT)))
+        return getAllowedInterviewAuthorityRoles().stream()
                 .map(role -> InternalVacancyInterviewAuthorityRoleOptionView.builder()
                         .roleId(role.getId())
                         .roleName(role.getName())
@@ -262,12 +251,14 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
 
     @Override
     public List<InternalVacancyInterviewAuthorityUserOptionView> getAvailableInterviewAuthorities(List<Long> roleIds) {
-        List<Long> normalizedRoleIds = normalizePositiveIds(roleIds);
-        if (normalizedRoleIds.isEmpty()) {
+        List<Role> allowedRoles = findAllowedInterviewAuthorityRoles(normalizePositiveIds(roleIds));
+        if (allowedRoles.isEmpty()) {
             return List.of();
         }
 
-        return userRepository.findDistinctUsersByRoleIds(normalizedRoleIds).stream()
+        return userRepository.findDistinctUsersByRoleIds(
+                        allowedRoles.stream().map(Role::getId).toList())
+                .stream()
                 .sorted(Comparator
                         .comparing((User user) -> normalizeSortText(user.getName()))
                         .thenComparing(user -> normalizeSortText(user.getEmail())))
@@ -428,22 +419,56 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             throw new RecruitmentNotificationException("At least one interview authority role is required.");
         }
 
-        Map<Long, Role> rolesById = roleRepository.findAllById(normalizedRoleIds).stream()
+        List<Role> roles = findAllowedInterviewAuthorityRoles(normalizedRoleIds);
+        Set<Long> resolvedRoleIds = roles.stream()
+                .map(Role::getId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (resolvedRoleIds.size() != normalizedRoleIds.size()) {
+            Set<Long> invalidIds = new LinkedHashSet<>(normalizedRoleIds);
+            invalidIds.removeAll(resolvedRoleIds);
+            throw new RecruitmentNotificationException(
+                    "Only HOD, PM, and STM roles can be assigned as interview authorities. Invalid role ids: "
+                            + invalidIds);
+        }
+
+        return normalizedRoleIds.stream()
+                .map(roleId -> roles.stream()
+                        .filter(role -> roleId.equals(role.getId()))
+                        .findFirst()
+                        .orElse(null))
+                .filter(role -> role != null)
+                .toList();
+    }
+
+    private List<Role> findAllowedInterviewAuthorityRoles(List<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Role> rolesById = roleRepository.findAllById(roleIds).stream()
                 .filter(role -> StringUtils.hasText(role.getName()))
+                .filter(role -> ALLOWED_INTERVIEW_AUTHORITY_ROLE_NAMES.contains(
+                        role.getName().trim().toUpperCase(Locale.ROOT)))
                 .collect(Collectors.toMap(
                         Role::getId,
                         role -> role,
                         (left, right) -> left,
                         LinkedHashMap::new));
 
-        if (rolesById.size() != normalizedRoleIds.size()) {
-            Set<Long> missingIds = new LinkedHashSet<>(normalizedRoleIds);
-            missingIds.removeAll(rolesById.keySet());
-            throw new RecruitmentNotificationException("Interview authority roles not found for ids: " + missingIds);
-        }
-
-        return normalizedRoleIds.stream()
+        return roleIds.stream()
                 .map(rolesById::get)
+                .filter(role -> role != null)
+                .toList();
+    }
+
+    private List<Role> getAllowedInterviewAuthorityRoles() {
+        return roleRepository.findAllByOrderByNameAsc().stream()
+                .filter(role -> StringUtils.hasText(role.getName()))
+                .filter(role -> ALLOWED_INTERVIEW_AUTHORITY_ROLE_NAMES.contains(
+                        role.getName().trim().toUpperCase(Locale.ROOT)))
+                .sorted(Comparator.comparingInt(role -> ALLOWED_INTERVIEW_AUTHORITY_ROLE_NAMES.indexOf(
+                        role.getName().trim().toUpperCase(Locale.ROOT))))
                 .toList();
     }
 

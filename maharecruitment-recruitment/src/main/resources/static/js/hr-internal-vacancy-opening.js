@@ -197,7 +197,7 @@
         }
         interviewAuthorityUserContainerElement.innerHTML = `
             <div class="text-muted small">
-                Select interview authority roles first. Matching users will appear here.
+                Select HOD, PM, or STM roles first. Users with those roles will appear here.
             </div>
         `;
     }
@@ -211,7 +211,7 @@
         if (!Array.isArray(users) || users.length === 0) {
             interviewAuthorityUserContainerElement.innerHTML = `
                 <div class="text-muted small">
-                    No users are available for the selected interview authority roles.
+                    No users are available for the selected HOD, PM, or STM roles.
                 </div>
             `;
             return;
