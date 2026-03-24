@@ -12,6 +12,10 @@ public class InternalVacancyCandidateRequestSummaryView {
     private String requestId;
     private String projectName;
     private Long totalCandidates;
+    private Long pendingReviewCandidates;
+    private Long shortlistedCandidates;
+    private Long rejectedCandidates;
     private Long interviewScheduledCandidates;
+    private Long feedbackSubmittedCandidates;
     private LocalDateTime latestSubmittedAt;
 }

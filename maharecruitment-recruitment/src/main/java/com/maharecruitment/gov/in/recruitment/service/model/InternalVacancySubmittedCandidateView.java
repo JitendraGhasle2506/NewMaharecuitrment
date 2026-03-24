@@ -31,6 +31,7 @@ public class InternalVacancySubmittedCandidateView {
     private String resumeOriginalName;
     private String resumeFilePath;
     private RecruitmentCandidateStatus candidateStatus;
+    private String departmentShortlistRemarks;
     private LocalDateTime submittedAt;
     private LocalDateTime interviewDateTime;
     private String interviewTimeSlot;

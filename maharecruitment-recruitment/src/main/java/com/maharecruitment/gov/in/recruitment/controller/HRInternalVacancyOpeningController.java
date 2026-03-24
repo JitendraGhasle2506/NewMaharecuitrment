@@ -194,11 +194,14 @@ public class HRInternalVacancyOpeningController {
             throw new RecruitmentNotificationException("Vacancy opening action is required.");
         }
 
-        return switch (action.trim().toLowerCase(Locale.ROOT)) {
-            case "draft" -> InternalVacancyOpeningStatus.DRAFT;
-            case "submit" -> InternalVacancyOpeningStatus.OPEN;
-            default -> throw new RecruitmentNotificationException("Unsupported vacancy opening action.");
-        };
+        String normalizedAction = action.trim().toLowerCase(Locale.ROOT);
+        if ("draft".equals(normalizedAction)) {
+            return InternalVacancyOpeningStatus.DRAFT;
+        }
+        if ("submit".equals(normalizedAction)) {
+            return InternalVacancyOpeningStatus.OPEN;
+        }
+        throw new RecruitmentNotificationException("Unsupported vacancy opening action.");
     }
 
     private String buildSuccessMessage(

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Interview Shortlisting</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .overview-card,
+        .request-shell {
+            border: 1px solid #d8e4f5;
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .overview-card {
+            padding: 14px 16px;
+            background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
+        }
+
+        .overview-label {
+            color: #607391;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .35px;
+        }
+
+        .overview-value {
+            margin-top: 6px;
+            color: #163868;
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .overview-note {
+            margin-top: 6px;
+            color: #6b7d99;
+            font-size: 12px;
+        }
+
+        .request-shell {
+            overflow: hidden;
+        }
+
+        .request-shell .table thead th {
+            background: #eef4ff;
+            color: #20406f;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .25px;
+            white-space: nowrap;
+        }
+
+        .request-link {
+            color: #163e74;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .request-link:hover {
+            color: #0d2c57;
+            text-decoration: underline;
+        }
+
+        .project-subtext {
+            margin-top: 4px;
+            color: #6d7d96;
+            font-size: 12px;
+        }
+
+        .metric-chip {
+            display: inline-flex;
+            min-width: 52px;
+            justify-content: center;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .metric-neutral {
+            background: #eef3fb;
+            border-color: #d8e3f2;
+            color: #355175;
+        }
+
+        .metric-pending {
+            background: #fff5df;
+            border-color: #f0dfab;
+            color: #946200;
+        }
+
+        .metric-shortlisted {
+            background: #e7f8ee;
+            border-color: #b8e1c7;
+            color: #1f7a3d;
+        }
+
+        .metric-rejected {
+            background: #ffebee;
+            border-color: #f3c2c8;
+            color: #b42335;
+        }
+
+        .metric-scheduled {
+            background: #e8f7ff;
+            border-color: #bbe3f2;
+            color: #0a6d90;
+        }
+
+        .metric-feedback {
+            background: #f0edff;
+            border-color: #d4cbf5;
+            color: #5a3fad;
+        }
+
+        .action-cell {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .empty-state {
+            border: 1px dashed #cfdbec;
+            border-radius: 14px;
+            padding: 28px 16px;
+            text-align: center;
+            color: #607391;
+            background: linear-gradient(180deg, #fcfdff 0%, #f5f9ff 100%);
+        }
+
+        @media (max-width: 1200px) {
+            .overview-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .overview-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .action-cell {
+                text-align: left;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .overview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Interview Authority', 'Interview Shortlisting', ~{::section})}">
+        <section
+            th:with="requestCount=${requestSummaries != null ? #lists.size(requestSummaries) : 0},
+                     totalCandidates=${#lists.isEmpty(requestSummaries) ? 0 : #aggregates.sum(requestSummaries.![totalCandidates != null ? totalCandidates : 0])},
+                     pendingReviewCandidates=${#lists.isEmpty(requestSummaries) ? 0 : #aggregates.sum(requestSummaries.![pendingReviewCandidates != null ? pendingReviewCandidates : 0])},
+                     rejectedCandidates=${#lists.isEmpty(requestSummaries) ? 0 : #aggregates.sum(requestSummaries.![rejectedCandidates != null ? rejectedCandidates : 0])},
+                     interviewScheduledCandidates=${#lists.isEmpty(requestSummaries) ? 0 : #aggregates.sum(requestSummaries.![interviewScheduledCandidates != null ? interviewScheduledCandidates : 0])},
+                     feedbackSubmittedCandidates=${#lists.isEmpty(requestSummaries) ? 0 : #aggregates.sum(requestSummaries.![feedbackSubmittedCandidates != null ? feedbackSubmittedCandidates : 0])}">
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Interview Shortlisting</h2>
+                        <small class="text-muted">Manage assigned internal vacancy requests, shortlist actions, rejected candidates, and interview progress</small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/home}">
+                        Back to Home
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="overview-grid">
+                        <div class="overview-card">
+                            <div class="overview-label">Assigned Requests</div>
+                            <div class="overview-value" th:text="${requestCount}">0</div>
+                            <div class="overview-note">Internal requests mapped to this interview authority</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Total Candidates</div>
+                            <div class="overview-value" th:text="${totalCandidates}">0</div>
+                            <div class="overview-note">All submitted candidates across assigned requests</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Pending Review</div>
+                            <div class="overview-value" th:text="${pendingReviewCandidates}">0</div>
+                            <div class="overview-note">Candidates still waiting for shortlist decision</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Rejected</div>
+                            <div class="overview-value" th:text="${rejectedCandidates}">0</div>
+                            <div class="overview-note">Rejected by interview authority</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Feedback Submitted</div>
+                            <div class="overview-value" th:text="${feedbackSubmittedCandidates}">0</div>
+                            <div class="overview-note"
+                                 th:text="${'Interview Scheduled: ' + interviewScheduledCandidates}">
+                                Interview Scheduled: 0
+                            </div>
+                        </div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(requestSummaries)}" class="empty-state">
+                        <h5 class="mb-2">No assigned requests yet</h5>
+                        <div>No internal vacancy requests with candidate submissions are currently mapped to your interview authority.</div>
+                    </div>
+
+                    <div th:if="${!#lists.isEmpty(requestSummaries)}" class="request-shell">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle mb-0">
+                                <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Request ID</th>
+                                    <th>Project</th>
+                                    <th class="text-center">Total</th>
+                                    <th class="text-center">Pending</th>
+                                    <th class="text-center">Shortlisted</th>
+                                    <th class="text-center">Rejected</th>
+                                    <th class="text-center">Scheduled</th>
+                                    <th class="text-center">Feedback</th>
+                                    <th>Latest Submitted At</th>
+                                    <th class="action-cell">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="summary, stat : ${requestSummaries}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td>
+                                        <a th:if="${summary.requestId != null}" class="request-link"
+                                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId})}"
+                                           th:text="${summary.requestId}">
+                                            REQ-0000
+                                        </a>
+                                        <span th:if="${summary.requestId == null}" class="text-muted">-</span>
+                                    </td>
+                                    <td>
+                                        <a th:if="${summary.requestId != null}" class="request-link"
+                                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId})}"
+                                           th:text="${summary.projectName != null ? summary.projectName : '-'}">
+                                            Project
+                                        </a>
+                                        <span th:if="${summary.requestId == null}"
+                                            th:text="${summary.projectName != null ? summary.projectName : '-'}">
+                                            Project
+                                        </span>
+                                        <div class="project-subtext">Candidate activity by review stage</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="metric-chip metric-neutral"
+                                              th:text="${summary.totalCandidates != null ? summary.totalCandidates : 0}">0</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="metric-chip metric-pending"
+                                              th:text="${summary.pendingReviewCandidates != null ? summary.pendingReviewCandidates : 0}">0</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="metric-chip metric-shortlisted"
+                                              th:text="${summary.shortlistedCandidates != null ? summary.shortlistedCandidates : 0}">0</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="metric-chip metric-rejected"
+                                              th:text="${summary.rejectedCandidates != null ? summary.rejectedCandidates : 0}">0</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="metric-chip metric-scheduled"
+                                              th:text="${summary.interviewScheduledCandidates != null ? summary.interviewScheduledCandidates : 0}">0</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="metric-chip metric-feedback"
+                                              th:text="${summary.feedbackSubmittedCandidates != null ? summary.feedbackSubmittedCandidates : 0}">0</span>
+                                    </td>
+                                    <td
+                                        th:text="${summary.latestSubmittedAt != null ? #temporals.format(summary.latestSubmittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                    <td class="action-cell">
+                                        <a th:if="${summary.requestId != null}"
+                                           class="btn btn-primary btn-sm"
+                                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId})}">
+                                            View Candidates
+                                        </a>
+                                        <span th:if="${summary.requestId == null}" class="text-muted">-</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
