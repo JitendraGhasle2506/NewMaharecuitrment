@@ -10,66 +10,140 @@
 
 <body class="department-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('Department', ${dashboard.departmentTitle}, ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header">
-                    <h2>Department Dashboard</h2>
-                </div>
-                <div class="card-body">
-                    <section class="department-hero">
+        <section class="dashboard-wrapper">
+            <div class="dashboard-header premium-card mb-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="dashboard-title-group">
+                        <div class="icon-box header-icon d-flex justify-content-center align-items-center">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
                         <div>
-                            <h1 th:text="${dashboard.departmentTitle}">Department</h1>
-                            <p>Operational overview for project and workforce status.</p>
+                            <h2 class="dashboard-title mb-1" th:text="${dashboard.departmentTitle}">Department</h2>
+                            <p class="dept-meta-line mb-1">
+                                <span class="dept-meta-label">Sub-Department Name:</span>
+                                <strong class="dept-meta-value" th:text="${#strings.isEmpty(dashboard.subDepartmentName) ? '-' : dashboard.subDepartmentName}">-</strong>
+                            </p>
+                            <p class="subtitle-copy mb-0">Track active projects, workforce deployment, and payment progress for your department.</p>
                         </div>
-                        <div class="d-flex gap-2 align-items-center">
-                            <span class="badge text-bg-warning" th:if="${isDummyData}">Dummy Data</span>
-                            <a class="btn btn-outline-secondary btn-sm" th:href="@{/department/profile}">
-                                View Profile
-                            </a>
-                        </div>
-                    </section>
+                    </div>
+                    <div class="dashboard-actions d-flex gap-2 align-items-center flex-wrap">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/department/profile}">
+                            <i class="fa-solid fa-user-circle me-1"></i> View Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
 
-                    <section class="metrics-grid">
-                        <article class="metric-card">
-                            <p>Projects Registered</p>
-                            <h3 th:text="${dashboard.registeredProjectCount}">0</h3>
-                        </article>
-                        <article class="metric-card">
-                            <p>Employees Count</p>
-                            <h3 th:text="${dashboard.employeeCount}">0</h3>
-                        </article>
-                        <article class="metric-card">
-                            <p>Current Running Projects</p>
-                            <h3 th:text="${dashboard.runningProjectCount}">0</h3>
-                        </article>
-                    </section>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="metric-card premium-card">
+                        <div class="metric-icon bg-indigo-soft text-indigo">
+                            <i class="fa-regular fa-folder-open"></i>
+                        </div>
+                        <div class="metric-details">
+                            <p class="metric-label">Projects Registered</p>
+                            <h3 class="metric-value text-indigo" th:text="${dashboard.registeredProjectCount}">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="metric-card premium-card">
+                        <div class="metric-icon bg-emerald-soft text-emerald">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div class="metric-details">
+                            <p class="metric-label">Employees Count</p>
+                            <h3 class="metric-value text-emerald" th:text="${dashboard.employeeCount}">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="metric-card premium-card">
+                        <div class="metric-icon bg-amber-soft text-amber">
+                            <i class="fa-solid fa-rocket"></i>
+                        </div>
+                        <div class="metric-details">
+                            <p class="metric-label">Running Projects</p>
+                            <h3 class="metric-value text-amber" th:text="${dashboard.runningProjectCount}">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    <section class="panel">
-                        <div class="panel-header">
-                            <h4>Current Running Projects</h4>
-                            <span>Snapshot: <strong th:text="${#temporals.format(dashboard.snapshotDate, 'dd-MMM-yyyy')}">--</strong></span>
+            <div class="card premium-card border-0">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="icon-box list-icon d-flex justify-content-center align-items-center">
+                            <i class="fa-solid fa-list-check"></i>
                         </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Project Name</th>
-                                        <th>Start Date</th>
-                                        <th>Allocated Employees</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="project : ${dashboard.runningProjects}">
-                                        <td th:text="${project.projectName}">Project</td>
-                                        <td th:text="${#temporals.format(project.startDate, 'dd-MMM-yyyy')}">01-Jan-2026</td>
-                                        <td th:text="${project.allocatedEmployees}">0</td>
-                                        <td><span class="badge text-bg-success" th:text="${project.status}">Running</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
+                        <h5 class="mb-0 fw-bold panel-title">Current Running Projects</h5>
+                    </div>
+                    <div class="snapshot-info d-flex align-items-center">
+                        <i class="fa-regular fa-calendar-alt me-2 text-muted"></i>
+                        <span class="text-muted small">Snapshot:</span>
+                        <strong class="ms-1" th:text="${#temporals.format(dashboard.snapshotDate, 'dd-MMM-yyyy')}">--</strong>
+                    </div>
+                </div>
+                <div class="card-body p-0 mt-3">
+                    <div class="table-responsive">
+                        <table class="table premium-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Project Name</th>
+                                    <th>Start Date</th>
+                                    <th>Allocated Employees</th>
+                                    <th class="pe-4">Status</th>
+                                    <th class="pe-4">Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="project : ${dashboard.runningProjects}">
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="project-avatar me-3 bg-primary-soft">
+                                                <i class="fa-solid fa-diagram-project text-primary"></i>
+                                            </div>
+                                            <span class="fw-semibold text-dark project-name-text" th:text="${project.projectName}">Project</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted"><i class="fa-regular fa-calendar me-2"></i><span th:text="${#temporals.format(project.startDate, 'dd-MMM-yyyy')}">01-Jan-2026</span></span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border px-2 py-1 rounded-pill fw-semibold">
+                                            <i class="fa-solid fa-user-group me-1 text-muted"></i>
+                                            <span th:text="${project.allocatedEmployees}">0</span>
+                                        </span>
+                                    </td>
+                                    <td class="pe-4">
+                                        <span class="custom-badge badge-success border-success" th:if="${project.status == 'Running' or project.status == 'Active'}">
+                                            <i class="fa-solid fa-circle-check me-1"></i> <span th:text="${project.status}">Running</span>
+                                        </span>
+                                        <span class="custom-badge badge-secondary border-secondary" th:unless="${project.status == 'Running' or project.status == 'Active'}">
+                                            <i class="fa-solid fa-circle-info me-1"></i> <span th:text="${project.status}">Status</span>
+                                        </span>
+                                    </td>
+                                    <td class="pe-4">
+                                        <a th:if="${project.paymentPending}" class="btn btn-warning btn-sm fw-bold shadow-sm" th:href="@{'/department/payment/apply/' + ${project.applicationId}}">
+                                            <i class="fa-solid fa-credit-card me-1"></i> Pay Now
+                                        </a>
+                                        <span th:unless="${project.paymentPending}" class="text-success small fw-bold">
+                                            <i class="fa-solid fa-check-circle me-1"></i> Paid
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(dashboard.runningProjects)}">
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <div class="empty-state">
+                                            <i class="fa-regular fa-folder-open mb-3" style="font-size: 2.5rem; color: #cbd5e1;"></i>
+                                            <h6 class="fw-semibold text-dark">No running projects found.</h6>
+                                            <p class="small mb-0">Check back later for updates.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </section>

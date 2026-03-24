@@ -20,11 +20,16 @@ import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.repository.ManpowerDesignationMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningEntity;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningRequirementEntity;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacancyEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyOpeningRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
+import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationRankReleaseService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
 import com.maharecruitment.gov.in.recruitment.service.model.AuditorApprovedNotificationCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.DesignationVacancyInput;
@@ -38,14 +43,20 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
     private final RecruitmentNotificationRepository notificationRepository;
     private final ProjectMstRepository projectRepository;
     private final ManpowerDesignationMasterRepository designationRepository;
+    private final InternalVacancyOpeningRepository internalVacancyOpeningRepository;
+    private final RecruitmentNotificationRankReleaseService rankReleaseService;
 
     public RecruitmentNotificationServiceImpl(
             RecruitmentNotificationRepository notificationRepository,
             ProjectMstRepository projectRepository,
-            ManpowerDesignationMasterRepository designationRepository) {
+            ManpowerDesignationMasterRepository designationRepository,
+            InternalVacancyOpeningRepository internalVacancyOpeningRepository,
+            RecruitmentNotificationRankReleaseService rankReleaseService) {
         this.notificationRepository = notificationRepository;
         this.projectRepository = projectRepository;
         this.designationRepository = designationRepository;
+        this.internalVacancyOpeningRepository = internalVacancyOpeningRepository;
+        this.rankReleaseService = rankReleaseService;
     }
 
     @Override
@@ -90,6 +101,46 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
         }
     }
 
+    @Override
+    @Transactional
+    public void upsertFromInternalVacancyOpening(Long internalVacancyOpeningId) {
+        InternalVacancyOpeningEntity opening = resolveOpenInternalVacancyOpening(internalVacancyOpeningId);
+        RecruitmentNotificationEntity existingNotification = findExistingInternalNotification(opening);
+        if (existingNotification != null) {
+            linkInternalVacancyIfMissing(existingNotification, opening);
+            int releasedRankCount = rankReleaseService
+                    .releaseEligibleRanksForNotification(existingNotification.getRecruitmentNotificationId());
+            log.info(
+                    "Recruitment notification already exists for internal vacancy opening. requestId={}, openingId={}, notificationId={}, releasedRankCount={}",
+                    opening.getRequestId(),
+                    opening.getInternalVacancyOpeningId(),
+                    existingNotification.getRecruitmentNotificationId(),
+                    releasedRankCount);
+            return;
+        }
+
+        RecruitmentNotificationEntity notification = new RecruitmentNotificationEntity();
+        notification.setRequestId(opening.getRequestId());
+        notification.setInternalVacancyOpening(opening);
+        notification.setDepartmentRegistrationId(null);
+        notification.setDepartmentProjectApplicationId(null);
+        notification.setProjectMst(opening.getProjectMst());
+        notification.setStatus(RecruitmentNotificationStatus.PENDING_ALLOCATION);
+        notification.replaceDesignationVacancies(toInternalVacancyEntities(opening.getRequirements()));
+
+        RecruitmentNotificationEntity savedNotification = saveInternalNotification(notification, opening);
+        int releasedRankCount = rankReleaseService
+                .releaseEligibleRanksForNotification(savedNotification.getRecruitmentNotificationId());
+
+        log.info(
+                "Recruitment notification created for internal vacancy opening. requestId={}, openingId={}, notificationId={}, vacancyCount={}, releasedRankCount={}",
+                opening.getRequestId(),
+                opening.getInternalVacancyOpeningId(),
+                savedNotification.getRecruitmentNotificationId(),
+                savedNotification.getDesignationVacancies().size(),
+                releasedRankCount);
+    }
+
     private void validateCommand(AuditorApprovedNotificationCommand command) {
         if (command == null) {
             throw new RecruitmentNotificationException("Notification command is required.");
@@ -107,6 +158,83 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
         }
         if (command.getDesignationVacancies() == null || command.getDesignationVacancies().isEmpty()) {
             throw new RecruitmentNotificationException("At least one designation vacancy is required.");
+        }
+    }
+
+    private InternalVacancyOpeningEntity resolveOpenInternalVacancyOpening(Long internalVacancyOpeningId) {
+        if (internalVacancyOpeningId == null || internalVacancyOpeningId < 1) {
+            throw new RecruitmentNotificationException("Valid internal vacancy opening id is required.");
+        }
+
+        InternalVacancyOpeningEntity opening = internalVacancyOpeningRepository
+                .findDetailedByInternalVacancyOpeningId(internalVacancyOpeningId)
+                .orElseThrow(() -> new RecruitmentNotificationException(
+                        "Internal vacancy opening not found for id: " + internalVacancyOpeningId));
+
+        if (opening.getStatus() != InternalVacancyOpeningStatus.OPEN) {
+            throw new RecruitmentNotificationException(
+                    "Recruitment notification can be created only for submitted internal vacancy openings.");
+        }
+        if (!StringUtils.hasText(opening.getRequestId())) {
+            throw new RecruitmentNotificationException("Request id is required for internal vacancy notification.");
+        }
+        if (opening.getProjectMst() == null || opening.getProjectMst().getProjectId() == null) {
+            throw new RecruitmentNotificationException("Project is required for internal vacancy notification.");
+        }
+        if (opening.getRequirements() == null || opening.getRequirements().isEmpty()) {
+            throw new RecruitmentNotificationException(
+                    "At least one designation vacancy is required for internal vacancy notification.");
+        }
+
+        return opening;
+    }
+
+    private RecruitmentNotificationEntity findExistingInternalNotification(InternalVacancyOpeningEntity opening) {
+        RecruitmentNotificationEntity notification = notificationRepository
+                .findByInternalVacancyOpeningInternalVacancyOpeningId(opening.getInternalVacancyOpeningId())
+                .orElse(null);
+        if (notification != null) {
+            return notification;
+        }
+
+        if (!StringUtils.hasText(opening.getRequestId())) {
+            return null;
+        }
+
+        RecruitmentNotificationEntity byRequestId = notificationRepository
+                .findByRequestIdIgnoreCase(opening.getRequestId())
+                .orElse(null);
+        if (byRequestId != null
+                && byRequestId.getInternalVacancyOpening() != null
+                && !opening.getInternalVacancyOpeningId()
+                        .equals(byRequestId.getInternalVacancyOpening().getInternalVacancyOpeningId())) {
+            throw new RecruitmentNotificationException(
+                    "Request id is already linked to a different internal vacancy opening.");
+        }
+        return byRequestId;
+    }
+
+    private void linkInternalVacancyIfMissing(
+            RecruitmentNotificationEntity notification,
+            InternalVacancyOpeningEntity opening) {
+        if (notification.getInternalVacancyOpening() != null) {
+            return;
+        }
+        notification.setInternalVacancyOpening(opening);
+        notificationRepository.save(notification);
+    }
+
+    private RecruitmentNotificationEntity saveInternalNotification(
+            RecruitmentNotificationEntity notification,
+            InternalVacancyOpeningEntity opening) {
+        try {
+            return notificationRepository.saveAndFlush(notification);
+        } catch (DataIntegrityViolationException ex) {
+            RecruitmentNotificationEntity existingNotification = findExistingInternalNotification(opening);
+            if (existingNotification != null) {
+                return existingNotification;
+            }
+            throw ex;
         }
     }
 
@@ -187,6 +315,46 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
             entities.add(entity);
         }
         return entities;
+    }
+
+    private List<RecruitmentDesignationVacancyEntity> toInternalVacancyEntities(
+            List<InternalVacancyOpeningRequirementEntity> requirements) {
+        Map<String, RecruitmentDesignationVacancyEntity> vacancyByKey = new LinkedHashMap<>();
+
+        for (InternalVacancyOpeningRequirementEntity requirement : requirements) {
+            validateInternalRequirement(requirement);
+
+            Long designationId = requirement.getDesignationMst().getDesignationId();
+            String levelCode = requirement.getLevelCode().trim().toUpperCase(Locale.ROOT);
+            String key = designationId + "|" + levelCode;
+
+            RecruitmentDesignationVacancyEntity vacancy = vacancyByKey.computeIfAbsent(key, ignored -> {
+                RecruitmentDesignationVacancyEntity entity = new RecruitmentDesignationVacancyEntity();
+                entity.setDesignationMst(requirement.getDesignationMst());
+                entity.setLevelCode(levelCode);
+                entity.setNumberOfVacancy(0L);
+                entity.setFillPost(0L);
+                return entity;
+            });
+
+            vacancy.setNumberOfVacancy(vacancy.getNumberOfVacancy() + requirement.getNumberOfVacancy());
+        }
+
+        return new ArrayList<>(vacancyByKey.values());
+    }
+
+    private void validateInternalRequirement(InternalVacancyOpeningRequirementEntity requirement) {
+        if (requirement == null || requirement.getDesignationMst() == null
+                || requirement.getDesignationMst().getDesignationId() == null) {
+            throw new RecruitmentNotificationException("Internal vacancy designation is required.");
+        }
+        if (!StringUtils.hasText(requirement.getLevelCode())) {
+            throw new RecruitmentNotificationException("Internal vacancy level code is required.");
+        }
+        if (requirement.getNumberOfVacancy() == null || requirement.getNumberOfVacancy() <= 0) {
+            throw new RecruitmentNotificationException(
+                    "Internal vacancy number of vacancy must be greater than zero.");
+        }
     }
 
     private String normalizeText(String value) {

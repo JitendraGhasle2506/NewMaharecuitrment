@@ -30,10 +30,9 @@ public class DepartmentDashboardPageController {
         SessionUserDTO sessionUser = extractSessionUser(session);
         DepartmentDashboardView dashboard = departmentDashboardPageService.getDashboard(
                 sessionUser != null ? sessionUser.departmentId() : null,
-                sessionUser != null ? sessionUser.name() : null);
+                sessionUser != null ? sessionUser.id() : null);
 
         model.addAttribute("dashboard", dashboard);
-        model.addAttribute("isDummyData", true);
         return "department/dashboard";
     }
 

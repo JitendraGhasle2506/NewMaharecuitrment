@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.auth.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -46,4 +47,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
             """)
     List<Long> findDistinctUserIdsByDepartmentRegistrationId(
             @Param("departmentRegistrationId") Long departmentRegistrationId);
+
+    @Query("""
+            select distinct u
+            from User u
+            join fetch u.roles r
+            where r.id in :roleIds
+            """)
+    List<User> findDistinctUsersByRoleIds(@Param("roleIds") Collection<Long> roleIds);
+
+    @Query("""
+            select distinct u
+            from User u
+            left join fetch u.roles
+            where u.id in :userIds
+            """)
+    List<User> findAllWithRolesByIdIn(@Param("userIds") Collection<Long> userIds);
 }

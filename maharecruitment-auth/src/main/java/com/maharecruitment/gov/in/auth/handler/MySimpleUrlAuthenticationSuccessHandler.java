@@ -124,6 +124,7 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
                 user.getEmail(),
                 roles,
                 departmentId,
+                user.getEmployeeId(),
                 user.getMobileNo(),
                 LocalDateTime.now()
         );

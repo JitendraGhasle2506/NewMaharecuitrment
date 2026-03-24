@@ -103,6 +103,10 @@ public class DepartmentProjectApplicationEntity extends Auditable {
     @OrderBy("actionTimestamp DESC")
     private List<DepartmentProjectApplicationActivityEntity> activityLog = new ArrayList<>();
 
+    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("departmentProformaInvoiceId DESC")
+    private List<DepartmentProformaInvoiceEntity> proformaInvoices = new ArrayList<>();
+
     public void replaceResourceRequirements(List<DepartmentProjectResourceRequirementEntity> requirements) {
         resourceRequirements.clear();
         if (requirements == null) {

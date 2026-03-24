@@ -24,6 +24,7 @@ public class AttendanceRegisterDTO {
     private String division;
     private String officeLocation;
     private String level;
+    private String projectName;
 
     // Attendance Filters
     private String dateRange;   // Month-Year (02-2026)

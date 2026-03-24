@@ -45,4 +45,16 @@ public class AdvancePaymentForm {
     private MultipartFile receiptFile;
 
     private String remarks;
+
+    private String piNumber;
+
+    private BigDecimal totalPiAmount;
+
+    private BigDecimal partialAmount;
+
+    private BigDecimal balanceAmount;
+
+    private String utrNumber;
+
+    private String paymentType; // "FULL" or "PARTIAL"
 }

@@ -22,6 +22,22 @@ import db.postmigration.V5__auth_agency_resigned_menu_backfill;
 import db.postmigration.V6__auth_agency_resignation_menu_fix;
 import db.postmigration.V7__recruitment_pre_onboarding_hr_columns_fix;
 import db.postmigration.V8__auth_agency_profile_menu_backfill;
+import db.postmigration.V10__auth_department_attendance_reports_menu_backfill;
+import db.postmigration.V11__pre_onboarding_interview_detail_nullable;
+import db.postmigration.V12__auth_hr_internal_vacancy_menu_backfill;
+import db.postmigration.V13__auth_complete_menu_seed_backfill;
+import db.postmigration.V14__auth_hr_employees_menu_backfill;
+import db.postmigration.V15__auth_hr_employees_menu_conflict_fix;
+import db.postmigration.V16__project_scope_type_backfill;
+import db.postmigration.V17__internal_vacancy_draft_status_support;
+import db.postmigration.V18__recruitment_notification_internal_vacancy_support;
+import db.postmigration.V19__auth_hr_all_candidate_details_menu_backfill;
+import db.postmigration.V20__internal_vacancy_interview_panel_support;
+import db.postmigration.V21__internal_vacancy_interview_authority_support;
+import db.postmigration.V22__auth_role_name_normalization;
+import db.postmigration.V23__auth_interview_shortlisting_menu_backfill;
+import db.postmigration.V24__recruitment_assessment_internal_vacancy_support;
+import db.postmigration.V25__internal_feedback_leadership_quality_marks;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -42,6 +58,7 @@ public class PostSchemaFlywayRunner {
                 .dataSource(dataSource)
                 .baselineOnMigrate(true)
                 .table("flyway_post_schema_history")
+                .ignoreMigrationPatterns("*:missing")
                 .javaMigrations(
                         new R__department_and_recruitment_schema(),
                         new R__master_reference_data(),
@@ -53,7 +70,23 @@ public class PostSchemaFlywayRunner {
                         new V5__auth_agency_resigned_menu_backfill(),
                         new V6__auth_agency_resignation_menu_fix(),
                         new V7__recruitment_pre_onboarding_hr_columns_fix(),
-                        new V8__auth_agency_profile_menu_backfill())
+                        new V8__auth_agency_profile_menu_backfill(),
+                        new V10__auth_department_attendance_reports_menu_backfill(),
+                        new V11__pre_onboarding_interview_detail_nullable(),
+                        new V12__auth_hr_internal_vacancy_menu_backfill(),
+                        new V13__auth_complete_menu_seed_backfill(),
+                        new V14__auth_hr_employees_menu_backfill(),
+                        new V15__auth_hr_employees_menu_conflict_fix(),
+                        new V16__project_scope_type_backfill(),
+                        new V17__internal_vacancy_draft_status_support(),
+                        new V18__recruitment_notification_internal_vacancy_support(),
+                        new V19__auth_hr_all_candidate_details_menu_backfill(),
+                        new V20__internal_vacancy_interview_panel_support(),
+                        new V21__internal_vacancy_interview_authority_support(),
+                        new V22__auth_role_name_normalization(),
+                        new V23__auth_interview_shortlisting_menu_backfill(),
+                        new V24__recruitment_assessment_internal_vacancy_support(),
+                        new V25__internal_feedback_leadership_quality_marks())
                 .load()
                 .migrate();
         LOGGER.info("Post-schema Flyway migrations completed");

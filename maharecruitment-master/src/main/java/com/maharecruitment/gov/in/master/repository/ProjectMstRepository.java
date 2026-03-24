@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.master.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,11 +9,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
+import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 
 @Repository
 public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
 
     Optional<ProjectMst> findFirstByApplicationId(Long applicationId);
+
+    List<ProjectMst> findByProjectScopeTypeOrderByProjectNameAsc(ProjectScopeType projectScopeType);
+
+    Optional<ProjectMst> findByProjectIdAndProjectScopeType(Long projectId, ProjectScopeType projectScopeType);
 
     Optional<ProjectMst> findFirstByProjectNameIgnoreCaseAndDepartmentRegistrationId(
             String projectName,

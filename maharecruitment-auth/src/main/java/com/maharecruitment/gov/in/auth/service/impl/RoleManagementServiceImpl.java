@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.auth.service.impl;
 
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,18 @@ import com.maharecruitment.gov.in.auth.service.RoleManagementService;
 public class RoleManagementServiceImpl implements RoleManagementService {
 
     private static final Logger log = LoggerFactory.getLogger(RoleManagementServiceImpl.class);
+    private static final Set<String> CANONICAL_ROLE_NAMES = Set.of(
+            "ROLE_DEPARTMENT",
+            "ROLE_HR",
+            "ROLE_AGENCY",
+            "ROLE_ADMIN",
+            "ROLE_USER",
+            "ROLE_STM",
+            "ROLE_HOD",
+            "ROLE_COO",
+            "ROLE_PM",
+            "ROLE_AUDITOR",
+            "ROLE_EMPLOYEE");
 
     private final RoleRepository roleRepository;
 
@@ -76,6 +89,9 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     @Override
     public void delete(Long id) {
         Role existing = getById(id);
+        if (CANONICAL_ROLE_NAMES.contains(existing.getName())) {
+            throw new IllegalArgumentException("Canonical system roles cannot be deleted.");
+        }
         if (existing.getUsers() != null && !existing.getUsers().isEmpty()) {
             throw new IllegalArgumentException("Cannot delete role mapped to users.");
         }
@@ -88,6 +104,12 @@ public class RoleManagementServiceImpl implements RoleManagementService {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Role name is required.");
         }
-        return name.trim().toUpperCase();
+
+        String normalizedName = name.trim().toUpperCase();
+        if (!CANONICAL_ROLE_NAMES.contains(normalizedName)) {
+            throw new IllegalArgumentException("Only canonical ROLE_* names are allowed.");
+        }
+
+        return normalizedName;
     }
 }

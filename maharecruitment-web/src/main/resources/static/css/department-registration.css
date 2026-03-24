@@ -1,18 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Merriweather+Sans:wght@600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --registration-card-bg: rgba(255, 255, 255, 0.9);
-    --registration-border: rgba(255, 255, 255, 0.78);
-    --registration-line: #d3dced;
-    --registration-text: #142542;
-    --registration-muted: #5c6f8f;
-    --registration-brand: #0f63ae;
-    --registration-brand-deep: #083d76;
-    --registration-highlight: rgba(15, 99, 174, 0.1);
+    --registration-card-bg: rgba(255, 255, 255, 0.92);
+    --registration-border: rgba(255, 255, 255, 0.84);
+    --registration-line: var(--panel-border, #d4dee8);
+    --registration-text: var(--text-main, #1b2b3b);
+    --registration-muted: var(--text-muted, #5f7287);
+    --registration-brand: var(--primary, #1f4f78);
+    --registration-brand-deep: var(--primary-strong, #163a59);
+    --registration-accent: #0f8b8d;
+    --registration-highlight: var(--primary-soft, rgba(31, 79, 120, 0.12));
 }
 
 .registration-main {
-    padding: 2rem 0 3rem;
+    padding: 1.9rem 0 2.8rem;
+    font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
 }
 
 .registration-container {
@@ -21,7 +23,7 @@
 
 .registration-hero,
 .registration-card {
-    border-radius: 28px;
+    border-radius: 24px;
     animation: panelRise 0.7s ease;
 }
 
@@ -31,9 +33,9 @@
     padding: 2rem;
     color: #ffffff;
     background:
-        linear-gradient(155deg, rgba(4, 47, 92, 0.96), rgba(9, 96, 172, 0.92)),
+        linear-gradient(155deg, rgba(10, 55, 102, 0.96), rgba(31, 79, 120, 0.92)),
         radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 42%);
-    box-shadow: 0 26px 44px rgba(5, 41, 80, 0.24);
+    box-shadow: 0 22px 40px rgba(5, 41, 80, 0.22);
     overflow: hidden;
 }
 
@@ -49,7 +51,7 @@
 
 .registration-hero h1 {
     margin: 0;
-    font-family: "Sora", "Manrope", sans-serif;
+    font-family: "Merriweather Sans", "Public Sans", sans-serif;
     font-size: clamp(1.8rem, 2.6vw, 2.6rem);
     line-height: 1.2;
 }
@@ -101,8 +103,8 @@
 .registration-card {
     background: var(--registration-card-bg);
     border: 1px solid var(--registration-border);
-    box-shadow: 0 24px 46px rgba(15, 35, 72, 0.14);
-    padding: 1.8rem;
+    box-shadow: 0 18px 36px rgba(15, 35, 72, 0.12);
+    padding: 1.65rem;
 }
 
 .registration-card-header {
@@ -125,8 +127,8 @@
 .registration-card-header h2 {
     margin: 0;
     color: var(--registration-text);
-    font-family: "Sora", "Manrope", sans-serif;
-    font-size: 1.55rem;
+    font-family: "Merriweather Sans", "Public Sans", sans-serif;
+    font-size: 1.46rem;
 }
 
 .status-pill {
@@ -134,8 +136,8 @@
     align-items: center;
     border-radius: 999px;
     padding: 0.45rem 0.8rem;
-    background: var(--registration-highlight);
-    color: var(--registration-brand-deep);
+    background: linear-gradient(135deg, rgba(31, 79, 120, 0.14), rgba(31, 79, 120, 0.08));
+    color: #0b467f;
     font-weight: 700;
     white-space: nowrap;
 }
@@ -146,10 +148,16 @@
 }
 
 .form-section {
-    border-radius: 20px;
+    border-radius: 16px;
     background: rgba(255, 255, 255, 0.82);
     border: 1px solid rgba(208, 220, 240, 0.9);
-    padding: 1.25rem;
+    padding: 1.12rem;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.form-section:hover {
+    box-shadow: 0 8px 20px rgba(15, 35, 72, 0.08);
+    transform: translateY(-1px);
 }
 
 .form-section-header {
@@ -158,7 +166,7 @@
 
 .form-section-header h3 {
     margin: 0;
-    font-size: 1.08rem;
+    font-size: 1.02rem;
     font-weight: 800;
     color: var(--registration-text);
 }
@@ -171,44 +179,49 @@
 
 .registration-form .form-label {
     font-weight: 700;
-    color: #243758;
+    color: var(--registration-text);
     margin-bottom: 0.45rem;
+    font-size: var(--form-label-font-size, 0.95rem);
+    font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
 }
 
 .registration-form .form-control,
 .registration-form .form-select {
-    min-height: 48px;
-    border-radius: 14px;
+    min-height: 45px;
+    border-radius: 10px;
     border: 1px solid var(--registration-line);
-    padding: 0.7rem 0.85rem;
+    padding: 0.62rem 0.8rem;
+    font-size: var(--form-control-font-size, 1rem);
+    font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
+    line-height: 1.5;
 }
 
 .registration-form textarea.form-control {
-    min-height: 116px;
+    min-height: 108px;
 }
 
 .registration-form .form-control:focus,
 .registration-form .form-select:focus {
-    border-color: #78abeb;
-    box-shadow: 0 0 0 0.2rem rgba(15, 99, 174, 0.12);
+    border-color: var(--registration-brand);
+    box-shadow: 0 0 0 0.2rem rgba(31, 79, 120, 0.12);
 }
 
 .declaration-box {
-    max-height: 180px;
+    max-height: 190px;
     overflow-y: auto;
     border: 1px solid var(--registration-line);
     border-radius: 16px;
     background: #f9fbff;
     padding: 1rem;
-    color: #30415f;
+    color: #355274;
 }
 
 .declaration-check {
     margin-top: 1rem;
     padding: 0.9rem 1rem;
     border-radius: 16px;
-    background: rgba(15, 99, 174, 0.06);
-    border: 1px dashed rgba(15, 99, 174, 0.24);
+    background: rgba(31, 79, 120, 0.06);
+    border: 1px dashed rgba(31, 79, 120, 0.24);
 }
 
 .declaration-check .form-check-input {
@@ -232,8 +245,8 @@
 }
 
 .btn-verify {
-    min-height: 48px;
-    border-radius: 14px;
+    min-height: 45px;
+    border-radius: 10px;
     font-weight: 700;
     white-space: nowrap;
 }
@@ -243,7 +256,7 @@
     margin-top: 0.45rem;
     font-size: 0.88rem;
     font-weight: 600;
-    color: #1d6f45;
+    color: var(--registration-accent);
 }
 
 .verification-status.is-pending {
@@ -264,17 +277,25 @@
 
 .btn-submit {
     min-width: 220px;
-    min-height: 48px;
+    min-height: 45px;
     border: 0;
-    border-radius: 14px;
+    border-radius: 10px;
     font-weight: 800;
     background: linear-gradient(135deg, var(--registration-brand-deep), var(--registration-brand));
-    box-shadow: 0 14px 26px rgba(15, 99, 174, 0.2);
+    box-shadow: 0 12px 20px rgba(31, 79, 120, 0.18);
 }
 
 .btn-submit:disabled {
     background: linear-gradient(135deg, #8da6c6, #aebfd8);
     box-shadow: none;
+}
+
+.registration-form .form-control:focus-visible,
+.registration-form .form-select:focus-visible,
+.btn-submit:focus-visible,
+.btn-verify:focus-visible {
+    outline: 2px solid var(--registration-brand);
+    outline-offset: 2px;
 }
 
 @media (max-width: 1199.98px) {
@@ -291,7 +312,7 @@
     .registration-card,
     .registration-hero,
     .form-section {
-        border-radius: 20px;
+        border-radius: 16px;
     }
 
     .registration-card {
@@ -317,3 +338,13 @@
         width: 100%;
     }
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .registration-hero,
+    .registration-card,
+    .form-section {
+        animation: none;
+        transition: none;
+    }
+}
+

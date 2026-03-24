@@ -3,9 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Registration and Login System</title>
+    <title>MahaIT Recruitment Login</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/captcha.css}" />
+    <link rel="stylesheet" th:href="@{/css/login.css}" />
 </head>
 
 <body class="portal-shell">
@@ -18,9 +19,6 @@
     <nav class="navbar navbar-expand-lg portal-nav">
         <div class="container">
             <a class="navbar-brand fw-semibold" th:href="@{/index}">MahaIT Recruitment</a>
-            <div class="d-flex gap-2">
-                <a class="btn btn-outline-light btn-sm" th:href="@{/register/department-registration}">Register</a>
-            </div>
         </div>
     </nav>
 
@@ -30,23 +28,30 @@
                 <div class="col-lg-7">
                     <section class="hero-panel">
                         <p class="hero-chip">Government of Maharashtra</p>
-                        <h1>Digital Recruitment and Workforce Operations</h1>
+                        <h1>MahaIT Digital Recruitment & Workforce Platform</h1>
                         <p class="hero-subtitle">
-                            One platform for department onboarding, attendance, compliance flow, and secure role-based access.
+                            An integrated ecosystem empowering government departments with seamless end-to-end
+                            recruitment management, from candidate shortlisting and pre-onboarding to automated
+                            attendance tracking and transparent compliance monitoring.
                         </p>
                         <div class="hero-stats">
                             <div class="stat-card">
-                                <span class="stat-value">Unified</span>
-                                <span class="stat-label">Department Workflow</span>
+                                <span class="stat-value">End-to-End</span>
+                                <span class="stat-label">Recruitment Cycle</span>
                             </div>
                             <div class="stat-card">
-                                <span class="stat-value">Secure</span>
-                                <span class="stat-label">Role-based Login</span>
+                                <span class="stat-value">Automated</span>
+                                <span class="stat-label">Onboarding Flow</span>
                             </div>
                             <div class="stat-card">
-                                <span class="stat-value">Realtime</span>
-                                <span class="stat-label">Attendance Visibility</span>
+                                <span class="stat-value">Transparent</span>
+                                <span class="stat-label">Workforce Ops</span>
                             </div>
+                        </div>
+                        <div class="trust-strip">
+                            <span class="trust-item"><i class="fa-solid fa-building-user"></i> Department Mapping</span>
+                            <span class="trust-item"><i class="fa-solid fa-file-shield"></i> Compliance Ready</span>
+                            <span class="trust-item"><i class="fa-solid fa-user-shield"></i> Secure Verification</span>
                         </div>
                     </section>
                 </div>
@@ -58,16 +63,22 @@
 
                         <div th:if="${param.error}" class="alert alert-danger">Invalid Email or Password</div>
                         <div th:if="${param.logout}" class="alert alert-success">You have been logged out.</div>
-                        <div th:if="${param.sessionExpired}" class="alert alert-warning">Session expired. Please login again.</div>
-                        <div th:if="${param.unauthenticated}" class="alert alert-warning">Please login to continue.</div>
-                        <div th:if="${param.accessDenied}" class="alert alert-danger">Access denied for requested module.</div>
-                        <div th:if="${generatedUsername != null and generatedPassword != null}" class="alert alert-success">
+                        <div th:if="${param.sessionExpired}" class="alert alert-warning">Session expired. Please login
+                            again.</div>
+                        <div th:if="${param.unauthenticated}" class="alert alert-warning">Please login to continue.
+                        </div>
+                        <div th:if="${param.accessDenied}" class="alert alert-danger">Access denied for requested
+                            module.</div>
+                        <div th:if="${generatedUsername != null and generatedPassword != null}"
+                            class="alert alert-success">
                             Department registration submitted successfully.<br>
                             Username: <strong th:text="${generatedUsername}"></strong><br>
                             Temporary Password: <strong th:text="${generatedPassword}"></strong><br>
                             Credentials have also been sent to your registered email and mobile number.
                         </div>
-                        <div th:if="${param.registered != null and generatedUsername == null}" class="alert alert-success">Department registration submitted successfully. Please wait for approval.</div>
+                        <div th:if="${param.registered != null and generatedUsername == null}"
+                            class="alert alert-success">Department registration submitted successfully. Please wait for
+                            approval.</div>
 
                         <form id="loginForm" method="post" th:action="@{/doLogin}" class="form-horizontal">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
@@ -90,13 +101,15 @@
                                                 <canvas id="CapCode" class="capcode" width="300" height="80"></canvas>
                                             </div>
                                             <button type="button" class="ReloadBtn" onclick="CreateCaptcha();"
-                                                aria-label="Reload captcha"></button>
+                                                aria-label="Reload captcha"><i
+                                                    class="fa-solid fa-rotate-right"></i></button>
                                         </div>
                                         <input type="text" id="UserCaptchaCode" onkeyup="myFunction();"
                                             class="CaptchaTxtField form-control mt-3" maxlength="6"
                                             placeholder="Enter Captcha - Case Sensitive" required>
                                         <span id="WrongCaptchaError" class="error mt-1 d-block"></span>
-                                        <span id="SuccessMessage" style="display: none;" class="success mt-1 d-block"></span>
+                                        <span id="SuccessMessage" style="display: none;"
+                                            class="success mt-1 d-block"></span>
                                     </fieldset>
                                 </div>
                             </div>
@@ -105,7 +118,8 @@
                                 <button type="submit" class="btn btn-primary btn-login">Login</button>
                             </div>
                             <div class="form-group mb-0 d-grid">
-                                <a th:href="@{/register/department-registration}" class="btn btn-outline-secondary">Department Registration</a>
+                                <a th:href="@{/register/department-registration}"
+                                    class="btn btn-outline-secondary">Department Registration</a>
                             </div>
                         </form>
                     </section>
@@ -117,8 +131,8 @@
     <footer class="footer portal-footer">
         <div class="container">
             <div class="d-flex justify-content-between py-3 flex-wrap gap-2">
-                <span>Copyright © 2024 Maharashtra Information Technology Corporation Ltd., Government of Maharashtra, India</span>
-                <span>Visitor Count: <span th:text="${visitorCount}"></span></span>
+                <span>Copyright &copy; 2026 Maharashtra Information Technology Corporation Ltd., Government of
+                    Maharashtra, India</span>
             </div>
         </div>
     </footer>

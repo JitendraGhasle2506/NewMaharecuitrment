@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Interview Shortlisting Candidates</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .status-chip {
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid transparent;
+            display: inline-block;
+        }
+
+        .status-submitted {
+            background: #eaf1ff;
+            color: #27477d;
+            border-color: #c5d6f5;
+        }
+
+        .status-shortlisted {
+            background: #e8fbef;
+            color: #1f7a39;
+            border-color: #bde7cb;
+        }
+
+        .status-rejected {
+            background: #ffecee;
+            color: #b42335;
+            border-color: #f0c1c7;
+        }
+
+        .status-scheduled {
+            background: #e7f8fe;
+            color: #0b6f90;
+            border-color: #b8e6f2;
+        }
+
+        .remarks-note {
+            margin-top: 4px;
+            color: #5d6e8b;
+            font-size: 12px;
+        }
+
+        .interview-link-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .interview-link-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px;
+            border: 1px solid #d7e4f7;
+            border-radius: 999px;
+            background: linear-gradient(180deg, #f9fbff 0%, #eef5ff 100%);
+        }
+
+        .interview-join-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid #c9d9f5;
+            background: #ffffff;
+            color: #16407b;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+        }
+
+        .interview-join-link:hover {
+            background: #eef4ff;
+            border-color: #b9cdef;
+            color: #0f3365;
+        }
+
+        .copy-link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border: 1px solid #d1dcf0;
+            border-radius: 999px;
+            background: #f4f7fc;
+            color: #415472;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease;
+        }
+
+        .copy-link-btn:hover {
+            background: #e8eef9;
+            border-color: #bdcdea;
+            color: #213655;
+        }
+
+        .copy-link-btn.is-copied {
+            background: #e7f8ee;
+            border-color: #b7e2c7;
+            color: #1e7a3c;
+            box-shadow: 0 0 0 3px rgba(31, 122, 57, 0.08);
+        }
+
+        .copy-link-status {
+            min-height: 16px;
+            color: #607493;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .2px;
+            opacity: 0;
+            transform: translateY(-2px);
+            transition: opacity .2s ease, transform .2s ease, color .2s ease;
+        }
+
+        .copy-link-status.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .copy-link-status.is-success {
+            color: #1e7a3c;
+        }
+
+        .copy-link-status.is-error {
+            color: #b42335;
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Interview Authority', 'Interview Shortlisting', ~{::section})}">
+        <section
+            th:with="submittedCount=${candidateListView != null and candidateListView.candidates != null ? #lists.size(candidateListView.candidates) : 0},
+                     scheduledCount=${candidateListView != null and candidateListView.candidates != null ? #lists.size(candidateListView.candidates.?[candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY']) : 0}">
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0" th:text="${candidateListView != null ? candidateListView.requestId : 'Interview Shortlisting Candidates'}">
+                            REQ-0000
+                        </h2>
+                        <small class="text-muted"
+                            th:text="${candidateListView != null ? (candidateListView.projectName != null ? candidateListView.projectName : '-') : '-'}">
+                            Project Name
+                        </small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/interview-authority/internal-vacancies}">
+                        Back to Requests
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <table class="table table-bordered table-sm mb-4">
+                        <tr>
+                            <th width="20%">Request ID</th>
+                            <td th:text="${candidateListView != null ? candidateListView.requestId : '-'}">REQ-0000</td>
+                            <th width="20%">Notification Status</th>
+                            <td>
+                                <span class="badge text-bg-secondary"
+                                    th:text="${candidateListView != null and candidateListView.notificationStatus != null ? #strings.replace(candidateListView.notificationStatus.name(), '_', ' ') : '-'}">
+                                    IN PROGRESS
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Project Name</th>
+                            <td th:text="${candidateListView != null and candidateListView.projectName != null ? candidateListView.projectName : '-'}">
+                                Project
+                            </td>
+                            <th>Candidate Summary</th>
+                            <td th:text="${'Submitted: ' + submittedCount + ' | Interview Scheduled: ' + scheduledCount}">
+                                Submitted: 0 | Interview Scheduled: 0
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Agency</th>
+                                    <th>Candidate</th>
+                                    <th>Designation</th>
+                                    <th>Experience</th>
+                                    <th>Joining Time</th>
+                                    <th>Status</th>
+                                    <th>Submitted At</th>
+                                    <th>Interview</th>
+                                    <th>Resume</th>
+                                    <th style="min-width: 280px;">Shortlist Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${candidateListView == null or #lists.isEmpty(candidateListView.candidates)}">
+                                    <td colspan="11" class="text-center text-muted">
+                                        No agency-submitted candidates are available for this request id yet.
+                                    </td>
+                                </tr>
+
+                                <tr th:each="candidate, stat : ${candidateListView.candidates}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td>
+                                        <div th:text="${candidate.agencyName != null ? candidate.agencyName : '-'}">Agency</div>
+                                        <small class="text-muted"
+                                            th:text="${candidate.agencyId != null ? 'Agency ID: ' + candidate.agencyId : '-'}">
+                                            Agency ID: 1
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">Candidate</div>
+                                        <small class="text-muted"
+                                            th:text="${(candidate.candidateEmail != null ? candidate.candidateEmail : '-') + ' | ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '-')}">
+                                            email | mobile
+                                        </small>
+                                        <div class="small text-muted"
+                                            th:text="${candidate.candidateEducation != null ? candidate.candidateEducation : '-'}">
+                                            Qualification
+                                        </div>
+                                    </td>
+                                    <td
+                                        th:text="${(candidate.designationName != null ? candidate.designationName : '-') + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">
+                                        Designation | Level
+                                    </td>
+                                    <td>
+                                        <span th:text="${candidate.totalExperience != null ? candidate.totalExperience : 0}">0</span>
+                                        /
+                                        <span th:text="${candidate.relevantExperience != null ? candidate.relevantExperience : 0}">0</span>
+                                    </td>
+                                    <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
+                                    <td>
+                                        <span class="status-chip"
+                                            th:classappend="${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT'} ? ' status-shortlisted' :
+                                                (${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT'} ? ' status-rejected' :
+                                                (${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' status-scheduled' : ' status-submitted'))"
+                                            th:text="${candidate.candidateStatus == null ? '-' :
+                                                (candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT' ? 'SHORTLISTED BY INTERVIEW AUTHORITY' :
+                                                (candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT' ? 'REJECTED BY INTERVIEW AUTHORITY' :
+                                                #strings.replace(candidate.candidateStatus.name(), '_', ' ')))}">
+                                            SUBMITTED BY AGENCY
+                                        </span>
+                                        <div th:if="${candidate.departmentShortlistRemarks != null}" class="remarks-note">
+                                            <span th:text="${'Remarks: ' + candidate.departmentShortlistRemarks}">Remarks</span>
+                                        </div>
+                                    </td>
+                                    <td
+                                        th:text="${candidate.submittedAt != null ? #temporals.format(candidate.submittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                    <td>
+                                        <div th:if="${candidate.interviewDateTime != null}">
+                                            <div th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
+                                                01-Apr-2026 10:30
+                                            </div>
+                                            <small class="text-muted"
+                                                th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : '-'}">
+                                                Slot
+                                            </small>
+                                            <div
+                                                th:if="${candidate.assessmentSubmitted != true and candidate.interviewLink != null and !#strings.isEmpty(candidate.interviewLink)}"
+                                                class="interview-link-stack">
+                                                <div class="interview-link-actions">
+                                                    <a class="interview-join-link"
+                                                        th:href="${candidate.interviewLink}"
+                                                        target="_blank">
+                                                        Join Link
+                                                    </a>
+                                                    <button type="button"
+                                                        class="copy-link-btn"
+                                                        data-default-label="Copy Link"
+                                                        th:attr="data-copy-text=${candidate.interviewLink}"
+                                                        onclick="copyInterviewLink(this)">
+                                                        Copy Link
+                                                    </button>
+                                                </div>
+                                                <span class="copy-link-status" aria-live="polite">Link copied to clipboard</span>
+                                            </div>
+                                        </div>
+                                        <span th:if="${candidate.interviewDateTime == null}" class="text-muted">-</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            th:if="${candidate.resumeFilePath != null}"
+                                            th:attr="data-path=${candidate.resumeFilePath}"
+                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                            View
+                                        </button>
+                                        <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>
+                                    </td>
+                                    <td>
+                                        <div th:if="${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'}"
+                                            class="mb-2">
+                                            <a class="btn btn-outline-primary btn-sm"
+                                                th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates/{recruitmentInterviewDetailId}/feedback(
+                                                    requestId=${candidateListView.requestId},
+                                                    recruitmentInterviewDetailId=${candidate.recruitmentInterviewDetailId})}">
+                                                <span th:text="${candidate.assessmentSubmitted == true ? 'Open Interview Feedback' : 'Fill Interview Feedback'}">
+                                                    Fill Interview Feedback
+                                                </span>
+                                            </a>
+                                        </div>
+                                        <div th:if="${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'}"
+                                            class="text-muted small">
+                                            Interview already scheduled by agency.
+                                        </div>
+                                        <div th:if="${candidate.assessmentSubmitted == true or candidate.finalDecisionStatus != null}"
+                                            class="text-muted small">
+                                            Candidate moved beyond shortlist stage.
+                                        </div>
+
+                                        <form method="post"
+                                            th:if="${(candidate.candidateStatus == null or candidate.candidateStatus.name() != 'INTERVIEW_SCHEDULED_BY_AGENCY')
+                                                and candidate.assessmentSubmitted != true and candidate.finalDecisionStatus == null}"
+                                            th:action="@{/interview-authority/internal-vacancies/request/{requestId}/candidates/{recruitmentInterviewDetailId}/review(
+                                                requestId=${candidateListView.requestId},
+                                                recruitmentInterviewDetailId=${candidate.recruitmentInterviewDetailId})}">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <input type="text"
+                                                class="form-control form-control-sm mb-2"
+                                                name="remarks"
+                                                maxlength="1000"
+                                                th:value="${candidate.departmentShortlistRemarks != null ? candidate.departmentShortlistRemarks : ''}"
+                                                placeholder="Remarks (mandatory for reject)">
+                                            <div class="d-flex gap-2">
+                                                <button type="submit"
+                                                    class="btn btn-outline-success btn-sm"
+                                                    name="decision"
+                                                    value="SHORTLIST">
+                                                    Shortlist
+                                                </button>
+                                                <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm"
+                                                    name="decision"
+                                                    value="REJECT">
+                                                    Reject
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:inline="javascript">
+        const contextPath = /*[[@{/}]]*/ '/';
+
+        function openManagedDocument(path) {
+            if (!path) {
+                return;
+            }
+            try {
+                const encodedPath = encodeURIComponent(btoa(path));
+                window.open(contextPath + "documents/view?path=" + encodedPath, "_blank");
+            } catch (error) {
+                alert("Unable to open resume document.");
+            }
+        }
+
+        function copyInterviewLink(button) {
+            const interviewLink = button ? button.getAttribute('data-copy-text') : '';
+            if (!interviewLink) {
+                return;
+            }
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(interviewLink)
+                    .then(() => markInterviewLinkCopied(button))
+                    .catch(() => copyInterviewLinkFallback(interviewLink, button));
+                return;
+            }
+
+            copyInterviewLinkFallback(interviewLink, button);
+        }
+
+        function copyInterviewLinkFallback(interviewLink, button) {
+            const textArea = document.createElement('textarea');
+            textArea.value = interviewLink;
+            textArea.setAttribute('readonly', 'readonly');
+            textArea.style.position = 'absolute';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+
+            try {
+                document.execCommand('copy');
+                markInterviewLinkCopied(button);
+            } catch (error) {
+                markInterviewLinkCopyError(button);
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function markInterviewLinkCopied(button) {
+            if (!button) {
+                return;
+            }
+            const originalLabel = button.getAttribute('data-default-label') || button.textContent.trim();
+            button.textContent = 'Copied';
+            button.classList.add('is-copied');
+            setCopyStatus(button, 'Link copied to clipboard', true);
+            if (button.copyResetTimer) {
+                window.clearTimeout(button.copyResetTimer);
+            }
+            button.copyResetTimer = window.setTimeout(() => {
+                button.textContent = originalLabel;
+                button.classList.remove('is-copied');
+                clearCopyStatus(button);
+            }, 1500);
+        }
+
+        function markInterviewLinkCopyError(button) {
+            setCopyStatus(button, 'Unable to copy link', false);
+        }
+
+        function setCopyStatus(button, message, isSuccess) {
+            const status = button ? button.closest('.interview-link-stack')?.querySelector('.copy-link-status') : null;
+            if (!status) {
+                return;
+            }
+            status.textContent = message;
+            status.classList.add('is-visible');
+            status.classList.toggle('is-success', !!isSuccess);
+            status.classList.toggle('is-error', !isSuccess);
+            if (status.copyStatusTimer) {
+                window.clearTimeout(status.copyStatusTimer);
+            }
+            status.copyStatusTimer = window.setTimeout(() => {
+                clearCopyStatus(button);
+            }, isSuccess ? 1500 : 2200);
+        }
+
+        function clearCopyStatus(button) {
+            const status = button ? button.closest('.interview-link-stack')?.querySelector('.copy-link-status') : null;
+            if (!status) {
+                return;
+            }
+            status.classList.remove('is-visible', 'is-success', 'is-error');
+        }
+    </script>
+</body>
+
+</html>

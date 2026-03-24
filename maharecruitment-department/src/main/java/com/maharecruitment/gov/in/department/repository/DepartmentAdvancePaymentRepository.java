@@ -22,6 +22,10 @@ public interface DepartmentAdvancePaymentRepository extends JpaRepository<Depart
 
     Optional<DepartmentAdvancePaymentEntity> findByApplication(DepartmentProjectApplicationEntity application);
 
+    List<DepartmentAdvancePaymentEntity> findByApplicationAndApplicationStatusNotIn(
+            DepartmentProjectApplicationEntity application,
+            java.util.Collection<DepartmentApplicationStatus> statuses);
+
     boolean existsByApplication(DepartmentProjectApplicationEntity application);
 
     @org.springframework.data.jpa.repository.Query("SELECT p.application.departmentProjectApplicationId FROM DepartmentAdvancePaymentEntity p WHERE p.departmentRegistrationId = :regId")

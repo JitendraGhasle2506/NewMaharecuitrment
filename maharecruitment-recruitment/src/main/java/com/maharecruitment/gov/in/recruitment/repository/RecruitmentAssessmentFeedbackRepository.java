@@ -23,4 +23,13 @@ public interface RecruitmentAssessmentFeedbackRepository extends JpaRepository<R
     Optional<RecruitmentAssessmentFeedbackEntity> findByCandidateForDepartment(
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId);
+
+    @Query("select feedback "
+            + "from RecruitmentAssessmentFeedbackEntity feedback "
+            + "left join fetch feedback.panelMembers panelMember "
+            + "where feedback.recruitmentInterviewDetail.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and feedback.internalVacancyOpeningId = :internalVacancyOpeningId")
+    Optional<RecruitmentAssessmentFeedbackEntity> findByCandidateForInternalVacancy(
+            @Param("internalVacancyOpeningId") Long internalVacancyOpeningId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId);
 }

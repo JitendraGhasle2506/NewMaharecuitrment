@@ -20,6 +20,7 @@ import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.department.dto.AdvancePaymentForm;
+import com.maharecruitment.gov.in.department.entity.DepartmentProformaInvoiceEntity;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
 import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
 import com.maharecruitment.gov.in.department.entity.DepartmentAdvancePaymentActivityEntity;
@@ -52,18 +53,21 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     private final DepartmentProjectApplicationRepository applicationRepository;
     private final UserRepository userRepository;
     private final DepartmentPaymentStorageService storageService;
+    private final com.maharecruitment.gov.in.department.repository.DepartmentProformaInvoiceRepository proformaInvoiceRepository;
 
     public DepartmentAdvancePaymentServiceImpl(
             DepartmentAdvancePaymentRepository paymentRepository,
             DepartmentAdvancePaymentActivityRepository activityRepository,
             DepartmentProjectApplicationRepository applicationRepository,
             UserRepository userRepository,
-            DepartmentPaymentStorageService storageService) {
+            DepartmentPaymentStorageService storageService,
+            com.maharecruitment.gov.in.department.repository.DepartmentProformaInvoiceRepository proformaInvoiceRepository) {
         this.paymentRepository = paymentRepository;
         this.activityRepository = activityRepository;
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
         this.storageService = storageService;
+        this.proformaInvoiceRepository = proformaInvoiceRepository;
     }
 
     @Override
@@ -79,6 +83,31 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         AdvancePaymentForm form = new AdvancePaymentForm();
         form.setDepartmentProjectApplicationId(app.getDepartmentProjectApplicationId());
         form.setDepartmentRegistrationId(actorContext.getDepartmentRegistrationId());
+
+        // Fetch latest PI details
+        List<DepartmentProformaInvoiceEntity> invoices = proformaInvoiceRepository
+                .findByApplication_DepartmentProjectApplicationIdOrderByDepartmentProformaInvoiceIdDesc(applicationId);
+        
+        if (!invoices.isEmpty()) {
+            DepartmentProformaInvoiceEntity pi = invoices.get(0);
+            form.setProformaInvoiceId(pi.getPiNumber());
+            form.setPiNumber(pi.getPiNumber());
+            form.setTotalPiAmount(pi.getTotalAmount());
+            
+            // Calculate previously paid amounts for this application (excluding current if editing, but this is initialize)
+            List<DepartmentAdvancePaymentEntity> pastPayments = paymentRepository
+                    .findByApplicationAndApplicationStatusNotIn(app, List.of(DepartmentApplicationStatus.HR_REJECTED));
+            
+            BigDecimal paidAmount = pastPayments.stream()
+                    .map(DepartmentAdvancePaymentEntity::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            form.setPartialAmount(paidAmount);
+            form.setBalanceAmount(pi.getTotalAmount().subtract(paidAmount));
+            form.setTotalAmount(pi.getTotalAmount().subtract(paidAmount)); // Default to paying balance
+            form.setPaymentType("FULL");
+        }
+
         return form;
     }
 
@@ -98,12 +127,11 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     }
 
     @Override
-    public List<ProformaInvoiceSummary> getAvailableInvoices(Long applicationId) {
-        // Placeholder implementation for invoices
-        return List.of(
-                new ProformaInvoiceSummary("PI/2026/001", new BigDecimal("150000.00")),
-                new ProformaInvoiceSummary("PI/2026/002", new BigDecimal("25000.50")),
-                new ProformaInvoiceSummary("PI/2026/003", new BigDecimal("100.00")));
+    public List< ProformaInvoiceSummary> getAvailableInvoices(Long applicationId) {
+        return proformaInvoiceRepository.findByApplication_DepartmentProjectApplicationIdOrderByDepartmentProformaInvoiceIdDesc(applicationId)
+                .stream()
+                .map(pi -> new ProformaInvoiceSummary(pi.getPiNumber(), pi.getTotalAmount()))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -150,9 +178,10 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         }
 
         entity.setProformaInvoiceId(form.getProformaInvoiceId());
-        entity.setReceiptNumber(form.getReceiptNumber());
+        entity.setReceiptNumber(form.getUtrNumber()); // Consolidate: Receipt Number = UTR Number
         entity.setTotalAmount(form.getTotalAmount());
         entity.setRemarks(form.getRemarks());
+        entity.setUtrNumber(form.getUtrNumber());
         entity.setUpdatedBy(actorEmail);
         entity.setUpdatedDate(LocalDateTime.now());
 
@@ -204,8 +233,12 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         form.setReceiptNumber(entity.getReceiptNumber());
         form.setTotalAmount(entity.getTotalAmount());
         form.setRemarks(entity.getRemarks());
+        form.setUtrNumber(entity.getUtrNumber());
         form.setReceiptOriginalName(entity.getReceiptOriginalName());
         form.setReceiptFileType(entity.getReceiptFileType());
+        
+        populatePiInfoInForm(form, entity.getApplication());
+        
         return form;
     }
 
@@ -318,10 +351,10 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                 .collect(Collectors.toSet());
 
         List<DepartmentApplicationStatus> statuses = new ArrayList<>();
-        if (roles.contains("ROLE_HR") || roles.contains("HR")) {
+        if (roles.contains("ROLE_HR")) {
             statuses.add(DepartmentApplicationStatus.SUBMITTED_TO_HR);
         }
-        if (roles.contains("ROLE_AUDITOR") || roles.contains("AUDITOR")) {
+        if (roles.contains("ROLE_AUDITOR")) {
             statuses.add(DepartmentApplicationStatus.AUDITOR_REVIEW);
         }
 
@@ -345,9 +378,9 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                 .collect(Collectors.toSet());
 
         boolean isAuthorized = false;
-        if (roles.contains("ROLE_HR") || roles.contains("HR")) {
+        if (roles.contains("ROLE_HR")) {
             isAuthorized = true;
-        } else if (roles.contains("ROLE_AUDITOR") || roles.contains("AUDITOR")) {
+        } else if (roles.contains("ROLE_AUDITOR")) {
             isAuthorized = true;
         } else if (user.getDepartmentRegistrationId() != null
                 && entity.getDepartmentRegistrationId()
@@ -368,8 +401,12 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         form.setReceiptNumber(entity.getReceiptNumber());
         form.setTotalAmount(entity.getTotalAmount());
         form.setRemarks(entity.getRemarks());
+        form.setUtrNumber(entity.getUtrNumber());
         form.setReceiptOriginalName(entity.getReceiptOriginalName());
         form.setReceiptFileType(entity.getReceiptFileType());
+        
+        populatePiInfoInForm(form, entity.getApplication());
+        
         return form;
     }
 
@@ -386,9 +423,9 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                 .collect(Collectors.toSet());
 
         boolean isAuthorized = false;
-        if (roles.contains("ROLE_HR") || roles.contains("HR")) {
+        if (roles.contains("ROLE_HR")) {
             isAuthorized = true;
-        } else if (roles.contains("ROLE_AUDITOR") || roles.contains("AUDITOR")) {
+        } else if (roles.contains("ROLE_AUDITOR")) {
             isAuthorized = true;
         } else if (user.getDepartmentRegistrationId() != null
                 && entity.getDepartmentRegistrationId()
@@ -487,5 +524,28 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             throw new DepartmentApplicationException("Department profile not found for user.");
         }
         return context;
+    }
+
+    private void populatePiInfoInForm(AdvancePaymentForm form, DepartmentProjectApplicationEntity app) {
+        List<DepartmentProformaInvoiceEntity> invoices = proformaInvoiceRepository
+                .findByApplication_DepartmentProjectApplicationIdOrderByDepartmentProformaInvoiceIdDesc(
+                        app.getDepartmentProjectApplicationId());
+        
+        if (!invoices.isEmpty()) {
+            DepartmentProformaInvoiceEntity pi = invoices.get(0);
+            form.setPiNumber(pi.getPiNumber());
+            form.setTotalPiAmount(pi.getTotalAmount());
+            
+            List<DepartmentAdvancePaymentEntity> pastPayments = paymentRepository
+                    .findByApplicationAndApplicationStatusNotIn(app, List.of(DepartmentApplicationStatus.HR_REJECTED));
+            
+            BigDecimal paidAmount = pastPayments.stream()
+                    .filter(p -> form.getId() == null || !p.getId().equals(form.getId()))
+                    .map(DepartmentAdvancePaymentEntity::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            form.setPartialAmount(paidAmount);
+            form.setBalanceAmount(pi.getTotalAmount().subtract(paidAmount));
+        }
     }
 }

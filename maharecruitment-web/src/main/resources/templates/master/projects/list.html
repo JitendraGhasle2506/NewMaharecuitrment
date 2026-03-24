@@ -35,6 +35,7 @@
                                     <th>Project Name</th>
                                     <th>Project Description</th>
                                     <th>Project Type</th>
+                                    <th>Project Scope</th>
                                     <th>Department Registration ID</th>
                                     <th>Application ID</th>
                                     <th class="text-center">Actions</th>
@@ -42,13 +43,14 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${projects.isEmpty()}">
-                                    <td colspan="7" class="text-center text-muted">No records found</td>
+                                    <td colspan="8" class="text-center text-muted">No records found</td>
                                 </tr>
                                 <tr th:each="item : ${projects.content}">
                                     <td th:text="${item.projectId}"></td>
                                     <td th:text="${item.projectName}"></td>
                                     <td th:text="${item.projectDesc != null ? item.projectDesc : '-'}"></td>
                                     <td th:text="${#strings.replace(item.projectType.name(), '_', ' ')}"></td>
+                                    <td th:text="${#strings.capitalize(#strings.toLowerCase(item.projectScopeType.name()))}"></td>
                                     <td th:text="${item.departmentRegistrationId != null ? item.departmentRegistrationId : '-'}"></td>
                                     <td th:text="${item.applicationId != null ? item.applicationId : '-'}"></td>
                                     <td class="text-center">

@@ -31,11 +31,15 @@ import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationActivityEntity;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectResourceRequirementEntity;
+import com.maharecruitment.gov.in.department.entity.DepartmentProformaInvoiceEntity;
+import com.maharecruitment.gov.in.department.entity.DepartmentTaxRateMasterEntity;
 import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
 import com.maharecruitment.gov.in.department.entity.HrReviewDecision;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationActivityRepository;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
+import com.maharecruitment.gov.in.department.repository.DepartmentProformaInvoiceRepository;
+import com.maharecruitment.gov.in.department.repository.DepartmentTaxRateMasterRepository;
 import com.maharecruitment.gov.in.department.service.DepartmentManpowerApplicationService;
 import com.maharecruitment.gov.in.department.service.DepartmentRequestIdGenerator;
 import com.maharecruitment.gov.in.department.service.DepartmentWorkOrderStorageService;
@@ -65,13 +69,9 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     private static final String ACTION_DRAFT = "draft";
     private static final String ACTION_SUBMIT = "submit";
     private static final String ROLE_HR = "ROLE_HR";
-    private static final String ROLE_HR_ALT = "HR";
     private static final String ROLE_AUDITOR = "ROLE_AUDITOR";
-    private static final String ROLE_AUDITOR_ALT = "AUDITOR";
     private static final String ROLE_DEPARTMENT = "ROLE_DEPARTMENT";
-    private static final String ROLE_DEPARTMENT_ALT = "DEPARTMENT";
     private static final String ROLE_USER = "ROLE_USER";
-    private static final String ROLE_USER_ALT = "USER";
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
     private final DepartmentProjectApplicationRepository applicationRepository;
@@ -84,6 +84,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     private final NotificationService notificationService;
     private final UserRepository userRepository;
     private final DepartmentWorkOrderStorageService storageService;
+    private final DepartmentProformaInvoiceRepository proformaInvoiceRepository;
+    private final DepartmentTaxRateMasterRepository taxRateMasterRepository;
 
     public DepartmentManpowerApplicationServiceImpl(
             DepartmentProjectApplicationRepository applicationRepository,
@@ -95,7 +97,9 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             RecruitmentNotificationService recruitmentNotificationService,
             NotificationService notificationService,
             UserRepository userRepository,
-            DepartmentWorkOrderStorageService storageService) {
+            DepartmentWorkOrderStorageService storageService,
+            DepartmentProformaInvoiceRepository proformaInvoiceRepository,
+            DepartmentTaxRateMasterRepository taxRateMasterRepository) {
         this.applicationRepository = applicationRepository;
         this.activityRepository = activityRepository;
         this.designationService = designationService;
@@ -106,6 +110,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         this.notificationService = notificationService;
         this.userRepository = userRepository;
         this.storageService = storageService;
+        this.proformaInvoiceRepository = proformaInvoiceRepository;
+        this.taxRateMasterRepository = taxRateMasterRepository;
     }
 
     @Override
@@ -323,7 +329,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             String remarks,
             String actorEmail) {
         DepartmentActorContext actorContext = resolveWorkflowActorContext(actorEmail);
-        ensureActorHasRole(actorContext.getActorEmail(), "ROLE_HR", "HR");
+        ensureActorHasRole(actorContext.getActorEmail(), ROLE_HR);
 
         DepartmentProjectApplicationEntity application = findApplicationById(applicationId);
         DepartmentApplicationStatus previousStatus = application.getApplicationStatus();
@@ -360,7 +366,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             String remarks,
             String actorEmail) {
         DepartmentActorContext actorContext = resolveWorkflowActorContext(actorEmail);
-        ensureActorHasRole(actorContext.getActorEmail(), "ROLE_AUDITOR", "AUDITOR");
+        ensureActorHasRole(actorContext.getActorEmail(), ROLE_AUDITOR);
 
         DepartmentProjectApplicationEntity application = findApplicationById(applicationId);
         DepartmentApplicationStatus currentStatus = application.getApplicationStatus();
@@ -395,6 +401,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         if (nextStatus == DepartmentApplicationStatus.AUDITOR_APPROVED) {
             syncProjectMaster(saved);
             publishRecruitmentNotification(saved);
+            generateProformaInvoice(saved);
         }
 
         log.info("Auditor reviewed application. applicationId={}, decision={}, status={} actor={}",
@@ -413,7 +420,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             String remarks,
             String actorEmail) {
         DepartmentActorContext actorContext = resolveWorkflowActorContext(actorEmail);
-        ensureActorHasRole(actorContext.getActorEmail(), "ROLE_AUDITOR", "AUDITOR");
+        ensureActorHasRole(actorContext.getActorEmail(), ROLE_AUDITOR);
 
         DepartmentProjectApplicationEntity application = findApplicationById(applicationId);
         if (application.getApplicationStatus() != DepartmentApplicationStatus.AUDITOR_APPROVED) {
@@ -792,6 +799,76 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         }
     }
 
+    private void generateProformaInvoice(DepartmentProjectApplicationEntity application) {
+        try {
+            BigDecimal baseAmount = application.getTotalEstimatedCost() != null ? application.getTotalEstimatedCost() : ZERO;
+            LocalDate applicableDate = application.getCreatedDate() != null ? application.getCreatedDate().toLocalDate() : LocalDate.now();
+            
+            BigDecimal taxAmount = calculateTaxAmount(baseAmount, applicableDate);
+            BigDecimal totalAmount = baseAmount.add(taxAmount).setScale(2, RoundingMode.HALF_UP);
+
+            String piNumber = generatePiNumber();
+
+            DepartmentProformaInvoiceEntity piEntity = DepartmentProformaInvoiceEntity.builder()
+                    .application(application)
+                    .piNumber(piNumber)
+                    .baseAmount(baseAmount)
+                    .taxAmount(taxAmount)
+                    .totalAmount(totalAmount)
+                    .active(true)
+                    .build();
+
+            // Audit fields are handled by Auditable or manually if needed
+            piEntity.setCreatedBy(application.getUpdatedBy());
+            piEntity.setCreatedDate(LocalDateTime.now());
+            piEntity.setUpdatedBy(application.getUpdatedBy());
+            piEntity.setUpdatedDate(LocalDateTime.now());
+
+            proformaInvoiceRepository.save(piEntity);
+            log.info("Proforma Invoice generated for application. applicationId={}, piNumber={}, totalAmount={}", 
+                    application.getDepartmentProjectApplicationId(), piNumber, totalAmount);
+        } catch (Exception e) {
+            log.error("Failed to generate Proforma Invoice for application {}. Reason: {}", 
+                    application.getDepartmentProjectApplicationId(), e.getMessage(), e);
+            // We don't throw exception here to avoid rolling back the approval, 
+            // but in a real system we might want to ensure PI is generated.
+        }
+    }
+
+    private BigDecimal calculateTaxAmount(BigDecimal baseCost, LocalDate applicableDate) {
+        List<DepartmentTaxRateMasterEntity> taxRates = taxRateMasterRepository.findApplicableTaxRates(applicableDate);
+        if (taxRates.isEmpty()) {
+            return ZERO;
+        }
+
+        BigDecimal hundred = BigDecimal.valueOf(100);
+        return taxRates.stream()
+                .filter(taxRate -> taxRate.getRatePercentage() != null && taxRate.getRatePercentage().compareTo(BigDecimal.ZERO) > 0)
+                .map(taxRate -> baseCost
+                        .multiply(taxRate.getRatePercentage())
+                        .divide(hundred, 2, RoundingMode.HALF_UP))
+                .reduce(ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private String generatePiNumber() {
+        int year = LocalDate.now().getYear();
+        String prefix = "PI/" + year + "/";
+        String maxPiNumber = proformaInvoiceRepository.findMaxPiNumberByPrefix(prefix + "%");
+        
+        int nextSequence = 1;
+        if (maxPiNumber != null && maxPiNumber.length() > prefix.length()) {
+            try {
+                String sequencePart = maxPiNumber.substring(prefix.length());
+                nextSequence = Integer.parseInt(sequencePart) + 1;
+            } catch (NumberFormatException e) {
+                log.warn("Unable to parse sequence from max PI number: {}. Starting from 1.", maxPiNumber);
+            }
+        }
+        
+        return String.format("%s%05d", prefix, nextSequence);
+    }
+
     private void syncProjectMaster(DepartmentProjectApplicationEntity applicationEntity) {
         if (applicationEntity == null) {
             return;
@@ -858,7 +935,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             return;
         }
 
-        List<Long> hrUserIds = resolveUserIdsByRoleNames(ROLE_HR, ROLE_HR_ALT);
+        List<Long> hrUserIds = resolveUserIdsByRoleNames(ROLE_HR);
         if (hrUserIds.isEmpty()) {
             log.warn("No HR users found to notify for applicationId={}, requestId={}",
                     applicationEntity.getDepartmentProjectApplicationId(),
@@ -949,7 +1026,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             return;
         }
 
-        List<Long> auditorUserIds = resolveUserIdsByRoleNames(ROLE_AUDITOR, ROLE_AUDITOR_ALT);
+        List<Long> auditorUserIds = resolveUserIdsByRoleNames(ROLE_AUDITOR);
         if (auditorUserIds.isEmpty()) {
             log.warn("No Auditor users found to notify for HR-approved applicationId={}, requestId={}",
                     applicationEntity.getDepartmentProjectApplicationId(),
@@ -1044,9 +1121,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             List<Long> departmentUserIds = resolveDepartmentUserIdsByRoleNames(
                     applicationEntity.getDepartmentRegistrationId(),
                     ROLE_DEPARTMENT,
-                    ROLE_DEPARTMENT_ALT,
-                    ROLE_USER,
-                    ROLE_USER_ALT);
+                    ROLE_USER);
             if (departmentUserIds != null && !departmentUserIds.isEmpty()) {
                 recipients.addAll(departmentUserIds);
             }

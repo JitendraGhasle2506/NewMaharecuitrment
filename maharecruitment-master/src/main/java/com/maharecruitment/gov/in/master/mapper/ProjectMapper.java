@@ -14,6 +14,7 @@ public class ProjectMapper {
                 .projectName(entity.getProjectName())
                 .projectDesc(entity.getProjectDesc())
                 .projectType(entity.getProjectType())
+                .projectScopeType(entity.getProjectScopeType())
                 .departmentRegistrationId(entity.getDepartmentRegistrationId())
                 .applicationId(entity.getApplicationId())
                 .createdAt(entity.getCreatedDateTime())

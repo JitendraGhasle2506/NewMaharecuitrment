@@ -122,6 +122,72 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
 
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and n.internalVacancyOpening is not null "
+            + "and c.active = true "
+            + "order by case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacancyByRequestId(
+            @Param("requestId") String requestId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join n.internalVacancyOpening opening "
+            + "join opening.interviewAuthorities authority "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where authority.user.id = :userId "
+            + "and n.internalVacancyOpening is not null "
+            + "and c.active = true "
+            + "order by upper(n.requestId) asc, "
+            + "case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacanciesByInterviewAuthorityUserId(
+            @Param("userId") Long userId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join n.internalVacancyOpening opening "
+            + "join opening.interviewAuthorities authority "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and authority.user.id = :userId "
+            + "and n.internalVacancyOpening is not null "
+            + "and c.active = true "
+            + "order by case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacancyByRequestIdAndInterviewAuthorityUserId(
+            @Param("requestId") String requestId,
+            @Param("userId") Long userId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where n.internalVacancyOpening is not null "
+            + "and c.active = true "
+            + "order by upper(n.requestId) asc, "
+            + "case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacancies();
+
     boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateEmailIgnoreCase(
             Long recruitmentNotificationId,
             Long agencyId,
@@ -164,6 +230,59 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId,
             @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join c.recruitmentNotification n "
+            + "join n.internalVacancyOpening opening "
+            + "join opening.interviewAuthorities authority "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and c.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and authority.user.id = :userId "
+            + "and n.internalVacancyOpening is not null "
+            + "and c.active = true")
+    Optional<RecruitmentInterviewDetailEntity> findByIdForInternalVacancyInterviewAuthorityReviewUpdate(
+            @Param("requestId") String requestId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId,
+            @Param("userId") Long userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "join n.internalVacancyOpening opening "
+            + "join opening.interviewAuthorities authority "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and c.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and authority.user.id = :userId "
+            + "and n.internalVacancyOpening is not null "
+            + "and c.active = true")
+    Optional<RecruitmentInterviewDetailEntity> findByIdForInternalVacancyInterviewWorkflowUpdate(
+            @Param("requestId") String requestId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId,
+            @Param("userId") Long userId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "join fetch c.agency agency "
+            + "join n.internalVacancyOpening opening "
+            + "join opening.interviewAuthorities authority "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and c.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and authority.user.id = :userId "
+            + "and n.internalVacancyOpening is not null "
+            + "and c.active = true")
+    Optional<RecruitmentInterviewDetailEntity> findByIdForInternalVacancyInterviewWorkflowView(
+            @Param("requestId") String requestId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId,
+            @Param("userId") Long userId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c "

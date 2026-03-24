@@ -52,35 +52,84 @@
                         <input type="hidden" th:field="*{departmentProjectApplicationId}" />
                         <input type="hidden" th:field="*{departmentRegistrationId}" />
 
+                        <div class="row g-3 mb-4 p-3 bg-light rounded-3" th:if="${paymentForm.piNumber != null}">
+                            <div class="col-md-3">
+                                <label class="text-muted small d-block">PI Number</label>
+                                <strong th:text="${paymentForm.piNumber}"></strong>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small d-block">Total PI Amount</label>
+                                <strong
+                                    th:text="${'₹' + #numbers.formatDecimal(paymentForm.totalPiAmount, 1, 'COMMA', 2, 'POINT')}"></strong>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small d-block">Partially Paid</label>
+                                <strong class="text-warning"
+                                    th:text="${'₹' + #numbers.formatDecimal(paymentForm.partialAmount, 1, 'COMMA', 2, 'POINT')}"></strong>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small d-block">Balance Amount</label>
+                                <strong class="text-danger"
+                                    th:text="${'₹' + #numbers.formatDecimal(paymentForm.balanceAmount, 1, 'COMMA', 2, 'POINT')}"></strong>
+                            </div>
+                        </div>
+
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Proforma Invoice <span
-                                        class="text-danger">*</span></label>
-                                <select th:field="*{proformaInvoiceId}" class="form-select" required>
-                                    <option value="">-- Select PI --</option>
-                                    <option th:each="pi : ${invoices}" th:value="${pi.piNumber}"
-                                        th:text="${pi.piNumber + ' (Amount: ' + pi.piAmount + ')'}"></option>
-                                </select>
-                                <div class="text-danger small" th:if="${#fields.hasErrors('proformaInvoiceId')}"
-                                    th:errors="*{proformaInvoiceId}"></div>
+                                        class="text-danger small">(Selected)</span></label>
+                                <input type="text" th:field="*{proformaInvoiceId}" class="form-control" readonly />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Receipt Number <span
+                                <label class="form-label fw-semibold">UTR / Transaction ID <span
                                         class="text-danger">*</span></label>
-                                <input type="text" th:field="*{receiptNumber}" class="form-control"
-                                    placeholder="Enter Receipt Number" required />
-                                <div class="text-danger small" th:if="${#fields.hasErrors('receiptNumber')}"
-                                    th:errors="*{receiptNumber}"></div>
+                                <input type="text" th:field="*{utrNumber}" class="form-control"
+                                    placeholder="Enter UTR / Transaction Number" required />
+                                <div class="text-danger small" th:if="${#fields.hasErrors('utrNumber')}"
+                                    th:errors="*{utrNumber}"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold d-block">
+                                    Payment Type <span class="text-danger">*</span>
+                                </label>
+
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentType" id="fullPay"
+                                        value="FULL" th:field="*{paymentType}" checked>
+                                    <label class="form-check-label" for="fullPay">
+                                        Full Payment (Balance)
+                                    </label>
+                                </div>
+
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentType" id="partialPay"
+                                        value="PARTIAL" th:field="*{paymentType}">
+                                    <label class="form-check-label" for="partialPay">
+                                        Partial Payment
+                                    </label>
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Total Amount Paid (INR) <span
+                                <label class="form-label fw-semibold">Amount to Pay (INR) <span
                                         class="text-danger">*</span></label>
                                 <input type="number" step="0.01" th:field="*{totalAmount}" class="form-control"
-                                    placeholder="0.00" required />
+                                    placeholder="0.00" required id="amountToPay" />
                                 <div class="text-danger small" th:if="${#fields.hasErrors('totalAmount')}"
                                     th:errors="*{totalAmount}"></div>
+                                <small id="amountWarning" class="text-danger" style="display:none;">Amount cannot exceed
+                                    balance!</small>
                             </div>
-                            <div class="col-md-6">
+
+                            <!-- Live Remaining Balance -->
+                            <div class="col-md-6 d-flex align-items-end" id="remainingBalanceBox">
+                                <div class="w-100 p-3 rounded-3 border bg-light text-center">
+                                    <div class="text-muted small mb-1">Remaining Balance After This Payment</div>
+                                    <span id="remainingBalance" class="fw-bold fs-5 text-warning">&#8377;0.00</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
                                 <label class="form-label fw-semibold">Proof of Payment (Receipt Copy) <span
                                         class="text-danger">*</span></label>
                                 <input type="file" th:field="*{receiptFile}" class="form-control"
@@ -121,6 +170,64 @@
                     </form>
                 </div>
             </div>
+
+            <script th:inline="javascript">
+                document.addEventListener('DOMContentLoaded', () => {
+                    const balance = /*[[${paymentForm.balanceAmount}]]*/ 0;
+                    const amountInput = document.getElementById('amountToPay');
+                    const fullPayRadio = document.getElementById('fullPay');
+                    const partialPayRadio = document.getElementById('partialPay');
+                    const warning = document.getElementById('amountWarning');
+
+                    function updateRemainingBalance(paidAmount) {
+                        const remaining = document.getElementById('remainingBalance');
+                        if (!remaining) return;
+                        const diff = balance - (parseFloat(paidAmount) || 0);
+                        remaining.textContent = '\u20b9' + (diff < 0 ? '0.00' : diff.toFixed(2));
+                        if (diff <= 0) {
+                            remaining.className = 'fw-bold fs-5 text-success';
+                        } else if (diff < balance) {
+                            remaining.className = 'fw-bold fs-5 text-warning';
+                        } else {
+                            remaining.className = 'fw-bold fs-5 text-muted';
+                        }
+                    }
+
+                    function updateAmount() {
+                        if (fullPayRadio.checked) {
+                            amountInput.value = balance.toFixed(2);
+                            amountInput.readOnly = true;
+                            warning.style.display = 'none';
+                            amountInput.classList.remove('is-invalid');
+                            updateRemainingBalance(balance);
+                        } else {
+                            amountInput.readOnly = false;
+                            amountInput.value = '';
+                            amountInput.placeholder = 'Enter partial amount...';
+                            amountInput.focus();
+                            updateRemainingBalance(0);
+                        }
+                    }
+
+                    fullPayRadio.addEventListener('change', updateAmount);
+                    partialPayRadio.addEventListener('change', updateAmount);
+
+                    amountInput.addEventListener('input', () => {
+                        const val = parseFloat(amountInput.value) || 0;
+                        if (val > balance) {
+                            warning.style.display = 'block';
+                            amountInput.classList.add('is-invalid');
+                        } else {
+                            warning.style.display = 'none';
+                            amountInput.classList.remove('is-invalid');
+                        }
+                        updateRemainingBalance(val);
+                    });
+
+                    // Initial call
+                    updateAmount();
+                });
+            </script>
         </section>
     </th:block>
 </body>

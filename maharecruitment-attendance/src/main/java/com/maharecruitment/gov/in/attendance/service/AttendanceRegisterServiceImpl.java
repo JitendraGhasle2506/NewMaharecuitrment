@@ -19,10 +19,14 @@ import com.maharecruitment.gov.in.attendance.dto.AttendanceRegisterDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceReportDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceReportProjection;
 import com.maharecruitment.gov.in.attendance.entity.AttendanceRegisterEntity;
+import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceLockRepository;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
+import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
+import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
+import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 
@@ -39,8 +43,15 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	@Autowired
 	private HolidayRepository holidayRepository;
 	@Autowired
-	
+
+	private DailyAttendanceInternalRepository dailyAttendanceInternalRepository;
+
+	@Autowired
+	private DepartmentProjectApplicationRepository departmentProjectApplicationRepository;
+
+	@Autowired
 	private AttendanceLockRepository attendanceLockRepository;
+
 	@Override
 	public AttendanceRegisterDTO getEmployeeDetails(Long id,
 			LocalDate startDate,
@@ -182,6 +193,154 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			default:
 				return null;
 		}
+	}
+
+	@Override
+	public List<AttendanceRegisterDTO> getInternalAttendance(Long departmentId, int month, int year) {
+		List<EmployeeEntity> employees = employeeRepository
+				.findByDepartmentRegistration_DepartmentRegistrationIdAndRecruitmentType(departmentId, "INTERNAL");
+
+		YearMonth yearMonth = YearMonth.of(year, month);
+		LocalDate startDate = yearMonth.atDay(1);
+		LocalDate endDate = yearMonth.atEndOfMonth();
+
+		List<DailyAttendanceInternalEntity> dailyAttendance = dailyAttendanceInternalRepository
+				.findByAttendanceDateBetween(startDate, endDate);
+
+		List<DepartmentProjectApplicationEntity> projects = departmentProjectApplicationRepository
+				.findByDepartmentRegistrationIdOrderByDepartmentProjectApplicationIdDesc(departmentId);
+
+		Map<String, String> projectMap = projects.stream()
+				.collect(Collectors.toMap(DepartmentProjectApplicationEntity::getRequestId,
+						DepartmentProjectApplicationEntity::getProjectName, (existing, replacement) -> existing));
+
+		Map<Long, Map<LocalDate, DailyAttendanceInternalEntity>> attendanceMap = dailyAttendance.stream()
+				.collect(Collectors.groupingBy(DailyAttendanceInternalEntity::getEmployeeId,
+						Collectors.toMap(DailyAttendanceInternalEntity::getAttendanceDate, a -> a)));
+
+		List<AttendanceRegisterDTO> resultList = new ArrayList<>();
+		for (EmployeeEntity employee : employees) {
+			AttendanceRegisterDTO dto = new AttendanceRegisterDTO();
+			dto.setEmpId(employee.getEmployeeId());
+			dto.setUserId(employee.getEmployeeId());
+			dto.setName(employee.getFullName());
+			dto.setDesignation(employee.getDesignation() != null ? employee.getDesignation().getDesignationName() : null);
+			dto.setRequestId(employee.getRequestId());
+			dto.setLevel(employee.getLevelCode());
+			dto.setOrganization(employee.getAgency() != null ? employee.getAgency().getAgencyName() : null);
+			dto.setProjectName(employee.getRequestId() != null ? projectMap.get(employee.getRequestId()) : null);
+
+			Map<LocalDate, DailyAttendanceInternalEntity> empAttendance = attendanceMap
+					.getOrDefault(employee.getEmployeeId(), new HashMap<>());
+
+			List<AttendanceDayDTO> days = new ArrayList<>();
+			for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+				AttendanceDayDTO dayDTO = new AttendanceDayDTO();
+				dayDTO.setDate(date);
+				DailyAttendanceInternalEntity daily = empAttendance.get(date);
+				if (daily != null) {
+					dayDTO.setInTime(daily.getInTime());
+					dayDTO.setOutTime(daily.getOutTime());
+					dayDTO.setStayHours(daily.getTotalHours());
+					dayDTO.setStatus(daily.getStatus());
+				} else {
+					dayDTO.setStatus("");
+				}
+				days.add(dayDTO);
+			}
+			dto.setAttendanceDays(days);
+			resultList.add(dto);
+		}
+		return resultList;
+	}
+
+	@Override
+	public AttendanceRegisterDTO getInternalAttendanceForEmployee(Long employeeId, int month, int year) {
+		EmployeeEntity employee = employeeRepository.findById(employeeId)
+				.orElseThrow(() -> new RuntimeException("Employee not found with id: " + employeeId));
+
+		YearMonth yearMonth = YearMonth.of(year, month);
+		LocalDate startDate = yearMonth.atDay(1);
+		LocalDate endDate = yearMonth.atEndOfMonth();
+
+		List<DailyAttendanceInternalEntity> dailyAttendance = dailyAttendanceInternalRepository
+				.findByEmployeeIdAndMonthAndYear(employeeId, month, year);
+
+		Map<LocalDate, DailyAttendanceInternalEntity> empAttendance = dailyAttendance.stream()
+				.collect(Collectors.toMap(DailyAttendanceInternalEntity::getAttendanceDate, a -> a));
+
+		List<HolidayMasterEntity> holidays = holidayRepository.findByHolidayDateBetween(startDate, endDate);
+		Set<LocalDate> holidayDates = holidays.stream()
+				.map(HolidayMasterEntity::getHolidayDate)
+				.collect(Collectors.toSet());
+
+		Long departmentId = employee.getDepartmentRegistration() != null ? employee.getDepartmentRegistration().getDepartmentRegistrationId() : null;
+		
+		Map<String, String> projectMap = new HashMap<>();
+		if (departmentId != null) {
+			List<DepartmentProjectApplicationEntity> projects = departmentProjectApplicationRepository
+					.findByDepartmentRegistrationIdOrderByDepartmentProjectApplicationIdDesc(departmentId);
+
+			projectMap = projects.stream()
+					.collect(Collectors.toMap(DepartmentProjectApplicationEntity::getRequestId,
+							DepartmentProjectApplicationEntity::getProjectName, (existing, replacement) -> existing));
+		}
+
+		AttendanceRegisterDTO dto = new AttendanceRegisterDTO();
+		dto.setEmpId(employee.getEmployeeId());
+		dto.setUserId(employee.getEmployeeId());
+		dto.setName(employee.getFullName());
+		dto.setDesignation(employee.getDesignation() != null ? employee.getDesignation().getDesignationName() : null);
+		dto.setRequestId(employee.getRequestId());
+		dto.setLevel(employee.getLevelCode());
+		dto.setOrganization(employee.getAgency() != null ? employee.getAgency().getAgencyName() : null);
+		dto.setProjectName(employee.getRequestId() != null ? projectMap.get(employee.getRequestId()) : null);
+		
+		// New UI Fields
+		dto.setDivision(employee.getSubDepartment() != null ? employee.getSubDepartment().getSubDeptName() : "-");
+		dto.setOfficeLocation(employee.getDepartmentRegistration() != null ? employee.getDepartmentRegistration().getAddress() : "-");
+		dto.setEmail(employee.getEmail());
+		dto.setMobile(employee.getMobile());
+
+		// Today's Activity
+		LocalDate today = LocalDate.now();
+		DailyAttendanceInternalEntity todayAttendance = dailyAttendanceInternalRepository
+				.findByEmployeeIdAndAttendanceDate(employeeId, today).orElse(null);
+		if (todayAttendance != null) {
+			dto.setTodayInTime(todayAttendance.getInTime());
+			dto.setTodayOutTime(todayAttendance.getOutTime());
+			dto.setTodayStatus(todayAttendance.getStatus());
+		} else {
+			dto.setTodayInTime("-");
+			dto.setTodayOutTime("-");
+		}
+		dto.setAvgResponseTime("-"); // Placeholder
+
+		List<AttendanceDayDTO> days = new ArrayList<>();
+		for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+			AttendanceDayDTO dayDTO = new AttendanceDayDTO();
+			dayDTO.setDate(date);
+			DailyAttendanceInternalEntity daily = empAttendance.get(date);
+			if (daily != null) {
+				dayDTO.setInTime(daily.getInTime());
+				dayDTO.setOutTime(daily.getOutTime());
+				dayDTO.setStayHours(daily.getTotalHours());
+				dayDTO.setStatus(daily.getStatus());
+			} else if (holidayDates.contains(date)) {
+				dayDTO.setStatus("HOLIDAY");
+			} else if (!date.isAfter(LocalDate.now())) {
+				if (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+					dayDTO.setStatus("WEEK_OFF");
+				} else {
+					dayDTO.setStatus("ABSENT");
+				}
+			} else {
+				dayDTO.setStatus("");
+			}
+			days.add(dayDTO);
+		}
+		dto.setAttendanceDays(days);
+		return dto;
 	}
 
 	@Override
@@ -465,7 +624,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	}
 
 	@Override
-	public List<AttendanceReportDTO> getExternalAttendanceReportData(Long regId, Long agencyId, Integer month, Integer year,
+	public List<AttendanceReportDTO> getExternalAttendanceReportData(Long regId, Long agencyId, Integer month,
+			Integer year,
 			Long projectId) {
 
 		LocalDate startDate = LocalDate.of(year, month, 1);
@@ -475,8 +635,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				.map(h -> h.getHolidayDate().getDayOfMonth())
 				.collect(Collectors.toSet());
 
-		List<com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection> projections = attendanceRegisterRepo.getExternalAttendanceReportNative(regId,
-				agencyId, projectId, month, year);
+		List<com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection> projections = attendanceRegisterRepo
+				.getExternalAttendanceReportNative(regId,
+						agencyId, projectId, month, year);
 
 		return projections.stream().map(p -> {
 			AttendanceReportDTO dto = new AttendanceReportDTO();
@@ -505,47 +666,78 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		}).collect(Collectors.toList());
 	}
 
-	private String getExternalProjectionDayStatus(com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection p, int day) {
+	private String getExternalProjectionDayStatus(
+			com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection p, int day) {
 		switch (day) {
-			case 1: return p.getD1();
-			case 2: return p.getD2();
-			case 3: return p.getD3();
-			case 4: return p.getD4();
-			case 5: return p.getD5();
-			case 6: return p.getD6();
-			case 7: return p.getD7();
-			case 8: return p.getD8();
-			case 9: return p.getD9();
-			case 10: return p.getD10();
-			case 11: return p.getD11();
-			case 12: return p.getD12();
-			case 13: return p.getD13();
-			case 14: return p.getD14();
-			case 15: return p.getD15();
-			case 16: return p.getD16();
-			case 17: return p.getD17();
-			case 18: return p.getD18();
-			case 19: return p.getD19();
-			case 20: return p.getD20();
-			case 21: return p.getD21();
-			case 22: return p.getD22();
-			case 23: return p.getD23();
-			case 24: return p.getD24();
-			case 25: return p.getD25();
-			case 26: return p.getD26();
-			case 27: return p.getD27();
-			case 28: return p.getD28();
-			case 29: return p.getD29();
-			case 30: return p.getD30();
-			case 31: return p.getD31();
-			default: return null;
+			case 1:
+				return p.getD1();
+			case 2:
+				return p.getD2();
+			case 3:
+				return p.getD3();
+			case 4:
+				return p.getD4();
+			case 5:
+				return p.getD5();
+			case 6:
+				return p.getD6();
+			case 7:
+				return p.getD7();
+			case 8:
+				return p.getD8();
+			case 9:
+				return p.getD9();
+			case 10:
+				return p.getD10();
+			case 11:
+				return p.getD11();
+			case 12:
+				return p.getD12();
+			case 13:
+				return p.getD13();
+			case 14:
+				return p.getD14();
+			case 15:
+				return p.getD15();
+			case 16:
+				return p.getD16();
+			case 17:
+				return p.getD17();
+			case 18:
+				return p.getD18();
+			case 19:
+				return p.getD19();
+			case 20:
+				return p.getD20();
+			case 21:
+				return p.getD21();
+			case 22:
+				return p.getD22();
+			case 23:
+				return p.getD23();
+			case 24:
+				return p.getD24();
+			case 25:
+				return p.getD25();
+			case 26:
+				return p.getD26();
+			case 27:
+				return p.getD27();
+			case 28:
+				return p.getD28();
+			case 29:
+				return p.getD29();
+			case 30:
+				return p.getD30();
+			case 31:
+				return p.getD31();
+			default:
+				return null;
 		}
 	}
 
-
 	@Override
 	public void lockAttendance(Long departmentId, int month, int year) {
-		// TODO Auto-generated method stub
 		com.maharecruitment.gov.in.attendance.entity.AttendanceLockEntity lock = attendanceLockRepository
 				.findByDeptRegIdAndMonthAndYear(departmentId, month, year)
 				.orElse(new com.maharecruitment.gov.in.attendance.entity.AttendanceLockEntity());
@@ -562,7 +754,6 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 	@Override
 	public boolean isAttendanceLocked(Long departmentId, int month, int year) {
-		// TODO Auto-generated method stub
 		Optional<com.maharecruitment.gov.in.attendance.entity.AttendanceLockEntity> lockOpt = attendanceLockRepository
 				.findByDeptRegIdAndMonthAndYear(departmentId, month, year);
 
@@ -575,7 +766,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		LocalDate cutoffDate = LocalDate.of(year, month, 1).plusMonths(1).withDayOfMonth(15);
 
 		if (today.isAfter(cutoffDate)) {
-			// Only lock if data exists in database (as per user request: "data which is not there it will not be locked")
+			// Only lock if data exists in database (as per user request: "data which is not
+			// there it will not be locked")
 			return attendanceRegisterRepo.existsByDeptRegIdAndMonthAndYear(departmentId, month, year);
 		}
 

@@ -42,6 +42,11 @@ public class ProjectMst extends Auditable {
     @Column(name = "project_type", nullable = false, length = 80)
     private ProjectType projectType;
 
+    @NotNull(message = "Project scope is required")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "project_scope_type", nullable = false, length = 20)
+    private ProjectScopeType projectScopeType;
+
     @Column(name = "department_registration_id")
     private Long departmentRegistrationId;
 

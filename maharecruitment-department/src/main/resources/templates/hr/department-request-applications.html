@@ -3,50 +3,61 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Sub-Department Submitted Applications</title>
+    <title>Submitted Applications | HR Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/hr-department-requests.css}">
 </head>
 
 <body class="hr-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Department Request', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="mb-0">Submitted Applications</h2>
-                        <small class="text-muted"
-                               th:text="${applicationDetail.departmentName + ' | ' + applicationDetail.subDepartmentName}">
-                            Department | Sub-Department
-                        </small>
+        <section class="hr-request-container">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="dept-info">
+                    <div class="dept-icon shadow-sm">
+                        <i class="fa-solid fa-list-check"></i>
                     </div>
-                    <a class="btn btn-outline-secondary btn-sm"
-                       th:href="@{/hr/department-requests/{departmentId}/subdepartments(departmentId=${applicationDetail.departmentId})}">
-                        Back to Sub-Departments
-                    </a>
+                    <div>
+                        <h2 class="fw-bold text-dark mb-1">Submitted Applications</h2>
+                        <p class="text-muted small mb-0" th:text="${applicationDetail.departmentName + ' | ' + applicationDetail.subDepartmentName}">
+                            Department | Sub-Department
+                        </p>
+                    </div>
                 </div>
+                <a class="btn btn-outline-secondary btn-sm px-3"
+                   th:href="@{/hr/department-requests/{departmentId}/subdepartments(departmentId=${applicationDetail.departmentId})}">
+                    <i class="fa fa-arrow-left me-2"></i>Back to Sub-Departments
+                </a>
+            </div>
 
-                <div class="card-body">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-4 bg-light">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle mb-0">
+                        <table class="table-premium">
                             <thead>
                                 <tr>
                                     <th>Request ID</th>
                                     <th>Project Name</th>
-                                    <th>Application Type</th>
+                                    <th>Type</th>
                                     <th>Status</th>
-                                    <th>Total Estimated Cost</th>
-                                    <th>Last Updated</th>
+                                    <th class="text-end">Est. Cost (₹)</th>
+                                    <th class="text-end">Last Updated</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(applicationDetail.applications)}">
-                                    <td colspan="6" class="text-center text-muted">No submitted applications found.</td>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fa-solid fa-inbox d-block mb-3 fs-1 opacity-25"></i>
+                                        No submitted applications found for this sub-department.
+                                    </td>
                                 </tr>
 
                                 <tr th:each="applicationSummary : ${applicationDetail.applications}">
-                                    <td th:text="${applicationSummary.requestId}">DPA-0000</td>
                                     <td>
-                                        <a th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}(
+                                        <span class="fw-bold text-dark" th:text="${applicationSummary.requestId}">DPA-0000</span>
+                                    </td>
+                                    <td>
+                                        <a class="project-link" th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}(
                                                 departmentId=${applicationDetail.departmentId},
                                                 subDepartmentId=${applicationDetail.subDepartmentId},
                                                 applicationId=${applicationSummary.departmentProjectApplicationId})}"
@@ -54,20 +65,26 @@
                                             Project Name
                                         </a>
                                     </td>
-                                    <td th:text="${applicationSummary.applicationType != null ? #strings.replace(applicationSummary.applicationType.name(), '_', ' ') : '-'}">
-                                        -
+                                    <td>
+                                        <span class="text-muted small" th:text="${applicationSummary.applicationType != null ? #strings.replace(applicationSummary.applicationType.name(), '_', ' ') : '-'}">
+                                            -
+                                        </span>
                                     </td>
                                     <td>
-                                        <span class="badge text-bg-primary"
+                                        <span class="badge badge-premium text-bg-primary"
                                               th:text="${applicationSummary.applicationStatus.statusCode + ' - ' + #strings.replace(applicationSummary.applicationStatus.name(), '_', ' ')}">
                                             SUBMITTED_TO_HR
                                         </span>
                                     </td>
-                                    <td th:text="${#numbers.formatDecimal(applicationSummary.totalEstimatedCost != null ? applicationSummary.totalEstimatedCost : 0, 1, 'COMMA', 2, 'POINT')}">
-                                        0.00
+                                    <td class="text-end fw-semibold">
+                                        <span th:text="${#numbers.formatDecimal(applicationSummary.totalEstimatedCost != null ? applicationSummary.totalEstimatedCost : 0, 1, 'COMMA', 2, 'POINT')}">
+                                            0.00
+                                        </span>
                                     </td>
-                                    <td th:text="${applicationSummary.updatedDate != null ? #temporals.format(applicationSummary.updatedDate, 'dd-MMM-yyyy HH:mm') : '-'}">
-                                        -
+                                    <td class="text-end text-muted small">
+                                        <span th:text="${applicationSummary.updatedDate != null ? #temporals.format(applicationSummary.updatedDate, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                            -
+                                        </span>
                                     </td>
                                 </tr>
                             </tbody>

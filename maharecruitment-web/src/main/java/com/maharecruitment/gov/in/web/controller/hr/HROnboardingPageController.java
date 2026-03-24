@@ -19,7 +19,7 @@ import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
 
 @Controller
 @RequestMapping("/hr/onboarding")
-@PreAuthorize("hasRole('ROLE_HR')")
+@PreAuthorize("hasAuthority('                                     ')")
 public class HROnboardingPageController {
 
     private final HROnboardingPageService hrOnboardingPageService;

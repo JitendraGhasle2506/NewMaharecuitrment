@@ -23,6 +23,9 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
 
     Optional<RecruitmentNotificationEntity> findByRequestIdIgnoreCase(String requestId);
 
+    Optional<RecruitmentNotificationEntity> findByInternalVacancyOpeningInternalVacancyOpeningId(
+            Long internalVacancyOpeningId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select notification "
             + "from RecruitmentNotificationEntity notification "
@@ -51,4 +54,15 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
     Optional<RecruitmentNotificationEntity> findForDepartmentReview(
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+
+    @Query("select notification "
+            + "from RecruitmentNotificationEntity notification "
+            + "join fetch notification.projectMst project "
+            + "join notification.internalVacancyOpening opening "
+            + "join opening.interviewAuthorities authority "
+            + "where upper(notification.requestId) = upper(:requestId) "
+            + "and authority.user.id = :userId")
+    Optional<RecruitmentNotificationEntity> findInternalVacancyForInterviewAuthorityReview(
+            @Param("requestId") String requestId,
+            @Param("userId") Long userId);
 }

@@ -9,6 +9,9 @@ import com.maharecruitment.gov.in.attendance.dto.AttendanceReportDTO;
 public interface AttendanceRegisterService {
 	public AttendanceRegisterDTO getEmployeeDetails(Long id, LocalDate startDate, LocalDate endDate);
 
+	public List<AttendanceRegisterDTO> getInternalAttendance(Long departmentId, int month, int year);
+	public AttendanceRegisterDTO getInternalAttendanceForEmployee(Long employeeId, int month, int year);
+
 	public List<AttendanceRegisterDTO> getExternalAttendance(Long departmentId, int month, int year);
 
 	public void saveExternalAttendance(List<AttendanceRegisterDTO> dtos);

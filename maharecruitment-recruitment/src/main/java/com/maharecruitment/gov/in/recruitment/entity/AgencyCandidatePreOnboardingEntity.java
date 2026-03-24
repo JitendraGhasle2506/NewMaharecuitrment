@@ -51,8 +51,8 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
     @Column(name = "pre_onboarding_id")
     private Long preOnboardingId;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "recruitment_interview_detail_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "recruitment_interview_detail_id", nullable = true)
     private RecruitmentInterviewDetailEntity interviewDetail;
 
     @Column(name = "agency_user_id", nullable = false)

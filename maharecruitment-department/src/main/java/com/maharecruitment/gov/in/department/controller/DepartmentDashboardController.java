@@ -29,7 +29,7 @@ public class DepartmentDashboardController {
 
         DepartmentDashboardView dashboard = departmentDashboardService.getDashboard(
                 sessionUser != null ? sessionUser.departmentId() : null,
-                sessionUser != null ? sessionUser.name() : null);
+                sessionUser != null ? sessionUser.id() : null);
 
         model.addAttribute("dashboard", dashboard);
         model.addAttribute("isDummyData", true);

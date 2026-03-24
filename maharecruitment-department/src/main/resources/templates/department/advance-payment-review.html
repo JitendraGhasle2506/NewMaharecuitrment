@@ -70,7 +70,7 @@
                     <!-- Review Action block using separate tags for priority -->
                     <div
                         th:if="${payment.applicationStatus != null and (payment.applicationStatus.getStatusCode() == 2 or payment.applicationStatus.getStatusCode() == 7)}">
-                        <div class="review-section mt-4" sec:authorize="hasAnyRole('ROLE_HR', 'ROLE_AUDITOR')">
+                        <div class="review-section mt-4" sec:authorize="hasAnyAuthority('ROLE_HR', 'ROLE_AUDITOR')">
                             <h5 class="section-title mb-3"
                                 style="color: #2c3e50; border-left: 4px solid #9b59b6; padding-left: 10px;">Review
                                 Action
@@ -79,7 +79,7 @@
                                 <input type="hidden" id="paymentId" th:value="${payment.id}" />
                                 <div class="row g-3">
                                     <div class="col-md-4" th:if="${payment.applicationStatus.getStatusCode() == 2}"
-                                        sec:authorize="hasRole('ROLE_HR')">
+                                        sec:authorize="hasAuthority('ROLE_HR')">
                                         <label class="form-label fw-semibold">HR Decision</label>
                                         <select id="hrDecision" class="form-select">
                                             <option value="">-- Select Decision --</option>
@@ -88,7 +88,7 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4" th:if="${payment.applicationStatus.getStatusCode() == 7}"
-                                        sec:authorize="hasRole('ROLE_AUDITOR')">
+                                        sec:authorize="hasAuthority('ROLE_AUDITOR')">
                                         <label class="form-label fw-semibold">Auditor Decision</label>
                                         <select id="auditorDecision" class="form-select">
                                             <option value="">-- Select Decision --</option>

@@ -9,6 +9,7 @@ public record SessionUserDTO(
         String email,
         List<String> roles,
         Long departmentId,
+        Long employeeId,
         String mobileNo,
         LocalDateTime loginTime
 ) {

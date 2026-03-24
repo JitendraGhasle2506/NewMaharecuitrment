@@ -21,6 +21,7 @@ public class DepartmentInterviewAssessmentSubmissionInput {
     private BigDecimal totalExperience;
     private Integer communicationSkillMarks;
     private Integer technicalSkillMarks;
+    private Integer leadershipQualityMarks;
     private Integer relevantExperienceMarks;
     private String interviewerGrade;
     private String recommendationStatus;

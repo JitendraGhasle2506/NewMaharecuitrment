@@ -2,7 +2,6 @@ package com.maharecruitment.gov.in.department.dto;
 
 import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
 
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -17,7 +16,4 @@ public class AuditorDepartmentReviewForm {
 
     @Size(max = 1000, message = "Remarks must not exceed 1000 characters.")
     private String remarks;
-
-    @AssertTrue(message = "Please confirm that auditor has verified department details.")
-    private Boolean verificationConfirmed = Boolean.FALSE;
 }

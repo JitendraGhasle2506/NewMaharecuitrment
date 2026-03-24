@@ -55,14 +55,17 @@ public class RecruitmentAssessmentFeedbackEntity extends RecruitmentAuditable {
     @JoinColumn(name = "recruitment_interview_detail_id", nullable = false, unique = true)
     private RecruitmentInterviewDetailEntity recruitmentInterviewDetail;
 
-    @Column(name = "department_registration_id", nullable = false)
+    @Column(name = "department_registration_id")
     private Long departmentRegistrationId;
 
     @Column(name = "request_id", nullable = false, length = 32)
     private String requestId;
 
-    @Column(name = "department_project_application_id", nullable = false)
+    @Column(name = "department_project_application_id")
     private Long departmentProjectApplicationId;
+
+    @Column(name = "internal_vacancy_opening_id")
+    private Long internalVacancyOpeningId;
 
     @Column(name = "interview_authority", length = 255)
     private String interviewAuthority;
@@ -102,6 +105,9 @@ public class RecruitmentAssessmentFeedbackEntity extends RecruitmentAuditable {
 
     @Column(name = "technical_skill_marks")
     private Integer technicalSkillMarks;
+
+    @Column(name = "leadership_quality_marks")
+    private Integer leadershipQualityMarks;
 
     @Column(name = "relevant_experience_marks")
     private Integer relevantExperienceMarks;

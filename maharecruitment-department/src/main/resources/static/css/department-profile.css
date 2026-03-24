@@ -1,7 +1,15 @@
+:root {
+    --profile-surface: var(--panel-bg, #ffffff);
+    --profile-line: var(--panel-border, #d4dee8);
+    --profile-text: var(--text-main, #1b2b3b);
+    --profile-muted: var(--text-muted, #5f7287);
+    --profile-brand-soft: var(--primary-soft, rgba(31, 79, 120, 0.12));
+}
+
 .department-shell .profile-hero {
     align-items: center;
-    background: linear-gradient(135deg, #edf3ff 0%, #ecfbf2 100%);
-    border: 1px solid #dce6f4;
+    background: linear-gradient(135deg, #edf3fb 0%, #f4f8fc 100%);
+    border: 1px solid var(--profile-line);
     border-radius: 12px;
     display: flex;
     justify-content: space-between;
@@ -11,28 +19,30 @@
 .department-shell .profile-hero h3 {
     margin: 0 0 0.35rem;
     font-size: 1.2rem;
+    color: var(--profile-text);
 }
 
 .department-shell .profile-hero p {
-    color: #425776;
+    color: var(--profile-muted);
 }
 
 .department-shell .section-card {
-    background: #ffffff;
-    border: 1px solid #e1e9f3;
+    background: var(--profile-surface);
+    border: 1px solid var(--profile-line);
     border-radius: 10px;
     padding: 1rem;
 }
 
 .department-shell .section-card h5 {
-    border-bottom: 1px solid #edf2f8;
+    border-bottom: 1px solid var(--profile-line);
+    color: var(--profile-text);
     font-size: 1rem;
     margin-bottom: 0.75rem;
     padding-bottom: 0.55rem;
 }
 
 .department-shell .label-column {
-    color: #4e617f;
+    color: var(--profile-muted);
     font-weight: 600;
     width: 220px;
 }

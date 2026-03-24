@@ -1,0 +1,273 @@
+@import url('https://fonts.googleapis.com/css2?family=Merriweather+Sans:wght@600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --landing-ink: var(--text-main, #1b2b3b);
+    --landing-muted: var(--text-muted, #5f7287);
+    --landing-brand: var(--primary, #1f4f78);
+    --landing-brand-strong: var(--primary-strong, #163a59);
+    --landing-accent: #0f8b8d;
+    --landing-line: var(--panel-border, #d4dee8);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body.landing-shell {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--landing-ink);
+    font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+    background:
+        radial-gradient(620px 300px at -6% -8%, rgba(31, 79, 120, 0.13), transparent 62%),
+        radial-gradient(560px 300px at 106% 0%, rgba(15, 139, 141, 0.12), transparent 56%),
+        linear-gradient(165deg, #ffffff 0%, var(--app-bg, #eef3f7) 100%);
+}
+
+.landing-topbar {
+    background: linear-gradient(90deg, var(--sidebar-bg, #1a3c5a) 0%, #235d83 56%, var(--sidebar-bg-soft, #2a678f) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 10px 20px rgba(9, 47, 88, 0.2);
+    padding: 0.8rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+.brand-link {
+    color: #ffffff;
+    text-decoration: none;
+    font-family: "Merriweather Sans", "Public Sans", sans-serif;
+    font-size: 1.12rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.brand-link:hover {
+    color: #ffffff;
+}
+
+.landing-main {
+    padding: 2rem 0 2.2rem;
+}
+
+.landing-hero {
+    margin-bottom: 1.1rem;
+}
+
+.hero-panel-main,
+.hero-panel-side {
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.84);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 18px 36px rgba(18, 41, 70, 0.12);
+    padding: 1.6rem;
+    animation: liftIn 0.44s ease;
+}
+
+.hero-badge {
+    margin: 0 0 0.75rem;
+    width: fit-content;
+    border-radius: 999px;
+    border: 1px solid rgba(31, 79, 120, 0.26);
+    background: rgba(31, 79, 120, 0.1);
+    color: var(--landing-brand-strong);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 0.32rem 0.72rem;
+}
+
+.hero-panel-main h1 {
+    margin: 0;
+    font-family: "Merriweather Sans", "Public Sans", sans-serif;
+    font-size: clamp(1.75rem, 2.65vw, 2.55rem);
+    line-height: 1.2;
+    color: var(--landing-brand-strong);
+}
+
+.hero-description {
+    margin: 1rem 0 1.2rem;
+    font-size: 1rem;
+    color: var(--landing-muted);
+    max-width: 56ch;
+}
+
+.hero-panel-side h2 {
+    margin: 0 0 0.95rem;
+    font-family: "Merriweather Sans", "Public Sans", sans-serif;
+    font-size: 1.15rem;
+    color: var(--landing-brand-strong);
+}
+
+.highlight-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.78rem;
+}
+
+.highlight-list li {
+    display: flex;
+    gap: 0.62rem;
+    align-items: flex-start;
+    padding: 0.8rem;
+    border-radius: 12px;
+    border: 1px solid var(--landing-line);
+    background: #f7fafe;
+    color: #355274;
+    font-size: 0.9rem;
+}
+
+.highlight-list i {
+    color: var(--landing-accent);
+    margin-top: 0.08rem;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.82rem;
+    margin: 0.3rem 0 1rem;
+}
+
+.feature-card {
+    border-radius: 14px;
+    border: 1px solid var(--landing-line);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 10px 24px rgba(18, 41, 70, 0.08);
+    padding: 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(18, 41, 70, 0.14);
+}
+
+.feature-card i {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-grid;
+    place-items: center;
+    margin-bottom: 0.6rem;
+    color: var(--landing-brand);
+    background: rgba(31, 79, 120, 0.12);
+}
+
+.feature-card h3 {
+    margin: 0 0 0.3rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--landing-brand-strong);
+}
+
+.feature-card p {
+    margin: 0;
+    color: var(--landing-muted);
+    font-size: 0.9rem;
+}
+
+.metric-tile {
+    border-radius: 12px;
+    border: 1px solid var(--landing-line);
+    background: rgba(255, 255, 255, 0.94);
+    padding: 0.92rem;
+}
+
+.metric-tile h4 {
+    margin: 0 0 0.24rem;
+    font-size: 0.96rem;
+    color: var(--landing-brand-strong);
+    font-weight: 700;
+}
+
+.metric-tile p {
+    margin: 0;
+    color: var(--landing-muted);
+    font-size: 0.86rem;
+}
+
+.landing-footer {
+    margin-top: 0.4rem;
+    border-top: 1px solid rgba(177, 194, 215, 0.72);
+    background: rgba(255, 255, 255, 0.78);
+    color: #355274;
+    font-size: 0.83rem;
+}
+
+.btn.btn-primary {
+    border-color: var(--landing-brand);
+    background: linear-gradient(135deg, var(--landing-brand), #0d70bf);
+}
+
+.btn.btn-primary:hover,
+.btn.btn-primary:focus {
+    border-color: var(--landing-brand-strong);
+    background: linear-gradient(135deg, var(--landing-brand-strong), var(--landing-brand));
+}
+
+.btn.btn-outline-primary {
+    border-color: rgba(31, 79, 120, 0.56);
+    color: var(--landing-brand);
+}
+
+.btn.btn-outline-primary:hover,
+.btn.btn-outline-primary:focus {
+    border-color: var(--landing-brand);
+    background: rgba(31, 79, 120, 0.08);
+    color: var(--landing-brand-strong);
+}
+
+@keyframes liftIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 991.98px) {
+    .feature-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .landing-main {
+        padding-top: 1.3rem;
+    }
+
+    .hero-panel-main,
+    .hero-panel-side {
+        border-radius: 16px;
+        padding: 1.2rem;
+    }
+
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.brand-link:focus-visible,
+.btn.btn-primary:focus-visible,
+.btn.btn-outline-primary:focus-visible {
+    outline: 2px solid var(--landing-brand);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-panel-main,
+    .hero-panel-side,
+    .feature-card {
+        animation: none;
+        transition: none;
+    }
+}
+

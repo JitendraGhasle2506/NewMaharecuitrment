@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -29,6 +31,7 @@ import jakarta.servlet.http.HttpSession;
 @Component
 public class MenuInterceptor implements HandlerInterceptor {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MenuInterceptor.class);
     private static final String MENUS_KEY = "menus";
     private static final String SUB_MENUS_KEY = "submenus";
     private static final String HOMEPAGE_URL_KEY = "homepageUrl";
@@ -63,19 +66,15 @@ public class MenuInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        if (session.getAttribute(MENUS_KEY) != null && session.getAttribute(SUB_MENUS_KEY) != null) {
-            return true;
-        }
-
-        if (!(authentication.getPrincipal() instanceof UserDetails userDetails)) {
-            return true;
-        }
-
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .filter(Objects::nonNull)
                 .filter(authority -> !authority.isBlank())
                 .toList();
+
+        if (!(authentication.getPrincipal() instanceof UserDetails userDetails)) {
+            return true;
+        }
 
         Map<String, String> roleTargetUrlMap = CommonConstant.getDashboardUrls();
         List<Long> roleIds = new ArrayList<>();
@@ -99,6 +98,9 @@ public class MenuInterceptor implements HandlerInterceptor {
 
         List<MstMenu> menus = mstMenuService.findMenusByRoleIds(roleIds);
         session.setAttribute(MENUS_KEY, menus);
+        if (roles != null && !roles.isEmpty() && menus.isEmpty()) {
+            LOGGER.warn("No DB menus found for authenticated user {} with roles {}", userDetails.getUsername(), roles);
+        }
 
         List<Long> menuIds = menus.stream()
                 .map(MstMenu::getMenuId)
