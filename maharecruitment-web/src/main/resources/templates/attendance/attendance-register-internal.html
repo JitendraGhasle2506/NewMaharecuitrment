@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Internal Employee Attendance Register</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+    <style>
+        .profile-card, .info-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 20px;
+            background: #fff;
+            height: 100%;
+        }
+        .profile-img {
+            width: 100%;
+            max-width: 150px;
+            border: 1px solid #ddd;
+            padding: 5px;
+        }
+        .info-label {
+            color: #666;
+            width: 130px;
+            display: inline-block;
+            font-size: 13px;
+        }
+        .info-value {
+            font-weight: 500;
+            font-size: 13px;
+        }
+        .section-title {
+            color: #ff9800;
+            font-size: 14px;
+            margin-top: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .activity-title {
+            color: #f44336;
+            font-size: 13px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+        .tab-nav {
+            border-bottom: 2px solid #2196F3;
+            margin-top: 30px;
+        }
+        .tab-nav .nav-link {
+            border: none;
+            color: #2196F3;
+            font-weight: 500;
+            padding: 10px 20px;
+        }
+        .tab-nav .nav-link.active {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-top: 2px solid #2196F3;
+            margin-bottom: -2px;
+        }
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+            font-size: 12px;
+        }
+        .legend-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+        .bg-present { background-color: #00c853; }
+        .bg-absent { background-color: #f44336; }
+        .bg-holiday { background-color: #2196f3; }
+        .bg-weekoff { background-color: #1976d2; }
+        .bg-leave { background-color: #4caf50; }
+        .bg-tour { background-color: #9c27b0; }
+        .bg-future { background-color: #eeeeee; }
+
+        .attendance-grid {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .attendance-grid th, .attendance-grid td {
+            border: 1px solid #eee;
+            padding: 5px;
+            text-align: center;
+            width: 25px;
+        }
+        .attendance-grid .emp-name-cell {
+            text-align: left;
+            width: 200px;
+            padding-left: 10px;
+        }
+        .status-block {
+            width: 100%;
+            height: 25px;
+            display: block;
+        }
+        .btn-load {
+            background-color: #00bfa5;
+            color: #fff;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 3px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Attendance Register', 'Employee Corner', ~{::section})}">
+        <section>
+            <div class="page-main-content">
+                <ul class="breadcrumb breadcrumb-style" style="background: none; padding: 0; display: inline-flex;">
+                    <li class="breadcrumb-item"><i class="fa fa-home"></i> Home</li>
+                    <li class="breadcrumb-item">Employee Corner</li>
+                    <li class="breadcrumb-item active">View Attendance Register</li>
+                </ul>
+
+                <div class="row">
+                    <!-- Profile Section -->
+                    <div class="col-md-6">
+                        <div class="profile-card">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <img th:src="${attendance.photoPath ?: '/assets/img/user-default.png'}" class="profile-img" alt="Profile">
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="mb-2"><span class="info-label">Name</span> <span class="info-value" th:text="${attendance.name}"></span></div>
+                                    <div class="mb-2"><span class="info-label">Designation</span> <span class="info-value" th:text="${attendance.designation}"></span></div>
+                                    <div class="mb-2"><span class="info-label">E-Mail</span> <span class="info-value" th:text="${attendance.email}"></span></div>
+                                    <div class="mb-2"><span class="info-label">Mobile</span> <span class="info-value" style="color: #9c27b0;" th:text="${attendance.mobile}"></span></div>
+                                    
+                                    <h6 class="section-title">Data for Month</h6>
+                                    <form th:action="@{/employee/fetchMyAttendance}" method="post">
+                                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                            <input type="text" name="dateRange" id="dateRangePicker" class="form-control" 
+                                                   th:value="${attendance.dateRange}" readonly 
+                                                   style="background-color: #fff; cursor: pointer;">
+                                        </div>
+                                        <button type="submit" class="btn btn-load">Load Register</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Organization Section -->
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <div class="mb-2"><span class="info-label">Organization</span> <span class="info-value" th:text="${attendance.organization}"></span></div>
+                            <div class="mb-2"><span class="info-label">Division/Unit</span> <span class="info-value" th:text="${attendance.division}"></span></div>
+                            <div class="mb-2"><span class="info-label">Office Location</span> <span class="info-value" th:text="${attendance.officeLocation}"></span></div>
+                            
+                            <h6 class="activity-title">Activity Today</h6>
+                            <div class="mb-2"><span class="info-label">In Time</span> <span class="info-value" th:text="${attendance.todayInTime}"></span></div>
+                            <div class="mb-2"><span class="info-label">Out Time</span> <span class="info-value" th:text="${attendance.todayOutTime}"></span></div>
+                            <div class="mb-2"><span class="info-label">Avg Response Time</span> <span class="info-value" th:text="${attendance.avgResponseTime}"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs Section -->
+                <ul class="nav nav-tabs tab-nav" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">Register</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab">Details</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="myTabContent">
+                    <!-- Register Tab -->
+                    <div class="tab-pane fade show active" id="register" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="body">
+                                <div class="legend mb-3 text-center">
+                                    <div class="legend-item"><span class="legend-dot bg-present"></span> Present</div>
+                                    <div class="legend-item"><span class="legend-dot bg-absent"></span> Absent</div>
+                                    <div class="legend-item"><span class="legend-dot bg-holiday"></span> Holiday</div>
+                                    <div class="legend-item"><span class="legend-dot bg-leave"></span> Leave</div>
+                                    <div class="legend-item"><span class="legend-dot bg-tour"></span> Tour</div>
+                                    <div class="legend-item"><span class="legend-dot bg-future"></span> Invalid/Future Date</div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="attendance-grid">
+                                        <thead>
+                                            <tr>
+                                                <th class="emp-name-cell">Employee Name</th>
+                                                <th th:each="i : ${#numbers.sequence(1, daysInMonth)}" th:text="${i}"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="emp-name-cell" th:text="${attendance.name}"></td>
+                                                <td th:each="day : ${attendance.attendanceDays}">
+                                                    <span class="status-block" th:classappend="${day.status == 'PRESENT' ? 'bg-present' : 
+                                                                                                  (day.status == 'ABSENT' ? 'bg-absent' : 
+                                                                                                  (day.status == 'HOLIDAY' ? 'bg-holiday' : 
+                                                                                                  (day.status == 'WEEK_OFF' ? 'bg-weekoff' : 
+                                                                                                  (day.status == 'LEAVE' ? 'bg-leave' : 
+                                                                                                  (day.status == 'TOUR' ? 'bg-tour' : 'bg-future')))))}"
+                                                          th:title="${'Date: ' + day.date + ', Status: ' + day.status}">
+                                                    </span>
+                                                </td>
+                                                <td th:if="${daysInMonth < 31}" th:each="i : ${#numbers.sequence(daysInMonth + 1, 31)}"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Details Tab -->
+                    <div class="tab-pane fade" id="details" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped" id="detailsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>In Time</th>
+                                                <th>Out Time</th>
+                                                <th>Stay Hours</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="day : ${attendance.attendanceDays}">
+                                                <td th:text="${#temporals.format(day.date, 'dd-MM-yyyy')}"></td>
+                                                <td th:text="${day.inTime ?: '-'}"></td>
+                                                <td th:text="${day.outTime ?: '-'}"></td>
+                                                <td th:text="${day.stayHours ?: '-'}"></td>
+                                                <td th:text="${day.status}"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    
+    <script>
+        $(document).ready(function(){
+            $('#dateRangePicker').datepicker({
+                format: "mm-yyyy",
+                startView: "months", 
+                minViewMode: "months",
+                autoclose: true,
+                orientation: "bottom"
+            });
+        });
+    </script>
+</body>
+
+</html>

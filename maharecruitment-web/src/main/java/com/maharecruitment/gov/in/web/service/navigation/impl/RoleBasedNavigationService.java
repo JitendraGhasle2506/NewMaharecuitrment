@@ -210,7 +210,8 @@ public class RoleBasedNavigationService implements NavigationService {
         ));
 
         navItems.put("ROLE_EMPLOYEE", List.of(
-                new SidebarItemView("Employee Dashboard", "fa fa-id-badge", "/employee/dashboard")
+                new SidebarItemView("Employee Dashboard", "fa fa-id-badge", "/employee/dashboard"),
+                new SidebarItemView("Apply Leave", "fa fa-calendar-plus", "/employee/applyLeave")
         ));
 
         navItems.put("ROLE_COMMON_MANAGER", List.of(

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle}">Holiday List</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .holiday-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 20px;
+            background: #fff;
+            margin-bottom: 20px;
+        }
+        .btn-add {
+            background-color: #00bfa5;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+        .btn-add:hover {
+            color: #fff;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header(${pageTitle}, 'Holiday Master', ~{::section})}">
+        <section>
+            <div class="page-main-content">
+                <ul class="breadcrumb breadcrumb-style" style="background: none; padding: 0;">
+                    <li class="breadcrumb-item"><i class="fa fa-home"></i> Home</li>
+                    <li class="breadcrumb-item">Holiday Master</li>
+                    <li class="breadcrumb-item active" th:text="${pageTitle}">List</li>
+                </ul>
+
+                <div class="holiday-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Holidays</h5>
+                        <a th:href="@{/hr/holidays/add}" class="btn btn-add">
+                            <i class="fa fa-plus me-1"></i> Add New Holiday
+                        </a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Date</th>
+                                    <th>Holiday Name</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="holiday : ${holidays}">
+                                    <td th:text="${holiday.id}"></td>
+                                    <td th:text="${#temporals.format(holiday.holidayDate, 'dd-MM-yyyy')}"></td>
+                                    <td th:text="${holiday.holidayName}"></td>
+                                    <td>
+                                        <a th:href="@{/hr/holidays/edit/{id}(id=${holiday.id})}" class="btn btn-sm btn-outline-primary shadow-none me-1" title="Edit">
+                                            <i class="fa fa-edit"></i>
+                                        </a>
+                                        <a th:href="@{/hr/holidays/delete/{id}(id=${holiday.id})}" 
+                                           class="btn btn-sm btn-outline-danger shadow-none" 
+                                           title="Delete"
+                                           onclick="return confirm('Are you sure you want to delete this holiday?')">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(holidays)}">
+                                    <td colspan="5" class="text-center text-muted">No holidays found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+</html>

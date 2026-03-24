@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Apply Leave</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+    <style>
+        .page-title-box {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .page-title-box h4 {
+            font-size: 20px;
+            margin: 0;
+            color: #555;
+            font-weight: 400;
+        }
+        .page-title-box span {
+            color: #999;
+            margin-left: 10px;
+            font-size: 14px;
+        }
+        .form-card {
+            background-color: #fff;
+            padding: 20px;
+            border-top: 3px solid #64b5f6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .instructions-card {
+            background-color: #fff;
+            padding: 20px;
+            border-top: 3px solid #ff9800;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-size: 13px;
+        }
+        .instructions-card h6 {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .instructions-card ol {
+            padding-left: 20px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .instructions-card .note {
+            font-weight: bold;
+            color: #333;
+        }
+        .instructions-card .note-text {
+            color: #666;
+        }
+        .field-label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #444;
+            margin-bottom: 5px;
+        }
+        .required {
+            color: red;
+        }
+        .btn-submit {
+            background-color: #1abc9c;
+            color: #fff;
+            border: none;
+            padding: 8px 25px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .btn-submit:hover {
+            background-color: #16a085;
+            color: #fff;
+        }
+        .form-control-custom {
+            height: 38px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Apply Leave', 'Employee Corner', ~{::section})}">
+        <section>
+            <div class="page-main-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px;">
+                    <div class="page-title-box">
+                        <h4>Apply Leave</h4>
+                        <span>employee leave record</span>
+                    </div>
+                    <ul class="breadcrumb breadcrumb-style" style="margin-bottom: 0;">
+                        <li class="breadcrumb-item"><i class="fa fa-home"></i> Home</li>
+                        <li class="breadcrumb-item">Employee Corner</li>
+                        <li class="breadcrumb-item active">Apply Leave</li>
+                    </ul>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-7">
+                        <div class="form-card">
+                            <div th:if="${success}" class="alert alert-success mt-2" th:text="${success}"></div>
+                            <div th:if="${error}" class="alert alert-danger mt-2" th:text="${error}"></div>
+                            
+                            <form th:action="@{/employee/submitLeave}" th:object="${leaveApplication}" method="post">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                
+                                <div class="form-group mb-4">
+                                    <label class="field-label">Leave Type <span class="required">*</span></label>
+                                    <select class="form-control form-control-custom" th:field="*{leaveType}" required>
+                                        <option value="">- Select -</option>
+                                        <option th:each="leave : ${leaveTypes}" th:value="${leave.leaveCode}" th:text="${leave.leaveName}"></option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group mb-4">
+                                    <label class="field-label">Leave Category <span class="required">*</span></label>
+                                    <select class="form-control form-control-custom" th:field="*{leaveCategory}" required>
+                                        <option value="">- Select -</option>
+                                        <option value="Full Day">Full Day</option>
+                                        <option value="First Half">First Half</option>
+                                        <option value="Second Half">Second Half</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="row mb-4">
+                                    <div class="col-md-6 form-group">
+                                        <label class="field-label">Leave Start Date <span class="required">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                            <input type="text" class="form-control form-control-custom datepicker" th:field="*{startDate}" id="startDate" placeholder="Select Start Date" required autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 form-group">
+                                        <label class="field-label">Leave End Date <span class="required">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                            <input type="text" class="form-control form-control-custom datepicker" th:field="*{endDate}" id="endDate" placeholder="Select End Date" required autocomplete="off">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group mb-4">
+                                    <label class="field-label">Description</label>
+                                    <input type="text" class="form-control form-control-custom" th:field="*{description}" placeholder="Reason">
+                                </div>
+                                
+                                <div class="form-group mt-5">
+                                    <button type="submit" class="btn btn-submit">Submit</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-5">
+                        <div class="instructions-card">
+                            <h6>Instructions for adding a leave record</h6>
+                            <ol>
+                                <li>Select Leave type</li>
+                                <li>Select Leave category</li>
+                                <li>Enter the leave start and end date in yyyy-mm-dd format</li>
+                                <li>Enter the leave description.</li>
+                            </ol>
+                            <p class="note">Note:</p>
+                            <p class="note-text mb-2">a. Employee leave record added in the leave register will be represented accordingly in the employee attendance register.</p>
+                            <p class="note-text">b. For any other assistance please get in touch with the Attendance Helpdesk or write to us at .</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    
+    <script>
+        $(document).ready(function(){
+            $('.datepicker').datepicker({
+                format: "yyyy-mm-dd",
+                autoclose: true,
+                todayHighlight: true
+            });
+            
+            // Validate End Date >= Start Date
+            $('form').on('submit', function(e) {
+                var start = $('#startDate').val();
+                var end = $('#endDate').val();
+                if (start && end && start > end) {
+                    alert('End Date must be greater than or equal to Start Date');
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
