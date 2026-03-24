@@ -90,6 +90,16 @@
             line-height: 1;
         }
 
+        a.metric-chip {
+            text-decoration: none;
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+
+        a.metric-chip:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(17, 49, 94, 0.08);
+        }
+
         .metric-neutral {
             background: #eef3fb;
             border-color: #d8e3f2;
@@ -266,27 +276,69 @@
                                         <div class="project-subtext">Candidate activity by review stage</div>
                                     </td>
                                     <td class="text-center">
-                                        <span class="metric-chip metric-neutral"
+                                        <a th:if="${summary.requestId != null and summary.totalCandidates != null and summary.totalCandidates > 0}"
+                                           class="metric-chip metric-neutral"
+                                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId},filter='all')}"
+                                           th:text="${summary.totalCandidates}">
+                                            0
+                                        </a>
+                                        <span th:if="${summary.requestId == null or summary.totalCandidates == null or summary.totalCandidates == 0}"
+                                              class="metric-chip metric-neutral"
                                               th:text="${summary.totalCandidates != null ? summary.totalCandidates : 0}">0</span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="metric-chip metric-pending"
+                                        <a th:if="${summary.requestId != null and summary.pendingReviewCandidates != null and summary.pendingReviewCandidates > 0}"
+                                           class="metric-chip metric-pending"
+                                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId},filter='pending')}"
+                                           th:text="${summary.pendingReviewCandidates}">
+                                            0
+                                        </a>
+                                        <span th:if="${summary.requestId == null or summary.pendingReviewCandidates == null or summary.pendingReviewCandidates == 0}"
+                                              class="metric-chip metric-pending"
                                               th:text="${summary.pendingReviewCandidates != null ? summary.pendingReviewCandidates : 0}">0</span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="metric-chip metric-shortlisted"
+                                        <a th:if="${summary.requestId != null and summary.shortlistedCandidates != null and summary.shortlistedCandidates > 0}"
+                                           class="metric-chip metric-shortlisted"
+                                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId},filter='shortlisted')}"
+                                           th:text="${summary.shortlistedCandidates}">
+                                            0
+                                        </a>
+                                        <span th:if="${summary.requestId == null or summary.shortlistedCandidates == null or summary.shortlistedCandidates == 0}"
+                                              class="metric-chip metric-shortlisted"
                                               th:text="${summary.shortlistedCandidates != null ? summary.shortlistedCandidates : 0}">0</span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="metric-chip metric-rejected"
+                                        <a th:if="${summary.requestId != null and summary.rejectedCandidates != null and summary.rejectedCandidates > 0}"
+                                           class="metric-chip metric-rejected"
+                                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId},filter='rejected')}"
+                                           th:text="${summary.rejectedCandidates}">
+                                            0
+                                        </a>
+                                        <span th:if="${summary.requestId == null or summary.rejectedCandidates == null or summary.rejectedCandidates == 0}"
+                                              class="metric-chip metric-rejected"
                                               th:text="${summary.rejectedCandidates != null ? summary.rejectedCandidates : 0}">0</span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="metric-chip metric-scheduled"
+                                        <a th:if="${summary.requestId != null and summary.interviewScheduledCandidates != null and summary.interviewScheduledCandidates > 0}"
+                                           class="metric-chip metric-scheduled"
+                                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId},filter='scheduled')}"
+                                           th:text="${summary.interviewScheduledCandidates}">
+                                            0
+                                        </a>
+                                        <span th:if="${summary.requestId == null or summary.interviewScheduledCandidates == null or summary.interviewScheduledCandidates == 0}"
+                                              class="metric-chip metric-scheduled"
                                               th:text="${summary.interviewScheduledCandidates != null ? summary.interviewScheduledCandidates : 0}">0</span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="metric-chip metric-feedback"
+                                        <a th:if="${summary.requestId != null and summary.feedbackSubmittedCandidates != null and summary.feedbackSubmittedCandidates > 0}"
+                                           class="metric-chip metric-feedback"
+                                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId},filter='feedback')}"
+                                           th:text="${summary.feedbackSubmittedCandidates}">
+                                            0
+                                        </a>
+                                        <span th:if="${summary.requestId == null or summary.feedbackSubmittedCandidates == null or summary.feedbackSubmittedCandidates == 0}"
+                                              class="metric-chip metric-feedback"
                                               th:text="${summary.feedbackSubmittedCandidates != null ? summary.feedbackSubmittedCandidates : 0}">0</span>
                                     </td>
                                     <td

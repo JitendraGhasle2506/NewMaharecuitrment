@@ -54,7 +54,9 @@
                         <div class="row g-3 mt-1">
                             <div class="col-md-6">
                                 <label class="form-label d-block">Interview Authority Roles <span class="text-danger">*</span></label>
-                                <div id="interviewAuthorityRoleIds" class="border rounded p-3 bg-light-subtle">
+                                <div id="interviewAuthorityRoleIds"
+                                    class="border rounded p-3 bg-light-subtle"
+                                    th:classappend="${#fields.hasErrors('interviewAuthorityRoleIds')} ? ' border-danger' : ''">
                                     <div class="form-check mb-2" th:each="role : ${interviewAuthorityRoleOptions}">
                                         <input class="form-check-input" type="checkbox"
                                             th:field="*{interviewAuthorityRoleIds}"
@@ -69,7 +71,9 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label d-block">Assign Interview Authorities <span class="text-danger">*</span></label>
-                                <div id="interviewAuthorityUserIds" class="border rounded p-3 bg-light-subtle">
+                                <div id="interviewAuthorityUserIds"
+                                    class="border rounded p-3 bg-light-subtle"
+                                    th:classappend="${#fields.hasErrors('interviewAuthorityUserIds')} ? ' border-danger' : ''">
                                     <div th:if="${#lists.isEmpty(interviewAuthorityUserOptions)}" class="text-muted small">
                                         Select HOD, PM, or STM roles first. Users with those roles will appear here.
                                     </div>
@@ -83,6 +87,9 @@
                                     </div>
                                 </div>
                                 <div class="form-text">Choose the users from the selected HOD, PM, or STM roles who will conduct the interview.</div>
+                                <div id="interviewAuthorityUserIdsClientError" class="text-danger small mt-2 d-none">
+                                    Select at least one interview authority.
+                                </div>
                                 <div class="text-danger small" th:errors="*{interviewAuthorityUserIds}"></div>
                             </div>
                         </div>

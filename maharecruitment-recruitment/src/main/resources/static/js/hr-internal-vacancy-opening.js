@@ -13,6 +13,7 @@
     const addRequirementButton = document.getElementById("addRequirementButton");
     const interviewAuthorityRoleContainerElement = document.getElementById("interviewAuthorityRoleIds");
     const interviewAuthorityUserContainerElement = document.getElementById("interviewAuthorityUserIds");
+    const interviewAuthorityUserClientErrorElement = document.getElementById("interviewAuthorityUserIdsClientError");
 
     const requirementRowKeys = new Set();
 
@@ -22,6 +23,8 @@
     addRequirementButton?.addEventListener("click", onAddRequirementClick);
     requirementTableBody?.addEventListener("click", onRequirementTableClick);
     interviewAuthorityRoleContainerElement?.addEventListener("change", onInterviewAuthorityRolesChange);
+    interviewAuthorityUserContainerElement?.addEventListener("change", clearInterviewAuthorityValidationError);
+    formElement.addEventListener("submit", onFormSubmit);
 
     function initializeExistingRows() {
         const rows = requirementTableBody?.querySelectorAll("tr") || [];
@@ -141,6 +144,7 @@
     function onInterviewAuthorityRolesChange() {
         const selectedRoleIds = getCheckedValues("interviewAuthorityRoleIds");
         const retainedAuthorityIds = new Set(getCheckedValues("interviewAuthorityUserIds"));
+        clearInterviewAuthorityValidationError(true);
 
         if (selectedRoleIds.length === 0) {
             resetInterviewAuthorityUsers();
@@ -165,6 +169,20 @@
                 console.error("Unable to load interview authorities.", error);
                 alert("Unable to load interview authorities for the selected roles.");
             });
+    }
+
+    function onFormSubmit(event) {
+        if (hasSelectedInterviewAuthority()) {
+            clearInterviewAuthorityValidationError();
+            return;
+        }
+
+        event.preventDefault();
+        showInterviewAuthorityValidationError();
+        interviewAuthorityUserContainerElement?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
     }
 
     function resequenceRequirementRows() {
@@ -200,6 +218,7 @@
                 Select HOD, PM, or STM roles first. Users with those roles will appear here.
             </div>
         `;
+        clearInterviewAuthorityValidationError(true);
     }
 
     function populateInterviewAuthorityUsers(users, retainedAuthorityIds) {
@@ -214,6 +233,7 @@
                     No users are available for the selected HOD, PM, or STM roles.
                 </div>
             `;
+            clearInterviewAuthorityValidationError(true);
             return;
         }
 
@@ -240,12 +260,32 @@
             wrapperElement.appendChild(labelElement);
             interviewAuthorityUserContainerElement.appendChild(wrapperElement);
         });
+
+        if (hasSelectedInterviewAuthority()) {
+            clearInterviewAuthorityValidationError(true);
+        }
     }
 
     function getCheckedValues(fieldName) {
         return Array.from(document.querySelectorAll(`input[name="${fieldName}"]:checked`))
             .map((checkboxElement) => checkboxElement.value)
             .filter((value) => value);
+    }
+
+    function hasSelectedInterviewAuthority() {
+        return getCheckedValues("interviewAuthorityUserIds").length > 0;
+    }
+
+    function showInterviewAuthorityValidationError() {
+        interviewAuthorityUserContainerElement?.classList.add("border-danger");
+        interviewAuthorityUserClientErrorElement?.classList.remove("d-none");
+    }
+
+    function clearInterviewAuthorityValidationError(forceClear) {
+        if (forceClear || hasSelectedInterviewAuthority()) {
+            interviewAuthorityUserContainerElement?.classList.remove("border-danger");
+            interviewAuthorityUserClientErrorElement?.classList.add("d-none");
+        }
     }
 
     function escapeHtml(value) {

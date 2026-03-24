@@ -21,6 +21,7 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDet
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyInterviewAuthorityShortlistingService;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateFilterType;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateRequestSummaryView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancySubmittedCandidateView;
@@ -84,7 +85,7 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
             if (candidate.getCandidateStatus() == RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT) {
                 accumulator.rejectedCandidates++;
             }
-            if (candidate.getCandidateStatus() == RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY) {
+            if (isAwaitingInterviewFeedback(candidate)) {
                 accumulator.interviewScheduledCandidates++;
             }
             if (Boolean.TRUE.equals(candidate.getAssessmentSubmitted())) {
@@ -117,9 +118,14 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
     }
 
     @Override
-    public InternalVacancyCandidateListView getAssignedCandidatesByRequestId(String actorEmail, String requestId) {
+    public InternalVacancyCandidateListView getAssignedCandidatesByRequestId(
+            String actorEmail,
+            String requestId,
+            InternalVacancyCandidateFilterType filterType) {
         User actor = resolveActor(actorEmail);
         String normalizedRequestId = normalizeRequestId(requestId);
+        InternalVacancyCandidateFilterType resolvedFilter =
+                filterType != null ? filterType : InternalVacancyCandidateFilterType.ALL;
 
         RecruitmentNotificationEntity notification = notificationRepository
                 .findInternalVacancyForInterviewAuthorityReview(normalizedRequestId, actor.getId())
@@ -133,19 +139,31 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
                 .stream()
                 .map(this::toCandidateView)
                 .toList();
+        CandidateListMetrics metrics = summarizeCandidates(candidates);
+        List<InternalVacancySubmittedCandidateView> filteredCandidates = candidates.stream()
+                .filter(candidate -> matchesFilter(candidate, resolvedFilter))
+                .toList();
 
         log.info(
-                "Loaded interview-authority internal vacancy candidates. userId={}, requestId={}, candidateCount={}",
+                "Loaded interview-authority internal vacancy candidates. userId={}, requestId={}, candidateCount={}, filter={}",
                 actor.getId(),
                 notification.getRequestId(),
-                candidates.size());
+                filteredCandidates.size(),
+                resolvedFilter.name());
 
         return InternalVacancyCandidateListView.builder()
                 .recruitmentNotificationId(notification.getRecruitmentNotificationId())
                 .requestId(notification.getRequestId())
                 .projectName(notification.getProjectMst() != null ? notification.getProjectMst().getProjectName() : "-")
                 .notificationStatus(notification.getStatus())
-                .candidates(candidates)
+                .activeFilter(resolvedFilter)
+                .totalCandidates(metrics.totalCandidates)
+                .pendingReviewCandidates(metrics.pendingReviewCandidates)
+                .shortlistedCandidates(metrics.shortlistedCandidates)
+                .rejectedCandidates(metrics.rejectedCandidates)
+                .interviewScheduledCandidates(metrics.interviewScheduledCandidates)
+                .feedbackSubmittedCandidates(metrics.feedbackSubmittedCandidates)
+                .candidates(filteredCandidates)
                 .build();
     }
 
@@ -276,6 +294,63 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
         return StringUtils.hasText(remarks) ? remarks.trim() : null;
     }
 
+    private CandidateListMetrics summarizeCandidates(List<InternalVacancySubmittedCandidateView> candidates) {
+        CandidateListMetrics metrics = new CandidateListMetrics();
+        if (candidates == null || candidates.isEmpty()) {
+            return metrics;
+        }
+
+        for (InternalVacancySubmittedCandidateView candidate : candidates) {
+            metrics.totalCandidates++;
+            if (candidate.getCandidateStatus() == null) {
+                metrics.pendingReviewCandidates++;
+            }
+            if (candidate.getCandidateStatus() == RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT) {
+                metrics.shortlistedCandidates++;
+            }
+            if (candidate.getCandidateStatus() == RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT) {
+                metrics.rejectedCandidates++;
+            }
+            if (isAwaitingInterviewFeedback(candidate)) {
+                metrics.interviewScheduledCandidates++;
+            }
+            if (Boolean.TRUE.equals(candidate.getAssessmentSubmitted())) {
+                metrics.feedbackSubmittedCandidates++;
+            }
+        }
+        return metrics;
+    }
+
+    private boolean matchesFilter(
+            InternalVacancySubmittedCandidateView candidate,
+            InternalVacancyCandidateFilterType filterType) {
+        if (candidate == null || filterType == null) {
+            return true;
+        }
+
+        switch (filterType) {
+            case PENDING_REVIEW:
+                return candidate.getCandidateStatus() == null;
+            case SHORTLISTED:
+                return candidate.getCandidateStatus() == RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT;
+            case REJECTED:
+                return candidate.getCandidateStatus() == RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT;
+            case INTERVIEW_SCHEDULED:
+                return isAwaitingInterviewFeedback(candidate);
+            case FEEDBACK_SUBMITTED:
+                return Boolean.TRUE.equals(candidate.getAssessmentSubmitted());
+            case ALL:
+            default:
+                return true;
+        }
+    }
+
+    private boolean isAwaitingInterviewFeedback(InternalVacancySubmittedCandidateView candidate) {
+        return candidate != null
+                && candidate.getCandidateStatus() == RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY
+                && !Boolean.TRUE.equals(candidate.getAssessmentSubmitted());
+    }
+
     private static final class SummaryAccumulator {
         private final String requestId;
         private final String projectName;
@@ -307,5 +382,14 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
             this.feedbackSubmittedCandidates = feedbackSubmittedCandidates;
             this.latestSubmittedAt = latestSubmittedAt;
         }
+    }
+
+    private static final class CandidateListMetrics {
+        private long totalCandidates;
+        private long pendingReviewCandidates;
+        private long shortlistedCandidates;
+        private long rejectedCandidates;
+        private long interviewScheduledCandidates;
+        private long feedbackSubmittedCandidates;
     }
 }

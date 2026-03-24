@@ -133,14 +133,68 @@
         .copy-link-status.is-error {
             color: #b42335;
         }
+
+        .filter-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 0 0 18px;
+        }
+
+        .filter-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid #d7e1f0;
+            border-radius: 999px;
+            background: #f7faff;
+            color: #35506f;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            text-decoration: none;
+            transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease;
+        }
+
+        .filter-pill:hover {
+            background: #edf3ff;
+            border-color: #c7d7f1;
+            color: #173a6b;
+            box-shadow: 0 6px 16px rgba(19, 57, 107, 0.08);
+        }
+
+        .filter-pill.is-active {
+            background: #163e74;
+            border-color: #163e74;
+            color: #fff;
+        }
+
+        .filter-pill-count {
+            display: inline-flex;
+            min-width: 22px;
+            justify-content: center;
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .filter-pill:not(.is-active) .filter-pill-count {
+            background: #e1ebfb;
+            color: #244879;
+        }
+
+        .current-filter-note {
+            margin: -4px 0 14px;
+            color: #5e7190;
+            font-size: 13px;
+        }
     </style>
 </head>
 
 <body>
     <th:block th:replace="~{header/header :: var-sidebar-header('Interview Authority', 'Interview Shortlisting', ~{::section})}">
-        <section
-            th:with="submittedCount=${candidateListView != null and candidateListView.candidates != null ? #lists.size(candidateListView.candidates) : 0},
-                     scheduledCount=${candidateListView != null and candidateListView.candidates != null ? #lists.size(candidateListView.candidates.?[candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY']) : 0}">
+        <section>
             <div class="card add-emp-card">
                 <div class="header d-flex justify-content-between align-items-center">
                     <div>
@@ -179,11 +233,57 @@
                                 Project
                             </td>
                             <th>Candidate Summary</th>
-                            <td th:text="${'Submitted: ' + submittedCount + ' | Interview Scheduled: ' + scheduledCount}">
+                            <td th:text="${'Total: ' + (candidateListView != null and candidateListView.totalCandidates != null ? candidateListView.totalCandidates : 0)
+                                    + ' | Scheduled: ' + (candidateListView != null and candidateListView.interviewScheduledCandidates != null ? candidateListView.interviewScheduledCandidates : 0)
+                                    + ' | Rejected: ' + (candidateListView != null and candidateListView.rejectedCandidates != null ? candidateListView.rejectedCandidates : 0)}">
                                 Submitted: 0 | Interview Scheduled: 0
                             </td>
                         </tr>
                     </table>
+
+                    <div class="filter-toolbar" th:if="${candidateListView != null}">
+                        <a class="filter-pill"
+                           th:classappend="${candidateListView.activeFilter != null and candidateListView.activeFilter.name() == 'ALL'} ? ' is-active'"
+                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${candidateListView.requestId},filter='all')}">
+                            <span>All</span>
+                            <span class="filter-pill-count" th:text="${candidateListView.totalCandidates != null ? candidateListView.totalCandidates : 0}">0</span>
+                        </a>
+                        <a class="filter-pill"
+                           th:classappend="${candidateListView.activeFilter != null and candidateListView.activeFilter.name() == 'PENDING_REVIEW'} ? ' is-active'"
+                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${candidateListView.requestId},filter='pending')}">
+                            <span>Pending</span>
+                            <span class="filter-pill-count" th:text="${candidateListView.pendingReviewCandidates != null ? candidateListView.pendingReviewCandidates : 0}">0</span>
+                        </a>
+                        <a class="filter-pill"
+                           th:classappend="${candidateListView.activeFilter != null and candidateListView.activeFilter.name() == 'SHORTLISTED'} ? ' is-active'"
+                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${candidateListView.requestId},filter='shortlisted')}">
+                            <span>Shortlisted</span>
+                            <span class="filter-pill-count" th:text="${candidateListView.shortlistedCandidates != null ? candidateListView.shortlistedCandidates : 0}">0</span>
+                        </a>
+                        <a class="filter-pill"
+                           th:classappend="${candidateListView.activeFilter != null and candidateListView.activeFilter.name() == 'REJECTED'} ? ' is-active'"
+                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${candidateListView.requestId},filter='rejected')}">
+                            <span>Rejected</span>
+                            <span class="filter-pill-count" th:text="${candidateListView.rejectedCandidates != null ? candidateListView.rejectedCandidates : 0}">0</span>
+                        </a>
+                        <a class="filter-pill"
+                           th:classappend="${candidateListView.activeFilter != null and candidateListView.activeFilter.name() == 'INTERVIEW_SCHEDULED'} ? ' is-active'"
+                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${candidateListView.requestId},filter='scheduled')}">
+                            <span>Scheduled</span>
+                            <span class="filter-pill-count" th:text="${candidateListView.interviewScheduledCandidates != null ? candidateListView.interviewScheduledCandidates : 0}">0</span>
+                        </a>
+                        <a class="filter-pill"
+                           th:classappend="${candidateListView.activeFilter != null and candidateListView.activeFilter.name() == 'FEEDBACK_SUBMITTED'} ? ' is-active'"
+                           th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${candidateListView.requestId},filter='feedback')}">
+                            <span>Feedback</span>
+                            <span class="filter-pill-count" th:text="${candidateListView.feedbackSubmittedCandidates != null ? candidateListView.feedbackSubmittedCandidates : 0}">0</span>
+                        </a>
+                    </div>
+
+                    <div class="current-filter-note" th:if="${candidateListView != null and candidateListView.activeFilter != null}"
+                         th:text="${'Showing: ' + candidateListView.activeFilter.label}">
+                        Showing: All Candidates
+                    </div>
 
                     <div class="table-responsive">
                         <table class="table table-bordered table-sm align-middle">
