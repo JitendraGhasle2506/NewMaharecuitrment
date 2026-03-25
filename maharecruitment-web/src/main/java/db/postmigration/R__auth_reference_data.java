@@ -227,6 +227,11 @@ public class R__auth_reference_data extends BaseJavaMigration {
                                 "/hr/internal-vacancies/level-two",
                                 "fa fa-calendar-check",
                                 roleIds.get("ROLE_HR"));
+                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "L2 Eligible Candidates",
+                                "/panel/internal-vacancies/level-two",
+                                "fa fa-user-check",
+                                roleIds.get("ROLE_HOD"),
+                                roleIds.get("ROLE_COO"));
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Interview Shortlisting",
                                 "/interview-authority/internal-vacancies",
                                 "fa fa-user-check",

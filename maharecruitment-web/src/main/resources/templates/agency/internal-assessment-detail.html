@@ -654,8 +654,8 @@
                             <div class="timeline-card mb-3">
                                 <div class="timeline-label">Current Level 2 Status</div>
                                 <div class="timeline-value"
-                                    th:text="${detail.levelTwoTimeChangeRequested ? 'HR Requested Reschedule' : (detail.levelTwoScheduled ? 'Level 2 Interview Scheduled' : (detail.levelTwoSchedulingAllowed ? 'Ready For Level 2 Scheduling' : 'Not Eligible For Level 2'))}">
-                                    Ready For Level 2 Scheduling
+                                    th:text="${detail.workflowStatus != null ? detail.workflowStatus.name() : 'Not eligible for Level 2'}">
+                                    Not eligible for Level 2
                                 </div>
                                 <div class="overview-support mt-2"
                                     th:text="${detail.levelTwoTimeChangeRequested && detail.levelTwoTimeChangeRequestedAt != null ? 'HR requested change on ' + #temporals.format(detail.levelTwoTimeChangeRequestedAt, 'dd-MMM-yyyy HH:mm') : (detail.levelTwoScheduledAt != null ? 'Updated on ' + #temporals.format(detail.levelTwoScheduledAt, 'dd-MMM-yyyy HH:mm') : 'Awaiting agency action')}">

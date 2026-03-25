@@ -7,7 +7,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class InternalVacancyLevelTwoCandidateSummaryView {
+public class InternalVacancyLevelTwoPanelCandidateView {
 
     private Long recruitmentNotificationId;
     private Long recruitmentInterviewDetailId;
@@ -18,14 +18,12 @@ public class InternalVacancyLevelTwoCandidateSummaryView {
     private String candidateMobile;
     private String designationName;
     private String levelCode;
-    private String recommendationStatus;
     private LocalDateTime levelTwoInterviewDateTime;
     private String levelTwoInterviewTimeSlot;
-    private LocalDateTime levelTwoScheduledAt;
-    private boolean panelAssigned;
-    private LocalDateTime panelAssignedAt;
+    private String levelTwoMeetingLink;
     private boolean timeChangeRequested;
-    private LocalDateTime timeChangeRequestedAt;
     private String finalDecisionStatus;
+    private boolean feedbackSubmitted;
+    private LocalDateTime feedbackSubmittedAt;
     private InternalVacancyLevelTwoWorkflowStatus workflowStatus;
 }

@@ -1,13 +1,14 @@
 package com.maharecruitment.gov.in.recruitment.service.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
 @Builder
-public class InternalVacancyLevelTwoCandidateSummaryView {
+public class InternalVacancyLevelTwoPanelWorkflowDetailView {
 
     private Long recruitmentNotificationId;
     private Long recruitmentInterviewDetailId;
@@ -16,16 +17,20 @@ public class InternalVacancyLevelTwoCandidateSummaryView {
     private String candidateName;
     private String candidateEmail;
     private String candidateMobile;
+    private String candidateEducation;
     private String designationName;
     private String levelCode;
-    private String recommendationStatus;
+    private String joiningTime;
+    private String resumeFilePath;
     private LocalDateTime levelTwoInterviewDateTime;
     private String levelTwoInterviewTimeSlot;
+    private String levelTwoMeetingLink;
+    private String levelTwoRemarks;
     private LocalDateTime levelTwoScheduledAt;
-    private boolean panelAssigned;
-    private LocalDateTime panelAssignedAt;
     private boolean timeChangeRequested;
-    private LocalDateTime timeChangeRequestedAt;
     private String finalDecisionStatus;
+    private DepartmentInterviewAssessmentView initialAssessment;
+    private List<InternalVacancyLevelTwoPanelMemberView> panelMembers;
+    private InternalVacancyLevelTwoPanelFeedbackView myFeedback;
     private InternalVacancyLevelTwoWorkflowStatus workflowStatus;
 }

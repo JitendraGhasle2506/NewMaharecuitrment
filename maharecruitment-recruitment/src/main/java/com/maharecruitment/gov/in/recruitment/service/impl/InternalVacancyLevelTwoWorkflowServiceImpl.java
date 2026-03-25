@@ -19,23 +19,31 @@ import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentFeedbackEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentPanelMemberEntity;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInternalLevelTwoFeedbackEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInternalLevelTwoPanelMemberEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInternalLevelTwoScheduleEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentAssessmentFeedbackRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoFeedbackRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoScheduleRepository;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyLevelTwoWorkflowService;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoCandidateSummaryView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelFeedbackView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelMemberView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelUserOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatusResolver;
 
 @Service
 @Transactional(readOnly = true)
 public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacancyLevelTwoWorkflowService {
 
     private static final String RECOMMENDED_STATUS = "RECOMMENDED";
+    private static final String FINAL_DECISION_SELECTED = "SELECTED";
+    private static final String FINAL_DECISION_REJECTED = "REJECTED";
     private static final List<String> ALLOWED_PANEL_ROLE_NAMES = List.of("ROLE_STM", "ROLE_COO", "ROLE_HOD");
     private static final Map<String, String> ALLOWED_PANEL_ROLE_LABELS = Map.of(
             "ROLE_STM", "STM",
@@ -46,32 +54,42 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
 
     private final RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository;
     private final RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository;
+    private final RecruitmentInternalLevelTwoFeedbackRepository levelTwoFeedbackRepository;
     private final UserRepository userRepository;
 
     public InternalVacancyLevelTwoWorkflowServiceImpl(
             RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository,
             RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository,
+            RecruitmentInternalLevelTwoFeedbackRepository levelTwoFeedbackRepository,
             UserRepository userRepository) {
         this.levelTwoScheduleRepository = levelTwoScheduleRepository;
         this.assessmentFeedbackRepository = assessmentFeedbackRepository;
+        this.levelTwoFeedbackRepository = levelTwoFeedbackRepository;
         this.userRepository = userRepository;
     }
 
     @Override
     public Page<InternalVacancyLevelTwoCandidateSummaryView> getScheduledCandidatePage(String search, Pageable pageable) {
         String searchPattern = normalizeSearchPattern(search);
-        return levelTwoScheduleRepository.findHrScheduledCandidatePage(searchPattern, pageable)
-                .map(this::toSummaryView);
+        Page<RecruitmentInternalLevelTwoScheduleEntity> schedulePage = levelTwoScheduleRepository
+                .findHrScheduledCandidatePage(searchPattern, pageable);
+        Map<Long, Integer> feedbackCountByCandidateId = loadFeedbackCountMap(schedulePage.getContent());
+        return schedulePage.map(schedule -> toSummaryView(
+                schedule,
+                feedbackCountByCandidateId.getOrDefault(
+                        schedule.getRecruitmentInterviewDetail().getRecruitmentInterviewDetailId(),
+                        0)));
     }
 
     @Override
     public InternalVacancyLevelTwoWorkflowDetailView getWorkflowDetail(Long recruitmentInterviewDetailId) {
         RecruitmentInternalLevelTwoScheduleEntity schedule = loadDetailedSchedule(recruitmentInterviewDetailId);
         RecruitmentAssessmentFeedbackEntity assessment = loadAssessment(schedule);
+        List<RecruitmentInternalLevelTwoFeedbackEntity> panelFeedbacks = loadPanelFeedbacks(recruitmentInterviewDetailId);
         Map<Long, String> interviewerNameMap = assessment == null
                 ? Map.of()
                 : loadInterviewerNameMap(List.of(assessment));
-        return toDetailView(schedule, assessment, interviewerNameMap);
+        return toDetailView(schedule, assessment, interviewerNameMap, panelFeedbacks);
     }
 
     @Override
@@ -130,8 +148,41 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
         levelTwoScheduleRepository.save(schedule);
     }
 
+    @Override
+    @Transactional
+    public void applyFinalDecision(
+            Long recruitmentInterviewDetailId,
+            String actorEmail,
+            DepartmentCandidateFinalDecision finalDecision,
+            String decisionRemarks) {
+        RecruitmentInternalLevelTwoScheduleEntity schedule = loadScheduleForUpdate(recruitmentInterviewDetailId);
+        User actor = resolveUser(actorEmail);
+
+        if (finalDecision == null) {
+            throw new RecruitmentNotificationException("Final decision is required.");
+        }
+        if (loadPanelFeedbacks(recruitmentInterviewDetailId).isEmpty()) {
+            throw new RecruitmentNotificationException("At least one Round L2 panel feedback is required before sending to agency.");
+        }
+
+        var candidate = schedule.getRecruitmentInterviewDetail();
+        if (finalDecision == DepartmentCandidateFinalDecision.SELECT) {
+            candidate.setFinalDecisionStatus(FINAL_DECISION_SELECTED);
+            candidate.setCandidateStatus(RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY);
+        } else {
+            candidate.setFinalDecisionStatus(FINAL_DECISION_REJECTED);
+            candidate.setCandidateStatus(RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT);
+        }
+        candidate.setFinalDecisionAt(LocalDateTime.now());
+        candidate.setFinalDecisionByUserId(actor.getId());
+        candidate.setFinalDecisionRemarks(normalizeText(decisionRemarks));
+
+        levelTwoScheduleRepository.save(schedule);
+    }
+
     private InternalVacancyLevelTwoCandidateSummaryView toSummaryView(
-            RecruitmentInternalLevelTwoScheduleEntity schedule) {
+            RecruitmentInternalLevelTwoScheduleEntity schedule,
+            int panelFeedbackSubmittedCount) {
         var candidate = schedule.getRecruitmentInterviewDetail();
         var notification = candidate.getRecruitmentNotification();
         var vacancy = candidate.getDesignationVacancy();
@@ -157,16 +208,28 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
                 .timeChangeRequested(Boolean.TRUE.equals(schedule.getHrTimeChangeRequested()))
                 .timeChangeRequestedAt(schedule.getHrTimeChangeRequestedAt())
                 .finalDecisionStatus(normalizeUpper(candidate.getFinalDecisionStatus()))
+                .workflowStatus(InternalVacancyLevelTwoWorkflowStatusResolver.resolveForHr(
+                        true,
+                        schedule.getPanelAssignedAt() != null,
+                        Boolean.TRUE.equals(schedule.getHrTimeChangeRequested()),
+                        panelFeedbackSubmittedCount,
+                        candidate.getFinalDecisionStatus()))
                 .build();
     }
 
     private InternalVacancyLevelTwoWorkflowDetailView toDetailView(
             RecruitmentInternalLevelTwoScheduleEntity schedule,
             RecruitmentAssessmentFeedbackEntity assessment,
-            Map<Long, String> interviewerNameMap) {
+            Map<Long, String> interviewerNameMap,
+            List<RecruitmentInternalLevelTwoFeedbackEntity> panelFeedbacks) {
         var candidate = schedule.getRecruitmentInterviewDetail();
         var notification = candidate.getRecruitmentNotification();
         var vacancy = candidate.getDesignationVacancy();
+        List<InternalVacancyLevelTwoPanelFeedbackView> feedbackViews = panelFeedbacks == null
+                ? List.of()
+                : panelFeedbacks.stream()
+                        .map(this::toPanelFeedbackView)
+                        .toList();
 
         return InternalVacancyLevelTwoWorkflowDetailView.builder()
                 .recruitmentNotificationId(notification.getRecruitmentNotificationId())
@@ -201,6 +264,14 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
                         : schedule.getPanelMembers().stream()
                                 .map(this::toPanelMemberView)
                                 .toList())
+                .panelFeedbackSubmittedCount(feedbackViews.size())
+                .panelFeedbacks(feedbackViews)
+                .workflowStatus(InternalVacancyLevelTwoWorkflowStatusResolver.resolveForHr(
+                        true,
+                        schedule.getPanelAssignedAt() != null,
+                        Boolean.TRUE.equals(schedule.getHrTimeChangeRequested()),
+                        feedbackViews.size(),
+                        candidate.getFinalDecisionStatus()))
                 .build();
     }
 
@@ -231,6 +302,31 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
         return assessmentFeedbackRepository.findByCandidateForInternalVacancy(
                 internalVacancyOpening.getInternalVacancyOpeningId(),
                 candidate.getRecruitmentInterviewDetailId()).orElse(null);
+    }
+
+    private List<RecruitmentInternalLevelTwoFeedbackEntity> loadPanelFeedbacks(Long recruitmentInterviewDetailId) {
+        return levelTwoFeedbackRepository.findByCandidateId(recruitmentInterviewDetailId);
+    }
+
+    private Map<Long, Integer> loadFeedbackCountMap(List<RecruitmentInternalLevelTwoScheduleEntity> schedules) {
+        List<Long> candidateIds = schedules == null
+                ? List.of()
+                : schedules.stream()
+                        .map(schedule -> schedule.getRecruitmentInterviewDetail().getRecruitmentInterviewDetailId())
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
+        if (candidateIds.isEmpty()) {
+            return Map.of();
+        }
+        return levelTwoFeedbackRepository.findByCandidateIds(candidateIds).stream()
+                .collect(Collectors.toMap(
+                        feedback -> feedback.getSchedule()
+                                .getRecruitmentInterviewDetail()
+                                .getRecruitmentInterviewDetailId(),
+                        feedback -> 1,
+                        Integer::sum,
+                        LinkedHashMap::new));
     }
 
     private Map<Long, String> loadInterviewerNameMap(List<RecruitmentAssessmentFeedbackEntity> assessments) {
@@ -302,6 +398,25 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
                 .panelUserId(member.getPanelUserId())
                 .panelMemberName(member.getPanelMemberName())
                 .panelMemberDesignation(member.getPanelMemberDesignation())
+                .build();
+    }
+
+    private InternalVacancyLevelTwoPanelFeedbackView toPanelFeedbackView(
+            RecruitmentInternalLevelTwoFeedbackEntity feedback) {
+        return InternalVacancyLevelTwoPanelFeedbackView.builder()
+                .feedbackId(feedback.getRecruitmentInternalLevelTwoFeedbackId())
+                .reviewerUserId(feedback.getReviewerUserId())
+                .reviewerName(feedback.getReviewerName())
+                .reviewerRoleLabel(feedback.getReviewerRoleLabel())
+                .communicationSkillMarks(feedback.getCommunicationSkillMarks())
+                .technicalSkillMarks(feedback.getTechnicalSkillMarks())
+                .leadershipQualityMarks(feedback.getLeadershipQualityMarks())
+                .relevantExperienceMarks(feedback.getRelevantExperienceMarks())
+                .interviewerGrade(feedback.getInterviewerGrade())
+                .recommendationStatus(feedback.getRecommendationStatus())
+                .assessmentRemarks(feedback.getAssessmentRemarks())
+                .finalRemarks(feedback.getFinalRemarks())
+                .submittedAt(feedback.getSubmittedAt())
                 .build();
     }
 

@@ -79,38 +79,26 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <div th:if="${candidate.levelTwoTimeChangeRequested}">
-                                            <span class="badge text-bg-warning text-dark">HR REQUESTED RESCHEDULE</span>
-                                        </div>
-                                        <div th:if="${!candidate.levelTwoTimeChangeRequested and candidate.finalDecisionStatus != null}">
-                                            <span class="badge text-bg-success">L2 FEEDBACK SUBMITTED</span>
-                                            <div class="small fw-semibold text-dark mt-2"
-                                                th:text="${'Final Status: ' + #strings.replace(candidate.finalDecisionStatus, '_', ' ')}">
-                                                Final Status: SELECTED
-                                            </div>
-                                            <div class="small text-muted mt-1"
-                                                th:if="${candidate.levelTwoInterviewDateTime != null}"
-                                                th:text="${'Level 2 Completed: ' + #temporals.format(candidate.levelTwoInterviewDateTime, 'dd-MMM-yyyy') + ' | ' + (candidate.levelTwoInterviewTimeSlot != null ? candidate.levelTwoInterviewTimeSlot : '-')}">
-                                                Level 2 Completed
-                                            </div>
-                                        </div>
-                                        <div th:if="${!candidate.levelTwoTimeChangeRequested and candidate.finalDecisionStatus == null and candidate.levelTwoScheduled}">
-                                            <span class="badge text-bg-info">LEVEL 2 SCHEDULED</span>
-                                            <div class="small text-muted mt-1"
-                                                th:text="${candidate.levelTwoInterviewDateTime != null ? #temporals.format(candidate.levelTwoInterviewDateTime, 'dd-MMM-yyyy') : '-'}">
-                                                01-Apr-2026
-                                            </div>
-                                            <div class="small text-muted"
-                                                th:text="${candidate.levelTwoInterviewTimeSlot != null ? candidate.levelTwoInterviewTimeSlot : '-'}">
-                                                10:00 AM - 10:30 AM
-                                            </div>
-                                        </div>
-                                        <span class="badge text-bg-warning text-dark"
-                                            th:if="${!candidate.levelTwoTimeChangeRequested and candidate.finalDecisionStatus == null and !candidate.levelTwoScheduled and candidate.levelTwoSchedulingAllowed}">
-                                            READY FOR LEVEL 2
+                                        <span class="badge"
+                                            th:if="${candidate.workflowStatus != null}"
+                                            th:classappend="${' ' + candidate.workflowStatus.bootstrapBadgeClass}"
+                                            th:text="${candidate.workflowStatus.name()}">
+                                            READY_FOR_L2
                                         </span>
+                                        <div class="small text-muted mt-1"
+                                            th:if="${candidate.workflowStatus != null and candidate.levelTwoInterviewDateTime != null
+                                                and candidate.workflowStatus.name() != 'L2_RESCHEDULE_REQUESTED'}"
+                                            th:text="${#temporals.format(candidate.levelTwoInterviewDateTime, 'dd-MMM-yyyy')}">
+                                            01-Apr-2026
+                                        </div>
+                                        <div class="small text-muted"
+                                            th:if="${candidate.workflowStatus != null and candidate.levelTwoInterviewTimeSlot != null
+                                                and candidate.workflowStatus.name() != 'L2_RESCHEDULE_REQUESTED'}"
+                                            th:text="${candidate.levelTwoInterviewTimeSlot}">
+                                            10:00 AM - 10:30 AM
+                                        </div>
                                         <span class="text-muted"
-                                            th:if="${!candidate.levelTwoTimeChangeRequested and candidate.finalDecisionStatus == null and !candidate.levelTwoScheduled and !candidate.levelTwoSchedulingAllowed}">
+                                            th:if="${candidate.workflowStatus == null}">
                                             Not recommended for Level 2
                                         </span>
                                     </td>
@@ -119,7 +107,7 @@
                                             th:href="@{/agency/internal-assessments/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}(
                                                 recruitmentNotificationId=${candidate.recruitmentNotificationId},
                                                 recruitmentInterviewDetailId=${candidate.recruitmentInterviewDetailId})}">
-                                            <span th:text="${candidate.levelTwoTimeChangeRequested ? 'View & Reschedule' : 'View Assessment'}">View Assessment</span>
+                                            <span th:text="${candidate.workflowStatus != null and candidate.workflowStatus.name() == 'L2_RESCHEDULE_REQUESTED' ? 'View & Reschedule' : 'View Assessment'}">View Assessment</span>
                                         </a>
                                     </td>
                                 </tr>

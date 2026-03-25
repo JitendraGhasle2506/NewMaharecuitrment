@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,9 +24,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyLevelTwoChangeRequestForm;
+import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyLevelTwoFinalDecisionForm;
 import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyLevelTwoPanelAssignmentForm;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyLevelTwoWorkflowService;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoCandidateSummaryView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelMemberView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowDetailView;
@@ -105,7 +108,12 @@ public class HRInternalVacancyLevelTwoController {
             return "redirect:/hr/internal-vacancies/level-two";
         }
         if (bindingResult.hasErrors()) {
-            populateDetailModel(model, detail, panelAssignmentForm, ensureChangeRequestForm(changeRequestForm, detail));
+            populateDetailModel(
+                    model,
+                    detail,
+                    panelAssignmentForm,
+                    ensureChangeRequestForm(changeRequestForm, detail),
+                    buildFinalDecisionForm(detail));
             return "hr/internal-vacancy-level-two-detail";
         }
 
@@ -118,7 +126,12 @@ public class HRInternalVacancyLevelTwoController {
             return "redirect:/hr/internal-vacancies/level-two/" + recruitmentInterviewDetailId;
         } catch (RecruitmentNotificationException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
-            populateDetailModel(model, detail, panelAssignmentForm, ensureChangeRequestForm(changeRequestForm, detail));
+            populateDetailModel(
+                    model,
+                    detail,
+                    panelAssignmentForm,
+                    ensureChangeRequestForm(changeRequestForm, detail),
+                    buildFinalDecisionForm(detail));
             return "hr/internal-vacancy-level-two-detail";
         }
     }
@@ -140,7 +153,12 @@ public class HRInternalVacancyLevelTwoController {
             return "redirect:/hr/internal-vacancies/level-two";
         }
         if (bindingResult.hasErrors()) {
-            populateDetailModel(model, detail, ensurePanelAssignmentForm(panelAssignmentForm, detail), changeRequestForm);
+            populateDetailModel(
+                    model,
+                    detail,
+                    ensurePanelAssignmentForm(panelAssignmentForm, detail),
+                    changeRequestForm,
+                    buildFinalDecisionForm(detail));
             return "hr/internal-vacancy-level-two-detail";
         }
 
@@ -153,7 +171,60 @@ public class HRInternalVacancyLevelTwoController {
             return "redirect:/hr/internal-vacancies/level-two/" + recruitmentInterviewDetailId;
         } catch (RecruitmentNotificationException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
-            populateDetailModel(model, detail, ensurePanelAssignmentForm(panelAssignmentForm, detail), changeRequestForm);
+            populateDetailModel(
+                    model,
+                    detail,
+                    ensurePanelAssignmentForm(panelAssignmentForm, detail),
+                    changeRequestForm,
+                    buildFinalDecisionForm(detail));
+            return "hr/internal-vacancy-level-two-detail";
+        }
+    }
+
+    @PostMapping("/{recruitmentInterviewDetailId}/final-decision")
+    public String applyFinalDecision(
+            @PathVariable Long recruitmentInterviewDetailId,
+            @Valid @ModelAttribute("finalDecisionForm") InternalVacancyLevelTwoFinalDecisionForm finalDecisionForm,
+            BindingResult bindingResult,
+            @ModelAttribute("panelAssignmentForm") InternalVacancyLevelTwoPanelAssignmentForm panelAssignmentForm,
+            @ModelAttribute("changeRequestForm") InternalVacancyLevelTwoChangeRequestForm changeRequestForm,
+            Principal principal,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+        InternalVacancyLevelTwoWorkflowDetailView detail;
+        try {
+            detail = workflowService.getWorkflowDetail(recruitmentInterviewDetailId);
+        } catch (RecruitmentNotificationException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/hr/internal-vacancies/level-two";
+        }
+
+        if (bindingResult.hasErrors()) {
+            populateDetailModel(
+                    model,
+                    detail,
+                    ensurePanelAssignmentForm(panelAssignmentForm, detail),
+                    ensureChangeRequestForm(changeRequestForm, detail),
+                    finalDecisionForm);
+            return "hr/internal-vacancy-level-two-detail";
+        }
+
+        try {
+            workflowService.applyFinalDecision(
+                    recruitmentInterviewDetailId,
+                    resolveActorEmail(principal),
+                    resolveFinalDecision(finalDecisionForm.getFinalDecision()),
+                    finalDecisionForm.getDecisionRemarks());
+            redirectAttributes.addFlashAttribute("successMessage", "Round L2 decision sent to agency.");
+            return "redirect:/hr/internal-vacancies/level-two/" + recruitmentInterviewDetailId;
+        } catch (RecruitmentNotificationException ex) {
+            model.addAttribute("errorMessage", ex.getMessage());
+            populateDetailModel(
+                    model,
+                    detail,
+                    ensurePanelAssignmentForm(panelAssignmentForm, detail),
+                    ensureChangeRequestForm(changeRequestForm, detail),
+                    finalDecisionForm);
             return "hr/internal-vacancy-level-two-detail";
         }
     }
@@ -163,18 +234,21 @@ public class HRInternalVacancyLevelTwoController {
                 model,
                 detail,
                 buildPanelAssignmentForm(detail),
-                buildChangeRequestForm(detail));
+                buildChangeRequestForm(detail),
+                buildFinalDecisionForm(detail));
     }
 
     private void populateDetailModel(
             Model model,
             InternalVacancyLevelTwoWorkflowDetailView detail,
             InternalVacancyLevelTwoPanelAssignmentForm panelAssignmentForm,
-            InternalVacancyLevelTwoChangeRequestForm changeRequestForm) {
+            InternalVacancyLevelTwoChangeRequestForm changeRequestForm,
+            InternalVacancyLevelTwoFinalDecisionForm finalDecisionForm) {
         model.addAttribute("detail", detail);
         model.addAttribute("eligiblePanelUsers", workflowService.getEligiblePanelUsers());
         model.addAttribute("panelAssignmentForm", ensurePanelAssignmentForm(panelAssignmentForm, detail));
         model.addAttribute("changeRequestForm", ensureChangeRequestForm(changeRequestForm, detail));
+        model.addAttribute("finalDecisionForm", ensureFinalDecisionForm(finalDecisionForm, detail));
     }
 
     private InternalVacancyLevelTwoPanelAssignmentForm buildPanelAssignmentForm(
@@ -206,6 +280,17 @@ public class HRInternalVacancyLevelTwoController {
             InternalVacancyLevelTwoWorkflowDetailView detail) {
         InternalVacancyLevelTwoChangeRequestForm form = new InternalVacancyLevelTwoChangeRequestForm();
         form.setChangeReason(detail.getTimeChangeReason());
+        return form;
+    }
+
+    private InternalVacancyLevelTwoFinalDecisionForm buildFinalDecisionForm(
+            InternalVacancyLevelTwoWorkflowDetailView detail) {
+        InternalVacancyLevelTwoFinalDecisionForm form = new InternalVacancyLevelTwoFinalDecisionForm();
+        if ("SELECTED".equalsIgnoreCase(detail.getFinalDecisionStatus())) {
+            form.setFinalDecision(DepartmentCandidateFinalDecision.SELECT.name());
+        } else if ("REJECTED".equalsIgnoreCase(detail.getFinalDecisionStatus())) {
+            form.setFinalDecision(DepartmentCandidateFinalDecision.REJECT.name());
+        }
         return form;
     }
 
@@ -248,6 +333,18 @@ public class HRInternalVacancyLevelTwoController {
         return form;
     }
 
+    private InternalVacancyLevelTwoFinalDecisionForm ensureFinalDecisionForm(
+            InternalVacancyLevelTwoFinalDecisionForm form,
+            InternalVacancyLevelTwoWorkflowDetailView detail) {
+        if (form == null) {
+            return buildFinalDecisionForm(detail);
+        }
+        if (!StringUtils.hasText(form.getFinalDecision()) && StringUtils.hasText(detail.getFinalDecisionStatus())) {
+            form = buildFinalDecisionForm(detail);
+        }
+        return form;
+    }
+
     private String resolveActorEmail(Principal principal) {
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new RecruitmentNotificationException("Authenticated user is required.");
@@ -276,5 +373,16 @@ public class HRInternalVacancyLevelTwoController {
 
     private String normalizeSearch(String search) {
         return search == null || search.isBlank() ? null : search.trim();
+    }
+
+    private DepartmentCandidateFinalDecision resolveFinalDecision(String value) {
+        if (!StringUtils.hasText(value)) {
+            throw new RecruitmentNotificationException("Final decision is required.");
+        }
+        try {
+            return DepartmentCandidateFinalDecision.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new RecruitmentNotificationException("Invalid final decision.");
+        }
     }
 }

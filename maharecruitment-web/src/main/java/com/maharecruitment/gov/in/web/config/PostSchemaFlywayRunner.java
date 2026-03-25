@@ -43,6 +43,8 @@ import db.postmigration.V27__auth_agency_internal_assessment_menu_backfill;
 import db.postmigration.V28__recruitment_internal_level_two_hr_workflow_support;
 import db.postmigration.V29__auth_hr_internal_level_two_menu_backfill;
 import db.postmigration.V30__recruitment_internal_level_two_panel_user_support;
+import db.postmigration.V31__recruitment_internal_level_two_feedback_support;
+import db.postmigration.V32__auth_level_two_panel_menu_backfill;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -96,7 +98,9 @@ public class PostSchemaFlywayRunner {
                         new V27__auth_agency_internal_assessment_menu_backfill(),
                         new V28__recruitment_internal_level_two_hr_workflow_support(),
                         new V29__auth_hr_internal_level_two_menu_backfill(),
-                        new V30__recruitment_internal_level_two_panel_user_support())
+                        new V30__recruitment_internal_level_two_panel_user_support(),
+                        new V31__recruitment_internal_level_two_feedback_support(),
+                        new V32__auth_level_two_panel_menu_backfill())
                 .load()
                 .migrate();
         LOGGER.info("Post-schema Flyway migrations completed");

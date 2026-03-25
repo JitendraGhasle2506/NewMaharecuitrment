@@ -76,6 +76,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/hr/**", "/employees/**").hasAuthority("ROLE_HR")
                                                 .requestMatchers("/agency/**").hasAuthority("ROLE_AGENCY")
                                                 .requestMatchers("/user/**").hasAuthority("ROLE_USER")
+                                                .requestMatchers("/panel/**")
+                                                .hasAnyAuthority("ROLE_COO", "ROLE_HOD", "ROLE_STM")
                                                 .requestMatchers("/interview-authority/**")
                                                 .hasAnyAuthority("ROLE_HOD", "ROLE_PM", "ROLE_STM")
                                                 .requestMatchers("/stm/**").hasAuthority("ROLE_STM")

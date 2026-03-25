@@ -36,5 +36,7 @@ public class InternalVacancyLevelTwoWorkflowDetailView {
     private LocalDateTime panelAssignedAt;
     private DepartmentInterviewAssessmentView assessment;
     private List<InternalVacancyLevelTwoPanelMemberView> panelMembers;
+    private int panelFeedbackSubmittedCount;
+    private List<InternalVacancyLevelTwoPanelFeedbackView> panelFeedbacks;
+    private InternalVacancyLevelTwoWorkflowStatus workflowStatus;
 }
-

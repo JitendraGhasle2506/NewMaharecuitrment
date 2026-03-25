@@ -92,6 +92,9 @@
         .l2-detail .status-pill.success { background: #dcfce7; color: #166534; }
         .l2-detail .status-pill.warning { background: #fef3c7; color: #92400e; }
         .l2-detail .status-pill.neutral { background: #e2e8f0; color: #334155; }
+        .l2-detail .status-pill.info { background: #dbeafe; color: #1d4ed8; }
+        .l2-detail .status-pill.primary { background: #e0e7ff; color: #4338ca; }
+        .l2-detail .status-pill.danger { background: #fee2e2; color: #b91c1c; }
 
         .l2-detail .alert-box {
             border-radius: 16px;
@@ -313,13 +316,64 @@
             font-weight: 600;
         }
 
+        .l2-detail .feedback-review-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .l2-detail .feedback-review-card {
+            padding: 16px;
+            border: 1px solid #dbe3ef;
+            border-radius: 18px;
+            background: #f8fafc;
+        }
+
+        .l2-detail .feedback-review-meta {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .l2-detail .feedback-review-marks {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .l2-detail .feedback-review-mark {
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: #fff;
+            border: 1px solid #dbe3ef;
+        }
+
+        .l2-detail .feedback-review-mark span {
+            display: block;
+        }
+
+        .l2-detail .feedback-review-mark .mark-label {
+            color: #64748b;
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .l2-detail .feedback-review-mark .mark-value {
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
         @media (max-width: 991px) {
             .l2-detail .overview-grid,
             .l2-detail .section-grid,
             .l2-detail .mark-grid,
             .l2-detail .panel-option-grid,
             .l2-detail .panel-filter-grid,
-            .l2-detail .panel-management-layout {
+            .l2-detail .panel-management-layout,
+            .l2-detail .feedback-review-marks {
                 grid-template-columns: 1fr;
             }
         }
@@ -382,10 +436,13 @@
                     </div>
                 </div>
                 <div class="mini-card">
-                    <span class="label">Final Decision</span>
-                    <div class="value" th:text="${detail.finalDecisionStatus != null ? detail.finalDecisionStatus : 'OPEN'}">OPEN</div>
-                    <div class="muted-copy mt-2" th:text="${detail.panelAssigned ? 'Panel assigned' : 'Panel pending'}">
-                        Panel pending
+                    <span class="label">L2 Status</span>
+                    <div class="value" th:text="${detail.workflowStatus != null ? detail.workflowStatus.name() : '-'}">L2_SCHEDULED</div>
+                    <div class="muted-copy mt-2"
+                        th:text="${detail.panelFeedbackSubmittedCount > 0
+                            ? detail.panelFeedbackSubmittedCount + ' panel feedback submitted'
+                            : (detail.panelAssigned ? 'Panel assigned, feedback awaited' : 'Panel pending')}">
+                        Panel assigned, feedback awaited
                     </div>
                 </div>
             </div>
@@ -397,8 +454,11 @@
                             <h5 class="section-title">Round L2 Schedule</h5>
                             <div class="muted-copy">Current agency schedule and reschedule request status.</div>
                         </div>
-                        <span class="status-pill warning" th:if="${detail.timeChangeRequested}">Reschedule Requested</span>
-                        <span class="status-pill neutral" th:if="${!detail.timeChangeRequested}">No Pending Request</span>
+                        <span class="status-pill"
+                            th:classappend="${detail.workflowStatus != null ? ' ' + detail.workflowStatus.tone : ' neutral'}"
+                            th:text="${detail.workflowStatus != null ? detail.workflowStatus.name() : '-'}">
+                            L2_SCHEDULED
+                        </span>
                     </div>
 
                     <div class="row g-3">
@@ -534,6 +594,128 @@
                 </div>
             </div>
 
+            <div class="section-card mb-4">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h5 class="section-title">Panel Feedback Review</h5>
+                        <div class="muted-copy">Review Round L2 assessments submitted by assigned panel members before sending the result to agency.</div>
+                    </div>
+                    <span class="status-pill success" th:if="${detail.panelFeedbackSubmittedCount > 0}"
+                        th:text="${detail.panelFeedbackSubmittedCount + ' submitted'}">
+                        1 submitted
+                    </span>
+                    <span class="status-pill neutral" th:if="${detail.panelFeedbackSubmittedCount == 0}">Awaiting Feedback</span>
+                </div>
+
+                <div class="alert alert-info mb-0" th:if="${#lists.isEmpty(detail.panelFeedbacks)}">
+                    No Round L2 panel feedback has been submitted yet.
+                </div>
+
+                <div class="feedback-review-grid" th:if="${!#lists.isEmpty(detail.panelFeedbacks)}">
+                    <div class="feedback-review-card" th:each="feedback : ${detail.panelFeedbacks}">
+                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                            <div>
+                                <div class="value" th:text="${feedback.reviewerName != null ? feedback.reviewerName : '-'}">Reviewer</div>
+                                <div class="feedback-review-meta"
+                                    th:text="${feedback.reviewerRoleLabel != null ? feedback.reviewerRoleLabel : '-'}">
+                                    Role
+                                </div>
+                            </div>
+                            <span class="status-pill success"
+                                th:text="${feedback.submittedAt != null ? #temporals.format(feedback.submittedAt, 'dd-MMM-yyyy HH:mm') : 'Submitted'}">
+                                Submitted
+                            </span>
+                        </div>
+
+                        <div class="feedback-review-marks">
+                            <div class="feedback-review-mark">
+                                <span class="mark-label">Communication</span>
+                                <span class="mark-value" th:text="${feedback.communicationSkillMarks != null ? feedback.communicationSkillMarks : 0}">0</span>
+                            </div>
+                            <div class="feedback-review-mark">
+                                <span class="mark-label">Technical</span>
+                                <span class="mark-value" th:text="${feedback.technicalSkillMarks != null ? feedback.technicalSkillMarks : 0}">0</span>
+                            </div>
+                            <div class="feedback-review-mark">
+                                <span class="mark-label">Leadership</span>
+                                <span class="mark-value" th:text="${feedback.leadershipQualityMarks != null ? feedback.leadershipQualityMarks : 0}">0</span>
+                            </div>
+                            <div class="feedback-review-mark">
+                                <span class="mark-label">Relevant Experience</span>
+                                <span class="mark-value" th:text="${feedback.relevantExperienceMarks != null ? feedback.relevantExperienceMarks : 0}">0</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <span class="label">Grade / Recommendation</span>
+                            <div class="value"
+                                th:text="${(feedback.interviewerGrade != null ? feedback.interviewerGrade : '-') + ' / ' + (feedback.recommendationStatus != null ? #strings.replace(feedback.recommendationStatus, '_', ' ') : '-')}">
+                                A / RECOMMENDED
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <span class="label">Assessment Remarks</span>
+                            <div class="feedback-review-meta" th:text="${feedback.assessmentRemarks != null ? feedback.assessmentRemarks : '-'}">
+                                Remarks
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <span class="label">Final Remarks</span>
+                            <div class="feedback-review-meta" th:text="${feedback.finalRemarks != null ? feedback.finalRemarks : '-'}">
+                                Final remarks
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card mb-4" th:if="${detail.finalDecisionStatus == null}">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h5 class="section-title">Send Round L2 Result To Agency</h5>
+                        <div class="muted-copy">HR can send the final Round L2 result to agency after reviewing the submitted panel assessments.</div>
+                    </div>
+                    <span class="status-pill warning" th:if="${detail.panelFeedbackSubmittedCount == 0}">Waiting For Panel</span>
+                    <span class="status-pill success" th:if="${detail.panelFeedbackSubmittedCount > 0}">Ready To Send</span>
+                </div>
+
+                <div class="alert alert-warning mb-0" th:if="${detail.panelFeedbackSubmittedCount == 0}">
+                    At least one panel feedback submission is required before HR can send the Round L2 result to agency.
+                </div>
+
+                <form method="post" th:if="${detail.panelFeedbackSubmittedCount > 0}" th:object="${finalDecisionForm}"
+                    th:action="@{/hr/internal-vacancies/level-two/{recruitmentInterviewDetailId}/final-decision(
+                        recruitmentInterviewDetailId=${detail.recruitmentInterviewDetailId})}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Final Decision</label>
+                            <select class="form-select" th:field="*{finalDecision}">
+                                <option value="">Select Final Decision</option>
+                                <option value="SELECT">Selected</option>
+                                <option value="REJECT">Rejected</option>
+                            </select>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('finalDecision')}" th:errors="*{finalDecision}">
+                                Final decision is required.
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">HR Remarks</label>
+                            <textarea class="form-control" rows="4" th:field="*{decisionRemarks}"
+                                placeholder="Add the HR note that will go with the Round L2 result"></textarea>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('decisionRemarks')}" th:errors="*{decisionRemarks}">
+                                Decision remarks are invalid.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">Send To Agency</button>
+                    </div>
+                </form>
+            </div>
+
             <div class="section-card" th:if="${detail.finalDecisionStatus == null}">
                 <form method="post" th:object="${panelAssignmentForm}"
                     th:action="@{/hr/internal-vacancies/level-two/{recruitmentInterviewDetailId}/panel(
@@ -624,7 +806,7 @@
             </div>
 
             <div class="alert alert-info" th:if="${detail.finalDecisionStatus != null}">
-                Round L2 workflow is closed because the final decision is already recorded for this candidate.
+                Round L2 workflow is closed because the final decision is already recorded and shared with agency for this candidate.
             </div>
         </section>
     </th:block>

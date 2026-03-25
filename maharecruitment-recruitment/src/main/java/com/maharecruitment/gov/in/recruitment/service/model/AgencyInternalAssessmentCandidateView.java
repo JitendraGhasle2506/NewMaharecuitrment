@@ -33,8 +33,10 @@ public class AgencyInternalAssessmentCandidateView {
     private LocalDateTime levelTwoScheduledAt;
     private boolean levelTwoScheduled;
     private boolean levelTwoSchedulingAllowed;
+    private boolean levelTwoPanelAssigned;
     private boolean levelTwoTimeChangeRequested;
     private String levelTwoTimeChangeReason;
     private LocalDateTime levelTwoTimeChangeRequestedAt;
     private String finalDecisionStatus;
+    private InternalVacancyLevelTwoWorkflowStatus workflowStatus;
 }
