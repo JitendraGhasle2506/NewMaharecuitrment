@@ -1,10 +1,14 @@
 package com.maharecruitment.gov.in.recruitment.service.impl;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.master.entity.ResourceLevelExperience;
 import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepository;
@@ -18,9 +22,12 @@ import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationE
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
+import com.maharecruitment.gov.in.recruitment.repository.projection.AgencyVisibleNotificationMetricsProjection;
+import com.maharecruitment.gov.in.recruitment.repository.projection.AgencyVisibleNotificationProjection;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationQueryService;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView.DesignationVacancyView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
 
 @Service
@@ -56,7 +63,10 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
         }
 
         @Override
-        public List<AgencyVisibleNotificationView> getVisibleNotifications(Long agencyId) {
+        public Page<AgencyVisibleNotificationView> getVisibleNotifications(
+                        Long agencyId,
+                        String searchText,
+                        Pageable pageable) {
                 if (agencyId == null) {
                         throw new RecruitmentNotificationException("Agency id is required.");
                 }
@@ -65,13 +75,40 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                         throw new RecruitmentNotificationException("Agency not found for id: " + agencyId);
                 }
 
-                return trackingRepository.findVisibleTrackingByAgency(
+                return trackingRepository.findVisibleNotificationPageByAgency(
                                 agencyId,
                                 VISIBLE_TRACKING_STATUSES,
-                                VISIBLE_NOTIFICATION_STATUSES)
-                                .stream()
-                                .map(this::toView)
-                                .toList();
+                                VISIBLE_NOTIFICATION_STATUSES,
+                                buildSearchPattern(searchText),
+                                pageable)
+                                .map(this::toView);
+        }
+
+        @Override
+        public AgencyVisibleNotificationListMetricsView getVisibleNotificationMetrics(Long agencyId, String searchText) {
+                if (agencyId == null) {
+                        throw new RecruitmentNotificationException("Agency id is required.");
+                }
+
+                if (!agencyRepository.existsById(agencyId)) {
+                        throw new RecruitmentNotificationException("Agency not found for id: " + agencyId);
+                }
+
+                AgencyVisibleNotificationMetricsProjection metrics = trackingRepository
+                                .summarizeVisibleNotificationMetricsByAgency(
+                                                agencyId,
+                                                VISIBLE_TRACKING_STATUSES,
+                                                VISIBLE_NOTIFICATION_STATUSES,
+                                                buildSearchPattern(searchText));
+
+                return AgencyVisibleNotificationListMetricsView.builder()
+                                .totalNotifications(toSafeLong(metrics != null ? metrics.getTotalNotifications() : null))
+                                .releasedNotifications(
+                                                toSafeLong(metrics != null ? metrics.getReleasedNotifications() : null))
+                                .readNotifications(toSafeLong(metrics != null ? metrics.getReadNotifications() : null))
+                                .respondedNotifications(
+                                                toSafeLong(metrics != null ? metrics.getRespondedNotifications() : null))
+                                .build();
         }
 
         @Override
@@ -96,6 +133,9 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                                 .orElseThrow(() -> new RecruitmentNotificationException(
                                                 "Recruitment notification not found for id: "
                                                                 + recruitmentNotificationId));
+                if (!VISIBLE_NOTIFICATION_STATUSES.contains(notification.getStatus())) {
+                        throw new RecruitmentNotificationException("Notification is no longer active for this agency.");
+                }
 
                 String projectName = notification.getProjectMst() != null
                                 ? notification.getProjectMst().getProjectName()
@@ -115,6 +155,7 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                                 .departmentProjectApplicationId(notification.getDepartmentProjectApplicationId())
                                 .projectId(projectId)
                                 .projectName(projectName)
+                                .internalNotification(notification.getInternalVacancyOpening() != null)
                                 .notificationStatus(notification.getStatus())
                                 .releasedRank(tracking.getReleasedRank())
                                 .notifiedAt(tracking.getNotifiedAt())
@@ -149,6 +190,21 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                                 .build();
         }
 
+        private AgencyVisibleNotificationView toView(AgencyVisibleNotificationProjection projection) {
+                return AgencyVisibleNotificationView.builder()
+                                .recruitmentNotificationId(projection.getRecruitmentNotificationId())
+                                .requestId(projection.getRequestId())
+                                .departmentRegistrationId(projection.getDepartmentRegistrationId())
+                                .departmentProjectApplicationId(projection.getDepartmentProjectApplicationId())
+                                .projectId(projection.getProjectId())
+                                .projectName(projection.getProjectName())
+                                .releasedRank(projection.getReleasedRank())
+                                .notifiedAt(projection.getNotifiedAt())
+                                .trackingStatus(projection.getTrackingStatus())
+                                .notificationStatus(projection.getNotificationStatus())
+                                .build();
+        }
+
         private DesignationVacancyView toVacancyView(RecruitmentDesignationVacancyEntity vacancy) {
                 String designationName = vacancy.getDesignationMst() != null
                                 ? vacancy.getDesignationMst().getDesignationName()
@@ -175,5 +231,16 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                                 .maxExperience(levelExperience != null ? levelExperience.getMaxExperience() : null)
                                 .jobDescription(vacancy.getJobDescription())
                                 .build();
+        }
+
+        private long toSafeLong(Long value) {
+                return value == null ? 0L : value;
+        }
+
+        private String buildSearchPattern(String value) {
+                if (!StringUtils.hasText(value)) {
+                        return null;
+                }
+                return "%" + value.trim().toUpperCase(Locale.ROOT) + "%";
         }
 }

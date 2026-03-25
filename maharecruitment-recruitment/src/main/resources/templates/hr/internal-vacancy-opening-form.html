@@ -12,7 +12,7 @@
         <section>
             <div class="card add-emp-card">
                 <div class="header">
-                    <h2 th:text="${isEdit ? 'Edit Internal Vacancy Draft' : 'Create Internal Vacancy Opening'}"></h2>
+                    <h2 th:text="${isSubmittedEdit ? 'Update Internal Vacancy Opening' : (isEdit ? 'Edit Internal Vacancy Draft' : 'Create Internal Vacancy Opening')}"></h2>
                 </div>
 
                 <div class="card-body">
@@ -26,6 +26,7 @@
                         th:object="${openingForm}"
                         method="post">
                         <input type="hidden" th:field="*{internalVacancyOpeningId}">
+                        <input type="hidden" th:field="*{currentStatus}">
 
                         <div class="row g-3">
                             <div class="col-md-12">
@@ -56,7 +57,7 @@
                                 <label class="form-label d-block">Interview Authority Roles <span class="text-danger">*</span></label>
                                 <div id="interviewAuthorityRoleIds"
                                     class="border rounded p-3 bg-light-subtle"
-                                    th:classappend="${#fields.hasErrors('interviewAuthorityRoleIds')} ? ' border-danger' : ''">
+                                    th:classappend="${#fields.hasErrors('interviewAuthorityRoleIds') ? ' border-danger' : ''}">
                                     <div class="form-check mb-2" th:each="role : ${interviewAuthorityRoleOptions}">
                                         <input class="form-check-input" type="checkbox"
                                             th:field="*{interviewAuthorityRoleIds}"
@@ -73,7 +74,7 @@
                                 <label class="form-label d-block">Assign Interview Authorities <span class="text-danger">*</span></label>
                                 <div id="interviewAuthorityUserIds"
                                     class="border rounded p-3 bg-light-subtle"
-                                    th:classappend="${#fields.hasErrors('interviewAuthorityUserIds')} ? ' border-danger' : ''">
+                                    th:classappend="${#fields.hasErrors('interviewAuthorityUserIds') ? ' border-danger' : ''}">
                                     <div th:if="${#lists.isEmpty(interviewAuthorityUserOptions)}" class="text-muted small">
                                         Select HOD, PM, or STM roles first. Users with those roles will appear here.
                                     </div>
@@ -166,9 +167,10 @@
 
                         <div class="mt-4 d-flex justify-content-center gap-2">
                             <button type="submit" name="action" value="draft" class="btn btn-outline-primary"
+                                th:if="${!isSubmittedEdit}"
                                 th:text="${isEdit ? 'Update Draft' : 'Save Draft'}"></button>
                             <button type="submit" name="action" value="submit" class="btn btn-primary"
-                                th:text="${isEdit ? 'Submit Draft' : 'Submit Vacancy Opening'}"></button>
+                                th:text="${isSubmittedEdit ? 'Update Vacancy Opening' : (isEdit ? 'Submit Draft' : 'Submit Vacancy Opening')}"></button>
                             <a class="btn btn-secondary" th:href="@{/hr/internal-vacancies}">Back to List</a>
                         </div>
                     </form>

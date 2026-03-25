@@ -38,6 +38,11 @@ import db.postmigration.V22__auth_role_name_normalization;
 import db.postmigration.V23__auth_interview_shortlisting_menu_backfill;
 import db.postmigration.V24__recruitment_assessment_internal_vacancy_support;
 import db.postmigration.V25__internal_feedback_leadership_quality_marks;
+import db.postmigration.V26__recruitment_internal_level_two_schedule_support;
+import db.postmigration.V27__auth_agency_internal_assessment_menu_backfill;
+import db.postmigration.V28__recruitment_internal_level_two_hr_workflow_support;
+import db.postmigration.V29__auth_hr_internal_level_two_menu_backfill;
+import db.postmigration.V30__recruitment_internal_level_two_panel_user_support;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -86,7 +91,12 @@ public class PostSchemaFlywayRunner {
                         new V22__auth_role_name_normalization(),
                         new V23__auth_interview_shortlisting_menu_backfill(),
                         new V24__recruitment_assessment_internal_vacancy_support(),
-                        new V25__internal_feedback_leadership_quality_marks())
+                        new V25__internal_feedback_leadership_quality_marks(),
+                        new V26__recruitment_internal_level_two_schedule_support(),
+                        new V27__auth_agency_internal_assessment_menu_backfill(),
+                        new V28__recruitment_internal_level_two_hr_workflow_support(),
+                        new V29__auth_hr_internal_level_two_menu_backfill(),
+                        new V30__recruitment_internal_level_two_panel_user_support())
                 .load()
                 .migrate();
         LOGGER.info("Post-schema Flyway migrations completed");

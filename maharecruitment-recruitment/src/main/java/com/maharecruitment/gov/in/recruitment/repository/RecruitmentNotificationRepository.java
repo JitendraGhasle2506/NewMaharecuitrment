@@ -61,6 +61,8 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
             + "join notification.internalVacancyOpening opening "
             + "join opening.interviewAuthorities authority "
             + "where upper(notification.requestId) = upper(:requestId) "
+            + "and notification.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
             + "and authority.user.id = :userId")
     Optional<RecruitmentNotificationEntity> findInternalVacancyForInterviewAuthorityReview(
             @Param("requestId") String requestId,

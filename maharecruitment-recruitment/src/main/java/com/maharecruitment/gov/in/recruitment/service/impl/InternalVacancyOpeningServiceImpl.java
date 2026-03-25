@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,11 +45,13 @@ import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningRequi
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyOpeningRepository;
+import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyOpeningStatusCountProjection;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentRequestIdGenerator;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityRoleOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalProjectOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningLevelOptionView;
@@ -106,6 +109,11 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         String actorEmail = normalizeActorEmail(command.getActorEmail());
         ProjectMst project = findInternalProject(command.getProjectId());
         InternalVacancyOpeningStatus targetStatus = resolveTargetStatus(command.getTargetStatus());
+        boolean isEdit = command.getInternalVacancyOpeningId() != null;
+        InternalVacancyOpeningEntity entity = isEdit
+                ? findOpeningForUpdate(command.getInternalVacancyOpeningId())
+                : new InternalVacancyOpeningEntity();
+        validateSaveTransition(entity, targetStatus);
 
         Map<Long, ManpowerDesignationMaster> designationById = resolveDesignations(command.getRequirements());
         List<InternalVacancyOpeningRequirementEntity> requirementEntities = buildRequirementEntities(
@@ -118,11 +126,6 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         List<InternalVacancyInterviewRoleEntity> interviewRoleEntities = buildInterviewRoleEntities(interviewRoles);
         List<InternalVacancyInterviewAuthorityEntity> interviewAuthorityEntities = buildInterviewAuthorityEntities(
                 interviewAuthorities);
-
-        boolean isEdit = command.getInternalVacancyOpeningId() != null;
-        InternalVacancyOpeningEntity entity = isEdit
-                ? findEditableOpening(command.getInternalVacancyOpeningId())
-                : new InternalVacancyOpeningEntity();
 
         if (!isEdit) {
             entity.setRequestId(recruitmentRequestIdGenerator.generate(INTERNAL_REQUEST_TYPE));
@@ -173,30 +176,86 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
     }
 
     @Override
-    public List<InternalVacancyOpeningSummaryView> getAllOpenings() {
-        return internalVacancyOpeningRepository.findAllByOrderByInternalVacancyOpeningIdDesc()
-                .stream()
-                .map(this::toSummaryView)
-                .toList();
+    @Transactional
+    public InternalVacancyOpeningResult changeOpeningStatus(
+            Long internalVacancyOpeningId,
+            String actorEmail,
+            InternalVacancyOpeningStatus targetStatus) {
+        String normalizedActorEmail = normalizeActorEmail(actorEmail);
+        InternalVacancyOpeningEntity entity = findOpeningForStatusChange(internalVacancyOpeningId);
+        validateStatusChangeTransition(entity, targetStatus);
+
+        entity.setStatus(targetStatus);
+        entity.setUpdatedByEmail(normalizedActorEmail);
+        InternalVacancyOpeningEntity saved = internalVacancyOpeningRepository.saveAndFlush(entity);
+
+        if (targetStatus == InternalVacancyOpeningStatus.OPEN) {
+            recruitmentNotificationService.upsertFromInternalVacancyOpening(saved.getInternalVacancyOpeningId());
+        } else if (targetStatus == InternalVacancyOpeningStatus.CLOSED) {
+            recruitmentNotificationService.closeFromInternalVacancyOpening(saved.getInternalVacancyOpeningId());
+        }
+
+        log.info(
+                "Internal vacancy opening status changed. requestId={}, openingId={}, status={}, actor={}",
+                saved.getRequestId(),
+                saved.getInternalVacancyOpeningId(),
+                saved.getStatus(),
+                normalizedActorEmail);
+
+        return InternalVacancyOpeningResult.builder()
+                .internalVacancyOpeningId(saved.getInternalVacancyOpeningId())
+                .requestId(saved.getRequestId())
+                .build();
+    }
+
+    @Override
+    public Page<InternalVacancyOpeningSummaryView> getOpeningPage(String searchText, Pageable pageable) {
+        return internalVacancyOpeningRepository.findPageBySearch(buildSearchPattern(searchText), pageable)
+                .map(this::toSummaryView);
+    }
+
+    @Override
+    public InternalVacancyOpeningListMetricsView getOpeningListMetrics(String searchText) {
+        List<InternalVacancyOpeningStatusCountProjection> counts = internalVacancyOpeningRepository
+                .summarizeStatusCounts(buildSearchPattern(searchText));
+
+        Map<InternalVacancyOpeningStatus, Long> countByStatus = new LinkedHashMap<>();
+        long totalOpenings = 0L;
+        for (InternalVacancyOpeningStatusCountProjection count : counts) {
+            if (count == null || count.getStatus() == null) {
+                continue;
+            }
+
+            long safeCount = count.getTotalCount() == null ? 0L : count.getTotalCount();
+            countByStatus.put(count.getStatus(), safeCount);
+            totalOpenings += safeCount;
+        }
+
+        return InternalVacancyOpeningListMetricsView.builder()
+                .totalOpenings(totalOpenings)
+                .draftOpenings(countByStatus.getOrDefault(InternalVacancyOpeningStatus.DRAFT, 0L))
+                .activeOpenings(countByStatus.getOrDefault(InternalVacancyOpeningStatus.OPEN, 0L))
+                .closedOpenings(countByStatus.getOrDefault(InternalVacancyOpeningStatus.CLOSED, 0L))
+                .build();
     }
 
     @Override
     public InternalVacancyOpeningForm getOpeningForEdit(Long internalVacancyOpeningId) {
-        InternalVacancyOpeningEntity entity = findEditableOpening(internalVacancyOpeningId);
+        InternalVacancyOpeningEntity entity = findOpeningForFormEdit(internalVacancyOpeningId);
 
         InternalVacancyOpeningForm form = new InternalVacancyOpeningForm();
         form.setInternalVacancyOpeningId(entity.getInternalVacancyOpeningId());
+        form.setCurrentStatus(entity.getStatus());
         form.setProjectId(entity.getProjectMst().getProjectId());
         form.setRemarks(entity.getRemarks());
         form.setRequirements(entity.getRequirements().stream()
                 .map(this::toRequirementForm)
                 .toList());
-        form.setInterviewAuthorityRoleIds(entity.getInterviewRoles().stream()
-                .map(roleAssignment -> roleAssignment.getRole().getId())
-                .distinct()
-                .toList());
+        form.setInterviewAuthorityRoleIds(resolveEditInterviewAuthorityRoleIds(entity));
         form.setInterviewAuthorityUserIds(entity.getInterviewAuthorities().stream()
-                .map(authorityAssignment -> authorityAssignment.getUser().getId())
+                .map(InternalVacancyInterviewAuthorityEntity::getUser)
+                .filter(user -> user != null && user.getId() != null)
+                .map(User::getId)
                 .distinct()
                 .toList());
         return form;
@@ -324,7 +383,34 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         return targetStatus;
     }
 
-    private InternalVacancyOpeningEntity findEditableOpening(Long internalVacancyOpeningId) {
+    private InternalVacancyOpeningEntity findOpeningForFormEdit(Long internalVacancyOpeningId) {
+        InternalVacancyOpeningEntity entity = findOpeningById(internalVacancyOpeningId);
+        if (entity.getStatus() == InternalVacancyOpeningStatus.CLOSED) {
+            throw new RecruitmentNotificationException(
+                    "Deactivated internal vacancy openings must be activated before editing.");
+        }
+        return entity;
+    }
+
+    private InternalVacancyOpeningEntity findOpeningForUpdate(Long internalVacancyOpeningId) {
+        InternalVacancyOpeningEntity entity = findOpeningById(internalVacancyOpeningId);
+        if (entity.getStatus() == InternalVacancyOpeningStatus.CLOSED) {
+            throw new RecruitmentNotificationException(
+                    "Deactivated internal vacancy openings must be activated before updating.");
+        }
+        return entity;
+    }
+
+    private InternalVacancyOpeningEntity findOpeningForStatusChange(Long internalVacancyOpeningId) {
+        InternalVacancyOpeningEntity entity = findOpeningById(internalVacancyOpeningId);
+        if (entity.getStatus() == InternalVacancyOpeningStatus.DRAFT) {
+            throw new RecruitmentNotificationException(
+                    "Only submitted internal vacancy openings can be activated or deactivated.");
+        }
+        return entity;
+    }
+
+    private InternalVacancyOpeningEntity findOpeningById(Long internalVacancyOpeningId) {
         if (internalVacancyOpeningId == null || internalVacancyOpeningId < 1) {
             throw new RecruitmentNotificationException("Valid internal vacancy opening id is required.");
         }
@@ -333,12 +419,43 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .findDetailedByInternalVacancyOpeningId(internalVacancyOpeningId)
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Internal vacancy opening not found for id: " + internalVacancyOpeningId));
-
-        if (entity.getStatus() != InternalVacancyOpeningStatus.DRAFT) {
-            throw new RecruitmentNotificationException("Only draft internal vacancy openings can be edited.");
-        }
-
         return entity;
+    }
+
+    private void validateSaveTransition(
+            InternalVacancyOpeningEntity entity,
+            InternalVacancyOpeningStatus targetStatus) {
+        if (entity.getInternalVacancyOpeningId() == null) {
+            return;
+        }
+        if (entity.getStatus() == InternalVacancyOpeningStatus.OPEN
+                && targetStatus != InternalVacancyOpeningStatus.OPEN) {
+            throw new RecruitmentNotificationException(
+                    "Submitted internal vacancy openings can only be updated as active openings.");
+        }
+        if (entity.getStatus() == InternalVacancyOpeningStatus.DRAFT
+                && targetStatus == InternalVacancyOpeningStatus.CLOSED) {
+            throw new RecruitmentNotificationException(
+                    "Draft internal vacancy openings cannot be deactivated.");
+        }
+    }
+
+    private void validateStatusChangeTransition(
+            InternalVacancyOpeningEntity entity,
+            InternalVacancyOpeningStatus targetStatus) {
+        if (targetStatus == null) {
+            throw new RecruitmentNotificationException("Internal vacancy opening status is required.");
+        }
+        if (targetStatus == InternalVacancyOpeningStatus.CLOSED
+                && entity.getStatus() != InternalVacancyOpeningStatus.OPEN) {
+            throw new RecruitmentNotificationException(
+                    "Only active internal vacancy openings can be deactivated.");
+        }
+        if (targetStatus == InternalVacancyOpeningStatus.OPEN
+                && entity.getStatus() != InternalVacancyOpeningStatus.CLOSED) {
+            throw new RecruitmentNotificationException(
+                    "Only deactivated internal vacancy openings can be activated.");
+        }
     }
 
     private Map<Long, ManpowerDesignationMaster> resolveDesignations(List<InternalVacancyRequirementCommand> requirements) {
@@ -470,6 +587,34 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .sorted(Comparator.comparingInt(role -> ALLOWED_INTERVIEW_AUTHORITY_ROLE_NAMES.indexOf(
                         role.getName().trim().toUpperCase(Locale.ROOT))))
                 .toList();
+    }
+
+    private List<Long> resolveEditInterviewAuthorityRoleIds(InternalVacancyOpeningEntity entity) {
+        List<Long> assignedRoleIds = entity.getInterviewRoles().stream()
+                .map(InternalVacancyInterviewRoleEntity::getRole)
+                .filter(this::isAllowedInterviewAuthorityRole)
+                .map(Role::getId)
+                .distinct()
+                .toList();
+        if (!assignedRoleIds.isEmpty()) {
+            return assignedRoleIds;
+        }
+
+        return entity.getInterviewAuthorities().stream()
+                .map(InternalVacancyInterviewAuthorityEntity::getUser)
+                .filter(user -> user != null && user.getRoles() != null)
+                .flatMap(user -> user.getRoles().stream())
+                .filter(this::isAllowedInterviewAuthorityRole)
+                .map(Role::getId)
+                .distinct()
+                .toList();
+    }
+
+    private boolean isAllowedInterviewAuthorityRole(Role role) {
+        return role != null
+                && role.getId() != null
+                && StringUtils.hasText(role.getName())
+                && ALLOWED_INTERVIEW_AUTHORITY_ROLE_NAMES.contains(role.getName().trim().toUpperCase(Locale.ROOT));
     }
 
     private List<User> resolveInterviewAuthorities(List<Long> userIds, List<Role> selectedRoles) {
@@ -621,6 +766,13 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             return null;
         }
         return value.trim();
+    }
+
+    private String buildSearchPattern(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return "%" + value.trim().toUpperCase(Locale.ROOT) + "%";
     }
 
     private List<Long> normalizePositiveIds(List<Long> ids) {

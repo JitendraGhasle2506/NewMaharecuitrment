@@ -4,17 +4,23 @@ import java.security.Principal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
-import org.springframework.validation.BindingResult;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateBatchForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateRowForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewScheduleForm;
@@ -25,6 +31,8 @@ import com.maharecruitment.gov.in.web.service.agency.AgencyRecruitmentNotificati
 public class AgencyRecruitmentNotificationPageController {
 
     private static final Logger log = LoggerFactory.getLogger(AgencyRecruitmentNotificationPageController.class);
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 50;
 
     private final AgencyRecruitmentNotificationPageService pageService;
 
@@ -34,10 +42,37 @@ public class AgencyRecruitmentNotificationPageController {
 
     @GetMapping
     public String listNotifications(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
             Principal principal,
             Model model) {
         String actorEmail = resolveActorEmail(principal);
-        model.addAttribute("notifications", pageService.getVisibleNotifications(actorEmail));
+        int resolvedPage = Math.max(page, 0);
+        int resolvedSize = resolvePageSize(size);
+        String normalizedSearch = normalizeSearch(search);
+
+        Page<AgencyVisibleNotificationView> notificationPage = loadNotificationPage(
+                actorEmail,
+                normalizedSearch,
+                resolvedPage,
+                resolvedSize);
+        if (notificationPage.getTotalPages() > 0 && resolvedPage >= notificationPage.getTotalPages()) {
+            notificationPage = loadNotificationPage(
+                    actorEmail,
+                    normalizedSearch,
+                    notificationPage.getTotalPages() - 1,
+                    resolvedSize);
+        }
+
+        AgencyVisibleNotificationListMetricsView notificationMetrics = pageService
+                .getVisibleNotificationMetrics(actorEmail, normalizedSearch);
+
+        model.addAttribute("notifications", notificationPage.getContent());
+        model.addAttribute("notificationPage", notificationPage);
+        model.addAttribute("notificationMetrics", notificationMetrics);
+        model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
+        model.addAttribute("pageSize", notificationPage.getSize());
         return "agency/recruitment-notification-list";
     }
 
@@ -198,6 +233,26 @@ public class AgencyRecruitmentNotificationPageController {
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
         return principal.getName().trim();
+    }
+
+    private Page<AgencyVisibleNotificationView> loadNotificationPage(
+            String actorEmail,
+            String normalizedSearch,
+            int page,
+            int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), resolvePageSize(size));
+        return pageService.getVisibleNotifications(actorEmail, normalizedSearch, pageable);
+    }
+
+    private int resolvePageSize(int size) {
+        if (size <= 0) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    private String normalizeSearch(String search) {
+        return search == null || search.isBlank() ? null : search.trim();
     }
 
     private AgencyCandidateBatchForm buildDefaultCandidateForm() {

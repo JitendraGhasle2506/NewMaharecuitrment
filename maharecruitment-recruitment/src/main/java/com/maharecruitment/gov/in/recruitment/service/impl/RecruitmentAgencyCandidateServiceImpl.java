@@ -284,6 +284,10 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         if (StringUtils.hasText(candidateEntity.getFinalDecisionStatus())) {
             throw new RecruitmentNotificationException("Interview schedule cannot be modified after final department decision.");
         }
+        if (Boolean.TRUE.equals(candidateEntity.getAssessmentSubmitted())) {
+            throw new RecruitmentNotificationException(
+                    "Interview details cannot be modified after assessment feedback is submitted.");
+        }
 
         candidateEntity.setInterviewDateTime(scheduleInput.getInterviewDateTime());
         candidateEntity.setInterviewTimeSlot(scheduleInput.getInterviewTimeSlot());
@@ -327,6 +331,9 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         if (preOnboarding != null && preOnboarding.getOnboardedAt() != null) {
             throw new RecruitmentNotificationException("Candidate is already onboarded and cannot be withdrawn.");
         }
+        if (candidateEntity.getCandidateStatus() == RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT) {
+            throw new RecruitmentNotificationException("Rejected candidate cannot be withdrawn.");
+        }
 
         if (preOnboarding != null) {
             preOnboardingRepository.delete(preOnboarding);
@@ -340,12 +347,17 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
     private AgencyNotificationTrackingEntity ensureNotificationReleasedForAgency(
             Long recruitmentNotificationId,
             Long agencyId) {
-        return trackingRepository
+        AgencyNotificationTrackingEntity tracking = trackingRepository
                 .findByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId(
                         recruitmentNotificationId,
                         agencyId)
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Notification is not released for this agency."));
+        if (tracking.getRecruitmentNotification() == null
+                || tracking.getRecruitmentNotification().getStatus() == RecruitmentNotificationStatus.CLOSED) {
+            throw new RecruitmentNotificationException("Notification is no longer active for this agency.");
+        }
+        return tracking;
     }
 
     private AgencyCandidateSubmissionInput normalizeCandidateInput(AgencyCandidateSubmissionInput input) {
@@ -561,6 +573,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             AgencyCandidatePreOnboardingEntity preOnboarding) {
         return candidate != null
                 && Boolean.TRUE.equals(candidate.getActive())
+                && candidate.getCandidateStatus() != RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT
                 && (preOnboarding == null || preOnboarding.getOnboardedAt() == null);
     }
 

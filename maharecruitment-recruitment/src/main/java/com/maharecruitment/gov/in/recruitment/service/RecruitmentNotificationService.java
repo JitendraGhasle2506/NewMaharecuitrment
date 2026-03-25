@@ -7,4 +7,6 @@ public interface RecruitmentNotificationService {
     void upsertFromAuditorApproval(AuditorApprovedNotificationCommand command);
 
     void upsertFromInternalVacancyOpening(Long internalVacancyOpeningId);
+
+    void closeFromInternalVacancyOpening(Long internalVacancyOpeningId);
 }

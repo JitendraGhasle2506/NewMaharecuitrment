@@ -59,6 +59,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("""
             select distinct u
             from User u
+            join fetch u.roles r
+            where upper(trim(r.name)) in :roleNames
+            """)
+    List<User> findDistinctUsersByRoleNames(@Param("roleNames") Collection<String> roleNames);
+
+    @Query("""
+            select distinct u
+            from User u
             left join fetch u.roles
             where u.id in :userIds
             """)

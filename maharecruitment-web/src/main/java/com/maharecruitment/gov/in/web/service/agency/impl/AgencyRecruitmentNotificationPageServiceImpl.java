@@ -3,6 +3,8 @@ package com.maharecruitment.gov.in.web.service.agency.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,6 +25,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDe
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateBatchForm;
@@ -61,9 +64,18 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     }
 
     @Override
-    public List<AgencyVisibleNotificationView> getVisibleNotifications(String actorEmail) {
+    public Page<AgencyVisibleNotificationView> getVisibleNotifications(
+            String actorEmail,
+            String searchText,
+            Pageable pageable) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        return queryService.getVisibleNotifications(context.agencyId());
+        return queryService.getVisibleNotifications(context.agencyId(), searchText, pageable);
+    }
+
+    @Override
+    public AgencyVisibleNotificationListMetricsView getVisibleNotificationMetrics(String actorEmail, String searchText) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return queryService.getVisibleNotificationMetrics(context.agencyId(), searchText);
     }
 
     @Override
@@ -168,7 +180,8 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
                 context.userId(),
                 AgencyCandidateInterviewScheduleInput.builder()
                         .interviewDateTime(
-                                interviewScheduleForm != null ? interviewScheduleForm.getInterviewDateTime() : null)
+                                interviewScheduleForm != null && interviewScheduleForm.getInterviewDate() != null
+                                        ? interviewScheduleForm.getInterviewDate().atStartOfDay() : null)
                         .interviewTimeSlot(
                                 interviewScheduleForm != null ? interviewScheduleForm.getInterviewTimeSlot() : null)
                         .interviewLink(interviewScheduleForm != null ? interviewScheduleForm.getInterviewLink() : null)

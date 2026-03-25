@@ -3,6 +3,8 @@ package com.maharecruitment.gov.in.recruitment.dto.hr;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -15,6 +17,8 @@ import lombok.Setter;
 public class InternalVacancyOpeningForm {
 
     private Long internalVacancyOpeningId;
+
+    private InternalVacancyOpeningStatus currentStatus = InternalVacancyOpeningStatus.DRAFT;
 
     @NotNull(message = "Project is required.")
     private Long projectId;

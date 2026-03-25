@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.recruitment.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -69,7 +70,9 @@ public class RecruitmentNotificationDistributionController {
     @GetMapping("/agencies/{agencyId}/visible")
     public ResponseEntity<List<AgencyVisibleNotificationResponse>> getVisibleNotifications(
             @PathVariable Long agencyId) {
-        List<AgencyVisibleNotificationResponse> responses = queryService.getVisibleNotifications(agencyId)
+        List<AgencyVisibleNotificationResponse> responses = queryService
+                .getVisibleNotifications(agencyId, null, Pageable.unpaged())
+                .getContent()
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -107,4 +110,3 @@ public class RecruitmentNotificationDistributionController {
                 .build();
     }
 }
-
