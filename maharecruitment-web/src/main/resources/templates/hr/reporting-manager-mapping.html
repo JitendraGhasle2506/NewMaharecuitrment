@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reporting Manager Mapping</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <!-- Include DataTables API for grid if needed -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+    <style>
+        .mapping-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 25px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .section-title {
+            color: #1976d2;
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .form-label {
+            font-weight: 500;
+            color: #424242;
+        }
+        .employee-list-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .employee-row {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+        .employee-row:last-child {
+            border-bottom: none;
+        }
+        .employee-row:hover {
+            background-color: #f5f5f5;
+        }
+        .emp-checkbox {
+            margin-right: 15px;
+            transform: scale(1.2);
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Reporting Manager Mapping', 'Human Resources', ~{::section})}">
+        <section>
+            <div class="page-main-content">
+                <ul class="breadcrumb breadcrumb-style" style="background: none; padding: 0; display: inline-flex;">
+                    <li class="breadcrumb-item"><i class="fa fa-home"></i> Home</li>
+                    <li class="breadcrumb-item">Human Resources</li>
+                    <li class="breadcrumb-item active">Reporting Manager Mapping</li>
+                </ul>
+
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        
+                        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                            <span th:text="${successMessage}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <span th:text="${errorMessage}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+
+                        <!-- Existing Mappings Card -->
+                        <div class="card add-emp-card mb-4" id="gridCard">
+                            <div class="header d-flex justify-content-between align-items-center">
+                                <h2>Reporting Manager Mapping</h2>
+                                <button type="button" class="btn btn-primary btn-sm" id="addMappingBtn">Add Mapping</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="mappingsTable" class="table table-bordered table-hover align-middle w-100">
+                                    <thead>
+                                        <tr>
+                                            <th>Employee</th>
+                                            <th>Project</th>
+                                            <th>Manager</th>
+                                            <th>HOD</th>
+                                            <th style="width: 100px;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                            </div>
+                        </div>
+
+                        <div class="card add-emp-card mb-4" id="formCard" style="display: none;">
+                            <div class="header d-flex justify-content-between align-items-center">
+                                <h2>Map Employees to Reporting Managers</h2>
+                            </div>
+                            <div class="card-body">
+                                <form th:action="@{/hr/saveReportingMapping}" method="post" id="mappingForm">
+                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                
+                                <!-- Step 1: HOD -->
+                                <div class="mb-4">
+                                    <label class="form-label" for="hodSelect">1. Select Head of Department (HOD) <span class="text-danger">*</span></label>
+                                    <select class="form-select w-50" id="hodSelect" name="hodUserId" required>
+                                        <option value="">-- Select HOD --</option>
+                                    </select>
+                                </div>
+
+                                <!-- Step 2: Manager Type -->
+                                <div class="mb-4">
+                                    <label class="form-label d-block">2. Select Manager Type <span class="text-danger">*</span></label>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeSTM" value="STM" required>
+                                        <label class="form-check-label" for="typeSTM">Senior Technical Manager (STM)</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typePM" value="PM" required>
+                                        <label class="form-check-label" for="typePM">Project Manager (PM)</label>
+                                    </div>
+                                </div>
+
+                                <!-- Step 3: Specific Manager -->
+                                <div class="mb-4 hidden" id="managerSection">
+                                    <label class="form-label" for="managerSelect" id="managerLabel">3. Select Manager <span class="text-danger">*</span></label>
+                                    <select class="form-select w-50" id="managerSelect" name="managerEmployeeId" required>
+                                        <option value="">-- Select Manager --</option>
+                                    </select>
+                                </div>
+
+                                <!-- Step 4: Project -->
+                                <div class="mb-4 hidden" id="projectSection">
+                                    <label class="form-label" for="projectSelect">4. Select Project <span class="text-danger">*</span></label>
+                                    <select class="form-select w-50" id="projectSelect" name="projectId" required>
+                                        <option value="">-- Select Project --</option>
+                                    </select>
+                                </div>
+
+                                <!-- Step 5: Internal Employees -->
+                                <div class="mb-4 hidden" id="employeeSection">
+                                    <label class="form-label">5. Select Internal Employees to Map <span class="text-danger">*</span></label>
+                                    
+                                    <div class="input-group mb-2 w-50">
+                                        <span class="input-group-text"><i class="fa fa-search"></i></span>
+                                        <input type="text" id="employeeSearch" class="form-control" placeholder="Search employees...">
+                                    </div>
+
+                                    <div class="employee-list-container bg-light" id="employeeListContainer">
+                                        <!-- Checkboxes will be rendered here via JS -->
+                                        <div class="text-center p-3 text-muted" id="empLoader">Loading employees...</div>
+                                    </div>
+                                    <div class="mt-2 text-primary" style="font-size: 13px;">
+                                        <i class="fa fa-info-circle"></i> Showing active Internal Employees
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-3 py-0" id="selectAllBtn">Select All</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-1 py-0" id="deselectAllBtn">Deselect All</button>
+                                    </div>
+                                </div>
+
+                                <div class="text-end border-top pt-3 mt-4 hidden" id="submitSection">
+                                    <button type="button" class="btn btn-secondary me-2" id="cancelBtn">Cancel</button>
+                                    <button type="submit" class="btn btn-primary" id="saveMappingBtn"><i class="fa fa-save me-1"></i> Save Mapping</button>
+                                </div>
+                            </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </th:block>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    
+    <script th:inline="javascript">
+        $(document).ready(function() {
+            var contextPath = /*[[@{/}]]*/ '';
+            if(!contextPath.endsWith('/')) contextPath += '/';
+            
+            var allEmployees = [];
+            var editingEmployeeId = null;
+
+            // View toggle logic
+            function showForm() {
+                $('#gridCard').hide();
+                $('#formCard').show();
+            }
+
+            function showGrid() {
+                $('#formCard').hide();
+                $('#gridCard').show();
+                editingEmployeeId = null;
+                $('#mappingForm')[0].reset();
+                $('#managerSection, #projectSection, #employeeSection, #submitSection').addClass('hidden');
+                $('#employeeListContainer').empty();
+                
+                // Also reset standard labels
+                $('#managerLabel').text('3. Select Manager *');
+            }
+
+            $('#addMappingBtn').click(function() {
+                showForm();
+            });
+
+            $('#cancelBtn').click(function() {
+                showGrid();
+            });
+
+            // Initialize DataTable
+            var mappingsTable = $('#mappingsTable').DataTable({
+                ajax: {
+                    url: contextPath + 'hr/api/mappings',
+                    dataSrc: ''
+                },
+                columns: [
+                    { data: 'employeeName' },
+                    { data: 'projectName' },
+                    { data: 'managerType', render: function(data, type, row) {
+                        return data + ' - ' + row.managerName;
+                    }},
+                    { data: 'hodName' },
+                    {
+                        data: null,
+                        orderable: false,
+                        render: function(data, type, row) {
+                            return '<button type="button" class="btn btn-sm btn-primary edit-mapping-btn" ' +
+                                'data-id="'+row.mappingId+'" data-emp="'+row.employeeId+'" ' + 
+                                'data-proj="'+row.projectId+'" data-mgr="'+row.managerEmployeeId+'" ' +
+                                'data-mgrtype="'+row.managerType+'" data-hod="'+row.hodUserId+'">' +
+                                '<i class="fa fa-edit"></i> Edit' +
+                                '</button>';
+                        }
+                    }
+                ]
+            });
+
+            // 1. Load HODs on init
+            $.ajax({
+                url: contextPath + 'hr/api/hods',
+                method: 'GET',
+                success: function(data) {
+                    var select = $('#hodSelect');
+                    data.forEach(function(hod) {
+                        select.append('<option value="'+hod.id+'">'+hod.name+'</option>');
+                    });
+                }
+            });
+
+            function loadManagersDeferred(type) {
+                return $.ajax({ url: contextPath + 'hr/api/managers?type=' + type });
+            }
+            
+            function loadProjectsDeferred() {
+                if ($('#projectSelect option').length > 1) {
+                    var simulatedResponse = [];
+                    $('#projectSelect option').each(function() {
+                        if($(this).val()) {
+                            simulatedResponse.push({id: $(this).val(), name: $(this).text()});
+                        }
+                    });
+                    return $.Deferred().resolve(simulatedResponse).promise();
+                }
+                return $.ajax({ url: contextPath + 'hr/api/projects' });
+            }
+
+            // 2. On clicking STM / PM Radio
+            $('.managerTypeOption').change(function() {
+                var type = $(this).val();
+                
+                $('#managerSection').removeClass('hidden');
+                $('#managerLabel').text('3. Select ' + type + ' Manager *');
+                
+                // Keep the selection if we're editing to avoid wiping it on auto-trigger
+                var currentSelection = $('#managerSelect').val();
+                $('#managerSelect').html('<option value="">-- Loading... --</option>');
+
+                // Hide lower sections
+                $('#projectSection').addClass('hidden');
+                $('#employeeSection').addClass('hidden');
+                $('#submitSection').addClass('hidden');
+                $('#projectSelect').val('');
+
+                $.ajax({
+                    url: contextPath + 'hr/api/managers?type=' + type,
+                    method: 'GET',
+                    success: function(data) {
+                        var select = $('#managerSelect');
+                        select.html('<option value="">-- Select Manager --</option>');
+                        if(data.length === 0) {
+                            select.append('<option disabled>No managers found</option>');
+                        } else {
+                            data.forEach(function(mgr) {
+                                select.append('<option value="'+mgr.id+'">'+mgr.name+'</option>');
+                            });
+                        }
+                        // restore if editing
+                        if(currentSelection) {
+                           select.val(currentSelection);
+                        }
+                    }
+                });
+            });
+
+            // 3. On selecting Manager -> Show Project
+            $('#managerSelect').change(function() {
+                if($(this).val()) {
+                    $('#projectSection').removeClass('hidden');
+                    
+                    // Hide lower
+                    $('#employeeSection').addClass('hidden');
+                    $('#submitSection').addClass('hidden');
+
+                    if($('#projectSelect option').length <= 1) { // If not loaded yet
+                        $('#projectSelect').html('<option value="">-- Loading... --</option>');
+                        $.ajax({
+                            url: contextPath + 'hr/api/projects',
+                            method: 'GET',
+                            success: function(data) {
+                                var select = $('#projectSelect');
+                                select.html('<option value="">-- Select Project --</option>');
+                                data.forEach(function(proj) {
+                                    select.append('<option value="'+proj.id+'">'+proj.name+'</option>');
+                                });
+                            }
+                        });
+                    }
+                } else {
+                    $('#projectSection').addClass('hidden');
+                    $('#employeeSection').addClass('hidden');
+                    $('#submitSection').addClass('hidden');
+                }
+            });
+
+            // 4. On selecting Project -> Show Employees
+            $('#projectSelect').change(function() {
+                if($(this).val()) {
+                    $('#employeeSection').removeClass('hidden');
+                    $('#submitSection').removeClass('hidden');
+                    
+                    var url = contextPath + 'hr/api/employees';
+                    if (editingEmployeeId) {
+                        url += '?includeEmployeeId=' + editingEmployeeId;
+                    }
+
+                    $.ajax({
+                        url: url,
+                        method: 'GET',
+                        success: function(data) {
+                            allEmployees = data;
+                            renderEmployees(allEmployees);
+                            
+                            if (editingEmployeeId) {
+                                $('#emp_' + editingEmployeeId).prop('checked', true);
+                            }
+                        }
+                    });
+                } else {
+                    $('#employeeSection').addClass('hidden');
+                    $('#submitSection').addClass('hidden');
+                }
+            });
+
+            // Handle Edit Click
+            $(document).on('click', '.edit-mapping-btn', function() {
+                var hod = $(this).data('hod');
+                var mgrType = $(this).data('mgrtype');
+                var mgr = $(this).data('mgr');
+                var proj = $(this).data('proj');
+                editingEmployeeId = $(this).data('emp');
+
+                showForm();
+
+                // Populate form dynamically
+                $('#hodSelect').val(hod);
+                $('input[name="managerType"][value="'+mgrType+'"]').prop('checked', true);
+                
+                // Show sections
+                $('#managerSection').removeClass('hidden');
+                $('#projectSection').removeClass('hidden');
+                $('#managerLabel').text('3. Select ' + mgrType + ' Manager *');
+                
+                $.when(loadManagersDeferred(mgrType), loadProjectsDeferred()).done(function(mgrRes, projRes) {
+                    var managers = mgrRes[0] || mgrRes;
+                    var projects = projRes ? (projRes[0] || projRes) : null;
+                    
+                    var selectMgr = $('#managerSelect');
+                    selectMgr.html('<option value="">-- Select Manager --</option>');
+                    managers.forEach(function(m) { selectMgr.append('<option value="'+m.id+'">'+m.name+'</option>'); });
+                    selectMgr.val(mgr);
+
+                    if (projects && Array.isArray(projects)) {
+                        var selectProj = $('#projectSelect');
+                        selectProj.html('<option value="">-- Select Project --</option>');
+                        projects.forEach(function(p) { selectProj.append('<option value="'+p.id+'">'+p.name+'</option>'); });
+                    }
+                    $('#projectSelect').val(proj);
+
+                    // Trigger project select change to load employees
+                    $('#projectSelect').trigger('change');
+                });
+            });
+
+            // Render Employee Checkboxes
+            function renderEmployees(list) {
+                var container = $('#employeeListContainer');
+                container.empty();
+                
+                if(list.length === 0) {
+                    container.append('<div class="p-3 text-muted text-center">No unassigned internal employees found.</div>');
+                    return;
+                }
+
+                list.forEach(function(emp) {
+                    var row = '<div class="employee-row">' +
+                              '<input class="form-check-input emp-checkbox" type="checkbox" name="employeeIds" value="'+emp.id+'" id="emp_'+emp.id+'">' +
+                              '<label class="form-check-label w-100" style="cursor:pointer;" for="emp_'+emp.id+'">'+emp.name+'</label>' +
+                              '</div>';
+                    container.append(row);
+                });
+            }
+
+            // Client side search filter
+            $('#employeeSearch').on('keyup', function() {
+                var term = $(this).val().toLowerCase();
+                if(!term) {
+                    renderEmployees(allEmployees);
+                    return;
+                }
+                var filtered = allEmployees.filter(function(e) {
+                    return e.name.toLowerCase().indexOf(term) > -1;
+                });
+                renderEmployees(filtered);
+            });
+
+            // Select / Deselect All
+            $('#selectAllBtn').click(function() {
+                $('.emp-checkbox').prop('checked', true);
+            });
+            $('#deselectAllBtn').click(function() {
+                $('.emp-checkbox').prop('checked', false);
+            });
+
+            // Form validation
+            $('#mappingForm').submit(function(e) {
+                if($('input[name="employeeIds"]:checked').length === 0) {
+                    alert('Please select at least one employee to map.');
+                    e.preventDefault();
+                }
+            });
+            
+            // Re-fetch mappings on successful save
+            // (Normally handled by page reload, which is current behavior)
+        });
+    </script>
+</body>
+
+</html>
