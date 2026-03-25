@@ -14,33 +14,40 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentPanelM
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacancyEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInternalLevelTwoScheduleEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentAssessmentFeedbackRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoScheduleRepository;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyInterviewAuthorityWorkflowService;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentPanelMemberInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
 
 @Service
 @Transactional(readOnly = true)
 public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
         implements InternalVacancyInterviewAuthorityWorkflowService {
 
+    private static final String RECOMMENDED_STATUS = "RECOMMENDED";
     private static final int MAX_PANEL_MEMBER_COUNT = 5;
 
     private final UserRepository userRepository;
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository;
+    private final RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository;
 
     public InternalVacancyInterviewAuthorityWorkflowServiceImpl(
             UserRepository userRepository,
             RecruitmentInterviewDetailRepository interviewDetailRepository,
-            RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository) {
+            RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository,
+            RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository) {
         this.userRepository = userRepository;
         this.interviewDetailRepository = interviewDetailRepository;
         this.assessmentFeedbackRepository = assessmentFeedbackRepository;
+        this.levelTwoScheduleRepository = levelTwoScheduleRepository;
     }
 
     @Override
@@ -209,6 +216,10 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
         candidate.setAssessmentSubmittedAt(java.time.LocalDateTime.now());
         candidate.setAssessmentSubmittedByUserId(actor.getId());
         interviewDetailRepository.save(candidate);
+
+        synchronizeLevelTwoReadyState(
+                candidate,
+                RECOMMENDED_STATUS.equals(normalizeUpper(assessment.getRecommendationStatus())));
     }
 
     private User resolveActor(String actorEmail) {
@@ -368,5 +379,40 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
 
     private String normalizeEmail(String value) {
         return StringUtils.hasText(value) ? value.trim().toLowerCase() : null;
+    }
+
+    private void synchronizeLevelTwoReadyState(
+            RecruitmentInterviewDetailEntity candidate,
+            boolean recommendedForLevelTwo) {
+        if (candidate == null || candidate.getRecruitmentInterviewDetailId() == null) {
+            return;
+        }
+
+        RecruitmentInternalLevelTwoScheduleEntity schedule = levelTwoScheduleRepository
+                .findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(
+                        candidate.getRecruitmentInterviewDetailId())
+                .orElse(null);
+
+        if (recommendedForLevelTwo) {
+            if (schedule == null) {
+                schedule = new RecruitmentInternalLevelTwoScheduleEntity();
+                schedule.setRecruitmentInterviewDetail(candidate);
+            }
+            if (schedule.getWorkflowStatus() == null
+                    || schedule.getWorkflowStatus() == InternalVacancyLevelTwoWorkflowStatus.READY_FOR_L2) {
+                schedule.setWorkflowStatus(InternalVacancyLevelTwoWorkflowStatus.READY_FOR_L2);
+                levelTwoScheduleRepository.save(schedule);
+            }
+            return;
+        }
+
+        if (schedule != null
+                && schedule.getScheduledAt() == null
+                && schedule.getInterviewDateTime() == null
+                && schedule.getPanelAssignedAt() == null
+                && !Boolean.TRUE.equals(schedule.getHrTimeChangeRequested())
+                && schedule.getWorkflowStatus() == InternalVacancyLevelTwoWorkflowStatus.READY_FOR_L2) {
+            levelTwoScheduleRepository.delete(schedule);
+        }
     }
 }

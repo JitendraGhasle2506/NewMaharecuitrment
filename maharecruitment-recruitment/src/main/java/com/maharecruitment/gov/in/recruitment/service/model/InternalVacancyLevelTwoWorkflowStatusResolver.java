@@ -8,6 +8,7 @@ public final class InternalVacancyLevelTwoWorkflowStatusResolver {
     }
 
     public static InternalVacancyLevelTwoWorkflowStatus resolveForAgency(
+            InternalVacancyLevelTwoWorkflowStatus storedStatus,
             boolean readyForL2,
             boolean scheduled,
             boolean panelAssigned,
@@ -17,6 +18,9 @@ public final class InternalVacancyLevelTwoWorkflowStatusResolver {
         InternalVacancyLevelTwoWorkflowStatus finalStatus = resolveFinalDecisionStatus(finalDecisionStatus);
         if (finalStatus != null) {
             return finalStatus;
+        }
+        if (storedStatus != null) {
+            return storedStatus;
         }
         if (rescheduleRequested) {
             return InternalVacancyLevelTwoWorkflowStatus.L2_RESCHEDULE_REQUESTED;
@@ -37,12 +41,14 @@ public final class InternalVacancyLevelTwoWorkflowStatusResolver {
     }
 
     public static InternalVacancyLevelTwoWorkflowStatus resolveForHr(
+            InternalVacancyLevelTwoWorkflowStatus storedStatus,
             boolean scheduled,
             boolean panelAssigned,
             boolean rescheduleRequested,
             int panelFeedbackSubmittedCount,
             String finalDecisionStatus) {
         return resolveForAgency(
+                storedStatus,
                 false,
                 scheduled,
                 panelAssigned,
@@ -52,6 +58,7 @@ public final class InternalVacancyLevelTwoWorkflowStatusResolver {
     }
 
     public static InternalVacancyLevelTwoWorkflowStatus resolveForPanel(
+            InternalVacancyLevelTwoWorkflowStatus storedStatus,
             boolean scheduled,
             boolean panelAssigned,
             boolean rescheduleRequested,
@@ -66,6 +73,9 @@ public final class InternalVacancyLevelTwoWorkflowStatusResolver {
         }
         if (myFeedbackSubmitted) {
             return InternalVacancyLevelTwoWorkflowStatus.L2_FEEDBACK_SUBMITTED;
+        }
+        if (storedStatus != null) {
+            return storedStatus;
         }
         if (panelAssigned) {
             return InternalVacancyLevelTwoWorkflowStatus.L2_PANEL_ASSIGNED;

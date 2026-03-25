@@ -179,9 +179,7 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
                 context.agencyId(),
                 context.userId(),
                 AgencyCandidateInterviewScheduleInput.builder()
-                        .interviewDateTime(
-                                interviewScheduleForm != null && interviewScheduleForm.getInterviewDate() != null
-                                        ? interviewScheduleForm.getInterviewDate().atStartOfDay() : null)
+                        .interviewDateTime(resolveInterviewDateTime(interviewScheduleForm))
                         .interviewTimeSlot(
                                 interviewScheduleForm != null ? interviewScheduleForm.getInterviewTimeSlot() : null)
                         .interviewLink(interviewScheduleForm != null ? interviewScheduleForm.getInterviewLink() : null)
@@ -276,5 +274,17 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     }
 
     private record AgencyUserContext(Long userId, Long agencyId) {
+    }
+
+    private java.time.LocalDateTime resolveInterviewDateTime(AgencyInterviewScheduleForm interviewScheduleForm) {
+        if (interviewScheduleForm == null) {
+            return null;
+        }
+        if (interviewScheduleForm.getInterviewDateTime() != null) {
+            return interviewScheduleForm.getInterviewDateTime();
+        }
+        return interviewScheduleForm.getInterviewDate() != null
+                ? interviewScheduleForm.getInterviewDate().atStartOfDay()
+                : null;
     }
 }

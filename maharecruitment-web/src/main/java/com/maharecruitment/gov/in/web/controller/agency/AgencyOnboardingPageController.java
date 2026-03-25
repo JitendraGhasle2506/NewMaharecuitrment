@@ -98,13 +98,23 @@ public class AgencyOnboardingPageController {
                     recruitmentInterviewDetailId,
                     actorEmail,
                     ex.getMessage());
-            AgencyPreOnboardingForm referenceForm = onboardingPageService.loadPreOnboardingForm(
-                    actorEmail,
-                    recruitmentInterviewDetailId);
-            mergeReadonlyFields(referenceForm, form);
-            model.addAttribute("errorMessage", ex.getMessage());
-            model.addAttribute("preOnboardingForm", form);
-            return "agency/pre-onboarding-form";
+            try {
+                AgencyPreOnboardingForm referenceForm = onboardingPageService.loadPreOnboardingForm(
+                        actorEmail,
+                        recruitmentInterviewDetailId);
+                mergeReadonlyFields(referenceForm, form);
+                model.addAttribute("errorMessage", ex.getMessage());
+                model.addAttribute("preOnboardingForm", form);
+                return "agency/pre-onboarding-form";
+            } catch (RecruitmentNotificationException lockedEx) {
+                log.warn(
+                        "Unable to reload pre-onboarding form after save failure. candidateId={}, actorEmail={}, reason={}",
+                        recruitmentInterviewDetailId,
+                        actorEmail,
+                        lockedEx.getMessage());
+                redirectAttributes.addFlashAttribute("errorMessage", lockedEx.getMessage());
+                return "redirect:/agency/selected-candidates";
+            }
         }
     }
 

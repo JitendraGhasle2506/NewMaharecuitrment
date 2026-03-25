@@ -35,6 +35,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevel
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelMemberView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelUserOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatusResolver;
 
 @Service
@@ -110,6 +111,14 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
             String actorEmail,
             List<Long> panelUserIds) {
         RecruitmentInternalLevelTwoScheduleEntity schedule = loadScheduleForUpdate(recruitmentInterviewDetailId);
+        if (!loadPanelFeedbacks(recruitmentInterviewDetailId).isEmpty()) {
+            throw new RecruitmentNotificationException(
+                    "Round L2 panel cannot be edited after panel feedback is submitted.");
+        }
+        if (schedule.getInterviewDateTime() == null) {
+            throw new RecruitmentNotificationException(
+                    "Round L2 interview is not scheduled yet. Panel cannot be assigned.");
+        }
         User actor = resolveUser(actorEmail);
         List<User> resolvedPanelUsers = validateAndResolvePanelUsers(schedule, panelUserIds);
 
@@ -120,6 +129,7 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
         schedule.replacePanelMembers(members);
         schedule.setPanelAssignedByUserId(actor.getId());
         schedule.setPanelAssignedAt(LocalDateTime.now());
+        schedule.setWorkflowStatus(InternalVacancyLevelTwoWorkflowStatus.L2_PANEL_ASSIGNED);
         levelTwoScheduleRepository.save(schedule);
     }
 
@@ -130,6 +140,10 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
             String actorEmail,
             String changeReason) {
         RecruitmentInternalLevelTwoScheduleEntity schedule = loadScheduleForUpdate(recruitmentInterviewDetailId);
+        if (schedule.getInterviewDateTime() == null) {
+            throw new RecruitmentNotificationException(
+                    "Round L2 interview is not scheduled yet. Time change cannot be requested.");
+        }
         User actor = resolveUser(actorEmail);
 
         String normalizedReason = normalizeText(changeReason);
@@ -145,6 +159,7 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
         schedule.setHrTimeChangeReason(normalizedReason);
         schedule.setHrTimeChangeRequestedAt(LocalDateTime.now());
         schedule.setHrTimeChangeRequestedByUserId(actor.getId());
+        schedule.setWorkflowStatus(InternalVacancyLevelTwoWorkflowStatus.L2_RESCHEDULE_REQUESTED);
         levelTwoScheduleRepository.save(schedule);
     }
 
@@ -169,9 +184,11 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
         if (finalDecision == DepartmentCandidateFinalDecision.SELECT) {
             candidate.setFinalDecisionStatus(FINAL_DECISION_SELECTED);
             candidate.setCandidateStatus(RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY);
+            schedule.setWorkflowStatus(InternalVacancyLevelTwoWorkflowStatus.L2_SELECTED);
         } else {
             candidate.setFinalDecisionStatus(FINAL_DECISION_REJECTED);
             candidate.setCandidateStatus(RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT);
+            schedule.setWorkflowStatus(InternalVacancyLevelTwoWorkflowStatus.L2_REJECTED);
         }
         candidate.setFinalDecisionAt(LocalDateTime.now());
         candidate.setFinalDecisionByUserId(actor.getId());
@@ -209,6 +226,7 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
                 .timeChangeRequestedAt(schedule.getHrTimeChangeRequestedAt())
                 .finalDecisionStatus(normalizeUpper(candidate.getFinalDecisionStatus()))
                 .workflowStatus(InternalVacancyLevelTwoWorkflowStatusResolver.resolveForHr(
+                        schedule.getWorkflowStatus(),
                         true,
                         schedule.getPanelAssignedAt() != null,
                         Boolean.TRUE.equals(schedule.getHrTimeChangeRequested()),
@@ -267,6 +285,7 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
                 .panelFeedbackSubmittedCount(feedbackViews.size())
                 .panelFeedbacks(feedbackViews)
                 .workflowStatus(InternalVacancyLevelTwoWorkflowStatusResolver.resolveForHr(
+                        schedule.getWorkflowStatus(),
                         true,
                         schedule.getPanelAssignedAt() != null,
                         Boolean.TRUE.equals(schedule.getHrTimeChangeRequested()),

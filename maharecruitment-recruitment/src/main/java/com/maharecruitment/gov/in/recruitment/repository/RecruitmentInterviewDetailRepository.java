@@ -43,6 +43,9 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "where candidate.agency.agencyId = :agencyId "
             + "and candidate.active = true "
             + "and candidate.finalDecisionStatus = 'SELECTED' "
+            + "and not exists (select preOnboarding.preOnboardingId "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null) "
             + "order by candidate.finalDecisionAt desc, candidate.createdDateTime desc")
     List<RecruitmentInterviewDetailEntity> findSelectedCandidatesByAgency(@Param("agencyId") Long agencyId);
 
@@ -56,6 +59,9 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
             + "and candidate.active = true "
             + "and candidate.finalDecisionStatus = 'SELECTED' "
+            + "and not exists (select preOnboarding.preOnboardingId "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null) "
             + "order by candidate.finalDecisionAt desc, candidate.createdDateTime desc")
     List<RecruitmentInterviewDetailEntity> findSelectedCandidatesByAgencyAndNotification(
             @Param("agencyId") Long agencyId,
@@ -72,6 +78,9 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "where c.agency.agencyId = :agencyId "
             + "and c.active = true "
             + "and c.finalDecisionStatus = 'SELECTED' "
+            + "and not exists (select preOnboarding.preOnboardingId "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = c and preOnboarding.onboardedAt is not null) "
             + "group by n.recruitmentNotificationId, n.requestId, p.projectName "
             + "order by max(c.finalDecisionAt) desc")
     List<AgencySelectedCandidateProjectSummaryProjection> findSelectedCandidateProjectSummariesByAgency(
