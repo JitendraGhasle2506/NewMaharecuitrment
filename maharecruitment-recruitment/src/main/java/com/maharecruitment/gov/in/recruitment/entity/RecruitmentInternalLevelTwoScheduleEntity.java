@@ -6,9 +6,13 @@ import java.util.List;
 
 import org.springframework.util.StringUtils;
 
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -55,16 +59,20 @@ public class RecruitmentInternalLevelTwoScheduleEntity extends RecruitmentAudita
     @JoinColumn(name = "recruitment_interview_detail_id", nullable = false, unique = true)
     private RecruitmentInterviewDetailEntity recruitmentInterviewDetail;
 
-    @Column(name = "scheduled_by_user_id", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "l2_workflow_status", nullable = false, length = 40)
+    private InternalVacancyLevelTwoWorkflowStatus workflowStatus;
+
+    @Column(name = "scheduled_by_user_id")
     private Long scheduledByUserId;
 
-    @Column(name = "scheduled_at", nullable = false)
+    @Column(name = "scheduled_at")
     private LocalDateTime scheduledAt;
 
-    @Column(name = "interview_date_time", nullable = false)
+    @Column(name = "interview_date_time")
     private LocalDateTime interviewDateTime;
 
-    @Column(name = "interview_time_slot", nullable = false, length = 100)
+    @Column(name = "interview_time_slot", length = 100)
     private String interviewTimeSlot;
 
     @Column(name = "meeting_link", length = 700)

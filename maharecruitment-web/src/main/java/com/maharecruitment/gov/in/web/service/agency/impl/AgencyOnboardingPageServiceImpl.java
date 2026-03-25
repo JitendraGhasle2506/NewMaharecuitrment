@@ -94,6 +94,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         AgencyCandidatePreOnboardingEntity existing = preOnboardingRepository
                 .findByInterviewDetailIdAndAgencyIdForForm(recruitmentInterviewDetailId, context.agencyId())
                 .orElse(null);
+        assertPreOnboardingEditable(existing);
 
         AgencyPreOnboardingForm form = new AgencyPreOnboardingForm();
         DepartmentInfo departmentInfo = resolveDepartmentInfo(
@@ -154,6 +155,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         AgencyCandidatePreOnboardingEntity existing = preOnboardingRepository
                 .findByInterviewDetailIdAndAgencyIdForForm(recruitmentInterviewDetailId, context.agencyId())
                 .orElse(null);
+        assertPreOnboardingEditable(existing);
 
         List<NormalizedEmployment> employmentRows = normalizeEmploymentRows(form.getPreviousEmployments());
         BigDecimal minExperienceYears = resolveMinExperienceYears(
@@ -393,6 +395,13 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         return interviewDetailRepository.findSelectedCandidateByIdAndAgency(recruitmentInterviewDetailId, agencyId)
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Selected candidate not found or not available for pre-onboarding."));
+    }
+
+    private void assertPreOnboardingEditable(AgencyCandidatePreOnboardingEntity preOnboarding) {
+        if (preOnboarding != null && preOnboarding.getOnboardedAt() != null) {
+            throw new RecruitmentNotificationException(
+                    "Candidate is already onboarded. Pre-onboarding form cannot be edited.");
+        }
     }
 
     private List<NormalizedEmployment> normalizeEmploymentRows(

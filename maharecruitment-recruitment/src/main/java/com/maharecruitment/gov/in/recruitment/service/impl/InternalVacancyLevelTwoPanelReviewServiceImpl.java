@@ -31,6 +31,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevel
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelFeedbackView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelMemberView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatusResolver;
 
 @Service
@@ -139,6 +140,7 @@ public class InternalVacancyLevelTwoPanelReviewServiceImpl implements InternalVa
         feedback.setAssessmentRemarks(normalizeText(submissionInput.getAssessmentRemarks()));
         feedback.setFinalRemarks(normalizeText(submissionInput.getFinalRemarks()));
         feedback.setSubmittedAt(LocalDateTime.now());
+        schedule.setWorkflowStatus(InternalVacancyLevelTwoWorkflowStatus.L2_UNDER_HR_REVIEW);
         levelTwoFeedbackRepository.save(feedback);
     }
 
@@ -188,6 +190,7 @@ public class InternalVacancyLevelTwoPanelReviewServiceImpl implements InternalVa
                 .feedbackSubmitted(feedback != null)
                 .feedbackSubmittedAt(feedback != null ? feedback.getSubmittedAt() : null)
                 .workflowStatus(InternalVacancyLevelTwoWorkflowStatusResolver.resolveForPanel(
+                        schedule.getWorkflowStatus(),
                         true,
                         schedule.getPanelAssignedAt() != null,
                         Boolean.TRUE.equals(schedule.getHrTimeChangeRequested()),
@@ -236,6 +239,7 @@ public class InternalVacancyLevelTwoPanelReviewServiceImpl implements InternalVa
                                 .toList())
                 .myFeedback(toPanelFeedbackView(myFeedback))
                 .workflowStatus(InternalVacancyLevelTwoWorkflowStatusResolver.resolveForPanel(
+                        schedule.getWorkflowStatus(),
                         true,
                         schedule.getPanelAssignedAt() != null,
                         Boolean.TRUE.equals(schedule.getHrTimeChangeRequested()),

@@ -39,39 +39,75 @@
             border-color: #b8e6f2;
         }
 
+        .status-feedback {
+            background: #f1ecff;
+            color: #5d2ea8;
+            border-color: #d8caf6;
+        }
+
         .remarks-note {
             margin-top: 4px;
             color: #5d6e8b;
             font-size: 12px;
         }
 
-        .interview-link-stack {
+        .interview-cell {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
             gap: 6px;
+            min-width: 210px;
+        }
+
+        .interview-schedule {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 8px;
+            line-height: 1.25;
+        }
+
+        .interview-date-text {
+            color: #233b5f;
+            font-weight: 600;
+        }
+
+        .interview-slot {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid #d7e4f7;
+            background: #f4f8ff;
+            color: #4a607f;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
+        .interview-link-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
         }
 
         .interview-link-actions {
             display: inline-flex;
+            flex-wrap: wrap;
             align-items: center;
-            gap: 8px;
-            padding: 6px;
-            border: 1px solid #d7e4f7;
-            border-radius: 999px;
-            background: linear-gradient(180deg, #f9fbff 0%, #eef5ff 100%);
+            gap: 6px;
         }
 
         .interview-join-link {
             display: inline-flex;
             align-items: center;
-            padding: 6px 12px;
+            padding: 4px 10px;
             border-radius: 999px;
             border: 1px solid #c9d9f5;
             background: #ffffff;
             color: #16407b;
-            font-size: 12px;
             font-weight: 700;
+            line-height: 1.1;
             text-decoration: none;
             transition: background-color .2s ease, border-color .2s ease, color .2s ease;
         }
@@ -86,14 +122,13 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 6px 12px;
+            padding: 4px 10px;
             border: 1px solid #d1dcf0;
             border-radius: 999px;
             background: #f4f7fc;
             color: #415472;
-            font-size: 12px;
             font-weight: 700;
-            line-height: 1;
+            line-height: 1.1;
             transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease;
         }
 
@@ -111,19 +146,15 @@
         }
 
         .copy-link-status {
-            min-height: 16px;
+            display: none;
             color: #607493;
             font-size: 11px;
             font-weight: 600;
             letter-spacing: .2px;
-            opacity: 0;
-            transform: translateY(-2px);
-            transition: opacity .2s ease, transform .2s ease, color .2s ease;
         }
 
         .copy-link-status.is-visible {
-            opacity: 1;
-            transform: translateY(0);
+            display: block;
         }
 
         .copy-link-status.is-success {
@@ -341,13 +372,15 @@
                                     <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
                                     <td>
                                         <span class="status-chip"
-                                            th:classappend="${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT'} ? ' status-shortlisted' :
+                                            th:classappend="${candidate.assessmentSubmitted == true} ? ' status-feedback' :
+                                                (${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT'} ? ' status-shortlisted' :
                                                 (${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT'} ? ' status-rejected' :
-                                                (${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' status-scheduled' : ' status-submitted'))"
-                                            th:text="${candidate.candidateStatus == null ? '-' :
+                                                (${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' status-scheduled' : ' status-submitted')))"
+                                            th:text="${candidate.assessmentSubmitted == true ? 'FEEDBACK SUBMITTED' :
+                                                (candidate.candidateStatus == null ? '-' :
                                                 (candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT' ? 'SHORTLISTED BY INTERVIEW AUTHORITY' :
                                                 (candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT' ? 'REJECTED BY INTERVIEW AUTHORITY' :
-                                                #strings.replace(candidate.candidateStatus.name(), '_', ' ')))}">
+                                                #strings.replace(candidate.candidateStatus.name(), '_', ' '))))}">
                                             SUBMITTED BY AGENCY
                                         </span>
                                         <div th:if="${candidate.departmentShortlistRemarks != null}" class="remarks-note">
@@ -359,14 +392,17 @@
                                         -
                                     </td>
                                     <td>
-                                        <div th:if="${candidate.interviewDateTime != null}">
-                                            <div th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
-                                                01-Apr-2026 10:30
+                                        <div th:if="${candidate.interviewDateTime != null}" class="interview-cell">
+                                            <div class="interview-schedule">
+                                                <span class="interview-date-text"
+                                                    th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
+                                                    01-Apr-2026 10:30
+                                                </span>
+                                                <span class="interview-slot"
+                                                    th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : '-'}">
+                                                    Slot
+                                                </span>
                                             </div>
-                                            <small class="text-muted"
-                                                th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : '-'}">
-                                                Slot
-                                            </small>
                                             <div
                                                 th:if="${candidate.assessmentSubmitted != true and candidate.interviewLink != null and !#strings.isEmpty(candidate.interviewLink)}"
                                                 class="interview-link-stack">
@@ -374,14 +410,14 @@
                                                     <a class="interview-join-link"
                                                         th:href="${candidate.interviewLink}"
                                                         target="_blank">
-                                                        Join Link
+                                                        Join
                                                     </a>
                                                     <button type="button"
                                                         class="copy-link-btn"
-                                                        data-default-label="Copy Link"
+                                                        data-default-label="Copy"
                                                         th:attr="data-copy-text=${candidate.interviewLink}"
                                                         onclick="copyInterviewLink(this)">
-                                                        Copy Link
+                                                        Copy
                                                     </button>
                                                 </div>
                                                 <span class="copy-link-status" aria-live="polite">Link copied to clipboard</span>

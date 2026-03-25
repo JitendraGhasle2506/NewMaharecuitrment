@@ -31,6 +31,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.AgencyInternalAssess
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyInternalAssessmentDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyInternalAssessmentProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatusResolver;
 
 @Service
@@ -203,6 +204,7 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
         schedule.setHrTimeChangeReason(null);
         schedule.setHrTimeChangeRequestedAt(null);
         schedule.setHrTimeChangeRequestedByUserId(null);
+        schedule.setWorkflowStatus(resolveScheduledWorkflowStatus(schedule));
         levelTwoScheduleRepository.save(schedule);
     }
 
@@ -238,11 +240,12 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
 
     private AgencyInternalAssessmentCandidateView toCandidateView(
             RecruitmentInterviewDetailEntity candidate,
-            RecruitmentAssessmentFeedbackEntity assessment,
-            RecruitmentInternalLevelTwoScheduleEntity schedule,
-            int levelTwoFeedbackSubmittedCount,
-            Map<Long, String> interviewerNameMap) {
+        RecruitmentAssessmentFeedbackEntity assessment,
+        RecruitmentInternalLevelTwoScheduleEntity schedule,
+        int levelTwoFeedbackSubmittedCount,
+        Map<Long, String> interviewerNameMap) {
         boolean schedulingAllowed = isLevelTwoSchedulingAllowed(candidate, assessment);
+        boolean levelTwoScheduled = isLevelTwoInterviewScheduled(schedule);
         boolean panelAssigned = schedule != null && schedule.getPanelAssignedAt() != null;
         boolean rescheduleRequested = schedule != null && Boolean.TRUE.equals(schedule.getHrTimeChangeRequested());
 
@@ -273,7 +276,7 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 .levelTwoInterviewTimeSlot(schedule != null ? schedule.getInterviewTimeSlot() : null)
                 .levelTwoMeetingLink(schedule != null ? schedule.getMeetingLink() : null)
                 .levelTwoScheduledAt(schedule != null ? schedule.getScheduledAt() : null)
-                .levelTwoScheduled(schedule != null)
+                .levelTwoScheduled(levelTwoScheduled)
                 .levelTwoSchedulingAllowed(schedulingAllowed)
                 .levelTwoPanelAssigned(panelAssigned)
                 .levelTwoTimeChangeRequested(rescheduleRequested)
@@ -281,8 +284,9 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 .levelTwoTimeChangeRequestedAt(schedule != null ? schedule.getHrTimeChangeRequestedAt() : null)
                 .finalDecisionStatus(normalizeUpper(candidate.getFinalDecisionStatus()))
                 .workflowStatus(InternalVacancyLevelTwoWorkflowStatusResolver.resolveForAgency(
+                        schedule != null ? schedule.getWorkflowStatus() : null,
                         schedulingAllowed,
-                        schedule != null,
+                        levelTwoScheduled,
                         panelAssigned,
                         rescheduleRequested,
                         levelTwoFeedbackSubmittedCount,
@@ -293,10 +297,11 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
     private AgencyInternalAssessmentDetailView toDetailView(
             RecruitmentInterviewDetailEntity candidate,
             RecruitmentAssessmentFeedbackEntity assessment,
-            RecruitmentInternalLevelTwoScheduleEntity levelTwoSchedule,
-            int levelTwoFeedbackSubmittedCount,
-            Map<Long, String> interviewerNameMap) {
+        RecruitmentInternalLevelTwoScheduleEntity levelTwoSchedule,
+        int levelTwoFeedbackSubmittedCount,
+        Map<Long, String> interviewerNameMap) {
         boolean schedulingAllowed = isLevelTwoSchedulingAllowed(candidate, assessment);
+        boolean levelTwoScheduled = isLevelTwoInterviewScheduled(levelTwoSchedule);
         boolean panelAssigned = levelTwoSchedule != null && levelTwoSchedule.getPanelAssignedAt() != null;
         boolean rescheduleRequested = levelTwoSchedule != null
                 && Boolean.TRUE.equals(levelTwoSchedule.getHrTimeChangeRequested());
@@ -329,7 +334,7 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 .levelTwoMeetingLink(levelTwoSchedule != null ? levelTwoSchedule.getMeetingLink() : null)
                 .levelTwoRemarks(levelTwoSchedule != null ? levelTwoSchedule.getRemarks() : null)
                 .levelTwoScheduledAt(levelTwoSchedule != null ? levelTwoSchedule.getScheduledAt() : null)
-                .levelTwoScheduled(levelTwoSchedule != null)
+                .levelTwoScheduled(levelTwoScheduled)
                 .levelTwoSchedulingAllowed(schedulingAllowed)
                 .levelTwoPanelAssigned(panelAssigned)
                 .levelTwoTimeChangeRequested(rescheduleRequested)
@@ -338,8 +343,9 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                         levelTwoSchedule != null ? levelTwoSchedule.getHrTimeChangeRequestedAt() : null)
                 .finalDecisionStatus(normalizeUpper(candidate.getFinalDecisionStatus()))
                 .workflowStatus(InternalVacancyLevelTwoWorkflowStatusResolver.resolveForAgency(
+                        levelTwoSchedule != null ? levelTwoSchedule.getWorkflowStatus() : null,
                         schedulingAllowed,
-                        levelTwoSchedule != null,
+                        levelTwoScheduled,
                         panelAssigned,
                         rescheduleRequested,
                         levelTwoFeedbackSubmittedCount,
@@ -399,6 +405,20 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
             return 0;
         }
         return levelTwoFeedbackRepository.findByCandidateId(recruitmentInterviewDetailId).size();
+    }
+
+    private boolean isLevelTwoInterviewScheduled(RecruitmentInternalLevelTwoScheduleEntity schedule) {
+        return schedule != null && schedule.getInterviewDateTime() != null;
+    }
+
+    private InternalVacancyLevelTwoWorkflowStatus resolveScheduledWorkflowStatus(
+            RecruitmentInternalLevelTwoScheduleEntity schedule) {
+        if (schedule == null) {
+            return null;
+        }
+        return schedule.getPanelAssignedAt() != null
+                ? InternalVacancyLevelTwoWorkflowStatus.L2_PANEL_ASSIGNED
+                : InternalVacancyLevelTwoWorkflowStatus.L2_SCHEDULED;
     }
 
     private Map<Long, String> loadInterviewerNameMap(Collection<RecruitmentAssessmentFeedbackEntity> assessments) {
