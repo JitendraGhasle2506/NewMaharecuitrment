@@ -28,6 +28,7 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEnti
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyOpeningRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationRankReleaseService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
@@ -44,6 +45,7 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
     private final ProjectMstRepository projectRepository;
     private final ManpowerDesignationMasterRepository designationRepository;
     private final InternalVacancyOpeningRepository internalVacancyOpeningRepository;
+    private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final RecruitmentNotificationRankReleaseService rankReleaseService;
 
     public RecruitmentNotificationServiceImpl(
@@ -51,11 +53,13 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
             ProjectMstRepository projectRepository,
             ManpowerDesignationMasterRepository designationRepository,
             InternalVacancyOpeningRepository internalVacancyOpeningRepository,
+            RecruitmentInterviewDetailRepository interviewDetailRepository,
             RecruitmentNotificationRankReleaseService rankReleaseService) {
         this.notificationRepository = notificationRepository;
         this.projectRepository = projectRepository;
         this.designationRepository = designationRepository;
         this.internalVacancyOpeningRepository = internalVacancyOpeningRepository;
+        this.interviewDetailRepository = interviewDetailRepository;
         this.rankReleaseService = rankReleaseService;
     }
 
@@ -107,14 +111,15 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
         InternalVacancyOpeningEntity opening = resolveOpenInternalVacancyOpening(internalVacancyOpeningId);
         RecruitmentNotificationEntity existingNotification = findExistingInternalNotification(opening);
         if (existingNotification != null) {
-            linkInternalVacancyIfMissing(existingNotification, opening);
+            syncExistingInternalNotification(existingNotification, opening);
+            RecruitmentNotificationEntity savedNotification = notificationRepository.saveAndFlush(existingNotification);
             int releasedRankCount = rankReleaseService
-                    .releaseEligibleRanksForNotification(existingNotification.getRecruitmentNotificationId());
+                    .releaseEligibleRanksForNotification(savedNotification.getRecruitmentNotificationId());
             log.info(
-                    "Recruitment notification already exists for internal vacancy opening. requestId={}, openingId={}, notificationId={}, releasedRankCount={}",
+                    "Recruitment notification synchronized for internal vacancy opening. requestId={}, openingId={}, notificationId={}, releasedRankCount={}",
                     opening.getRequestId(),
                     opening.getInternalVacancyOpeningId(),
-                    existingNotification.getRecruitmentNotificationId(),
+                    savedNotification.getRecruitmentNotificationId(),
                     releasedRankCount);
             return;
         }
@@ -139,6 +144,26 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
                 savedNotification.getRecruitmentNotificationId(),
                 savedNotification.getDesignationVacancies().size(),
                 releasedRankCount);
+    }
+
+    @Override
+    @Transactional
+    public void closeFromInternalVacancyOpening(Long internalVacancyOpeningId) {
+        if (internalVacancyOpeningId == null || internalVacancyOpeningId < 1) {
+            throw new RecruitmentNotificationException("Valid internal vacancy opening id is required.");
+        }
+
+        RecruitmentNotificationEntity notification = notificationRepository
+                .findByInternalVacancyOpeningInternalVacancyOpeningId(internalVacancyOpeningId)
+                .orElse(null);
+        if (notification == null) {
+            return;
+        }
+
+        if (notification.getStatus() != RecruitmentNotificationStatus.CLOSED) {
+            notification.setStatus(RecruitmentNotificationStatus.CLOSED);
+            notificationRepository.save(notification);
+        }
     }
 
     private void validateCommand(AuditorApprovedNotificationCommand command) {
@@ -214,14 +239,22 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
         return byRequestId;
     }
 
-    private void linkInternalVacancyIfMissing(
+    private void syncExistingInternalNotification(
             RecruitmentNotificationEntity notification,
             InternalVacancyOpeningEntity opening) {
-        if (notification.getInternalVacancyOpening() != null) {
-            return;
+        if (notification.getInternalVacancyOpening() != null
+                && !opening.getInternalVacancyOpeningId()
+                        .equals(notification.getInternalVacancyOpening().getInternalVacancyOpeningId())) {
+            throw new RecruitmentNotificationException(
+                    "Request id is already linked to a different internal vacancy opening.");
         }
+
         notification.setInternalVacancyOpening(opening);
-        notificationRepository.save(notification);
+        notification.setProjectMst(opening.getProjectMst());
+        syncInternalVacancyDesignationVacancies(notification, opening);
+        if (notification.getStatus() == null || notification.getStatus() == RecruitmentNotificationStatus.CLOSED) {
+            notification.setStatus(RecruitmentNotificationStatus.PENDING_ALLOCATION);
+        }
     }
 
     private RecruitmentNotificationEntity saveInternalNotification(
@@ -236,6 +269,52 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
             }
             throw ex;
         }
+    }
+
+    private void syncInternalVacancyDesignationVacancies(
+            RecruitmentNotificationEntity notification,
+            InternalVacancyOpeningEntity opening) {
+        List<RecruitmentDesignationVacancyEntity> updatedVacancies = toInternalVacancyEntities(opening.getRequirements());
+        if (hasSameVacancySnapshot(notification.getDesignationVacancies(), updatedVacancies)) {
+            return;
+        }
+
+        if (notification.getRecruitmentNotificationId() != null
+                && interviewDetailRepository.existsByRecruitmentNotificationRecruitmentNotificationIdAndActiveTrue(
+                        notification.getRecruitmentNotificationId())) {
+            throw new RecruitmentNotificationException(
+                    "Submitted candidate data already exists for this internal vacancy opening. Vacancy rows cannot be changed after submission.");
+        }
+
+        notification.replaceDesignationVacancies(updatedVacancies);
+    }
+
+    private boolean hasSameVacancySnapshot(
+            List<RecruitmentDesignationVacancyEntity> currentVacancies,
+            List<RecruitmentDesignationVacancyEntity> updatedVacancies) {
+        return toVacancySnapshot(currentVacancies).equals(toVacancySnapshot(updatedVacancies));
+    }
+
+    private Map<String, Long> toVacancySnapshot(List<RecruitmentDesignationVacancyEntity> vacancies) {
+        Map<String, Long> snapshot = new LinkedHashMap<>();
+        if (vacancies == null || vacancies.isEmpty()) {
+            return snapshot;
+        }
+
+        for (RecruitmentDesignationVacancyEntity vacancy : vacancies) {
+            if (vacancy == null
+                    || vacancy.getDesignationMst() == null
+                    || vacancy.getDesignationMst().getDesignationId() == null
+                    || !StringUtils.hasText(vacancy.getLevelCode())) {
+                continue;
+            }
+
+            snapshot.put(
+                    vacancy.getDesignationMst().getDesignationId()
+                            + "|" + vacancy.getLevelCode().trim().toUpperCase(Locale.ROOT),
+                    vacancy.getNumberOfVacancy());
+        }
+        return snapshot;
     }
 
     private List<VacancyAggregate> aggregateVacancies(List<DesignationVacancyInput> vacancies) {

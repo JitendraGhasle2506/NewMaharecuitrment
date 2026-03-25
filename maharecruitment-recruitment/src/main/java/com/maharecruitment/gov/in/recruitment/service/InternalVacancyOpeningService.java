@@ -2,10 +2,15 @@ package com.maharecruitment.gov.in.recruitment.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationMasterResponse;
 import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyOpeningForm;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityRoleOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalProjectOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningLevelOptionView;
@@ -16,7 +21,14 @@ public interface InternalVacancyOpeningService {
 
     InternalVacancyOpeningResult saveOpening(InternalVacancyOpeningCommand command);
 
-    List<InternalVacancyOpeningSummaryView> getAllOpenings();
+    InternalVacancyOpeningResult changeOpeningStatus(
+            Long internalVacancyOpeningId,
+            String actorEmail,
+            InternalVacancyOpeningStatus targetStatus);
+
+    Page<InternalVacancyOpeningSummaryView> getOpeningPage(String searchText, Pageable pageable);
+
+    InternalVacancyOpeningListMetricsView getOpeningListMetrics(String searchText);
 
     InternalVacancyOpeningForm getOpeningForEdit(Long internalVacancyOpeningId);
 

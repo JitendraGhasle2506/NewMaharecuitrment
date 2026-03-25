@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.recruitment.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,6 +15,12 @@ public interface RecruitmentAssessmentFeedbackRepository extends JpaRepository<R
 
     Optional<RecruitmentAssessmentFeedbackEntity> findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(
             Long recruitmentInterviewDetailId);
+
+    @Query("select feedback "
+            + "from RecruitmentAssessmentFeedbackEntity feedback "
+            + "where feedback.recruitmentInterviewDetail.recruitmentInterviewDetailId in :recruitmentInterviewDetailIds")
+    List<RecruitmentAssessmentFeedbackEntity> findByRecruitmentInterviewDetailIds(
+            @Param("recruitmentInterviewDetailIds") List<Long> recruitmentInterviewDetailIds);
 
     @Query("select feedback "
             + "from RecruitmentAssessmentFeedbackEntity feedback "

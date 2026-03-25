@@ -81,11 +81,16 @@ public class RecruitmentAgencyNotificationActionServiceImpl implements Recruitme
             throw new RecruitmentNotificationException("Agency id is required.");
         }
 
-        return trackingRepository
+        AgencyNotificationTrackingEntity tracking = trackingRepository
                 .findByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId(
                         recruitmentNotificationId,
                         agencyId)
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Notification is not released for agency id: " + agencyId));
+        if (tracking.getRecruitmentNotification() == null
+                || tracking.getRecruitmentNotification().getStatus() == RecruitmentNotificationStatus.CLOSED) {
+            throw new RecruitmentNotificationException("Notification is no longer active for agency id: " + agencyId);
+        }
+        return tracking;
     }
 }

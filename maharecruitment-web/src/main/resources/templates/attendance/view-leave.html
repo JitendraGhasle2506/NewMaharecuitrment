@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Leave History</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .history-card {
+            max-width: 1000px;
+            margin: 20px auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: none;
+        }
+        .history-card .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+        }
+        .history-card .card-header h4 {
+            margin: 0;
+            color: #333;
+            font-weight: 500;
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Leave History', 'Employee Corner', ~{::section})}">
+        <section>
+            <div class="container-fluid">
+                <div class="card history-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fa fa-history me-2"></i>My Leave Applications</h4>
+                        <a th:href="@{/employee/attendance-module}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fa fa-arrow-left"></i> Back
+                        </a>
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Sl.no.</th>
+                                        <th>Leave Category</th>
+                                        <th>Leave Type</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Description</th>
+                                        <th class="pe-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${leaveHistory == null || leaveHistory.isEmpty()}">
+                                        <td colspan="7" class="text-center text-muted p-5">
+                                            <i class="fa fa-folder-open fa-2x mb-3 d-block opacity-25"></i>
+                                            No leave applications found.
+                                        </td>
+                                    </tr>
+                                    <tr th:each="leave, iterStat : ${leaveHistory}">
+                                        <td class="ps-4" th:text="${iterStat.count}"></td>
+                                        <td th:text="${leave.leaveCategory}"></td>
+                                        <td th:text="${leave.leaveType}"></td>
+                                        <td th:text="${#temporals.format(leave.startDate, 'dd-MM-yyyy')}"></td>
+                                        <td th:text="${#temporals.format(leave.endDate, 'dd-MM-yyyy')}"></td>
+                                        <td th:text="${leave.description}"></td>
+                                        <td class="pe-4">
+                                            <span class="status-badge bg-warning text-dark" th:if="${leave.status == 'PENDING'}">Pending</span>
+                                            <span class="status-badge bg-success text-white" th:if="${leave.status == 'APPROVED' or leave.status == 'ACCEPTED'}">Approved</span>
+                                            <span class="status-badge bg-danger text-white" th:if="${leave.status == 'REJECTED'}">Rejected</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+</html>

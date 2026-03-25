@@ -7,164 +7,211 @@
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
     <style>
-        .profile-card, .info-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
+        :root {
+            --primary-color: #4f46e5;
+            --primary-light: #e0e7ff;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #0ea5e9;
+            --bg-body: #f8fafc;
+            --card-border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        .page-main-content {
+            background-color: var(--bg-body);
             padding: 20px;
-            background: #fff;
-            height: 100%;
+            border-radius: 12px;
         }
-        .profile-img {
-            width: 100%;
-            max-width: 150px;
-            border: 1px solid #ddd;
-            padding: 5px;
-        }
+
         .info-label {
-            color: #666;
-            width: 130px;
+            color: var(--text-muted);
+            width: 160px;
             display: inline-block;
             font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
+
         .info-value {
-            font-weight: 500;
-            font-size: 13px;
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-main);
         }
+
+        .profile-card {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            background: #ffffff;
+            padding: 32px;
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: var(--primary-color);
+        }
+
         .section-title {
-            color: #ff9800;
+            color: var(--secondary-color);
             font-size: 14px;
-            margin-top: 15px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
+            font-weight: 700;
+            margin-top: 24px;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .activity-title {
-            color: #f44336;
-            font-size: 13px;
-            margin-top: 15px;
-            margin-bottom: 5px;
-        }
-        .tab-nav {
-            border-bottom: 2px solid #2196F3;
-            margin-top: 30px;
-        }
-        .tab-nav .nav-link {
-            border: none;
-            color: #2196F3;
-            font-weight: 500;
-            padding: 10px 20px;
-        }
-        .tab-nav .nav-link.active {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-bottom: none;
-            border-top: 2px solid #2196F3;
-            margin-bottom: -2px;
-        }
-        .legend-item {
-            display: inline-block;
-            margin-right: 20px;
-            font-size: 12px;
-        }
-        .legend-dot {
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 5px;
-        }
-        .bg-present { background-color: #00c853; }
-        .bg-absent { background-color: #f44336; }
-        .bg-holiday { background-color: #2196f3; }
-        .bg-weekoff { background-color: #1976d2; }
-        .bg-leave { background-color: #4caf50; }
-        .bg-tour { background-color: #9c27b0; }
-        .bg-future { background-color: #eeeeee; }
 
-        .btn-load {
-            background-color: #00bfa5;
-            color: #fff;
-            border: none;
-            padding: 5px 15px;
-            border-radius: 3px;
-            margin-top: 10px;
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--card-border);
         }
-        
-        /* Styles imported identically from External Employee Register layout */
+
+        /* Attendance Table Refinement */
         .attendance-table {
-			width: 100%;
-			border-collapse: collapse;
-			margin-top: 20px;
-			font-size: 11px;
-		}
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 24px;
+            font-size: 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
 
-		.attendance-table th,
-		.attendance-table td {
-			border: 1px solid #ddd;
-			padding: 4px 1px;
-			text-align: center;
-			min-width: 30px;
-		}
+        .attendance-table th {
+            background-color: #f1f5f9;
+            color: var(--secondary-color);
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 12px 4px;
+            border-bottom: 2px solid var(--card-border);
+        }
 
-		.attendance-table select {
-			padding: 2px 0;
-			font-size: 1rem;
-			width: 100%;
-			border: 1px solid #ccc;
-			border-radius: 3px;
-			text-align: center;
-			text-align-last: center;
-			font-weight: bold;
-			font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-			cursor: pointer;
-			-webkit-appearance: none;
-			-moz-appearance: none;
-			appearance: none;
-			padding-left: 1px;
-			padding-right: 1px;
-		}
+        .attendance-table td {
+            padding: 8px 2px;
+            border-bottom: 1px solid var(--card-border);
+            border-right: 1px solid var(--card-border);
+            transition: all 0.2s;
+        }
 
-		.attendance-table th { background-color: #f2f2f2; }
-		.attendance-table select option[value="PRESENT"] { color: #00b050; }
-		.attendance-table select option[value="ABSENT"] { color: rgb(255, 0, 0); }
-		.attendance-table select option[value="WEEK_OFF"] { color: #9e9e9e; }
-		.attendance-table select option[value="LEAVE"] { color: #556b2f; }
-		.attendance-table select option[value="TOUR"] { color: #9c27b0; }
+        .attendance-table tr:last-child td {
+            border-bottom: none;
+        }
 
-        .status-present { color: #00b050 !important; font-weight: bold; }
-        .status-absent { color: rgb(255, 0, 0) !important; font-weight: bold; }
-        .status-holiday { color: #0b5ed7 !important; font-weight: bold; }
-        .status-weekoff { color: #444444 !important; font-weight: bold; }
-        .status-leave { color: #556b2f !important; font-weight: bold; }
-        .status-tour { color: #9c27b0 !important; font-weight: bold; }
+        .attendance-table tr:hover td {
+            background-color: #f8fafc;
+        }
 
+        .attendance-select {
+            background: transparent !important;
+            font-weight: 800 !important;
+            font-size: 13px !important;
+            padding: 4px !important;
+            border-radius: 6px !important;
+            text-align: center;
+            outline: none;
+            transition: transform 0.1s;
+        }
+
+        .attendance-select:focus {
+            transform: scale(1.1);
+        }
+
+        .status-present { color: var(--success-color) !important; }
+        .status-absent { color: var(--danger-color) !important; }
+        .status-holiday { color: var(--info-color) !important; }
+        .status-weekoff { color: #94a3b8 !important; }
+        .status-leave { color: #8b5cf6 !important; }
+        .status-tour { color: #db2777 !important; }
+
+        /* Modern Legend Chips */
         .attendance-legend {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 40px;
-			margin: 25px 0;
-			padding: 10px;
-			justify-content: center;
-		}
-		.legend-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; color: #333; }
-		.legend-circle {
-			width: 24px;
-			height: 24px;
-			border-radius: 50%;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			color: #fff;
-			font-weight: 800;
-			font-size: 12px;
-		}
-		.circle-present { background-color: #00b050; }
-		.circle-absent { background-color: rgb(255, 0, 0); }
-		.circle-holiday { background-color: #2196f3; }
-		.circle-leave { background-color: #556b2f; }
-		.circle-tour { background-color: #9c27b0; }
-		.circle-future { background-color: #eeeeee; color: #bdbdbd; }
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 24px 0;
+            padding: 16px;
+            justify-content: center;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-body);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .legend-item:hover {
+            border-color: var(--primary-light);
+            background: #fff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-circle {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 800;
+            font-size: 11px;
+        }
+
+        .circle-present { background: var(--success-color); }
+        .circle-absent { background: var(--danger-color); }
+        .circle-holiday { background: var(--info-color); }
+        .circle-leave { background: #8b5cf6; }
+        .circle-tour { background: #db2777; }
+        .circle-future { background: #e2e8f0; color: #94a3b8; }
+
+        .btn-success {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 10px 32px;
+            border-radius: 8px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4);
+            transition: all 0.3s;
+        }
+
+        .btn-success:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
+        }
     </style>
 </head>
 
@@ -178,47 +225,71 @@
                     <li class="breadcrumb-item active">View Attendance Register</li>
                 </ul>
 
-                <div class="row">
-                    <!-- Profile Section -->
-                    <div class="col-md-6">
-                        <div class="profile-card">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <img th:src="${attendance.photoPath ?: '/assets/img/user-default.png'}" class="profile-img" alt="Profile">
+                <div class="profile-card">
+                    <div class="row">
+                        <!-- Left Column: Primary Details -->
+                        <div class="col-md-6 border-end">
+                            <div class="mb-3 d-flex align-items-center">
+                                <i class="fa fa-user text-primary me-3" style="width: 20px;"></i>
+                                <div>
+                                    <span class="info-label">Employee Name</span><br/>
+                                    <span class="info-value text-primary" th:text="${attendance.name}"></span>
                                 </div>
-                                <div class="col-md-8">
-                                    <div class="mb-2"><span class="info-label">Name</span> <span class="info-value" th:text="${attendance.name}"></span></div>
-                                    <div class="mb-2"><span class="info-label">Designation</span> <span class="info-value" th:text="${attendance.designation}"></span></div>
-                                    <div class="mb-2"><span class="info-label">E-Mail</span> <span class="info-value" th:text="${attendance.email}"></span></div>
-                                    <div class="mb-2"><span class="info-label">Mobile</span> <span class="info-value" style="color: #9c27b0;" th:text="${attendance.mobile}"></span></div>
-                                    
-                                    <h6 class="section-title">Data for Month</h6>
-                                    <form th:action="@{/employee/fetchMyAttendance}" method="post">
-                                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                        <div class="input-group mb-3">
-                                            <span class="input-group-text datepicker-icon" style="cursor: pointer;"><i class="fa fa-calendar"></i></span>
-                                            <input type="text" name="dateRange" id="dateRangePicker" class="form-control" 
-                                                   th:value="${attendance.dateRange}" readonly 
-                                                   style="background-color: #fff; cursor: pointer;">
-                                        </div>
-                                        <!-- Submit happens automatically on date change -->
-                                    </form>
+                            </div>
+                            <div class="mb-3 d-flex align-items-center">
+                                <i class="fa fa-briefcase text-secondary me-3" style="width: 20px;"></i>
+                                <div>
+                                    <span class="info-label">Designation</span><br/>
+                                    <span class="info-value" th:text="${attendance.designation}"></span>
+                                </div>
+                            </div>
+                            <div class="mb-3 d-flex align-items-center">
+                                <i class="fa fa-building text-secondary me-3" style="width: 20px;"></i>
+                                <div>
+                                    <span class="info-label">Organization</span><br/>
+                                    <span class="info-value" th:text="${attendance.organization}"></span>
+                                </div>
+                            </div>
+                            <div class="mb-3 d-flex align-items-center">
+                                <i class="fa fa-folder-open text-secondary me-3" style="width: 20px;"></i>
+                                <div>
+                                    <span class="info-label">Project Name</span><br/>
+                                    <span class="info-value" th:text="${attendance.projectName ?: '-'}"></span>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Organization Section -->
-                    <div class="col-md-6">
-                        <div class="info-card">
-                            <div class="mb-2"><span class="info-label">Organization</span> <span class="info-value" th:text="${attendance.organization}"></span></div>
-                            <div class="mb-2"><span class="info-label">Division/Unit</span> <span class="info-value" th:text="${attendance.division}"></span></div>
-                            <div class="mb-2"><span class="info-label">Office Location</span> <span class="info-value" th:text="${attendance.officeLocation}"></span></div>
+                        
+                        <!-- Right Column: Reporting & Calendar -->
+                        <div class="col-md-6 ps-md-4">
+                            <div class="mb-3 d-flex align-items-center">
+                                <i class="fa fa-user-tie text-secondary me-3" style="width: 20px;"></i>
+                                <div>
+                                    <span class="info-label">Reporting HOD</span><br/>
+                                    <span class="info-value" th:text="${attendance.reportingHOD ?: '-'}"></span>
+                                </div>
+                            </div>
+                            <div class="mb-3 d-flex align-items-center">
+                                <i class="fa fa-user-check text-secondary me-3" style="width: 20px;"></i>
+                                <div>
+                                    <span class="info-label">Reporting Manager</span><br/>
+                                    <span class="info-value" th:text="${attendance.reportingManager ?: '-'}"></span>
+                                </div>
+                            </div>
                             
-                            <h6 class="activity-title">Activity Today</h6>
-                            <div class="mb-2"><span class="info-label">In Time</span> <span class="info-value" th:text="${attendance.todayInTime}"></span></div>
-                            <div class="mb-2"><span class="info-label">Out Time</span> <span class="info-value" th:text="${attendance.todayOutTime}"></span></div>
-                            <div class="mb-2"><span class="info-label">Avg Response Time</span> <span class="info-value" th:text="${attendance.avgResponseTime}"></span></div>
+                            <div class="mt-4">
+                                <h6 class="section-title">Data for Month</h6>
+                                <form th:action="@{/employee/fetchMyAttendance}" method="post">
+                                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <div class="input-group">
+                                        <span class="input-group-text datepicker-icon" style="cursor: pointer; background: #f8fafc; border-right: none;">
+                                            <i class="fa fa-calendar text-primary"></i>
+                                        </span>
+                                        <input type="text" name="dateRange" id="dateRangePicker" class="form-control" 
+                                               th:value="${attendance.dateRange}" readonly 
+                                               style="background-color: #fff; cursor: pointer; border-left: none; font-weight: 600;">
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -232,8 +303,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
 
-                <!-- Tabs -->
-                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <!-- Tabs (Hidden from user view as per request, but kept structure if needed later) -->
+                <ul class="nav nav-tabs d-none" id="myTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">Register</button>
                     </li>
@@ -253,11 +324,11 @@
                                 <div class="attendance-legend">
 									<div class="legend-item"><div class="legend-circle circle-present">P</div><span>Present</span></div>
 									<div class="legend-item"><div class="legend-circle circle-absent">A</div><span>Absent</span></div>
-									<div class="legend-item"><div class="legend-circle status-weekoff" style="color:#fff;">W</div><span>Week OFF</span></div>
+									<div class="legend-item"><div class="legend-circle status-weekoff" style="color:#fff; background: #94a3b8;">W</div><span>Week OFF</span></div>
 									<div class="legend-item"><div class="legend-circle circle-holiday">H</div><span>Holiday</span></div>
 									<div class="legend-item"><div class="legend-circle circle-leave">L</div><span>Leave</span></div>
 									<div class="legend-item"><div class="legend-circle circle-tour">T</div><span>Tour</span></div>
-									<div class="legend-item"><div class="legend-circle circle-future">F</div><span>Invalid/Future Date</span></div>
+									<div class="legend-item"><div class="legend-circle circle-future">F</div><span>Invalid Date</span></div>
 								</div>
 								
                                 <form id="bulkAttendanceForm" th:action="@{/employee/manual-attendance/submit-bulk}" method="post">

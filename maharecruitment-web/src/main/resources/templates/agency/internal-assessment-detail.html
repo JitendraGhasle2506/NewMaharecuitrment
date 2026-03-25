@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Internal Assessment Detail</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .assessment-page {
+            display: grid;
+            gap: 20px;
+        }
+
+        .hero-panel {
+            position: relative;
+            border: 1px solid #d9e3f0;
+            border-radius: 18px;
+            padding: 24px;
+            background:
+                radial-gradient(circle at top right, rgba(14, 116, 144, 0.12), transparent 32%),
+                linear-gradient(135deg, #ffffff 0%, #f5f9ff 55%, #eef6ff 100%);
+            box-shadow: 0 14px 38px rgba(15, 23, 42, 0.07);
+        }
+
+        .hero-eyebrow {
+            font-size: 0.78rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #0f766e;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .hero-title {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        .hero-subtitle {
+            margin: 10px 0 0;
+            color: #475569;
+            max-width: 760px;
+        }
+
+        .hero-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .hero-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.88);
+            border: 1px solid #d8e2ef;
+            color: #0f172a;
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        .hero-chip span {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .hero-back {
+            position: absolute;
+            top: 22px;
+            right: 22px;
+        }
+
+        .section-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            background: #ffffff;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+            overflow: hidden;
+        }
+
+        .section-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 18px 22px 0;
+        }
+
+        .section-card-body {
+            padding: 18px 22px 22px;
+        }
+
+        .section-title {
+            margin: 0;
+            color: #0f172a;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .section-subtitle {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+        }
+
+        .overview-card {
+            border: 1px solid #e5edf6;
+            border-radius: 16px;
+            padding: 16px 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .overview-label {
+            font-size: 0.78rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+
+        .overview-value {
+            font-size: 1.12rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.35;
+        }
+
+        .overview-support {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 0.88rem;
+        }
+
+        .assessment-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(300px, 0.95fr);
+            gap: 20px;
+        }
+
+        .stack {
+            display: grid;
+            gap: 20px;
+        }
+
+        .snapshot-table {
+            margin: 0;
+        }
+
+        .snapshot-table th {
+            width: 24%;
+            color: #334155;
+            background: #f8fafc;
+        }
+
+        .mark-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 14px;
+        }
+
+        .mark-card {
+            border-radius: 16px;
+            padding: 16px;
+            background: linear-gradient(180deg, #0f172a 0%, #172554 100%);
+            color: #ffffff;
+            min-height: 112px;
+        }
+
+        .mark-card:nth-child(2) {
+            background: linear-gradient(180deg, #083344 0%, #155e75 100%);
+        }
+
+        .mark-card:nth-child(3) {
+            background: linear-gradient(180deg, #3f1d6b 0%, #5b21b6 100%);
+        }
+
+        .mark-card:nth-child(4) {
+            background: linear-gradient(180deg, #4a1d1f 0%, #9f1239 100%);
+        }
+
+        .mark-card-label {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            opacity: 0.82;
+        }
+
+        .mark-card-value {
+            margin-top: 12px;
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .assessment-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .assessment-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+            color: #334155;
+        }
+
+        .recommendation-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 0.86rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+        }
+
+        .recommendation-pill.recommended {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .recommendation-pill.not-recommended {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .remarks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .remarks-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px;
+            background: #ffffff;
+        }
+
+        .remarks-card-title {
+            margin: 0 0 8px;
+            font-size: 0.9rem;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .remarks-card-text {
+            margin: 0;
+            color: #475569;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .timeline-card {
+            border-radius: 16px;
+            padding: 18px;
+            border: 1px solid #d8e2ef;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .timeline-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+        }
+
+        .timeline-value {
+            margin-top: 6px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .schedule-panel {
+            border-radius: 18px;
+            border: 1px solid #dbeafe;
+            background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+            padding: 22px;
+        }
+
+        .schedule-panel.scheduled {
+            border-color: #bfdbfe;
+            background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
+        }
+
+        .schedule-note {
+            margin: 0 0 18px;
+            color: #475569;
+            line-height: 1.65;
+            max-width: 560px;
+        }
+
+        .schedule-form {
+            display: grid;
+            gap: 18px;
+        }
+
+        .schedule-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .schedule-field-wide {
+            grid-column: 1 / -1;
+        }
+
+        .schedule-link-field {
+            max-width: 560px;
+        }
+
+        .schedule-form .form-label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .schedule-form .form-control {
+            border-radius: 12px;
+            min-height: 44px;
+        }
+
+        .schedule-form textarea.form-control {
+            min-height: 120px;
+        }
+
+        .schedule-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 8px;
+            border-top: 1px solid #e5eef9;
+        }
+
+        .schedule-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            text-decoration: none;
+            color: #0f172a;
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+
+        .schedule-link-wrap {
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .empty-state {
+            border: 1px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 18px;
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        @media (max-width: 991px) {
+            .assessment-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-back {
+                position: static;
+                margin-top: 14px;
+            }
+
+            .schedule-form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .schedule-field-wide {
+                grid-column: auto;
+            }
+
+            .schedule-link-field {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+
+<body class="agency-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Internal Assessments', ~{::section})}">
+        <section>
+            <div class="card add-emp-card border-0 bg-transparent shadow-none">
+                <div class="hero-panel">
+                    <a class="btn btn-outline-secondary btn-sm hero-back"
+                        th:href="@{/agency/internal-assessments/{recruitmentNotificationId}(recruitmentNotificationId=${detail.recruitmentNotificationId})}">
+                        Back to Candidates
+                    </a>
+                    <div class="hero-eyebrow">Internal Candidate Assessment</div>
+                    <h2 class="hero-title"
+                        th:text="${detail.candidateName != null ? detail.candidateName : 'Candidate Assessment'}">
+                        Candidate Name
+                    </h2>
+                    <p class="hero-subtitle"
+                        th:text="${(detail.requestId != null ? detail.requestId : '-') + ' | ' + (detail.projectName != null ? detail.projectName : '-')}">
+                        REQ-0000 | Project
+                    </p>
+
+                    <div class="hero-chip-row">
+                        <div class="hero-chip">
+                            <span>Role</span>
+                            <strong
+                                th:text="${(detail.designationName != null ? detail.designationName : '-') + ' | ' + (detail.levelCode != null ? detail.levelCode : '-')}">
+                                Designation | Level
+                            </strong>
+                        </div>
+                        <div class="hero-chip">
+                            <span>Candidate</span>
+                            <strong th:text="${detail.candidateEmail != null ? detail.candidateEmail : '-'}">candidate@email.com</strong>
+                        </div>
+                        <div class="hero-chip" th:if="${detail.assessment != null}">
+                            <span>Recommendation</span>
+                            <strong
+                                th:text="${detail.assessment.recommendationStatus != null ? #strings.replace(detail.assessment.recommendationStatus, '_', ' ') : '-'}">
+                                RECOMMENDED
+                            </strong>
+                        </div>
+                    </div>
+
+                    <div class="hero-actions">
+                        <button type="button" class="btn btn-outline-dark btn-sm"
+                            th:if="${detail.resumeFilePath != null}"
+                            th:attr="data-path=${detail.resumeFilePath}"
+                            onclick="openManagedDocument(this.getAttribute('data-path'))">
+                            View Resume
+                        </button>
+                        <a class="btn btn-outline-primary btn-sm"
+                            th:if="${detail.initialInterviewLink != null and !#strings.isEmpty(detail.initialInterviewLink)}"
+                            th:href="${detail.initialInterviewLink}" target="_blank">
+                            Join Level 1 Interview
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body px-0 pt-4">
+                    <div th:if="${successMessage}" class="alert alert-success mb-4" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger mb-4" th:text="${errorMessage}"></div>
+
+                    <div class="overview-grid mb-4">
+                        <div class="overview-card">
+                            <div class="overview-label">Candidate</div>
+                            <div class="overview-value" th:text="${detail.candidateName != null ? detail.candidateName : '-'}">Candidate</div>
+                            <div class="overview-support"
+                                th:text="${(detail.candidateEmail != null ? detail.candidateEmail : '-') + ' | ' + (detail.candidateMobile != null ? detail.candidateMobile : '-')}">
+                                email | mobile
+                            </div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Role Applied</div>
+                            <div class="overview-value"
+                                th:text="${(detail.designationName != null ? detail.designationName : '-') + ' | ' + (detail.levelCode != null ? detail.levelCode : '-')}">
+                                Designation | Level
+                            </div>
+                            <div class="overview-support"
+                                th:text="${'Qualification: ' + (detail.candidateEducation != null ? detail.candidateEducation : '-')}">
+                                Qualification
+                            </div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Experience</div>
+                            <div class="overview-value">
+                                <span th:text="${detail.totalExperience != null ? detail.totalExperience : 0}">0</span>
+                                /
+                                <span th:text="${detail.relevantExperience != null ? detail.relevantExperience : 0}">0</span>
+                            </div>
+                            <div class="overview-support"
+                                th:text="${'Joining Time: ' + (detail.joiningTime != null ? detail.joiningTime : '-')}">
+                                Joining Time
+                            </div>
+                        </div>
+                        <div class="overview-card" th:if="${detail.assessment != null}">
+                            <div class="overview-label">Assessment Submitted</div>
+                            <div class="overview-value"
+                                th:text="${detail.assessment.submittedAt != null ? #temporals.format(detail.assessment.submittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                01-Apr-2026 10:30
+                            </div>
+                            <div class="overview-support"
+                                th:text="${'Interview Authority: ' + (detail.assessment.interviewAuthority != null ? detail.assessment.interviewAuthority : '-')}">
+                                Interview Authority
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card mb-4">
+                        <div class="section-card-header">
+                            <div>
+                                <h5 class="section-title">Level 1 Interview Snapshot</h5>
+                                <p class="section-subtitle">Original interview details shared for the internal round.</p>
+                            </div>
+                        </div>
+                        <div class="section-card-body">
+                            <table class="table table-bordered table-sm snapshot-table">
+                                <tr>
+                                    <th>Interview Date</th>
+                                    <td th:text="${detail.initialInterviewDateTime != null ? #temporals.format(detail.initialInterviewDateTime, 'dd-MMM-yyyy') : '-'}">
+                                        -
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Time Slot</th>
+                                    <td th:text="${detail.initialInterviewTimeSlot != null ? detail.initialInterviewTimeSlot : '-'}">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Meeting Link</th>
+                                    <td>
+                                        <a class="schedule-link"
+                                            th:if="${detail.initialInterviewLink != null and !#strings.isEmpty(detail.initialInterviewLink)}"
+                                            th:href="${detail.initialInterviewLink}" target="_blank">
+                                            Open Level 1 Meeting Link
+                                        </a>
+                                        <span th:if="${detail.initialInterviewLink == null or #strings.isEmpty(detail.initialInterviewLink)}">-</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="section-card mb-4">
+                        <div class="section-card-header">
+                            <div>
+                                <h5 class="section-title">Assessment Feedback</h5>
+                                <p class="section-subtitle">Submitted internal assessment scores, panel remarks, and recommendation.</p>
+                            </div>
+                            <div th:if="${detail.assessment != null}"
+                                class="recommendation-pill"
+                                th:classappend="${detail.assessment.recommendationStatus == 'RECOMMENDED' ? ' recommended' : ' not-recommended'}"
+                                th:text="${detail.assessment.recommendationStatus != null ? #strings.replace(detail.assessment.recommendationStatus, '_', ' ') : '-'}">
+                                RECOMMENDED
+                            </div>
+                        </div>
+                        <div class="section-card-body">
+                            <div th:if="${detail.assessment == null}" class="empty-state">
+                                Assessment details are not available for this candidate.
+                            </div>
+
+                            <div th:if="${detail.assessment != null}">
+                                <div class="assessment-meta mb-3">
+                                    <div class="assessment-tag">
+                                        <strong>Authority</strong>
+                                        <span th:text="${detail.assessment.interviewAuthority != null ? detail.assessment.interviewAuthority : '-'}">Authority</span>
+                                    </div>
+                                    <div class="assessment-tag">
+                                        <strong>Grade</strong>
+                                        <span th:text="${detail.assessment.interviewerGrade != null ? detail.assessment.interviewerGrade : '-'}">A</span>
+                                    </div>
+                                    <div class="assessment-tag">
+                                        <strong>Submitted</strong>
+                                        <span th:text="${detail.assessment.submittedAt != null ? #temporals.format(detail.assessment.submittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">01-Apr-2026 10:30</span>
+                                    </div>
+                                </div>
+
+                                <div class="mark-grid mb-3">
+                                    <div class="mark-card">
+                                        <div class="mark-card-label">Communication</div>
+                                        <div class="mark-card-value" th:text="${detail.assessment.communicationSkillMarks != null ? detail.assessment.communicationSkillMarks : 0}">0</div>
+                                    </div>
+                                    <div class="mark-card">
+                                        <div class="mark-card-label">Technical</div>
+                                        <div class="mark-card-value" th:text="${detail.assessment.technicalSkillMarks != null ? detail.assessment.technicalSkillMarks : 0}">0</div>
+                                    </div>
+                                    <div class="mark-card">
+                                        <div class="mark-card-label">Leadership</div>
+                                        <div class="mark-card-value" th:text="${detail.assessment.leadershipQualityMarks != null ? detail.assessment.leadershipQualityMarks : 0}">0</div>
+                                    </div>
+                                    <div class="mark-card">
+                                        <div class="mark-card-label">Relevant Experience</div>
+                                        <div class="mark-card-value" th:text="${detail.assessment.relevantExperienceMarks != null ? detail.assessment.relevantExperienceMarks : 0}">0</div>
+                                    </div>
+                                </div>
+
+                                <div class="remarks-grid mb-4">
+                                    <div class="remarks-card">
+                                        <h6 class="remarks-card-title">Assessment Remarks</h6>
+                                        <p class="remarks-card-text"
+                                            th:text="${detail.assessment.assessmentRemarks != null ? detail.assessment.assessmentRemarks : '-'}">
+                                            Remarks
+                                        </p>
+                                    </div>
+                                    <div class="remarks-card">
+                                        <h6 class="remarks-card-title">Final Remarks</h6>
+                                        <p class="remarks-card-text"
+                                            th:text="${detail.assessment.finalRemarks != null ? detail.assessment.finalRemarks : '-'}">
+                                            Remarks
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <h6 class="section-title mb-3">Panel Members</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Name</th>
+                                                <th>Designation</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${#lists.isEmpty(detail.assessment.panelMembers)}">
+                                                <td colspan="3" class="text-center text-muted">No panel member details available.</td>
+                                            </tr>
+                                            <tr th:each="member, stat : ${detail.assessment.panelMembers}">
+                                                <td th:text="${stat.count}">1</td>
+                                                <td th:text="${member.panelMemberName != null ? member.panelMemberName : '-'}">Member</td>
+                                                <td th:text="${member.panelMemberDesignation != null ? member.panelMemberDesignation : '-'}">Designation</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <div class="section-card-header">
+                            <div>
+                                <h5 class="section-title">Level 2 Workflow</h5>
+                                <p class="section-subtitle">Schedule the next interview round only for recommended candidates.</p>
+                            </div>
+                        </div>
+                        <div class="section-card-body">
+                            <div class="timeline-card mb-3">
+                                <div class="timeline-label">Current Level 2 Status</div>
+                                <div class="timeline-value"
+                                    th:text="${detail.workflowStatus != null ? detail.workflowStatus.name() : 'Not eligible for Level 2'}">
+                                    Not eligible for Level 2
+                                </div>
+                                <div class="overview-support mt-2"
+                                    th:text="${detail.levelTwoTimeChangeRequested && detail.levelTwoTimeChangeRequestedAt != null ? 'HR requested change on ' + #temporals.format(detail.levelTwoTimeChangeRequestedAt, 'dd-MMM-yyyy HH:mm') : (detail.levelTwoScheduledAt != null ? 'Updated on ' + #temporals.format(detail.levelTwoScheduledAt, 'dd-MMM-yyyy HH:mm') : 'Awaiting agency action')}">
+                                    Awaiting agency action
+                                </div>
+                            </div>
+
+                            <div th:if="${detail.levelTwoScheduled}" class="schedule-panel scheduled mb-3">
+                                <p class="schedule-note">Level 2 interview details are already saved for this candidate.</p>
+                                <div class="overview-grid">
+                                    <div class="overview-card">
+                                        <div class="overview-label">Interview Date</div>
+                                        <div class="overview-value"
+                                            th:text="${detail.levelTwoInterviewDateTime != null ? #temporals.format(detail.levelTwoInterviewDateTime, 'dd-MMM-yyyy') : '-'}">
+                                            -
+                                        </div>
+                                    </div>
+                                    <div class="overview-card">
+                                        <div class="overview-label">Time Slot</div>
+                                        <div class="overview-value"
+                                            th:text="${detail.levelTwoInterviewTimeSlot != null ? detail.levelTwoInterviewTimeSlot : '-'}">
+                                            Slot
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="schedule-link-wrap mt-3"
+                                    th:if="${detail.levelTwoMeetingLink != null and !#strings.isEmpty(detail.levelTwoMeetingLink)}">
+                                    <a class="schedule-link" th:href="${detail.levelTwoMeetingLink}" target="_blank">
+                                        Open Level 2 Meeting Link
+                                    </a>
+                                </div>
+                                <div class="remarks-card mt-3">
+                                    <h6 class="remarks-card-title">Level 2 Remarks</h6>
+                                    <p class="remarks-card-text"
+                                        th:text="${detail.levelTwoRemarks != null ? detail.levelTwoRemarks : '-'}">
+                                        Remarks
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div th:if="${detail.assessment != null and detail.levelTwoSchedulingAllowed}" class="schedule-panel">
+                                <div class="alert alert-warning mb-3"
+                                    th:if="${detail.levelTwoTimeChangeRequested}">
+                                    <div class="fw-semibold">HR requested interview reschedule</div>
+                                    <div class="mt-2"
+                                        th:text="${detail.levelTwoTimeChangeReason != null ? detail.levelTwoTimeChangeReason : '-'}">
+                                        Change reason
+                                    </div>
+                                </div>
+                                <p class="schedule-note">
+                                    <span th:if="${detail.levelTwoTimeChangeRequested}">
+                                        Update the Level 2 interview plan below based on the HR reschedule request.
+                                    </span>
+                                    <span th:if="${!detail.levelTwoTimeChangeRequested}">
+                                        Enter the Level 2 interview plan below. This schedule stays separate from the original internal interview details.
+                                    </span>
+                                </p>
+                                <form method="post" class="schedule-form"
+                                    th:action="@{/agency/internal-assessments/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/level-two(
+                                        recruitmentNotificationId=${detail.recruitmentNotificationId},
+                                        recruitmentInterviewDetailId=${detail.recruitmentInterviewDetailId})}">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                                    <div class="schedule-form-grid">
+                                        <div>
+                                            <label class="form-label">Interview Date *</label>
+                                            <input type="date" class="form-control"
+                                                name="interviewDate"
+                                                th:value="${levelTwoScheduleForm.interviewDate != null ? #temporals.format(levelTwoScheduleForm.interviewDate, 'yyyy-MM-dd') : ''}"
+                                                required>
+                                        </div>
+                                        <div>
+                                            <label class="form-label">Time Slot *</label>
+                                            <input type="text" class="form-control"
+                                                name="interviewTimeSlot"
+                                                th:value="${levelTwoScheduleForm.interviewTimeSlot != null ? levelTwoScheduleForm.interviewTimeSlot : ''}"
+                                                placeholder="10:00 AM - 10:30 AM" required>
+                                        </div>
+                                        <div class="schedule-field-wide schedule-link-field">
+                                            <label class="form-label">Meeting Link *</label>
+                                            <input type="url" class="form-control"
+                                                name="interviewLink"
+                                                th:value="${levelTwoScheduleForm.interviewLink != null ? levelTwoScheduleForm.interviewLink : ''}"
+                                                placeholder="https://..." required>
+                                        </div>
+                                        <div class="schedule-field-wide">
+                                            <label class="form-label">Remarks</label>
+                                            <textarea class="form-control" name="interviewRemarks" rows="4"
+                                                placeholder="Optional Level 2 interview remarks"
+                                                th:text="${levelTwoScheduleForm.interviewRemarks != null ? levelTwoScheduleForm.interviewRemarks : ''}"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="schedule-form-actions">
+                                        <button type="submit" class="btn btn-success"
+                                            th:text="${detail.levelTwoTimeChangeRequested ? 'Reschedule Level 2 Interview' : (detail.levelTwoScheduled ? 'Update Level 2 Interview' : 'Send To Level 2')}">
+                                            Send To Level 2
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="empty-state"
+                                th:if="${detail.assessment != null and !detail.levelTwoSchedulingAllowed}">
+                                Level 2 interview can be scheduled only for candidates recommended in the internal assessment.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:inline="javascript">
+        const contextPath = /*[[@{/}]]*/ '/';
+
+        function openManagedDocument(path) {
+            if (!path) {
+                return;
+            }
+            try {
+                const encodedPath = encodeURIComponent(btoa(path));
+                window.open(contextPath + "documents/view?path=" + encodedPath, "_blank");
+            } catch (error) {
+                alert("Unable to open resume document.");
+            }
+        }
+    </script>
+</body>
+
+</html>

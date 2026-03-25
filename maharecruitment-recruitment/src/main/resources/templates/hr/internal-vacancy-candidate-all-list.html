@@ -5,14 +5,327 @@
     <meta charset="UTF-8">
     <title>All Candidate Details</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .candidate-summary-page .header {
+            gap: 16px;
+        }
+
+        .candidate-summary-page .card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-top: 20px;
+        }
+
+        .candidate-summary-page .alert {
+            margin-bottom: 0;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .overview-card,
+        .candidate-table-shell,
+        .empty-state {
+            border: 1px solid #d8e4f5;
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .overview-card {
+            padding: 16px 18px;
+            background: linear-gradient(180deg, #fcfdff 0%, #f5f9ff 100%);
+        }
+
+        .overview-label {
+            color: #607391;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+        }
+
+        .overview-value {
+            margin-top: 8px;
+            color: #163868;
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .overview-note {
+            margin-top: 8px;
+            color: #6c7c96;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 16px;
+            padding: 18px;
+            border: 1px solid #d9e4f4;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #fcfdff 0%, #f7faff 100%);
+        }
+
+        .filter-form {
+            display: flex;
+            flex: 1 1 560px;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: flex-end;
+        }
+
+        .filter-field {
+            min-width: 180px;
+        }
+
+        .filter-field.filter-search {
+            flex: 1 1 320px;
+        }
+
+        .filter-meta {
+            color: #607391;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .candidate-table-shell {
+            overflow: hidden;
+        }
+
+        .candidate-table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 18px;
+            border-bottom: 1px solid #e5edf8;
+            background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+        }
+
+        .candidate-table-title {
+            color: #1c3f71;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .candidate-table-subtitle {
+            color: #6b7d99;
+            font-size: 13px;
+        }
+
+        .candidate-table-shell .table {
+            margin-bottom: 0;
+        }
+
+        .candidate-table-shell .table thead th {
+            padding: 14px 16px;
+            background: #eef4ff;
+            color: #23436f;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .25px;
+            white-space: nowrap;
+        }
+
+        .candidate-table-shell .table tbody td {
+            padding: 16px;
+            vertical-align: top;
+        }
+
+        .candidate-table-shell .table tbody tr:hover {
+            background: #fbfdff;
+        }
+
+        .request-link {
+            color: #153d73;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .request-link:hover {
+            color: #0d2c57;
+            text-decoration: underline;
+        }
+
+        .project-name {
+            color: #1f3554;
+            font-weight: 600;
+        }
+
+        .project-note {
+            margin-top: 4px;
+            color: #6d7d96;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .metric-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .metric-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid #dbe6f5;
+            background: #f8fbff;
+            color: #335179;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .metric-pill strong {
+            color: #173c6f;
+            font-size: 12px;
+        }
+
+        .metric-total {
+            background: #edf4ff;
+            border-color: #ccdcf6;
+        }
+
+        .metric-pending {
+            background: #fff8e6;
+            border-color: #f0dfac;
+        }
+
+        .metric-shortlisted {
+            background: #e9f8ef;
+            border-color: #bfe5cd;
+        }
+
+        .metric-rejected {
+            background: #fff0f0;
+            border-color: #f2c7c7;
+        }
+
+        .metric-scheduled {
+            background: #eef3ff;
+            border-color: #ccd8f5;
+        }
+
+        .metric-feedback {
+            background: #f2f7f4;
+            border-color: #d5e4dc;
+        }
+
+        .submitted-at {
+            color: #1f3554;
+            font-weight: 600;
+        }
+
+        .submitted-at-note {
+            margin-top: 4px;
+            color: #6d7d96;
+            font-size: 12px;
+        }
+
+        .action-panel {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 12px;
+            border: 1px solid #d9e4f4;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .empty-state {
+            padding: 40px 24px;
+            text-align: center;
+            background: linear-gradient(180deg, #fcfdff 0%, #f5f9ff 100%);
+        }
+
+        .empty-state h5 {
+            margin-bottom: 8px;
+            color: #1f3d67;
+        }
+
+        .empty-state p {
+            margin: 0;
+            color: #6b7d99;
+        }
+
+        .pagination-shell {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            padding-top: 4px;
+        }
+
+        .pagination-summary {
+            color: #607391;
+            font-size: 13px;
+        }
+
+        .pagination-shell .pagination {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 1400px) {
+            .overview-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 992px) {
+            .overview-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .candidate-summary-page .card-body {
+                gap: 16px;
+            }
+
+            .candidate-table-header,
+            .filter-bar,
+            .pagination-shell {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .overview-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-form,
+            .filter-field,
+            .filter-field.filter-search {
+                flex: 1 1 100%;
+                min-width: 100%;
+            }
+
+            .candidate-table-shell .table thead th,
+            .candidate-table-shell .table tbody td {
+                padding: 12px;
+            }
+        }
+    </style>
 </head>
 
 <body>
     <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'All Candidate Details', ~{::section})}">
-        <section
-            th:with="requestCount=${requestSummaries != null ? #lists.size(requestSummaries) : 0},
-                     totalCandidates=${#lists.isEmpty(requestSummaries) ? 0 : #aggregates.sum(requestSummaries.![totalCandidates != null ? totalCandidates : 0])}">
-            <div class="card add-emp-card">
+        <section>
+            <div class="card add-emp-card candidate-summary-page">
                 <div class="header d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="mb-0">All Candidate Details</h2>
@@ -27,38 +340,99 @@
                     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-                    <table class="table table-bordered table-sm mb-4">
-                        <tr>
-                            <th width="20%">Request Summary</th>
-                            <td th:text="${'Requests: ' + requestCount + ' | Total Submitted Candidates: ' + totalCandidates}">
-                                Requests: 0 | Total Submitted Candidates: 0
-                            </td>
-                        </tr>
-                    </table>
+                    <div class="filter-bar">
+                        <form class="filter-form" th:action="@{/hr/internal-vacancies/candidates}" method="get">
+                            <div class="filter-field filter-search">
+                                <label class="form-label mb-1">Search Requests</label>
+                                <input type="text"
+                                    class="form-control"
+                                    name="search"
+                                    th:value="${searchTerm}"
+                                    placeholder="Search by request ID or project name">
+                            </div>
+                            <div class="filter-field">
+                                <label class="form-label mb-1">Page Size</label>
+                                <select name="size" class="form-select">
+                                    <option value="10" th:selected="${pageSize == 10}">10 per page</option>
+                                    <option value="25" th:selected="${pageSize == 25}">25 per page</option>
+                                    <option value="50" th:selected="${pageSize == 50}">50 per page</option>
+                                </select>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-primary">Search</button>
+                                <a class="btn btn-outline-secondary" th:href="@{/hr/internal-vacancies/candidates}">Clear</a>
+                            </div>
+                        </form>
+                        <div class="filter-meta"
+                            th:text="${requestSummaryPage.totalElements > 0 ? 'Showing ' + (requestSummaryPage.number * requestSummaryPage.size + 1) + ' to ' + (((requestSummaryPage.number + 1) * requestSummaryPage.size) > requestSummaryPage.totalElements ? requestSummaryPage.totalElements : ((requestSummaryPage.number + 1) * requestSummaryPage.size)) + ' of ' + requestSummaryPage.totalElements + ' requests' : 'No requests found for the current filter'}">
+                            Showing 1 to 10 of 25 requests
+                        </div>
+                    </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle">
-                            <thead class="table-light">
+                    <div class="overview-grid">
+                        <div class="overview-card">
+                            <div class="overview-label">Requests</div>
+                            <div class="overview-value" th:text="${candidateSummaryMetrics.requestCount}">0</div>
+                            <div class="overview-note">Internal requests with at least one candidate submission</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Submitted</div>
+                            <div class="overview-value" th:text="${candidateSummaryMetrics.totalCandidates}">0</div>
+                            <div class="overview-note">All candidates received across internal vacancy requests</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Pending Review</div>
+                            <div class="overview-value" th:text="${candidateSummaryMetrics.pendingReviewCandidates}">0</div>
+                            <div class="overview-note">Candidates still waiting for review or next action</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Interview Scheduled</div>
+                            <div class="overview-value" th:text="${candidateSummaryMetrics.interviewScheduledCandidates}">0</div>
+                            <div class="overview-note">Candidates currently moved into the interview stage</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Feedback Submitted</div>
+                            <div class="overview-value" th:text="${candidateSummaryMetrics.feedbackSubmittedCandidates}">0</div>
+                            <div class="overview-note">Candidates with interview feedback already recorded</div>
+                        </div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(requestSummaries)}" class="empty-state">
+                        <h5>No candidate submissions yet</h5>
+                        <p>No internal vacancy request has candidate data available at the moment.</p>
+                    </div>
+
+                    <div th:if="${!#lists.isEmpty(requestSummaries)}" class="candidate-table-shell">
+                        <div class="candidate-table-header">
+                            <div>
+                                <div class="candidate-table-title">Request-Wise Candidate Summary</div>
+                                <div class="candidate-table-subtitle">
+                                    Click the request ID or project name to open the candidate list for that request.
+                                </div>
+                            </div>
+                            <div class="candidate-table-subtitle"
+                                th:text="${'Total requests: ' + candidateSummaryMetrics.requestCount + ' | Total candidates: ' + candidateSummaryMetrics.totalCandidates}">
+                                Total requests: 0 | Total candidates: 0
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle">
+                                <thead>
                                 <tr>
                                     <th>#</th>
                                     <th>Request ID</th>
                                     <th>Project</th>
-                                    <th class="text-end">Submitted Candidates</th>
-                                    <th class="text-end">Interview Scheduled</th>
-                                    <th>Latest Submitted At</th>
+                                    <th>Pipeline Snapshot</th>
+                                    <th class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr th:if="${#lists.isEmpty(requestSummaries)}">
-                                    <td colspan="6" class="text-center text-muted">
-                                        No internal vacancy requests have candidate submissions yet.
-                                    </td>
-                                </tr>
-
                                 <tr th:each="summary, stat : ${requestSummaries}">
-                                    <td th:text="${stat.count}">1</td>
+                                    <td th:text="${requestSummaryPage.number * requestSummaryPage.size + stat.index + 1}">1</td>
                                     <td>
                                         <a th:if="${summary.requestId != null}"
+                                            class="request-link"
                                             th:href="@{/hr/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId})}"
                                             th:text="${summary.requestId}">
                                             REQ-0000
@@ -67,28 +441,88 @@
                                     </td>
                                     <td>
                                         <a th:if="${summary.requestId != null}"
+                                            class="request-link project-name"
                                             th:href="@{/hr/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId})}"
                                             th:text="${summary.projectName != null ? summary.projectName : '-'}">
                                             Project
                                         </a>
                                         <span th:if="${summary.requestId == null}"
+                                            class="project-name"
                                             th:text="${summary.projectName != null ? summary.projectName : '-'}">
                                             Project
                                         </span>
+                                        <div class="project-note">Internal vacancy candidate request summary</div>
                                     </td>
-                                    <td class="text-end"
-                                        th:text="${summary.totalCandidates != null ? summary.totalCandidates : 0}">0</td>
-                                    <td class="text-end"
-                                        th:text="${summary.interviewScheduledCandidates != null ? summary.interviewScheduledCandidates : 0}">
-                                        0
+                                    <td>
+                                        <div class="metric-grid">
+                                            <span class="metric-pill metric-total">
+                                                Total <strong th:text="${summary.totalCandidates != null ? summary.totalCandidates : 0}">0</strong>
+                                            </span>
+                                            <span class="metric-pill metric-pending">
+                                                Pending <strong th:text="${summary.pendingReviewCandidates != null ? summary.pendingReviewCandidates : 0}">0</strong>
+                                            </span>
+                                            <span class="metric-pill metric-shortlisted">
+                                                Shortlisted <strong th:text="${summary.shortlistedCandidates != null ? summary.shortlistedCandidates : 0}">0</strong>
+                                            </span>
+                                            <span class="metric-pill metric-rejected">
+                                                Rejected <strong th:text="${summary.rejectedCandidates != null ? summary.rejectedCandidates : 0}">0</strong>
+                                            </span>
+                                            <span class="metric-pill metric-scheduled">
+                                                Scheduled <strong th:text="${summary.interviewScheduledCandidates != null ? summary.interviewScheduledCandidates : 0}">0</strong>
+                                            </span>
+                                            <span class="metric-pill metric-feedback">
+                                                Feedback <strong th:text="${summary.feedbackSubmittedCandidates != null ? summary.feedbackSubmittedCandidates : 0}">0</strong>
+                                            </span>
+                                        </div>
                                     </td>
-                                    <td
-                                        th:text="${summary.latestSubmittedAt != null ? #temporals.format(summary.latestSubmittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
-                                        -
+                                    <td class="text-center">
+                                        <div class="action-panel">
+                                            <a class="btn btn-outline-primary btn-sm"
+                                                th:if="${summary.requestId != null}"
+                                                th:href="@{/hr/internal-vacancies/request/{requestId}/candidates(requestId=${summary.requestId})}">
+                                                View Candidates
+                                            </a>
+                                            <span th:if="${summary.requestId == null}" class="text-muted small">Unavailable</span>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    </div>
+
+                    <div class="pagination-shell" th:if="${requestSummaryPage.totalPages > 1}"
+                        th:with="startPage=${requestSummaryPage.number - 2 > 0 ? requestSummaryPage.number - 2 : 0},
+                                 endPage=${requestSummaryPage.number + 2 < requestSummaryPage.totalPages - 1 ? requestSummaryPage.number + 2 : requestSummaryPage.totalPages - 1}">
+                        <div class="pagination-summary">
+                            Page <span th:text="${requestSummaryPage.number + 1}">1</span> of
+                            <span th:text="${requestSummaryPage.totalPages}">1</span>
+                        </div>
+                        <nav aria-label="Internal vacancy candidate summary pagination">
+                            <ul class="pagination pagination-sm">
+                                <li class="page-item" th:classappend="${requestSummaryPage.first} ? ' disabled' : ''">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-vacancies/candidates(page=${requestSummaryPage.number - 1},size=${requestSummaryPage.size},search=${searchTerm})}">
+                                        Previous
+                                    </a>
+                                </li>
+                                <li class="page-item"
+                                    th:each="pageIndex : ${#numbers.sequence(startPage, endPage)}"
+                                    th:classappend="${pageIndex == requestSummaryPage.number} ? ' active' : ''">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-vacancies/candidates(page=${pageIndex},size=${requestSummaryPage.size},search=${searchTerm})}"
+                                        th:text="${pageIndex + 1}">
+                                        1
+                                    </a>
+                                </li>
+                                <li class="page-item" th:classappend="${requestSummaryPage.last} ? ' disabled' : ''">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-vacancies/candidates(page=${requestSummaryPage.number + 1},size=${requestSummaryPage.size},search=${searchTerm})}">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>

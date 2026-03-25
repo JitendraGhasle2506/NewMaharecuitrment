@@ -2,17 +2,23 @@ package com.maharecruitment.gov.in.web.service.agency;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateBatchForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewScheduleForm;
 
 public interface AgencyRecruitmentNotificationPageService {
 
-    List<AgencyVisibleNotificationView> getVisibleNotifications(String actorEmail);
+    Page<AgencyVisibleNotificationView> getVisibleNotifications(String actorEmail, String searchText, Pageable pageable);
+
+    AgencyVisibleNotificationListMetricsView getVisibleNotificationMetrics(String actorEmail, String searchText);
 
     AgencyNotificationDetailView getNotificationDetail(String actorEmail, Long recruitmentNotificationId);
 

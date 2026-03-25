@@ -1,12 +1,13 @@
 package com.maharecruitment.gov.in.recruitment.service.impl;
 
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -16,8 +17,11 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEnti
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
+import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyCandidateRequestSummaryMetricsProjection;
+import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyCandidateRequestSummaryProjection;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyCandidateReviewService;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateRequestListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateRequestSummaryView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancySubmittedCandidateView;
 
@@ -38,51 +42,31 @@ public class InternalVacancyCandidateReviewServiceImpl implements InternalVacanc
     }
 
     @Override
-    public List<InternalVacancyCandidateRequestSummaryView> getCandidateRequestSummaries() {
-        List<InternalVacancySubmittedCandidateView> candidates = interviewDetailRepository
-                .findActiveCandidatesForInternalVacancies()
-                .stream()
-                .map(this::toCandidateView)
-                .toList();
+    public Page<InternalVacancyCandidateRequestSummaryView> getCandidateRequestSummaryPage(
+            String searchText,
+            Pageable pageable) {
+        return interviewDetailRepository.findInternalVacancyCandidateRequestSummaryPage(
+                        buildSearchPattern(searchText),
+                        pageable)
+                .map(this::toSummaryView);
+    }
 
-        Map<String, SummaryAccumulator> summaryByRequestId = new LinkedHashMap<>();
-        for (InternalVacancySubmittedCandidateView candidate : candidates) {
-            if (!StringUtils.hasText(candidate.getRequestId())) {
-                continue;
-            }
+    @Override
+    public InternalVacancyCandidateRequestListMetricsView getCandidateRequestSummaryMetrics(String searchText) {
+        InternalVacancyCandidateRequestSummaryMetricsProjection metrics = interviewDetailRepository
+                .summarizeInternalVacancyCandidateRequestMetrics(buildSearchPattern(searchText));
 
-            SummaryAccumulator accumulator = summaryByRequestId.computeIfAbsent(
-                    candidate.getRequestId(),
-                    ignored -> new SummaryAccumulator(
-                            candidate.getRequestId(),
-                            candidate.getProjectName(),
-                            0L,
-                            0L,
-                            candidate.getSubmittedAt()));
-            accumulator.totalCandidates++;
-            if (candidate.getCandidateStatus() != null
-                    && "INTERVIEW_SCHEDULED_BY_AGENCY".equals(candidate.getCandidateStatus().name())) {
-                accumulator.interviewScheduledCandidates++;
-            }
-            if (candidate.getSubmittedAt() != null
-                    && (accumulator.latestSubmittedAt == null
-                            || candidate.getSubmittedAt().isAfter(accumulator.latestSubmittedAt))) {
-                accumulator.latestSubmittedAt = candidate.getSubmittedAt();
-            }
-        }
-
-        List<InternalVacancyCandidateRequestSummaryView> summaries = summaryByRequestId.values().stream()
-                .map(accumulator -> InternalVacancyCandidateRequestSummaryView.builder()
-                        .requestId(accumulator.requestId)
-                        .projectName(accumulator.projectName)
-                        .totalCandidates(accumulator.totalCandidates)
-                        .interviewScheduledCandidates(accumulator.interviewScheduledCandidates)
-                        .latestSubmittedAt(accumulator.latestSubmittedAt)
-                        .build())
-                .toList();
-
-        log.info("Loaded HR internal vacancy candidate request summaries. requestCount={}", summaries.size());
-        return summaries;
+        return InternalVacancyCandidateRequestListMetricsView.builder()
+                .requestCount(toSafeLong(metrics != null ? metrics.getRequestCount() : null))
+                .totalCandidates(toSafeLong(metrics != null ? metrics.getTotalCandidates() : null))
+                .pendingReviewCandidates(toSafeLong(metrics != null ? metrics.getPendingReviewCandidates() : null))
+                .shortlistedCandidates(toSafeLong(metrics != null ? metrics.getShortlistedCandidates() : null))
+                .rejectedCandidates(toSafeLong(metrics != null ? metrics.getRejectedCandidates() : null))
+                .interviewScheduledCandidates(
+                        toSafeLong(metrics != null ? metrics.getInterviewScheduledCandidates() : null))
+                .feedbackSubmittedCandidates(
+                        toSafeLong(metrics != null ? metrics.getFeedbackSubmittedCandidates() : null))
+                .build();
     }
 
     @Override
@@ -173,24 +157,29 @@ public class InternalVacancyCandidateReviewServiceImpl implements InternalVacanc
         return requestId.trim().toUpperCase();
     }
 
-    private static final class SummaryAccumulator {
-        private final String requestId;
-        private final String projectName;
-        private long totalCandidates;
-        private long interviewScheduledCandidates;
-        private LocalDateTime latestSubmittedAt;
+    private InternalVacancyCandidateRequestSummaryView toSummaryView(
+            InternalVacancyCandidateRequestSummaryProjection projection) {
+        return InternalVacancyCandidateRequestSummaryView.builder()
+                .requestId(projection.getRequestId())
+                .projectName(projection.getProjectName())
+                .totalCandidates(toSafeLong(projection.getTotalCandidates()))
+                .pendingReviewCandidates(toSafeLong(projection.getPendingReviewCandidates()))
+                .shortlistedCandidates(toSafeLong(projection.getShortlistedCandidates()))
+                .rejectedCandidates(toSafeLong(projection.getRejectedCandidates()))
+                .interviewScheduledCandidates(toSafeLong(projection.getInterviewScheduledCandidates()))
+                .feedbackSubmittedCandidates(toSafeLong(projection.getFeedbackSubmittedCandidates()))
+                .latestSubmittedAt(projection.getLatestSubmittedAt())
+                .build();
+    }
 
-        private SummaryAccumulator(
-                String requestId,
-                String projectName,
-                long totalCandidates,
-                long interviewScheduledCandidates,
-                LocalDateTime latestSubmittedAt) {
-            this.requestId = requestId;
-            this.projectName = projectName;
-            this.totalCandidates = totalCandidates;
-            this.interviewScheduledCandidates = interviewScheduledCandidates;
-            this.latestSubmittedAt = latestSubmittedAt;
+    private long toSafeLong(Long value) {
+        return value == null ? 0L : value;
+    }
+
+    private String buildSearchPattern(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
         }
+        return "%" + value.trim().toUpperCase(Locale.ROOT) + "%";
     }
 }

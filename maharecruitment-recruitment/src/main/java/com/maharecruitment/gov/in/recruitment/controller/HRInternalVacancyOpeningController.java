@@ -7,6 +7,10 @@ import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -27,9 +31,13 @@ import com.maharecruitment.gov.in.recruitment.service.InternalVacancyCandidateRe
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateRequestListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningLevelOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningResult;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningSummaryView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateRequestSummaryView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyRequirementCommand;
 
 import jakarta.validation.Valid;
@@ -40,6 +48,8 @@ import jakarta.validation.Valid;
 public class HRInternalVacancyOpeningController {
 
     private static final Logger log = LoggerFactory.getLogger(HRInternalVacancyOpeningController.class);
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 50;
 
     private final InternalVacancyOpeningService internalVacancyOpeningService;
     private final InternalVacancyCandidateReviewService internalVacancyCandidateReviewService;
@@ -52,8 +62,34 @@ public class HRInternalVacancyOpeningController {
     }
 
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("openings", internalVacancyOpeningService.getAllOpenings());
+    public String list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
+            Model model) {
+        int resolvedPage = Math.max(page, 0);
+        int resolvedSize = resolvePageSize(size);
+        String normalizedSearch = normalizeSearch(search);
+
+        Page<InternalVacancyOpeningSummaryView> openingPage = loadOpeningPage(
+                normalizedSearch,
+                resolvedPage,
+                resolvedSize);
+        if (openingPage.getTotalPages() > 0 && resolvedPage >= openingPage.getTotalPages()) {
+            openingPage = loadOpeningPage(
+                    normalizedSearch,
+                    openingPage.getTotalPages() - 1,
+                    resolvedSize);
+        }
+
+        InternalVacancyOpeningListMetricsView openingMetrics = internalVacancyOpeningService
+                .getOpeningListMetrics(normalizedSearch);
+
+        model.addAttribute("openings", openingPage.getContent());
+        model.addAttribute("openingPage", openingPage);
+        model.addAttribute("openingMetrics", openingMetrics);
+        model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
+        model.addAttribute("pageSize", openingPage.getSize());
         return "hr/internal-vacancy-opening-list";
     }
 
@@ -64,8 +100,34 @@ public class HRInternalVacancyOpeningController {
     }
 
     @GetMapping("/candidates")
-    public String viewAllSubmittedCandidates(Model model) {
-        model.addAttribute("requestSummaries", internalVacancyCandidateReviewService.getCandidateRequestSummaries());
+    public String viewAllSubmittedCandidates(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
+            Model model) {
+        int resolvedPage = Math.max(page, 0);
+        int resolvedSize = resolvePageSize(size);
+        String normalizedSearch = normalizeSearch(search);
+
+        Page<InternalVacancyCandidateRequestSummaryView> requestSummaryPage = loadCandidateSummaryPage(
+                normalizedSearch,
+                resolvedPage,
+                resolvedSize);
+        if (requestSummaryPage.getTotalPages() > 0 && resolvedPage >= requestSummaryPage.getTotalPages()) {
+            requestSummaryPage = loadCandidateSummaryPage(
+                    normalizedSearch,
+                    requestSummaryPage.getTotalPages() - 1,
+                    resolvedSize);
+        }
+
+        InternalVacancyCandidateRequestListMetricsView candidateSummaryMetrics = internalVacancyCandidateReviewService
+                .getCandidateRequestSummaryMetrics(normalizedSearch);
+
+        model.addAttribute("requestSummaries", requestSummaryPage.getContent());
+        model.addAttribute("requestSummaryPage", requestSummaryPage);
+        model.addAttribute("candidateSummaryMetrics", candidateSummaryMetrics);
+        model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
+        model.addAttribute("pageSize", requestSummaryPage.getSize());
         return "hr/internal-vacancy-candidate-all-list";
     }
 
@@ -134,6 +196,44 @@ public class HRInternalVacancyOpeningController {
         }
     }
 
+    @PostMapping("/{internalVacancyOpeningId}/status")
+    public String updateStatus(
+            @PathVariable Long internalVacancyOpeningId,
+            @RequestParam("action") String action,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+        String actorEmail = resolveActorEmail(principal);
+
+        try {
+            InternalVacancyOpeningStatus targetStatus = resolveStatusAction(action);
+            InternalVacancyOpeningResult result = internalVacancyOpeningService.changeOpeningStatus(
+                    internalVacancyOpeningId,
+                    actorEmail,
+                    targetStatus);
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    buildStatusChangeMessage(targetStatus, result.getRequestId()));
+        } catch (RecruitmentNotificationException ex) {
+            log.warn(
+                    "Unable to update internal vacancy opening status. openingId={}, actor={}, reason={}",
+                    internalVacancyOpeningId,
+                    actorEmail,
+                    ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+
+        redirectAttributes.addAttribute("page", Math.max(page, 0));
+        redirectAttributes.addAttribute("size", resolvePageSize(size));
+        String normalizedSearch = normalizeSearch(search);
+        if (normalizedSearch != null) {
+            redirectAttributes.addAttribute("search", normalizedSearch);
+        }
+        return "redirect:/hr/internal-vacancies";
+    }
+
     @GetMapping("/by-designation/{designationId}")
     @ResponseBody
     public List<InternalVacancyOpeningLevelOptionView> getLevelsByDesignation(@PathVariable Long designationId) {
@@ -150,6 +250,7 @@ public class HRInternalVacancyOpeningController {
     private void populateFormModel(Model model, InternalVacancyOpeningForm openingForm, boolean isEdit) {
         model.addAttribute("openingForm", openingForm);
         model.addAttribute("isEdit", isEdit);
+        model.addAttribute("isSubmittedEdit", isEdit && openingForm.getCurrentStatus() == InternalVacancyOpeningStatus.OPEN);
         model.addAttribute("projectOptions", internalVacancyOpeningService.getAvailableInternalProjects());
         model.addAttribute("designationOptions", internalVacancyOpeningService.getAvailableDesignations());
         model.addAttribute("interviewAuthorityRoleOptions", internalVacancyOpeningService.getAvailableInterviewAuthorityRoles());
@@ -204,6 +305,21 @@ public class HRInternalVacancyOpeningController {
         throw new RecruitmentNotificationException("Unsupported vacancy opening action.");
     }
 
+    private InternalVacancyOpeningStatus resolveStatusAction(String action) {
+        if (action == null) {
+            throw new RecruitmentNotificationException("Vacancy opening status action is required.");
+        }
+
+        String normalizedAction = action.trim().toLowerCase(Locale.ROOT);
+        if ("activate".equals(normalizedAction)) {
+            return InternalVacancyOpeningStatus.OPEN;
+        }
+        if ("deactivate".equals(normalizedAction)) {
+            return InternalVacancyOpeningStatus.CLOSED;
+        }
+        throw new RecruitmentNotificationException("Unsupported vacancy opening status action.");
+    }
+
     private String buildSuccessMessage(
             InternalVacancyOpeningStatus targetStatus,
             String requestId,
@@ -212,7 +328,22 @@ public class HRInternalVacancyOpeningController {
         if (targetStatus == InternalVacancyOpeningStatus.DRAFT) {
             return "Internal vacancy draft " + operationLabel + " successfully. Request ID: " + requestId;
         }
+        if (editMode) {
+            return "Internal vacancy opening updated successfully. Request ID: " + requestId;
+        }
         return "Internal vacancy opening submitted successfully. Request ID: " + requestId;
+    }
+
+    private String buildStatusChangeMessage(
+            InternalVacancyOpeningStatus targetStatus,
+            String requestId) {
+        if (targetStatus == InternalVacancyOpeningStatus.OPEN) {
+            return "Internal vacancy opening activated successfully. Request ID: " + requestId;
+        }
+        if (targetStatus == InternalVacancyOpeningStatus.CLOSED) {
+            return "Internal vacancy opening deactivated successfully. Request ID: " + requestId;
+        }
+        return "Internal vacancy opening status updated successfully. Request ID: " + requestId;
     }
 
     private String resolveActorEmail(Principal principal) {
@@ -220,5 +351,35 @@ public class HRInternalVacancyOpeningController {
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
         return principal.getName();
+    }
+
+    private Page<InternalVacancyOpeningSummaryView> loadOpeningPage(
+            String normalizedSearch,
+            int page,
+            int size) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                resolvePageSize(size),
+                Sort.by(Sort.Direction.DESC, "internalVacancyOpeningId"));
+        return internalVacancyOpeningService.getOpeningPage(normalizedSearch, pageable);
+    }
+
+    private Page<InternalVacancyCandidateRequestSummaryView> loadCandidateSummaryPage(
+            String normalizedSearch,
+            int page,
+            int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), resolvePageSize(size));
+        return internalVacancyCandidateReviewService.getCandidateRequestSummaryPage(normalizedSearch, pageable);
+    }
+
+    private int resolvePageSize(int size) {
+        if (size <= 0) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    private String normalizeSearch(String search) {
+        return search == null || search.isBlank() ? null : search.trim();
     }
 }

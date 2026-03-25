@@ -5,63 +5,495 @@
     <meta charset="UTF-8">
     <title>Internal Vacancy Openings</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .internal-vacancy-page .header {
+            gap: 16px;
+        }
+
+        .internal-vacancy-page .card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-top: 20px;
+        }
+
+        .internal-vacancy-page .alert {
+            margin-bottom: 0;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 0;
+        }
+
+        .overview-card,
+        .opening-shell,
+        .empty-state {
+            border: 1px solid #d8e4f5;
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .overview-card {
+            padding: 18px 18px 16px;
+            background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
+        }
+
+        .overview-label {
+            color: #607391;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .35px;
+        }
+
+        .overview-value {
+            margin-top: 6px;
+            color: #163868;
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .overview-note {
+            margin-top: 6px;
+            color: #6b7d99;
+            font-size: 12px;
+        }
+
+        .opening-shell {
+            overflow: hidden;
+        }
+
+        .opening-shell .table {
+            margin-bottom: 0;
+        }
+
+        .opening-shell .table thead th {
+            background: #eef4ff;
+            color: #20406f;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .25px;
+            white-space: nowrap;
+            padding: 14px 16px;
+        }
+
+        .opening-shell .table tbody td {
+            padding: 16px;
+            vertical-align: top;
+        }
+
+        .request-link {
+            color: #163e74;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .request-link:hover {
+            color: #0d2c57;
+            text-decoration: underline;
+        }
+
+        .project-subtext {
+            margin-top: 4px;
+            color: #6d7d96;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .2px;
+            border: 1px solid transparent;
+        }
+
+        .status-draft {
+            background: #fff5df;
+            border-color: #f0dfab;
+            color: #946200;
+        }
+
+        .status-open {
+            background: #e7f8ee;
+            border-color: #b8e1c7;
+            color: #1f7a3d;
+        }
+
+        .status-closed {
+            background: #f3f5f8;
+            border-color: #d8dde6;
+            color: #55657e;
+        }
+
+        .action-cell {
+            min-width: 290px;
+        }
+
+        .action-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px 12px;
+            border: 1px solid #d9e4f4;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .action-heading {
+            color: #23436f;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .action-row form {
+            margin: 0;
+        }
+
+        .action-row .btn {
+            padding: 5px 10px;
+        }
+
+        .action-note {
+            color: #6d7d96;
+            font-size: 11px;
+            line-height: 1.25;
+            margin: 0;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 16px;
+            margin-bottom: 0;
+            padding: 18px;
+            border: 1px solid #d9e4f4;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #fcfdff 0%, #f7faff 100%);
+        }
+
+        .filter-form {
+            display: flex;
+            flex: 1 1 560px;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: flex-end;
+        }
+
+        .filter-field {
+            min-width: 180px;
+        }
+
+        .filter-field.filter-search {
+            flex: 1 1 320px;
+        }
+
+        .filter-meta {
+            color: #607391;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .pagination-shell {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            margin-top: 0;
+            padding-top: 4px;
+        }
+
+        .pagination-summary {
+            color: #607391;
+            font-size: 13px;
+        }
+
+        .pagination-shell .pagination {
+            margin-bottom: 0;
+        }
+
+        .empty-state {
+            padding: 36px 24px;
+            text-align: center;
+            background: linear-gradient(180deg, #fcfdff 0%, #f5f9ff 100%);
+        }
+
+        .empty-state h5 {
+            color: #1f3d67;
+        }
+
+        @media (max-width: 1200px) {
+            .overview-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .internal-vacancy-page .card-body {
+                gap: 16px;
+            }
+
+            .overview-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar-actions {
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .action-cell {
+                min-width: 240px;
+            }
+
+            .filter-form,
+            .filter-field,
+            .filter-field.filter-search {
+                flex: 1 1 100%;
+                min-width: 100%;
+            }
+
+            .action-row > * {
+                flex: 1 1 100%;
+            }
+
+            .filter-bar,
+            .pagination-shell {
+                align-items: stretch;
+            }
+        }
+    </style>
 </head>
 
 <body>
     <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Internal Vacancy Openings', ~{::section})}">
         <section>
-            <div class="card add-emp-card">
+            <div class="card add-emp-card internal-vacancy-page">
                 <div class="header d-flex justify-content-between align-items-center">
                     <h2 class="mb-0">Internal Vacancy Openings</h2>
-                    <a class="btn btn-primary" th:href="@{/hr/internal-vacancies/new}">Create Opening</a>
+                    <div class="toolbar-actions">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/internal-vacancies/candidates}">
+                            All Candidate Details
+                        </a>
+                        <a class="btn btn-primary" th:href="@{/hr/internal-vacancies/new}">Create Opening</a>
+                    </div>
                 </div>
 
                 <div class="card-body">
                     <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
                     <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Request ID</th>
-                                    <th>Project Name</th>
-                                    <th>Status</th>
-                                    <th>Created At</th>
-                                    <th class="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:if="${#lists.isEmpty(openings)}">
-                                    <td colspan="5" class="text-center text-muted">No internal vacancy openings created yet.</td>
-                                </tr>
-                                <tr th:each="opening : ${openings}">
-                                    <td>
-                                        <a th:if="${opening.status.name() == 'OPEN'}"
-                                            th:href="@{/hr/internal-vacancies/request/{requestId}/candidates(requestId=${opening.requestId})}"
-                                            th:text="${opening.requestId}"></a>
-                                        <span th:if="${opening.status.name() != 'OPEN'}"
-                                            th:text="${opening.requestId}"></span>
-                                    </td>
-                                    <td th:text="${opening.projectName}"></td>
-                                    <td th:text="${opening.status}"></td>
-                                    <td th:text="${#temporals.format(opening.createdDateTime, 'dd-MMM-yyyy HH:mm')}"></td>
-                                    <td class="text-center">
-                                        <a class="btn btn-outline-primary btn-sm"
-                                            th:if="${opening.status.name() == 'DRAFT'}"
-                                            th:href="@{/hr/internal-vacancies/{id}/edit(id=${opening.internalVacancyOpeningId})}">
-                                            Edit
-                                        </a>
-                                        <a class="btn btn-outline-secondary btn-sm"
-                                            th:if="${opening.status.name() == 'OPEN'}"
-                                            th:href="@{/hr/internal-vacancies/request/{requestId}/candidates(requestId=${opening.requestId})}">
-                                            Candidates
-                                        </a>
-                                        <span class="text-muted small" th:if="${opening.status.name() != 'DRAFT' and opening.status.name() != 'OPEN'}">Locked</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="overview-grid">
+                        <div class="overview-card">
+                            <div class="overview-label">Total Openings</div>
+                            <div class="overview-value" th:text="${openingMetrics.totalOpenings}">0</div>
+                            <div class="overview-note">All internal vacancy requests created by HR</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Draft Openings</div>
+                            <div class="overview-value" th:text="${openingMetrics.draftOpenings}">0</div>
+                            <div class="overview-note">Still editable and not visible externally</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Active Openings</div>
+                            <div class="overview-value" th:text="${openingMetrics.activeOpenings}">0</div>
+                            <div class="overview-note">Visible to released agencies and interview authorities</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Deactivated</div>
+                            <div class="overview-value" th:text="${openingMetrics.closedOpenings}">0</div>
+                            <div class="overview-note">Hidden from agencies and interview authorities</div>
+                        </div>
+                    </div>
+
+                    <div class="filter-bar">
+                        <form class="filter-form" th:action="@{/hr/internal-vacancies}" method="get">
+                            <div class="filter-field filter-search">
+                                <label class="form-label mb-1">Search Openings</label>
+                                <input type="text"
+                                    class="form-control"
+                                    name="search"
+                                    th:value="${searchTerm}"
+                                    placeholder="Search by request ID or project name">
+                            </div>
+                            <div class="filter-field">
+                                <label class="form-label mb-1">Page Size</label>
+                                <select name="size" class="form-select">
+                                    <option value="10" th:selected="${pageSize == 10}">10 per page</option>
+                                    <option value="25" th:selected="${pageSize == 25}">25 per page</option>
+                                    <option value="50" th:selected="${pageSize == 50}">50 per page</option>
+                                </select>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-primary">Search</button>
+                                <a class="btn btn-outline-secondary" th:href="@{/hr/internal-vacancies}">Clear</a>
+                            </div>
+                        </form>
+                        <div class="filter-meta"
+                            th:text="${openingPage.totalElements > 0 ? 'Showing ' + (openingPage.number * openingPage.size + 1) + ' to ' + (((openingPage.number + 1) * openingPage.size) > openingPage.totalElements ? openingPage.totalElements : ((openingPage.number + 1) * openingPage.size)) + ' of ' + openingPage.totalElements + ' openings' : 'No openings found for the current filter'}">
+                            Showing 1 to 10 of 25 openings
+                        </div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(openings)}" class="empty-state">
+                        <h5 class="mb-2">No internal vacancy openings yet</h5>
+                        <div class="text-muted"
+                            th:text="${searchTerm != null and !#strings.isEmpty(searchTerm) ? 'No internal vacancy openings match the current search.' : 'Create the first internal vacancy opening to start agency release and interview assignment.'}">
+                            Create the first internal vacancy opening to start agency release and interview assignment.
+                        </div>
+                    </div>
+
+                    <div th:if="${!#lists.isEmpty(openings)}" class="opening-shell">
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Request ID</th>
+                                        <th>Project</th>
+                                        <th>Status</th>
+                                        <th>Created At</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="opening, stat : ${openings}">
+                                        <td th:text="${stat.count}">1</td>
+                                        <td>
+                                            <a th:if="${opening.status.name() == 'OPEN'}"
+                                                class="request-link"
+                                                th:href="@{/hr/internal-vacancies/request/{requestId}/candidates(requestId=${opening.requestId})}"
+                                                th:text="${opening.requestId}">
+                                                REQ-0000
+                                            </a>
+                                            <span th:if="${opening.status.name() != 'OPEN'}"
+                                                th:text="${opening.requestId}">REQ-0000</span>
+                                        </td>
+                                        <td>
+                                            <div th:text="${opening.projectName}">Project Name</div>
+                                            <div class="project-subtext"
+                                                th:text="${opening.status.name() == 'OPEN' ? 'Currently available in the active recruitment flow' : (opening.status.name() == 'CLOSED' ? 'Currently hidden from all external users' : 'Draft stage, not released yet')}">
+                                                Draft stage, not released yet
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge"
+                                                th:classappend="${opening.status.name() == 'OPEN' ? ' status-open' : (opening.status.name() == 'CLOSED' ? ' status-closed' : ' status-draft')}"
+                                                th:text="${opening.status.name() == 'OPEN' ? 'ACTIVE' : (opening.status.name() == 'CLOSED' ? 'DEACTIVATED' : 'DRAFT')}">
+                                                DRAFT
+                                            </span>
+                                        </td>
+                                        <td th:text="${#temporals.format(opening.createdDateTime, 'dd-MMM-yyyy HH:mm')}">24-Mar-2026 11:15</td>
+                                        <td class="action-cell">
+                                            <div class="action-panel">
+                                                <div class="action-heading">Actions</div>
+                                                <div class="action-row">
+                                                    <a class="btn btn-outline-primary btn-sm"
+                                                        th:if="${opening.status.name() == 'DRAFT' or opening.status.name() == 'OPEN'}"
+                                                        th:href="@{/hr/internal-vacancies/{id}/edit(id=${opening.internalVacancyOpeningId})}">
+                                                        Edit
+                                                    </a>
+                                                    <a class="btn btn-outline-secondary btn-sm"
+                                                        th:if="${opening.status.name() == 'OPEN'}"
+                                                        th:href="@{/hr/internal-vacancies/request/{requestId}/candidates(requestId=${opening.requestId})}">
+                                                        View
+                                                    </a>
+                                                    <form class="d-inline"
+                                                        th:if="${opening.status.name() == 'OPEN'}"
+                                                        th:action="@{/hr/internal-vacancies/{id}/status(id=${opening.internalVacancyOpeningId})}"
+                                                        method="post"
+                                                        onsubmit="return confirm('Deactivate this internal vacancy opening? It will no longer be visible to agencies or interview authorities.');">
+                                                        <input type="hidden" name="page" th:value="${openingPage.number}">
+                                                        <input type="hidden" name="size" th:value="${openingPage.size}">
+                                                        <input type="hidden" name="search" th:value="${searchTerm}">
+                                                        <button type="submit" name="action" value="deactivate" class="btn btn-outline-danger btn-sm">
+                                                            Deactivate
+                                                        </button>
+                                                    </form>
+                                                    <form class="d-inline"
+                                                        th:if="${opening.status.name() == 'CLOSED'}"
+                                                        th:action="@{/hr/internal-vacancies/{id}/status(id=${opening.internalVacancyOpeningId})}"
+                                                        method="post"
+                                                        onsubmit="return confirm('Activate this internal vacancy opening again?');">
+                                                        <input type="hidden" name="page" th:value="${openingPage.number}">
+                                                        <input type="hidden" name="size" th:value="${openingPage.size}">
+                                                        <input type="hidden" name="search" th:value="${searchTerm}">
+                                                        <button type="submit" name="action" value="activate" class="btn btn-outline-success btn-sm">
+                                                            Activate
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                                <div class="action-note"
+                                                    th:text="${opening.status.name() == 'OPEN' ? 'Active openings can be edited, reviewed, or deactivated at any time.' : (opening.status.name() == 'CLOSED' ? 'Deactivated openings stay hidden until HR activates them again.' : 'Draft openings stay inside HR until they are submitted.')}">
+                                                    Draft openings stay inside HR until they are submitted.
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="pagination-shell" th:if="${openingPage.totalPages > 1}"
+                        th:with="startPage=${openingPage.number - 2 > 0 ? openingPage.number - 2 : 0},
+                                 endPage=${openingPage.number + 2 < openingPage.totalPages - 1 ? openingPage.number + 2 : openingPage.totalPages - 1}">
+                        <div class="pagination-summary">
+                            Page <span th:text="${openingPage.number + 1}">1</span> of
+                            <span th:text="${openingPage.totalPages}">1</span>
+                        </div>
+                        <nav aria-label="Internal vacancy opening pagination">
+                            <ul class="pagination pagination-sm">
+                                <li class="page-item" th:classappend="${openingPage.first} ? ' disabled' : ''">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-vacancies(page=${openingPage.number - 1},size=${openingPage.size},search=${searchTerm})}">
+                                        Previous
+                                    </a>
+                                </li>
+                                <li class="page-item"
+                                    th:each="pageIndex : ${#numbers.sequence(startPage, endPage)}"
+                                    th:classappend="${pageIndex == openingPage.number} ? ' active' : ''">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-vacancies(page=${pageIndex},size=${openingPage.size},search=${searchTerm})}"
+                                        th:text="${pageIndex + 1}">
+                                        1
+                                    </a>
+                                </li>
+                                <li class="page-item" th:classappend="${openingPage.last} ? ' disabled' : ''">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-vacancies(page=${openingPage.number + 1},size=${openingPage.size},search=${searchTerm})}">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>

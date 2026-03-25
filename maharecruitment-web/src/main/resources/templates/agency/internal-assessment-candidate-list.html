@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Internal Assessment Candidates</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="agency-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Internal Assessments', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0" th:text="${selectedRequestId != null ? selectedRequestId : 'Internal Assessment Candidates'}">
+                            REQ-0000
+                        </h2>
+                        <small class="text-muted"
+                            th:text="${selectedProjectName != null ? selectedProjectName : 'Assessment submitted candidates for this request'}">
+                            Project Name
+                        </small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/internal-assessments}">
+                        Back to Requests
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Candidate</th>
+                                    <th>Designation</th>
+                                    <th>Assessment</th>
+                                    <th>Recommendation</th>
+                                    <th>Level 2 Status</th>
+                                    <th class="text-center">View</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(assessmentCandidates)}">
+                                    <td colspan="7" class="text-center text-muted">
+                                        No assessment submitted candidates are available for this request.
+                                    </td>
+                                </tr>
+                                <tr th:each="candidate, stat : ${assessmentCandidates}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td>
+                                        <div th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">Candidate</div>
+                                        <small class="text-muted"
+                                            th:text="${(candidate.candidateEmail != null ? candidate.candidateEmail : '-') + ' | ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '-')}">
+                                            email | mobile
+                                        </small>
+                                    </td>
+                                    <td th:text="${(candidate.designationName != null ? candidate.designationName : '-') + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">
+                                        Designation | Level
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold"
+                                            th:text="${candidate.assessmentSubmittedAt != null ? #temporals.format(candidate.assessmentSubmittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                            01-Apr-2026 10:30
+                                        </div>
+                                        <small class="text-muted"
+                                            th:text="${candidate.interviewerGrade != null ? 'Grade: ' + candidate.interviewerGrade : 'Grade: -'}">
+                                            Grade: A
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge"
+                                            th:classappend="${candidate.recommendationStatus == 'RECOMMENDED' ? ' text-bg-success' : ' text-bg-danger'}"
+                                            th:text="${candidate.recommendationStatus != null ? #strings.replace(candidate.recommendationStatus, '_', ' ') : '-'}">
+                                            RECOMMENDED
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge"
+                                            th:if="${candidate.workflowStatus != null}"
+                                            th:classappend="${' ' + candidate.workflowStatus.bootstrapBadgeClass}"
+                                            th:text="${candidate.workflowStatus.name()}">
+                                            READY_FOR_L2
+                                        </span>
+                                        <div class="small text-muted mt-1"
+                                            th:if="${candidate.workflowStatus != null and candidate.levelTwoInterviewDateTime != null
+                                                and candidate.workflowStatus.name() != 'L2_RESCHEDULE_REQUESTED'}"
+                                            th:text="${#temporals.format(candidate.levelTwoInterviewDateTime, 'dd-MMM-yyyy')}">
+                                            01-Apr-2026
+                                        </div>
+                                        <div class="small text-muted"
+                                            th:if="${candidate.workflowStatus != null and candidate.levelTwoInterviewTimeSlot != null
+                                                and candidate.workflowStatus.name() != 'L2_RESCHEDULE_REQUESTED'}"
+                                            th:text="${candidate.levelTwoInterviewTimeSlot}">
+                                            10:00 AM - 10:30 AM
+                                        </div>
+                                        <span class="text-muted"
+                                            th:if="${candidate.workflowStatus == null}">
+                                            Not recommended for Level 2
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:href="@{/agency/internal-assessments/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}(
+                                                recruitmentNotificationId=${candidate.recruitmentNotificationId},
+                                                recruitmentInterviewDetailId=${candidate.recruitmentInterviewDetailId})}">
+                                            <span th:text="${candidate.workflowStatus != null and candidate.workflowStatus.name() == 'L2_RESCHEDULE_REQUESTED' ? 'View & Reschedule' : 'View Assessment'}">View Assessment</span>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

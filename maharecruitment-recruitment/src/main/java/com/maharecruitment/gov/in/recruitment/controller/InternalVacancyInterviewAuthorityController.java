@@ -30,6 +30,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateR
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentPanelMemberInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateFilterType;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
 
 import jakarta.validation.Valid;
@@ -65,12 +66,14 @@ public class InternalVacancyInterviewAuthorityController {
     @GetMapping("/request/{requestId}/candidates")
     public String candidateList(
             @PathVariable String requestId,
+            @RequestParam(name = "filter", required = false) String filter,
             Model model,
             Principal principal,
             RedirectAttributes redirectAttributes) {
         try {
+            InternalVacancyCandidateFilterType filterType = InternalVacancyCandidateFilterType.fromRequestValue(filter);
             InternalVacancyCandidateListView candidateListView = shortlistingService
-                    .getAssignedCandidatesByRequestId(resolveActorEmail(principal), requestId);
+                    .getAssignedCandidatesByRequestId(resolveActorEmail(principal), requestId, filterType);
             model.addAttribute("candidateListView", candidateListView);
             return "interview-authority/internal-vacancy-candidate-list";
         } catch (RecruitmentNotificationException ex) {

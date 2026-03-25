@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Leave Approvals</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .approval-card {
+            margin: 20px auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: none;
+        }
+        .approval-card .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+        }
+        .table thead th {
+            background-color: #f1f3f5;
+            font-weight: 600;
+            color: #495057;
+            border-top: none;
+        }
+        .status-badge-pending {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .btn-action {
+            padding: 5px 15px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .remarks-input {
+            min-width: 200px;
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Leave Approvals', 'HOD Dashboard', ~{::section})}">
+        <section>
+            <div class="container-fluid">
+                <div class="card approval-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fa fa-check-square me-2"></i>Pending Leave Requests</h4>
+                        <a th:href="@{/employee/attendance-module}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fa fa-arrow-left"></i> Back
+                        </a>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                            <i class="fa fa-check-circle me-2"></i><span th:text="${success}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <i class="fa fa-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Employee Name</th>
+                                        <th>Leave Type</th>
+                                        <th>Period</th>
+                                        <th>Duration</th>
+                                        <th>Reason</th>
+                                        <th>Applied On</th>
+                                        <th>Remarks</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="leave : ${pendingLeaves}">
+                                        <td>
+                                            <div class="fw-bold" th:text="${leave.employeeName}"></div>
+                                            <small class="text-muted" th:text="'ID: ' + ${leave.employeeCode ?: leave.employeeId}"></small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info text-dark" th:text="${leave.leaveType}"></span>
+                                            <br><small th:text="${leave.leaveCategory}"></small>
+                                        </td>
+                                        <td>
+                                            <span th:text="${#temporals.format(leave.startDate, 'dd MMM yyyy')}"></span> to 
+                                            <br><span th:text="${#temporals.format(leave.endDate, 'dd MMM yyyy')}"></span>
+                                        </td>
+                                        <td>
+                                            <!-- Simple duration calculation if possible or just show dates -->
+                                            <span class="text-muted">Applied Duration</span>
+                                        </td>
+                                        <td>
+                                            <span th:text="${leave.description}" th:title="${leave.description}"></span>
+                                        </td>
+                                        <td>
+                                            <small th:text="${#temporals.format(leave.applicationDate, 'dd-MM-yyyy HH:mm')}"></small>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm remarks-input" 
+                                                   th:id="'remarks-' + ${leave.leaveId}" placeholder="Enter remarks...">
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-success btn-sm btn-action me-2" 
+                                                        th:onclick="'submitAction(' + ${leave.leaveId} + ', \'approve\')'">
+                                                    <i class="fa fa-check"></i> Approve
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm btn-action" 
+                                                        th:onclick="'submitAction(' + ${leave.leaveId} + ', \'reject\')'">
+                                                    <i class="fa fa-times"></i> Reject
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(pendingLeaves)}">
+                                        <td colspan="8" class="text-center py-4 text-muted">
+                                            <i class="fa fa-inbox fa-3x mb-3 d-block"></i>
+                                            No pending leave requests found.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Hidden action forms -->
+            <form id="approveForm" th:action="@{/hod1/approveLeave}" method="post" style="display:none;">
+                <input type="hidden" name="leaveId" id="approveLeaveId">
+                <input type="hidden" name="remarks" id="approveRemarks">
+            </form>
+            <form id="rejectForm" th:action="@{/hod1/rejectLeave}" method="post" style="display:none;">
+                <input type="hidden" name="leaveId" id="rejectLeaveId">
+                <input type="hidden" name="remarks" id="rejectRemarks">
+            </form>
+        </section>
+    </th:block>
+
+    <script th:src="@{https://code.jquery.com/jquery-3.6.0.min.js}"></script>
+    <script>
+        function submitAction(leaveId, action) {
+            var remarks = $('#remarks-' + leaveId).val();
+            if (action === 'reject' && (!remarks || remarks.trim() === '')) {
+                alert('Please provide remarks for rejection.');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to ' + action + ' this leave request?')) {
+                if (action === 'approve') {
+                    $('#approveLeaveId').val(leaveId);
+                    $('#approveRemarks').val(remarks);
+                    $('#approveForm').submit();
+                } else {
+                    $('#rejectLeaveId').val(leaveId);
+                    $('#rejectRemarks').val(remarks);
+                    $('#rejectForm').submit();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
