@@ -65,7 +65,7 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
 
         AgencyMaster savedEntity = agencyRepository.save(entity);
         AgencyUserProvisioningResult provisioningResult = agencyUserProvisioningService.createOrSyncAgencyUser(
-                buildProvisioningRequest(request, null));
+                buildProvisioningRequest(savedEntity, null));
 
         AgencyMasterResponse response = mapper.toResponse(savedEntity, true);
         applyProvisioningDetails(response, provisioningResult);
@@ -90,7 +90,7 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
 
         AgencyMaster savedEntity = agencyRepository.save(entity);
         AgencyUserProvisioningResult provisioningResult = agencyUserProvisioningService.createOrSyncAgencyUser(
-                buildProvisioningRequest(request, previousEmail));
+                buildProvisioningRequest(savedEntity, previousEmail));
 
         AgencyMasterResponse response = mapper.toResponse(savedEntity, true);
         applyProvisioningDetails(response, provisioningResult);
@@ -239,11 +239,12 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
         return entity;
     }
 
-    private AgencyUserProvisioningRequest buildProvisioningRequest(AgencyMasterRequest request, String previousEmail) {
+    private AgencyUserProvisioningRequest buildProvisioningRequest(AgencyMaster agency, String previousEmail) {
         AgencyUserProvisioningRequest provisioningRequest = new AgencyUserProvisioningRequest();
-        provisioningRequest.setName(normalizeName(request.getContactPersonName()));
-        provisioningRequest.setEmail(normalizeEmail(request.getOfficialEmail()));
-        provisioningRequest.setMobileNo(request.getContactPersonMobileNo().trim());
+        provisioningRequest.setName(normalizeName(agency.getContactPersonName()));
+        provisioningRequest.setEmail(normalizeEmail(agency.getOfficialEmail()));
+        provisioningRequest.setMobileNo(agency.getContactPersonMobileNo().trim());
+        provisioningRequest.setAgencyId(agency.getAgencyId());
         provisioningRequest.setPreviousEmail(previousEmail);
         return provisioningRequest;
     }

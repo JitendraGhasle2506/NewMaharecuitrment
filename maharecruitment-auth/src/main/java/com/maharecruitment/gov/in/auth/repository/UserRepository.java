@@ -29,22 +29,37 @@ public interface UserRepository extends JpaRepository<User, Long> {
             """)
     List<Long> findDistinctUserIdsByRoleName(@Param("roleName") String roleName);
 
-    @Query("""
-            select distinct u.id
-            from User u
-            join u.roles r
-            where u.departmentRegistrationId.departmentRegistrationId = :departmentRegistrationId
-              and upper(trim(r.name)) = upper(trim(:roleName))
-            """)
+    @Query(
+            value = """
+                    select distinct u.id
+                    from users u
+                    join users_roles ur on ur.user_id = u.id
+                    join roles r on r.id = ur.role_id
+                    left join user_department_mapping udm
+                        on udm.user_id = u.id
+                       and udm.active = true
+                    where (
+                            u.department_registration_id = :departmentRegistrationId
+                            or udm.department_registration_id = :departmentRegistrationId
+                    )
+                      and upper(trim(r.name)) = upper(trim(:roleName))
+                    """,
+            nativeQuery = true)
     List<Long> findDistinctUserIdsByDepartmentRegistrationIdAndRoleName(
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("roleName") String roleName);
 
-    @Query("""
-            select distinct u.id
-            from User u
-            where u.departmentRegistrationId.departmentRegistrationId = :departmentRegistrationId
-            """)
+    @Query(
+            value = """
+                    select distinct u.id
+                    from users u
+                    left join user_department_mapping udm
+                        on udm.user_id = u.id
+                       and udm.active = true
+                    where u.department_registration_id = :departmentRegistrationId
+                       or udm.department_registration_id = :departmentRegistrationId
+                    """,
+            nativeQuery = true)
     List<Long> findDistinctUserIdsByDepartmentRegistrationId(
             @Param("departmentRegistrationId") Long departmentRegistrationId);
 

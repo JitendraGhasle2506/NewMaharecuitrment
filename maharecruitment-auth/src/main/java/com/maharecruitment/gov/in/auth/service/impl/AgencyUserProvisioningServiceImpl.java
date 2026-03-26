@@ -16,6 +16,7 @@ import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.AgencyUserProvisioningService;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.util.SecurePasswordGenerator;
 
 @Service
@@ -27,14 +28,17 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserAffiliationService userAffiliationService;
 
     public AgencyUserProvisioningServiceImpl(
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            UserAffiliationService userAffiliationService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userAffiliationService = userAffiliationService;
     }
 
     @Override
@@ -61,6 +65,8 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
         ensureRole(existingUser, agencyRole);
 
         User savedUser = userRepository.save(existingUser);
+        userAffiliationService.synchronizeUserProfile(savedUser);
+        userAffiliationService.synchronizePrimaryAgency(savedUser, request.getAgencyId());
         return AgencyUserProvisioningResult.builder()
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())
@@ -86,6 +92,8 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
         user.setRoles(List.of(agencyRole));
 
         User savedUser = userRepository.save(user);
+        userAffiliationService.synchronizeUserProfile(savedUser);
+        userAffiliationService.synchronizePrimaryAgency(savedUser, request.getAgencyId());
 
         return AgencyUserProvisioningResult.builder()
                 .userId(savedUser.getId())

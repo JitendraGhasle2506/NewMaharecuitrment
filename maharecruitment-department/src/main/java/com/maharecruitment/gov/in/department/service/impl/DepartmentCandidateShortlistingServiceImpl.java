@@ -8,7 +8,7 @@ import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.entity.User;
-import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.service.DepartmentCandidateShortlistingService;
 import com.maharecruitment.gov.in.department.service.model.DepartmentActorContext;
@@ -29,15 +29,15 @@ public class DepartmentCandidateShortlistingServiceImpl implements DepartmentCan
 
     private final RecruitmentDepartmentCandidateReviewService candidateReviewService;
     private final RecruitmentDepartmentInterviewWorkflowService interviewWorkflowService;
-    private final UserRepository userRepository;
+    private final UserAffiliationService userAffiliationService;
 
     public DepartmentCandidateShortlistingServiceImpl(
             RecruitmentDepartmentCandidateReviewService candidateReviewService,
             RecruitmentDepartmentInterviewWorkflowService interviewWorkflowService,
-            UserRepository userRepository) {
+            UserAffiliationService userAffiliationService) {
         this.candidateReviewService = candidateReviewService;
         this.interviewWorkflowService = interviewWorkflowService;
-        this.userRepository = userRepository;
+        this.userAffiliationService = userAffiliationService;
     }
 
     @Override
@@ -157,12 +157,10 @@ public class DepartmentCandidateShortlistingServiceImpl implements DepartmentCan
             throw new DepartmentApplicationException("Authenticated user is required.");
         }
 
-        User user = userRepository.findByEmail(actorEmail);
-        if (user == null) {
-            throw new DepartmentApplicationException("Authenticated user not found.");
-        }
+        User user = userAffiliationService.loadUserByEmail(actorEmail);
 
-        DepartmentRegistrationEntity departmentRegistration = user.getDepartmentRegistrationId();
+        DepartmentRegistrationEntity departmentRegistration = userAffiliationService.resolvePrimaryDepartmentRegistration(
+                user);
         if (departmentRegistration == null) {
             throw new DepartmentApplicationException("Department profile is not linked to this user.");
         }

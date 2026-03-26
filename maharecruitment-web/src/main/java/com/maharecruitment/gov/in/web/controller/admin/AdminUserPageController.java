@@ -23,6 +23,7 @@ import com.maharecruitment.gov.in.auth.dto.UserUpsertRequest;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
 import com.maharecruitment.gov.in.auth.service.RoleManagementService;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.service.UserManagementService;
 import com.maharecruitment.gov.in.web.dto.admin.UserForm;
 
@@ -37,14 +38,17 @@ public class AdminUserPageController {
     private final UserManagementService userManagementService;
     private final RoleManagementService roleManagementService;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
+    private final UserAffiliationService userAffiliationService;
 
     public AdminUserPageController(
             UserManagementService userManagementService,
             RoleManagementService roleManagementService,
-            DepartmentRegistrationRepository departmentRegistrationRepository) {
+            DepartmentRegistrationRepository departmentRegistrationRepository,
+            UserAffiliationService userAffiliationService) {
         this.userManagementService = userManagementService;
         this.roleManagementService = roleManagementService;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
+        this.userAffiliationService = userAffiliationService;
     }
 
     @GetMapping
@@ -170,8 +174,7 @@ public class AdminUserPageController {
         form.setName(user.getName());
         form.setEmail(user.getEmail());
         form.setMobileNo(user.getMobileNo());
-        form.setDepartmentRegistrationId(
-                user.getDepartmentRegistrationId() == null ? null : user.getDepartmentRegistrationId().getDepartmentRegistrationId());
+        form.setDepartmentRegistrationId(userAffiliationService.getAffiliation(user).getDepartmentRegistrationId());
         form.setRoleIds(user.getRoleIds());
         return form;
     }

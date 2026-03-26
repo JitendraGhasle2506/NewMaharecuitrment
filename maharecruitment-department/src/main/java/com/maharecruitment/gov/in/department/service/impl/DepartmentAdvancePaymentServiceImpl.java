@@ -19,6 +19,7 @@ import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.department.dto.AdvancePaymentForm;
 import com.maharecruitment.gov.in.department.entity.DepartmentProformaInvoiceEntity;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
@@ -52,6 +53,7 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     private final DepartmentAdvancePaymentActivityRepository activityRepository;
     private final DepartmentProjectApplicationRepository applicationRepository;
     private final UserRepository userRepository;
+    private final UserAffiliationService userAffiliationService;
     private final DepartmentPaymentStorageService storageService;
     private final com.maharecruitment.gov.in.department.repository.DepartmentProformaInvoiceRepository proformaInvoiceRepository;
 
@@ -60,12 +62,14 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             DepartmentAdvancePaymentActivityRepository activityRepository,
             DepartmentProjectApplicationRepository applicationRepository,
             UserRepository userRepository,
+            UserAffiliationService userAffiliationService,
             DepartmentPaymentStorageService storageService,
             com.maharecruitment.gov.in.department.repository.DepartmentProformaInvoiceRepository proformaInvoiceRepository) {
         this.paymentRepository = paymentRepository;
         this.activityRepository = activityRepository;
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
+        this.userAffiliationService = userAffiliationService;
         this.storageService = storageService;
         this.proformaInvoiceRepository = proformaInvoiceRepository;
     }
@@ -382,9 +386,7 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             isAuthorized = true;
         } else if (roles.contains("ROLE_AUDITOR")) {
             isAuthorized = true;
-        } else if (user.getDepartmentRegistrationId() != null
-                && entity.getDepartmentRegistrationId()
-                        .equals(user.getDepartmentRegistrationId().getDepartmentRegistrationId())) {
+        } else if (matchesActorDepartment(user, entity.getDepartmentRegistrationId())) {
             isAuthorized = true;
         }
 
@@ -427,9 +429,7 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             isAuthorized = true;
         } else if (roles.contains("ROLE_AUDITOR")) {
             isAuthorized = true;
-        } else if (user.getDepartmentRegistrationId() != null
-                && entity.getDepartmentRegistrationId()
-                        .equals(user.getDepartmentRegistrationId().getDepartmentRegistrationId())) {
+        } else if (matchesActorDepartment(user, entity.getDepartmentRegistrationId())) {
             isAuthorized = true;
         }
 
@@ -499,18 +499,15 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     }
 
     private DepartmentActorContext resolveActorContext(String actorEmail) {
-        User user = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
-        if (user == null) {
-            throw new DepartmentApplicationException("User not found.");
-        }
+        User user = userAffiliationService.loadUserByEmail(actorEmail);
 
         var builder = DepartmentActorContext.builder()
                 .userId(user.getId())
                 .actorName(user.getName())
                 .actorEmail(user.getEmail());
 
-        if (user.getDepartmentRegistrationId() != null) {
-            DepartmentRegistrationEntity reg = user.getDepartmentRegistrationId();
+        DepartmentRegistrationEntity reg = userAffiliationService.resolvePrimaryDepartmentRegistration(user);
+        if (reg != null) {
             builder.departmentId(reg.getDepartmentId())
                     .departmentRegistrationId(reg.getDepartmentRegistrationId());
         }
@@ -547,5 +544,13 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             form.setPartialAmount(paidAmount);
             form.setBalanceAmount(pi.getTotalAmount().subtract(paidAmount));
         }
+    }
+
+    private boolean matchesActorDepartment(User user, Long departmentRegistrationId) {
+        DepartmentRegistrationEntity departmentRegistration = userAffiliationService.resolvePrimaryDepartmentRegistration(
+                user);
+        return departmentRegistration != null
+                && departmentRegistration.getDepartmentRegistrationId() != null
+                && departmentRegistration.getDepartmentRegistrationId().equals(departmentRegistrationId);
     }
 }
