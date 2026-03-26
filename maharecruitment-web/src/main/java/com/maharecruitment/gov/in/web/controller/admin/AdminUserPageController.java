@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -26,6 +27,7 @@ import com.maharecruitment.gov.in.auth.service.RoleManagementService;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.service.UserManagementService;
 import com.maharecruitment.gov.in.web.dto.admin.UserForm;
+import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 
 import jakarta.validation.Valid;
 
@@ -38,16 +40,19 @@ public class AdminUserPageController {
     private final UserManagementService userManagementService;
     private final RoleManagementService roleManagementService;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
+    private final AgencyMasterRepository agencyMasterRepository;
     private final UserAffiliationService userAffiliationService;
 
     public AdminUserPageController(
             UserManagementService userManagementService,
             RoleManagementService roleManagementService,
             DepartmentRegistrationRepository departmentRegistrationRepository,
+            AgencyMasterRepository agencyMasterRepository,
             UserAffiliationService userAffiliationService) {
         this.userManagementService = userManagementService;
         this.roleManagementService = roleManagementService;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
+        this.agencyMasterRepository = agencyMasterRepository;
         this.userAffiliationService = userAffiliationService;
     }
 
@@ -89,6 +94,7 @@ public class AdminUserPageController {
             Model model,
             RedirectAttributes redirectAttributes) {
         validateRoleSelection(form, bindingResult);
+        validateAffiliationSelection(form, bindingResult);
         if (form.getPassword() == null || form.getPassword().isBlank()) {
             bindingResult.rejectValue("password", "user.password", "Password is required.");
         }
@@ -120,6 +126,7 @@ public class AdminUserPageController {
             Model model,
             RedirectAttributes redirectAttributes) {
         validateRoleSelection(form, bindingResult);
+        validateAffiliationSelection(form, bindingResult);
         if (bindingResult.hasErrors()) {
             clearSensitiveFields(form);
             populateForm(model, form, userId);
@@ -155,7 +162,10 @@ public class AdminUserPageController {
         model.addAttribute("userId", userId);
         model.addAttribute("isEdit", userId != null);
         model.addAttribute("availableRoles", roleManagementService.getAll());
-        model.addAttribute("departments", departmentRegistrationRepository.findAll());
+        model.addAttribute("departments", departmentRegistrationRepository.findAll(
+                Sort.by(Sort.Direction.ASC, "departmentName")));
+        model.addAttribute("agencies", agencyMasterRepository.findAll(
+                Sort.by(Sort.Direction.ASC, "agencyName")));
     }
 
     private UserUpsertRequest toRequest(UserForm form) {
@@ -165,6 +175,7 @@ public class AdminUserPageController {
         request.setMobileNo(form.getMobileNo());
         request.setPassword(form.getPassword());
         request.setDepartmentRegistrationId(form.getDepartmentRegistrationId());
+        request.setAgencyId(form.getAgencyId());
         request.setRoleIds(form.getRoleIds() == null ? List.of() : new ArrayList<>(form.getRoleIds()));
         return request;
     }
@@ -174,7 +185,9 @@ public class AdminUserPageController {
         form.setName(user.getName());
         form.setEmail(user.getEmail());
         form.setMobileNo(user.getMobileNo());
-        form.setDepartmentRegistrationId(userAffiliationService.getAffiliation(user).getDepartmentRegistrationId());
+        var affiliation = userAffiliationService.getAffiliation(user);
+        form.setDepartmentRegistrationId(affiliation.getDepartmentRegistrationId());
+        form.setAgencyId(affiliation.getAgencyId());
         form.setRoleIds(user.getRoleIds());
         return form;
     }
@@ -182,6 +195,21 @@ public class AdminUserPageController {
     private void validateRoleSelection(UserForm form, BindingResult bindingResult) {
         if (form.getRoleIds() == null || form.getRoleIds().isEmpty()) {
             bindingResult.rejectValue("roleIds", "user.roles", "At least one role is required.");
+        }
+    }
+
+    private void validateAffiliationSelection(UserForm form, BindingResult bindingResult) {
+        Long departmentRegistrationId = form.getDepartmentRegistrationId();
+        if (departmentRegistrationId != null && !departmentRegistrationRepository.existsById(departmentRegistrationId)) {
+            bindingResult.rejectValue(
+                    "departmentRegistrationId",
+                    "user.departmentRegistrationId",
+                    "Selected department is not registered.");
+        }
+
+        Long agencyId = form.getAgencyId();
+        if (agencyId != null && !agencyMasterRepository.existsById(agencyId)) {
+            bindingResult.rejectValue("agencyId", "user.agencyId", "Selected agency is not registered.");
         }
     }
 

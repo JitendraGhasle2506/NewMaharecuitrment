@@ -19,6 +19,7 @@ import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.AgencyRegistrationValidationService;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.service.UserManagementService;
 import com.maharecruitment.gov.in.auth.util.UserValidationUtil;
@@ -34,18 +35,21 @@ public class UserManagementServiceImpl implements UserManagementService {
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserAffiliationService userAffiliationService;
+    private final AgencyRegistrationValidationService agencyRegistrationValidationService;
 
     public UserManagementServiceImpl(
             UserRepository userRepository,
             RoleRepository roleRepository,
             DepartmentRegistrationRepository departmentRegistrationRepository,
             PasswordEncoder passwordEncoder,
-            UserAffiliationService userAffiliationService) {
+            UserAffiliationService userAffiliationService,
+            AgencyRegistrationValidationService agencyRegistrationValidationService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.passwordEncoder = passwordEncoder;
         this.userAffiliationService = userAffiliationService;
+        this.agencyRegistrationValidationService = agencyRegistrationValidationService;
     }
 
     @Override
@@ -72,6 +76,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         User saved = userRepository.save(user);
         userAffiliationService.synchronizeUserProfile(saved);
         userAffiliationService.synchronizePrimaryDepartment(saved, saved.getDepartmentRegistrationId());
+        userAffiliationService.synchronizePrimaryAgency(saved, request.getAgencyId());
         log.info("User created: id={}, email={}", saved.getId(), saved.getEmail());
         return saved;
     }
@@ -89,6 +94,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         User saved = userRepository.save(existing);
         userAffiliationService.synchronizeUserProfile(saved);
         userAffiliationService.synchronizePrimaryDepartment(saved, saved.getDepartmentRegistrationId());
+        userAffiliationService.synchronizePrimaryAgency(saved, request.getAgencyId());
         log.info("User updated: id={}, email={}", saved.getId(), saved.getEmail());
         return saved;
     }
@@ -131,6 +137,8 @@ public class UserManagementServiceImpl implements UserManagementService {
         if (normalizeRoleIds(request.getRoleIds()).isEmpty()) {
             throw new IllegalArgumentException("At least one role is required.");
         }
+
+        agencyRegistrationValidationService.validateAgencyRegistration(request.getAgencyId());
     }
 
     private List<Role> resolveRoles(List<Long> roleIds) {
