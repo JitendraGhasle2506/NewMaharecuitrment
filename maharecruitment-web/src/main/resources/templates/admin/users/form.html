@@ -50,7 +50,8 @@
 
                         <div class="col-md-6">
                             <label class="form-label" th:text="${isEdit} ? 'Password (leave blank to keep unchanged)' : 'Password'"></label>
-                            <input type="password" th:field="*{password}" class="form-control" maxlength="100" autocomplete="new-password">
+                            <input type="password" name="password" class="form-control" maxlength="100" autocomplete="new-password">
+                            <div class="form-text">Use at least 8 characters with uppercase, lowercase, number, and special character.</div>
                             <div class="text-danger small" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
                         </div>
 

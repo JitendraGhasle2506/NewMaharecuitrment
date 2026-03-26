@@ -59,10 +59,24 @@
 
                             <tr th:each="applicationSummary : ${applicationDetail.applications}">
                                 <td class="ps-4">
-                                    <span class="fw-bold text-primary" th:text="${applicationSummary.requestId}">DPA-0000</span>
+                                    <a class="project-link fw-bold"
+                                       th:href="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}(
+                                            departmentId=${applicationDetail.departmentId},
+                                            subDepartmentId=${applicationDetail.subDepartmentId},
+                                            applicationId=${applicationSummary.departmentProjectApplicationId})}"
+                                       th:text="${applicationSummary.requestId}">
+                                        DPA-0000
+                                    </a>
                                 </td>
                                 <td>
-                                    <div class="fw-semibold text-dark" th:text="${applicationSummary.projectName}">Project Name</div>
+                                    <a class="project-link fw-semibold"
+                                       th:href="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}(
+                                            departmentId=${applicationDetail.departmentId},
+                                            subDepartmentId=${applicationDetail.subDepartmentId},
+                                            applicationId=${applicationSummary.departmentProjectApplicationId})}"
+                                       th:text="${applicationSummary.projectName}">
+                                        Project Name
+                                    </a>
                                 </td>
                                 <td>
                                     <span class="text-muted small" th:text="${applicationSummary.applicationType != null ? #strings.replace(applicationSummary.applicationType.name(), '_', ' ') : '-'}">

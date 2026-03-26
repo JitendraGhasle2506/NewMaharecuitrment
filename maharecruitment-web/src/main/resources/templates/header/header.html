@@ -129,6 +129,10 @@
                                             th:text="${session.SESSION_USER.email}">email@domain.com</small>
                                     </div>
                                     <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" th:href="@{/common/profile}">
+                                        <i class="fas fa-id-card me-2"></i> My Profile
+                                    </a>
+                                    <div class="dropdown-divider"></div>
                                     <form th:action="@{/logout}" method="post" class="px-3 py-2">
                                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                         <button type="submit" class="btn btn-danger btn-sm w-100">

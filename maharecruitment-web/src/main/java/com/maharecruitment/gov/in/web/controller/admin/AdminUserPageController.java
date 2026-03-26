@@ -90,6 +90,7 @@ public class AdminUserPageController {
         }
 
         if (bindingResult.hasErrors()) {
+            clearSensitiveFields(form);
             populateForm(model, form, null);
             return "admin/users/form";
         }
@@ -101,6 +102,7 @@ public class AdminUserPageController {
         } catch (RuntimeException ex) {
             log.error("User create failed", ex);
             model.addAttribute("errorMessage", ex.getMessage());
+            clearSensitiveFields(form);
             populateForm(model, form, null);
             return "admin/users/form";
         }
@@ -115,6 +117,7 @@ public class AdminUserPageController {
             RedirectAttributes redirectAttributes) {
         validateRoleSelection(form, bindingResult);
         if (bindingResult.hasErrors()) {
+            clearSensitiveFields(form);
             populateForm(model, form, userId);
             return "admin/users/form";
         }
@@ -126,6 +129,7 @@ public class AdminUserPageController {
         } catch (RuntimeException ex) {
             log.error("User update failed for id={}", userId, ex);
             model.addAttribute("errorMessage", ex.getMessage());
+            clearSensitiveFields(form);
             populateForm(model, form, userId);
             return "admin/users/form";
         }
@@ -176,5 +180,9 @@ public class AdminUserPageController {
         if (form.getRoleIds() == null || form.getRoleIds().isEmpty()) {
             bindingResult.rejectValue("roleIds", "user.roles", "At least one role is required.");
         }
+    }
+
+    private void clearSensitiveFields(UserForm form) {
+        form.setPassword(null);
     }
 }
