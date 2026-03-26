@@ -43,6 +43,9 @@ public class DepartmentUserProvisioningServiceImpl implements DepartmentUserProv
     @Override
     public DepartmentUserProvisioningResult createDepartmentUser(DepartmentUserProvisioningRequest request) {
         String email = normalizeEmail(request.getEmail());
+        if (email == null) {
+            throw new IllegalArgumentException("Email is required.");
+        }
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new IllegalArgumentException("A user account already exists for the primary email address.");
         }

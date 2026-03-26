@@ -14,12 +14,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
+import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
 
 @Controller
 @RequestMapping("/hr/onboarding")
-@PreAuthorize("hasAuthority('                                     ')")
+@PreAuthorize("hasAuthority('ROLE_HR')")
 public class HROnboardingPageController {
 
     private final HROnboardingPageService hrOnboardingPageService;
@@ -49,11 +50,17 @@ public class HROnboardingPageController {
             Principal principal,
             RedirectAttributes redirectAttributes) {
         try {
-            hrOnboardingPageService.saveOnboarding(preOnboardingId, form, principal.getName());
-            redirectAttributes.addFlashAttribute("successMessage", "Candidate onboarded successfully.");
+            EmployeeOnboardingResult result = hrOnboardingPageService.saveOnboarding(preOnboardingId, form,
+                    principal.getName());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Candidate onboarded successfully. Employee account created.");
+            redirectAttributes.addFlashAttribute("generatedUsername", result.username());
+            redirectAttributes.addFlashAttribute("generatedPassword", result.temporaryPassword());
+            if (result.notificationWarning() != null && !result.notificationWarning().isBlank()) {
+                redirectAttributes.addFlashAttribute("notificationWarning", result.notificationWarning());
+            }
             return "redirect:/hr/onboarding";
         } catch (Exception e) {
-            form.setHrFlow(true);
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/hr/onboarding/process/" + preOnboardingId;
         }

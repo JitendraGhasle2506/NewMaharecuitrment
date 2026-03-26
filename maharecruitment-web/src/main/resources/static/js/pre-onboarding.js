@@ -21,8 +21,18 @@
     const dobInput = document.getElementById("dob");
     const panInput = document.getElementById("pan");
     const aadhaarInput = form.querySelector("[name='aadhaar']");
+    const candidatePhotoInput = document.getElementById("uploadImage");
+    const candidatePhotoPreview = document.getElementById("candidatePhotoPreview");
+    const candidatePhotoEmpty = document.getElementById("candidatePhotoEmpty");
+    const candidatePhotoFileName = document.getElementById("candidatePhotoFileName");
     const hrFlowInput = form.querySelector("[name='hrFlow']");
     const hrFlow = hrFlowInput && hrFlowInput.value === "true";
+    const existingPhotoPath = candidatePhotoPreview
+        ? (candidatePhotoPreview.getAttribute("data-managed-path") || "")
+        : "";
+    const existingPhotoName = candidatePhotoPreview
+        ? (candidatePhotoPreview.getAttribute("data-managed-name") || "")
+        : "";
 
     function attachRowEvents(row) {
         row.querySelectorAll(".experience-date").forEach(function (input) {
@@ -429,6 +439,74 @@
         return true;
     }
 
+    function getManagedDocumentUrl(path) {
+        if (!path) {
+            return "";
+        }
+
+        const contextPath = window.preOnboardingConfig && window.preOnboardingConfig.contextPath
+            ? window.preOnboardingConfig.contextPath
+            : "/";
+        const encodedPath = encodeURIComponent(btoa(path));
+        return contextPath + "documents/view?path=" + encodedPath;
+    }
+
+    function showPhotoPlaceholder() {
+        if (candidatePhotoPreview) {
+            candidatePhotoPreview.removeAttribute("src");
+            candidatePhotoPreview.classList.add("d-none");
+        }
+        if (candidatePhotoEmpty) {
+            candidatePhotoEmpty.classList.remove("d-none");
+        }
+        if (candidatePhotoFileName) {
+            candidatePhotoFileName.textContent = "No photo selected";
+        }
+    }
+
+    function showManagedPhoto(path) {
+        if (!candidatePhotoPreview || !path) {
+            showPhotoPlaceholder();
+            return;
+        }
+
+        candidatePhotoPreview.src = getManagedDocumentUrl(path);
+        candidatePhotoPreview.classList.remove("d-none");
+        if (candidatePhotoEmpty) {
+            candidatePhotoEmpty.classList.add("d-none");
+        }
+        if (candidatePhotoFileName) {
+            candidatePhotoFileName.textContent = existingPhotoName || "Existing photo";
+        }
+    }
+
+    function showUploadedPhoto(file) {
+        if (!candidatePhotoPreview || !file) {
+            if (existingPhotoPath) {
+                showManagedPhoto(existingPhotoPath);
+            } else {
+                showPhotoPlaceholder();
+            }
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            if (!candidatePhotoPreview || !event || !event.target) {
+                return;
+            }
+            candidatePhotoPreview.src = event.target.result;
+            candidatePhotoPreview.classList.remove("d-none");
+            if (candidatePhotoEmpty) {
+                candidatePhotoEmpty.classList.add("d-none");
+            }
+            if (candidatePhotoFileName) {
+                candidatePhotoFileName.textContent = file.name || "Selected photo";
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
     function checkFormValidity() {
         if (hrFlow) {
             const hrLoc = document.getElementById("hrOnboardingLocation");
@@ -516,6 +594,18 @@
         });
     }
 
+    if (candidatePhotoInput) {
+        candidatePhotoInput.addEventListener("change", function () {
+            if (this.files && this.files[0]) {
+                showUploadedPhoto(this.files[0]);
+            } else if (existingPhotoPath) {
+                showManagedPhoto(existingPhotoPath);
+            } else {
+                showPhotoPlaceholder();
+            }
+        });
+    }
+
     form.addEventListener("submit", function (event) {
         checkFormValidity();
         if (submitBtn.disabled || !form.reportValidity()) {
@@ -529,6 +619,11 @@
     });
 
     calculateTotalExperience();
+    if (existingPhotoPath) {
+        showManagedPhoto(existingPhotoPath);
+    } else {
+        showPhotoPlaceholder();
+    }
     checkFormValidity();
     window.openManagedDocument = openManagedDocument;
 })();

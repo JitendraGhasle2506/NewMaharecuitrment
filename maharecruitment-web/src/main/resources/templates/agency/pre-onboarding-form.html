@@ -27,6 +27,49 @@
                 <div class="card-body">
                     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+                    <div class="pre-onboarding-hero"
+                        th:classappend="${preOnboardingForm.hrFlow} ? ' hero-hr' : ' hero-agency'">
+                        <div class="pre-onboarding-hero-copy">
+                            <span class="pre-onboarding-eyebrow">
+                                <i class="fa-solid fa-layer-group"></i>
+                                <span th:text="${preOnboardingForm.hrFlow ? 'HR verification mode' : 'Agency pre-onboarding'}">HR verification mode</span>
+                            </span>
+                            <h3 class="pre-onboarding-hero-title"
+                                th:text="${preOnboardingForm.name != null ? preOnboardingForm.name : 'Candidate Review'}">Candidate Review</h3>
+                            <p class="pre-onboarding-hero-text"
+                                th:text="${preOnboardingForm.hrFlow ? 'Review the submitted records, confirm the onboarding date, and activate the employee account.' : 'Complete the candidate profile, documents, and work history before forwarding to HR.'}">
+                                Review the submitted records, confirm the onboarding date, and activate the employee account.
+                            </p>
+                            <div class="pre-onboarding-tag-row">
+                                <span class="pre-onboarding-tag"
+                                    th:text="${preOnboardingForm.designation != null ? preOnboardingForm.designation : 'Designation'}">Designation</span>
+                                <span class="pre-onboarding-tag"
+                                    th:text="${preOnboardingForm.levelCode != null ? preOnboardingForm.levelCode : 'Level'}">Level</span>
+                                <span class="pre-onboarding-tag"
+                                    th:text="${preOnboardingForm.agencyName != null ? preOnboardingForm.agencyName : 'Agency'}">Agency</span>
+                            </div>
+                        </div>
+                        <div class="pre-onboarding-summary-grid">
+                            <div class="summary-card">
+                                <span class="summary-card-label">Request ID</span>
+                                <strong class="summary-card-value" th:text="${preOnboardingForm.requestId}">REQ-0001</strong>
+                            </div>
+                            <div class="summary-card">
+                                <span class="summary-card-label">Project</span>
+                                <strong class="summary-card-value" th:text="${preOnboardingForm.projectName}">Project</strong>
+                            </div>
+                            <div class="summary-card">
+                                <span class="summary-card-label">Department</span>
+                                <strong class="summary-card-value" th:text="${preOnboardingForm.department}">Department</strong>
+                                <span class="summary-card-subvalue" th:text="${preOnboardingForm.subDeptName}">Sub department</span>
+                            </div>
+                            <div class="summary-card">
+                                <span class="summary-card-label">Designation</span>
+                                <strong class="summary-card-value" th:text="${preOnboardingForm.designation}">Designation</strong>
+                                <span class="summary-card-subvalue" th:text="${preOnboardingForm.levelCode}">L1</span>
+                            </div>
+                        </div>
+                    </div>
                     <form id="preOnboardingForm"
                         th:action="@{${preOnboardingForm.hrFlow ? '/hr/onboarding/process/' + preOnboardingForm.preOnboardingId : '/agency/onboarding/pre/' + preOnboardingForm.recruitmentInterviewDetailId}}"
                         method="post" th:object="${preOnboardingForm}" enctype="multipart/form-data">
@@ -37,30 +80,67 @@
 
                         <div class="section-block">
                             <h5 class="section-title">Personal Details</h5>
-                            <div class="row">
-                                <div class="col-md-4 form-group">
-                                    <label class="form-label">Full Name <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="text" class="form-control" th:field="*{name}" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
+                            <div class="row g-3 align-items-start">
+                                <div class="col-lg-9 col-xl-10">
+                                    <div class="row">
+                                        <div class="col-md-4 form-group">
+                                            <label class="form-label">Full Name <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                            <input type="text" class="form-control" th:field="*{name}" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
+                                        </div>
+                                        <div class="col-md-4 form-group">
+                                            <label class="form-label">Email <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                            <input type="email" class="form-control" th:field="*{email}" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
+                                        </div>
+                                        <div class="col-md-4 form-group">
+                                            <label class="form-label">Mobile <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                            <input type="text" class="form-control" th:field="*{mobile}" pattern="[0-9]{10,15}"
+                                                th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4 form-group">
+                                            <label class="form-label">Date of Birth <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                            <input type="date" class="form-control" th:field="*{dob}" id="dob" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
+                                            <div class="invalid-feedback">Candidate must be at least 18 years old.</div>
+                                        </div>
+                                        <div class="col-md-8 form-group">
+                                            <label class="form-label">Address <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                            <textarea class="form-control" th:field="*{address}" rows="2" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required></textarea>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-4 form-group">
-                                    <label class="form-label">Email <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="email" class="form-control" th:field="*{email}" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
-                                </div>
-                                <div class="col-md-4 form-group">
-                                    <label class="form-label">Mobile <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="text" class="form-control" th:field="*{mobile}" pattern="[0-9]{10,15}"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 form-group">
-                                    <label class="form-label">Date of Birth <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="date" class="form-control" th:field="*{dob}" id="dob" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
-                                    <div class="invalid-feedback">Candidate must be at least 18 years old.</div>
-                                </div>
-                                <div class="col-md-8 form-group">
-                                    <label class="form-label">Address <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <textarea class="form-control" th:field="*{address}" rows="2" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required></textarea>
+                                <div class="col-lg-3 col-xl-2">
+                                    <div class="passport-photo-panel">
+                                        <div class="passport-photo-panel-header">
+                                            <span class="passport-photo-heading">Candidate Photo</span>
+                                            <small class="text-muted">Passport-size preview</small>
+                                        </div>
+                                        <div class="passport-photo-frame">
+                                            <img id="candidatePhotoPreview" class="passport-photo-image d-none"
+                                                th:attr="data-managed-path=${preOnboardingForm.existingPhotoFilePath}, data-managed-name=${preOnboardingForm.existingPhotoFileName}"
+                                                alt="Candidate Photo" />
+                                            <div id="candidatePhotoEmpty" class="passport-photo-empty">
+                                                <i class="fa-regular fa-image"></i>
+                                                <span>No photo uploaded</span>
+                                            </div>
+                                        </div>
+
+                                        <input type="file" class="d-none" th:field="*{uploadImage}" id="uploadImage"
+                                            accept=".jpg,.jpeg,.png" />
+
+                                        <div class="passport-photo-actions">
+                                            <label class="btn btn-outline-primary btn-sm passport-photo-action-btn"
+                                                for="uploadImage"
+                                                th:text="${preOnboardingForm.existingPhotoFilePath != null ? 'Replace Photo' : 'Choose Photo'}">
+                                                Choose Photo
+                                            </label>
+                                            <span id="candidatePhotoFileName"
+                                                class="passport-photo-file-name text-muted text-truncate"
+                                                th:text="${preOnboardingForm.existingPhotoFileName != null ? preOnboardingForm.existingPhotoFileName : 'No photo selected'}">
+                                                No photo selected
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -185,6 +265,8 @@
                             </div>
                             <p class="text-muted mb-3">Add at least one employment entry. Total experience is calculated
                                 automatically from the dates below.</p>
+                            <div id="employmentValidationMessage" class="alert alert-warning d-none mt-3 mb-0"
+                                role="alert"></div>
 
                             <div id="employmentContainer">
                                 <div class="employment-row" th:each="employment, stat : *{previousEmployments}">
@@ -304,26 +386,6 @@
                         </div>
 
                         <div class="section-block">
-                            <h5 class="section-title">Candidate Photo</h5>
-                            <div class="row">
-                                <div class="col-md-6 form-group">
-                                    <label class="form-label">Upload Passport Size Photo <span class="text-danger" th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.existingPhotoFilePath == null}">*</span></label>
-                                    <input type="file" class="form-control" th:field="*{uploadImage}"
-                                        accept=".jpg,.jpeg,.png" th:disabled="*{hrFlow}" />
-                                    <small class="text-muted" th:if="${!preOnboardingForm.hrFlow}">JPG, PNG up to 10MB</small>
-                                    <div class="existing-file" th:if="${preOnboardingForm.existingPhotoFilePath}">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2"
-                                            th:attr="data-path=${preOnboardingForm.existingPhotoFilePath}"
-                                            onclick="openManagedDocument(this.getAttribute('data-path'))">View Existing
-                                            Photo</button>
-                                        <small class="d-block text-muted mt-1"
-                                            th:text="${preOnboardingForm.existingPhotoFileName}">photo.png</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="section-block">
                             <h5 class="section-title">Document Checklist</h5>
                             <p class="text-muted mb-4" th:if="${!preOnboardingForm.hrFlow}">Please verify that the candidate has provided the following documents.</p>
                             <p class="text-muted mb-4" th:if="${preOnboardingForm.hrFlow}">Documents verified by the agency:</p>
@@ -425,12 +487,19 @@
                             </label>
                         </div>
 
-                        <div class="d-flex justify-content-end gap-2 mt-4">
-                            <a class="btn btn-outline-secondary" th:if="${!preOnboardingForm.hrFlow}"
-                                th:href="@{/agency/selected-candidates/{id}(id=${preOnboardingForm.recruitmentNotificationId})}">Cancel</a>
-                            <a class="btn btn-outline-secondary" th:if="${preOnboardingForm.hrFlow}"
-                                th:href="@{/hr/onboarding}">Cancel</a>
-                            <button type="submit" id="submitBtn" class="btn btn-primary" th:text="${preOnboardingForm.hrFlow ? 'Onboard Employee' : 'Submit Pre-Onboarding'}">Submit Pre-Onboarding</button>
+                        <div class="pre-onboarding-actions">
+                            <div class="pre-onboarding-action-note">
+                                <strong th:text="${preOnboardingForm.hrFlow ? 'HR verification completes the employee onboarding.' : 'Agency submission forwards the candidate to HR review.'}">HR verification completes the employee onboarding.</strong>
+                                <span class="text-muted">Review the details once before submitting. Required documents must be complete.</span>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 flex-wrap">
+                                <a class="btn btn-outline-secondary" th:if="${!preOnboardingForm.hrFlow}"
+                                    th:href="@{/agency/selected-candidates/{id}(id=${preOnboardingForm.recruitmentNotificationId})}">Cancel</a>
+                                <a class="btn btn-outline-secondary" th:if="${preOnboardingForm.hrFlow}"
+                                    th:href="@{/hr/onboarding}">Cancel</a>
+                                <button type="submit" id="submitBtn" class="btn btn-primary"
+                                    th:text="${preOnboardingForm.hrFlow ? 'Onboard Employee' : 'Submit Pre-Onboarding'}">Submit Pre-Onboarding</button>
+                            </div>
                         </div>
                     </form>
                 </div>
