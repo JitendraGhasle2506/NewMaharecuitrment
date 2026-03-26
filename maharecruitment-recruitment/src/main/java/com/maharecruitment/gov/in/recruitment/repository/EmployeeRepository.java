@@ -40,4 +40,6 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     List<EmployeeEntity> findByDepartmentRegistration_DepartmentRegistrationIdAndRecruitmentType(Long id,
             String recruitmentType);
+
+    List<EmployeeEntity> findByDesignation_DesignationNameIgnoreCaseAndStatusIgnoreCase(String designationName, String status);
 }
