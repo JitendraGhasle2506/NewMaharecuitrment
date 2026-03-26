@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.auth.entity;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -63,6 +64,9 @@ public class User implements Serializable {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "department_registration_id")
     private DepartmentRegistrationEntity departmentRegistrationId;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 
     @Transient
     private String captcha;

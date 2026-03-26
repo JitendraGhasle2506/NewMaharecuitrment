@@ -24,6 +24,10 @@
 body.portal-shell {
     margin: 0;
     min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     color: var(--portal-ink);
     font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
     background:
@@ -58,6 +62,9 @@ body.portal-shell {
 
 .login-main {
     padding: 2.15rem 0 1.5rem;
+    flex: 1 0 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .login-con {
@@ -291,6 +298,38 @@ label.control-label {
     background: rgba(255, 255, 255, 0.78);
     border-top: 1px solid rgba(183, 199, 228, 0.8);
     backdrop-filter: blur(6px);
+}
+
+.site-footer {
+    flex-shrink: 0;
+    margin-top: auto;
+    padding: 0.9rem 0 1rem;
+    border-top: 1px solid rgba(183, 199, 228, 0.8);
+    background: rgba(255, 255, 255, 0.78);
+    color: #355274;
+    font-size: 0.83rem;
+    backdrop-filter: blur(6px);
+}
+
+.site-footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    flex-wrap: wrap;
+}
+
+.site-footer-copy {
+    font-weight: 600;
+}
+
+.site-footer-meta {
+    margin-left: auto;
+    color: #274867;
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
 @keyframes panelRise {

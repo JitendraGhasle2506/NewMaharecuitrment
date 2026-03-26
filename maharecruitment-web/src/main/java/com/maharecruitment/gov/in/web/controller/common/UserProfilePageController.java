@@ -170,7 +170,8 @@ public class UserProfilePageController {
                 sessionUser.roles(),
                 sessionUser.departmentId(),
                 updatedProfile.getMobileNo(),
-                sessionUser.loginTime()));
+                sessionUser.loginTime(),
+                sessionUser.lastLoginTime()));
     }
 
     private SessionUserDTO extractSessionUser(HttpSession session) {

@@ -36,6 +36,8 @@ public class NavigationModelAdvice {
         String homeUrl = toContextAwareUrl(contextPath, resolveHomeUrl(session, roles));
         List<String> resolvedRoles = List.copyOf(roles);
 
+        model.addAttribute("sessionUser", sessionUser);
+        model.addAttribute("sessionLoginTime", sessionUser != null ? sessionUser.loginTime() : null);
         model.addAttribute("homePageUrl", homeUrl);
         model.addAttribute("contextPath", contextPath);
         model.addAttribute("primaryRoleLabel", navigationService.resolvePrimaryRoleLabel(resolvedRoles));

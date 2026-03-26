@@ -25,6 +25,7 @@ import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.auth.dto.UserAffiliationView;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
+import com.maharecruitment.gov.in.auth.service.UserLoginTrackingService;
 import com.maharecruitment.gov.in.auth.util.AuthorityUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,9 +39,13 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
 
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
     private final UserAffiliationService userAffiliationService;
+    private final UserLoginTrackingService userLoginTrackingService;
 
-    public MySimpleUrlAuthenticationSuccessHandler(UserAffiliationService userAffiliationService) {
+    public MySimpleUrlAuthenticationSuccessHandler(
+            UserAffiliationService userAffiliationService,
+            UserLoginTrackingService userLoginTrackingService) {
         this.userAffiliationService = userAffiliationService;
+        this.userLoginTrackingService = userLoginTrackingService;
     }
 
     @Override
@@ -105,8 +110,10 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
         String email = authentication.getName();
         User user = userAffiliationService.loadUserByEmail(email);
         UserAffiliationView affiliation = userAffiliationService.getAffiliation(user);
+        LocalDateTime loginTime = LocalDateTime.now();
+        LocalDateTime lastLoginTime = userLoginTrackingService.recordSuccessfulLogin(user, loginTime);
 
-        List<String> roles = user.getRoles().stream()
+        List<String> roles = user.getRoles() == null ? List.of() : user.getRoles().stream()
                 .map(role -> AuthorityUtil.toAuthority(role.getName()))
                 .filter(r -> r != null && !r.isBlank())
                 .collect(Collectors.toList());
@@ -118,7 +125,8 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
                 roles,
                 affiliation.getDepartmentRegistrationId(),
                 affiliation.getMobileNo(),
-                LocalDateTime.now()
+                loginTime,
+                lastLoginTime
         );
 
         session.setAttribute("SESSION_USER", sessionUser);
