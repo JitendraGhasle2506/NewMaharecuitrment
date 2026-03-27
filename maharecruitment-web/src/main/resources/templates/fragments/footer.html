@@ -10,7 +10,8 @@
                         Maharashtra, India
                     </span>
                     <span class="site-footer-meta"
-                        th:text="${sessionUser != null and sessionUser.lastLoginTime != null ? 'Last login: ' + #temporals.format(sessionUser.lastLoginTime, 'dd MMM yyyy, hh:mm a') : 'Last login unavailable'}">
+                        th:if="${sessionUser != null and sessionUser.lastLoginTime != null}"
+                        th:text="${'Last login: ' + #temporals.format(sessionUser.lastLoginTime, 'dd MMM yyyy, hh:mm a')}">
                         Last login unavailable
                     </span>
                 </div>

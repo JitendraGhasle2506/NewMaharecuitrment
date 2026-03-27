@@ -3,56 +3,99 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Sub-Department Audit Queue</title>
+    <title>Sub-Department Audit Queue | Auditor Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/hr-department-requests.css}">
 </head>
 
 <body class="hr-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('Auditor', 'Department Audit Request', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="mb-0">Sub-Department Audit Queue</h2>
-                        <small class="text-muted" th:text="${subDepartmentRequest.departmentName}">Department</small>
-                    </div>
-                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/auditor/department-requests}">
-                        Back to Parent Departments
-                    </a>
+        <section class="hr-request-container hr-request-summary-page">
+            <div class="page-hero mb-4">
+                <div class="page-hero-copy">
+                    <p class="page-hero-kicker mb-1">Auditor Operations</p>
+                    <h2 class="fw-bold text-dark mb-1">Sub-Department Audit Queue</h2>
+                    <p class="text-muted mb-0" th:text="${subDepartmentRequest.departmentName}">
+                        Department
+                    </p>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+                <a class="btn btn-outline-secondary btn-sm px-3 page-back-btn" th:href="@{/auditor/department-requests}">
+                    <i class="fa fa-arrow-left me-2"></i>Back to Departments
+                </a>
+            </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Sub-Department</th>
-                                    <th class="text-center">Queue Applications</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:if="${#lists.isEmpty(subDepartmentRequest.subDepartmentProjectCounts)}">
-                                    <td colspan="2" class="text-center text-muted">No sub-department records found.</td>
-                                </tr>
+            <div class="alert alert-danger shadow-sm border-0" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
-                                <tr th:each="subDepartment : ${subDepartmentRequest.subDepartmentProjectCounts}">
-                                    <td th:text="${subDepartment.subDepartmentName}">Sub-Department</td>
-                                    <td class="text-center">
-                                        <a th:if="${subDepartment.subDepartmentId != null and subDepartment.projectApplicationCount > 0}"
-                                           th:href="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(departmentId=${subDepartmentRequest.departmentId},subDepartmentId=${subDepartment.subDepartmentId})}"
-                                           th:text="${subDepartment.projectApplicationCount}">
-                                            0
-                                        </a>
-                                        <span th:if="${subDepartment.subDepartmentId == null or subDepartment.projectApplicationCount == 0}"
-                                              th:text="${subDepartment.projectApplicationCount}">
-                                            0
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="row g-4 mb-4" th:if="${not #lists.isEmpty(subDepartmentRequest.subDepartmentProjectCounts)}">
+                <div class="col-md-6">
+                    <div class="summary-card">
+                        <div class="summary-icon bg-soft-primary">
+                            <i class="fa-solid fa-diagram-project"></i>
+                        </div>
+                        <div class="summary-value" th:text="${#lists.size(subDepartmentRequest.subDepartmentProjectCounts)}">
+                            0
+                        </div>
+                        <div class="summary-label">Sub-Departments</div>
                     </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="summary-card">
+                        <div class="summary-icon bg-soft-success">
+                            <i class="fa-solid fa-file-circle-check"></i>
+                        </div>
+                        <div class="summary-value"
+                             th:text="${#aggregates.sum(subDepartmentRequest.subDepartmentProjectCounts.![projectApplicationCount])}">
+                            0
+                        </div>
+                        <div class="summary-label">Pending Applications</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-premium align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Sub-Department</th>
+                                <th class="text-center">Queue Applications</th>
+                                <th class="pe-4 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(subDepartmentRequest.subDepartmentProjectCounts)}">
+                                <td colspan="3" class="text-center py-5 text-muted">
+                                    <i class="fa-solid fa-folder-open fa-2x mb-2 opacity-25"></i>
+                                    <p class="mb-0">No sub-department records found.</p>
+                                </td>
+                            </tr>
+
+                            <tr th:each="subDepartment : ${subDepartmentRequest.subDepartmentProjectCounts}">
+                                <td class="ps-4">
+                                    <div class="fw-semibold text-dark" th:text="${subDepartment.subDepartmentName}">
+                                        Sub-Department
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill bg-primary border-0 px-3 py-2"
+                                          th:text="${subDepartment.projectApplicationCount}">
+                                        0
+                                    </span>
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <a th:if="${subDepartment.subDepartmentId != null and subDepartment.projectApplicationCount > 0}"
+                                       th:href="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(departmentId=${subDepartmentRequest.departmentId},subDepartmentId=${subDepartment.subDepartmentId})}"
+                                       class="btn btn-light btn-sm rounded-pill px-3 fw-bold border text-primary">
+                                        Open Queue <i class="fa-solid fa-chevron-right ms-1 small"></i>
+                                    </a>
+                                    <span th:if="${subDepartment.subDepartmentId == null or subDepartment.projectApplicationCount == 0}"
+                                          class="text-muted small">
+                                        No active requests
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>
