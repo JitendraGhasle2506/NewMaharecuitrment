@@ -93,7 +93,9 @@ body {
 
 .app-shell {
     min-height: 100vh;
+    min-height: 100dvh;
     height: 100vh;
+    height: 100dvh;
     display: flex;
     overflow: hidden;
     background: transparent;
@@ -549,6 +551,8 @@ body {
     flex: 1 1 auto;
     min-height: 0;
     padding: 1.1rem;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     animation: pageFadeIn 0.26s ease;
 }
@@ -565,6 +569,7 @@ body {
 }
 
 .site-footer-inner {
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -612,6 +617,8 @@ body {
 
 .page-contents {
     margin-top: 1rem;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .add-emp-card {
@@ -721,6 +728,23 @@ body {
 
     .user-info-text {
         display: none;
+    }
+
+    .site-footer {
+        padding: 0.8rem 0 0.9rem;
+    }
+
+    .site-footer-inner {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .site-footer-copy,
+    .site-footer-meta {
+        margin-left: 0;
+        white-space: normal;
+        text-align: center;
     }
 }
 

@@ -69,6 +69,8 @@ public class SecurityConfig {
 
                                                 // .requestMatchers("/api/master/agencies/**").hasAuthority("ROLE_ADMIN")
                                                 // .requestMatchers("/master/agencies/**").hasAuthority("ROLE_ADMIN")
+                                                .requestMatchers("/common/mahait-profile/**")
+                                                .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR")
                                                 .requestMatchers("/home", "/common/**").authenticated()
                                                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
                                                 .requestMatchers("/hr/department/payment/**")
