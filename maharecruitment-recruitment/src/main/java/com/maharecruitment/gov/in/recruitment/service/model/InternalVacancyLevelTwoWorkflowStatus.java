@@ -8,7 +8,8 @@ public enum InternalVacancyLevelTwoWorkflowStatus {
     L2_FEEDBACK_SUBMITTED("success", "text-bg-success"),
     L2_UNDER_HR_REVIEW("info", "text-bg-info"),
     L2_SELECTED("success", "text-bg-success"),
-    L2_REJECTED("danger", "text-bg-danger");
+    L2_REJECTED("danger", "text-bg-danger"),
+    L2_FORWARDED_TO_AGENCY("success", "text-bg-success");
 
     private final String tone;
     private final String bootstrapBadgeClass;

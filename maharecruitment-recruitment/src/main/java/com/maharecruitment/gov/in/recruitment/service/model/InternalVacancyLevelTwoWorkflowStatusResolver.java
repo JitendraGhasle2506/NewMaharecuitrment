@@ -15,12 +15,12 @@ public final class InternalVacancyLevelTwoWorkflowStatusResolver {
             boolean rescheduleRequested,
             int panelFeedbackSubmittedCount,
             String finalDecisionStatus) {
+        if (storedStatus != null) {
+            return storedStatus;
+        }
         InternalVacancyLevelTwoWorkflowStatus finalStatus = resolveFinalDecisionStatus(finalDecisionStatus);
         if (finalStatus != null) {
             return finalStatus;
-        }
-        if (storedStatus != null) {
-            return storedStatus;
         }
         if (rescheduleRequested) {
             return InternalVacancyLevelTwoWorkflowStatus.L2_RESCHEDULE_REQUESTED;
@@ -64,6 +64,9 @@ public final class InternalVacancyLevelTwoWorkflowStatusResolver {
             boolean rescheduleRequested,
             boolean myFeedbackSubmitted,
             String finalDecisionStatus) {
+        if (storedStatus != null) {
+            return storedStatus;
+        }
         InternalVacancyLevelTwoWorkflowStatus finalStatus = resolveFinalDecisionStatus(finalDecisionStatus);
         if (finalStatus != null) {
             return finalStatus;
@@ -73,9 +76,6 @@ public final class InternalVacancyLevelTwoWorkflowStatusResolver {
         }
         if (myFeedbackSubmitted) {
             return InternalVacancyLevelTwoWorkflowStatus.L2_FEEDBACK_SUBMITTED;
-        }
-        if (storedStatus != null) {
-            return storedStatus;
         }
         if (panelAssigned) {
             return InternalVacancyLevelTwoWorkflowStatus.L2_PANEL_ASSIGNED;

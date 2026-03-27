@@ -1,5 +1,10 @@
 package com.maharecruitment.gov.in.web.config;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
@@ -12,6 +17,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import db.postmigration.R__auth_reference_data;
+import db.postmigration.R__common_mahait_profile_schema;
 import db.postmigration.R__department_and_recruitment_reference_data;
 import db.postmigration.R__department_and_recruitment_schema;
 import db.postmigration.R__master_reference_data;
@@ -46,6 +52,8 @@ import db.postmigration.V30__recruitment_internal_level_two_panel_user_support;
 import db.postmigration.V31__recruitment_internal_level_two_feedback_support;
 import db.postmigration.V32__auth_level_two_panel_menu_backfill;
 import db.postmigration.V33__recruitment_internal_level_two_workflow_status_support;
+import db.postmigration.V38__auth_mahait_profile_menu_backfill;
+import db.postmigration.V39__mahait_profile_cin_number_support;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -62,7 +70,7 @@ public class PostSchemaFlywayRunner {
     @EventListener(ApplicationReadyEvent.class)
     public void migrate() {
         LOGGER.info("Running post-schema Flyway migrations");
-        Flyway.configure()
+        Flyway flyway = Flyway.configure()
                 .dataSource(dataSource)
                 .baselineOnMigrate(true)
                 .table("flyway_post_schema_history")
@@ -72,6 +80,7 @@ public class PostSchemaFlywayRunner {
                         new R__master_reference_data(),
                         new R__department_and_recruitment_reference_data(),
                         new R__auth_reference_data(),
+                        new R__common_mahait_profile_schema(),
                         new V2__auth_menu_seed_fix(),
                         new V3__auth_menu_seed_backfill(),
                         new V4__auth_hr_resigned_menu_backfill(),
@@ -102,9 +111,29 @@ public class PostSchemaFlywayRunner {
                         new V30__recruitment_internal_level_two_panel_user_support(),
                         new V31__recruitment_internal_level_two_feedback_support(),
                         new V32__auth_level_two_panel_menu_backfill(),
-                        new V33__recruitment_internal_level_two_workflow_status_support())
-                .load()
-                .migrate();
+                        new V33__recruitment_internal_level_two_workflow_status_support(),
+                        new V38__auth_mahait_profile_menu_backfill(),
+                        new V39__mahait_profile_cin_number_support())
+                .load();
+
+        if (hasFailedPostSchemaMigration()) {
+            LOGGER.warn(
+                    "Detected failed entries in flyway_post_schema_history. Repairing the post-schema history before retrying.");
+            flyway.repair();
+        }
+
+        flyway.migrate();
         LOGGER.info("Post-schema Flyway migrations completed");
+    }
+
+    private boolean hasFailedPostSchemaMigration() {
+        try (Connection connection = dataSource.getConnection();
+                Statement statement = connection.createStatement();
+                ResultSet rs = statement.executeQuery(
+                        "select 1 from flyway_post_schema_history where success = false limit 1")) {
+            return rs.next();
+        } catch (SQLException ex) {
+            return false;
+        }
     }
 }

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>MahaIT Profile Master</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Masters', 'MahaIT Profile Master', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2>MahaIT Profile Master</h2>
+                    <a class="btn btn-primary btn-sm" th:href="@{/common/mahait-profile/new}">Add Profile</a>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="searchInput"
+                                placeholder="Search by profile, company, CIN, PAN, GST or bank">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle" id="profileTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Profile</th>
+                                    <th>Company</th>
+                                    <th>CIN</th>
+                                    <th>PAN</th>
+                                    <th>GST</th>
+                                    <th>Bank</th>
+                                    <th>Status</th>
+                                    <th>Updated Info</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${profiles.isEmpty()}">
+                                    <td colspan="10" class="text-center text-muted">No MahaIT profile records found</td>
+                                </tr>
+                                <tr th:each="item : ${profiles.content}">
+                                    <td th:text="${item.mahaItProfileId}"></td>
+                                    <td th:text="${item.profileName}"></td>
+                                    <td th:text="${item.companyName}"></td>
+                                    <td th:text="${item.cinNumber}"></td>
+                                    <td th:text="${item.panNumber}"></td>
+                                    <td th:text="${item.gstNumber}"></td>
+                                    <td th:text="${item.bankName}"></td>
+                                    <td>
+                                        <span class="badge"
+                                            th:classappend="${item.active} ? ' text-bg-success' : ' text-bg-secondary'"
+                                            th:text="${item.active ? 'Active' : 'Inactive'}"></span>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold" th:text="${item.updatedBy != null ? item.updatedBy : '-'}"></div>
+                                        <div class="small text-muted"
+                                            th:text="${item.updatedDate != null ? #temporals.format(item.updatedDate, 'dd MMM yyyy, hh:mm a') : '-'}"></div>
+                                    </td>
+                                    <td class="text-center">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:href="@{/common/mahait-profile/{id}/edit(id=${item.mahaItProfileId})}">Edit</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3"
+                        th:if="${profiles.totalPages > 1}">
+                        <a class="btn btn-outline-secondary btn-sm" th:if="${!profiles.first}"
+                            th:href="@{/common/mahait-profile(page=${profiles.number - 1},size=${profiles.size})}">
+                            Previous
+                        </a>
+                        <span th:if="${profiles.first}"></span>
+                        <span class="small text-muted">
+                            Page <span th:text="${profiles.number + 1}"></span> of <span
+                                th:text="${profiles.totalPages}"></span>
+                        </span>
+                        <a class="btn btn-outline-secondary btn-sm" th:if="${!profiles.last}"
+                            th:href="@{/common/mahait-profile(page=${profiles.number + 1},size=${profiles.size})}">
+                            Next
+                        </a>
+                        <span th:if="${profiles.last}"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script>
+        document.getElementById('searchInput').addEventListener('input', function () {
+            const filter = this.value.toLowerCase();
+            document.querySelectorAll('#profileTable tbody tr').forEach(function (row) {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+</body>
+
+</html>
