@@ -162,6 +162,16 @@ public class DepartmentRegistrationPageController {
                 bindingResult.rejectValue("panFile", "registration.panFile", "PAN document is required.");
             }
         }
+        if (form.getUploadedGstFilePath() == null || form.getUploadedGstFilePath().isEmpty()) {
+        	if (!StringUtils.hasText(form.getUploadedGstFilePath())) {
+        		bindingResult.rejectValue("gstFile", "registration.gstFile", "GST document is required.");
+        	}
+        }
+        if (form.getUploadedTanFilePath() == null || form.getUploadedTanFilePath().isEmpty()) {
+        	if (!StringUtils.hasText(form.getUploadedTanFilePath())) {
+        		bindingResult.rejectValue("tanFile", "registration.tanFile", "TAN document is required.");
+        	}
+        }
 
         if (!isBlank(form.getPrimaryEmail())
                 && form.getPrimaryEmail().trim().equalsIgnoreCase(form.getSecondaryEmail())) {
