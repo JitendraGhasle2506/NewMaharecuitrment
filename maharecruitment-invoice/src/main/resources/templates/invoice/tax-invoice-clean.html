@@ -6,10 +6,15 @@
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/print.css}" />
     <style>
+        body.tax-invoice {
+            margin: 0;
+            background: #fff;
+        }
+
         .invoice-page {
-            max-width: 1200px;
+            max-width: none;
             margin: 0 auto;
-            padding: 12px;
+            padding: 8px 10px 12px;
         }
 
         .invoice-top {
@@ -26,10 +31,27 @@
             margin-top: 12px;
             text-align: center;
         }
+
+        .tax-invoice.embedded-mode .invoice-page {
+            max-width: none;
+            padding: 0;
+        }
+
+        .tax-invoice.embedded-mode #print-content {
+            margin: 0;
+        }
+
+        .tax-invoice.embedded-mode .table {
+            margin-bottom: 8px;
+        }
+
+        .tax-invoice.embedded-mode .text-center p {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 
-<body class="tax-invoice">
+<body class="tax-invoice" th:classappend="${#bools.isTrue(embeddedPreviewMode)} ? ' embedded-mode' : ''">
     <div class="invoice-page">
         <div id="print-content" class="invoice-container">
             <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}" class="alert alert-warning" style="margin-bottom: 12px;">
@@ -247,9 +269,61 @@
     </div>
 
     <script>
+        function printWhenAssetsReady(printWindow) {
+            if (!printWindow) {
+                return;
+            }
+
+            function triggerPrint() {
+                printWindow.focus();
+                window.setTimeout(function () {
+                    printWindow.print();
+                    printWindow.close();
+                }, 250);
+            }
+
+            function waitForImages() {
+                var doc = printWindow.document;
+                var images = Array.from(doc.images || []);
+                var pending = images.filter(function (image) {
+                    return !image.complete;
+                });
+
+                if (!pending.length) {
+                    triggerPrint();
+                    return;
+                }
+
+                var remaining = pending.length;
+                function resolveImage() {
+                    remaining -= 1;
+                    if (remaining <= 0) {
+                        triggerPrint();
+                    }
+                }
+
+                pending.forEach(function (image) {
+                    image.addEventListener('load', resolveImage, { once: true });
+                    image.addEventListener('error', resolveImage, { once: true });
+                });
+            }
+
+            if (printWindow.document.readyState === 'complete') {
+                window.setTimeout(waitForImages, 100);
+                return;
+            }
+
+            printWindow.addEventListener('load', function () {
+                window.setTimeout(waitForImages, 100);
+            }, { once: true });
+        }
+
         function printContent(id) {
             var content = document.getElementById(id).innerHTML;
             var win = window.open('', '_blank');
+            if (!win) {
+                return;
+            }
             var styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
                 .map(function (node) {
                     return node.outerHTML;
@@ -260,9 +334,7 @@
             win.document.write(content);
             win.document.write('</body></html>');
             win.document.close();
-            win.focus();
-            win.print();
-            win.close();
+            printWhenAssetsReady(win);
         }
     </script>
 </body>
