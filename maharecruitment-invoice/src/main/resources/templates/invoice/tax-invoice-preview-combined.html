@@ -54,6 +54,35 @@
             margin-top: 18px;
         }
 
+        .preview-frame-message {
+            display: none;
+            min-height: 260px;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 22px;
+            border: 1px dashed #f59e0b;
+            border-radius: 12px;
+            background: #fff7ed;
+            color: #9a3412;
+            text-align: center;
+        }
+
+        .preview-frame-message.is-visible {
+            display: flex;
+        }
+
+        .preview-frame-message h3 {
+            margin: 0 0 8px;
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .preview-frame-message p {
+            margin: 0;
+            font-size: 0.96rem;
+            line-height: 1.5;
+        }
+
         .preview-frame {
             width: 100%;
             min-height: 900px;
@@ -83,6 +112,12 @@
 <body>
     <div class="preview-shell">
         <section class="preview-section">
+            <div class="preview-frame-message" id="oldPreviewFrameMessage" aria-live="polite">
+                <div>
+                    <h3>Session expired</h3>
+                    <p>Please login again and reopen the tax invoice preview.</p>
+                </div>
+            </div>
             <iframe class="preview-frame"
                 id="oldPreviewFrame"
                 title="Old Tax Invoice Preview"
@@ -92,6 +127,12 @@
         </section>
 
         <section class="preview-section">
+            <div class="preview-frame-message" id="newPreviewFrameMessage" aria-live="polite">
+                <div>
+                    <h3>Session expired</h3>
+                    <p>Please login again and reopen the tax invoice preview.</p>
+                </div>
+            </div>
             <iframe class="preview-frame"
                 id="newPreviewFrame"
                 title="New Tax Invoice Preview"
@@ -113,6 +154,80 @@
                 return null;
             }
             return frame.contentDocument || (frame.contentWindow ? frame.contentWindow.document : null);
+        }
+
+        function getFrameLocation(frame) {
+            if (!frame || !frame.contentWindow) {
+                return null;
+            }
+            try {
+                return frame.contentWindow.location;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function resolveFrameState(frame) {
+            var locationRef = getFrameLocation(frame);
+            var pathname = locationRef && locationRef.pathname ? locationRef.pathname : '';
+            var search = locationRef && locationRef.search ? locationRef.search : '';
+            var params = new URLSearchParams(search);
+
+            if (pathname.endsWith('/login')) {
+                if (params.get('sessionExpired') === 'true') {
+                    return {
+                        kind: 'sessionExpired',
+                        title: 'Session expired',
+                        message: 'Please login again and reopen the tax invoice preview.'
+                    };
+                }
+
+                return {
+                    kind: 'loginRequired',
+                    title: 'Login required',
+                    message: 'Please login to continue and reopen the tax invoice preview.'
+                };
+            }
+
+            return {
+                kind: 'ready'
+            };
+        }
+
+        function setFrameMessage(frame, title, message) {
+            if (!frame) {
+                return;
+            }
+
+            var notice = document.getElementById(frame.id + 'Message');
+            if (!notice) {
+                return;
+            }
+
+            var titleNode = notice.querySelector('h3');
+            var messageNode = notice.querySelector('p');
+            if (titleNode) {
+                titleNode.textContent = title;
+            }
+            if (messageNode) {
+                messageNode.textContent = message;
+            }
+
+            notice.classList.add('is-visible');
+            frame.style.display = 'none';
+            frame.style.height = '0';
+        }
+
+        function clearFrameMessage(frame) {
+            if (!frame) {
+                return;
+            }
+
+            var notice = document.getElementById(frame.id + 'Message');
+            if (notice) {
+                notice.classList.remove('is-visible');
+            }
+            frame.style.display = 'block';
         }
 
         function resizePreviewFrame(frame) {
@@ -201,14 +316,32 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             var printButton = document.getElementById('printBothBtn');
-            var loadedFrames = 0;
-            var totalFrames = 2;
+            var frameStates = {
+                oldPreviewFrame: 'loading',
+                newPreviewFrame: 'loading'
+            };
 
             function syncPrintButtonState() {
                 if (!printButton) {
                     return;
                 }
-                var ready = loadedFrames >= totalFrames;
+
+                var states = Object.values(frameStates);
+                if (states.includes('sessionExpired')) {
+                    printButton.disabled = true;
+                    printButton.textContent = 'Session expired';
+                    return;
+                }
+
+                if (states.includes('loginRequired')) {
+                    printButton.disabled = true;
+                    printButton.textContent = 'Login required';
+                    return;
+                }
+
+                var ready = states.every(function (state) {
+                    return state === 'ready';
+                });
                 printButton.disabled = !ready;
                 printButton.textContent = ready ? 'Print Both Previews' : 'Loading previews...';
             }
@@ -220,10 +353,18 @@
                 }
 
                 frame.addEventListener('load', function () {
-                    loadedFrames += 1;
-                    resizePreviewFrame(frame);
-                    window.setTimeout(function () { resizePreviewFrame(frame); }, 150);
-                    window.setTimeout(function () { resizePreviewFrame(frame); }, 500);
+                    var state = resolveFrameState(frame);
+                    frameStates[frameId] = state.kind;
+
+                    if (state.kind === 'ready') {
+                        clearFrameMessage(frame);
+                        resizePreviewFrame(frame);
+                        window.setTimeout(function () { resizePreviewFrame(frame); }, 150);
+                        window.setTimeout(function () { resizePreviewFrame(frame); }, 500);
+                    } else {
+                        setFrameMessage(frame, state.title, state.message);
+                    }
+
                     syncPrintButtonState();
                 });
             });
