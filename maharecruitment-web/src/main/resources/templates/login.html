@@ -130,6 +130,45 @@
 
     <th:block th:replace="~{fragments/footer :: var-footer}"></th:block>
 
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function () {
+            var blockEmbeddedLogin = /*[[${param.sessionExpired != null or param.unauthenticated != null}]]*/ false;
+            if (!blockEmbeddedLogin || window.self === window.top) {
+                return;
+            }
+
+            var authCard = document.querySelector('.auth-card');
+            var loginForm = document.getElementById('loginForm');
+
+            if (loginForm) {
+                loginForm.style.display = 'none';
+                loginForm.querySelectorAll('input, button, textarea, select, a').forEach(function (element) {
+                    if ('disabled' in element) {
+                        element.disabled = true;
+                    }
+                });
+            }
+
+            if (authCard && !document.getElementById('embeddedSessionExpiredAlert')) {
+                var alertNode = document.createElement('div');
+                alertNode.id = 'embeddedSessionExpiredAlert';
+                alertNode.className = 'alert alert-warning';
+                alertNode.textContent = 'Session expired. Please login again in the main window. Login inside this preview is not allowed.';
+                authCard.appendChild(alertNode);
+            }
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'mahait-session-expired',
+                        reason: /*[[${param.sessionExpired != null}]]*/ false ? 'sessionExpired' : 'unauthenticated'
+                    }, window.location.origin);
+                }
+            } catch (error) {
+                console.warn('Unable to notify parent window about embedded session expiry.', error);
+            }
+        });
+    </script>
     <script th:src="@{/js/captcha.js}"></script>
 </body>
 

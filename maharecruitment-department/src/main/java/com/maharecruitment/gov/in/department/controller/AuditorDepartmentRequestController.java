@@ -202,7 +202,7 @@ public class AuditorDepartmentRequestController {
         if (!verificationConfirmed) {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Please confirm that auditor has verified department details before completion.");
+                    "Please review the tax invoice preview and confirm completion.");
             return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
                     + "/applications/" + applicationId;
         }
@@ -214,7 +214,11 @@ public class AuditorDepartmentRequestController {
                     applicationId,
                     completionRemarks,
                     resolveActorEmail(principal));
-            redirectAttributes.addFlashAttribute("successMessage", "Application marked completed successfully.");
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Application marked completed successfully. Tax invoice generated.");
+            return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
+                    + "/applications/" + applicationId;
         } catch (DepartmentApplicationException ex) {
             log.warn("Unable to complete application. departmentId={}, subDepartmentId={}, applicationId={}, reason={}",
                     departmentId,
@@ -222,6 +226,16 @@ public class AuditorDepartmentRequestController {
                     applicationId,
                     ex.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Unable to complete application because tax invoice generation failed. departmentId={}, subDepartmentId={}, applicationId={}",
+                    departmentId,
+                    subDepartmentId,
+                    applicationId,
+                    ex);
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Unable to complete application because final tax invoice generation failed. No changes were saved.");
         }
 
         return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId

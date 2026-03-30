@@ -7,6 +7,14 @@
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/captcha.css}">
     <link rel="stylesheet" th:href="@{/css/department-registration.css}">
+    
+    <style>
+    .required-asterisk {
+            color: red;
+        }
+   
+   
+   </style>
 </head>
 
 <body class="portal-shell department-registration-shell">
@@ -91,20 +99,19 @@
 
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label" for="departmentId">Department</label>
+                                        <label class="form-label" for="departmentId">Department</label> <span class="required-asterisk">*</span>
                                         <select class="form-select" th:field="*{departmentId}" id="departmentId">
                                             <option value="">Select department</option>
                                             <option th:each="department : ${departments}"
                                                 th:value="${department.departmentId}"
                                                 th:text="${department.departmentName}"></option>
-                                            <option value="-1">Other / Not listed</option>
                                         </select>
                                         <div class="text-danger small" th:if="${#fields.hasErrors('departmentId')}"
                                             th:errors="*{departmentId}"></div>
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="form-label" for="subDeptId">Sub-department</label>
+                                        <label class="form-label" for="subDeptId">Sub-department</label> <span class="required-asterisk">*</span>
                                         <select class="form-select" th:field="*{subDeptId}" id="subDeptId">
                                             <option value="">Select sub-department</option>
                                             <option th:each="subDepartment : ${subDepartments}"
@@ -117,7 +124,7 @@
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="form-label" for="newDepartmentName">New Department Name</label>
+                                        <label class="form-label" for="newDepartmentName">New Department Name</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control" id="newDepartmentName"
                                             th:field="*{newDepartmentName}" placeholder="Enter department name">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('newDepartmentName')}"
@@ -125,7 +132,7 @@
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="form-label" for="newSubDeptName">New Sub-department Name</label>
+                                        <label class="form-label" for="newSubDeptName">New Sub-department Name</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control" id="newSubDeptName"
                                             th:field="*{newSubDeptName}" placeholder="Enter sub-department name">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('newSubDeptName')}"
@@ -133,7 +140,7 @@
                                     </div>
 
                                     <div class="col-12">
-                                        <label class="form-label" for="address">Office Address</label>
+                                        <label class="form-label" for="address">Office Address</label> <span class="required-asterisk">*</span>
                                         <textarea class="form-control" id="address" th:field="*{address}" rows="3"
                                             placeholder="Enter office address"></textarea>
                                         <div class="text-danger small" th:if="${#fields.hasErrors('address')}"
@@ -150,7 +157,7 @@
 
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label" for="primaryContactName">Contact Name</label>
+                                        <label class="form-label" for="primaryContactName">Contact Name</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control" id="primaryContactName"
                                             th:field="*{primaryContactName}" placeholder="Enter full name">
                                         <div class="text-danger small"
@@ -158,7 +165,7 @@
                                             th:errors="*{primaryContactName}"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" for="primaryDesignation">Designation</label>
+                                        <label class="form-label" for="primaryDesignation">Designation</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control" id="primaryDesignation"
                                             th:field="*{primaryDesignation}" placeholder="Enter designation">
                                         <div class="text-danger small"
@@ -166,7 +173,7 @@
                                             th:errors="*{primaryDesignation}"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" for="primaryMobile">Mobile Number</label>
+                                        <label class="form-label" for="primaryMobile">Mobile Number</label> <span class="required-asterisk">*</span>
                                         <div class="verification-input-group">
                                             <input type="text" class="form-control" id="primaryMobile"
                                                 th:field="*{primaryMobile}" maxlength="10"
@@ -185,7 +192,7 @@
                                             th:errors="*{primaryMobile}"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" for="primaryEmail">Email Address</label>
+                                        <label class="form-label" for="primaryEmail">Email Address</label> <span class="required-asterisk">*</span>
                                         <div class="verification-input-group">
                                             <input type="email" class="form-control" id="primaryEmail"
                                                 th:field="*{primaryEmail}" placeholder="Enter official email">
@@ -222,7 +229,7 @@
 
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label" for="secondaryContactName">Contact Name</label>
+                                        <label class="form-label" for="secondaryContactName">Contact Name</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control" id="secondaryContactName"
                                             th:field="*{secondaryContactName}" placeholder="Enter full name">
                                         <div class="text-danger small"
@@ -230,7 +237,7 @@
                                             th:errors="*{secondaryContactName}"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" for="secondaryDesignation">Designation</label>
+                                        <label class="form-label" for="secondaryDesignation">Designation</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control" id="secondaryDesignation"
                                             th:field="*{secondaryDesignation}" placeholder="Enter designation">
                                         <div class="text-danger small"
@@ -238,7 +245,7 @@
                                             th:errors="*{secondaryDesignation}"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" for="secondaryMobile">Mobile Number</label>
+                                        <label class="form-label" for="secondaryMobile">Mobile Number</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control" id="secondaryMobile"
                                             th:field="*{secondaryMobile}" maxlength="10"
                                             placeholder="10 digit mobile number">
@@ -246,7 +253,7 @@
                                             th:errors="*{secondaryMobile}"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" for="secondaryEmail">Email Address</label>
+                                        <label class="form-label" for="secondaryEmail">Email Address</label> <span class="required-asterisk">*</span>
                                         <input type="email" class="form-control" id="secondaryEmail"
                                             th:field="*{secondaryEmail}" placeholder="Enter official email">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('secondaryEmail')}"
@@ -265,7 +272,7 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label" for="billDepartmentName">Department Name for
-                                            Bill</label>
+                                            Bill</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control" id="billDepartmentName"
                                             th:field="*{billDepartmentName}" placeholder="Billing department name">
                                         <div class="text-danger small"
@@ -273,35 +280,35 @@
                                             th:errors="*{billDepartmentName}"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" for="gstNo">GST Number</label>
+                                        <label class="form-label" for="gstNo">GST Number</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control text-uppercase" id="gstNo"
                                             th:field="*{gstNo}" maxlength="15" placeholder="Enter GST number">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('gstNo')}"
                                             th:errors="*{gstNo}"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" for="panNo">PAN Number</label>
+                                        <label class="form-label" for="panNo">PAN Number</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control text-uppercase" id="panNo"
                                             th:field="*{panNo}" maxlength="10" placeholder="Enter PAN number">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('panNo')}"
                                             th:errors="*{panNo}"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" for="tanNo">TAN Number</label>
+                                        <label class="form-label" for="tanNo">TAN Number</label> <span class="required-asterisk">*</span>
                                         <input type="text" class="form-control text-uppercase" id="tanNo"
                                             th:field="*{tanNo}" maxlength="10" placeholder="Enter TAN number">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('tanNo')}"
                                             th:errors="*{tanNo}"></div>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label" for="billAddress">Billing Address</label>
+                                        <label class="form-label" for="billAddress">Billing Address</label> <span class="required-asterisk">*</span>
                                         <textarea class="form-control" id="billAddress" th:field="*{billAddress}"
                                             rows="3" placeholder="Enter billing address"></textarea>
                                         <div class="text-danger small" th:if="${#fields.hasErrors('billAddress')}"
                                             th:errors="*{billAddress}"></div>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label" for="gstFile">GST Document</label>
+                                        <label class="form-label" for="gstFile">GST Document</label> <span class="required-asterisk">*</span>
                                         <input type="file" class="form-control" id="gstFile" th:field="*{gstFile}"
                                             accept=".pdf,.png,.jpg,.jpeg">
                                         <input type="hidden" th:field="*{uploadedGstFilePath}">
@@ -314,7 +321,7 @@
                                             th:errors="*{gstFile}"></div>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label" for="panFile">PAN Document</label>
+                                        <label class="form-label" for="panFile">PAN Document</label> <span class="required-asterisk">*</span>
                                         <input type="file" class="form-control" id="panFile" th:field="*{panFile}"
                                             accept=".pdf,.png,.jpg,.jpeg">
                                         <input type="hidden" th:field="*{uploadedPanFilePath}">
@@ -327,7 +334,7 @@
                                             th:errors="*{panFile}"></div>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label" for="tanFile">TAN Document</label>
+                                        <label class="form-label" for="tanFile">TAN Document</label> <span class="required-asterisk">*</span>
                                         <input type="file" class="form-control" id="tanFile" th:field="*{tanFile}"
                                             accept=".pdf,.png,.jpg,.jpeg">
                                         <input type="hidden" th:field="*{uploadedTanFilePath}">

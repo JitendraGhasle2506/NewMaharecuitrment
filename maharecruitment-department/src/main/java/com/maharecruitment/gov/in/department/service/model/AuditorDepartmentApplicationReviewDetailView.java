@@ -37,6 +37,8 @@ public class AuditorDepartmentApplicationReviewDetailView {
     private String workOrderOriginalName;
 
     private boolean auditorActionAllowed;
+    private boolean approvalAllowed;
+    private boolean sendBackAllowed;
     private boolean completionAllowed;
 
     private LocalDate taxApplicableDate;

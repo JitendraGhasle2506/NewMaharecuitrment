@@ -54,11 +54,11 @@
 
                         <div class="row g-3 mb-4 p-3 bg-light rounded-3" th:if="${paymentForm.piNumber != null}">
                             <div class="col-md-3">
-                                <label class="text-muted small d-block">PI Number</label>
+                                <label class="text-muted small d-block">TI Number</label>
                                 <strong th:text="${paymentForm.piNumber}"></strong>
                             </div>
                             <div class="col-md-3">
-                                <label class="text-muted small d-block">Total PI Amount</label>
+                                <label class="text-muted small d-block">Tax Invoice Amount</label>
                                 <strong
                                     th:text="${'₹' + #numbers.formatDecimal(paymentForm.totalPiAmount, 1, 'COMMA', 2, 'POINT')}"></strong>
                             </div>
@@ -76,7 +76,7 @@
 
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Proforma Invoice <span
+                                <label class="form-label fw-semibold">Tax Invoice <span
                                         class="text-danger small">(Selected)</span></label>
                                 <input type="text" th:field="*{proformaInvoiceId}" class="form-control" readonly />
                             </div>

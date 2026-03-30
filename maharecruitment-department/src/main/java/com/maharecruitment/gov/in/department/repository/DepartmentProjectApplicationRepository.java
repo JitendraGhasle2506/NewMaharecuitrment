@@ -21,6 +21,8 @@ public interface DepartmentProjectApplicationRepository extends JpaRepository<De
 
     boolean existsByRequestId(String requestId);
 
+    Optional<DepartmentProjectApplicationEntity> findByRequestIdIgnoreCase(String requestId);
+
     List<DepartmentProjectApplicationEntity> findByDepartmentRegistrationIdOrderByDepartmentProjectApplicationIdDesc(
             Long departmentRegistrationId);
 

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -21,7 +22,6 @@ import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.department.dto.AdvancePaymentForm;
-import com.maharecruitment.gov.in.department.entity.DepartmentProformaInvoiceEntity;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
 import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
 import com.maharecruitment.gov.in.department.entity.DepartmentAdvancePaymentActivityEntity;
@@ -40,6 +40,9 @@ import com.maharecruitment.gov.in.department.service.model.DepartmentActorContex
 import com.maharecruitment.gov.in.department.service.model.StoredDocument;
 import com.maharecruitment.gov.in.master.dto.ProformaInvoiceSummary;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 @Service
 @Transactional(readOnly = true)
 public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePaymentService {
@@ -55,7 +58,9 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     private final UserRepository userRepository;
     private final UserAffiliationService userAffiliationService;
     private final DepartmentPaymentStorageService storageService;
-    private final com.maharecruitment.gov.in.department.repository.DepartmentProformaInvoiceRepository proformaInvoiceRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public DepartmentAdvancePaymentServiceImpl(
             DepartmentAdvancePaymentRepository paymentRepository,
@@ -63,15 +68,13 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             DepartmentProjectApplicationRepository applicationRepository,
             UserRepository userRepository,
             UserAffiliationService userAffiliationService,
-            DepartmentPaymentStorageService storageService,
-            com.maharecruitment.gov.in.department.repository.DepartmentProformaInvoiceRepository proformaInvoiceRepository) {
+            DepartmentPaymentStorageService storageService) {
         this.paymentRepository = paymentRepository;
         this.activityRepository = activityRepository;
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
         this.userAffiliationService = userAffiliationService;
         this.storageService = storageService;
-        this.proformaInvoiceRepository = proformaInvoiceRepository;
     }
 
     @Override
@@ -88,15 +91,13 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         form.setDepartmentProjectApplicationId(app.getDepartmentProjectApplicationId());
         form.setDepartmentRegistrationId(actorContext.getDepartmentRegistrationId());
 
-        // Fetch latest PI details
-        List<DepartmentProformaInvoiceEntity> invoices = proformaInvoiceRepository
-                .findByApplication_DepartmentProjectApplicationIdOrderByDepartmentProformaInvoiceIdDesc(applicationId);
-        
-        if (!invoices.isEmpty()) {
-            DepartmentProformaInvoiceEntity pi = invoices.get(0);
-            form.setProformaInvoiceId(pi.getPiNumber());
-            form.setPiNumber(pi.getPiNumber());
-            form.setTotalPiAmount(pi.getTotalAmount());
+        Optional<TaxInvoiceInfo> taxInvoice = findTaxInvoiceInfo(applicationId);
+
+        if (taxInvoice.isPresent()) {
+            TaxInvoiceInfo invoice = taxInvoice.get();
+            form.setProformaInvoiceId(invoice.tiNumber());
+            form.setPiNumber(invoice.tiNumber());
+            form.setTotalPiAmount(invoice.totalAmount());
             
             // Calculate previously paid amounts for this application (excluding current if editing, but this is initialize)
             List<DepartmentAdvancePaymentEntity> pastPayments = paymentRepository
@@ -107,8 +108,8 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             
             form.setPartialAmount(paidAmount);
-            form.setBalanceAmount(pi.getTotalAmount().subtract(paidAmount));
-            form.setTotalAmount(pi.getTotalAmount().subtract(paidAmount)); // Default to paying balance
+            form.setBalanceAmount(invoice.totalAmount().subtract(paidAmount));
+            form.setTotalAmount(invoice.totalAmount().subtract(paidAmount)); // Default to paying balance
             form.setPaymentType("FULL");
         }
 
@@ -132,10 +133,9 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
 
     @Override
     public List< ProformaInvoiceSummary> getAvailableInvoices(Long applicationId) {
-        return proformaInvoiceRepository.findByApplication_DepartmentProjectApplicationIdOrderByDepartmentProformaInvoiceIdDesc(applicationId)
-                .stream()
-                .map(pi -> new ProformaInvoiceSummary(pi.getPiNumber(), pi.getTotalAmount()))
-                .collect(Collectors.toList());
+        return findTaxInvoiceInfo(applicationId)
+                .map(invoice -> List.of(new ProformaInvoiceSummary(invoice.tiNumber(), invoice.totalAmount())))
+                .orElseGet(List::of);
     }
 
     @Override
@@ -143,6 +143,9 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     public Long savePayment(AdvancePaymentForm form, String actionType, String actorEmail) {
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
         String normalizedAction = actionType != null ? actionType.trim().toUpperCase(Locale.ROOT) : ACTION_SAVE;
+        String receiptReference = StringUtils.hasText(form.getUtrNumber()) ? form.getUtrNumber() : form.getReceiptNumber();
+        form.setReceiptNumber(receiptReference);
+        form.setUtrNumber(receiptReference);
 
         DepartmentAdvancePaymentEntity entity;
         boolean isNew = form.getId() == null;
@@ -182,10 +185,10 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         }
 
         entity.setProformaInvoiceId(form.getProformaInvoiceId());
-        entity.setReceiptNumber(form.getUtrNumber()); // Consolidate: Receipt Number = UTR Number
+        entity.setReceiptNumber(receiptReference); // Consolidate: Receipt Number = UTR Number
         entity.setTotalAmount(form.getTotalAmount());
         entity.setRemarks(form.getRemarks());
-        entity.setUtrNumber(form.getUtrNumber());
+        entity.setUtrNumber(receiptReference);
         entity.setUpdatedBy(actorEmail);
         entity.setUpdatedDate(LocalDateTime.now());
 
@@ -477,7 +480,7 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
 
     private void validateForSubmission(DepartmentAdvancePaymentEntity entity) {
         if (!StringUtils.hasText(entity.getProformaInvoiceId())) {
-            throw new DepartmentApplicationException("Proforma Invoice is required for submission.");
+            throw new DepartmentApplicationException("Tax Invoice reference is required for submission.");
         }
         if (!StringUtils.hasText(entity.getReceiptNumber())) {
             throw new DepartmentApplicationException("Receipt number is required for submission.");
@@ -524,14 +527,12 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     }
 
     private void populatePiInfoInForm(AdvancePaymentForm form, DepartmentProjectApplicationEntity app) {
-        List<DepartmentProformaInvoiceEntity> invoices = proformaInvoiceRepository
-                .findByApplication_DepartmentProjectApplicationIdOrderByDepartmentProformaInvoiceIdDesc(
-                        app.getDepartmentProjectApplicationId());
-        
-        if (!invoices.isEmpty()) {
-            DepartmentProformaInvoiceEntity pi = invoices.get(0);
-            form.setPiNumber(pi.getPiNumber());
-            form.setTotalPiAmount(pi.getTotalAmount());
+        Optional<TaxInvoiceInfo> taxInvoice = findTaxInvoiceInfo(app.getDepartmentProjectApplicationId());
+
+        if (taxInvoice.isPresent()) {
+            TaxInvoiceInfo invoice = taxInvoice.get();
+            form.setPiNumber(invoice.tiNumber());
+            form.setTotalPiAmount(invoice.totalAmount());
             
             List<DepartmentAdvancePaymentEntity> pastPayments = paymentRepository
                     .findByApplicationAndApplicationStatusNotIn(app, List.of(DepartmentApplicationStatus.HR_REJECTED));
@@ -542,8 +543,32 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             
             form.setPartialAmount(paidAmount);
-            form.setBalanceAmount(pi.getTotalAmount().subtract(paidAmount));
+            form.setBalanceAmount(invoice.totalAmount().subtract(paidAmount));
         }
+    }
+
+    private Optional<TaxInvoiceInfo> findTaxInvoiceInfo(Long applicationId) {
+        List<Object[]> rows = entityManager.createNativeQuery(
+                "select ti_number, total_amount from department_tax_invoice "
+                        + "where department_project_application_id = :applicationId and is_active = true")
+                .setParameter("applicationId", applicationId)
+                .getResultList();
+
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Object[] row = rows.get(0);
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        if (row[1] instanceof BigDecimal amount) {
+            totalAmount = amount;
+        } else if (row[1] instanceof Number amount) {
+            totalAmount = BigDecimal.valueOf(amount.doubleValue());
+        }
+
+        return Optional.of(new TaxInvoiceInfo(
+                row[0] != null ? row[0].toString() : null,
+                totalAmount));
     }
 
     private boolean matchesActorDepartment(User user, Long departmentRegistrationId) {
@@ -552,5 +577,8 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         return departmentRegistration != null
                 && departmentRegistration.getDepartmentRegistrationId() != null
                 && departmentRegistration.getDepartmentRegistrationId().equals(departmentRegistrationId);
+    }
+
+    private record TaxInvoiceInfo(String tiNumber, BigDecimal totalAmount) {
     }
 }

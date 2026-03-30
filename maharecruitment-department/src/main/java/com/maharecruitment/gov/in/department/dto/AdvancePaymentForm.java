@@ -28,10 +28,9 @@ public class AdvancePaymentForm {
     @NotNull(message = "Department registration reference is required")
     private Long departmentRegistrationId;
 
-    @NotBlank(message = "Proforma Invoice selection is required")
+    @NotBlank(message = "Tax Invoice reference is required")
     private String proformaInvoiceId;
 
-    @NotBlank(message = "Receipt number is required")
     private String receiptNumber;
 
     @NotNull(message = "Total amount is required")
@@ -54,6 +53,7 @@ public class AdvancePaymentForm {
 
     private BigDecimal balanceAmount;
 
+    @NotBlank(message = "UTR / Transaction ID is required")
     private String utrNumber;
 
     private String paymentType; // "FULL" or "PARTIAL"

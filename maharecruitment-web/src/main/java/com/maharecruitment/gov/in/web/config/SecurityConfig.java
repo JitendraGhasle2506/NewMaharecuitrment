@@ -15,7 +15,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
 
-import com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler;
 import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
@@ -49,7 +48,7 @@ public class SecurityConfig {
         SecurityFilterChain filterChain(
                         HttpSecurity http,
                         DaoAuthenticationProvider authenticationProvider,
-                        MySimpleUrlAuthenticationSuccessHandler successHandler,
+                        com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler successHandler,
                         CustomLoginFailureHandler loginFailureHandler,
                         CustomAccessDeniedHandler accessDeniedHandler,
                         CustomLogoutSuccessHandler logoutSuccessHandler) throws Exception {
@@ -69,6 +68,8 @@ public class SecurityConfig {
 
                                                 // .requestMatchers("/api/master/agencies/**").hasAuthority("ROLE_ADMIN")
                                                 // .requestMatchers("/master/agencies/**").hasAuthority("ROLE_ADMIN")
+                                                .requestMatchers("/common/mahait-profile/**")
+                                                .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR")
                                                 .requestMatchers("/home", "/common/**").authenticated()
                                                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
                                                 .requestMatchers("/hr/department/payment/**")
@@ -87,6 +88,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/employee/**").hasAuthority("ROLE_EMPLOYEE")
                                                 .requestMatchers("/department/payment/*/receipt")
                                                 .hasAnyAuthority("ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AUDITOR")
+                                                .requestMatchers("/invoice/**")
+                                                .hasAnyAuthority("ROLE_ADMIN", "ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AUDITOR")
                                                 .requestMatchers("/department/**").hasAuthority("ROLE_DEPARTMENT")
                                                 .requestMatchers("/auditor/**").hasAuthority("ROLE_AUDITOR")
 
@@ -134,6 +137,7 @@ public class SecurityConfig {
                                 .headers(headers -> headers
                                                 .httpStrictTransportSecurity(
                                                                 hsts -> hsts.includeSubDomains(true).preload(true))
+                                                .frameOptions(frame -> frame.sameOrigin())
                                                 .cacheControl(cache -> {
                                                 })
                                                 .addHeaderWriter(new CacheControlHeadersWriter()));
