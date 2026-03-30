@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>View Employee Attendance</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+    <style>
+        .profile-card, .info-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 20px;
+            background: #fff;
+            height: 100%;
+        }
+        .profile-img { width: 100%; max-width: 120px; border: 1px solid #ddd; padding: 5px; }
+        .info-label { color: #666; width: 130px; display: inline-block; font-size: 13px; }
+        .info-value { font-weight: 500; font-size: 13px; }
+        .section-title { color: #ff9800; font-size: 14px; margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px; }
+        
+        .attendance-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; }
+        .attendance-table th, .attendance-table td { border: 1px solid #ddd; padding: 4px 1px; text-align: center; min-width: 30px; }
+        .attendance-table th { background-color: #f2f2f2; }
+        
+        .status-present { color: #00b050 !important; font-weight: bold; }
+        .status-absent { color: rgb(255, 0, 0) !important; font-weight: bold; }
+        .status-holiday { color: #0b5ed7 !important; font-weight: bold; }
+        .status-weekoff { color: #444444 !important; font-weight: bold; }
+        .status-leave { color: #556b2f !important; font-weight: bold; }
+        .status-tour { color: #9c27b0 !important; font-weight: bold; }
+
+        .attendance-legend { display: flex; flex-wrap: wrap; gap: 20px; margin: 15px 0; padding: 10px; background: #fafafa; border-radius: 4px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .legend-circle { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 10px; }
+        .circle-present { background-color: #00b050; }
+        .circle-absent { background-color: rgb(255, 0, 0); }
+        .circle-holiday { background-color: #2196f3; }
+        .circle-leave { background-color: #556b2f; }
+        .circle-tour { background-color: #9c27b0; }
+        .circle-future { background-color: #eeeeee; color: #bdbdbd; }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Team Details', 'Attendance', ~{::section})}">
+        <section>
+            <div class="mb-3">
+                <a th:href="@{/hod1/team-attendance(roleType=${currentRoleType})}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fa fa-arrow-left"></i> Back to Team List
+                </a>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="profile-card">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <img th:src="${targetEmployee.photoPath ?: '/assets/img/user-default.png'}" class="profile-img" alt="Profile">
+                            </div>
+                            <div class="col-md-9">
+                                <div class="mb-1"><span class="info-label">Employee</span> <span class="info-value" th:text="${targetEmployee.fullName}"></span></div>
+                                <div class="mb-1"><span class="info-label">Code</span> <span class="info-value" th:text="${targetEmployee.employeeCode}"></span></div>
+                                <div class="mb-1"><span class="info-label">Designation</span> <span class="info-value" th:text="${targetEmployee.designation != null ? targetEmployee.designation.designationName : '-'}"></span></div>
+                                
+                                <h6 class="section-title">Select Month</h6>
+                                <form th:action="@{/hod1/team-attendance/view}" method="get">
+                                    <input type="hidden" name="empId" th:value="${targetEmployee.employeeId}">
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text datepicker-icon" style="cursor: pointer;"><i class="fa fa-calendar"></i></span>
+                                        <input type="text" id="dateRangePicker" class="form-control form-control-sm" 
+                                               th:value="${attendance.dateRange}" readonly 
+                                               style="background-color: #fff; cursor: pointer;">
+                                        <input type="hidden" name="month" id="hiddenMonth" th:value="${selectedMonth}">
+                                        <input type="hidden" name="year" id="hiddenYear" th:value="${selectedYear}">
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <div class="mb-1"><span class="info-label">Organization</span> <span class="info-value" th:text="${attendance.organization}"></span></div>
+                        <div class="mb-1"><span class="info-label">Division</span> <span class="info-value" th:text="${attendance.division}"></span></div>
+                        <div class="mb-1"><span class="info-label">Office</span> <span class="info-value" th:text="${attendance.officeLocation}"></span></div>
+                        <div class="mt-3">
+                            <small class="text-muted">Viewing attendance history for auditing purposes.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Register -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="attendance-legend">
+                        <div class="legend-item"><div class="legend-circle circle-present">P</div><span>Present</span></div>
+                        <div class="legend-item"><div class="legend-circle circle-absent">A</div><span>Absent</span></div>
+                        <div class="legend-item"><div class="legend-circle circle-holiday">H</div><span>Holiday</span></div>
+                        <div class="legend-item"><div class="legend-circle circle-leave">L</div><span>Leave</span></div>
+                        <div class="legend-item"><div class="legend-circle circle-tour">T</div><span>Tour</span></div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th style="min-width: 150px;">Date & Status</th>
+                                    <th th:each="day : ${#numbers.sequence(1, daysInMonth)}" th:text="${day < 10 ? '0' + day : day}"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="text-align: left; padding-left: 10px;" th:text="${targetEmployee.fullName}"></td>
+                                    <td th:each="day : ${attendance.attendanceDays}">
+                                        <span th:if="${day.status == 'PRESENT'}" class="status-present">P</span>
+                                        <span th:if="${day.status == 'ABSENT'}" class="status-absent">A</span>
+                                        <span th:if="${day.status == 'WEEK_OFF'}" class="status-weekoff">W</span>
+                                        <span th:if="${day.status == 'HOLIDAY'}" class="status-holiday">H</span>
+                                        <span th:if="${day.status == 'LEAVE'}" class="status-leave">L</span>
+                                        <span th:if="${day.status == 'TOUR'}" class="status-tour">T</span>
+                                        <span th:if="${day.status == 'FUTURE'}" class="text-muted">-</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h5 class="mt-4">Daily Logs</h5>
+                    <div class="table-responsive mt-2">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>In Time</th>
+                                    <th>Out Time</th>
+                                    <th>Total Hours</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="day : ${attendance.attendanceDays}">
+                                    <td th:text="${#temporals.format(day.date, 'dd-MM-yyyy')}"></td>
+                                    <td th:text="${day.inTime ?: '-'}"></td>
+                                    <td th:text="${day.outTime ?: '-'}"></td>
+                                    <td th:text="${day.stayHours ?: '-'}"></td>
+                                    <td>
+                                        <span class="badge" th:classappend="${day.status == 'PRESENT' ? 'bg-success' : (day.status == 'ABSENT' ? 'bg-danger' : 'bg-secondary')}" th:text="${day.status}"></span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('#dateRangePicker').datepicker({
+                format: "mm-yyyy",
+                startView: "months", 
+                minViewMode: "months",
+                autoclose: true,
+                orientation: "bottom"
+            }).on('changeDate', function(e) {
+                var date = e.date;
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+                $('#hiddenMonth').val(month);
+                $('#hiddenYear').val(year);
+                $(this).closest('form').submit();
+            });
+            
+            $('.datepicker-icon').on('click', function() {
+                $('#dateRangePicker').datepicker('show');
+            });
+        });
+    </script>
+</body>
+</html>

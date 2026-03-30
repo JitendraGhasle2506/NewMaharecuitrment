@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply for Tour | Attendance System</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --primary-dark: linear-gradient(180deg, #1f4f78, #163a59);
+            --primary-accent: #17252a;
+            --button-bg: #1f4f78;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --input-focus: #1f4f78;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+            color: #2d3436;
+        }
+
+        .leave-form-card {
+            max-width: 95%;
+            margin: 20px auto;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            border: none;
+            overflow: hidden;
+            background: var(--glass-bg);
+        }
+
+        .card-header-premium {
+            background: var(--primary-dark);
+            padding: 20px 30px;
+            position: relative;
+        }
+
+        .card-header-premium h4 {
+            color: #fff;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #636e72;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            border: 1px solid #dfe6e9;
+            transition: all 0.3s ease;
+        }
+
+        .input-group:focus-within {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px rgba(31, 79, 120, 0.1);
+        }
+
+        .form-control, .form-select {
+            border: none;
+            padding: 12px 15px;
+            font-size: 0.95rem;
+            color: #2d3436;
+        }
+
+        .form-control:focus, .form-select:focus {
+            box-shadow: none;
+        }
+
+        .input-group-text {
+            background-color: #f8f9fa;
+            border: none;
+            color: #1f4f78;
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+
+        .btn-submit-leave {
+            background: var(--primary-dark);
+            border: none;
+            padding: 12px 40px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit-leave:hover {
+            background: #17252a;
+            transform: translateY(-2px);
+            color: #fff;
+        }
+
+        .info-note {
+            background: rgba(31, 79, 120, 0.05);
+            border-left: 4px solid #1f4f78;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 25px;
+        }
+
+        .note-icon {
+            background: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            color: #1f4f78;
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Apply for Tour', 'Employee Corner', ~{::section})}">
+        <section>
+            <div class="container-fluid pb-5">
+                <div class="card leave-form-card">
+                    <div class="card-header-premium d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Apply for Tour</h4>
+                        <a th:href="@{/employee/viewTour}" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                            <i class="fa fa-history me-2"></i>Tour History
+                        </a>
+                    </div>
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="info-note d-flex align-items-center">
+                            <div class="note-icon me-3">
+                                <i class="fa fa-info"></i>
+                            </div>
+                            <p class="mb-0 text-muted small">Please submit your tour application at least 2 days in advance. All tours require HOD approval.</p>
+                        </div>
+
+                        <form th:action="@{/employee/submitTour}" th:object="${tourApplication}" method="post" id="tourForm">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label">Tour Category <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa fa-tags"></i></span>
+                                        <select class="form-select" th:field="*{tourCategory}" id="tourCategory" required>
+                                            <option value="">- Select -</option>
+                                            <option value="Full Day">Full Day</option>
+                                            <option value="Half Day">Half Day</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6" id="timePeriodContainer" style="display: none;">
+                                    <label class="form-label">Time Period <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa fa-clock"></i></span>
+                                        <select class="form-select" th:field="*{timePeriod}" id="timePeriod">
+                                            <option value="">- Select -</option>
+                                            <option value="Forenoon">Forenoon</option>
+                                            <option value="Afternoon">Afternoon</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Application Date</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa fa-calendar-check"></i></span>
+                                        <input type="text" class="form-control bg-light" th:value="${#temporals.format(#temporals.createNow(), 'dd-MM-yyyy')}" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6" id="startDateContainer">
+                                    <label class="form-label" id="startDateLabel">Start Date <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
+                                        <input type="date" class="form-control" th:field="*{startDate}" required id="startDate">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6" id="endDateContainer">
+                                    <label class="form-label">End Date <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
+                                        <input type="date" class="form-control" th:field="*{endDate}" required id="endDate">
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label">Description / Purpose <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="align-items: flex-start; padding-top: 12px;"><i class="fa fa-align-left"></i></span>
+                                        <textarea class="form-control" th:field="*{description}" rows="3" placeholder="Enter tour details and purpose..." required></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 text-center mt-5">
+                                    <button type="submit" class="btn btn-submit-leave">
+                                        <i class="fa fa-paper-plane me-2"></i>Submit Tour Application
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script th:inline="javascript">
+        $(document).ready(function() {
+            function updateFormState() {
+                const category = $('#tourCategory').val();
+                if (category === 'Half Day') {
+                    $('#timePeriodContainer').show();
+                    $('#timePeriod').attr('required', true);
+                    $('#endDateContainer').hide();
+                    $('#endDate').attr('required', false).val('');
+                    $('#startDateLabel').html('Date <span class="text-danger">*</span>');
+                } else if (category === 'Full Day') {
+                    $('#timePeriodContainer').hide();
+                    $('#timePeriod').attr('required', false).val('');
+                    $('#endDateContainer').show();
+                    $('#endDate').attr('required', true);
+                    $('#startDateLabel').html('Start Date <span class="text-danger">*</span>');
+                } else {
+                    $('#timePeriodContainer').hide();
+                    $('#endDateContainer').show();
+                    $('#startDateLabel').html('Start Date <span class="text-danger">*</span>');
+                }
+            }
+
+            // Run on load
+            updateFormState();
+
+            // Run on change
+            $('#tourCategory').on('change', updateFormState);
+
+            $('#tourForm').on('submit', function(e) {
+                const category = $('#tourCategory').val();
+                const startDateVal = $('#startDate').val();
+                const endDateVal = $('#endDate').val();
+
+                if (!startDateVal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Required Field',
+                        text: 'Please select a date!',
+                        confirmButtonColor: '#1f4f78'
+                    });
+                    return false;
+                }
+
+                if (category === 'Full Day') {
+                    if (!endDateVal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Required Field',
+                            text: 'Please select an end date!',
+                            confirmButtonColor: '#1f4f78'
+                        });
+                        return false;
+                    }
+
+                    const startDate = new Date(startDateVal);
+                    const endDate = new Date(endDateVal);
+                    if (endDate < startDate) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Invalid Date',
+                            text: 'End date cannot be earlier than start date!',
+                            confirmButtonColor: '#1f4f78'
+                        });
+                        return false;
+                    }
+                }
+
+                if (category === 'Half Day' && !$('#timePeriod').val()) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Required Field',
+                        text: 'Please select a Time Period for Half Day tour!',
+                        confirmButtonColor: '#1f4f78'
+                    });
+                    return false;
+                }
+            });
+            
+            /*[# th:if="${success}"]*/
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: /*[[${success}]]*/ 'Submitted successfully',
+                confirmButtonColor: '#1f4f78'
+            });
+            /*[/]*/
+
+            /*[# th:if="${error}"]*/
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: /*[[${error}]]*/ 'Something went wrong',
+                confirmButtonColor: '#d33'
+            });
+            /*[/]*/
+        });
+    </script>
+</body>
+
+</html>

@@ -20,6 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.department.dto.AdvancePaymentForm;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
@@ -66,6 +67,9 @@ public class DepartmentPaymentController {
             RedirectAttributes redirectAttributes) {
 
         String actorEmail = principal.getName();
+        String receiptReference = StringUtils.hasText(form.getUtrNumber()) ? form.getUtrNumber() : form.getReceiptNumber();
+        form.setReceiptNumber(receiptReference);
+        form.setUtrNumber(receiptReference);
 
         if (bindingResult.hasErrors()) {
             populateModel(model, form, form.getDepartmentProjectApplicationId());
@@ -73,7 +77,7 @@ public class DepartmentPaymentController {
         }
 
         if (paymentService.isReceiptNumberDuplicate(form.getReceiptNumber(), form.getId())) {
-            bindingResult.rejectValue("receiptNumber", "duplicate", "Receipt number already exists.");
+            bindingResult.rejectValue("utrNumber", "duplicate", "UTR / Transaction ID already exists.");
             populateModel(model, form, form.getDepartmentProjectApplicationId());
             return "department/advance-payment";
         }

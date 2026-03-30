@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>My Team Attendance</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Team Attendance', 'Attendance', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2>My Team Attendance (<span th:text="${currentRoleType}"></span>)</h2>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered table-hover align-middle w-100">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Emp ID</th>
+                                    <th>Employee Name</th>
+                                    <th>Employee Code</th>
+                                    <th>Project</th>
+                                    <th style="width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${teamMembers == null || teamMembers.isEmpty()}">
+                                    <td colspan="5" class="text-center text-muted p-4">No team members mapped to your account.</td>
+                                </tr>
+                                <tr th:each="member : ${teamMembers}">
+                                    <td th:text="${member.employeeId}"></td>
+                                    <td class="fw-bold" th:text="${member.employeeName}"></td>
+                                    <td th:text="${member.employeeCode}"></td>
+                                    <td th:text="${member.projectName}">-</td>
+                                    <td>
+                                        <a th:href="@{/hod1/team-attendance/view(empId=${member.employeeId})}" 
+                                           class="btn btn-sm btn-info w-100">
+                                            <i class="fa fa-eye"></i> View Attendance
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+</html>

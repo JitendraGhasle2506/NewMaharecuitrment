@@ -19,9 +19,8 @@ public class HolidayMasterEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate holidayDate;
 
     private String holidayName;
-
-    private Long organizationId;
 }

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -31,7 +31,7 @@
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                         <div class="col-md-6">
-                            <label class="form-label">Parent Menu</label>
+                            <label class="form-label">Parent Menu <span class="text-danger">*</span></label>
                             <select class="form-select" th:field="*{menuId}">
                                 <option th:value="''">-- Select Parent Menu --</option>
                                 <option th:each="menu : ${parentMenus}" th:value="${menu.menuId}" th:text="${menu.menuNameEnglish}"></option>
@@ -40,7 +40,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Submenu Name (English)</label>
+                            <label class="form-label">Submenu Name (English) <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" th:field="*{subMenuNameEnglish}" maxlength="150" autocomplete="off">
                             <div class="text-danger small" th:if="${#fields.hasErrors('subMenuNameEnglish')}" th:errors="*{subMenuNameEnglish}"></div>
                         </div>
@@ -58,7 +58,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">URL</label>
+                            <label class="form-label">URL <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" th:field="*{url}" maxlength="255" autocomplete="off">
                             <div class="text-danger small" th:if="${#fields.hasErrors('url')}" th:errors="*{url}"></div>
                         </div>
