@@ -9,7 +9,7 @@
     <link rel="stylesheet" th:href="@{/css/department-registration.css}">
 </head>
 
-<body class="portal-shell">
+<body class="portal-shell department-registration-shell">
     <nav class="navbar navbar-expand-lg portal-nav">
         <div class="container">
             <a class="navbar-brand fw-semibold" th:href="@{/index}">MahaIT Recruitment</a>
@@ -395,15 +395,7 @@
         </div>
     </main>
 
-    <footer class="footer portal-footer">
-        <div class="container">
-            <div class="d-flex justify-content-between py-3 flex-wrap gap-2">
-                <span>Copyright &copy; 2026 Maharashtra Information Technology Corporation Ltd., Government of Maharashtra,
-                    India</span>
-                <span>Department registration portal</span>
-            </div>
-        </div>
-    </footer>
+    <th:block th:replace="~{fragments/footer :: var-footer}"></th:block>
 
     <script th:src="@{/js/otp-verification.js}"></script>
     <script th:src="@{/js/department-registration.js}"></script>

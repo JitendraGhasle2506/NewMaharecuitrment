@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.master.dto.AgencyEscalationMatrixRequest;
 import com.maharecruitment.gov.in.master.dto.AgencyEscalationMatrixResponse;
 import com.maharecruitment.gov.in.master.dto.AgencyMasterRequest;
@@ -37,14 +39,17 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
     private final AgencyMasterService agencyMasterService;
     private final FileStorageService fileStorageService;
     private final AccountNotificationService accountNotificationService;
+    private final UserAffiliationService userAffiliationService;
 
     public AgencyMasterPageServiceImpl(
             AgencyMasterService agencyMasterService,
             FileStorageService fileStorageService,
-            AccountNotificationService accountNotificationService) {
+            AccountNotificationService accountNotificationService,
+            UserAffiliationService userAffiliationService) {
         this.agencyMasterService = agencyMasterService;
         this.fileStorageService = fileStorageService;
         this.accountNotificationService = accountNotificationService;
+        this.userAffiliationService = userAffiliationService;
     }
 
     @Override
@@ -177,8 +182,15 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
     }
 
     public AgencyMasterResponse getAgencyProfile(String email) {
-
-        AgencyMaster agency = agencyMasterRepository.getAgencyProfile(email);
+        User user = userAffiliationService.loadUserByEmail(email);
+        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
+        AgencyMaster agency = agencyId == null
+                ? null
+                : agencyMasterRepository.findDetailedByAgencyId(agencyId).orElse(null);
+        if (agency == null) {
+            agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
+                    .orElseThrow(() -> new IllegalArgumentException("No agency profile is linked with this login user."));
+        }
 
         AgencyMasterResponse response = new AgencyMasterResponse();
 

@@ -29,15 +29,23 @@ public class ApplyTourMasterController {
 
     @GetMapping("/applyTour")
     public String showApplyTourForm(Model model, HttpSession session) {
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser != null) {
+            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
+                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            model.addAttribute("employee", employee);
+        }
         model.addAttribute("tourApplication", new TourApplicationEntity());
         return "attendance/apply-tour";
     }
 
     @GetMapping("/viewTour")
     public String showTourHistory(Model model, HttpSession session) {
-        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user != null && user.employeeId() != null) {
-            model.addAttribute("tourHistory", tourApplicationService.getTourApplicationsByEmployee(user.employeeId()));
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser != null) {
+            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
+                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            model.addAttribute("tourHistory", tourApplicationService.getTourApplicationsByEmployee(employee.getEmployeeId()));
         }
         return "attendance/view-tour";
     }
@@ -46,18 +54,19 @@ public class ApplyTourMasterController {
     public String submitTourApplication(@ModelAttribute("tourApplication") TourApplicationEntity tourApplication, 
             HttpSession session, RedirectAttributes redirectAttributes) {
         
-        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user == null || user.employeeId() == null) {
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser == null) {
             redirectAttributes.addFlashAttribute("error", "Session expired or invalid user.");
             return "redirect:/login";
         }
 
-        EmployeeEntity employee = employeeRepository.findById(user.employeeId()).orElse(null);
-        if (employee == null) {
-            redirectAttributes.addFlashAttribute("error", "Employee details not found.");
-            return "redirect:/employee/applyTour";
-        }
+        EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
 
+        if ("Half Day".equalsIgnoreCase(tourApplication.getTourCategory()) && tourApplication.getEndDate() == null) {
+            tourApplication.setEndDate(tourApplication.getStartDate());
+        }
+        
         tourApplication.setEmployeeId(employee.getEmployeeId());
         tourApplicationService.saveTourApplication(tourApplication);
         

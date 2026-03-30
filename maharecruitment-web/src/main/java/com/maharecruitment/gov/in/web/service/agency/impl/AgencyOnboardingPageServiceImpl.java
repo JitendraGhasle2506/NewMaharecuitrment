@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
-import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepository;
@@ -52,7 +52,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
     private static final String DEFAULT_VALUE = "-";
 
-    private final UserRepository userRepository;
+    private final UserAffiliationService userAffiliationService;
     private final AgencyMasterRepository agencyMasterRepository;
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
@@ -64,7 +64,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     private final FileStorageService fileStorageService;
 
     public AgencyOnboardingPageServiceImpl(
-            UserRepository userRepository,
+            UserAffiliationService userAffiliationService,
             AgencyMasterRepository agencyMasterRepository,
             RecruitmentInterviewDetailRepository interviewDetailRepository,
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
@@ -74,7 +74,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             SubDepartmentRepository subDepartmentRepository,
             ResourceLevelExperienceRepository resourceLevelExperienceRepository,
             FileStorageService fileStorageService) {
-        this.userRepository = userRepository;
+        this.userAffiliationService = userAffiliationService;
         this.agencyMasterRepository = agencyMasterRepository;
         this.interviewDetailRepository = interviewDetailRepository;
         this.preOnboardingRepository = preOnboardingRepository;
@@ -754,12 +754,14 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
 
-        User user = userRepository.findByEmailIgnoreCase(actorEmail)
-                .orElseThrow(() -> new RecruitmentNotificationException("Authenticated user not found."));
-
-        AgencyMaster agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
-                .orElseThrow(() -> new RecruitmentNotificationException(
-                        "No agency profile is linked with this login user."));
+        User user = userAffiliationService.loadUserByEmail(actorEmail);
+        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
+        AgencyMaster agency = agencyId == null ? null : agencyMasterRepository.findById(agencyId).orElse(null);
+        if (agency == null) {
+            agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
+                    .orElseThrow(() -> new RecruitmentNotificationException(
+                            "No agency profile is linked with this login user."));
+        }
 
         return new AgencyUserContext(user.getId(), agency.getAgencyId(), agency.getAgencyName());
     }

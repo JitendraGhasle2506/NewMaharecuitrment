@@ -22,8 +22,10 @@ import org.springframework.stereotype.Component;
 
 import com.maharecruitment.gov.in.auth.constant.CommonConstant;
 import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
+import com.maharecruitment.gov.in.auth.dto.UserAffiliationView;
 import com.maharecruitment.gov.in.auth.entity.User;
-import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
+import com.maharecruitment.gov.in.auth.service.UserLoginTrackingService;
 import com.maharecruitment.gov.in.auth.util.AuthorityUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,10 +38,14 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
     private static final Logger logger = LoggerFactory.getLogger(MySimpleUrlAuthenticationSuccessHandler.class);
 
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
-    private final UserRepository userRepository;
+    private final UserAffiliationService userAffiliationService;
+    private final UserLoginTrackingService userLoginTrackingService;
 
-    public MySimpleUrlAuthenticationSuccessHandler(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public MySimpleUrlAuthenticationSuccessHandler(
+            UserAffiliationService userAffiliationService,
+            UserLoginTrackingService userLoginTrackingService) {
+        this.userAffiliationService = userAffiliationService;
+        this.userLoginTrackingService = userLoginTrackingService;
     }
 
     @Override
@@ -102,30 +108,25 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
 
     private void storeUserInSession(HttpSession session, Authentication authentication) {
         String email = authentication.getName();
-        User user = userRepository.findByEmail(email);
+        User user = userAffiliationService.loadUserByEmail(email);
+        UserAffiliationView affiliation = userAffiliationService.getAffiliation(user);
+        LocalDateTime loginTime = LocalDateTime.now();
+        LocalDateTime lastLoginTime = userLoginTrackingService.recordSuccessfulLogin(user, loginTime);
 
-        if (user == null) {
-            throw new IllegalStateException("User not found with email: " + email);
-        }
-
-        List<String> roles = user.getRoles().stream()
+        List<String> roles = user.getRoles() == null ? List.of() : user.getRoles().stream()
                 .map(role -> AuthorityUtil.toAuthority(role.getName()))
                 .filter(r -> r != null && !r.isBlank())
                 .collect(Collectors.toList());
 
-        Long departmentId = null;
-        if (user.getDepartmentRegistrationId() != null) {
-            departmentId = user.getDepartmentRegistrationId().getDepartmentRegistrationId();
-        }
-
         SessionUserDTO sessionUser = new SessionUserDTO(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
+                affiliation.getUserId(),
+                affiliation.getName(),
+                affiliation.getEmail(),
                 roles,
-                departmentId,
-                user.getMobileNo(),
-                LocalDateTime.now()
+                affiliation.getDepartmentRegistrationId(),
+                affiliation.getMobileNo(),
+                loginTime,
+                lastLoginTime
         );
 
         session.setAttribute("SESSION_USER", sessionUser);

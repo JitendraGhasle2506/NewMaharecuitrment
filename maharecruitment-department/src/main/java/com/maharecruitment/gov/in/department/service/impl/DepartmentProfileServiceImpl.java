@@ -20,6 +20,7 @@ import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.department.dto.DepartmentProfileUpdateForm;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.service.DepartmentProfileDocumentStorageService;
@@ -42,6 +43,7 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
     private static final String TAN_DOCUMENT_MODULE_PATH = "department-registration/tan";
 
     private final UserRepository userRepository;
+    private final UserAffiliationService userAffiliationService;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
     private final DepartmentMstRepository departmentMstRepository;
     private final SubDepartmentRepository subDepartmentRepository;
@@ -49,11 +51,13 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
 
     public DepartmentProfileServiceImpl(
             UserRepository userRepository,
+            UserAffiliationService userAffiliationService,
             DepartmentRegistrationRepository departmentRegistrationRepository,
             DepartmentMstRepository departmentMstRepository,
             SubDepartmentRepository subDepartmentRepository,
             DepartmentProfileDocumentStorageService documentStorageService) {
         this.userRepository = userRepository;
+        this.userAffiliationService = userAffiliationService;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.departmentMstRepository = departmentMstRepository;
         this.subDepartmentRepository = subDepartmentRepository;
@@ -237,8 +241,7 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
             throw new DepartmentApplicationException("Authenticated user is required.");
         }
 
-        User user = userRepository.findByEmailIgnoreCase(actorEmail.trim().toLowerCase(Locale.ROOT))
-                .orElseThrow(() -> new DepartmentApplicationException("Authenticated user not found."));
+        User user = userAffiliationService.loadUserByEmail(actorEmail);
 
         if (!StringUtils.hasText(user.getEmail())) {
             throw new DepartmentApplicationException("Authenticated user email is invalid.");
@@ -248,7 +251,7 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
     }
 
     private DepartmentRegistrationEntity resolveRegistration(User user) {
-        DepartmentRegistrationEntity registration = user.getDepartmentRegistrationId();
+        DepartmentRegistrationEntity registration = userAffiliationService.resolvePrimaryDepartmentRegistration(user);
         if (registration == null || registration.getDepartmentRegistrationId() == null) {
             throw new DepartmentApplicationException("Department registration profile is not linked to this user.");
         }

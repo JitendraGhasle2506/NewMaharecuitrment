@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.entity.User;
-import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
@@ -24,15 +24,15 @@ import com.maharecruitment.gov.in.web.service.agency.AgencyInternalAssessmentPag
 public class AgencyInternalAssessmentPageServiceImpl implements AgencyInternalAssessmentPageService {
 
     private final RecruitmentAgencyInternalAssessmentService internalAssessmentService;
-    private final UserRepository userRepository;
+    private final UserAffiliationService userAffiliationService;
     private final AgencyMasterRepository agencyMasterRepository;
 
     public AgencyInternalAssessmentPageServiceImpl(
             RecruitmentAgencyInternalAssessmentService internalAssessmentService,
-            UserRepository userRepository,
+            UserAffiliationService userAffiliationService,
             AgencyMasterRepository agencyMasterRepository) {
         this.internalAssessmentService = internalAssessmentService;
-        this.userRepository = userRepository;
+        this.userAffiliationService = userAffiliationService;
         this.agencyMasterRepository = agencyMasterRepository;
     }
 
@@ -90,12 +90,14 @@ public class AgencyInternalAssessmentPageServiceImpl implements AgencyInternalAs
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
 
-        User user = userRepository.findByEmailIgnoreCase(actorEmail)
-                .orElseThrow(() -> new RecruitmentNotificationException("Authenticated user not found."));
-
-        AgencyMaster agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
-                .orElseThrow(() -> new RecruitmentNotificationException(
-                        "No agency profile is linked with this login user."));
+        User user = userAffiliationService.loadUserByEmail(actorEmail);
+        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
+        AgencyMaster agency = agencyId == null ? null : agencyMasterRepository.findById(agencyId).orElse(null);
+        if (agency == null) {
+            agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
+                    .orElseThrow(() -> new RecruitmentNotificationException(
+                            "No agency profile is linked with this login user."));
+        }
 
         return new AgencyUserContext(user.getId(), agency.getAgencyId());
     }

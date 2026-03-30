@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.repository.DepartmentAdvancePaymentRepository;
@@ -35,6 +36,7 @@ public class DepartmentDashboardServiceImpl implements DepartmentDashboardServic
     private final DepartmentAdvancePaymentRepository advancePaymentRepository;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
     private final UserRepository userRepository;
+    private final UserAffiliationService userAffiliationService;
     private final DepartmentMstRepository departmentMstRepository;
     private final SubDepartmentRepository subDepartmentRepository;
 
@@ -44,6 +46,7 @@ public class DepartmentDashboardServiceImpl implements DepartmentDashboardServic
             DepartmentAdvancePaymentRepository advancePaymentRepository,
             DepartmentRegistrationRepository departmentRegistrationRepository,
             UserRepository userRepository,
+            UserAffiliationService userAffiliationService,
             DepartmentMstRepository departmentMstRepository,
             SubDepartmentRepository subDepartmentRepository) {
         this.projectApplicationRepository = projectApplicationRepository;
@@ -51,6 +54,7 @@ public class DepartmentDashboardServiceImpl implements DepartmentDashboardServic
         this.advancePaymentRepository = advancePaymentRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.userRepository = userRepository;
+        this.userAffiliationService = userAffiliationService;
         this.departmentMstRepository = departmentMstRepository;
         this.subDepartmentRepository = subDepartmentRepository;
     }
@@ -137,7 +141,7 @@ public class DepartmentDashboardServiceImpl implements DepartmentDashboardServic
 
         if (userId != null) {
             DepartmentRegistrationEntity fromUser = userRepository.findById(userId)
-                    .map(user -> user.getDepartmentRegistrationId())
+                    .map(userAffiliationService::resolvePrimaryDepartmentRegistration)
                     .orElse(null);
             if (fromUser != null) {
                 return fromUser;

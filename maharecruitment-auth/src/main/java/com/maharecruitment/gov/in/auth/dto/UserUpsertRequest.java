@@ -15,5 +15,6 @@ public class UserUpsertRequest {
     private String mobileNo;
     private String password;
     private Long departmentRegistrationId;
+    private Long agencyId;
     private List<Long> roleIds = new ArrayList<>();
 }

@@ -11,7 +11,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.auth.entity.User;
-import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
@@ -41,7 +41,7 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     private final RecruitmentAgencyNotificationQueryService queryService;
     private final RecruitmentAgencyNotificationActionService actionService;
     private final RecruitmentAgencyCandidateService candidateService;
-    private final UserRepository userRepository;
+    private final UserAffiliationService userAffiliationService;
     private final AgencyMasterRepository agencyMasterRepository;
     private final FileStorageService fileStorageService;
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
@@ -50,14 +50,14 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
             RecruitmentAgencyNotificationQueryService queryService,
             RecruitmentAgencyNotificationActionService actionService,
             RecruitmentAgencyCandidateService candidateService,
-            UserRepository userRepository,
+            UserAffiliationService userAffiliationService,
             AgencyMasterRepository agencyMasterRepository,
             FileStorageService fileStorageService,
             AgencyCandidatePreOnboardingRepository preOnboardingRepository) {
         this.queryService = queryService;
         this.actionService = actionService;
         this.candidateService = candidateService;
-        this.userRepository = userRepository;
+        this.userAffiliationService = userAffiliationService;
         this.agencyMasterRepository = agencyMasterRepository;
         this.fileStorageService = fileStorageService;
         this.preOnboardingRepository = preOnboardingRepository;
@@ -263,12 +263,14 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
 
-        User user = userRepository.findByEmailIgnoreCase(actorEmail)
-                .orElseThrow(() -> new RecruitmentNotificationException("Authenticated user not found."));
-
-        AgencyMaster agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
-                .orElseThrow(() -> new RecruitmentNotificationException(
-                        "No agency profile is linked with this login user."));
+        User user = userAffiliationService.loadUserByEmail(actorEmail);
+        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
+        AgencyMaster agency = agencyId == null ? null : agencyMasterRepository.findById(agencyId).orElse(null);
+        if (agency == null) {
+            agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
+                    .orElseThrow(() -> new RecruitmentNotificationException(
+                            "No agency profile is linked with this login user."));
+        }
 
         return new AgencyUserContext(user.getId(), agency.getAgencyId());
     }

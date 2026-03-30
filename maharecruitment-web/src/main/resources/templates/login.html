@@ -128,14 +128,7 @@
         </div>
     </main>
 
-    <footer class="footer portal-footer">
-        <div class="container">
-            <div class="d-flex justify-content-between py-3 flex-wrap gap-2">
-                <span>Copyright &copy; 2026 Maharashtra Information Technology Corporation Ltd., Government of
-                    Maharashtra, India</span>
-            </div>
-        </div>
-    </footer>
+    <th:block th:replace="~{fragments/footer :: var-footer}"></th:block>
 
     <script th:src="@{/js/captcha.js}"></script>
 </body>

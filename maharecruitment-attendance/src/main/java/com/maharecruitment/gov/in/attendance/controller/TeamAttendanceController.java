@@ -28,14 +28,22 @@ public class TeamAttendanceController {
 
     @GetMapping
     public String listTeam(Model model, HttpSession session, @RequestParam(required = false) String roleType) {
-        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user == null) return "redirect:/login";
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser == null) return "redirect:/login";
 
         if (roleType == null) {
-            roleType = (user.roles() != null && user.roles().contains("ROLE_HOD")) ? "HOD" : "MANAGER";
+            roleType = (sessionUser.roles() != null && sessionUser.roles().contains("ROLE_HOD")) ? "HOD" : "MANAGER";
         }
 
-        Long approverId = "HOD".equalsIgnoreCase(roleType) ? user.id() : user.employeeId();
+        Long approverId;
+        if ("HOD".equalsIgnoreCase(roleType)) {
+            approverId = sessionUser.id();
+        } else {
+            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
+                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            approverId = employee.getEmployeeId();
+        }
+        
         model.addAttribute("teamMembers", attendanceService.getTeamMembers(approverId, roleType));
         model.addAttribute("currentRoleType", roleType);
 
@@ -49,8 +57,8 @@ public class TeamAttendanceController {
             @RequestParam(required = false) Integer year,
             Model model, HttpSession session) {
         
-        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user == null) return "redirect:/login";
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser == null) return "redirect:/login";
 
         EmployeeEntity employee = employeeRepository.findById(empId).orElse(null);
         if (employee == null) {

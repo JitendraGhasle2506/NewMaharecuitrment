@@ -194,10 +194,13 @@
                                                 <small class="text-muted d-block" th:if="${tour.tourCategory == 'Half Day'}" th:text="'(' + ${tour.timePeriod} + ')'"></small>
                                             </td>
                                             <td>
-                                                <div class="small">
+                                                <div class="small" th:if="${tour.tourCategory == 'Full Day'}">
                                                     <span th:text="${#temporals.format(tour.startDate, 'dd MMM yyyy')}"></span><br>
                                                     <span class="text-muted">to</span><br>
                                                     <span th:text="${#temporals.format(tour.endDate, 'dd MMM yyyy')}"></span>
+                                                </div>
+                                                <div class="small" th:if="${tour.tourCategory == 'Half Day'}">
+                                                    <span th:text="${#temporals.format(tour.startDate, 'dd MMM yyyy')}"></span>
                                                 </div>
                                             </td>
                                             <td>

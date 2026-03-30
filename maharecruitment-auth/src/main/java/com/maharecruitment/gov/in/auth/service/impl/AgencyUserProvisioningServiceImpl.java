@@ -16,6 +16,7 @@ import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.AgencyUserProvisioningService;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.util.SecurePasswordGenerator;
 
 @Service
@@ -27,19 +28,25 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserAffiliationService userAffiliationService;
 
     public AgencyUserProvisioningServiceImpl(
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            UserAffiliationService userAffiliationService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userAffiliationService = userAffiliationService;
     }
 
     @Override
     public AgencyUserProvisioningResult createOrSyncAgencyUser(AgencyUserProvisioningRequest request) {
         String email = normalizeEmail(request.getEmail());
+        if (email == null) {
+            throw new IllegalArgumentException("Email is required.");
+        }
         String previousEmail = normalizeEmail(request.getPreviousEmail());
         Role agencyRole = resolveAgencyRole();
 
@@ -51,8 +58,9 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
             return createAgencyUser(request, email, agencyRole);
         }
 
-        if (!Objects.equals(previousEmail, email) && userRepository.existsByEmailIgnoreCase(email)) {
-            throw new IllegalArgumentException("A user account already exists for the updated agency official email.");
+        if (!Objects.equals(previousEmail, email) && isIdentityInUse(email, existingUser.getId())) {
+            throw new IllegalArgumentException(
+                    "A user account already exists for the updated agency official email.");
         }
 
         existingUser.setName(request.getName().trim());
@@ -61,6 +69,8 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
         ensureRole(existingUser, agencyRole);
 
         User savedUser = userRepository.save(existingUser);
+        userAffiliationService.synchronizeUserProfile(savedUser);
+        userAffiliationService.synchronizePrimaryAgency(savedUser, request.getAgencyId());
         return AgencyUserProvisioningResult.builder()
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())
@@ -72,7 +82,7 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
             AgencyUserProvisioningRequest request,
             String email,
             Role agencyRole) {
-        if (userRepository.existsByEmailIgnoreCase(email)) {
+        if (isIdentityInUse(email, null)) {
             throw new IllegalArgumentException("A user account already exists for the agency official email.");
         }
 
@@ -86,6 +96,8 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
         user.setRoles(List.of(agencyRole));
 
         User savedUser = userRepository.save(user);
+        userAffiliationService.synchronizeUserProfile(savedUser);
+        userAffiliationService.synchronizePrimaryAgency(savedUser, request.getAgencyId());
 
         return AgencyUserProvisioningResult.builder()
                 .userId(savedUser.getId())
@@ -115,5 +127,11 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
             return null;
         }
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isIdentityInUse(String value, Long excludedUserId) {
+        return excludedUserId == null
+                ? userRepository.existsByEmailIgnoreCase(value)
+                : userRepository.existsByEmailIgnoreCaseAndIdNot(value, excludedUserId);
     }
 }

@@ -38,19 +38,22 @@ public class AttendanceRegisterInternalEmployeeController {
 
     @GetMapping("/intAttendance")
     public String myAttendance(Model model, HttpSession session) {
-        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user.employeeId() == null) {
+   
+
+         SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+
+        EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+
+        Long employeeId = employee.getEmployeeId();
+        String employeeCode = employee.getEmployeeCode();
+
+        
+        if (employeeId == null) {
             model.addAttribute("error", "Employee mapping not found in user account.");
             return "attendance/attendance-register-internal";
         }
 
-        EmployeeEntity employee = employeeRepository.findById(user.employeeId())
-                .orElse(null);
-
-        if (employee == null) {
-            model.addAttribute("error", "Employee details not found.");
-            return "attendance/attendance-register-internal";
-        }
 
         LocalDate today = LocalDate.now();
         int month = today.getMonthValue();
@@ -68,7 +71,7 @@ public class AttendanceRegisterInternalEmployeeController {
         YearMonth yearMonth = YearMonth.of(year, month);
         model.addAttribute("daysInMonth", yearMonth.lengthOfMonth());
         
-        List<ManualAttendanceRequestDTO> allRequests = attendanceService.getMyManualRequests(user.employeeId());
+        List<ManualAttendanceRequestDTO> allRequests = attendanceService.getMyManualRequests(employee.getEmployeeId());
         final int fMonth = month;
         final int fYear = year;
         model.addAttribute("pendingRequests", allRequests.stream()
@@ -92,18 +95,16 @@ public class AttendanceRegisterInternalEmployeeController {
             Model model, HttpSession session) {
 
         SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user.employeeId() == null) {
+        EmployeeEntity employee = employeeRepository.findByEmail(user.email())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+
+        Long employeeId = employee.getEmployeeId();
+        String employeeCode = employee.getEmployeeCode();
+        if (employeeId == null) {
             model.addAttribute("error", "Employee mapping not found in user account.");
             return "attendance/attendance-register-internal";
         }
 
-        EmployeeEntity employee = employeeRepository.findById(user.employeeId())
-                .orElse(null);
-
-        if (employee == null) {
-            model.addAttribute("error", "Employee details not found.");
-            return "attendance/attendance-register-internal";
-        }
         int month = LocalDate.now().getMonthValue();
         int year = LocalDate.now().getYear();
 
@@ -131,7 +132,7 @@ public class AttendanceRegisterInternalEmployeeController {
         YearMonth yearMonth = YearMonth.of(year, month);
         model.addAttribute("daysInMonth", yearMonth.lengthOfMonth());
         
-        List<ManualAttendanceRequestDTO> allRequests = attendanceService.getMyManualRequests(user.employeeId());
+        List<ManualAttendanceRequestDTO> allRequests = attendanceService.getMyManualRequests(employee.getEmployeeId());
         final int fMonth = month;
         final int fYear = year;
         model.addAttribute("pendingRequests", allRequests.stream()
@@ -166,10 +167,9 @@ public class AttendanceRegisterInternalEmployeeController {
             org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttrs) {
         
         SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user == null || user.employeeId() == null) {
-            redirectAttrs.addFlashAttribute("errorMessage", "Employee mapping not found.");
-            return "redirect:/employee/intAttendance";
-        }
+        EmployeeEntity employee = employeeRepository.findByEmail(user.email())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+
         
         try {
             int submittedCount = 0;
@@ -181,7 +181,7 @@ public class AttendanceRegisterInternalEmployeeController {
                         String autoOutTime = "18:00";
                         String reason = "Manual Attendance Mark from Dashboard Grid";
                         
-                        if (attendanceService.submitManualAttendance(user.employeeId(), day.getDate(), autoInTime, autoOutTime, reason)) {
+                        if (attendanceService.submitManualAttendance(employee.getEmployeeId(), day.getDate(), autoInTime, autoOutTime, reason)) {
                             submittedCount++;
                         } else {
                             skippedCount++;

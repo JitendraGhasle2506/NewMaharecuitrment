@@ -50,7 +50,8 @@
 
                         <div class="col-md-6">
                             <label class="form-label" th:text="${isEdit} ? 'Password (leave blank to keep unchanged)' : 'Password'"></label>
-                            <input type="password" th:field="*{password}" class="form-control" maxlength="100" autocomplete="new-password">
+                            <input type="password" name="password" class="form-control" maxlength="100" autocomplete="new-password">
+                            <div class="form-text">Use at least 8 characters with uppercase, lowercase, number, and special character.</div>
                             <div class="text-danger small" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
                         </div>
 
@@ -68,8 +69,21 @@
                             <select class="form-select" th:field="*{departmentRegistrationId}">
                                 <option th:value="''">-- Select Department --</option>
                                 <option th:each="dept : ${departments}" th:value="${dept.departmentRegistrationId}"
-                                    th:text="${dept.departmentName}"></option>
+                                    th:text="${dept.departmentName + ' (#' + dept.departmentRegistrationId + ')'}"></option>
                             </select>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('departmentRegistrationId')}"
+                                th:errors="*{departmentRegistrationId}"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Agency (Optional)</label>
+                            <select class="form-select" th:field="*{agencyId}">
+                                <option th:value="''">-- Select Agency --</option>
+                                <option th:each="agency : ${agencies}" th:value="${agency.agencyId}"
+                                    th:text="${agency.agencyName + ' (#' + agency.agencyId + ', ' + agency.status + ')'}"></option>
+                            </select>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('agencyId')}"
+                                th:errors="*{agencyId}"></div>
                         </div>
 
                         <div class="col-12 d-flex gap-2">

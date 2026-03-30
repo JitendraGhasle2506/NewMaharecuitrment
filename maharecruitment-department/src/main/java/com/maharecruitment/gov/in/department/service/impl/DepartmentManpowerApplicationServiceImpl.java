@@ -20,6 +20,7 @@ import org.springframework.util.StringUtils;
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationActivityView;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationForm;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
@@ -83,6 +84,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     private final RecruitmentNotificationService recruitmentNotificationService;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final UserAffiliationService userAffiliationService;
     private final DepartmentWorkOrderStorageService storageService;
     private final DepartmentProformaInvoiceRepository proformaInvoiceRepository;
     private final DepartmentTaxRateMasterRepository taxRateMasterRepository;
@@ -97,6 +99,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             RecruitmentNotificationService recruitmentNotificationService,
             NotificationService notificationService,
             UserRepository userRepository,
+            UserAffiliationService userAffiliationService,
             DepartmentWorkOrderStorageService storageService,
             DepartmentProformaInvoiceRepository proformaInvoiceRepository,
             DepartmentTaxRateMasterRepository taxRateMasterRepository) {
@@ -109,6 +112,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         this.recruitmentNotificationService = recruitmentNotificationService;
         this.notificationService = notificationService;
         this.userRepository = userRepository;
+        this.userAffiliationService = userAffiliationService;
         this.storageService = storageService;
         this.proformaInvoiceRepository = proformaInvoiceRepository;
         this.taxRateMasterRepository = taxRateMasterRepository;
@@ -676,12 +680,10 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             throw new DepartmentApplicationException("Authenticated user is required.");
         }
 
-        User user = userRepository.findByEmail(actorEmail);
-        if (user == null) {
-            throw new DepartmentApplicationException("Authenticated user not found.");
-        }
+        User user = userAffiliationService.loadUserByEmail(actorEmail);
 
-        DepartmentRegistrationEntity departmentRegistration = user.getDepartmentRegistrationId();
+        DepartmentRegistrationEntity departmentRegistration = userAffiliationService.resolvePrimaryDepartmentRegistration(
+                user);
         if (departmentRegistration == null) {
             throw new DepartmentApplicationException("Department profile is not linked to this user.");
         }
@@ -701,12 +703,10 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             throw new DepartmentApplicationException("Authenticated user is required.");
         }
 
-        User user = userRepository.findByEmail(actorEmail);
-        if (user == null) {
-            throw new DepartmentApplicationException("Authenticated user not found.");
-        }
+        User user = userAffiliationService.loadUserByEmail(actorEmail);
 
-        DepartmentRegistrationEntity departmentRegistration = user.getDepartmentRegistrationId();
+        DepartmentRegistrationEntity departmentRegistration = userAffiliationService.resolvePrimaryDepartmentRegistration(
+                user);
 
         return DepartmentActorContext.builder()
                 .userId(user.getId())
@@ -721,8 +721,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     }
 
     private void ensureActorHasRole(String actorEmail, String... acceptedRoles) {
-        User user = userRepository.findByEmail(actorEmail);
-        if (user == null || user.getRoles() == null) {
+        User user = userAffiliationService.loadUserByEmail(actorEmail);
+        if (user.getRoles() == null) {
             throw new DepartmentApplicationException("Authenticated user does not have required role.");
         }
 

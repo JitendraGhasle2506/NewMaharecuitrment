@@ -80,7 +80,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
                     Your department registration has been submitted successfully and a department user account has been created.
 
-                    Login ID: %s
+                    Username: %s
                     Temporary Password: %s
 
                     Please sign in and change the password after first login.
@@ -109,6 +109,72 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
     }
 
     @Override
+    public void sendEmployeeCredentials(
+            String email,
+            String mobileNo,
+            String contactName,
+            String username,
+            String temporaryPassword) {
+        Exception emailFailure = null;
+        Exception smsFailure = null;
+
+        if (isEnabled("notification.email.enabled", true)) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(getFromAddress());
+            message.setTo(email);
+            message.setSubject("MahaIT Recruitment Employee Account Created");
+            message.setText("""
+                    Dear %s,
+
+                    Your employee account has been created successfully during HR onboarding.
+
+                    Username: %s
+                    Temporary Password: %s
+
+                    Please sign in and change the password after first login.
+
+                    Regards,
+                    MahaIT Recruitment
+                    """.formatted(contactName, username, temporaryPassword));
+
+            try {
+                mailSender.send(message);
+            } catch (Exception ex) {
+                emailFailure = ex;
+                log.warn("Failed to send employee credential email to {}.", email, ex);
+            }
+        } else {
+            log.info("Email dispatch is disabled. Skipping employee credential email for {}.", email);
+        }
+
+        String smsMessage = "MahaIT Recruitment: Employee account created. Username: %s Password: %s. "
+                .formatted(username, temporaryPassword)
+                + "Please change password after first login.";
+        if (isEnabled("notification.sms.enabled", true)) {
+            try {
+                sendSmsMessage(mobileNo, smsMessage, "employee credentials");
+            } catch (Exception ex) {
+                smsFailure = ex;
+                log.warn("Failed to send employee credential SMS to {}.", mobileNo, ex);
+            }
+        } else {
+            log.info("SMS dispatch is disabled. Skipping employee credential SMS for mobile {}.", mobileNo);
+        }
+
+        if (emailFailure != null || smsFailure != null) {
+            IllegalStateException failure = new IllegalStateException(
+                    "Failed to deliver employee account credentials through all configured channels.");
+            if (emailFailure != null) {
+                failure.addSuppressed(emailFailure);
+            }
+            if (smsFailure != null) {
+                failure.addSuppressed(smsFailure);
+            }
+            throw failure;
+        }
+    }
+
+    @Override
     public void sendAgencyCredentials(String email, String contactName, String temporaryPassword) {
         if (!isEnabled("notification.email.enabled", true)) {
             log.info("Email dispatch is disabled. Skipping agency credential email for {}.", email);
@@ -124,7 +190,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
                 Your agency master record has been created successfully and an agency user account has been provisioned.
 
-                Login ID: %s
+                Username: %s
                 Temporary Password: %s
 
                 Please sign in and change the password after first login.

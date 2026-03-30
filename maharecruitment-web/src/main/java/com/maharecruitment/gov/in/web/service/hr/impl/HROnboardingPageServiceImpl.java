@@ -6,16 +6,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.maharecruitment.gov.in.auth.dto.UserUpsertRequest;
+import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
+import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
+import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserManagementService;
+import com.maharecruitment.gov.in.auth.util.SecurePasswordGenerator;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
@@ -25,15 +34,23 @@ import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationE
 import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
+import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingEmploymentForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
+import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
+import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
+import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 
 @Service
 @Transactional(readOnly = true)
 public class HROnboardingPageServiceImpl implements HROnboardingPageService {
+
+    private static final Logger log = LoggerFactory.getLogger(HROnboardingPageServiceImpl.class);
+    private static final String EMPLOYEE_ROLE_NAME = "ROLE_EMPLOYEE";
+    private static final String PHOTO_MODULE = "recruitment/agency-pre-onboarding/photo";
 
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
@@ -42,6 +59,10 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     private final EmployeeRepository employeeRepository;
     private final DepartmentProjectApplicationRepository projectApplicationRepository;
     private final RecruitmentDesignationVacancyRepository designationVacancyRepository;
+    private final UserManagementService userManagementService;
+    private final RoleRepository roleRepository;
+    private final AccountNotificationService accountNotificationService;
+    private final FileStorageService fileStorageService;
 
     public HROnboardingPageServiceImpl(
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
@@ -50,7 +71,11 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             UserRepository userRepository,
             EmployeeRepository employeeRepository,
             DepartmentProjectApplicationRepository projectApplicationRepository,
-            RecruitmentDesignationVacancyRepository designationVacancyRepository) {
+            RecruitmentDesignationVacancyRepository designationVacancyRepository,
+            UserManagementService userManagementService,
+            RoleRepository roleRepository,
+            AccountNotificationService accountNotificationService,
+            FileStorageService fileStorageService) {
         this.preOnboardingRepository = preOnboardingRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.subDepartmentRepository = subDepartmentRepository;
@@ -58,6 +83,10 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         this.employeeRepository = employeeRepository;
         this.projectApplicationRepository = projectApplicationRepository;
         this.designationVacancyRepository = designationVacancyRepository;
+        this.userManagementService = userManagementService;
+        this.roleRepository = roleRepository;
+        this.accountNotificationService = accountNotificationService;
+        this.fileStorageService = fileStorageService;
     }
 
     @Override
@@ -151,7 +180,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
 
     @Override
     @Transactional
-    public void saveOnboarding(Long preOnboardingId, AgencyPreOnboardingForm form, String actorEmail) {
+    public EmployeeOnboardingResult saveOnboarding(Long preOnboardingId, AgencyPreOnboardingForm form, String actorEmail) {
         AgencyCandidatePreOnboardingEntity entity = preOnboardingRepository.findById(preOnboardingId)
                 .orElseThrow(() -> new RecruitmentNotificationException("Onboarding record not found."));
 
@@ -167,6 +196,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         if (!form.isHrVerified()) {
             throw new RecruitmentNotificationException("HR Verification is required.");
         }
+        validateEmployeeAccountData(form);
         if (entity.getOnboardedAt() != null) {
             throw new RecruitmentNotificationException("Candidate is already onboarded.");
         }
@@ -194,69 +224,68 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                     "All vacancies are already filled for this designation and level. This candidate cannot be onboarded.");
         }
 
-        entity.setHrOnboardingDate(form.getHrOnboardingDate());
-        entity.setHrOnboardingLocation(form.getHrOnboardingLocation().trim());
-        entity.setHrVerified(true);
-        entity.setHrUserId(user.getId());
-        entity.setOnboardedAt(LocalDateTime.now());
-        vacancy.setFillPost(filledCount + 1);
+        DepartmentRegistrationEntity departmentRegistration = resolveDepartmentRegistration(entity);
+        List<String> newlyUploadedPaths = new ArrayList<>();
+        List<String> replacedPaths = new ArrayList<>();
+        FileUploadResult uploadedPhoto = null;
 
-        designationVacancyRepository.save(vacancy);
-        preOnboardingRepository.save(entity);
+        try {
+            uploadedPhoto = storeOptionalPhoto(form.getUploadImage(), newlyUploadedPaths);
 
-        // CREATE EMPLOYEE RECORD
-        EmployeeEntity employee = new EmployeeEntity();
-        employee.setEmployeeCode("PENDING"); // TEMPORARY PLACEHOLDER TO AVOID NOT-NULL CONSTRAINT
-        employee.setPreOnboarding(entity);
-        employee.setFullName(entity.getCandidateName());
-        employee.setEmail(entity.getCandidateEmail());
-        employee.setMobile(entity.getCandidateMobile());
-        employee.setAddress(entity.getAddress());
-        employee.setDateOfBirth(entity.getDateOfBirth());
-        employee.setJoiningDate(entity.getJoiningDate());
-        employee.setOnboardingDate(entity.getOnboardingDate());
-        employee.setPanNumber(entity.getPanNumber());
-        employee.setAadhaarNumber(entity.getAadhaarNumber());
+            entity.setHrOnboardingDate(form.getHrOnboardingDate());
+            entity.setHrOnboardingLocation(form.getHrOnboardingLocation().trim());
+            entity.setHrVerified(true);
+            entity.setHrUserId(user.getId());
+            entity.setOnboardedAt(LocalDateTime.now());
+            vacancy.setFillPost(filledCount + 1);
 
-        employee.setAgency(interview.getAgency());
-        employee.setDesignation(interview.getDesignationVacancy().getDesignationMst());
-        employee.setLevelCode(interview.getDesignationVacancy().getLevelCode());
-        employee.setRequestId(notification.getRequestId());
+            if (uploadedPhoto != null) {
+                applyUploadedPhoto(entity, uploadedPhoto, replacedPaths);
+            }
 
-        // Recruitment Type Logic
-        String requestId = notification.getRequestId();
-        boolean isExternal = requestId != null && requestId.contains("-E");
-        employee.setRecruitmentType(isExternal ? "EXTERNAL" : "INTERNAL");
+            designationVacancyRepository.save(vacancy);
+            preOnboardingRepository.save(entity);
 
-        if (isExternal && notification.getDepartmentProjectApplicationId() != null) {
-            projectApplicationRepository.findById(notification.getDepartmentProjectApplicationId())
-                    .ifPresent(app -> {
-                        if (app.getDepartmentRegistrationId() != null) {
-                            departmentRegistrationRepository.findById(app.getDepartmentRegistrationId())
-                                    .ifPresent(reg -> {
-                                        employee.setDepartmentRegistration(reg);
-                                        if (reg.getSubDeptId() != null) {
-                                            subDepartmentRepository.findById(reg.getSubDeptId()).ifPresent(employee::setSubDepartment);
-                                        }
-                                    });
-                        }
-                    });
-        } else if (notification.getDepartmentRegistrationId() != null) {
-            departmentRegistrationRepository.findById(notification.getDepartmentRegistrationId())
-                    .ifPresent(reg -> {
-                        employee.setDepartmentRegistration(reg);
-                        if (reg.getSubDeptId() != null) {
-                            subDepartmentRepository.findById(reg.getSubDeptId()).ifPresent(employee::setSubDepartment);
-                        }
-                    });
+            // CREATE EMPLOYEE RECORD
+            EmployeeEntity employee = new EmployeeEntity();
+            employee.setEmployeeCode("PENDING"); // TEMPORARY PLACEHOLDER TO AVOID NOT-NULL CONSTRAINT
+            employee.setPreOnboarding(entity);
+            employee.setFullName(entity.getCandidateName());
+            employee.setEmail(entity.getCandidateEmail());
+            employee.setMobile(entity.getCandidateMobile());
+            employee.setAddress(entity.getAddress());
+            employee.setDateOfBirth(entity.getDateOfBirth());
+            employee.setJoiningDate(entity.getJoiningDate());
+            employee.setOnboardingDate(entity.getOnboardingDate());
+            employee.setPanNumber(entity.getPanNumber());
+            employee.setAadhaarNumber(entity.getAadhaarNumber());
+
+            employee.setAgency(interview.getAgency());
+            employee.setDesignation(interview.getDesignationVacancy().getDesignationMst());
+            employee.setLevelCode(interview.getDesignationVacancy().getLevelCode());
+            employee.setRequestId(notification.getRequestId());
+            applyDepartmentRegistration(employee, departmentRegistration);
+
+            // Recruitment Type Logic
+            String requestId = notification.getRequestId();
+            boolean isExternal = requestId != null && requestId.contains("-E");
+            employee.setRecruitmentType(isExternal ? "EXTERNAL" : "INTERNAL");
+
+            employee.setStatus("ACTIVE");
+            EmployeeEntity savedEmployee = employeeRepository.save(employee);
+
+            // Generate Employee Code: EMP + padded ID
+            savedEmployee.setEmployeeCode("EMP" + String.format("%06d", savedEmployee.getEmployeeId()));
+            employeeRepository.save(savedEmployee);
+
+            EmployeeOnboardingResult accountResult = createEmployeeAccessAccount(entity, departmentRegistration,
+                    savedEmployee);
+            replacedPaths.forEach(fileStorageService::deleteQuietly);
+            return accountResult;
+        } catch (RuntimeException ex) {
+            newlyUploadedPaths.forEach(fileStorageService::deleteQuietly);
+            throw ex;
         }
-
-        employee.setStatus("ACTIVE");
-        EmployeeEntity savedEmployee = employeeRepository.save(employee);
-
-        // Generate Employee Code: EMP + padded ID
-        savedEmployee.setEmployeeCode("EMP" + String.format("%06d", savedEmployee.getEmployeeId()));
-        employeeRepository.save(savedEmployee);
     }
 
     @Override
@@ -316,6 +345,144 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
 
         employee.setStatus("RESIGNED");
         employeeRepository.save(employee);
+    }
+
+    private EmployeeOnboardingResult createEmployeeAccessAccount(
+            AgencyCandidatePreOnboardingEntity entity,
+            DepartmentRegistrationEntity departmentRegistration,
+            EmployeeEntity savedEmployee) {
+        Role employeeRole = roleRepository.findByNameIgnoreCase(EMPLOYEE_ROLE_NAME)
+                .orElseThrow(() -> new RecruitmentNotificationException("Employee role is not configured."));
+
+        String temporaryPassword = SecurePasswordGenerator.generate(12);
+        String employeeCode = savedEmployee.getEmployeeCode();
+        if (!StringUtils.hasText(employeeCode)) {
+            throw new RecruitmentNotificationException("Employee code could not be generated.");
+        }
+
+        UserUpsertRequest request = new UserUpsertRequest();
+        request.setName(entity.getCandidateName());
+        request.setEmail(entity.getCandidateEmail());
+        request.setMobileNo(entity.getCandidateMobile());
+        request.setPassword(temporaryPassword);
+        request.setDepartmentRegistrationId(
+                departmentRegistration != null ? departmentRegistration.getDepartmentRegistrationId() : null);
+        request.setAgencyId(null);
+        request.setRoleIds(List.of(employeeRole.getId()));
+
+        User createdUser = userManagementService.create(request);
+
+        String notificationWarning = null;
+        try {
+            accountNotificationService.sendEmployeeCredentials(
+                    createdUser.getEmail(),
+                    createdUser.getMobileNo(),
+                    createdUser.getName(),
+                    createdUser.getEmail(),
+                    temporaryPassword);
+        } catch (RuntimeException ex) {
+            log.warn("Employee credential notification failed for userId={}, email={}",
+                    createdUser.getId(),
+                    createdUser.getEmail(),
+                    ex);
+            notificationWarning = "Employee account was created, but credential delivery could not be completed. "
+                    + "Please share the login details manually.";
+        }
+
+        return new EmployeeOnboardingResult(
+                createdUser.getId(),
+                createdUser.getEmail(),
+                temporaryPassword,
+                notificationWarning);
+    }
+
+    private void validateEmployeeAccountData(AgencyPreOnboardingForm form) {
+        if (!StringUtils.hasText(form.getName())) {
+            throw new RecruitmentNotificationException("Candidate name is required to create the employee account.");
+        }
+        if (!StringUtils.hasText(form.getEmail())) {
+            throw new RecruitmentNotificationException("Candidate email is required to create the employee account.");
+        }
+        if (!StringUtils.hasText(form.getMobile())) {
+            throw new RecruitmentNotificationException("Candidate mobile number is required to create the employee account.");
+        }
+    }
+
+    private FileUploadResult storeOptionalPhoto(MultipartFile file, List<String> newlyUploadedPaths) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        FileUploadResult uploadResult = fileStorageService.store(file, PHOTO_MODULE);
+        newlyUploadedPaths.add(uploadResult.fullPath());
+        return uploadResult;
+    }
+
+    private void applyUploadedPhoto(
+            AgencyCandidatePreOnboardingEntity entity,
+            FileUploadResult uploadResult,
+            List<String> replacedPaths) {
+        if (entity.getPhotoFilePath() != null && !entity.getPhotoFilePath().isBlank()) {
+            replacedPaths.add(entity.getPhotoFilePath());
+        }
+
+        entity.setPhotoOriginalName(uploadResult.originalFileName());
+        entity.setPhotoFilePath(uploadResult.fullPath());
+        entity.setPhotoFileType(uploadResult.contentType());
+        entity.setPhotoFileSize(uploadResult.size());
+    }
+
+    private DepartmentRegistrationEntity resolveDepartmentRegistration(AgencyCandidatePreOnboardingEntity entity) {
+        if (entity == null || entity.getInterviewDetail() == null
+                || entity.getInterviewDetail().getRecruitmentNotification() == null) {
+            log.warn("Pre-onboarding record is missing interview/notification linkage. Proceeding without department mapping.");
+            return null;
+        }
+
+        var notification = entity.getInterviewDetail().getRecruitmentNotification();
+        if (notification.getDepartmentProjectApplicationId() != null) {
+            return projectApplicationRepository.findById(notification.getDepartmentProjectApplicationId())
+                    .map(app -> {
+                        if (app.getDepartmentRegistrationId() == null) {
+                            log.warn("Department registration is missing for projectApplicationId={}. Proceeding without department mapping.",
+                                    notification.getDepartmentProjectApplicationId());
+                            return null;
+                        }
+                        return departmentRegistrationRepository.findById(app.getDepartmentRegistrationId())
+                                .orElseGet(() -> {
+                                    log.warn("Department registration not found for id={}. Proceeding without department mapping.",
+                                            app.getDepartmentRegistrationId());
+                                    return null;
+                                });
+                    })
+                    .orElse(null);
+        }
+
+        if (notification.getDepartmentRegistrationId() != null) {
+            return departmentRegistrationRepository.findById(notification.getDepartmentRegistrationId())
+                    .orElseGet(() -> {
+                        log.warn("Department registration not found for id={}. Proceeding without department mapping.",
+                                notification.getDepartmentRegistrationId());
+                        return null;
+                    });
+        }
+
+        log.warn("No department registration found for HR onboarding. preOnboardingId={}", entity.getPreOnboardingId());
+        return null;
+    }
+
+    private void applyDepartmentRegistration(EmployeeEntity employee, DepartmentRegistrationEntity departmentRegistration) {
+        if (departmentRegistration == null) {
+            employee.setDepartmentRegistration(null);
+            employee.setSubDepartment(null);
+            return;
+        }
+
+        employee.setDepartmentRegistration(departmentRegistration);
+        if (departmentRegistration.getSubDeptId() != null) {
+            subDepartmentRepository.findById(departmentRegistration.getSubDeptId())
+                    .ifPresent(employee::setSubDepartment);
+        }
     }
 
     private EmployeeListView toEmployeeListView(EmployeeEntity entity) {

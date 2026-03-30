@@ -12,8 +12,18 @@
     --registration-highlight: var(--primary-soft, rgba(31, 79, 120, 0.12));
 }
 
+body.portal-shell.department-registration-shell {
+    min-height: 100vh;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
 .registration-main {
     padding: 1.9rem 0 2.8rem;
+    flex: 1 0 auto;
+    min-height: 0;
+    overflow: visible;
     font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
 }
 

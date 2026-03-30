@@ -166,8 +166,8 @@
                                         <span class="input-group-text"><i class="fa fa-clock"></i></span>
                                         <select class="form-select" th:field="*{timePeriod}" id="timePeriod">
                                             <option value="">- Select -</option>
-                                            <option value="Fore Noon">Fore Noon</option>
-                                            <option value="After Noon">After Noon</option>
+                                            <option value="Forenoon">Forenoon</option>
+                                            <option value="Afternoon">Afternoon</option>
                                         </select>
                                     </div>
                                 </div>
@@ -180,15 +180,15 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                                <div class="col-md-6" id="startDateContainer">
+                                    <label class="form-label" id="startDateLabel">Start Date <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
                                         <input type="date" class="form-control" th:field="*{startDate}" required id="startDate">
                                     </div>
                                 </div>
 
-                                <div class="col-md-6">
+                                <div class="col-md-6" id="endDateContainer">
                                     <label class="form-label">End Date <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
@@ -217,51 +217,79 @@
         </section>
     </th:block>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script th:inline="javascript">
         $(document).ready(function() {
-            $('#tourCategory').on('change', function() {
-                const category = $(this).val();
+            function updateFormState() {
+                const category = $('#tourCategory').val();
                 if (category === 'Half Day') {
                     $('#timePeriodContainer').show();
                     $('#timePeriod').attr('required', true);
-                    
-                    // For Half Day, Start Date and End Date should be same
-                    if($('#startDate').val()) {
-                        $('#endDate').val($('#startDate').val());
-                        $('#endDate').attr('readonly', true);
-                    }
-                } else {
+                    $('#endDateContainer').hide();
+                    $('#endDate').attr('required', false).val('');
+                    $('#startDateLabel').html('Date <span class="text-danger">*</span>');
+                } else if (category === 'Full Day') {
                     $('#timePeriodContainer').hide();
                     $('#timePeriod').attr('required', false).val('');
-                    $('#endDate').attr('readonly', false);
+                    $('#endDateContainer').show();
+                    $('#endDate').attr('required', true);
+                    $('#startDateLabel').html('Start Date <span class="text-danger">*</span>');
+                } else {
+                    $('#timePeriodContainer').hide();
+                    $('#endDateContainer').show();
+                    $('#startDateLabel').html('Start Date <span class="text-danger">*</span>');
                 }
-            });
+            }
 
-            $('#startDate').on('change', function() {
-                if ($('#tourCategory').val() === 'Half Day') {
-                    $('#endDate').val($(this).val());
-                }
-            });
+            // Run on load
+            updateFormState();
+
+            // Run on change
+            $('#tourCategory').on('change', updateFormState);
 
             $('#tourForm').on('submit', function(e) {
                 const category = $('#tourCategory').val();
-                const startDate = new Date($('#startDate').val());
-                const endDate = new Date($('#endDate').val());
+                const startDateVal = $('#startDate').val();
+                const endDateVal = $('#endDate').val();
 
-                if (endDate < startDate) {
+                if (!startDateVal) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Oops...',
-                        text: 'End date cannot be earlier than start date!',
+                        title: 'Required Field',
+                        text: 'Please select a date!',
                         confirmButtonColor: '#1f4f78'
                     });
                     return false;
                 }
 
+                if (category === 'Full Day') {
+                    if (!endDateVal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Required Field',
+                            text: 'Please select an end date!',
+                            confirmButtonColor: '#1f4f78'
+                        });
+                        return false;
+                    }
+
+                    const startDate = new Date(startDateVal);
+                    const endDate = new Date(endDateVal);
+                    if (endDate < startDate) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Invalid Date',
+                            text: 'End date cannot be earlier than start date!',
+                            confirmButtonColor: '#1f4f78'
+                        });
+                        return false;
+                    }
+                }
+
                 if (category === 'Half Day' && !$('#timePeriod').val()) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Oops...',
+                        title: 'Required Field',
                         text: 'Please select a Time Period for Half Day tour!',
                         confirmButtonColor: '#1f4f78'
                     });

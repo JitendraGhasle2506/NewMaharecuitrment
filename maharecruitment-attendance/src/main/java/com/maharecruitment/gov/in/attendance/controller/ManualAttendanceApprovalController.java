@@ -8,6 +8,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 
 @Controller
 @RequestMapping("/hod1/manual-attendance")
@@ -16,19 +18,29 @@ public class ManualAttendanceApprovalController {
     @Autowired
     private AttendanceRegisterService attendanceService;
 
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
     @GetMapping
     public String viewApprovals(Model model, HttpSession session, @RequestParam(required = false) String roleType) {
-        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user == null) {
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser == null) {
             model.addAttribute("errorMessage", "Session expired. Please log in again.");
             return "attendance/manual-attendance-approvals";
         }
 
         if (roleType == null) {
-            roleType = (user.roles() != null && user.roles().contains("ROLE_HOD")) ? "HOD" : "MANAGER";
+            roleType = (sessionUser.roles() != null && sessionUser.roles().contains("ROLE_HOD")) ? "HOD" : "MANAGER";
         }
 
-        Long approverId = "HOD".equalsIgnoreCase(roleType) ? user.id() : user.employeeId();
+        Long approverId;
+        if ("HOD".equalsIgnoreCase(roleType)) {
+            approverId = sessionUser.id();
+        } else {
+            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
+                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            approverId = employee.getEmployeeId();
+        }
 
         model.addAttribute("pendingSummaries", attendanceService.getPendingSummaries(approverId, roleType));
         model.addAttribute("currentRoleType", roleType);
@@ -40,14 +52,22 @@ public class ManualAttendanceApprovalController {
     public String viewDetails(@RequestParam("userId") Long targetUserId, 
                              @RequestParam(required = false) String roleType,
                              Model model, HttpSession session) {
-        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user == null) return "redirect:/login";
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        
+        if (sessionUser == null) return "redirect:/login";
 
         if (roleType == null) {
-            roleType = (user.roles() != null && user.roles().contains("ROLE_HOD")) ? "HOD" : "MANAGER";
+            roleType = (sessionUser.roles() != null && sessionUser.roles().contains("ROLE_HOD")) ? "HOD" : "MANAGER";
         }
 
-        Long approverId = "HOD".equalsIgnoreCase(roleType) ? user.id() : user.employeeId();
+        Long approverId;
+        if ("HOD".equalsIgnoreCase(roleType)) {
+            approverId = sessionUser.id();
+        } else {
+            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
+                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            approverId = employee.getEmployeeId();
+        }
         
         model.addAttribute("pendingRequests", attendanceService.getPendingRequestsForEmployee(approverId, targetUserId, roleType));
         model.addAttribute("currentRoleType", roleType);
@@ -66,13 +86,20 @@ public class ManualAttendanceApprovalController {
             HttpSession session, 
             RedirectAttributes redirectAttrs) {
 
-        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user == null) {
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser == null) {
             redirectAttrs.addFlashAttribute("errorMessage", "Session expired.");
             return "redirect:/login";
         }
 
-        Long approverId = "HOD".equalsIgnoreCase(roleType) ? user.id() : user.employeeId();
+        Long approverId;
+        if ("HOD".equalsIgnoreCase(roleType)) {
+            approverId = sessionUser.id();
+        } else {
+            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
+                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            approverId = employee.getEmployeeId();
+        }
 
         try {
             attendanceService.approveRejectManualAttendance(requestId, approverId, status, comments, roleType);

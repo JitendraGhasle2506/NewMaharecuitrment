@@ -11,13 +11,21 @@
         body {
             background: linear-gradient(135deg, #6a11cb, #2575fc);
             margin: 0;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column;
             font-family: 'Poppins', sans-serif;
             color: #fff;
             overflow: hidden;
+        }
+
+        .error-page-wrap {
+            flex: 1 0 auto;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 16px;
         }
 
         .card {
@@ -80,26 +88,59 @@
             transform: translateY(-3px);
             background: #f1f1f1;
         }
+
+        .site-footer {
+            margin-top: auto;
+            padding: 0.9rem 0 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            font-size: 0.83rem;
+            color: rgba(255, 255, 255, 0.94);
+        }
+
+        .site-footer-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem 1rem;
+            flex-wrap: wrap;
+        }
+
+        .site-footer-copy {
+            font-weight: 600;
+        }
+
+        .site-footer-meta {
+            margin-left: auto;
+            font-weight: 700;
+            text-align: right;
+            white-space: nowrap;
+        }
     </style>
 </head>
 
 <body>
 
-<div class="card">
+<div class="error-page-wrap">
+    <div class="card">
 
-    <!-- Dynamic Icon -->
-    <img th:src="@{'/icons/' + ${icon}}" class="icon" alt="Error Icon">
+        <!-- Dynamic Icon -->
+        <img th:src="@{'/icons/' + ${icon}}" class="icon" alt="Error Icon">
 
-    <div class="code" th:text="${status}">404</div>
+        <div class="code" th:text="${status}">404</div>
 
-    <div class="message" th:text="${error}">Page Not Found</div>
+        <div class="message" th:text="${error}">Page Not Found</div>
 
-    <div class="details" th:text="${message}">
-        The page you are looking for does not exist.
+        <div class="details" th:text="${message}">
+            The page you are looking for does not exist.
+        </div>
+
+        <a th:href="@{/}">Back to Home</a>
     </div>
-
-    <a th:href="@{/}">Back to Home</a>
 </div>
+
+<th:block th:replace="~{fragments/footer :: var-footer}"></th:block>
 
 </body>
 </html>

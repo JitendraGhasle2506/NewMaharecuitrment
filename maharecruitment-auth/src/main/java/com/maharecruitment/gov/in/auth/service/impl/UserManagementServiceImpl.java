@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.auth.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,10 @@ import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.AgencyRegistrationValidationService;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.service.UserManagementService;
+import com.maharecruitment.gov.in.auth.util.UserValidationUtil;
 
 @Service
 @Transactional
@@ -30,16 +34,22 @@ public class UserManagementServiceImpl implements UserManagementService {
     private final RoleRepository roleRepository;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserAffiliationService userAffiliationService;
+    private final AgencyRegistrationValidationService agencyRegistrationValidationService;
 
     public UserManagementServiceImpl(
             UserRepository userRepository,
             RoleRepository roleRepository,
             DepartmentRegistrationRepository departmentRegistrationRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            UserAffiliationService userAffiliationService,
+            AgencyRegistrationValidationService agencyRegistrationValidationService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userAffiliationService = userAffiliationService;
+        this.agencyRegistrationValidationService = agencyRegistrationValidationService;
     }
 
     @Override
@@ -61,9 +71,12 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         User user = new User();
         applyCommonFields(user, request);
-        user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
+        user.setPassword(passwordEncoder.encode(UserValidationUtil.validatePassword(request.getPassword())));
 
         User saved = userRepository.save(user);
+        userAffiliationService.synchronizeUserProfile(saved);
+        userAffiliationService.synchronizePrimaryDepartment(saved, saved.getDepartmentRegistrationId());
+        userAffiliationService.synchronizePrimaryAgency(saved, request.getAgencyId());
         log.info("User created: id={}, email={}", saved.getId(), saved.getEmail());
         return saved;
     }
@@ -75,10 +88,13 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         applyCommonFields(existing, request);
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            existing.setPassword(passwordEncoder.encode(request.getPassword().trim()));
+            existing.setPassword(passwordEncoder.encode(UserValidationUtil.validatePassword(request.getPassword())));
         }
 
         User saved = userRepository.save(existing);
+        userAffiliationService.synchronizeUserProfile(saved);
+        userAffiliationService.synchronizePrimaryDepartment(saved, saved.getDepartmentRegistrationId());
+        userAffiliationService.synchronizePrimaryAgency(saved, request.getAgencyId());
         log.info("User updated: id={}, email={}", saved.getId(), saved.getEmail());
         return saved;
     }
@@ -91,9 +107,9 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
     private void applyCommonFields(User user, UserUpsertRequest request) {
-        user.setName(normalizeRequired(request.getName(), "User name"));
-        user.setEmail(normalizeEmail(request.getEmail()));
-        user.setMobileNo(normalizeOptional(request.getMobileNo()));
+        user.setName(UserValidationUtil.normalizeName(request.getName()));
+        user.setEmail(UserValidationUtil.normalizeEmail(request.getEmail()));
+        user.setMobileNo(UserValidationUtil.normalizeOptionalMobile(request.getMobileNo()));
         user.setRoles(resolveRoles(request.getRoleIds()));
         user.setDepartmentRegistrationId(resolveDepartment(request.getDepartmentRegistrationId()));
     }
@@ -110,7 +126,7 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
     private void validateCommon(UserUpsertRequest request, Long id) {
-        String normalizedEmail = normalizeEmail(request.getEmail());
+        String normalizedEmail = UserValidationUtil.normalizeEmail(request.getEmail());
         boolean duplicateEmail = (id == null)
                 ? userRepository.existsByEmailIgnoreCase(normalizedEmail)
                 : userRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, id);
@@ -118,13 +134,15 @@ public class UserManagementServiceImpl implements UserManagementService {
             throw new IllegalArgumentException("Email already exists: " + normalizedEmail);
         }
 
-        if (request.getRoleIds() == null || request.getRoleIds().isEmpty()) {
+        if (normalizeRoleIds(request.getRoleIds()).isEmpty()) {
             throw new IllegalArgumentException("At least one role is required.");
         }
+
+        agencyRegistrationValidationService.validateAgencyRegistration(request.getAgencyId());
     }
 
     private List<Role> resolveRoles(List<Long> roleIds) {
-        List<Long> ids = new ArrayList<>(roleIds);
+        List<Long> ids = new ArrayList<>(normalizeRoleIds(roleIds));
         List<Role> roles = roleRepository.findAllById(ids);
         if (roles.size() != ids.size()) {
             throw new IllegalArgumentException("One or more selected roles are invalid.");
@@ -141,24 +159,14 @@ public class UserManagementServiceImpl implements UserManagementService {
                         "Department registration not found for id: " + departmentRegistrationId));
     }
 
-    private String normalizeRequired(String value, String fieldName) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " is required.");
+    private List<Long> normalizeRoleIds(List<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return List.of();
         }
-        return value.trim();
-    }
 
-    private String normalizeOptional(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
-    }
-
-    private String normalizeEmail(String email) {
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("Email is required.");
-        }
-        return email.trim().toLowerCase();
+        return roleIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
     }
 }
