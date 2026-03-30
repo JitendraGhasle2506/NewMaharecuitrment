@@ -202,7 +202,7 @@ public class AuditorDepartmentRequestController {
         if (!verificationConfirmed) {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Please confirm that auditor has verified department details before completion.");
+                    "Please review the tax invoice preview and confirm completion.");
             return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
                     + "/applications/" + applicationId;
         }

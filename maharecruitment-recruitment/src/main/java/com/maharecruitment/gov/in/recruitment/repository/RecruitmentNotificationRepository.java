@@ -23,6 +23,8 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
 
     Optional<RecruitmentNotificationEntity> findByRequestIdIgnoreCase(String requestId);
 
+    Optional<RecruitmentNotificationEntity> findByDepartmentProjectApplicationId(Long departmentProjectApplicationId);
+
     Optional<RecruitmentNotificationEntity> findByInternalVacancyOpeningInternalVacancyOpeningId(
             Long internalVacancyOpeningId);
 

@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.attendance.controller;
 import java.text.DateFormatSymbols;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -23,9 +24,6 @@ import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
 import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
-import com.maharecruitment.gov.in.master.entity.DepartmentMst;
-import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
-import com.maharecruitment.gov.in.master.service.DepartmentMstService;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -37,34 +35,25 @@ public class AttendanceRegisterExternalEmployeeController {
     private AttendanceRegisterService attendanceService;
 
     @Autowired
-    private DepartmentMstService departmentMstService;
-
-    @Autowired
-    private DepartmentMstRepository departmentMstRepository;
-    @Autowired
     private DepartmentRegistrationRepository departmentRegistrationRepository;
 
     @GetMapping("/extAttendance")
     public String attendanceRegisterExternalEmployee(Model model, HttpSession session) {
         SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        if (user != null && user.departmentId() != null) {
-            DepartmentRegistrationEntity dept = departmentRegistrationRepository.findById(user.departmentId())
-                    .orElse(null);
-            if (dept != null) {
-                DepartmentMst department = departmentMstRepository.findById(dept.getDepartmentId())
-                        .orElse(null);
+        List<DepartmentRegistrationEntity> departmentList = resolveAvailableDepartments(user);
+        Long selectedDeptId = resolveSelectedDepartmentId(user, null, departmentList);
+        populateDepartmentContext(model, departmentList, user, selectedDeptId);
 
-                model.addAttribute("departmentList", List.of(department));
-                model.addAttribute("selectedDept", department.getDepartmentName());
-            }
-        } else {
-            model.addAttribute("departmentList", departmentMstService.getAllDepartment());
-        }
-
+        Map<Integer, String> monthNames = getMonthNames();
         LocalDate today = LocalDate.now();
         model.addAttribute("currentMonth", today.getMonthValue());
         model.addAttribute("currentYear", today.getYear());
-        model.addAttribute("monthNames", getMonthNames());
+        model.addAttribute("selectedMonth", today.getMonthValue());
+        model.addAttribute("selectedYear", today.getYear());
+        model.addAttribute("selectedMonthName", monthNames.get(today.getMonthValue()));
+        model.addAttribute("monthNames", monthNames);
+        model.addAttribute("daysInMonth", today.lengthOfMonth());
+        model.addAttribute("isLocked", false);
         return "attendance/attendance-register-external";
     }
 
@@ -75,46 +64,81 @@ public class AttendanceRegisterExternalEmployeeController {
             Model model, HttpSession session) {
 
         SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        Long finalDeptId = (user != null && user.departmentId() != null) ? user.departmentId() : departmentId;
+        List<DepartmentRegistrationEntity> departmentList = resolveAvailableDepartments(user);
+        Long finalDeptId = resolveSelectedDepartmentId(user, departmentId, departmentList);
+        populateDepartmentContext(model, departmentList, user, finalDeptId);
 
-        if (user != null && user.departmentId() != null) {
-            DepartmentRegistrationEntity dept = departmentRegistrationRepository.findById(finalDeptId)
-                    .orElse(null);
-            if (dept != null) {
-                DepartmentMst department = departmentMstRepository.findById(dept.getDepartmentId())
-                        .orElse(null);
-                model.addAttribute("departmentList", List.of(department));
-                model.addAttribute("selectedDept", department.getDepartmentName());
-                model.addAttribute("selectedDeptId", finalDeptId);
-            }
-        } else {
-            model.addAttribute("departmentList", departmentMstService.getAllDepartment());
-            if (finalDeptId != null) {
-                final Long currentDeptId = finalDeptId;
-                departmentMstRepository.findById(currentDeptId).ifPresent(d -> {
-                    model.addAttribute("selectedDept", d.getDepartmentName());
-                    model.addAttribute("selectedDeptId", currentDeptId);
-                });
-            }
-        }
-
-        List<AttendanceRegisterDTO> attendanceList = attendanceService.getExternalAttendance(finalDeptId, month, year);
+        List<AttendanceRegisterDTO> attendanceList = finalDeptId == null
+                ? List.of()
+                : attendanceService.getExternalAttendance(finalDeptId, month, year);
         model.addAttribute("attendanceList", attendanceList);
 
+        Map<Integer, String> monthNames = getMonthNames();
         model.addAttribute("selectedMonth", month);
         model.addAttribute("selectedYear", year);
-        model.addAttribute("monthNames", getMonthNames());
+        model.addAttribute("selectedMonthName", monthNames.get(month));
+        model.addAttribute("monthNames", monthNames);
 
         YearMonth yearMonth = YearMonth.of(year, month);
         int daysInMonth = yearMonth.lengthOfMonth();
         model.addAttribute("daysInMonth", daysInMonth);
 
-        // Use the existing lock check logic from service or set a default if not fully
-        // implemented yet
-        boolean isLocked = attendanceService.isAttendanceLocked(finalDeptId, month, year);
+        boolean isLocked = finalDeptId != null && attendanceService.isAttendanceLocked(finalDeptId, month, year);
         model.addAttribute("isLocked", isLocked);
 
         return "attendance/attendance-register-external";
+    }
+
+    private List<DepartmentRegistrationEntity> resolveAvailableDepartments(SessionUserDTO user) {
+        if (user != null && user.departmentId() != null) {
+            return departmentRegistrationRepository.findById(user.departmentId())
+                    .map(List::of)
+                    .orElse(List.of());
+        }
+
+        return departmentRegistrationRepository.findAll().stream()
+                .sorted(Comparator.comparing(
+                        dept -> dept.getDepartmentName() == null ? "" : dept.getDepartmentName(),
+                        String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    private Long resolveSelectedDepartmentId(SessionUserDTO user, Long departmentId,
+            List<DepartmentRegistrationEntity> departmentList) {
+        if (user != null && user.departmentId() != null) {
+            return user.departmentId();
+        }
+
+        if (departmentId != null) {
+            return departmentId;
+        }
+
+        if (departmentList.size() == 1) {
+            return departmentList.get(0).getDepartmentRegistrationId();
+        }
+
+        return null;
+    }
+
+    private void populateDepartmentContext(Model model,
+            List<DepartmentRegistrationEntity> departmentList,
+            SessionUserDTO user,
+            Long selectedDeptId) {
+        model.addAttribute("departmentList", departmentList);
+        model.addAttribute("departmentSelectionLocked", user != null && user.departmentId() != null);
+
+        if (selectedDeptId == null) {
+            return;
+        }
+
+        departmentList.stream()
+                .filter(dept -> selectedDeptId.equals(dept.getDepartmentRegistrationId()))
+                .findFirst()
+                .or(() -> departmentRegistrationRepository.findById(selectedDeptId))
+                .ifPresent(dept -> {
+                    model.addAttribute("selectedDept", dept.getDepartmentName());
+                    model.addAttribute("selectedDeptId", dept.getDepartmentRegistrationId());
+                });
     }
 
     private Map<Integer, String> getMonthNames() {

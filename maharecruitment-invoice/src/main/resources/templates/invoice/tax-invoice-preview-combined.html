@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Tax Invoice Preview</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        body {
+            margin: 0;
+            background: #f8fafc;
+            font-family: Arial, sans-serif;
+        }
+
+        .preview-shell {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 18px;
+        }
+
+        .preview-toolbar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 18px;
+        }
+
+        .preview-print-btn {
+            border: 0;
+            border-radius: 10px;
+            padding: 10px 18px;
+            background: #1d4ed8;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(29, 78, 216, 0.2);
+        }
+
+        .preview-print-btn:disabled {
+            background: #94a3b8;
+            cursor: wait;
+            box-shadow: none;
+        }
+
+        .preview-section {
+            background: #fff;
+            border: 1px solid #d9e2ec;
+            border-radius: 14px;
+            padding: 10px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .preview-section + .preview-section {
+            margin-top: 18px;
+        }
+
+        .preview-frame {
+            width: 100%;
+            min-height: 900px;
+            display: block;
+            border: 0;
+            border-radius: 10px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        @media (max-width: 767.98px) {
+            .preview-shell {
+                padding: 10px;
+            }
+
+            .preview-section {
+                padding: 10px;
+            }
+
+            .preview-frame {
+                min-height: 720px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="preview-shell">
+        <section class="preview-section">
+            <iframe class="preview-frame"
+                id="oldPreviewFrame"
+                title="Old Tax Invoice Preview"
+                scrolling="no"
+                th:src="@{/invoice/tax-invoices/application/{applicationId}/preview/old(applicationId=${applicationId},embedded=true)}">
+            </iframe>
+        </section>
+
+        <section class="preview-section">
+            <iframe class="preview-frame"
+                id="newPreviewFrame"
+                title="New Tax Invoice Preview"
+                scrolling="no"
+                th:src="@{/invoice/tax-invoices/application/{applicationId}/preview/new(applicationId=${applicationId},embedded=true)}">
+            </iframe>
+        </section>
+
+        <div class="preview-toolbar no-print">
+            <button id="printBothBtn" class="preview-print-btn" type="button" onclick="printBothPreviews()" disabled>
+                Loading previews...
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function getFrameDocument(frame) {
+            if (!frame) {
+                return null;
+            }
+            return frame.contentDocument || (frame.contentWindow ? frame.contentWindow.document : null);
+        }
+
+        function resizePreviewFrame(frame) {
+            var doc = getFrameDocument(frame);
+            if (!doc) {
+                return;
+            }
+
+            if (doc.body) {
+                doc.body.style.overflow = 'hidden';
+            }
+            if (doc.documentElement) {
+                doc.documentElement.style.overflow = 'hidden';
+            }
+
+            frame.style.height = '1px';
+            var root = doc.getElementById('print-content') || doc.body;
+            var rootHeight = root ? root.scrollHeight : 0;
+            var bodyHeight = doc.body ? doc.body.scrollHeight : 0;
+            var htmlHeight = doc.documentElement ? doc.documentElement.scrollHeight : 0;
+            var targetHeight = Math.max(rootHeight, bodyHeight, htmlHeight, 720);
+            frame.style.height = targetHeight + 'px';
+        }
+
+        function collectPrintableStyles(doc, styleSet) {
+            if (!doc || !styleSet) {
+                return;
+            }
+
+            Array.from(doc.querySelectorAll('link[rel="stylesheet"], style')).forEach(function (node) {
+                styleSet.add(node.outerHTML);
+            });
+        }
+
+        function getPrintableContent(frame) {
+            var doc = getFrameDocument(frame);
+            if (!doc) {
+                return '';
+            }
+
+            var root = doc.getElementById('print-content');
+            return root ? root.outerHTML : doc.body.innerHTML;
+        }
+
+        function printBothPreviews() {
+            var frames = ['oldPreviewFrame', 'newPreviewFrame']
+                .map(function (frameId) { return document.getElementById(frameId); })
+                .filter(Boolean);
+
+            if (!frames.length) {
+                return;
+            }
+
+            var styleSet = new Set();
+            var printableSections = '';
+
+            frames.forEach(function (frame, index) {
+                var doc = getFrameDocument(frame);
+                collectPrintableStyles(doc, styleSet);
+                printableSections += '<section class="combined-print-section'
+                    + (index < frames.length - 1 ? ' with-break' : '')
+                    + '">'
+                    + getPrintableContent(frame)
+                    + '</section>';
+            });
+
+            var printWindow = window.open('', '_blank');
+            var printStyles = '<style>'
+                + 'body{margin:0;background:#fff;}'
+                + '.combined-print-section{page-break-after:always;}'
+                + '.combined-print-section:last-child{page-break-after:auto;}'
+                + '.no-print{display:none !important;}'
+                + '</style>';
+
+            printWindow.document.write('<html><head><title>Tax Invoice Preview</title>'
+                + Array.from(styleSet).join('')
+                + printStyles
+                + '</head><body>'
+                + printableSections
+                + '</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var printButton = document.getElementById('printBothBtn');
+            var loadedFrames = 0;
+            var totalFrames = 2;
+
+            function syncPrintButtonState() {
+                if (!printButton) {
+                    return;
+                }
+                var ready = loadedFrames >= totalFrames;
+                printButton.disabled = !ready;
+                printButton.textContent = ready ? 'Print Both Previews' : 'Loading previews...';
+            }
+
+            ['oldPreviewFrame', 'newPreviewFrame'].forEach(function (frameId) {
+                var frame = document.getElementById(frameId);
+                if (!frame) {
+                    return;
+                }
+
+                frame.addEventListener('load', function () {
+                    loadedFrames += 1;
+                    resizePreviewFrame(frame);
+                    window.setTimeout(function () { resizePreviewFrame(frame); }, 150);
+                    window.setTimeout(function () { resizePreviewFrame(frame); }, 500);
+                    syncPrintButtonState();
+                });
+            });
+
+            window.addEventListener('resize', function () {
+                ['oldPreviewFrame', 'newPreviewFrame'].forEach(function (frameId) {
+                    resizePreviewFrame(document.getElementById(frameId));
+                });
+            });
+
+            syncPrintButtonState();
+        });
+    </script>
+</body>
+
+</html>
