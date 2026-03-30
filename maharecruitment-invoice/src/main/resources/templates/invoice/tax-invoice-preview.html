@@ -156,7 +156,7 @@
 <body class="tax-invoice">
     <div class="preview-page">
         <div id="print-content" class="preview-sheet">
-            <div th:if="${invoicePreviewMode and !#bools.isTrue(embeddedPreviewMode)}" class="preview-banner">
+            <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}" class="preview-banner">
                 Preview only. This page loads dynamic resource details from the request and does not replace the final
                 tax invoice layout.
             </div>
