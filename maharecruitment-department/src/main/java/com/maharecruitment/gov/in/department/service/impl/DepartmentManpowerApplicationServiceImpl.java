@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
+import com.maharecruitment.gov.in.common.event.invoice.DepartmentTaxInvoiceGenerationRequestedEvent;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationActivityView;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationForm;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
@@ -88,6 +90,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     private final DepartmentWorkOrderStorageService storageService;
     private final DepartmentProformaInvoiceRepository proformaInvoiceRepository;
     private final DepartmentTaxRateMasterRepository taxRateMasterRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public DepartmentManpowerApplicationServiceImpl(
             DepartmentProjectApplicationRepository applicationRepository,
@@ -102,7 +105,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             UserAffiliationService userAffiliationService,
             DepartmentWorkOrderStorageService storageService,
             DepartmentProformaInvoiceRepository proformaInvoiceRepository,
-            DepartmentTaxRateMasterRepository taxRateMasterRepository) {
+            DepartmentTaxRateMasterRepository taxRateMasterRepository,
+            ApplicationEventPublisher applicationEventPublisher) {
         this.applicationRepository = applicationRepository;
         this.activityRepository = activityRepository;
         this.designationService = designationService;
@@ -116,6 +120,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         this.storageService = storageService;
         this.proformaInvoiceRepository = proformaInvoiceRepository;
         this.taxRateMasterRepository = taxRateMasterRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override
@@ -406,6 +411,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             syncProjectMaster(saved);
             publishRecruitmentNotification(saved);
             generateProformaInvoice(saved);
+            publishTaxInvoiceGenerationRequestedEvent(saved, actorContext);
         }
 
         log.info("Auditor reviewed application. applicationId={}, decision={}, status={} actor={}",
@@ -444,6 +450,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 DepartmentApplicationStatus.COMPLETED,
                 actorContext,
                 "Application marked completed.");
+
+        publishTaxInvoiceGenerationRequestedEvent(saved, actorContext);
 
         log.info("Application marked completed. applicationId={}, actor={}", applicationId,
                 actorContext.getActorEmail());
@@ -1016,6 +1024,19 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 .userIds(recipientUserIds)
                 .actionRequired(actionRequired)
                 .build());
+    }
+
+    private void publishTaxInvoiceGenerationRequestedEvent(
+            DepartmentProjectApplicationEntity applicationEntity,
+            DepartmentActorContext actorContext) {
+        if (applicationEntity == null || applicationEntity.getDepartmentProjectApplicationId() == null) {
+            return;
+        }
+
+        applicationEventPublisher.publishEvent(new DepartmentTaxInvoiceGenerationRequestedEvent(
+                applicationEntity.getDepartmentProjectApplicationId(),
+                applicationEntity.getRequestId(),
+                actorContext != null ? actorContext.getActorEmail() : applicationEntity.getUpdatedBy()));
     }
 
     private void notifyAuditorAfterHrReview(

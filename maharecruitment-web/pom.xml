@@ -102,6 +102,12 @@
 
         <dependency>
             <groupId>com.maharecruitment.gov.in</groupId>
+            <artifactId>maharecruitment-invoice</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.maharecruitment.gov.in</groupId>
             <artifactId>maharecruitment-recruitment</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -110,6 +116,18 @@
             <groupId>com.maharecruitment.gov.in</groupId>
             <artifactId>maharecruitment-notification</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.4</version>
         </dependency>
 
     </dependencies>

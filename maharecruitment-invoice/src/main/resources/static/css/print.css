@@ -1,0 +1,104 @@
+body.tax-invoice {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+    line-height: 1.35;
+}
+
+.tax-invoice .invoice-container {
+    padding: 12px;
+    font-size: 11pt;
+    line-height: 1.35;
+}
+
+.tax-invoice .table-invoice,
+.tax-invoice .table-invoice th,
+.tax-invoice .table-invoice td {
+    border: 1px solid #000 !important;
+}
+
+.tax-invoice .table-invoice th {
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 700;
+    font-size: 10pt;
+}
+
+.tax-invoice .table-invoice td {
+    vertical-align: middle;
+    font-size: 10pt;
+}
+
+.tax-invoice .text-right {
+    text-align: right;
+}
+
+.tax-invoice h2 {
+    font-size: 16pt;
+    line-height: 1.25;
+    margin-bottom: 0.25rem;
+}
+
+.tax-invoice h3 {
+    font-size: 14pt;
+    line-height: 1.25;
+}
+
+.tax-invoice h4 {
+    font-size: 12pt;
+    line-height: 1.25;
+}
+
+.tax-invoice small {
+    font-size: 9pt;
+}
+
+.tax-invoice strong,
+.tax-invoice b {
+    font-weight: 700;
+}
+
+.tax-invoice .qr-placeholder {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto;
+    border: 1px dashed #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.tax-invoice .qr-code-image {
+    width: 92px;
+    height: 92px;
+    display: block;
+    margin: 0 auto;
+    object-fit: contain;
+}
+
+.tax-invoice .qr-block {
+    display: inline-block;
+}
+
+.tax-invoice .qr-caption {
+    margin-top: 4px;
+    font-size: 8pt;
+    line-height: 1.2;
+    text-align: center;
+    font-weight: 600;
+}
+
+@media print {
+    body.tax-invoice {
+        font-size: 11pt;
+    }
+
+    .header,
+    .breadcrumb,
+    #printBtn {
+        display: none !important;
+    }
+}

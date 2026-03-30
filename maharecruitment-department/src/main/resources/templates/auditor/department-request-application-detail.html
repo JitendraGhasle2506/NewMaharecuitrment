@@ -295,28 +295,26 @@
                             </form>
 
                             <!-- Completion Action Form -->
-                            <form th:if="${applicationReviewDetail.completionAllowed}"
+                            <form th:if="${applicationReviewDetail.completionAllowed}" id="completionForm"
                                 th:action="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/complete(
                                                 departmentId=${applicationReviewDetail.departmentId},
                                                 subDepartmentId=${applicationReviewDetail.subDepartmentId},
                                                 applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
                                 method="post">
-                                <p class="small text-muted mb-4">Application has been audited. Finalize to mark as completed.</p>
+                                <p class="small text-muted mb-4">
+                                    Review the tax invoice preview before finalizing this request.
+                                </p>
                                 <div class="mb-4">
                                     <label class="form-label small fw-bold">Completion Notes</label>
                                     <textarea class="form-control border-0 bg-light" rows="2" name="completionRemarks"
                                         placeholder="Optional completion notes..."></textarea>
                                 </div>
-                                <div class="form-check mb-4">
-                                    <input class="form-check-input" type="checkbox" id="completionVerificationConfirmed"
-                                        name="verificationConfirmed" value="true" required>
-                                    <label class="form-check-label small fw-semibold" for="completionVerificationConfirmed">
-                                        Final confirmation of verification records.
-                                    </label>
-                                </div>
                                 <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary fw-bold py-2 shadow-sm">
-                                        <i class="fa-solid fa-flag-checkered me-1"></i> Finalize & Complete
+                                    <button type="button"
+                                        class="btn btn-primary fw-bold py-2 shadow-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#taxInvoiceConfirmModal">
+                                        <i class="fa-solid fa-flag-checkered me-1"></i> Review Tax Invoice & Complete
                                     </button>
                                 </div>
                             </form>
@@ -346,8 +344,89 @@
                     </div>
                 </div>
             </div>
+
+            <div th:if="${applicationReviewDetail.completionAllowed}" class="modal fade" id="taxInvoiceConfirmModal"
+                tabindex="-1" aria-labelledby="taxInvoiceConfirmModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header">
+                            <div>
+                                <h5 class="modal-title fw-bold mb-1" id="taxInvoiceConfirmModalLabel">
+                                    Tax Invoice Preview
+                                </h5>
+                                <div class="small text-muted">
+                                    Review the invoice before completing this application.
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info border-0 small mb-3">
+                                The preview loads the current tax invoice for request
+                                <strong th:text="${applicationReviewDetail.requestId}">DPA-0000</strong>.
+                                If the invoice is not available yet, the preview will load it and completion will
+                                request generation again for safety.
+                            </div>
+                            <div class="border rounded overflow-hidden bg-white" style="height:72vh;">
+                                <iframe id="taxInvoicePreviewFrame"
+                                    class="w-100 h-100 border-0"
+                                    title="Tax Invoice Preview"
+                                    src="about:blank"
+                                    th:attr="data-preview-url=@{/invoice/tax-invoices/application/{applicationId}(applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
+                                </iframe>
+                            </div>
+                            <div class="form-check mt-3">
+                                <input class="form-check-input"
+                                    type="checkbox"
+                                    id="completionVerificationConfirmed"
+                                    name="verificationConfirmed"
+                                    value="true"
+                                    form="completionForm"
+                                    required>
+                                <label class="form-check-label small fw-semibold"
+                                    for="completionVerificationConfirmed">
+                                    I have reviewed the tax invoice preview and confirm completion.
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary fw-bold" form="completionForm">
+                                <i class="fa-solid fa-check me-1"></i> Confirm & Complete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
     </th:block>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var modal = document.getElementById('taxInvoiceConfirmModal');
+            var frame = document.getElementById('taxInvoicePreviewFrame');
+            var checkbox = document.getElementById('completionVerificationConfirmed');
+
+            if (!modal || !frame) {
+                return;
+            }
+
+            modal.addEventListener('shown.bs.modal', function () {
+                var previewUrl = frame.getAttribute('data-preview-url');
+                if (previewUrl && frame.getAttribute('src') !== previewUrl) {
+                    frame.setAttribute('src', previewUrl);
+                }
+            });
+
+            modal.addEventListener('hidden.bs.modal', function () {
+                frame.setAttribute('src', 'about:blank');
+                if (checkbox) {
+                    checkbox.checked = false;
+                }
+            });
+        });
+    </script>
 </body>
 
-</html>
+</html>

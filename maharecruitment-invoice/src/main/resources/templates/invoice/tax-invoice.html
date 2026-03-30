@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Tax Invoice</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/print.css}" />
+    <style>
+        .invoice-header {
+            text-align: center;
+            padding-bottom: 8px;
+        }
+
+        .invoice-header h5 {
+            font-weight: 700;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        .invoice-header small {
+            font-size: 12px;
+        }
+
+        .section-title {
+            font-weight: 700;
+            text-align: center;
+            text-decoration: underline;
+            margin: 8px 0;
+        }
+
+        .table-invoice,
+        .table-invoice th,
+        .table-invoice td {
+            border: 1px solid #000 !important;
+        }
+
+        .table-invoice th {
+            text-align: center;
+            vertical-align: middle;
+            font-weight: 700;
+        }
+
+        .table-invoice td {
+            vertical-align: middle;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body class="tax-invoice">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Invoice', 'Tax Invoice', ~{::section})}">
+    <section>
+    <div class="page-main-content">
+        <ul class="breadcrumb breadcrumb-style">
+            <li class="breadcrumb-item">
+                <h4 class="page-title">Home</h4>
+            </li>
+            <li class="breadcrumb-item active">Tax Invoice</li>
+        </ul>
+
+        <div class="page-contents">
+            <div class="header">
+                <h2>Tax Invoice</h2>
+            </div>
+
+            <div class="card add-emp-card">
+                <div class="invoice-container">
+                    <div id="print-content">
+                        <table class="table bor-0">
+                            <tr>
+                                <td class="text-center">
+                                    <img th:src="@{/img/mahait_logo.png}" width="70" alt="MahaIT Logo">
+                                </td>
+                                <td colspan="5" style="text-align:center; vertical-align: middle;">
+                                    <h3 style="margin:0;" th:text="${invoice.companyName}">
+                                        Maharashtra Information Technology Corporation Limited
+                                    </h3>
+                                    <div th:text="${'CIN : ' + invoice.cinNumber}">CIN : U74999MH1998SGC099591</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="6" style="text-align:center;">
+                                    <h3 style="margin:0;">TAX INVOICE</h3>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table class="table table-bordered table-invoice">
+                            <tr>
+                                <td colspan="3" width="40%">
+                                    <b>TI No:</b>
+                                    <span th:text="${invoice.tiNumber}">TI-2025-26-00001</span>
+                                </td>
+                                <td colspan="3" rowspan="2" style="padding:8px; vertical-align:top;">
+                                    <b>Date:</b>
+                                    <span th:text="${#temporals.format(invoice.tiDate,'dd/MM/yyyy')}">10/07/2025</span><br>
+
+                                    <b>Client / Dept GSTIN:</b>
+                                    <span th:text="${invoice.clientGstinAvailable ? 'Yes' : 'No'}">Yes</span><br>
+
+                                    <b>Client GST Number:</b>
+                                    <span th:text="${invoice.clientGstNumber}">27AABCM3129H1DW</span><br>
+
+                                    <b>Place Of Supply:</b>
+                                    <span th:text="${invoice.placeOfSupply}">Maharashtra</span><br>
+
+                                    <b>Dept Ref/ WO No:</b>
+                                    <span th:text="${invoice.deptRefNumber}"></span><br>
+
+                                    <b>Dept Ref/ WO Date:</b>
+                                    <span th:text="${#temporals.format(invoice.deptRefDate,'dd-MM-yyyy')}"></span><br>
+
+                                    <b>PM Name:</b>
+                                    <span th:text="${invoice.pmName}"></span><br>
+
+                                    <b>Project Name:</b>
+                                    <span th:text="${invoice.projectName}"></span>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td colspan="3">
+                                    <b>To,</b><br>
+                                    <span th:text="${invoice.billedTo}"></span><br>
+                                    <span th:text="${invoice.billingAddress}"></span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table class="table table-bordered table-invoice">
+                            <tr>
+                                <th>Sr No</th>
+                                <th colspan="2">Description</th>
+                                <th>SAC/HSN</th>
+                                <th>Qty</th>
+                                <th>Rate/Month</th>
+                                <th>Total Amount</th>
+                            </tr>
+
+                            <tr th:if="${#lists.isEmpty(invoice.lineItems)}">
+                                <td colspan="7" class="text-center">No resource requirements found.</td>
+                            </tr>
+
+                            <tr th:each="item, stat : ${invoice.lineItems}">
+                                <td class="text-center" th:text="${stat.count}">1</td>
+                                <td colspan="2">
+                                    <div th:text="${item.description}">Description</div>
+                                    <small class="text-muted"
+                                        th:text="${'Duration: ' + item.durationInMonths + ' month(s)'}">Duration:
+                                        12 month(s)</small>
+                                </td>
+                                <td class="text-center" th:text="${item.sacHsn}">998313</td>
+                                <td class="text-center" th:text="${item.quantity}">1</td>
+                                <td class="text-right" th:text="${#numbers.formatDecimal(item.ratePerMonth,1,2)}">0.00
+                                </td>
+                                <td class="text-right" th:text="${#numbers.formatDecimal(item.totalAmount,1,2)}">0.00
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table class="table table-bordered table-invoice">
+                            <tr>
+                                <th>Particulars</th>
+                                <th class="text-center" width="18%">Rate (%)</th>
+                                <th class="text-right" width="22%">Amount</th>
+                            </tr>
+                            <tr>
+                                <td>Central Goods and Services Tax</td>
+                                <td class="text-center" th:text="${invoice.cgstRateDisplay}">9.0000</td>
+                                <td class="text-right" th:text="${invoice.cgstAmountDisplay}">86,400.00</td>
+                            </tr>
+                            <tr>
+                                <td>State Goods and Services Tax</td>
+                                <td class="text-center" th:text="${invoice.sgstRateDisplay}">9.0000</td>
+                                <td class="text-right" th:text="${invoice.sgstAmountDisplay}">86,400.00</td>
+                            </tr>
+                            <tr>
+                                <td><b>Sub-Total (Excl. Tax)</b></td>
+                                <td class="text-center">-</td>
+                                <td class="text-right" th:text="${invoice.baseAmountDisplay}">960,000.00</td>
+                            </tr>
+                            <tr>
+                                <td><b>Total Tax Liability</b></td>
+                                <td class="text-center">-</td>
+                                <td class="text-right" th:text="${invoice.taxAmountDisplay}">172,800.00</td>
+                            </tr>
+                            <tr>
+                                <td><b>Grand Total (Incl. Tax)</b></td>
+                                <td class="text-center">-</td>
+                                <td class="text-right"><b>&#8377; <span th:text="${invoice.totalAmountDisplay}">1,132,800.00</span></b>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div class="text-right" style="margin: 8px 0 12px;">
+                            <b>Total (In words):</b>
+                            <span th:text="${invoice.amountInWords}">Zero Rupees Only</span>
+                        </div>
+
+                        <table class="table table-bordered table-invoice">
+                            <tr>
+                                <td colspan="3" width="60%">
+                                    <b>Bank Account Details:</b><br>
+                                    <b>Bank Name:</b> <span th:text="${invoice.bankName}">Bank of Maharashtra</span><br>
+                                    <b>Branch:</b> <span th:text="${invoice.branchName}">Nariman Point</span><br>
+                                    <b>Account No:</b> <span th:text="${invoice.accountNumber}">378920500012</span><br>
+                                    <b>IFSC:</b> <span th:text="${invoice.ifscCode}">MAHB0000278</span>
+                                </td>
+
+                                <td colspan="3">
+                                    <b>Company Details:</b><br>
+                                    <b>PAN:</b> <span th:text="${invoice.panNumber}">AABCM3129H</span><br>
+                                    <b>GST No:</b> <span th:text="${invoice.gstNumber}">27AABCM3129H1DW</span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table class="table table-bordered table-invoice">
+                            <tr>
+                                <td colspan="6" style="padding:8px; text-align: center;">
+                                    <b>Terms & Conditions:</b>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="6" style="padding:8px;">
+                                    <ol style="padding-left:18px; margin:0;">
+                                        <li>Validity of Proforma Invoice is for 3 months from the date of issue of the
+                                            invoice.</li>
+                                        <li>MahaIT will start the service only after receipt of 100% advance payment
+                                            and submission of RTGS details via email to
+                                            manpowerfundreceipt@mahait.org.</li>
+                                        <li>The resource pay rate shall be revised annually from the commencement
+                                            date, i.e., 1st October of every year, with an increment of 8% for each
+                                            manpower category and shall be considered as the new base rate for that
+                                            year.</li>
+                                        <li>The above prices are inclusive of applicable taxes and MahaIT’s operating
+                                            margin @ 10%.</li>
+                                        <li>Any modification in the manpower description must be intimated to MahaIT
+                                            within 8 days from the date of this Proforma Invoice. The respective rates
+                                            may vary depending on the change or modification suggested.</li>
+                                        <li>After receiving 100% advance payment from the user department or client
+                                            through RTGS, NEFT, Demand Draft, or Cheque, as per the details mentioned
+                                            above, the work order for providing resources will be issued.</li>
+                                        <li>It is solely the responsibility of the department to ensure that the
+                                            manpower resources demanded are utilized only for the technical duties as
+                                            required.</li>
+                                        <li>Before depositing funds, it must be ensured that standard deductions such as
+                                            Income Tax (TDS @ 2%) are deducted and mentioned in the fund disbursement
+                                            letter. If the customer or department does not share the GSTIN, the
+                                            transaction shall be treated as B2C sales.</li>
+                                        <li>If the service is not provided within 60 days, the amount paid shall be
+                                            treated as a trade deposit and shall be eligible for refund.</li>
+                                        <li>All disputes are subject to Mumbai jurisdiction.</li>
+                                    </ol>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table class="table table-bordered table-invoice">
+                            <tr>
+                                <td width="35%" style="height:100px; text-align:center; vertical-align:bottom;">
+                                    Customer's Seal & Signature
+                                </td>
+                                <td width="30%" style="height:100px; text-align:center; vertical-align:bottom;">
+                                    <div class="text-center">
+                                        <th:block th:if="${!#strings.isEmpty(invoice.qrCodeDataUrl)}">
+                                            <div class="qr-block">
+                                                <img th:src="${invoice.qrCodeDataUrl}" class="qr-code-image"
+                                                    alt="Tax Invoice QR Code">
+                                                <div class="qr-caption">Scan for invoice details</div>
+                                            </div>
+                                        </th:block>
+                                        <div th:if="${#strings.isEmpty(invoice.qrCodeDataUrl)}" class="qr-placeholder">QR</div>
+                                    </div>
+                                </td>
+                                <td width="35%" style="height:100px; text-align:center; vertical-align:bottom;">
+                                    Authorized Signatory<br>
+                                    Maharashtra Information Technology Corporation Ltd
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div class="text-center">
+                            <p>
+                                Corporate Office: Apeejay House, 3rd Floor, Dinshaw Vacha Rd, Near KC College,
+                                Churchgate, Mumbai-400020.<br />
+                                Contact: +91 22 22174600
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Website:
+                                www.mahait.org
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button id="printBtn" class="btn" onclick="printContent('print-content')">
+                        Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </section>
+    </th:block>
+
+    <script>
+        function printContent(id) {
+            var content = document.getElementById(id).innerHTML;
+            var win = window.open('', '_blank');
+            var styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+                .map(function (node) {
+                    return node.outerHTML;
+                })
+                .join('');
+
+            win.document.write('<html><head><title>Tax Invoice</title>' + styles + '</head><body class="tax-invoice">');
+            win.document.write(content);
+            win.document.write('</body></html>');
+            win.document.close();
+            win.focus();
+            win.print();
+            win.close();
+        }
+    </script>
+</body>
+
+</html>
