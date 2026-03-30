@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record SessionUserDTO(
+         
         Long id,
         String name,
         String email,

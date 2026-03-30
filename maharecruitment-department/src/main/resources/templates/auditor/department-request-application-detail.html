@@ -337,7 +337,8 @@
                                                 applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
                                 method="post">
                                 <p class="form-section-note small text-muted mb-4">
-                                    Review the final tax invoice draft before completing this request.
+                                    Review the final tax invoice draft before completing this request. The final tax invoice
+                                    will be generated and opened immediately after completion.
                                 </p>
                                 <div class="mb-4">
                                     <label class="form-label small fw-bold">Completion Notes</label>
@@ -349,7 +350,7 @@
                                         class="btn btn-primary fw-bold py-2 shadow-sm"
                                         data-bs-toggle="modal"
                                         data-bs-target="#taxInvoiceConfirmModal">
-                                        <i class="fa-solid fa-flag-checkered me-1"></i> Review Final Tax Invoice Draft & Complete
+                                        <i class="fa-solid fa-flag-checkered me-1"></i> Review Final Tax Invoice Draft, Generate & Complete
                                     </button>
                                 </div>
                             </form>
@@ -458,7 +459,7 @@
                                     Tax Invoice Preview
                                 </h5>
                                 <div class="small text-muted">
-                                    Review the invoice before completing this application.
+                                    Review the invoice before completing this application and generating the final tax invoice.
                                 </div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -467,7 +468,8 @@
                             <div class="alert alert-info border-0 small mb-3">
                                 This preview shows the final tax invoice draft for request
                                 <strong th:text="${applicationReviewDetail.requestId}">DPA-0000</strong>.
-                                The actual invoice will be generated when you complete this request.
+                                When you confirm completion, the actual tax invoice will be generated and opened automatically.
+                                If generation fails, the completion will be rolled back and the status will remain unchanged.
                             </div>
                             <div class="preview-frame-shell border rounded overflow-hidden bg-white">
                                 <iframe id="taxInvoicePreviewFrame"
@@ -487,7 +489,7 @@
                                     required>
                                 <label class="form-check-label small fw-semibold"
                                     for="completionVerificationConfirmed">
-                                    I have reviewed the final tax invoice draft and confirm completion.
+                                    I have reviewed the final tax invoice draft and want to generate the final tax invoice and complete this request.
                                 </label>
                             </div>
                         </div>
@@ -496,7 +498,7 @@
                                 Cancel
                             </button>
                             <button type="submit" id="completionConfirmBtn" class="btn btn-primary fw-bold" form="completionForm">
-                                <i class="fa-solid fa-check me-1"></i> Confirm & Complete
+                                <i class="fa-solid fa-check me-1"></i> Confirm, Generate Tax Invoice & Complete
                             </button>
                         </div>
                     </div>

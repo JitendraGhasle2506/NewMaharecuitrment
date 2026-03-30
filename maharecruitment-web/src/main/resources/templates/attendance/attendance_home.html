@@ -31,6 +31,27 @@
                             <p class="text-muted mb-0">View attendance trends and monthly summaries.</p>
                         </article>
 
+                        <article class="module-card" th:onclick="'location.href=\'' + @{/hod1/manual-attendance} + '\''" 
+                                 th:if="${session.SESSION_USER != null and (session.SESSION_USER.roles.contains('ROLE_HOD') or session.SESSION_USER.roles.contains('ROLE_MANAGER'))}">
+                            <div class="module-icon"><i class="fa fa-check-to-slot text-success"></i></div>
+                            <h5>Manual Approvals</h5>
+                            <p class="text-muted mb-0">Review and approve manual attendance requests.</p>
+                        </article>
+
+                        <article class="module-card" th:onclick="'location.href=\'' + @{/hod1/team-attendance} + '\''" 
+                                 th:if="${session.SESSION_USER != null and (session.SESSION_USER.roles.contains('ROLE_HOD') or session.SESSION_USER.roles.contains('ROLE_MANAGER'))}">
+                            <div class="module-icon"><i class="fa fa-users text-primary"></i></div>
+                            <h5>Team Attendance</h5>
+                            <p class="text-muted mb-0">Monitor and audit your subordinate attendance logs.</p>
+                        </article>
+
+                        <article class="module-card" th:onclick="'location.href=\'' + @{/hod/leaveApprovals} + '\''" 
+                                 th:if="${session.SESSION_USER != null and (session.SESSION_USER.roles.contains('ROLE_HOD') or session.SESSION_USER.roles.contains('ROLE_MANAGER'))}">
+                            <div class="module-icon"><i class="fa fa-user-check text-warning"></i></div>
+                            <h5>Leave Approvals</h5>
+                            <p class="text-muted mb-0">Review and approve team leave applications.</p>
+                        </article>
+
                         <article class="module-card">
                             <div class="module-icon"><i class="fa fa-file-signature"></i></div>
                             <h5>Attendance Reports</h5>

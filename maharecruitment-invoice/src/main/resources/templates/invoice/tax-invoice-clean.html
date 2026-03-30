@@ -32,7 +32,7 @@
 <body class="tax-invoice">
     <div class="invoice-page">
         <div id="print-content" class="invoice-container">
-            <div th:if="${invoicePreviewMode and !#bools.isTrue(embeddedPreviewMode)}" class="alert alert-warning" style="margin-bottom: 12px;">
+            <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}" class="alert alert-warning" style="margin-bottom: 12px;">
                 Preview only. The final tax invoice number will be assigned after final completion.
             </div>
             <table class="table bor-0">

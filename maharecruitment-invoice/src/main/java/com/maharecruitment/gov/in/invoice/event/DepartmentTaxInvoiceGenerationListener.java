@@ -21,7 +21,7 @@ public class DepartmentTaxInvoiceGenerationListener {
         this.taxInvoiceService = taxInvoiceService;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onTaxInvoiceGenerationRequested(DepartmentTaxInvoiceGenerationRequestedEvent event) {
         if (event == null || event.departmentProjectApplicationId() == null) {
             return;
@@ -42,6 +42,7 @@ public class DepartmentTaxInvoiceGenerationListener {
                     event.requestId(),
                     event.actorEmail(),
                     ex);
+            throw ex;
         }
     }
 

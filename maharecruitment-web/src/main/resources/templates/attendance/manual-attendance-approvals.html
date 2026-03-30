@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Manual Attendance Approvals</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Approvals', 'Attendance', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Manual Attendance Approvals (<span th:text="${currentRoleType}"></span>)</h2>
+                    <a th:href="@{/hod1/attendance-module}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fa fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <span th:text="${successMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <span th:text="${errorMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered table-hover align-middle w-100">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Emp ID</th>
+                                    <th>Employee Name</th>
+                                    <th>Project Name</th>
+                                    <th class="text-center">Pending Requests</th>
+                                    <th style="width: 200px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${pendingSummaries == null || pendingSummaries.isEmpty()}">
+                                    <td colspan="5" class="text-center text-muted p-4">No employees with pending manual attendance requests found in your queue.</td>
+                                </tr>
+                                <tr th:each="summary : ${pendingSummaries}">
+                                    <td th:text="${summary.userId}"></td>
+                                    <td>
+                                        <div class="fw-bold" th:text="${summary.employeeName}"></div>
+                                        <small class="text-muted" th:text="${summary.employeeCode}"></small>
+                                    </td>
+                                    <td th:text="${summary.projectName}">-</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-warning text-dark" th:text="${summary.pendingCount}"></span>
+                                    </td>
+                                    <td>
+                                        <a th:href="@{/hod1/manual-attendance/details(userId=${summary.userId}, roleType=${currentRoleType})}" 
+                                           class="btn btn-sm btn-info w-100">
+                                            <i class="fa fa-eye"></i> View Attendance for Approval
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+</html>

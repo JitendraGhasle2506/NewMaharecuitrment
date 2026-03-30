@@ -81,4 +81,5 @@ public class RoleBasedNavigationService implements NavigationService {
                         default -> role.replace('_', ' ');
                 };
         }
+
 }
