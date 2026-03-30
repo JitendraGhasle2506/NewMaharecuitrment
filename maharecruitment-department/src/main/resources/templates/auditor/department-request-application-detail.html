@@ -7,16 +7,38 @@
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/hr-department-requests.css}">
     <style>
+        .page-header { gap: 1rem; }
+        .dept-info { display: flex; align-items: center; gap: 1rem; }
+        .page-alert { margin-bottom: 1.25rem; }
         .info-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #718096; margin-bottom: 0.25rem; font-weight: 600; }
         .info-value { font-size: 0.95rem; color: #2d3748; font-weight: 500; }
         .section-card { border: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 12px; margin-bottom: 1.5rem; }
+        .section-card .card-header { padding: 1rem 1.5rem; }
+        .section-card .card-body { padding: 1.5rem; }
         .doc-link-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; transition: all 0.2s; background: #fff; height: 100%; }
         .doc-link-card:hover { border-color: #3182ce; background: #f7fafc; }
         .tax-table th { font-weight: 600; color: #4a5568; background: #f8fafc; }
         .audit-action-box { background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 12px; padding: 1.5rem; }
+        .remarks-box { line-height: 1.6; }
+        .status-stack > * + * { margin-top: 1rem; }
+        .action-form + .action-form { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
+        .form-section-note { line-height: 1.6; }
+        .timeline { display: flex; flex-direction: column; gap: 0.25rem; }
         .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #e2e8f0; padding-bottom: 1.5rem; }
         .timeline-item::before { content: ''; position: absolute; left: -7px; top: 0; width: 12px; height: 12px; border-radius: 50%; background: #3182ce; border: 2px solid #fff; }
-        .timeline-item:last-child { border-left-color: transparent; }
+        .timeline-item:last-child { border-left-color: transparent; padding-bottom: 0; }
+        .timeline-item-hidden { display: none; }
+        .timeline-toggle-btn { padding: 0; font-weight: 600; }
+        .timeline-toggle-wrap { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; }
+        .preview-frame-shell { height: 72vh; min-height: 420px; }
+        @media (max-width: 991.98px) {
+            .page-header { align-items: flex-start !important; }
+            .page-header-actions { width: 100%; }
+            .page-header-actions .btn { width: 100%; justify-content: center; }
+            .section-card .card-header { padding: 0.9rem 1.1rem; }
+            .section-card .card-body { padding: 1.1rem; }
+            .preview-frame-shell { height: 60vh; min-height: 320px; }
+        }
     </style>
 </head>
 
@@ -24,7 +46,7 @@
     <th:block th:replace="~{header/header :: var-sidebar-header('Auditor', 'Department Audit Request', ~{::section})}">
         <section class="hr-request-container">
             <!-- Header Section -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="page-header d-flex justify-content-between align-items-center mb-4 flex-wrap">
                 <div class="dept-info">
                     <div class="dept-icon shadow-sm">
                         <i class="fa-solid fa-file-shield"></i>
@@ -36,7 +58,7 @@
                         </p>
                     </div>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="page-header-actions d-flex gap-2">
                     <a class="btn btn-outline-secondary btn-sm px-3" th:href="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications(
                                 departmentId=${applicationReviewDetail.departmentId},
                                 subDepartmentId=${applicationReviewDetail.subDepartmentId})}">
@@ -45,8 +67,8 @@
                 </div>
             </div>
 
-            <div class="alert alert-success shadow-sm border-0" th:if="${successMessage}" th:text="${successMessage}"></div>
-            <div class="alert alert-danger shadow-sm border-0" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+            <div class="alert alert-success shadow-sm border-0 page-alert" th:if="${successMessage}" th:text="${successMessage}"></div>
+            <div class="alert alert-danger shadow-sm border-0 page-alert" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
             <div class="row g-4">
                 <!-- Main Column -->
@@ -149,7 +171,7 @@
                             <div class="mb-4">
                                 <div class="info-label">Project Name</div>
                                 <div class="fs-5 fw-bold text-dark" th:text="${applicationReviewDetail.projectName}">Project Name</div>
-                                <div class="text-muted small italic mt-2 p-2 bg-light rounded" th:text="${applicationReviewDetail.remarks ?: 'No remarks provided.'}">Remarks</div>
+                                <div class="remarks-box text-muted small italic mt-2 p-2 bg-light rounded" th:text="${applicationReviewDetail.remarks ?: 'No remarks provided.'}">Remarks</div>
                             </div>
 
                             <div class="table-responsive rounded-3 border mb-4">
@@ -226,6 +248,7 @@
                             <h5 class="mb-0 fw-bold">Status & Information</h5>
                         </div>
                         <div class="card-body p-4">
+                            <div class="status-stack">
                             <div class="mb-3">
                                 <div class="info-label">Current Phase</div>
                                 <span class="badge badge-premium text-bg-primary fs-6 py-2 px-3" 
@@ -259,18 +282,25 @@
                                     </div>
                                 </div>
                             </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Actions Card -->
                     <div class="card section-card shadow-sm mb-4 overflow-hidden" 
-                         th:if="${applicationReviewDetail.auditorActionAllowed or applicationReviewDetail.completionAllowed}">
+                         th:if="${applicationReviewDetail.approvalAllowed or applicationReviewDetail.sendBackAllowed or applicationReviewDetail.completionAllowed}">
                         <div class="card-header bg-primary text-white py-3">
                             <h5 class="mb-0 fw-bold"><i class="fa fa-gavel me-2"></i>Auditor Action</h5>
                         </div>
                         <div class="card-body p-4">
+                            <div class="alert alert-info border-0 small mb-4"
+                                 th:if="${applicationReviewDetail.applicationStatus.name() == 'AUDITOR_APPROVED'}">
+                                This request is approved but not completed yet. You can still send it back for
+                                corrections or complete it after reviewing the final tax invoice draft.
+                            </div>
+
                             <!-- Auditor Review Form -->
-                            <form th:if="${applicationReviewDetail.auditorActionAllowed}" id="auditorReviewForm" 
+                            <form th:if="${applicationReviewDetail.approvalAllowed or applicationReviewDetail.sendBackAllowed}" id="auditorReviewForm" class="action-form"
                                 th:action="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/review(
                                                 departmentId=${applicationReviewDetail.departmentId},
                                                 subDepartmentId=${applicationReviewDetail.subDepartmentId},
@@ -284,10 +314,15 @@
                                 </div>
 
                                 <div class="d-grid gap-2">
-                                    <button type="submit" class="btn btn-success fw-bold py-2 shadow-sm" name="decision" value="APPROVE">
+                                    <button th:if="${applicationReviewDetail.approvalAllowed}"
+                                        type="button"
+                                        class="btn btn-success fw-bold py-2 shadow-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#approvalInvoicePreviewModal">
                                         <i class="fa-solid fa-check-circle me-1"></i> Approve Request
                                     </button>
-                                    <button type="submit" class="btn btn-warning fw-bold py-2 shadow-sm" name="decision" value="SEND_BACK">
+                                    <button th:if="${applicationReviewDetail.sendBackAllowed}"
+                                        type="submit" class="btn btn-warning fw-bold py-2 shadow-sm" name="decision" value="SEND_BACK">
                                         <i class="fa-solid fa-reply me-1"></i> Send Back to Sub-Dept
                                     </button>
                                 </div>
@@ -295,14 +330,14 @@
                             </form>
 
                             <!-- Completion Action Form -->
-                            <form th:if="${applicationReviewDetail.completionAllowed}" id="completionForm"
+                            <form th:if="${applicationReviewDetail.completionAllowed}" id="completionForm" class="action-form"
                                 th:action="@{/auditor/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/complete(
                                                 departmentId=${applicationReviewDetail.departmentId},
                                                 subDepartmentId=${applicationReviewDetail.subDepartmentId},
                                                 applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
                                 method="post">
-                                <p class="small text-muted mb-4">
-                                    Review the tax invoice preview before finalizing this request.
+                                <p class="form-section-note small text-muted mb-4">
+                                    Review the final tax invoice draft before completing this request.
                                 </p>
                                 <div class="mb-4">
                                     <label class="form-label small fw-bold">Completion Notes</label>
@@ -314,7 +349,7 @@
                                         class="btn btn-primary fw-bold py-2 shadow-sm"
                                         data-bs-toggle="modal"
                                         data-bs-target="#taxInvoiceConfirmModal">
-                                        <i class="fa-solid fa-flag-checkered me-1"></i> Review Tax Invoice & Complete
+                                        <i class="fa-solid fa-flag-checkered me-1"></i> Review Final Tax Invoice Draft & Complete
                                     </button>
                                 </div>
                             </form>
@@ -328,8 +363,10 @@
                             <h5 class="mb-0 fw-bold">Timeline</h5>
                         </div>
                         <div class="card-body p-4">
-                            <div class="timeline">
-                                <div th:each="activity : ${applicationReviewDetail.activityTimeline}" class="timeline-item">
+                            <div class="timeline" id="activityTimeline">
+                                <div th:each="activity, activityStat : ${applicationReviewDetail.activityTimeline}"
+                                    class="timeline-item"
+                                    th:classappend="${activityStat.index >= 3 ? ' timeline-item-hidden timeline-item-collapsible' : ''}">
                                     <div class="d-flex justify-content-between">
                                         <span class="small fw-bold text-dark" th:text="${activity.activityType != null ? #strings.replace(activity.activityType.name(), '_', ' ') : '-'}">Activity</span>
                                         <span class="text-muted" style="font-size: 0.65rem;" th:text="${activity.actionTimestamp != null ? #temporals.format(activity.actionTimestamp, 'dd MMM HH:mm') : '-'}">Time</span>
@@ -340,6 +377,72 @@
                                     <div class="p-2 bg-light rounded mt-2 small text-muted italic" th:if="${activity.activityRemarks}" th:text="${activity.activityRemarks}">Remarks</div>
                                 </div>
                             </div>
+                            <div class="timeline-toggle-wrap"
+                                 th:if="${#lists.size(applicationReviewDetail.activityTimeline) > 3}">
+                                <button type="button"
+                                    id="timelineToggleBtn"
+                                    class="btn btn-link timeline-toggle-btn text-decoration-none">
+                                    Show More Activity
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${applicationReviewDetail.approvalAllowed}" class="modal fade"
+                id="approvalInvoicePreviewModal"
+                tabindex="-1" aria-labelledby="approvalInvoicePreviewModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header">
+                            <div>
+                                <h5 class="modal-title fw-bold mb-1" id="approvalInvoicePreviewModalLabel">
+                                    Tax Invoice Preview Before Approval
+                                </h5>
+                                <div class="small text-muted">
+                                    Review the draft tax invoice before approving this request.
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning border-0 small mb-3">
+                                This preview shows the draft tax invoice for
+                                request <strong th:text="${applicationReviewDetail.requestId}">DPA-0000</strong>.
+                                The final invoice will be created only after completion.
+                            </div>
+                            <div class="preview-frame-shell border rounded overflow-hidden bg-white">
+                                <iframe id="approvalInvoicePreviewFrame"
+                                    class="w-100 h-100 border-0"
+                                    title="Tax Invoice Preview Before Approval"
+                                    src="about:blank"
+                                    th:attr="data-preview-url=@{/invoice/tax-invoices/application/{applicationId}/preview(applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
+                                </iframe>
+                            </div>
+                            <div class="form-check mt-3">
+                                <input class="form-check-input"
+                                    type="checkbox"
+                                    id="approvalPreviewConfirmed"
+                                    form="auditorReviewForm"
+                                    required>
+                                <label class="form-check-label small fw-semibold" for="approvalPreviewConfirmed">
+                                    I have reviewed the tax invoice preview and want to approve this request.
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                id="approvalPreviewConfirmBtn"
+                                class="btn btn-success fw-bold"
+                                form="auditorReviewForm"
+                                name="decision"
+                                value="APPROVE">
+                                <i class="fa-solid fa-check me-1"></i> Confirm & Approve
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -362,17 +465,16 @@
                         </div>
                         <div class="modal-body">
                             <div class="alert alert-info border-0 small mb-3">
-                                The preview loads the current tax invoice for request
+                                This preview shows the final tax invoice draft for request
                                 <strong th:text="${applicationReviewDetail.requestId}">DPA-0000</strong>.
-                                If the invoice is not available yet, the preview will load it and completion will
-                                request generation again for safety.
+                                The actual invoice will be generated when you complete this request.
                             </div>
-                            <div class="border rounded overflow-hidden bg-white" style="height:72vh;">
+                            <div class="preview-frame-shell border rounded overflow-hidden bg-white">
                                 <iframe id="taxInvoicePreviewFrame"
                                     class="w-100 h-100 border-0"
                                     title="Tax Invoice Preview"
                                     src="about:blank"
-                                    th:attr="data-preview-url=@{/invoice/tax-invoices/application/{applicationId}(applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
+                                    th:attr="data-preview-url=@{/invoice/tax-invoices/application/{applicationId}/preview(applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
                                 </iframe>
                             </div>
                             <div class="form-check mt-3">
@@ -385,7 +487,7 @@
                                     required>
                                 <label class="form-check-label small fw-semibold"
                                     for="completionVerificationConfirmed">
-                                    I have reviewed the tax invoice preview and confirm completion.
+                                    I have reviewed the final tax invoice draft and confirm completion.
                                 </label>
                             </div>
                         </div>
@@ -393,7 +495,7 @@
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                                 Cancel
                             </button>
-                            <button type="submit" class="btn btn-primary fw-bold" form="completionForm">
+                            <button type="submit" id="completionConfirmBtn" class="btn btn-primary fw-bold" form="completionForm">
                                 <i class="fa-solid fa-check me-1"></i> Confirm & Complete
                             </button>
                         </div>
@@ -404,27 +506,82 @@
     </th:block>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            var modal = document.getElementById('taxInvoiceConfirmModal');
-            var frame = document.getElementById('taxInvoicePreviewFrame');
-            var checkbox = document.getElementById('completionVerificationConfirmed');
+            function initializePreviewModal(modalId, frameId, checkboxId, confirmButtonId) {
+                var modal = document.getElementById(modalId);
+                var frame = document.getElementById(frameId);
+                var checkbox = document.getElementById(checkboxId);
+                var confirmButton = document.getElementById(confirmButtonId);
 
-            if (!modal || !frame) {
-                return;
+                if (!modal || !frame) {
+                    return;
+                }
+
+                function syncConfirmState() {
+                    if (confirmButton && checkbox) {
+                        confirmButton.disabled = !checkbox.checked;
+                    }
+                }
+
+                if (checkbox) {
+                    checkbox.addEventListener('change', syncConfirmState);
+                    syncConfirmState();
+                }
+
+                modal.addEventListener('shown.bs.modal', function () {
+                    var previewUrl = frame.getAttribute('data-preview-url');
+                    if (previewUrl && frame.getAttribute('src') !== previewUrl) {
+                        frame.setAttribute('src', previewUrl);
+                    }
+                    syncConfirmState();
+                });
+
+                modal.addEventListener('hidden.bs.modal', function () {
+                    frame.setAttribute('src', 'about:blank');
+                    if (checkbox) {
+                        checkbox.checked = false;
+                    }
+                    syncConfirmState();
+                });
             }
 
-            modal.addEventListener('shown.bs.modal', function () {
-                var previewUrl = frame.getAttribute('data-preview-url');
-                if (previewUrl && frame.getAttribute('src') !== previewUrl) {
-                    frame.setAttribute('src', previewUrl);
-                }
-            });
+            function initializeTimelineToggle() {
+                var toggleButton = document.getElementById('timelineToggleBtn');
+                var hiddenItems = document.querySelectorAll('#activityTimeline .timeline-item-collapsible');
 
-            modal.addEventListener('hidden.bs.modal', function () {
-                frame.setAttribute('src', 'about:blank');
-                if (checkbox) {
-                    checkbox.checked = false;
+                if (!toggleButton || !hiddenItems.length) {
+                    return;
                 }
-            });
+
+                var expanded = false;
+
+                function syncTimelineState() {
+                    hiddenItems.forEach(function (item) {
+                        item.classList.toggle('timeline-item-hidden', !expanded);
+                    });
+                    toggleButton.textContent = expanded ? 'Show Less Activity' : 'Show More Activity';
+                }
+
+                toggleButton.addEventListener('click', function () {
+                    expanded = !expanded;
+                    syncTimelineState();
+                });
+
+                syncTimelineState();
+            }
+
+            initializePreviewModal(
+                'approvalInvoicePreviewModal',
+                'approvalInvoicePreviewFrame',
+                'approvalPreviewConfirmed',
+                'approvalPreviewConfirmBtn');
+
+            initializePreviewModal(
+                'taxInvoiceConfirmModal',
+                'taxInvoicePreviewFrame',
+                'completionVerificationConfirmed',
+                'completionConfirmBtn');
+
+            initializeTimelineToggle();
         });
     </script>
 </body>

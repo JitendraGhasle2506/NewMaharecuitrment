@@ -23,6 +23,7 @@ import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.common.event.invoice.DepartmentTaxInvoiceGenerationRequestedEvent;
+import com.maharecruitment.gov.in.common.event.invoice.DepartmentTaxInvoiceInvalidationRequestedEvent;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationActivityView;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationForm;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
@@ -407,11 +408,9 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 "Auditor decision " + decision + " applied. (" + nextStatus.getDisplayName() + ")");
         notifyDepartmentAfterAuditorReview(saved, decision, remarks);
 
-        if (nextStatus == DepartmentApplicationStatus.AUDITOR_APPROVED) {
-            syncProjectMaster(saved);
-            publishRecruitmentNotification(saved);
-            generateProformaInvoice(saved);
-            publishTaxInvoiceGenerationRequestedEvent(saved, actorContext);
+        if (currentStatus == DepartmentApplicationStatus.AUDITOR_APPROVED
+                && nextStatus == DepartmentApplicationStatus.AUDITOR_SENT_BACK) {
+            cleanUpApprovedArtifacts(saved, actorContext);
         }
 
         log.info("Auditor reviewed application. applicationId={}, decision={}, status={} actor={}",
@@ -451,6 +450,9 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 actorContext,
                 "Application marked completed.");
 
+        syncProjectMaster(saved);
+        publishRecruitmentNotification(saved);
+        generateProformaInvoice(saved);
         publishTaxInvoiceGenerationRequestedEvent(saved, actorContext);
 
         log.info("Application marked completed. applicationId={}, actor={}", applicationId,
@@ -792,19 +794,45 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             throw new DepartmentApplicationException("Auditor decision is required.");
         }
 
-        if (currentStatus != DepartmentApplicationStatus.AUDITOR_REVIEW) {
+        if (currentStatus != DepartmentApplicationStatus.AUDITOR_REVIEW
+                && currentStatus != DepartmentApplicationStatus.AUDITOR_APPROVED) {
             throw new DepartmentApplicationException(
                     "Auditor review is not allowed in current state: " + currentStatus);
         }
 
         switch (decision) {
             case APPROVE:
+                if (currentStatus == DepartmentApplicationStatus.AUDITOR_APPROVED) {
+                    throw new DepartmentApplicationException("Application is already approved by auditor.");
+                }
                 return DepartmentApplicationStatus.AUDITOR_APPROVED;
             case SEND_BACK:
                 return DepartmentApplicationStatus.AUDITOR_SENT_BACK;
             default:
                 throw new DepartmentApplicationException("Unsupported auditor decision: " + decision);
         }
+    }
+
+    private void cleanUpApprovedArtifacts(
+            DepartmentProjectApplicationEntity application,
+            DepartmentActorContext actorContext) {
+        if (application == null || application.getDepartmentProjectApplicationId() == null) {
+            return;
+        }
+
+        List<DepartmentProformaInvoiceEntity> proformaInvoices = proformaInvoiceRepository
+                .findByApplication_DepartmentProjectApplicationIdOrderByDepartmentProformaInvoiceIdDesc(
+                        application.getDepartmentProjectApplicationId());
+        if (!proformaInvoices.isEmpty()) {
+            proformaInvoiceRepository.deleteAll(proformaInvoices);
+            log.info("Removed stale proforma invoices after auditor send back. applicationId={}, count={}",
+                    application.getDepartmentProjectApplicationId(),
+                    proformaInvoices.size());
+        }
+
+        recruitmentNotificationService.closeFromDepartmentProjectApplication(
+                application.getDepartmentProjectApplicationId());
+        publishTaxInvoiceInvalidationRequestedEvent(application, actorContext);
     }
 
     private void generateProformaInvoice(DepartmentProjectApplicationEntity application) {
@@ -1034,6 +1062,19 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         }
 
         applicationEventPublisher.publishEvent(new DepartmentTaxInvoiceGenerationRequestedEvent(
+                applicationEntity.getDepartmentProjectApplicationId(),
+                applicationEntity.getRequestId(),
+                actorContext != null ? actorContext.getActorEmail() : applicationEntity.getUpdatedBy()));
+    }
+
+    private void publishTaxInvoiceInvalidationRequestedEvent(
+            DepartmentProjectApplicationEntity applicationEntity,
+            DepartmentActorContext actorContext) {
+        if (applicationEntity == null || applicationEntity.getDepartmentProjectApplicationId() == null) {
+            return;
+        }
+
+        applicationEventPublisher.publishEvent(new DepartmentTaxInvoiceInvalidationRequestedEvent(
                 applicationEntity.getDepartmentProjectApplicationId(),
                 applicationEntity.getRequestId(),
                 actorContext != null ? actorContext.getActorEmail() : applicationEntity.getUpdatedBy()));

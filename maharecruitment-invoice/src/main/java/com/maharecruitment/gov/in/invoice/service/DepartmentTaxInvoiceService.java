@@ -8,5 +8,9 @@ public interface DepartmentTaxInvoiceService {
 
     TaxInvoiceView getInvoiceByApplicationId(Long applicationId);
 
+    TaxInvoiceView previewInvoiceByApplicationId(Long applicationId);
+
     TaxInvoiceView generateForApplication(Long applicationId, String actorEmail);
+
+    void invalidateForApplication(Long applicationId, String actorEmail);
 }

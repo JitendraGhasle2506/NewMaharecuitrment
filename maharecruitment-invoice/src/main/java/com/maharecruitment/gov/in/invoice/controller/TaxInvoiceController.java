@@ -9,6 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceView;
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceService;
@@ -39,6 +40,34 @@ public class TaxInvoiceController {
     public String viewByApplicationId(@PathVariable Long applicationId, Model model) {
         model.addAttribute("invoice", taxInvoiceService.getInvoiceByApplicationId(applicationId));
         return "invoice/tax-invoice-clean";
+    }
+
+    @GetMapping("/application/{applicationId}/preview")
+    public String previewByApplicationId(@PathVariable Long applicationId, Model model) {
+        model.addAttribute("applicationId", applicationId);
+        return "invoice/tax-invoice-preview-combined";
+    }
+
+    @GetMapping("/application/{applicationId}/preview/old")
+    public String previewOldByApplicationId(
+            @PathVariable Long applicationId,
+            @RequestParam(name = "embedded", defaultValue = "false") boolean embedded,
+            Model model) {
+        model.addAttribute("invoice", taxInvoiceService.previewInvoiceByApplicationId(applicationId));
+        model.addAttribute("invoicePreviewMode", true);
+        model.addAttribute("embeddedPreviewMode", embedded);
+        return "invoice/tax-invoice-clean";
+    }
+
+    @GetMapping("/application/{applicationId}/preview/new")
+    public String previewNewByApplicationId(
+            @PathVariable Long applicationId,
+            @RequestParam(name = "embedded", defaultValue = "false") boolean embedded,
+            Model model) {
+        model.addAttribute("invoice", taxInvoiceService.previewInvoiceByApplicationId(applicationId));
+        model.addAttribute("invoicePreviewMode", true);
+        model.addAttribute("embeddedPreviewMode", embedded);
+        return "invoice/tax-invoice-preview";
     }
 
     @GetMapping(value = "/{requestId}/qr", produces = MediaType.IMAGE_PNG_VALUE)

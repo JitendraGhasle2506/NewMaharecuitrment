@@ -59,6 +59,11 @@ public class TaxInvoiceView {
     private String sgstAmountDisplay;
     private String taxAmountDisplay;
     private String totalAmountDisplay;
+    private String legacySacHsn;
+    private Integer legacyQuantityTotal;
+    private String legacyDurationDisplay;
+    private String legacyRatePerMonthTotalDisplay;
+    private String legacyLineAmountTotalDisplay;
     private String qrCodeDataUrl;
 
     @Builder.Default

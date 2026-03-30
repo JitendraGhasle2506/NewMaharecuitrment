@@ -32,6 +32,9 @@
 <body class="tax-invoice">
     <div class="invoice-page">
         <div id="print-content" class="invoice-container">
+            <div th:if="${invoicePreviewMode and !#bools.isTrue(embeddedPreviewMode)}" class="alert alert-warning" style="margin-bottom: 12px;">
+                Preview only. The final tax invoice number will be assigned after final completion.
+            </div>
             <table class="table bor-0">
                 <tr>
                     <td class="text-center">
@@ -108,18 +111,16 @@
                     <td colspan="8" class="text-center text-muted">No line items available</td>
                 </tr>
 
-                <tr th:each="item, stat : ${invoice.lineItems}">
-                    <td class="text-center" th:text="${stat.count}">1</td>
+                <tr th:if="${!#lists.isEmpty(invoice.lineItems)}">
+                    <td class="text-center">1</td>
                     <td colspan="2">
-                        <div th:text="${item.description}">Description</div>
-                        <small class="text-muted"
-                            th:text="${'Duration: ' + item.durationInMonths + ' month(s)'}">Duration: 12 month(s)</small>
+                        <div th:text="${invoice.projectName}">Project Name</div>
                     </td>
-                    <td class="text-center" th:text="${item.sacHsn}">998313</td>
-                    <td class="text-center" th:text="${item.quantity}">1</td>
-                    <td class="text-center" th:text="${item.durationInMonths}">1</td>
-                    <td class="text-right" th:text="${#numbers.formatDecimal(item.ratePerMonth,1,2)}">0.00</td>
-                    <td class="text-right" th:text="${#numbers.formatDecimal(item.totalAmount,1,2)}">0.00</td>
+                    <td class="text-center" th:text="${invoice.legacySacHsn}">998313</td>
+                    <td class="text-center" th:text="${invoice.legacyQuantityTotal}">1</td>
+                    <td class="text-center" th:text="${invoice.legacyDurationDisplay}">1</td>
+                    <td class="text-right" th:text="${invoice.legacyRatePerMonthTotalDisplay}">0.00</td>
+                    <td class="text-right" th:text="${invoice.legacyLineAmountTotalDisplay}">0.00</td>
                 </tr>
             </table>
 
@@ -238,7 +239,7 @@
             </div>
         </div>
 
-        <div class="invoice-actions no-print">
+        <div th:if="${!#bools.isTrue(embeddedPreviewMode)}" class="invoice-actions no-print">
             <button id="printBtn" class="btn" onclick="printContent('print-content')">
                 Print
             </button>

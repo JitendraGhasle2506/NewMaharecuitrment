@@ -383,6 +383,8 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
                 .reduce(ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
         BigDecimal totalCostIncludingTax = baseCost.add(totalTaxAmount).setScale(2, RoundingMode.HALF_UP);
+        boolean approvalAllowed = isApprovalAllowed(application.getApplicationStatus());
+        boolean sendBackAllowed = isSendBackAllowed(application.getApplicationStatus());
 
         return AuditorDepartmentApplicationReviewDetailView.builder()
                 .departmentId(departmentId)
@@ -402,7 +404,9 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
                 .updatedDate(application.getUpdatedDate())
                 .workOrderAvailable(StringUtils.hasText(application.getWorkOrderFilePath()))
                 .workOrderOriginalName(application.getWorkOrderOriginalName())
-                .auditorActionAllowed(isAuditorActionAllowed(application.getApplicationStatus()))
+                .auditorActionAllowed(approvalAllowed || sendBackAllowed)
+                .approvalAllowed(approvalAllowed)
+                .sendBackAllowed(sendBackAllowed)
                 .completionAllowed(isCompletionAllowed(application.getApplicationStatus()))
                 .taxApplicableDate(taxApplicableDate)
                 .totalTaxAmount(totalTaxAmount)
@@ -578,9 +582,15 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
         return application;
     }
 
-    private boolean isAuditorActionAllowed(DepartmentApplicationStatus currentStatus) {
+    private boolean isApprovalAllowed(DepartmentApplicationStatus currentStatus) {
         return currentStatus == DepartmentApplicationStatus.HR_APPROVED
                 || currentStatus == DepartmentApplicationStatus.AUDITOR_REVIEW;
+    }
+
+    private boolean isSendBackAllowed(DepartmentApplicationStatus currentStatus) {
+        return currentStatus == DepartmentApplicationStatus.HR_APPROVED
+                || currentStatus == DepartmentApplicationStatus.AUDITOR_REVIEW
+                || currentStatus == DepartmentApplicationStatus.AUDITOR_APPROVED;
     }
 
     private boolean isCompletionAllowed(DepartmentApplicationStatus currentStatus) {

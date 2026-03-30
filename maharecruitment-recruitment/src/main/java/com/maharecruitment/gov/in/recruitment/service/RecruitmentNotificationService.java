@@ -9,4 +9,6 @@ public interface RecruitmentNotificationService {
     void upsertFromInternalVacancyOpening(Long internalVacancyOpeningId);
 
     void closeFromInternalVacancyOpening(Long internalVacancyOpeningId);
+
+    void closeFromDepartmentProjectApplication(Long departmentProjectApplicationId);
 }

@@ -7,6 +7,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.maharecruitment.gov.in.common.event.invoice.DepartmentTaxInvoiceGenerationRequestedEvent;
+import com.maharecruitment.gov.in.common.event.invoice.DepartmentTaxInvoiceInvalidationRequestedEvent;
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceService;
 
 @Component
@@ -37,6 +38,30 @@ public class DepartmentTaxInvoiceGenerationListener {
                     event.actorEmail());
         } catch (RuntimeException ex) {
             log.error("Tax invoice generation failed. applicationId={}, requestId={}, actor={}",
+                    event.departmentProjectApplicationId(),
+                    event.requestId(),
+                    event.actorEmail(),
+                    ex);
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onTaxInvoiceInvalidationRequested(DepartmentTaxInvoiceInvalidationRequestedEvent event) {
+        if (event == null || event.departmentProjectApplicationId() == null) {
+            return;
+        }
+
+        try {
+            log.info("Tax invoice invalidation requested. applicationId={}, requestId={}, actor={}",
+                    event.departmentProjectApplicationId(),
+                    event.requestId(),
+                    event.actorEmail());
+
+            taxInvoiceService.invalidateForApplication(
+                    event.departmentProjectApplicationId(),
+                    event.actorEmail());
+        } catch (RuntimeException ex) {
+            log.error("Tax invoice invalidation failed. applicationId={}, requestId={}, actor={}",
                     event.departmentProjectApplicationId(),
                     event.requestId(),
                     event.actorEmail(),

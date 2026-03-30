@@ -18,9 +18,12 @@ public class TaxInvoiceLineItemView {
     private Long resourceRequirementId;
     private Integer lineNumber;
     private String description;
+    private String requiredPeriodDisplay;
     private String sacHsn;
     private Integer quantity;
     private Integer durationInMonths;
     private BigDecimal ratePerMonth;
     private BigDecimal totalAmount;
+    private String ratePerMonthDisplay;
+    private String totalAmountDisplay;
 }

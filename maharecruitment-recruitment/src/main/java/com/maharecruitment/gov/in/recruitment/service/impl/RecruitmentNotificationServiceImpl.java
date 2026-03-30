@@ -69,17 +69,41 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
         validateCommand(command);
 
         String requestId = command.getRequestId().trim().toUpperCase(Locale.ROOT);
-        if (notificationRepository.existsByRequestIdIgnoreCase(requestId)) {
-            log.info("Recruitment notification already exists. requestId={}", requestId);
-            return;
-        }
-
         ProjectMst project = projectRepository.findFirstByApplicationId(command.getDepartmentProjectApplicationId())
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Project not found for application id: " + command.getDepartmentProjectApplicationId()));
 
         List<VacancyAggregate> aggregatedVacancies = aggregateVacancies(command.getDesignationVacancies());
         Map<Long, ManpowerDesignationMaster> designationById = resolveDesignations(aggregatedVacancies);
+        RecruitmentNotificationEntity existingNotification = notificationRepository.findByRequestIdIgnoreCase(requestId)
+                .orElse(null);
+
+        if (existingNotification != null) {
+            if (existingNotification.getDepartmentProjectApplicationId() != null
+                    && !command.getDepartmentProjectApplicationId()
+                            .equals(existingNotification.getDepartmentProjectApplicationId())) {
+                throw new RecruitmentNotificationException(
+                        "Request id is already linked to a different department application.");
+            }
+
+            if (existingNotification.getStatus() != RecruitmentNotificationStatus.CLOSED) {
+                log.info("Recruitment notification already exists. requestId={}", requestId);
+                return;
+            }
+
+            existingNotification.setDepartmentRegistrationId(command.getDepartmentRegistrationId());
+            existingNotification.setDepartmentProjectApplicationId(command.getDepartmentProjectApplicationId());
+            existingNotification.setProjectMst(project);
+            existingNotification.setStatus(RecruitmentNotificationStatus.PENDING_ALLOCATION);
+            existingNotification.replaceDesignationVacancies(
+                    toVacancyEntities(aggregatedVacancies, designationById));
+            notificationRepository.save(existingNotification);
+            log.info("Recruitment notification reopened. requestId={}, applicationId={}, vacancyCount={}",
+                    requestId,
+                    command.getDepartmentProjectApplicationId(),
+                    aggregatedVacancies.size());
+            return;
+        }
 
         RecruitmentNotificationEntity notification = new RecruitmentNotificationEntity();
         notification.setRequestId(requestId);
@@ -163,6 +187,29 @@ public class RecruitmentNotificationServiceImpl implements RecruitmentNotificati
         if (notification.getStatus() != RecruitmentNotificationStatus.CLOSED) {
             notification.setStatus(RecruitmentNotificationStatus.CLOSED);
             notificationRepository.save(notification);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void closeFromDepartmentProjectApplication(Long departmentProjectApplicationId) {
+        if (departmentProjectApplicationId == null || departmentProjectApplicationId < 1) {
+            return;
+        }
+
+        RecruitmentNotificationEntity notification = notificationRepository
+                .findByDepartmentProjectApplicationId(departmentProjectApplicationId)
+                .orElse(null);
+        if (notification == null) {
+            return;
+        }
+
+        if (notification.getStatus() != RecruitmentNotificationStatus.CLOSED) {
+            notification.setStatus(RecruitmentNotificationStatus.CLOSED);
+            notificationRepository.save(notification);
+            log.info("Recruitment notification closed for department application. requestId={}, applicationId={}",
+                    notification.getRequestId(),
+                    departmentProjectApplicationId);
         }
     }
 

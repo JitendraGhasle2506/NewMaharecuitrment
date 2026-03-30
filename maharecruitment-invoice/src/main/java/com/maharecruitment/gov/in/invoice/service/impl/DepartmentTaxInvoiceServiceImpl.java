@@ -129,6 +129,31 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
 
     @Override
     @Transactional
+    public TaxInvoiceView previewInvoiceByApplicationId(Long applicationId) {
+        if (applicationId == null) {
+            throw new TaxInvoiceException("Application id is required.");
+        }
+
+        DepartmentTaxInvoiceEntity existingInvoice = invoiceRepository.findByDepartmentProjectApplicationId(
+                applicationId)
+                .orElse(null);
+        if (existingInvoice != null) {
+            return viewMapper.toView(existingInvoice);
+        }
+
+        DepartmentProjectApplicationEntity application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new TaxInvoiceNotFoundException(
+                        "Department request not found for application id: " + applicationId));
+
+        ensurePreviewIsEligible(application);
+        return viewMapper.toView(buildInvoiceEntity(
+                application,
+                resolveActorEmail(application),
+                resolvePreviewNumber(application)));
+    }
+
+    @Override
+    @Transactional
     public TaxInvoiceView generateForApplication(Long applicationId, String actorEmail) {
         if (applicationId == null) {
             throw new TaxInvoiceException("Application id is required.");
@@ -146,7 +171,73 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                         "Department request not found for application id: " + applicationId));
 
         ensureInvoiceIsEligible(application);
+        DepartmentTaxInvoiceEntity invoice = buildInvoiceEntity(
+                application,
+                actorEmail,
+                numberGenerator.generate(resolveIssueDate(application)));
 
+        try {
+            DepartmentTaxInvoiceEntity saved = invoiceRepository.save(invoice);
+            log.info("Tax invoice generated. applicationId={}, requestId={}, tiNumber={}, totalAmount={}",
+                    applicationId,
+                    application.getRequestId(),
+                    saved.getTiNumber(),
+                    saved.getTotalAmount());
+            return viewMapper.toView(saved);
+        } catch (DataIntegrityViolationException ex) {
+            DepartmentTaxInvoiceEntity existingAfterConflict = invoiceRepository.findByDepartmentProjectApplicationId(
+                    applicationId)
+                    .orElseThrow(() -> new TaxInvoiceException(
+                            "Unable to persist tax invoice for application id: " + applicationId,
+                            ex));
+            return viewMapper.toView(existingAfterConflict);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void invalidateForApplication(Long applicationId, String actorEmail) {
+        if (applicationId == null) {
+            return;
+        }
+
+        DepartmentTaxInvoiceEntity existingInvoice = invoiceRepository.findByDepartmentProjectApplicationId(
+                applicationId)
+                .orElse(null);
+        if (existingInvoice == null) {
+            return;
+        }
+
+        invoiceRepository.delete(existingInvoice);
+        log.info("Tax invoice invalidated. applicationId={}, requestId={}, actor={}",
+                applicationId,
+                existingInvoice.getRequestId(),
+                actorEmail);
+    }
+
+    private void ensureInvoiceIsEligible(DepartmentProjectApplicationEntity application) {
+        DepartmentApplicationStatus status = application.getApplicationStatus();
+        if (status != DepartmentApplicationStatus.COMPLETED) {
+            throw new TaxInvoiceNotReadyException(
+                    "Tax invoice is available only after final completion.");
+        }
+    }
+
+    private void ensurePreviewIsEligible(DepartmentProjectApplicationEntity application) {
+        DepartmentApplicationStatus status = application.getApplicationStatus();
+        if (status != DepartmentApplicationStatus.HR_APPROVED
+                && status != DepartmentApplicationStatus.AUDITOR_REVIEW
+                && status != DepartmentApplicationStatus.AUDITOR_APPROVED
+                && status != DepartmentApplicationStatus.COMPLETED) {
+            throw new TaxInvoiceNotReadyException(
+                    "Tax invoice preview is available only for review-ready applications.");
+        }
+    }
+
+    private DepartmentTaxInvoiceEntity buildInvoiceEntity(
+            DepartmentProjectApplicationEntity application,
+            String actorEmail,
+            String tiNumber) {
         if (application.getDepartmentRegistrationId() == null) {
             throw new TaxInvoiceException("Department registration id is required for tax invoice generation.");
         }
@@ -186,7 +277,7 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                 .departmentProjectApplicationId(application.getDepartmentProjectApplicationId())
                 .departmentRegistrationId(application.getDepartmentRegistrationId())
                 .requestId(requestId)
-                .tiNumber(numberGenerator.generate(issueDate))
+                .tiNumber(requireText(tiNumber, "Tax invoice number"))
                 .tiDate(issueDate)
                 .deptRefDate(referenceDate)
                 .projectName(requireText(application.getProjectName(), "Project name"))
@@ -220,32 +311,7 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
 
         invoice.replaceLineItems(lineItems);
         applyAuditMetadata(invoice, actorEmail, application);
-
-        try {
-            DepartmentTaxInvoiceEntity saved = invoiceRepository.save(invoice);
-            log.info("Tax invoice generated. applicationId={}, requestId={}, tiNumber={}, totalAmount={}",
-                    applicationId,
-                    application.getRequestId(),
-                    saved.getTiNumber(),
-                    saved.getTotalAmount());
-            return viewMapper.toView(saved);
-        } catch (DataIntegrityViolationException ex) {
-            DepartmentTaxInvoiceEntity existingAfterConflict = invoiceRepository.findByDepartmentProjectApplicationId(
-                    applicationId)
-                    .orElseThrow(() -> new TaxInvoiceException(
-                            "Unable to persist tax invoice for application id: " + applicationId,
-                            ex));
-            return viewMapper.toView(existingAfterConflict);
-        }
-    }
-
-    private void ensureInvoiceIsEligible(DepartmentProjectApplicationEntity application) {
-        DepartmentApplicationStatus status = application.getApplicationStatus();
-        if (status != DepartmentApplicationStatus.AUDITOR_APPROVED
-                && status != DepartmentApplicationStatus.COMPLETED) {
-            throw new TaxInvoiceNotReadyException(
-                    "Tax invoice is available only after auditor approval.");
-        }
+        return invoice;
     }
 
     private List<DepartmentTaxInvoiceLineItemEntity> buildLineItems(
@@ -404,6 +470,20 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
             return application.getCreatedBy().trim();
         }
         return DEFAULT_ACTOR_EMAIL;
+    }
+
+    private String resolvePreviewNumber(DepartmentProjectApplicationEntity application) {
+        String requestId = application == null ? null : trimToNull(application.getRequestId());
+        if (requestId != null) {
+            return "PREVIEW-" + requestId;
+        }
+
+        Long applicationId = application == null ? null : application.getDepartmentProjectApplicationId();
+        if (applicationId != null) {
+            return "PREVIEW-" + applicationId;
+        }
+
+        return "PREVIEW";
     }
 
     private String normalizeRequestId(String requestId) {
