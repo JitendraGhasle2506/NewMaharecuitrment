@@ -6,18 +6,27 @@
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/print.css}" />
     <style>
+        body.tax-invoice {
+            background: #fff;
+            color: #000;
+            font-size: 11pt;
+            line-height: 1.35;
+        }
+
         .preview-page {
-            max-width: 1180px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 18px;
-            background: #f8fafc;
+            padding: 12px;
+            background: #fff;
         }
 
         .preview-sheet {
             background: #fff;
-            border: 1px solid #d9e2ec;
-            padding: 24px;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            border: 0;
+            padding: 12px;
+            box-shadow: none;
+            font-size: 11pt;
+            line-height: 1.35;
         }
 
         .preview-banner {
@@ -30,24 +39,6 @@
             font-size: 0.95rem;
         }
 
-        .invoice-title {
-            text-align: center;
-            border-bottom: 1px solid #d9e2ec;
-            padding-bottom: 14px;
-            margin-bottom: 18px;
-        }
-
-        .invoice-title h5,
-        .invoice-title h6,
-        .invoice-title small {
-            margin: 0;
-        }
-
-        .invoice-title h6 {
-            margin-top: 10px;
-            letter-spacing: 0.08em;
-        }
-
         .invoice-table {
             width: 100%;
             border-collapse: collapse;
@@ -56,14 +47,17 @@
 
         .invoice-table td,
         .invoice-table th {
-            border: 1px solid #cbd5e1;
+            border: 1px solid #000;
             padding: 9px 10px;
             vertical-align: top;
+            font-size: 10pt;
         }
 
         .invoice-table th {
-            background: #eff6ff;
+            background: #fff;
             font-weight: 700;
+            text-align: center;
+            vertical-align: middle;
         }
 
         .nested-detail-table {
@@ -153,7 +147,7 @@
             .invoice-table td,
             .invoice-table th {
                 padding: 7px;
-                font-size: 0.85rem;
+                font-size: 9pt;
             }
         }
     </style>
@@ -167,72 +161,87 @@
                 tax invoice layout.
             </div>
 
-            <div class="invoice-title">
-                <h5 class="fw-bold" th:text="${invoice.companyName}">
-                    MAHARASHTRA INFORMATION TECHNOLOGY CORPORATION LIMITED
-                </h5>
-                <small th:text="${'CIN: ' + invoice.cinNumber}">CIN: U74999MH2016SGC268591</small>
-                <h6 class="fw-bold">TAX INVOICE</h6>
-            </div>
-
-            <table class="invoice-table">
+            <table class="table bor-0">
                 <tr>
-                    <td width="50%">
-                        <strong>TI No:</strong>
-                        <span th:text="${invoice.tiNumber}">TI-2526-03-00030</span>
+                    <td class="text-center">
+                        <img th:src="@{/img/mahait_logo.png}" width="70" alt="MahaIT Logo">
                     </td>
-                    <td rowspan="2" width="50%">
+                    <td colspan="5" style="text-align:center; vertical-align: middle;">
+                        <h3 style="margin:0;" th:text="${invoice.companyName}">
+                            Maharashtra Information Technology Corporation Limited
+                        </h3>
+                        <div th:text="${'CIN : ' + invoice.cinNumber}">CIN : U74999MH1998SGC099591</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="6" style="text-align:center;">
+                        <h3 style="margin:0;">TAX INVOICE</h3>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="table table-bordered table-invoice">
+                <tr>
+                    <td colspan="3" width="40%">
+                        <b>TI No:</b>
+                        <span th:text="${invoice.tiNumber}">TI-2025-26-00001</span>
+                    </td>
+                    <td colspan="3" rowspan="2" style="padding:8px; vertical-align:top;">
                         <table class="nested-detail-table">
                             <tr>
-                                <td width="180"><strong>Date</strong></td>
-                                <td th:text="${': ' + #temporals.format(invoice.tiDate, 'dd-MM-yyyy')}">: 05-03-2026</td>
+                                <td width="180"><b>Date:</b></td>
+                                <td th:text="${#temporals.format(invoice.tiDate, 'dd/MM/yyyy')}">10/07/2025</td>
                             </tr>
                             <tr>
-                                <td><strong>Client Dept GSTIN</strong></td>
-                                <td th:text="${': ' + (invoice.clientGstinAvailable ? 'Yes' : 'No')}">: Yes</td>
+                                <td><b>Client / Dept GSTIN:</b></td>
+                                <td th:text="${invoice.clientGstinAvailable ? 'Yes' : 'No'}">Yes</td>
                             </tr>
                             <tr>
-                                <td><strong>Client GST Number</strong></td>
-                                <td th:text="${': ' + (invoice.clientGstNumber != null ? invoice.clientGstNumber : '-')}">: 27MUMF03152C1DV</td>
+                                <td><b>Client GST Number:</b></td>
+                                <td th:text="${invoice.clientGstNumber != null ? invoice.clientGstNumber : '-'}">27AABCM3129H1DW</td>
                             </tr>
                             <tr>
-                                <td><strong>Place Of Supply</strong></td>
-                                <td th:text="${': ' + invoice.placeOfSupply}">: Maharashtra</td>
+                                <td><b>Place Of Supply:</b></td>
+                                <td th:text="${invoice.placeOfSupply}">Maharashtra</td>
                             </tr>
                             <tr>
-                                <td><strong>Dept Ref WO No</strong></td>
-                                <td th:text="${': ' + (invoice.deptRefNumber != null ? invoice.deptRefNumber : '-')}">: Mail</td>
+                                <td><b>Dept Ref/ WO No:</b></td>
+                                <td th:text="${invoice.deptRefNumber != null ? invoice.deptRefNumber : '-'}">Mail</td>
                             </tr>
                             <tr>
-                                <td><strong>Dept Ref WO Date</strong></td>
-                                <td th:text="${': ' + #temporals.format(invoice.deptRefDate, 'dd-MM-yyyy')}">: 25-02-2026</td>
+                                <td><b>Dept Ref/ WO Date:</b></td>
+                                <td th:text="${#temporals.format(invoice.deptRefDate, 'dd-MM-yyyy')}">25-02-2026</td>
                             </tr>
                             <tr>
-                                <td><strong>Project Name</strong></td>
-                                <td th:text="${': ' + invoice.projectName}">: Manpower Supply</td>
+                                <td><b>PM Name:</b></td>
+                                <td th:text="${invoice.pmName != null ? invoice.pmName : '-'}"></td>
+                            </tr>
+                            <tr>
+                                <td><b>Project Name:</b></td>
+                                <td th:text="${invoice.projectName}">Manpower Supply</td>
                             </tr>
                         </table>
                     </td>
                 </tr>
                 <tr>
-                    <td>
-                        <strong>To,</strong><br>
+                    <td colspan="3">
+                        <b>To,</b><br>
                         <span th:text="${invoice.billedTo}">Department Name</span><br>
-                        <span class="address-block" th:text="${invoice.billingAddress}">Address</span>
+                        <span th:text="${invoice.billingAddress}">Address</span>
                     </td>
                 </tr>
             </table>
 
-            <table class="invoice-table">
-                <thead class="table-head">
+            <table class="table table-bordered table-invoice">
+                <thead>
                     <tr>
-                        <th class="text-center" width="7%">Sr No.</th>
-                        <th class="text-start" width="25%">Description</th>
-                        <th class="text-center" width="22%">Required Period</th>
-                        <th class="text-center" width="12%">SAC/HSN</th>
-                        <th class="text-center" width="8%">Qty</th>
-                        <th class="text-right" width="13%">Rate/Month</th>
-                        <th class="text-right" width="13%">Total Amount</th>
+                        <th>Sr No.</th>
+                        <th>Description</th>
+                        <th>Required Period</th>
+                        <th>SAC/HSN</th>
+                        <th>Qty</th>
+                        <th>Rate/Month</th>
+                        <th>Total Amount</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -267,7 +276,7 @@
                 </tbody>
             </table>
 
-            <table class="invoice-table">
+            <table class="table table-bordered table-invoice">
                 <tr>
                     <th width="50%">Bank Account Details</th>
                     <th width="50%">Company Details</th>
@@ -288,7 +297,7 @@
                 </tr>
             </table>
 
-            <table class="invoice-table">
+            <table class="table table-bordered table-invoice">
                 <tr>
                     <th class="text-center">Terms &amp; Conditions</th>
                 </tr>
@@ -308,7 +317,7 @@
                 </tr>
             </table>
 
-            <table class="invoice-table signature-row">
+            <table class="table table-bordered table-invoice signature-row">
                 <tr>
                     <td class="text-center" width="35%">Customer's Seal and Signature</td>
                     <td class="text-center" width="30%">
