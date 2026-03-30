@@ -29,21 +29,23 @@
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                         <div class="col-md-6">
-                            <label class="form-label">Category</label>
+                            <label class="form-label">Category  <span class="text-danger">*</span></label>
                             <input type="text" th:field="*{category}" class="form-control" maxlength="100">
                             <div class="text-danger small" th:if="${#fields.hasErrors('category')}" th:errors="*{category}"></div>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Designation Name</label>
+                            <label class="form-label">Designation Name  <span class="text-danger">*</span></label>
                             <input type="text" th:field="*{designationName}" class="form-control" maxlength="200">
                             <div class="text-danger small" th:if="${#fields.hasErrors('designationName')}"
                                 th:errors="*{designationName}"></div>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Role Name</label>
+                            <label class="form-label">Role Name  <span class="text-danger">*</span></label>
                             <input type="text" th:field="*{roleName}" class="form-control" maxlength="200">
+                             <div class="text-danger small" th:if="${#fields.hasErrors('roleName')}"
+                                th:errors="*{roleName}"></div>
                         </div>
 
                         <div class="col-md-6">
@@ -55,9 +57,11 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Educational Qualification</label>
+                            <label class="form-label">Educational Qualification  <span class="text-danger">*</span></label>
                             <textarea th:field="*{educationalQualification}" class="form-control" maxlength="500"
                                 rows="3"></textarea>
+                                  <div class="text-danger small" th:if="${#fields.hasErrors('educationalQualification')}"
+                                th:errors="*{educationalQualification}"></div>
                         </div>
 
                         <div class="col-md-6">

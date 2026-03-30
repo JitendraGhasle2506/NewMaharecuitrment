@@ -17,7 +17,10 @@ public class ManpowerDesignationMasterRequest {
     @NotBlank(message = "Designation name is required")
     private String designationName;
 
+    @NotBlank(message = "Role name is required")
     private String roleName;
+    
+    @NotBlank(message = "Education Qualification is required")
     private String educationalQualification;
     private String certification;
     private String activeFlag;
