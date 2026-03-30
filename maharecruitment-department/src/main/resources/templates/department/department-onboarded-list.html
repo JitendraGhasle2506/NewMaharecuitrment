@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+<meta charset="UTF-8">
+<title>Onboarding</title>
+<th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="agency-shell">
+	<th:block
+		th:replace="~{header/header :: var-sidebar-header('Department', 'Onboarding', ~{::section})}">
+		<section>
+			<div class="card add-emp-card">
+				<div
+					class="header d-flex justify-content-between align-items-center">
+					<div>
+						<h2 class="mb-0"
+							th:text="${pageTitle != null ? pageTitle : 'Onboarded Employees'}">Onboarded
+							Employees</h2>
+						<small class="text-muted"
+							th:text="${pageSubtitle != null ? pageSubtitle : 'Department-wise onboarded employee list.'}">
+							Department-wise onboarded employee list. </small>
+					</div>
+
+				</div>
+
+				<div class="card-body">
+					<div th:if="${successMessage}" class="alert alert-success"
+						th:text="${successMessage}"></div>
+					<div th:if="${errorMessage}" class="alert alert-danger"
+						th:text="${errorMessage}"></div>
+
+					<div class="table-responsive">
+						<table class="table table-bordered table-sm align-middle">
+							<thead class="table-light">
+								<tr>
+									<th>#</th>
+									<th>Employee Code</th>
+									<th>Request ID</th>
+									<th>Email</th>
+									<th>Level</th>
+									<th>Employee</th>
+									<th>Designation</th>
+									<th>Joining Date</th>
+									<th>Onboarding Date</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
+
+								<tr th:if="${#lists.isEmpty(onboardedEmployees)}">
+									<td colspan="9" class="text-center text-muted">No
+										onboarded employees found.</td>
+								</tr>
+
+								<tr th:each="employee, stat : ${onboardedEmployees}">
+									<td th:text="${stat.count}">1</td>
+
+									<td
+										th:text="${employee.employeeCode != null ? employee.employeeCode : '-'}">
+										EMP001</td>
+
+									<td
+										th:text="${employee.requestId != null ? employee.requestId : '-'}">
+										REQ001</td>
+
+									<td 
+										th:text="${(employee.candidateEmail != null ? employee.candidateEmail : '-')}">
+											email | mobile
+									</td>
+
+									<td
+										th:text="${employee.levelCode != null ? employee.levelCode : '-'}">
+										L1</td>
+
+									<td
+										th:text="${employee.candidateName != null ?employee.candidateName : '-'}">
+										01-Apr-2026</td>
+
+									<td th:text="${employee.designationName != null ?employee.designationName : '-'}">
+									</td>
+
+									<td
+										th:text="${employee.joiningDate != null ? #temporals.format(employee.joiningDate,'dd-MMM-yyyy') : '-'}">
+										05-Apr-2026</td>
+										
+									<td
+										th:text="${employee.onboardingDate != null ? #temporals.format(employee.onboardingDate,'dd-MMM-yyyy') : '-'}">
+										05-Apr-2026</td>
+
+									<td th:text="${employee.status != null ? employee.status : '-'}"></td>
+
+								</tr>
+
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- Resign Modal -->
+			<div class="modal fade" id="resignModal" tabindex="-1"
+				aria-labelledby="resignModalLabel" aria-hidden="true">
+				<div class="modal-dialog">
+					<form id="resignForm" method="post">
+						<input type="hidden" th:name="${_csrf.parameterName}"
+							th:value="${_csrf.token}">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title" id="resignModalLabel">Mark Employee
+									Resigned</h5>
+								<button type="button" class="btn-close" data-bs-dismiss="modal"
+									aria-label="Close"></button>
+							</div>
+							<div class="modal-body">
+								<p>
+									Are you sure you want to mark <strong id="resignEmployeeName"></strong>
+									as resigned and reopen the vacancy?
+								</p>
+								<div class="mb-3">
+									<label for="resignationDate" class="form-label">Resignation
+										Date <span class="text-danger">*</span>
+									</label> <input type="date" class="form-control" id="resignationDate"
+										name="resignationDate" required
+										th:max="${#temporals.format(#temporals.createNow, 'yyyy-MM-dd')}">
+									<div class="form-text">Specify the date when the employee
+										resigned.</div>
+								</div>
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary"
+									data-bs-dismiss="modal">Cancel</button>
+								<button type="submit" class="btn btn-danger">Confirm
+									Resignation</button>
+							</div>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<script th:inline="javascript">
+                function openResignModal(employeeId, employeeName) {
+                    const modal = new bootstrap.Modal(document.getElementById('resignModal'));
+                    const form = document.getElementById('resignForm');
+                    const nameSpan = document.getElementById('resignEmployeeName');
+                    const dateInput = document.getElementById('resignationDate');
+
+                    nameSpan.textContent = employeeName;
+                    form.action = /*[[@{/agency/onboarding/}]]*/ '/agency/onboarding/' + employeeId + '/resign';
+                    form.action = form.action.replace(/\/$/, '') + '/' + employeeId + '/resign';
+                    
+                    // Default to today
+                    const today = new Date().toISOString().split('T')[0];
+                    dateInput.value = today;
+
+                    modal.show();
+                }
+            </script>
+		</section>
+	</th:block>
+</body>
+
+</html>
