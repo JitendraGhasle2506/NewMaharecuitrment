@@ -111,7 +111,7 @@
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="form-label" for="subDeptId">Sub-department</label> <span class="required-asterisk">*</span>
+                                        <label class="form-label" for="subDeptId">Sub-department</label>
                                         <select class="form-select" th:field="*{subDeptId}" id="subDeptId">
                                             <option value="">Select sub-department</option>
                                             <option th:each="subDepartment : ${subDepartments}"
@@ -132,7 +132,7 @@
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="form-label" for="newSubDeptName">New Sub-department Name</label> <span class="required-asterisk">*</span>
+                                        <label class="form-label" for="newSubDeptName">New Sub-department Name</label>
                                         <input type="text" class="form-control" id="newSubDeptName"
                                             th:field="*{newSubDeptName}" placeholder="Enter sub-department name">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('newSubDeptName')}"

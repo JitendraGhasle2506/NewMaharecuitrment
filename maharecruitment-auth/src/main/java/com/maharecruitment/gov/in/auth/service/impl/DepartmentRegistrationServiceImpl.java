@@ -50,6 +50,9 @@ public class DepartmentRegistrationServiceImpl implements DepartmentRegistration
     }
 
     private void validateUniqueRegistration(DepartmentRegistrationRequest request) {
+        if (request.getDepartmentId() != null && departmentRegistrationRepository.existsByDepartmentId(request.getDepartmentId())) {
+            throw new IllegalArgumentException("This department is already registered.");
+        }
         if (departmentRegistrationRepository.existsByGstNoIgnoreCase(normalizeUpper(request.getGstNo()))) {
             throw new IllegalArgumentException("A registration already exists for the provided GST number.");
         }
