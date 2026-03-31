@@ -28,6 +28,18 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     @EntityGraph(attributePaths = {
             "agency",
             "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.previousEmployments",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    Optional<EmployeeEntity> findDetailedByEmployeeId(Long employeeId);
+
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
             "designation",
             "preOnboarding",
             "preOnboarding.interviewDetail",

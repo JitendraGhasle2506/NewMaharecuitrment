@@ -67,6 +67,16 @@
             gap: 8px;
             align-items: flex-end;
         }
+
+        .employee-detail-link {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .employee-detail-link:hover {
+            color: var(--primary, #0d6efd);
+            text-decoration: underline;
+        }
     </style>
 </head>
 
@@ -151,14 +161,21 @@
                                             <div class="employee-avatar me-3"
                                                 th:text="${#strings.substring(emp.fullName, 0, 1)}">E</div>
                                             <div>
-                                                <div class="fw-bold" th:text="${emp.fullName}">Full Name</div>
+                                                <a class="employee-detail-link fw-bold"
+                                                    th:href="@{/hr/employees/{employeeId}(employeeId=${emp.employeeId},status=${currentStatus},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}"
+                                                    th:text="${emp.fullName}">
+                                                    Full Name
+                                                </a>
                                                 <small class="text-muted" th:text="${emp.email}">email@domain.com</small>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-secondary-subtle text-secondary-emphasis"
-                                            th:text="${emp.employeeCode}">EMP001</span>
+                                        <a class="employee-detail-link"
+                                            th:href="@{/hr/employees/{employeeId}(employeeId=${emp.employeeId},status=${currentStatus},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis"
+                                                th:text="${emp.employeeCode}">EMP001</span>
+                                        </a>
                                     </td>
                                     <td th:text="${emp.requestId}">REQ-001</td>
                                     <td th:text="${emp.projectName}">Project Name</td>

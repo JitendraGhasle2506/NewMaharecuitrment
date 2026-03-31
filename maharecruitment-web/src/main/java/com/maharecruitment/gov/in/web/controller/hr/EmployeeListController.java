@@ -8,10 +8,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
+import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
 
 @Controller
@@ -46,6 +50,37 @@ public class EmployeeListController {
             @RequestParam(name = "search", required = false) String search,
             Model model) {
         return renderEmployeeList(type, "RESIGNED", page, size, search, model);
+    }
+
+    @GetMapping("/{employeeId}")
+    public String employeeDetail(
+            @PathVariable Long employeeId,
+            @RequestParam(required = false, defaultValue = "ACTIVE") String status,
+            @RequestParam(required = false, defaultValue = "ALL") String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        String normalizedStatus = normalizeStatus(status);
+        String normalizedType = normalizeType(type);
+        int resolvedPage = Math.max(page, 0);
+        int resolvedSize = resolvePageSize(size);
+        String normalizedSearch = normalizeSearch(search);
+
+        try {
+            EmployeeOnboardingDetailView employeeDetail = hrOnboardingPageService.loadEmployeeDetail(employeeId);
+            model.addAttribute("employeeDetail", employeeDetail);
+            model.addAttribute("currentStatus", normalizedStatus);
+            model.addAttribute("currentType", normalizedType);
+            model.addAttribute("currentPage", resolvedPage);
+            model.addAttribute("pageSize", resolvedSize);
+            model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
+            return "hr/employee-onboarding-detail";
+        } catch (RecruitmentNotificationException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:" + ("RESIGNED".equals(normalizedStatus) ? "/hr/employees/resigned" : "/hr/employees");
+        }
     }
 
     private String renderEmployeeList(
@@ -122,5 +157,9 @@ public class EmployeeListController {
 
     private String normalizeSearch(String search) {
         return StringUtils.hasText(search) ? search.trim() : null;
+    }
+
+    private String normalizeStatus(String status) {
+        return "RESIGNED".equalsIgnoreCase(status) ? "RESIGNED" : "ACTIVE";
     }
 }

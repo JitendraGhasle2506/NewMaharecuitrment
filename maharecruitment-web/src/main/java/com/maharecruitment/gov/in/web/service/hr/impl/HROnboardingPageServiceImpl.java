@@ -40,6 +40,7 @@ import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
+import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
@@ -324,6 +325,28 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 .toList();
         
         return new PageImpl<>(dtos, pageable, employees.getTotalElements());
+    }
+
+    @Override
+    public EmployeeOnboardingDetailView loadEmployeeDetail(Long employeeId) {
+        if (employeeId == null || employeeId < 1) {
+            throw new RecruitmentNotificationException("Valid employee id is required.");
+        }
+
+        EmployeeEntity employee = employeeRepository.findDetailedByEmployeeId(employeeId)
+                .orElseThrow(() -> new RecruitmentNotificationException("Employee not found."));
+        if (employee.getPreOnboarding() == null || employee.getPreOnboarding().getPreOnboardingId() == null) {
+            throw new RecruitmentNotificationException("Employee onboarding details are not available.");
+        }
+
+        AgencyPreOnboardingForm onboardingForm = loadOnboardingForm(employee.getPreOnboarding().getPreOnboardingId());
+        return new EmployeeOnboardingDetailView(
+                employee.getEmployeeId(),
+                employee.getEmployeeCode(),
+                employee.getStatus(),
+                employee.getRecruitmentType(),
+                employee.getResignationDate(),
+                onboardingForm);
     }
 
     @Override
