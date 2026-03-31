@@ -21,12 +21,14 @@ import com.maharecruitment.gov.in.invoice.exception.TaxInvoiceException;
 public class TaxInvoiceQrCodeGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(TaxInvoiceQrCodeGenerator.class);
-    private static final int QR_SIZE = 240;
+    private static final int QR_SIZE = 300;
     private static final String DATA_URL_PREFIX = "data:image/png;base64,";
     private static final String ZXING_QR_WRITER = "com.google.zxing.qrcode.QRCodeWriter";
     private static final String ZXING_BARCODE_FORMAT = "com.google.zxing.BarcodeFormat";
     private static final String ZXING_BIT_MATRIX = "com.google.zxing.common.BitMatrix";
     private static final String ZXING_MATRIX_TO_IMAGE_WRITER = "com.google.zxing.client.j2se.MatrixToImageWriter";
+    private static final String ZXING_ENCODE_HINT_TYPE = "com.google.zxing.EncodeHintType";
+    private static final String ZXING_ERROR_CORRECTION_LEVEL = "com.google.zxing.qrcode.decoder.ErrorCorrectionLevel";
 
     public byte[] generatePngBytes(TaxInvoiceView invoice) {
         if (invoice == null) {
@@ -92,10 +94,21 @@ public class TaxInvoiceQrCodeGenerator {
     private Object createBitMatrix(String payload) throws ReflectiveOperationException {
         Class<?> writerClass = Class.forName(ZXING_QR_WRITER);
         Object writer = writerClass.getConstructor().newInstance();
+
         Class<?> barcodeFormatClass = Class.forName(ZXING_BARCODE_FORMAT);
         Object qrCodeFormat = Enum.valueOf(barcodeFormatClass.asSubclass(Enum.class), "QR_CODE");
-        Method encodeMethod = writerClass.getMethod("encode", String.class, barcodeFormatClass, int.class, int.class);
-        return encodeMethod.invoke(writer, payload, qrCodeFormat, QR_SIZE, QR_SIZE);
+
+        Class<?> hintTypeClass = Class.forName(ZXING_ENCODE_HINT_TYPE);
+        Class<?> errorCorrectionLevelClass = Class.forName(ZXING_ERROR_CORRECTION_LEVEL);
+
+        java.util.Map<Object, Object> hints = new java.util.HashMap<>();
+        hints.put(Enum.valueOf(hintTypeClass.asSubclass(Enum.class), "MARGIN"), 0);
+        hints.put(Enum.valueOf(hintTypeClass.asSubclass(Enum.class), "ERROR_CORRECTION"),
+                Enum.valueOf(errorCorrectionLevelClass.asSubclass(Enum.class), "Q"));
+
+        Method encodeMethod = writerClass.getMethod("encode", String.class, barcodeFormatClass, int.class, int.class,
+                java.util.Map.class);
+        return encodeMethod.invoke(writer, payload, qrCodeFormat, QR_SIZE, QR_SIZE, hints);
     }
 
     private void writePng(Object matrix, ByteArrayOutputStream outputStream) throws ReflectiveOperationException {
