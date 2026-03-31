@@ -6,8 +6,17 @@
     <title>Recruitment Notifications</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <style>
+        .agency-notification-page {
+            --agency-border: #d8e4f5;
+            --agency-border-strong: #c6d8ef;
+            --agency-surface-soft: linear-gradient(180deg, #fcfdff 0%, #f5f9ff 100%);
+            --agency-hero: linear-gradient(135deg, #163868 0%, #214a83 55%, #2c5f9f 100%);
+            --agency-shadow: 0 18px 38px rgba(22, 56, 104, 0.08);
+        }
+
         .agency-notification-page .header {
             gap: 16px;
+            margin-bottom: 0;
         }
 
         .agency-notification-page .card-body {
@@ -19,6 +28,110 @@
 
         .agency-notification-page .alert {
             margin-bottom: 0;
+        }
+
+        .page-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.7fr) minmax(280px, .9fr);
+            gap: 18px;
+            width: 100%;
+        }
+
+        .hero-panel,
+        .hero-side-panel {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--agency-border);
+            border-radius: 18px;
+            box-shadow: var(--agency-shadow);
+        }
+
+        .hero-panel {
+            padding: 24px;
+            background: var(--agency-hero);
+            color: #fff;
+        }
+
+        .hero-panel::after {
+            content: "";
+            position: absolute;
+            right: -44px;
+            bottom: -68px;
+            width: 190px;
+            height: 190px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .hero-title {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: .2px;
+        }
+
+        .hero-subtitle {
+            max-width: 720px;
+            margin: 10px 0 0;
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .hero-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .hero-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        .hero-side-panel {
+            padding: 22px;
+            background: var(--agency-surface-soft);
+        }
+
+        .hero-side-label {
+            color: #607391;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+        }
+
+        .hero-side-value {
+            margin-top: 8px;
+            color: #163868;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
+        .hero-side-note {
+            margin-top: 12px;
+            color: #607391;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .hero-side-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
         }
 
         .overview-grid {
@@ -38,6 +151,7 @@
         .overview-card {
             padding: 18px;
             background: linear-gradient(180deg, #fcfdff 0%, #f5f9ff 100%);
+            box-shadow: 0 14px 30px rgba(17, 52, 101, 0.05);
         }
 
         .overview-label {
@@ -67,19 +181,20 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
-            align-items: flex-end;
-            gap: 16px;
-            padding: 18px;
+            align-items: stretch;
+            gap: 18px;
+            padding: 22px;
             border: 1px solid #d9e4f4;
-            border-radius: 14px;
+            border-radius: 16px;
             background: linear-gradient(180deg, #fcfdff 0%, #f7faff 100%);
+            box-shadow: 0 12px 26px rgba(22, 56, 104, 0.04);
         }
 
         .filter-form {
             display: flex;
             flex: 1 1 560px;
             flex-wrap: wrap;
-            gap: 14px;
+            gap: 16px;
             align-items: flex-end;
         }
 
@@ -91,14 +206,89 @@
             flex: 1 1 320px;
         }
 
+        .filter-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: #35547b;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .28px;
+            text-transform: uppercase;
+        }
+
+        .filter-input-group {
+            position: relative;
+        }
+
+        .filter-input-icon {
+            position: absolute;
+            top: 50%;
+            left: 14px;
+            transform: translateY(-50%);
+            color: #6883a6;
+            font-size: 13px;
+            pointer-events: none;
+        }
+
+        .filter-input-group .form-control {
+            padding-left: 38px;
+        }
+
+        .filter-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .filter-summary-panel {
+            display: flex;
+            flex: 0 1 320px;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 16px 18px;
+            border: 1px solid var(--agency-border-strong);
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .filter-summary-label {
+            color: #607391;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .28px;
+        }
+
         .filter-meta {
             color: #607391;
             font-size: 13px;
-            line-height: 1.5;
+            line-height: 1.6;
+        }
+
+        .filter-meta-quick {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .filter-meta-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eef4ff;
+            color: #23436f;
+            font-size: 12px;
+            font-weight: 700;
         }
 
         .notification-shell {
             overflow: hidden;
+            box-shadow: 0 16px 34px rgba(18, 51, 96, 0.05);
         }
 
         .notification-shell .table {
@@ -118,16 +308,31 @@
         .notification-shell .table tbody td {
             padding: 16px;
             vertical-align: top;
+            border-color: #e6eef9;
         }
 
         .notification-shell .table tbody tr:hover {
             background: #fbfdff;
         }
 
+        .serial-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 34px;
+            height: 34px;
+            padding: 0 10px;
+            border-radius: 999px;
+            background: #edf4ff;
+            color: #1f4d85;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
         .request-cell {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 8px;
         }
 
         .request-link {
@@ -165,14 +370,43 @@
 
         .project-name {
             color: #1f3554;
-            font-weight: 600;
+            font-weight: 700;
         }
 
-        .project-note {
-            margin-top: 4px;
-            color: #6d7d96;
+        .project-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .project-meta-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
             font-size: 12px;
-            line-height: 1.45;
+            font-weight: 700;
+            background: #f3f7fd;
+            color: #35557f;
+            border: 1px solid #d9e5f6;
+        }
+
+        .date-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .date-primary {
+            color: #1e3657;
+            font-weight: 700;
+        }
+
+        .date-note {
+            color: #6a7e9d;
+            font-size: 12px;
         }
 
         .status-stack {
@@ -192,6 +426,14 @@
             font-weight: 700;
             letter-spacing: .2px;
             border: 1px solid transparent;
+        }
+
+        .status-caption {
+            color: #617796;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .25px;
         }
 
         .tracking-released {
@@ -222,6 +464,27 @@
             background: #f3f5f8;
             border-color: #d8dde6;
             color: #55657e;
+        }
+
+        .row-action-cell {
+            min-width: 150px;
+        }
+
+        .row-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .row-actions .btn {
+            min-width: 128px;
+        }
+
+        .row-action-note {
+            color: #6a7e9d;
+            font-size: 12px;
+            line-height: 1.5;
         }
 
         .pagination-shell {
@@ -258,7 +521,12 @@
             color: #6b7d99;
         }
 
+        .empty-state .btn {
+            margin-top: 16px;
+        }
+
         @media (max-width: 1200px) {
+            .page-hero,
             .overview-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -269,6 +537,7 @@
                 gap: 16px;
             }
 
+            .page-hero,
             .overview-grid {
                 grid-template-columns: 1fr;
             }
@@ -279,6 +548,12 @@
                 align-items: stretch;
             }
 
+            .hero-panel,
+            .hero-side-panel,
+            .filter-bar {
+                padding: 18px;
+            }
+
             .filter-form,
             .filter-field,
             .filter-field.filter-search {
@@ -286,9 +561,17 @@
                 min-width: 100%;
             }
 
+            .filter-summary-panel {
+                flex-basis: auto;
+            }
+
             .notification-shell .table thead th,
             .notification-shell .table tbody td {
                 padding: 12px;
+            }
+
+            .row-actions .btn {
+                min-width: 100%;
             }
         }
     </style>
@@ -299,13 +582,46 @@
         <section>
             <div class="card add-emp-card agency-notification-page">
                 <div class="header d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="mb-0">Recruitment Notifications</h2>
-                        <small class="text-muted">
-                            Notifications are released rank-wise based on configured release rules.
-                        </small>
+                    <div class="page-hero">
+                        <div class="hero-panel">
+                            <h2 class="hero-title">Recruitment Notifications</h2>
+                            <p class="hero-subtitle">
+                                Track every released recruitment notification, review project demand quickly, and move
+                                straight to the response workflow from one clean agency inbox.
+                            </p>
+                            <div class="hero-chip-row">
+                                <span class="hero-chip">
+                                    <i class="fa fa-bullhorn" aria-hidden="true"></i>
+                                    Rank-wise releases
+                                </span>
+                                <span class="hero-chip">
+                                    <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                                    Faster project review
+                                </span>
+                                <span class="hero-chip">
+                                    <i class="fa fa-check-circle-o" aria-hidden="true"></i>
+                                    Response tracking
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="hero-side-panel">
+                            <div class="hero-side-label">Current View</div>
+                            <div class="hero-side-value">
+                                Agency-facing recruitment notifications released as per configured rank visibility.
+                            </div>
+                            <div class="hero-side-note">
+                                Open a notification to review project details, mark it as read, submit your response,
+                                and continue candidate processing from the same flow.
+                            </div>
+                            <div class="hero-side-actions">
+                                <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/dashboard}">
+                                    <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                                    Back to Dashboard
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/agency/dashboard}">Back to Dashboard</a>
                 </div>
 
                 <div class="card-body">
@@ -338,90 +654,158 @@
                     <div class="filter-bar">
                         <form class="filter-form" th:action="@{/agency/recruitment-notifications}" method="get">
                             <div class="filter-field filter-search">
-                                <label class="form-label mb-1">Search Notifications</label>
-                                <input type="text"
-                                    class="form-control"
-                                    name="search"
-                                    th:value="${searchTerm}"
-                                    placeholder="Search by request ID or project name">
+                                <label class="filter-label" for="notificationSearch">
+                                    <i class="fa fa-search" aria-hidden="true"></i>
+                                    Search Notifications
+                                </label>
+                                <div class="filter-input-group">
+                                    <span class="filter-input-icon">
+                                        <i class="fa fa-search" aria-hidden="true"></i>
+                                    </span>
+                                    <input type="text"
+                                        id="notificationSearch"
+                                        class="form-control"
+                                        name="search"
+                                        th:value="${searchTerm}"
+                                        placeholder="Search by request ID or project name">
+                                </div>
                             </div>
                             <div class="filter-field">
-                                <label class="form-label mb-1">Page Size</label>
-                                <select name="size" class="form-select">
+                                <label class="filter-label" for="notificationPageSize">
+                                    <i class="fa fa-list-ol" aria-hidden="true"></i>
+                                    Page Size
+                                </label>
+                                <select id="notificationPageSize" name="size" class="form-select">
                                     <option value="10" th:selected="${pageSize == 10}">10 per page</option>
                                     <option value="25" th:selected="${pageSize == 25}">25 per page</option>
                                     <option value="50" th:selected="${pageSize == 50}">50 per page</option>
                                 </select>
                             </div>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button type="submit" class="btn btn-primary">Search</button>
-                                <a class="btn btn-outline-secondary" th:href="@{/agency/recruitment-notifications}">Clear</a>
+                            <div class="filter-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-search" aria-hidden="true"></i>
+                                    Search
+                                </button>
+                                <a class="btn btn-outline-secondary" th:href="@{/agency/recruitment-notifications}">
+                                    <i class="fa fa-refresh" aria-hidden="true"></i>
+                                    Clear
+                                </a>
                             </div>
                         </form>
-                        <div class="filter-meta"
-                            th:text="${notificationPage.totalElements > 0 ? 'Showing ' + (notificationPage.number * notificationPage.size + 1) + ' to ' + (((notificationPage.number + 1) * notificationPage.size) > notificationPage.totalElements ? notificationPage.totalElements : ((notificationPage.number + 1) * notificationPage.size)) + ' of ' + notificationPage.totalElements + ' notifications' : 'No notifications found for the current filter'}">
-                            Showing 1 to 10 of 25 notifications
+                        <div class="filter-summary-panel">
+                            <div class="filter-summary-label">Result Summary</div>
+                            <div class="filter-meta"
+                                th:text="${notificationPage.totalElements > 0 ? 'Showing ' + (notificationPage.number * notificationPage.size + 1) + ' to ' + (((notificationPage.number + 1) * notificationPage.size) > notificationPage.totalElements ? notificationPage.totalElements : ((notificationPage.number + 1) * notificationPage.size)) + ' of ' + notificationPage.totalElements + ' notifications' : 'No notifications found for the current filter'}">
+                                Showing 1 to 10 of 25 notifications
+                            </div>
+                            <div class="filter-meta-quick">
+                                <span class="filter-meta-pill">
+                                    <i class="fa fa-bell-o" aria-hidden="true"></i>
+                                    Total <span th:text="${notificationMetrics.totalNotifications}">0</span>
+                                </span>
+                                <span class="filter-meta-pill" th:if="${!#strings.isEmpty(searchTerm)}">
+                                    <i class="fa fa-filter" aria-hidden="true"></i>
+                                    Filter applied
+                                </span>
+                            </div>
                         </div>
                     </div>
 
                     <div th:if="${#lists.isEmpty(notifications)}" class="empty-state">
                         <h5>No notifications available</h5>
                         <p>No recruitment notifications are currently visible for your agency.</p>
+                        <a class="btn btn-outline-secondary"
+                            th:if="${!#strings.isEmpty(searchTerm)}"
+                            th:href="@{/agency/recruitment-notifications}">
+                            Clear Search
+                        </a>
                     </div>
 
                     <div th:if="${!#lists.isEmpty(notifications)}" class="notification-shell">
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle">
                                 <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Request ID</th>
-                                    <th>Project</th>
-                                    <th>Notified At</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="item, stat : ${notifications}">
-                                    <td th:text="${notificationPage.number * notificationPage.size + stat.index + 1}">1</td>
-                                    <td>
-                                        <div class="request-cell">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Request</th>
+                                        <th>Project Details</th>
+                                        <th>Notified At</th>
+                                        <th>Tracking Status</th>
+                                        <th>Workflow Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="item, stat : ${notifications}">
+                                        <td>
+                                            <span class="serial-badge"
+                                                th:text="${notificationPage.number * notificationPage.size + stat.index + 1}">1</span>
+                                        </td>
+                                        <td>
+                                            <div class="request-cell">
                                             <a th:href="@{/agency/recruitment-notifications/{id}(id=${item.recruitmentNotificationId})}"
                                                 class="request-link">
-                                                <span th:text="${item.requestId}">REQ-0000</span>
+                                                <span th:text="${item.requestId != null ? item.requestId : 'Request'}">REQ-0000</span>
                                                 <span class="request-link-indicator">Open details</span>
                                             </a>
                                         </div>
                                     </td>
-                                    <td>
-                                        <div class="project-name"
-                                            th:text="${item.projectName != null ? item.projectName : '-'}">Project Name</div>
-                                        <div class="project-note"
-                                            th:text="${item.projectId != null ? 'Project ID: ' + item.projectId : 'Project details available in the notification'}">
-                                            Project details available in the notification
-                                        </div>
-                                    </td>
-                                    <td
-                                        th:text="${item.notifiedAt != null ? #temporals.format(item.notifiedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
-                                        -</td>
-                                    <td>
-                                        <div class="status-stack">
-                                            <span class="status-badge"
-                                                th:classappend="${item.trackingStatus.name() == 'RESPONDED' ? ' tracking-responded' : (item.trackingStatus.name() == 'READ' ? ' tracking-read' : ' tracking-released')}"
-                                                th:text="${#strings.replace(item.trackingStatus.name(), '_', ' ')}">
-                                                RELEASED
-                                            </span>
-                                            <span class="status-badge"
-                                                th:classappend="${item.notificationStatus.name() == 'IN_PROGRESS' ? ' notification-in-progress' : ' notification-pending'}"
-                                                th:text="${#strings.replace(item.notificationStatus.name(), '_', ' ')}">
-                                                IN PROGRESS
-                                            </span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                                        <td>
+                                            <div class="project-name"
+                                                th:text="${item.projectName != null ? item.projectName : '-'}">Project Name</div>
+                                            <div class="project-meta-row">
+                                                <span class="project-meta-pill" th:if="${item.releasedRank != null}">
+                                                    <i class="fa fa-signal" aria-hidden="true"></i>
+                                                    Rank <span th:text="${item.releasedRank}">1</span>
+                                                </span>
+                                                <span class="project-meta-pill" th:if="${item.departmentRegistrationId != null}">
+                                                    <i class="fa fa-building-o" aria-hidden="true"></i>
+                                                    Dept Reg <span th:text="${item.departmentRegistrationId}">101</span>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="date-cell">
+                                                <div class="date-primary"
+                                                    th:text="${item.notifiedAt != null ? #temporals.format(item.notifiedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                                    -
+                                                </div>
+                                                <div class="date-note">Released to agency</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="status-stack">
+                                                <div class="status-caption">Agency Tracking</div>
+                                                <span class="status-badge"
+                                                    th:classappend="${item.trackingStatus.name() == 'RESPONDED' ? ' tracking-responded' : (item.trackingStatus.name() == 'READ' ? ' tracking-read' : ' tracking-released')}"
+                                                    th:text="${#strings.replace(item.trackingStatus.name(), '_', ' ')}">
+                                                    RELEASED
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="status-stack">
+                                                <div class="status-caption">Notification State</div>
+                                                <span class="status-badge"
+                                                    th:classappend="${item.notificationStatus.name() == 'IN_PROGRESS' ? ' notification-in-progress' : ' notification-pending'}"
+                                                    th:text="${#strings.replace(item.notificationStatus.name(), '_', ' ')}">
+                                                    IN PROGRESS
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="row-action-cell">
+                                            <div class="row-actions">
+                                                <a class="btn btn-primary btn-sm"
+                                                    th:href="@{/agency/recruitment-notifications/{id}(id=${item.recruitmentNotificationId})}">
+                                                    View Details
+                                                </a>
+                                                <div class="row-action-note">Open this notification to review and respond.</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <div class="pagination-shell" th:if="${notificationPage.totalPages > 1}"

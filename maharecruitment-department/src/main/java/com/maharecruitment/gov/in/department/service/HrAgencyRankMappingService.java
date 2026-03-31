@@ -11,7 +11,7 @@ public interface HrAgencyRankMappingService {
 
     HrAgencyRankMappingListView getAgencyRankMappingListView();
 
-    HrAgencyRankMappingListView getRankReleaseOverviewListView();
+    HrAgencyRankMappingListView getRankReleaseOverviewListView(int pageNumber, int pageSize);
 
     HrRankReleaseRuleListView getRankReleaseRuleListView();
 

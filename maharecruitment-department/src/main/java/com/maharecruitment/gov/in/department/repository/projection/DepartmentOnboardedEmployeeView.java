@@ -2,23 +2,23 @@ package com.maharecruitment.gov.in.department.repository.projection;
 
 import java.time.LocalDate;
 
-import lombok.Data;
+import lombok.Getter;
 
-@Data
+@Getter
 public class DepartmentOnboardedEmployeeView {
 
-    private Long employeeId;
-    private String employeeCode;
-    private String requestId;
-    private String candidateName;
-    private String candidateEmail;
-    private String candidateMobile;
-    private String levelCode;
-    private LocalDate joiningDate;
-    private LocalDate onboardingDate;
-    private LocalDate resignationDate;
-    private String status;
-    private String designationName;
+    private final Long employeeId;
+    private final String employeeCode;
+    private final String requestId;
+    private final String candidateName;
+    private final String candidateEmail;
+    private final String candidateMobile;
+    private final String levelCode;
+    private final LocalDate joiningDate;
+    private final LocalDate onboardingDate;
+    private final LocalDate resignationDate;
+    private final String status;
+    private final String designationName;
 
     public DepartmentOnboardedEmployeeView(
             Long employeeId,
@@ -46,6 +46,4 @@ public class DepartmentOnboardedEmployeeView {
         this.status = status;
         this.designationName = designationName;
     }
-
-    // getters
 }
