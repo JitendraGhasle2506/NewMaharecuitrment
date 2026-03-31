@@ -33,9 +33,10 @@ public interface AttendanceRegisterService {
     
     public List<ManualAttendanceRequestDTO> getMyManualRequests(Long employeeId);
 	public void approveRejectManualAttendance(Long requestId, Long approverId, String status, String comments, String roleType);
+	public void bulkApproveRejectManualAttendance(List<Long> requestIds, Long approverId, String status, String comments, String roleType);
 
     public List<java.util.Map<String, Object>> getTeamMembers(Long approverId, String roleType);
 
-    public List<com.maharecruitment.gov.in.attendance.dto.ManualAttendanceSummaryDTO> getPendingSummaries(Long approverId, String roleType);
+    public List<com.maharecruitment.gov.in.attendance.dto.ManualAttendanceSummaryDTO> getPendingSummaries(Long approverId, String roleType, Integer month, Integer year);
     public List<ManualAttendanceRequestDTO> getPendingRequestsForEmployee(Long approverId, Long targetEmployeeId, String roleType);
 }

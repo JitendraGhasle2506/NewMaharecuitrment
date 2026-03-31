@@ -10,6 +10,8 @@ public class LeaveApplicationHODDTO {
     private Long employeeId;
     private String employeeCode;
     private String employeeName;
+    private String designation;
+    private String hodRemarks;
     private String leaveType;
     private String leaveCategory;
     private LocalDate startDate;

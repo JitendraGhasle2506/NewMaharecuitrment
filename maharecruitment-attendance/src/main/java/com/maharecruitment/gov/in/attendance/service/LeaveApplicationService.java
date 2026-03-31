@@ -12,7 +12,8 @@ public interface LeaveApplicationService {
 
     List<LeaveApplicationEntity> getLeaveApplicationsByEmployee(Long employeeId);
 
-    List<LeaveApplicationHODDTO> getPendingLeavesForHOD(Long hodUserId);
+    List<LeaveApplicationHODDTO> getPendingLeavesForHOD(Long hodUserId, String search);
+    List<LeaveApplicationHODDTO> getProcessedLeavesForHOD(Long hodUserId, String search);
 
     void updateLeaveStatus(Long leaveId, String status, String remarks);
 }
