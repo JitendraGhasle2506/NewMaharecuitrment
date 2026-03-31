@@ -93,6 +93,8 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     long countByOnboardingDateBetween(java.time.LocalDate startDate, java.time.LocalDate endDate);
 
+    long countByAgencyAgencyId(Long agencyId);
+
     List<EmployeeEntity> findByDepartmentRegistration_DepartmentRegistrationId(Long id);
 
     List<EmployeeEntity> findByDepartmentRegistration_DepartmentRegistrationIdAndRecruitmentType(Long id,

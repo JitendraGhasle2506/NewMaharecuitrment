@@ -4,6 +4,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import com.maharecruitment.gov.in.web.service.dashboard.AgencyDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.RoleLandingService;
 import com.maharecruitment.gov.in.web.service.dashboard.model.RoleDashboardView;
 
@@ -13,9 +14,11 @@ import jakarta.servlet.http.HttpServletRequest;
 public class RoleLandingController {
 
     private final RoleLandingService roleLandingService;
+    private final AgencyDashboardService agencyDashboardService;
 
-    public RoleLandingController(RoleLandingService roleLandingService) {
+    public RoleLandingController(RoleLandingService roleLandingService, AgencyDashboardService agencyDashboardService) {
         this.roleLandingService = roleLandingService;
+        this.agencyDashboardService = agencyDashboardService;
     }
 
     @GetMapping({
@@ -37,6 +40,18 @@ public class RoleLandingController {
         String contextPath = request.getContextPath();
         if (contextPath != null && !contextPath.isBlank() && path.startsWith(contextPath)) {
             path = path.substring(contextPath.length());
+        }
+
+        if ("/agency/dashboard".equals(path)) {
+            com.maharecruitment.gov.in.web.service.dashboard.model.AgencyDashboardView agencyDashboard = agencyDashboardService.getDashboard();
+            model.addAttribute("agencyName", agencyDashboard.agencyName());
+            model.addAttribute("totalOpenings", agencyDashboard.totalOpenings());
+            model.addAttribute("candidatesSubmitted", agencyDashboard.candidatesSubmitted());
+            model.addAttribute("interviewsScheduled", agencyDashboard.interviewsScheduled());
+            model.addAttribute("onboardedEmployees", agencyDashboard.onboardedEmployees());
+            model.addAttribute("status", agencyDashboard.status());
+            model.addAttribute("recentNotifications", agencyDashboard.recentNotifications());
+            return "agency/agency_dashboard";
         }
 
         RoleDashboardView dashboard = roleLandingService.getDashboardByPath(path);

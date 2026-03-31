@@ -68,6 +68,8 @@ public interface AgencyCandidatePreOnboardingRepository extends JpaRepository<Ag
     Optional<AgencyCandidatePreOnboardingEntity> findByInterviewDetailRecruitmentInterviewDetailId(
             Long recruitmentInterviewDetailId);
 
+    long countByInterviewDetailAgencyAgencyId(Long agencyId);
+
     long countByInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndOnboardedAtIsNotNull(
             Long recruitmentDesignationVacancyId);
 }
