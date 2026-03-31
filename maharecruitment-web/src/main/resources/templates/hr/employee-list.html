@@ -44,6 +44,39 @@
             font-weight: 700;
             color: #4a5568;
         }
+
+        .employee-filter-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+            justify-content: flex-end;
+        }
+
+        .employee-filter-field {
+            min-width: 150px;
+        }
+
+        .employee-filter-search {
+            min-width: 260px;
+            flex: 1 1 280px;
+        }
+
+        .employee-filter-actions {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .employee-detail-link {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .employee-detail-link:hover {
+            color: var(--primary, #0d6efd);
+            text-decoration: underline;
+        }
     </style>
 </head>
 
@@ -52,25 +85,58 @@
     <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Employees', ~{::section})}">
         <section>
             <div class="card employee-table-card">
-                <div class="header d-flex justify-content-between align-items-center">
+                <div class="header d-flex flex-wrap justify-content-between align-items-end gap-3">
                     <div>
                         <h2 class="mb-0" th:text="${pageTitle != null ? pageTitle : 'Employees'}">Employees</h2>
                         <p class="text-muted mb-0" th:text="${pageSubtitle != null ? pageSubtitle : 'Employee list'}">Employee list</p>
                     </div>
-                    <div class="filter-group">
-                        <form th:action="@{/hr/employees}" method="get" class="d-flex align-items-center gap-2">
-                            <label class="form-label mb-0 me-2 text-muted fw-bold small text-uppercase">Recruitment Type:</label>
-                            <select name="type" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 150px;">
-                                <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
-                                <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
-                                <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
-                            </select>
+                    <div class="filter-group flex-grow-1">
+                        <form method="get"
+                            class="employee-filter-form"
+                            th:action="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
+                            <input type="hidden" name="page" value="0">
+                            <div class="employee-filter-field employee-filter-search">
+                                <label class="form-label mb-1">Search</label>
+                                <input type="text"
+                                    name="search"
+                                    class="form-control form-control-sm"
+                                    th:value="${searchTerm}"
+                                    placeholder="Request ID, project name, internal, external">
+                            </div>
+                            <div class="employee-filter-field">
+                                <label class="form-label mb-1">Type</label>
+                                <select name="type" class="form-select form-select-sm">
+                                    <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
+                                    <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
+                                    <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
+                                </select>
+                            </div>
+                            <div class="employee-filter-field">
+                                <label class="form-label mb-1">Page Size</label>
+                                <select name="size" class="form-select form-select-sm">
+                                    <option value="10" th:selected="${pageSize == 10}">10 per page</option>
+                                    <option value="25" th:selected="${pageSize == 25}">25 per page</option>
+                                    <option value="50" th:selected="${pageSize == 50}">50 per page</option>
+                                </select>
+                            </div>
+                            <div class="employee-filter-actions">
+                                <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                                <a class="btn btn-outline-secondary btn-sm"
+                                    th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
+                                    Clear
+                                </a>
+                            </div>
                         </form>
                     </div>
                 </div>
                 <div class="card-body p-0">
                     <div th:if="${successMessage}" class="alert alert-success m-3" th:text="${successMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger m-3" th:text="${errorMessage}"></div>
+
+                    <div class="px-4 pt-3 text-muted small"
+                        th:text="${employeePage.totalElements > 0 ? 'Showing ' + (employeePage.number * employeePage.size + 1) + ' to ' + (employeePage.number * employeePage.size + employeePage.numberOfElements) + ' of ' + employeePage.totalElements + ' employees' : 'No employee records found for the current filter'}">
+                        Showing 1 to 10 of 10 employees
+                    </div>
 
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
@@ -79,7 +145,7 @@
                                     <th class="ps-4">Employee Information</th>
                                     <th>Employee Code</th>
                                     <th>Request ID</th>
-                                    <th>Full Name</th>
+                                    <th>Project Name</th>
                                     <th>Agency</th>
                                     <th>Department</th>
                                     <th>Designation</th>
@@ -95,17 +161,24 @@
                                             <div class="employee-avatar me-3"
                                                 th:text="${#strings.substring(emp.fullName, 0, 1)}">E</div>
                                             <div>
-                                                <div class="fw-bold" th:text="${emp.fullName}">Full Name</div>
+                                                <a class="employee-detail-link fw-bold"
+                                                    th:href="@{/hr/employees/{employeeId}(employeeId=${emp.employeeId},status=${currentStatus},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}"
+                                                    th:text="${emp.fullName}">
+                                                    Full Name
+                                                </a>
                                                 <small class="text-muted" th:text="${emp.email}">email@domain.com</small>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-secondary-subtle text-secondary-emphasis"
-                                            th:text="${emp.employeeCode}">EMP001</span>
+                                        <a class="employee-detail-link"
+                                            th:href="@{/hr/employees/{employeeId}(employeeId=${emp.employeeId},status=${currentStatus},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis"
+                                                th:text="${emp.employeeCode}">EMP001</span>
+                                        </a>
                                     </td>
                                     <td th:text="${emp.requestId}">REQ-001</td>
-                                    <td th:text="${emp.fullName}">Full Name</td>
+                                    <td th:text="${emp.projectName}">Project Name</td>
                                     <td th:text="${emp.agencyName}">Agency</td>
                                     <td th:text="${emp.department}">Department</td>
                                     <td th:text="${emp.designation}">Designation</td>
@@ -150,13 +223,13 @@
                                 <ul class="pagination app-pagination mb-0">
                                     <li class="page-item" th:classappend="${employeePage.first} ? ' disabled'">
                                         <a class="page-link"
-                                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType}, page=${employeePage.number - 1}, size=${employeePage.size})} : @{/hr/employees(type=${currentType}, page=${employeePage.number - 1}, size=${employeePage.size})}">
+                                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},search=${searchTerm},page=${employeePage.number - 1},size=${employeePage.size})} : @{/hr/employees(type=${currentType},search=${searchTerm},page=${employeePage.number - 1},size=${employeePage.size})}">
                                             Previous
                                         </a>
                                     </li>
                                     <li class="page-item" th:classappend="${employeePage.number == 0} ? ' active'">
                                         <a class="page-link"
-                                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType}, page=0, size=${employeePage.size})} : @{/hr/employees(type=${currentType}, page=0, size=${employeePage.size})}">
+                                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},search=${searchTerm},page=0,size=${employeePage.size})} : @{/hr/employees(type=${currentType},search=${searchTerm},page=0,size=${employeePage.size})}">
                                             1
                                         </a>
                                     </li>
@@ -167,7 +240,7 @@
                                         <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
                                             th:classappend="${pageIndex == employeePage.number} ? ' active'">
                                             <a class="page-link"
-                                                th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType}, page=${pageIndex}, size=${employeePage.size})} : @{/hr/employees(type=${currentType}, page=${pageIndex}, size=${employeePage.size})}"
+                                                th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},search=${searchTerm},page=${pageIndex},size=${employeePage.size})} : @{/hr/employees(type=${currentType},search=${searchTerm},page=${pageIndex},size=${employeePage.size})}"
                                                 th:text="${pageIndex + 1}">2</a>
                                         </li>
                                     </th:block>
@@ -177,12 +250,12 @@
                                     <li class="page-item" th:if="${employeePage.totalPages > 1}"
                                         th:classappend="${employeePage.number == employeePage.totalPages - 1} ? ' active'">
                                         <a class="page-link"
-                                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType}, page=${employeePage.totalPages - 1}, size=${employeePage.size})} : @{/hr/employees(type=${currentType}, page=${employeePage.totalPages - 1}, size=${employeePage.size})}"
+                                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},search=${searchTerm},page=${employeePage.totalPages - 1},size=${employeePage.size})} : @{/hr/employees(type=${currentType},search=${searchTerm},page=${employeePage.totalPages - 1},size=${employeePage.size})}"
                                             th:text="${employeePage.totalPages}">2</a>
                                     </li>
                                     <li class="page-item" th:classappend="${employeePage.last} ? ' disabled'">
                                         <a class="page-link"
-                                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType}, page=${employeePage.number + 1}, size=${employeePage.size})} : @{/hr/employees(type=${currentType}, page=${employeePage.number + 1}, size=${employeePage.size})}">
+                                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},search=${searchTerm},page=${employeePage.number + 1},size=${employeePage.size})} : @{/hr/employees(type=${currentType},search=${searchTerm},page=${employeePage.number + 1},size=${employeePage.size})}">
                                             Next
                                         </a>
                                     </li>

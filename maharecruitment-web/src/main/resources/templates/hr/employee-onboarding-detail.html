@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Onboarding Details</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/pre-onboarding.css}" />
+    <style>
+        .employee-detail-page .card-body {
+            padding: 24px;
+        }
+
+        .employee-detail-page .document-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .employee-detail-page .detail-value {
+            background-color: #f8fbff;
+            border-radius: 12px;
+            min-height: 44px;
+        }
+
+        .employee-detail-page textarea.detail-value {
+            min-height: 108px;
+            resize: none;
+        }
+
+        .employee-detail-page .status-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .employee-detail-page .status-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 7px 14px;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .employee-detail-page .status-chip.is-active {
+            background: rgba(25, 135, 84, 0.12);
+            color: #146c43;
+        }
+
+        .employee-detail-page .status-chip.is-resigned {
+            background: rgba(220, 53, 69, 0.12);
+            color: #b02a37;
+        }
+
+        .employee-detail-page .employee-hero-shell {
+            grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.95fr) minmax(180px, 220px);
+            align-items: start;
+            column-gap: 18px;
+            row-gap: 18px;
+        }
+
+        .employee-detail-page .employee-hero-copy {
+            gap: 16px;
+            min-width: 0;
+        }
+
+        .employee-detail-page .employee-hero-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .employee-detail-page .employee-hero-name-block {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .employee-detail-page .employee-hero-subtitle {
+            margin: 0;
+            color: var(--onboard-muted);
+            line-height: 1.55;
+            max-width: 56ch;
+        }
+
+        .employee-detail-page .employee-hero-fact-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .employee-detail-page .employee-hero-fact {
+            border: 1px solid rgba(31, 79, 120, 0.12);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.94);
+            padding: 14px 16px;
+            min-height: 92px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 1px 2px rgba(17, 39, 69, 0.05);
+        }
+
+        .employee-detail-page .employee-hero-fact-label {
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--onboard-muted);
+            margin-bottom: 4px;
+        }
+
+        .employee-detail-page .employee-hero-fact-value {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: var(--onboard-text);
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .employee-detail-page .employee-hero-summary-grid {
+            grid-column: 2;
+            align-self: stretch;
+        }
+
+        .employee-detail-page .employee-hero-photo {
+            grid-column: 3;
+            width: min(100%, 220px);
+            justify-self: end;
+            align-self: start;
+        }
+
+        .employee-detail-page .passport-photo-panel {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        .employee-detail-page .passport-photo-frame {
+            max-width: 132px;
+            min-height: 0;
+        }
+
+        .employee-detail-page .section-block {
+            margin-bottom: 20px;
+        }
+
+        .employee-detail-page .section-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .employee-detail-page .section-block .row {
+            --bs-gutter-x: 1.2rem;
+            --bs-gutter-y: 0.95rem;
+        }
+
+        .employee-detail-page .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 0;
+        }
+
+        .employee-detail-page .form-label {
+            margin-bottom: 0;
+        }
+
+        .employee-detail-page .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .employee-detail-page .section-heading .section-title {
+            margin-bottom: 0;
+        }
+
+        .employee-detail-page .document-file-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px dashed var(--onboard-line);
+        }
+
+        .employee-detail-page .employment-list {
+            display: grid;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .employee-detail-page .check-card {
+            min-height: 58px;
+        }
+
+        @media (max-width: 991.98px) {
+            .employee-detail-page .employee-hero-shell {
+                grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
+            }
+
+            .employee-detail-page .employee-hero-summary-grid {
+                grid-column: 1 / -1;
+            }
+
+            .employee-detail-page .employee-hero-photo {
+                grid-column: 2;
+            }
+
+            .employee-detail-page .passport-photo-panel {
+                align-self: flex-start;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .employee-detail-page .card-body {
+                padding: 18px;
+            }
+
+            .employee-detail-page .employee-hero-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .employee-detail-page .employee-hero-summary-grid,
+            .employee-detail-page .employee-hero-photo {
+                grid-column: auto;
+            }
+
+            .employee-detail-page .employee-hero-fact-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .employee-detail-page .employee-hero-photo {
+                width: min(100%, 190px);
+                justify-self: start;
+            }
+        }
+    </style>
+</head>
+
+<body class="hr-shell employee-detail-page">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Employee Onboarding Details', ~{::section})}">
+        <section>
+            <div class="card add-emp-card pre-onboarding-card">
+                <div class="header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h2 class="mb-0">Employee Onboarding Details</h2>
+                        <small class="text-muted">Full employee profile captured during onboarding, including HR verification, documents, and previous employment.</small>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm"
+                        th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})} : @{/hr/employees(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                        Back to Employees
+                    </a>
+                </div>
+                <div class="card-body" th:with="detail=${employeeDetail.onboardingForm}">
+                    <div class="pre-onboarding-hero hero-hr employee-hero-shell">
+                        <div class="pre-onboarding-hero-copy employee-hero-copy">
+                            <span class="pre-onboarding-eyebrow">
+                                <i class="fa-solid fa-id-card"></i>
+                                <span>Onboarded employee</span>
+                            </span>
+                            <div class="employee-hero-heading">
+                                <div class="employee-hero-name-block">
+                                    <h3 class="pre-onboarding-hero-title" th:text="${detail.name != null ? detail.name : 'Employee'}">Employee</h3>
+                                    <p class="employee-hero-subtitle">
+                                        Review the approved onboarding record, candidate profile, employment history, and uploaded documents.
+                                    </p>
+                                </div>
+                                <div class="status-chip-row">
+                                    <span class="status-chip"
+                                        th:classappend="${employeeDetail.status == 'RESIGNED'} ? ' is-resigned' : ' is-active'"
+                                        th:text="${employeeDetail.status != null ? employeeDetail.status : 'ACTIVE'}">
+                                        ACTIVE
+                                    </span>
+                                    <span class="status-chip is-active"
+                                        th:text="${employeeDetail.recruitmentType != null ? employeeDetail.recruitmentType : 'UNKNOWN'}">
+                                        INTERNAL
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="employee-hero-fact-grid">
+                                <div class="employee-hero-fact">
+                                    <span class="employee-hero-fact-label">Employee Code</span>
+                                    <strong class="employee-hero-fact-value"
+                                        th:text="${employeeDetail.employeeCode != null ? employeeDetail.employeeCode : '-'}">
+                                        EMP001
+                                    </strong>
+                                </div>
+                                <div class="employee-hero-fact">
+                                    <span class="employee-hero-fact-label">Designation</span>
+                                    <strong class="employee-hero-fact-value"
+                                        th:text="${detail.designation != null ? detail.designation : '-'}">
+                                        Designation
+                                    </strong>
+                                </div>
+                                <div class="employee-hero-fact">
+                                    <span class="employee-hero-fact-label">Agency</span>
+                                    <strong class="employee-hero-fact-value"
+                                        th:text="${detail.agencyName != null ? detail.agencyName : '-'}">
+                                        Agency
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pre-onboarding-summary-grid employee-hero-summary-grid">
+                            <div class="summary-card">
+                                <span class="summary-card-label">Request ID</span>
+                                <strong class="summary-card-value" th:text="${detail.requestId != null ? detail.requestId : '-'}">REQ-0001</strong>
+                            </div>
+                            <div class="summary-card">
+                                <span class="summary-card-label">Project</span>
+                                <strong class="summary-card-value" th:text="${detail.projectName != null ? detail.projectName : '-'}">Project</strong>
+                            </div>
+                            <div class="summary-card">
+                                <span class="summary-card-label">Department</span>
+                                <strong class="summary-card-value" th:text="${detail.department != null ? detail.department : '-'}">Department</strong>
+                                <span class="summary-card-subvalue" th:text="${detail.subDeptName != null ? detail.subDeptName : '-'}">Sub Department</span>
+                            </div>
+                            <div class="summary-card">
+                                <span class="summary-card-label">HR Onboarding</span>
+                                <strong class="summary-card-value"
+                                    th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MMM-yyyy') : '-'}">
+                                    01-Apr-2026
+                                </strong>
+                                <span class="summary-card-subvalue"
+                                    th:text="${detail.hrOnboardingLocation != null ? detail.hrOnboardingLocation : 'Location not available'}">
+                                    Location
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="passport-photo-panel employee-hero-photo">
+                            <div class="passport-photo-panel-header">
+                                <span class="passport-photo-heading">Passport Photo</span>
+                                <small class="text-muted">Top preview</small>
+                            </div>
+                            <div class="passport-photo-frame">
+                                <img id="employeePhotoPreview" class="passport-photo-image d-none"
+                                    th:attr="data-managed-path=${detail.existingPhotoFilePath}, data-managed-name=${detail.existingPhotoFileName}"
+                                    alt="Employee Photo" />
+                                <div id="employeePhotoEmpty" class="passport-photo-empty">
+                                    <i class="fa-regular fa-image"></i>
+                                    <span>No photo uploaded</span>
+                                </div>
+                            </div>
+                            <div class="passport-photo-actions">
+                                <button type="button" class="btn btn-outline-primary btn-sm passport-photo-action-btn"
+                                    th:if="${detail.existingPhotoFilePath != null}"
+                                    th:attr="data-path=${detail.existingPhotoFilePath}"
+                                    onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                    View Photo
+                                </button>
+                                <span class="passport-photo-file-name text-muted text-truncate"
+                                    th:text="${detail.existingPhotoFileName != null ? detail.existingPhotoFileName : 'No photo uploaded'}">
+                                    No photo uploaded
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-heading">
+                            <h5 class="section-title">Personal Details</h5>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.name}" readonly>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Email</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.email}" readonly>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Mobile</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.mobile}" readonly>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Date of Birth</label>
+                                <input type="text" class="form-control readonly-field detail-value"
+                                    th:value="${detail.dob != null ? #temporals.format(detail.dob, 'dd-MMM-yyyy') : '-'}" readonly>
+                            </div>
+                            <div class="col-md-8 form-group">
+                                <label class="form-label">Address</label>
+                                <textarea class="form-control readonly-field detail-value" rows="3" readonly th:text="${detail.address}"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-heading">
+                            <h5 class="section-title">Employment And Onboarding</h5>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Employee Code</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${employeeDetail.employeeCode != null ? employeeDetail.employeeCode : '-'}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Recruitment Type</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${employeeDetail.recruitmentType != null ? employeeDetail.recruitmentType : '-'}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Status</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${employeeDetail.status != null ? employeeDetail.status : '-'}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Resignation Date</label>
+                                <input type="text" class="form-control readonly-field detail-value"
+                                    th:value="${employeeDetail.resignationDate != null ? #temporals.format(employeeDetail.resignationDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Request ID</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.requestId}" readonly>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Project</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.projectName}" readonly>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Agency Name</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.agencyName}" readonly>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Department</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.department}" readonly>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Sub Department</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.subDeptName}" readonly>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Designation</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.designation}" readonly>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Level Code</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.levelCode}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Joining Date</label>
+                                <input type="text" class="form-control readonly-field detail-value"
+                                    th:value="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Onboarding Date</label>
+                                <input type="text" class="form-control readonly-field detail-value"
+                                    th:value="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">HR Onboarding Date</label>
+                                <input type="text" class="form-control readonly-field detail-value"
+                                    th:value="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">HR Onboarding Location</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.hrOnboardingLocation != null ? detail.hrOnboardingLocation : '-'}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Agency Verified</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.agencyFlag ? 'Yes' : 'No'}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">HR Verified</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.hrVerified ? 'Yes' : 'No'}" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-heading">
+                            <h5 class="section-title">KYC And Uploaded Documents</h5>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">Aadhaar Number</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.aadhaar != null ? detail.aadhaar : '-'}" readonly>
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">PAN Number</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.pan != null ? detail.pan : '-'}" readonly>
+                            </div>
+                        </div>
+                        <div class="document-actions">
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                th:if="${detail.existingPhotoFilePath != null}"
+                                th:attr="data-path=${detail.existingPhotoFilePath}"
+                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                View Photo
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                th:if="${detail.existingAadhaarFilePath != null}"
+                                th:attr="data-path=${detail.existingAadhaarFilePath}"
+                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                View Aadhaar
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                th:if="${detail.existingPanFilePath != null}"
+                                th:attr="data-path=${detail.existingPanFilePath}"
+                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                View PAN
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                th:if="${detail.existingExperienceDocFilePath != null}"
+                                th:attr="data-path=${detail.existingExperienceDocFilePath}"
+                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                View Experience Document
+                            </button>
+                        </div>
+                        <div class="document-file-list text-muted small">
+                            <div th:text="${detail.existingPhotoFileName != null ? 'Photo: ' + detail.existingPhotoFileName : 'Photo: Not uploaded'}">Photo</div>
+                            <div th:text="${detail.existingAadhaarFileName != null ? 'Aadhaar: ' + detail.existingAadhaarFileName : 'Aadhaar: Not uploaded'}">Aadhaar</div>
+                            <div th:text="${detail.existingPanFileName != null ? 'PAN: ' + detail.existingPanFileName : 'PAN: Not uploaded'}">PAN</div>
+                            <div th:text="${detail.existingExperienceDocFileName != null ? 'Experience: ' + detail.existingExperienceDocFileName : 'Experience: Not uploaded'}">Experience</div>
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-heading">
+                            <h5 class="section-title mb-0">Previous Employment Details</h5>
+                            <div class="experience-highlight">
+                                <span th:text="${detail.totalExperienceYears}">0</span> year(s)
+                                <span th:text="${detail.totalExperienceMonths}">0</span> month(s)
+                            </div>
+                        </div>
+                        <div th:if="${#lists.isEmpty(detail.previousEmployments)}" class="text-muted mt-3">
+                            No previous employment records were captured during onboarding.
+                        </div>
+                        <div th:if="${!#lists.isEmpty(detail.previousEmployments)}" class="employment-list">
+                            <div class="employment-row" th:each="employment, stat : ${detail.previousEmployments}">
+                                <div class="employment-row-header">
+                                    <strong class="employment-row-title" th:text="${'Employment #' + (stat.index + 1)}">Employment #1</strong>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 form-group">
+                                        <label class="form-label">Company Name</label>
+                                        <input type="text" class="form-control readonly-field detail-value" th:value="${employment.companyName}" readonly>
+                                    </div>
+                                    <div class="col-md-3 form-group">
+                                        <label class="form-label">Designation</label>
+                                        <input type="text" class="form-control readonly-field detail-value" th:value="${employment.designation != null ? employment.designation : '-'}" readonly>
+                                    </div>
+                                    <div class="col-md-2 form-group">
+                                        <label class="form-label">Start Date</label>
+                                        <input type="text" class="form-control readonly-field detail-value"
+                                            th:value="${employment.startDate != null ? #temporals.format(employment.startDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                                    </div>
+                                    <div class="col-md-3 form-group">
+                                        <label class="form-label">End Date</label>
+                                        <input type="text" class="form-control readonly-field detail-value"
+                                            th:value="${employment.endDate != null ? #temporals.format(employment.endDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-heading">
+                            <h5 class="section-title">Document Checklist</h5>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docEducationalCert}" disabled><span>Educational Certificates</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docExperienceLetter}" disabled><span>Experience Letter</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docRelievingLetter}" disabled><span>Relieving Letter</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docPayslips}" disabled><span>Salary Payslips</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docDeclarationForm}" disabled><span>Declaration Form</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docNda}" disabled><span>NDA Document</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docMedicalFitness}" disabled><span>Medical Fitness Cert</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docAddressProof}" disabled><span>Address Proof</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docPassportPhoto}" disabled><span>Passport Photo</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docAadhaar}" disabled><span>Aadhaar Copy</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docPan}" disabled><span>PAN Card Copy</span></label></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+    <script th:inline="javascript">
+        window.employeeDetailConfig = { contextPath: /*[[@{/}]]*/ '/' };
+
+        function openManagedDocument(path) {
+            if (!path) {
+                return;
+            }
+            try {
+                const contextPath = window.employeeDetailConfig && window.employeeDetailConfig.contextPath
+                    ? window.employeeDetailConfig.contextPath
+                    : "/";
+                const encodedPath = encodeURIComponent(btoa(path));
+                window.open(contextPath + "documents/view?path=" + encodedPath, "_blank");
+            } catch (error) {
+                window.alert("Unable to open the uploaded document.");
+            }
+        }
+
+        (function hydrateEmployeePhotoPreview() {
+            const image = document.getElementById("employeePhotoPreview");
+            const emptyState = document.getElementById("employeePhotoEmpty");
+            if (!image) {
+                return;
+            }
+
+            const managedPath = image.getAttribute("data-managed-path");
+            if (!managedPath) {
+                return;
+            }
+
+            try {
+                const contextPath = window.employeeDetailConfig && window.employeeDetailConfig.contextPath
+                    ? window.employeeDetailConfig.contextPath
+                    : "/";
+                const encodedPath = encodeURIComponent(btoa(managedPath));
+                image.src = contextPath + "documents/view?path=" + encodedPath;
+                image.classList.remove("d-none");
+                if (emptyState) {
+                    emptyState.classList.add("d-none");
+                }
+            } catch (error) {
+                if (emptyState) {
+                    emptyState.classList.remove("d-none");
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>
