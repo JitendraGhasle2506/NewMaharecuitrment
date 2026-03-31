@@ -72,8 +72,8 @@ body.tax-invoice {
 }
 
 .tax-invoice .qr-code-image {
-    width: 92px;
-    height: 92px;
+    width: 140px;
+    height: 140px;
     display: block;
     margin: 0 auto;
     object-fit: contain;
