@@ -808,35 +808,54 @@
                         </div>
                     </div>
 
-                    <div class="pagination-shell" th:if="${notificationPage.totalPages > 1}"
-                        th:with="startPage=${notificationPage.number - 2 > 0 ? notificationPage.number - 2 : 0},
-                                 endPage=${notificationPage.number + 2 < notificationPage.totalPages - 1 ? notificationPage.number + 2 : notificationPage.totalPages - 1}">
-                        <div class="pagination-summary">
-                            Page <span th:text="${notificationPage.number + 1}">1</span> of
-                            <span th:text="${notificationPage.totalPages}">1</span>
+                    <div class="app-pagination-shell"
+                        th:if="${notificationPage.totalPages > 1}"
+                        th:with="middleStart=${notificationPage.number - 2 > 1 ? notificationPage.number - 2 : 1},
+                                 middleEnd=${notificationPage.number + 2 < notificationPage.totalPages - 2 ? notificationPage.number + 2 : notificationPage.totalPages - 2},
+                                 showingFrom=${notificationPage.totalElements == 0 ? 0 : notificationPage.number * notificationPage.size + 1},
+                                 showingTo=${notificationPage.totalElements == 0 ? 0 : notificationPage.number * notificationPage.size + notificationPage.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                <span th:text="${notificationPage.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${notificationPage.number + 1}">1</span> of <span th:text="${notificationPage.totalPages}">1</span>
+                            </div>
                         </div>
                         <nav aria-label="Agency recruitment notification pagination">
-                            <ul class="pagination pagination-sm">
-                                <li class="page-item" th:classappend="${notificationPage.first ? ' disabled' : ''}">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${notificationPage.first} ? ' disabled'">
                                     <a class="page-link"
-                                        th:href="@{/agency/recruitment-notifications(page=${notificationPage.number - 1},size=${notificationPage.size},search=${searchTerm})}">
-                                        Previous
-                                    </a>
+                                        th:href="@{/agency/recruitment-notifications(page=${notificationPage.number - 1},size=${notificationPage.size},search=${searchTerm})}">Previous</a>
                                 </li>
-                                <li class="page-item"
-                                    th:each="pageIndex : ${#numbers.sequence(startPage, endPage)}"
-                                    th:classappend="${pageIndex == notificationPage.number ? ' active' : ''}">
+                                <li class="page-item" th:classappend="${notificationPage.number == 0} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/agency/recruitment-notifications(page=${pageIndex},size=${notificationPage.size},search=${searchTerm})}"
-                                        th:text="${pageIndex + 1}">
-                                        1
-                                    </a>
+                                        th:href="@{/agency/recruitment-notifications(page=0,size=${notificationPage.size},search=${searchTerm})}">1</a>
                                 </li>
-                                <li class="page-item" th:classappend="${notificationPage.last ? ' disabled' : ''}">
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == notificationPage.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/agency/recruitment-notifications(page=${pageIndex},size=${notificationPage.size},search=${searchTerm})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < notificationPage.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${notificationPage.totalPages > 1}"
+                                    th:classappend="${notificationPage.number == notificationPage.totalPages - 1} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/agency/recruitment-notifications(page=${notificationPage.number + 1},size=${notificationPage.size},search=${searchTerm})}">
-                                        Next
-                                    </a>
+                                        th:href="@{/agency/recruitment-notifications(page=${notificationPage.totalPages - 1},size=${notificationPage.size},search=${searchTerm})}"
+                                        th:text="${notificationPage.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${notificationPage.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/agency/recruitment-notifications(page=${notificationPage.number + 1},size=${notificationPage.size},search=${searchTerm})}">Next</a>
                                 </li>
                             </ul>
                         </nav>

@@ -193,7 +193,6 @@
                                     <th>Request ID</th>
                                     <th>Project Name</th>
                                     <th>Department</th>
-                                    <th class="text-center">Notifications</th>
                                     <th class="text-center">Released</th>
                                     <th class="text-center">Pending</th>
                                 </tr>
@@ -201,7 +200,7 @@
                             <tbody>
                                 <tr
                                     th:if="${rankReleaseListView == null or #lists.isEmpty(rankReleaseListView.releaseGroups)}">
-                                    <td colspan="6" class="text-center text-muted">
+                                    <td colspan="5" class="text-center text-muted">
                                         No rank release records found.
                                     </td>
                                 </tr>
@@ -237,7 +236,6 @@
                                                 Sub-department not mapped
                                             </small>
                                         </td>
-                                        <td class="text-center" th:text="${group.notificationCount}">1</td>
                                         <td class="text-center">
                                             <span class="rank-release-chip is-success"
                                                 th:text="${group.releasedCount}">0</span>
@@ -248,7 +246,7 @@
                                         </td>
                                     </tr>
                                     <tr class="rank-release-detail-row" th:with="collapseId=${'rank-release-detail-' + groupStat.count}">
-                                        <td colspan="6">
+                                        <td colspan="5">
                                             <div class="collapse" th:id="${collapseId}">
                                                 <div class="rank-release-detail-shell">
                                                     <div class="rank-release-detail-header">
@@ -328,35 +326,54 @@
                         </table>
                     </div>
 
-                    <div class="rank-release-pagination"
+                    <div class="app-pagination-shell"
                         th:if="${rankReleaseListView != null and rankReleaseListView.totalPages > 1}"
-                        th:with="startPage=${rankReleaseListView.pageNumber - 2 > 0 ? rankReleaseListView.pageNumber - 2 : 0},
-                                 endPage=${rankReleaseListView.pageNumber + 2 < rankReleaseListView.totalPages - 1 ? rankReleaseListView.pageNumber + 2 : rankReleaseListView.totalPages - 1}">
-                        <div class="rank-release-summary">
-                            Page <span th:text="${rankReleaseListView.pageNumber + 1}">1</span> of
-                            <span th:text="${rankReleaseListView.totalPages}">1</span>
+                        th:with="middleStart=${rankReleaseListView.pageNumber - 2 > 1 ? rankReleaseListView.pageNumber - 2 : 1},
+                                 middleEnd=${rankReleaseListView.pageNumber + 2 < rankReleaseListView.totalPages - 2 ? rankReleaseListView.pageNumber + 2 : rankReleaseListView.totalPages - 2}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${rankReleaseListView.showingFrom}">1</span> to
+                                <span th:text="${rankReleaseListView.showingTo}">10</span> of
+                                <span th:text="${rankReleaseListView.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${rankReleaseListView.pageNumber + 1}">1</span> of
+                                <span th:text="${rankReleaseListView.totalPages}">1</span>
+                            </div>
                         </div>
                         <nav aria-label="Rank release overview pagination">
-                            <ul class="pagination pagination-sm">
-                                <li class="page-item" th:classappend="${!rankReleaseListView.hasPrevious} ? 'disabled'">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${!rankReleaseListView.hasPrevious} ? ' disabled'">
                                     <a class="page-link"
-                                        th:href="@{/hr/department-requests/rank-release-overview(page=${rankReleaseListView.pageNumber - 1},size=${rankReleaseListView.pageSize})}">
-                                        Previous
-                                    </a>
+                                        th:href="@{/hr/department-requests/rank-release-overview(page=${rankReleaseListView.pageNumber - 1},size=${rankReleaseListView.pageSize})}">Previous</a>
                                 </li>
-                                <li class="page-item" th:each="pageIndex : ${#numbers.sequence(startPage, endPage)}"
-                                    th:classappend="${pageIndex == rankReleaseListView.pageNumber} ? 'active'">
+                                <li class="page-item" th:classappend="${rankReleaseListView.pageNumber == 0} ? ' active'">
                                     <a class="page-link"
-                                        th:text="${pageIndex + 1}"
-                                        th:href="@{/hr/department-requests/rank-release-overview(page=${pageIndex},size=${rankReleaseListView.pageSize})}">
-                                        1
-                                    </a>
+                                        th:href="@{/hr/department-requests/rank-release-overview(page=0,size=${rankReleaseListView.pageSize})}">1</a>
                                 </li>
-                                <li class="page-item" th:classappend="${!rankReleaseListView.hasNext} ? 'disabled'">
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == rankReleaseListView.pageNumber} ? ' active'">
+                                        <a class="page-link"
+                                            th:text="${pageIndex + 1}"
+                                            th:href="@{/hr/department-requests/rank-release-overview(page=${pageIndex},size=${rankReleaseListView.pageSize})}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < rankReleaseListView.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${rankReleaseListView.totalPages > 1}"
+                                    th:classappend="${rankReleaseListView.pageNumber == rankReleaseListView.totalPages - 1} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/hr/department-requests/rank-release-overview(page=${rankReleaseListView.pageNumber + 1},size=${rankReleaseListView.pageSize})}">
-                                        Next
-                                    </a>
+                                        th:href="@{/hr/department-requests/rank-release-overview(page=${rankReleaseListView.totalPages - 1},size=${rankReleaseListView.pageSize})}"
+                                        th:text="${rankReleaseListView.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${!rankReleaseListView.hasNext} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/hr/department-requests/rank-release-overview(page=${rankReleaseListView.pageNumber + 1},size=${rankReleaseListView.pageSize})}">Next</a>
                                 </li>
                             </ul>
                         </nav>

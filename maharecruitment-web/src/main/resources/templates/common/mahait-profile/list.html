@@ -74,22 +74,54 @@
                         </table>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-3"
-                        th:if="${profiles.totalPages > 1}">
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!profiles.first}"
-                            th:href="@{/common/mahait-profile(page=${profiles.number - 1},size=${profiles.size})}">
-                            Previous
-                        </a>
-                        <span th:if="${profiles.first}"></span>
-                        <span class="small text-muted">
-                            Page <span th:text="${profiles.number + 1}"></span> of <span
-                                th:text="${profiles.totalPages}"></span>
-                        </span>
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!profiles.last}"
-                            th:href="@{/common/mahait-profile(page=${profiles.number + 1},size=${profiles.size})}">
-                            Next
-                        </a>
-                        <span th:if="${profiles.last}"></span>
+                    <div class="app-pagination-shell"
+                        th:if="${profiles.totalPages > 1}"
+                        th:with="middleStart=${profiles.number - 2 > 1 ? profiles.number - 2 : 1},
+                                 middleEnd=${profiles.number + 2 < profiles.totalPages - 2 ? profiles.number + 2 : profiles.totalPages - 2},
+                                 showingFrom=${profiles.totalElements == 0 ? 0 : profiles.number * profiles.size + 1},
+                                 showingTo=${profiles.totalElements == 0 ? 0 : profiles.number * profiles.size + profiles.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                <span th:text="${profiles.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${profiles.number + 1}">1</span> of <span th:text="${profiles.totalPages}">1</span>
+                            </div>
+                        </div>
+                        <nav aria-label="MahaIT profile pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${profiles.first} ? ' disabled'">
+                                    <a class="page-link" th:href="@{/common/mahait-profile(page=${profiles.number - 1},size=${profiles.size})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:classappend="${profiles.number == 0} ? ' active'">
+                                    <a class="page-link" th:href="@{/common/mahait-profile(page=0,size=${profiles.size})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == profiles.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/common/mahait-profile(page=${pageIndex},size=${profiles.size})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < profiles.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${profiles.totalPages > 1}"
+                                    th:classappend="${profiles.number == profiles.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/common/mahait-profile(page=${profiles.totalPages - 1},size=${profiles.size})}"
+                                        th:text="${profiles.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${profiles.last} ? ' disabled'">
+                                    <a class="page-link" th:href="@{/common/mahait-profile(page=${profiles.number + 1},size=${profiles.size})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>

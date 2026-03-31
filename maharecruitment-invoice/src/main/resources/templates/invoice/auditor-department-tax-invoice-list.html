@@ -262,25 +262,56 @@
                 </div>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2" th:if="${taxInvoices.totalPages > 1}">
-                <a class="btn btn-outline-secondary btn-sm"
-                   th:if="${!taxInvoices.first}"
-                   th:href="@{/auditor/department-tax-invoices(page=${taxInvoices.number - 1},size=${taxInvoices.size})}">
-                    <i class="fa fa-arrow-left me-1"></i> Previous
-                </a>
-                <span th:if="${taxInvoices.first}"></span>
-
-                <div class="text-muted small fw-semibold">
-                    Page <span th:text="${taxInvoices.number + 1}">1</span> of
-                    <span th:text="${taxInvoices.totalPages}">1</span>
+            <div class="app-pagination-shell"
+                th:if="${taxInvoices.totalPages > 1}"
+                th:with="middleStart=${taxInvoices.number - 2 > 1 ? taxInvoices.number - 2 : 1},
+                         middleEnd=${taxInvoices.number + 2 < taxInvoices.totalPages - 2 ? taxInvoices.number + 2 : taxInvoices.totalPages - 2},
+                         showingFrom=${taxInvoices.totalElements == 0 ? 0 : taxInvoices.number * taxInvoices.size + 1},
+                         showingTo=${taxInvoices.totalElements == 0 ? 0 : taxInvoices.number * taxInvoices.size + taxInvoices.numberOfElements}">
+                <div class="app-pagination-summary">
+                    <div class="app-pagination-meta">
+                        Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                        <span th:text="${taxInvoices.totalElements}">10</span> entries
+                    </div>
+                    <div class="app-pagination-meta">
+                        Page <span th:text="${taxInvoices.number + 1}">1</span> of <span th:text="${taxInvoices.totalPages}">1</span>
+                    </div>
                 </div>
-
-                <a class="btn btn-outline-secondary btn-sm"
-                   th:if="${!taxInvoices.last}"
-                   th:href="@{/auditor/department-tax-invoices(page=${taxInvoices.number + 1},size=${taxInvoices.size})}">
-                    Next <i class="fa fa-arrow-right ms-1"></i>
-                </a>
-                <span th:if="${taxInvoices.last}"></span>
+                <nav aria-label="Department tax invoice pagination">
+                    <ul class="pagination app-pagination mb-0">
+                        <li class="page-item" th:classappend="${taxInvoices.first} ? ' disabled'">
+                            <a class="page-link"
+                                th:href="@{/auditor/department-tax-invoices(page=${taxInvoices.number - 1},size=${taxInvoices.size})}">Previous</a>
+                        </li>
+                        <li class="page-item" th:classappend="${taxInvoices.number == 0} ? ' active'">
+                            <a class="page-link" th:href="@{/auditor/department-tax-invoices(page=0,size=${taxInvoices.size})}">1</a>
+                        </li>
+                        <li class="page-item disabled" th:if="${middleStart > 1}">
+                            <span class="page-link app-pagination-ellipsis">...</span>
+                        </li>
+                        <th:block th:if="${middleStart <= middleEnd}">
+                            <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                th:classappend="${pageIndex == taxInvoices.number} ? ' active'">
+                                <a class="page-link"
+                                    th:href="@{/auditor/department-tax-invoices(page=${pageIndex},size=${taxInvoices.size})}"
+                                    th:text="${pageIndex + 1}">2</a>
+                            </li>
+                        </th:block>
+                        <li class="page-item disabled" th:if="${middleEnd < taxInvoices.totalPages - 2}">
+                            <span class="page-link app-pagination-ellipsis">...</span>
+                        </li>
+                        <li class="page-item" th:if="${taxInvoices.totalPages > 1}"
+                            th:classappend="${taxInvoices.number == taxInvoices.totalPages - 1} ? ' active'">
+                            <a class="page-link"
+                                th:href="@{/auditor/department-tax-invoices(page=${taxInvoices.totalPages - 1},size=${taxInvoices.size})}"
+                                th:text="${taxInvoices.totalPages}">2</a>
+                        </li>
+                        <li class="page-item" th:classappend="${taxInvoices.last} ? ' disabled'">
+                            <a class="page-link"
+                                th:href="@{/auditor/department-tax-invoices(page=${taxInvoices.number + 1},size=${taxInvoices.size})}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </section>
     </th:block>

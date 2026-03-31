@@ -63,16 +63,54 @@
                         </table>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-3" th:if="${roles.totalPages > 1}">
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!roles.first}"
-                            th:href="@{/admin/role-menu-mappings(page=${roles.number - 1},size=${roles.size})}">Previous</a>
-                        <span th:if="${roles.first}"></span>
-                        <span class="small text-muted">
-                            Page <span th:text="${roles.number + 1}"></span> of <span th:text="${roles.totalPages}"></span>
-                        </span>
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!roles.last}"
-                            th:href="@{/admin/role-menu-mappings(page=${roles.number + 1},size=${roles.size})}">Next</a>
-                        <span th:if="${roles.last}"></span>
+                    <div class="app-pagination-shell"
+                        th:if="${roles.totalPages > 1}"
+                        th:with="middleStart=${roles.number - 2 > 1 ? roles.number - 2 : 1},
+                                 middleEnd=${roles.number + 2 < roles.totalPages - 2 ? roles.number + 2 : roles.totalPages - 2},
+                                 showingFrom=${roles.totalElements == 0 ? 0 : roles.number * roles.size + 1},
+                                 showingTo=${roles.totalElements == 0 ? 0 : roles.number * roles.size + roles.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                <span th:text="${roles.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${roles.number + 1}">1</span> of <span th:text="${roles.totalPages}">1</span>
+                            </div>
+                        </div>
+                        <nav aria-label="Role menu mapping pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${roles.first} ? ' disabled'">
+                                    <a class="page-link" th:href="@{/admin/role-menu-mappings(page=${roles.number - 1},size=${roles.size})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:classappend="${roles.number == 0} ? ' active'">
+                                    <a class="page-link" th:href="@{/admin/role-menu-mappings(page=0,size=${roles.size})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == roles.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/admin/role-menu-mappings(page=${pageIndex},size=${roles.size})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < roles.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${roles.totalPages > 1}"
+                                    th:classappend="${roles.number == roles.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/admin/role-menu-mappings(page=${roles.totalPages - 1},size=${roles.size})}"
+                                        th:text="${roles.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${roles.last} ? ' disabled'">
+                                    <a class="page-link" th:href="@{/admin/role-menu-mappings(page=${roles.number + 1},size=${roles.size})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
