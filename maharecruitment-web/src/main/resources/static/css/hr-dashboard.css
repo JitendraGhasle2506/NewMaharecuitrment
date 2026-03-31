@@ -48,7 +48,7 @@ body.hr-shell {
 
 .hero-strip h1 {
     margin: 0;
-    font-size: clamp(1.2rem, 2.1vw, 1.65rem);
+    font-size: var(--heading-size-main);
     font-weight: 700;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
@@ -109,7 +109,7 @@ body.hr-shell {
 
 .panel h4 {
     margin: 0 0 0.8rem;
-    font-size: 1rem;
+    font-size: var(--heading-size-sub);
     font-weight: 700;
     color: var(--hr-ink);
     font-family: "Merriweather Sans", "Public Sans", sans-serif;

@@ -1,15 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Merriweather+Sans:wght@600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap');
-
 :root {
     --font-family-base: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
     --font-family-heading: "Merriweather Sans", "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
     --font-size-xs: 0.8125rem;
-    --font-size-sm: 0.875rem;
+    --font-size-sm: 0.9286rem;
     --font-size-base: 1rem;
-    --font-size-lg: 1.125rem;
-    --font-size-xl: 1.375rem;
+    --font-size-lg: 1.2857rem;
+    --font-size-xl: 1.4286rem;
+    --heading-size-main: 1.4286rem;
+    --heading-size-sub: 1.2857rem;
     --form-font-family: var(--font-family-base);
-    --form-label-font-size: 0.95rem;
+    --form-label-font-size: 1rem;
     --form-control-font-size: 1rem;
     --line-height-base: 1.5;
     --app-bg: #eef3f7;
@@ -44,7 +44,7 @@ body {
 }
 
 html {
-    font-size: 16px;
+    font-size: 14px;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     scrollbar-width: thin;
 }
@@ -56,6 +56,28 @@ body {
     line-height: var(--line-height-base);
     color: var(--text-main);
     background: linear-gradient(180deg, var(--app-bg-soft) 0%, var(--app-bg) 100%);
+}
+
+body,
+button,
+input,
+select,
+textarea,
+.btn,
+.form-control,
+.form-select,
+.form-check-label,
+.dropdown-item,
+.table {
+    font-size: var(--font-size-base);
+}
+
+img,
+svg,
+canvas,
+video {
+    max-width: 100%;
+    height: auto;
 }
 
 /* Unified scrollbar styling */
@@ -599,10 +621,11 @@ body {
 
 .breadcrumb-style .page-title {
     margin: 0;
-    font-size: var(--font-size-xl);
+    font-size: var(--heading-size-main);
     font-family: var(--font-family-heading);
     color: #15355d;
     font-weight: 700;
+    line-height: 1.3;
 }
 
 .breadcrumb-style .breadcrumb-item + .breadcrumb-item::before {
@@ -631,14 +654,27 @@ body {
 .add-emp-card .header {
     border-bottom: 1px solid #dfe8f2;
     padding: 0.95rem 1.05rem;
+    gap: 0.85rem;
+    flex-wrap: wrap;
 }
 
 .add-emp-card .header h2 {
     margin: 0;
     font-family: var(--font-family-heading);
-    font-size: var(--font-size-lg);
+    font-size: var(--heading-size-main);
     color: #17365d;
     font-weight: 700;
+    line-height: 1.3;
+}
+
+.add-emp-card .header h3,
+.section-title,
+.panel-title,
+.summary-title,
+.rank-release-detail-title {
+    font-family: var(--font-family-heading);
+    font-size: var(--heading-size-sub);
+    line-height: 1.35;
 }
 
 .module-grid {
@@ -715,6 +751,14 @@ body {
     .module-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .page-main-content {
+        padding: 1rem 0.9rem;
+    }
+
+    .add-emp-card .header {
+        align-items: flex-start !important;
+    }
 }
 
 @media (max-width: 575.98px) {
@@ -723,7 +767,7 @@ body {
     }
 
     .page-main-content {
-        padding: 0.85rem;
+        padding: 0.85rem 0.75rem;
     }
 
     .user-info-text {
@@ -802,9 +846,7 @@ body {
 }
 
 .section-title {
-    font-family: var(--font-family-heading);
     font-weight: 700;
-    font-size: 1.05rem;
     color: #1d3c63;
     margin-bottom: 1.05rem;
     padding-bottom: 0.42rem;
@@ -824,7 +866,7 @@ body {
 }
 
 .table td {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-base);
     color: #223953;
     border-bottom-color: #e6edf5;
 }
@@ -841,7 +883,7 @@ body {
     border-radius: 8px;
     padding: 0.56rem 1.1rem;
     font-weight: 600;
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-base);
     transition: all 0.2s ease;
 }
 

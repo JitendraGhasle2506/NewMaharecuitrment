@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Merriweather+Sans:wght@600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap');
-
 :root {
     --login-card-bg: rgba(255, 255, 255, 0.92);
     --login-border: rgba(255, 255, 255, 0.84);
@@ -86,7 +84,7 @@
 .hero-panel h1 {
     margin: 0 0 1rem;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
-    font-size: clamp(2rem, 2.8vw, 2.8rem);
+    font-size: var(--heading-size-main);
     line-height: 1.2;
     font-weight: 700;
 }
@@ -168,7 +166,7 @@
     margin: 0 0 0.5rem;
     color: var(--login-text);
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
-    font-size: 1.8rem;
+    font-size: var(--heading-size-main);
     font-weight: 700;
 }
 

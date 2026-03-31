@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Merriweather+Sans:wght@600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap');
-
 :root {
     --registration-card-bg: rgba(255, 255, 255, 0.92);
     --registration-border: rgba(255, 255, 255, 0.84);
@@ -62,7 +60,7 @@ body.portal-shell.department-registration-shell {
 .registration-hero h1 {
     margin: 0;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
-    font-size: clamp(1.8rem, 2.6vw, 2.6rem);
+    font-size: var(--heading-size-main);
     line-height: 1.2;
 }
 
@@ -89,7 +87,7 @@ body.portal-shell.department-registration-shell {
 
 .hero-point h2 {
     margin: 0 0 0.2rem;
-    font-size: 1rem;
+    font-size: var(--heading-size-sub);
     font-weight: 700;
 }
 
@@ -138,7 +136,7 @@ body.portal-shell.department-registration-shell {
     margin: 0;
     color: var(--registration-text);
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
-    font-size: 1.46rem;
+    font-size: var(--heading-size-main);
 }
 
 .status-pill {
@@ -176,7 +174,7 @@ body.portal-shell.department-registration-shell {
 
 .form-section-header h3 {
     margin: 0;
-    font-size: 1.02rem;
+    font-size: var(--heading-size-sub);
     font-weight: 800;
     color: var(--registration-text);
 }
