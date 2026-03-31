@@ -115,7 +115,10 @@ public class DepartmentDashboardServiceImpl implements DepartmentDashboardServic
                 runningProjectCount,
                 pendingPaymentCount,
                 runningProjects,
-                LocalDate.now());
+                LocalDate.now(),
+                employees,
+                allProjects,
+                runningProjectsEntities);
     }
 
     private DepartmentDashboardView emptyDashboard(DepartmentNameContext nameContext) {
@@ -127,7 +130,7 @@ public class DepartmentDashboardServiceImpl implements DepartmentDashboardServic
                 0,
                 0,
                 List.of(),
-                LocalDate.now());
+                LocalDate.now(), null,null,null);
     }
 
     private DepartmentRegistrationEntity resolveDepartmentRegistration(Long departmentRegistrationId, Long userId) {

@@ -16,5 +16,7 @@ public interface DepartmentRegistrationRepository extends JpaRepository<Departme
 
     boolean existsByTanNoIgnoreCase(String tanNo);
 
+    boolean existsByDepartmentIdAndSubDeptId(Long departmentId, Long subDeptId);
+
     List<DepartmentRegistrationEntity> findByDepartmentIdOrderByCreatedAtAsc(Long departmentId);
 }
