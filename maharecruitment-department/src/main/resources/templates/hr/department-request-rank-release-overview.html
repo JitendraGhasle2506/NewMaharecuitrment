@@ -153,7 +153,7 @@
                 <div class="header d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="mb-0">Rank Release Overview</h2>
-                        <small class="text-muted">Global rank order + delay rules -> notification-wise release status</small>
+                        <small class="text-muted">Global rank order + delay rules -> agency-wise release status</small>
                     </div>
                     <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/department-requests/rank-release-rules}">
                         View Rules
@@ -248,17 +248,15 @@
                                     <tr class="rank-release-detail-row" th:with="collapseId=${'rank-release-detail-' + groupStat.count}">
                                         <td colspan="5">
                                             <div class="collapse" th:id="${collapseId}">
-                                                <div class="rank-release-detail-shell">
+                                                    <div class="rank-release-detail-shell">
                                                     <div class="rank-release-detail-header">
                                                         <div>
-                                                            <h3 class="rank-release-detail-title">Released Notification Details</h3>
+                                                            <h3 class="rank-release-detail-title">Release Details</h3>
                                                             <p class="rank-release-detail-note">
-                                                                Review notification-wise agency release status for the selected request.
+                                                                Review agency-wise release status for the selected request.
                                                             </p>
                                                         </div>
                                                         <div class="rank-release-meta">
-                                                            <span class="rank-release-chip"
-                                                                th:text="${'Notifications: ' + group.notificationCount}">Notifications: 1</span>
                                                             <span class="rank-release-chip is-success"
                                                                 th:text="${'Released: ' + group.releasedCount}">Released: 0</span>
                                                             <span class="rank-release-chip is-warning"
@@ -270,7 +268,6 @@
                                                         <table class="table table-bordered table-sm align-middle rank-release-detail-table">
                                                             <thead class="table-light">
                                                                 <tr>
-                                                                    <th>Notification ID</th>
                                                                     <th>Agency</th>
                                                                     <th class="text-center">Rank</th>
                                                                     <th class="text-center">Delay (Days)</th>
@@ -281,10 +278,6 @@
                                                             </thead>
                                                             <tbody>
                                                                 <tr th:each="detail : ${group.releaseDetails}">
-                                                                    <td
-                                                                        th:text="${detail.recruitmentNotificationId != null ? detail.recruitmentNotificationId : '-'}">
-                                                                        -
-                                                                    </td>
                                                                     <td>
                                                                         <div class="agency-copy">
                                                                             <strong th:text="${detail.agencyName != null ? detail.agencyName : '-'}">Agency Name</strong>
