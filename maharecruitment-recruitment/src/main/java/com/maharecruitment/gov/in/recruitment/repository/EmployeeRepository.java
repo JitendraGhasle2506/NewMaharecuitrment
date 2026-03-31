@@ -38,6 +38,10 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             Long recruitmentDesignationVacancyId,
             String status);
 
+    long countByRecruitmentType(String recruitmentType);
+
+    long countByOnboardingDateBetween(java.time.LocalDate startDate, java.time.LocalDate endDate);
+
     List<EmployeeEntity> findByDepartmentRegistration_DepartmentRegistrationId(Long id);
 
     List<EmployeeEntity> findByDepartmentRegistration_DepartmentRegistrationIdAndRecruitmentType(Long id,
