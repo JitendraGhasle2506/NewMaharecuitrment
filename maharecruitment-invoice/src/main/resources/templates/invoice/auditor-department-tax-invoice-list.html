@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Department Tax Invoice | Auditor</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .invoice-list-shell {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        .invoice-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .invoice-list-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .invoice-list-icon {
+            width: 3.2rem;
+            height: 3.2rem;
+            border-radius: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #1d4ed8;
+            font-size: 1.2rem;
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.15);
+        }
+
+        .invoice-summary-card {
+            border: 0;
+            border-radius: 1.25rem;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+        }
+
+        .invoice-meta-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-weight: 600;
+            font-size: 0.86rem;
+        }
+
+        .invoice-table-wrap {
+            border-radius: 1.25rem;
+        }
+
+        .table-invoice-list {
+            table-layout: fixed;
+        }
+
+        .table-invoice-list thead th {
+            white-space: nowrap;
+            background: #f8fafc;
+            color: #334155;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom-width: 1px;
+            padding: 0.95rem 1rem;
+            vertical-align: middle;
+        }
+
+        .table-invoice-list td {
+            vertical-align: middle;
+            padding: 1rem;
+        }
+
+        .invoice-request-cell,
+        .invoice-project-cell,
+        .invoice-generated-cell,
+        .invoice-action-cell {
+            vertical-align: middle;
+        }
+
+        .invoice-request-link {
+            display: inline-grid;
+            gap: 0.2rem;
+            color: #0f172a;
+            text-decoration: none;
+        }
+
+        .invoice-request-link:hover {
+            color: #2563eb;
+        }
+
+        .invoice-request-id {
+            font-weight: 700;
+        }
+
+        .invoice-request-caption {
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        .invoice-project-name {
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .invoice-generated-on {
+            color: #64748b;
+            font-size: 0.88rem;
+            white-space: nowrap;
+        }
+
+        .invoice-action-group {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .invoice-link {
+            color: #0f172a;
+            text-decoration: none;
+        }
+
+        .invoice-link:hover {
+            color: #2563eb;
+        }
+
+        .invoice-empty {
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .audit-person {
+            display: grid;
+            gap: 0.15rem;
+        }
+
+        .audit-person-name {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .audit-person-meta {
+            color: #64748b;
+            font-size: 0.82rem;
+        }
+
+        @media (max-width: 991.98px) {
+            .table-invoice-list {
+                table-layout: auto;
+            }
+
+            .invoice-action-group {
+                justify-content: flex-start;
+            }
+
+            .invoice-generated-on {
+                white-space: normal;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Auditor', 'Department Tax Invoice', ~{::section})}">
+        <section class="invoice-list-shell">
+            <div class="invoice-list-header">
+                <div class="invoice-list-title">
+                    <div class="invoice-list-icon">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold text-dark mb-1">Generated Department Tax Invoices</h2>
+                        <p class="text-muted mb-0">Review all completed and generated department tax invoices from the auditor dashboard.</p>
+                    </div>
+                </div>
+                <div class="invoice-meta-chip">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span th:text="${'Total records: ' + taxInvoices.totalElements}">Total records: 0</span>
+                </div>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success border-0 shadow-sm" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger border-0 shadow-sm" th:text="${errorMessage}"></div>
+
+            <div class="card invoice-summary-card">
+                <div class="table-responsive invoice-table-wrap">
+                    <table class="table table-hover table-invoice-list align-middle mb-0">
+                        <colgroup>
+                            <col style="width: 19%;">
+                            <col style="width: 33%;">
+                            <col style="width: 18%;">
+                            <col style="width: 30%;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Project Name</th>
+                                <th>Generated On</th>
+                                <th class="pe-4 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${taxInvoices.isEmpty()}">
+                                <td colspan="4" class="invoice-empty">
+                                    <div class="mb-2">
+                                        <i class="fa-solid fa-inbox fa-2x opacity-25"></i>
+                                    </div>
+                                    <div class="fw-semibold">No generated department tax invoices found.</div>
+                                </td>
+                            </tr>
+
+                            <tr th:each="invoice : ${taxInvoices.content}">
+                                <td class="invoice-request-cell">
+                                    <a class="invoice-request-link"
+                                       th:href="@{/invoice/tax-invoices/application/{applicationId}(applicationId=${invoice.departmentProjectApplicationId})}"
+                                       >
+                                        <span class="invoice-request-id" th:text="${invoice.requestId}">DPA-0001</span>
+                                        <span class="invoice-request-caption" th:text="${invoice.tiNumber != null ? invoice.tiNumber : 'Tax Invoice'}">Tax Invoice</span>
+                                    </a>
+                                </td>
+                                <td class="invoice-project-cell">
+                                    <div class="invoice-project-name" th:text="${invoice.projectName != null ? invoice.projectName : '-'}">Project Name</div>
+                                </td>
+                                <td class="invoice-generated-cell">
+                                    <div class="invoice-generated-on"
+                                    th:text="${invoice.generatedOn != null ? #temporals.format(invoice.generatedOn, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </div>
+                                </td>
+                                <td class="invoice-action-cell pe-4 text-end">
+                                    <div class="invoice-action-group">
+                                        <a class="btn btn-light btn-sm border rounded-pill px-3 fw-semibold text-primary"
+                                           th:href="@{/invoice/tax-invoices/application/{applicationId}(applicationId=${invoice.departmentProjectApplicationId})}">
+                                            View Invoice <i class="fa-solid fa-arrow-up-right-from-square ms-1 small"></i>
+                                        </a>
+                                        <a class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold"
+                                           th:href="@{/invoice/tax-invoices/application/{applicationId}/audit(applicationId=${invoice.departmentProjectApplicationId})}">
+                                            View Audit Details
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2" th:if="${taxInvoices.totalPages > 1}">
+                <a class="btn btn-outline-secondary btn-sm"
+                   th:if="${!taxInvoices.first}"
+                   th:href="@{/auditor/department-tax-invoices(page=${taxInvoices.number - 1},size=${taxInvoices.size})}">
+                    <i class="fa fa-arrow-left me-1"></i> Previous
+                </a>
+                <span th:if="${taxInvoices.first}"></span>
+
+                <div class="text-muted small fw-semibold">
+                    Page <span th:text="${taxInvoices.number + 1}">1</span> of
+                    <span th:text="${taxInvoices.totalPages}">1</span>
+                </div>
+
+                <a class="btn btn-outline-secondary btn-sm"
+                   th:if="${!taxInvoices.last}"
+                   th:href="@{/auditor/department-tax-invoices(page=${taxInvoices.number + 1},size=${taxInvoices.size})}">
+                    Next <i class="fa fa-arrow-right ms-1"></i>
+                </a>
+                <span th:if="${taxInvoices.last}"></span>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

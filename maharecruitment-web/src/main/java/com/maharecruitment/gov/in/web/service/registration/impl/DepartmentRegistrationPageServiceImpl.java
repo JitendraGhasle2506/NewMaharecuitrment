@@ -83,7 +83,7 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
 
             DepartmentRegistrationRequest request = new DepartmentRegistrationRequest();
             request.setDepartmentId(resolvedDepartment.departmentId());
-            request.setSubDeptId(resolvedSubDepartment.subDepartmentId());
+            request.setSubDeptId(resolvedSubDepartment != null ? resolvedSubDepartment.subDepartmentId() : null);
             request.setDepartmentName(resolvedDepartment.departmentName());
             request.setAddress(form.getAddress());
             request.setBillDepartmentName(form.getBillDepartmentName());
@@ -142,15 +142,18 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
 
     private ResolvedSubDepartment resolveSubDepartment(DepartmentRegistrationForm form, Long departmentId) {
         if (form.isOtherDepartmentSelected() || form.isOtherSubDepartmentSelected()) {
-            SubDepartmentRequest request = new SubDepartmentRequest();
-            request.setDepartmentId(departmentId);
-            request.setSubDeptName(form.getNewSubDeptName());
-            SubDepartmentResponse response = subDepartmentService.create(request);
-            return new ResolvedSubDepartment(response.getSubDeptId(), response.getSubDeptName());
+            if (StringUtils.hasText(form.getNewSubDeptName())) {
+                SubDepartmentRequest request = new SubDepartmentRequest();
+                request.setDepartmentId(departmentId);
+                request.setSubDeptName(form.getNewSubDeptName());
+                SubDepartmentResponse response = subDepartmentService.create(request);
+                return new ResolvedSubDepartment(response.getSubDeptId(), response.getSubDeptName());
+            }
+            return null;
         }
 
         if (form.getSubDeptId() == null) {
-            throw new IllegalArgumentException("Sub-department selection is required.");
+            return null;
         }
 
         SubDepartmentResponse response = subDepartmentService.getById(form.getSubDeptId());

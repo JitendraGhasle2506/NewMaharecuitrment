@@ -25,6 +25,7 @@ import com.maharecruitment.gov.in.department.service.HrDepartmentRequestService;
 import com.maharecruitment.gov.in.department.service.model.HrAgencyOptionView;
 import com.maharecruitment.gov.in.department.service.model.HrAgencyRankMappingListRowView;
 import com.maharecruitment.gov.in.department.service.model.HrAgencyRankMappingListView;
+import com.maharecruitment.gov.in.department.service.model.HrAgencyRankReleaseOverviewGroupView;
 import com.maharecruitment.gov.in.department.service.model.HrAgencyRankMappingView;
 import com.maharecruitment.gov.in.department.service.model.HrAssignedAgencyRankView;
 import com.maharecruitment.gov.in.department.service.model.HrDepartmentApplicationReviewDetailView;
@@ -54,6 +55,9 @@ import com.maharecruitment.gov.in.recruitment.service.model.AgencyRankAssignment
 @Service
 @Transactional(readOnly = true)
 public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingService {
+
+    private static final int DEFAULT_RANK_RELEASE_PAGE_SIZE = 10;
+    private static final int MAX_RANK_RELEASE_PAGE_SIZE = 100;
 
     private final HrDepartmentRequestService hrDepartmentRequestService;
     private final RecruitmentNotificationRepository recruitmentNotificationRepository;
@@ -109,16 +113,34 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
 
         return HrAgencyRankMappingListView.builder()
                 .rankMappings(rows)
+                .releaseGroups(List.of())
+                .pageNumber(0)
+                .pageSize(rows.size() > 0 ? rows.size() : DEFAULT_RANK_RELEASE_PAGE_SIZE)
+                .totalElements(rows.size())
+                .totalPages(rows.isEmpty() ? 1 : 1)
+                .hasPrevious(false)
+                .hasNext(false)
+                .showingFrom(rows.isEmpty() ? 0 : 1)
+                .showingTo(rows.size())
                 .build();
     }
 
     @Override
-    public HrAgencyRankMappingListView getRankReleaseOverviewListView() {
+    public HrAgencyRankMappingListView getRankReleaseOverviewListView(int pageNumber, int pageSize) {
         List<AgencyGlobalRankEntity> globalRanks = agencyGlobalRankRepository
                 .findAllWithAgencyOrderByRankNumberAscAgencyAgencyIdAsc();
         if (globalRanks.isEmpty()) {
             return HrAgencyRankMappingListView.builder()
                     .rankMappings(List.of())
+                    .releaseGroups(List.of())
+                    .pageNumber(0)
+                    .pageSize(normalizePageSize(pageSize))
+                    .totalElements(0)
+                    .totalPages(1)
+                    .hasPrevious(false)
+                    .hasNext(false)
+                    .showingFrom(0)
+                    .showingTo(0)
                     .build();
         }
 
@@ -128,6 +150,15 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
         if (notifications.isEmpty()) {
             return HrAgencyRankMappingListView.builder()
                     .rankMappings(List.of())
+                    .releaseGroups(List.of())
+                    .pageNumber(0)
+                    .pageSize(normalizePageSize(pageSize))
+                    .totalElements(0)
+                    .totalPages(1)
+                    .hasPrevious(false)
+                    .hasNext(false)
+                    .showingFrom(0)
+                    .showingTo(0)
                     .build();
         }
 
@@ -165,8 +196,27 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
             }
         }
 
+        List<HrAgencyRankReleaseOverviewGroupView> allGroups = buildRankReleaseOverviewGroups(rows);
+        int normalizedPageSize = normalizePageSize(pageSize);
+        int totalPages = Math.max(1, (int) Math.ceil((double) allGroups.size() / normalizedPageSize));
+        int normalizedPageNumber = normalizePageNumber(pageNumber, totalPages);
+        int fromIndex = allGroups.isEmpty() ? 0 : normalizedPageNumber * normalizedPageSize;
+        int toIndex = Math.min(fromIndex + normalizedPageSize, allGroups.size());
+        List<HrAgencyRankReleaseOverviewGroupView> pagedGroups = allGroups.isEmpty()
+                ? List.of()
+                : List.copyOf(allGroups.subList(fromIndex, toIndex));
+
         return HrAgencyRankMappingListView.builder()
                 .rankMappings(rows)
+                .releaseGroups(pagedGroups)
+                .pageNumber(normalizedPageNumber)
+                .pageSize(normalizedPageSize)
+                .totalElements(allGroups.size())
+                .totalPages(totalPages)
+                .hasPrevious(normalizedPageNumber > 0)
+                .hasNext(normalizedPageNumber + 1 < totalPages)
+                .showingFrom(allGroups.isEmpty() ? 0 : fromIndex + 1)
+                .showingTo(allGroups.isEmpty() ? 0 : toIndex)
                 .build();
     }
 
@@ -536,6 +586,89 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
                 .releaseStatusLabel(releaseStatus.label())
                 .applicationContextAvailable(departmentId != null && subDepartmentId != null && applicationId != null)
                 .build();
+    }
+
+    private List<HrAgencyRankReleaseOverviewGroupView> buildRankReleaseOverviewGroups(
+            List<HrAgencyRankMappingListRowView> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, List<HrAgencyRankMappingListRowView>> rowsByGroupKey = new LinkedHashMap<>();
+        for (HrAgencyRankMappingListRowView row : rows) {
+            rowsByGroupKey.computeIfAbsent(resolveRankReleaseOverviewGroupKey(row), key -> new ArrayList<>())
+                    .add(row);
+        }
+
+        List<HrAgencyRankReleaseOverviewGroupView> groups = new ArrayList<>();
+        rowsByGroupKey.values().forEach(groupRows -> groups.add(toRankReleaseOverviewGroup(groupRows)));
+        return groups;
+    }
+
+    private String resolveRankReleaseOverviewGroupKey(HrAgencyRankMappingListRowView row) {
+        if (row.getDepartmentProjectApplicationId() != null) {
+            return "APP:" + row.getDepartmentProjectApplicationId();
+        }
+        if (StringUtils.hasText(row.getRequestId())) {
+            return "REQ:" + row.getRequestId();
+        }
+        if (StringUtils.hasText(row.getProjectName())) {
+            return "PROJECT:" + row.getProjectName().trim().toLowerCase();
+        }
+        return "NOTIFICATION:" + row.getRecruitmentNotificationId();
+    }
+
+    private HrAgencyRankReleaseOverviewGroupView toRankReleaseOverviewGroup(
+            List<HrAgencyRankMappingListRowView> groupRows) {
+        HrAgencyRankMappingListRowView firstRow = groupRows.get(0);
+        int releasedCount = (int) groupRows.stream()
+                .filter(row -> "RELEASED".equalsIgnoreCase(row.getReleaseStatusCode()))
+                .count();
+        int totalReleaseRows = groupRows.size();
+        Long latestNotificationId = groupRows.stream()
+                .map(HrAgencyRankMappingListRowView::getRecruitmentNotificationId)
+                .filter(Objects::nonNull)
+                .max(Long::compareTo)
+                .orElse(null);
+
+        return HrAgencyRankReleaseOverviewGroupView.builder()
+                .requestId(firstRow.getRequestId())
+                .projectName(firstRow.getProjectName())
+                .departmentId(firstRow.getDepartmentId())
+                .departmentName(firstRow.getDepartmentName())
+                .subDepartmentId(firstRow.getSubDepartmentId())
+                .subDepartmentName(firstRow.getSubDepartmentName())
+                .departmentProjectApplicationId(firstRow.getDepartmentProjectApplicationId())
+                .latestNotificationId(latestNotificationId)
+                .notificationCount((int) groupRows.stream()
+                        .map(HrAgencyRankMappingListRowView::getRecruitmentNotificationId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .count())
+                .totalReleaseRows(totalReleaseRows)
+                .releasedCount(releasedCount)
+                .pendingCount(totalReleaseRows - releasedCount)
+                .applicationContextAvailable(groupRows.stream()
+                        .anyMatch(HrAgencyRankMappingListRowView::isApplicationContextAvailable))
+                .releaseDetails(List.copyOf(groupRows))
+                .build();
+    }
+
+    private int normalizePageSize(int pageSize) {
+        if (pageSize < 1) {
+            return DEFAULT_RANK_RELEASE_PAGE_SIZE;
+        }
+        return Math.min(pageSize, MAX_RANK_RELEASE_PAGE_SIZE);
+    }
+
+    private int normalizePageNumber(int pageNumber, int totalPages) {
+        if (pageNumber < 0) {
+            return 0;
+        }
+        if (pageNumber >= totalPages) {
+            return totalPages - 1;
+        }
+        return pageNumber;
     }
 
     private List<Integer> buildSortedGlobalRanks(List<AgencyGlobalRankEntity> globalRanks) {

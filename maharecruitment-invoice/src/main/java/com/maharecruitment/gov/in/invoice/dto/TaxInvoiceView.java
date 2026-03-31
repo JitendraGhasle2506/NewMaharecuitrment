@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.invoice.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,7 +66,18 @@ public class TaxInvoiceView {
     private String legacyRatePerMonthTotalDisplay;
     private String legacyLineAmountTotalDisplay;
     private String qrCodeDataUrl;
+    private Long generatedByUserId;
+    private String generatedByName;
+    private String generatedByLoginId;
+    private LocalDateTime generatedOn;
+    private Long lastUpdatedByUserId;
+    private String lastUpdatedByName;
+    private String lastUpdatedByLoginId;
+    private LocalDateTime lastUpdatedOn;
 
     @Builder.Default
     private List<TaxInvoiceLineItemView> lineItems = new ArrayList<>();
+
+    @Builder.Default
+    private List<TaxInvoiceAuditEntryView> auditTrail = new ArrayList<>();
 }

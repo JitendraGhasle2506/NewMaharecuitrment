@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.util.StringUtils;
 
@@ -42,6 +43,8 @@ import jakarta.validation.Valid;
 public class HrDepartmentRequestController {
 
     private static final Logger log = LoggerFactory.getLogger(HrDepartmentRequestController.class);
+    private static final int DEFAULT_RANK_RELEASE_PAGE = 0;
+    private static final int DEFAULT_RANK_RELEASE_PAGE_SIZE = 10;
 
     private final HrDepartmentRequestService hrDepartmentRequestService;
     private final DepartmentWorkOrderStorageService workOrderStorageService;
@@ -149,21 +152,46 @@ public class HrDepartmentRequestController {
     }
 
     @GetMapping("/rank-release-overview")
-    public String rankReleaseOverview(Model model) {
+    public String rankReleaseOverview(
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "size", required = false) Integer size,
+            Model model) {
+        int resolvedPage = defaultIfNull(page, DEFAULT_RANK_RELEASE_PAGE);
+        int resolvedSize = defaultIfNull(size, DEFAULT_RANK_RELEASE_PAGE_SIZE);
         try {
-            HrAgencyRankMappingListView listView = hrAgencyRankMappingService.getRankReleaseOverviewListView();
+            HrAgencyRankMappingListView listView = hrAgencyRankMappingService.getRankReleaseOverviewListView(
+                    resolvedPage,
+                    resolvedSize);
             model.addAttribute("rankReleaseListView", listView);
         } catch (DepartmentApplicationException ex) {
             log.warn("Unable to load HR rank release overview. reason={}", ex.getMessage());
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("rankReleaseListView", HrAgencyRankMappingListView.builder()
                     .rankMappings(List.of())
+                    .releaseGroups(List.of())
+                    .pageNumber(DEFAULT_RANK_RELEASE_PAGE)
+                    .pageSize(DEFAULT_RANK_RELEASE_PAGE_SIZE)
+                    .totalElements(0)
+                    .totalPages(1)
+                    .hasPrevious(false)
+                    .hasNext(false)
+                    .showingFrom(0)
+                    .showingTo(0)
                     .build());
         } catch (Exception ex) {
             log.error("Unexpected error while loading HR rank release overview.", ex);
             model.addAttribute("errorMessage", "Unable to load rank release overview right now. Please try again.");
             model.addAttribute("rankReleaseListView", HrAgencyRankMappingListView.builder()
                     .rankMappings(List.of())
+                    .releaseGroups(List.of())
+                    .pageNumber(DEFAULT_RANK_RELEASE_PAGE)
+                    .pageSize(DEFAULT_RANK_RELEASE_PAGE_SIZE)
+                    .totalElements(0)
+                    .totalPages(1)
+                    .hasPrevious(false)
+                    .hasNext(false)
+                    .showingFrom(0)
+                    .showingTo(0)
                     .build());
         }
         return "hr/department-request-rank-release-overview";
@@ -429,6 +457,10 @@ public class HrDepartmentRequestController {
             form.getRankRows().add(row);
         });
         return form;
+    }
+
+    private int defaultIfNull(Integer value, int defaultValue) {
+        return value != null ? value : defaultValue;
     }
 
 }

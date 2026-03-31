@@ -36,10 +36,46 @@ public class TaxInvoiceController {
         return "invoice/tax-invoice-clean";
     }
 
+    @GetMapping("/{requestId}/audit")
+    public String viewAuditByRequestId(@PathVariable String requestId, Model model) {
+        model.addAttribute("invoice", taxInvoiceService.getInvoiceByRequestId(requestId));
+        model.addAttribute("backUrl", "/invoice/tax-invoices/" + requestId);
+        return "invoice/tax-invoice-audit";
+    }
+
     @GetMapping("/application/{applicationId}")
     public String viewByApplicationId(@PathVariable Long applicationId, Model model) {
         model.addAttribute("invoice", taxInvoiceService.getInvoiceByApplicationId(applicationId));
+        model.addAttribute("applicationId", applicationId);
+        return "invoice/tax-invoice-combined";
+    }
+
+    @GetMapping("/application/{applicationId}/audit")
+    public String viewAuditByApplicationId(@PathVariable Long applicationId, Model model) {
+        model.addAttribute("invoice", taxInvoiceService.getInvoiceByApplicationId(applicationId));
+        model.addAttribute("applicationId", applicationId);
+        model.addAttribute("backUrl", "/auditor/department-tax-invoices");
+        return "invoice/tax-invoice-audit";
+    }
+
+    @GetMapping("/application/{applicationId}/old")
+    public String viewOldByApplicationId(
+            @PathVariable Long applicationId,
+            @RequestParam(name = "embedded", defaultValue = "false") boolean embedded,
+            Model model) {
+        model.addAttribute("invoice", taxInvoiceService.getInvoiceByApplicationId(applicationId));
+        model.addAttribute("embeddedPreviewMode", embedded);
         return "invoice/tax-invoice-clean";
+    }
+
+    @GetMapping("/application/{applicationId}/new")
+    public String viewNewByApplicationId(
+            @PathVariable Long applicationId,
+            @RequestParam(name = "embedded", defaultValue = "false") boolean embedded,
+            Model model) {
+        model.addAttribute("invoice", taxInvoiceService.getInvoiceByApplicationId(applicationId));
+        model.addAttribute("embeddedPreviewMode", embedded);
+        return "invoice/tax-invoice-preview";
     }
 
     @GetMapping("/application/{applicationId}/preview")
