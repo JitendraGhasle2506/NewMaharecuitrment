@@ -3,6 +3,9 @@ package com.maharecruitment.gov.in.department.service.model;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -18,4 +21,7 @@ public class DepartmentDashboardView {
     private int pendingPaymentCount;
     private List<DepartmentRunningProjectView> runningProjects;
     private LocalDate snapshotDate;
+    List<EmployeeEntity> employees; 
+    List<DepartmentProjectApplicationEntity> allProjects; 
+    List<DepartmentProjectApplicationEntity> runningProjectsEntities; 
 }

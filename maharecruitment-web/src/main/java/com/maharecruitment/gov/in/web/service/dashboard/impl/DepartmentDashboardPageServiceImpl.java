@@ -104,7 +104,7 @@ public class DepartmentDashboardPageServiceImpl implements DepartmentDashboardPa
                 runningProjectCount,
                 pendingPaymentCount,
                 runningProjects,
-                LocalDate.now());
+                LocalDate.now(),null,null,null);
     }
 
     private DepartmentRegistrationEntity resolveDepartmentRegistration(Long departmentRegistrationId, Long userId) {
