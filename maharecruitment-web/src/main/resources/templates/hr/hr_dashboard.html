@@ -38,7 +38,7 @@
                             <h3 th:text="${totalEmployees}">0</h3>
                         </article>
                         <article class="kpi-card">
-                            <p>Pending Approvals</p>
+                            <p>Pending Department Requests</p>
                             <h3 th:text="${pendingApprovals}">0</h3>
                         </article>
                         <article class="kpi-card">
@@ -103,7 +103,8 @@
                                                 <td class="text-center" th:text="${project.internal}">0</td>
                                                 <td class="text-center" th:text="${project.external}">0</td>
                                                 <td>
-                                                    <span class="badge" th:classappend="${project.status == 'In Progress'} ? ' text-bg-primary' :
+                                                    <span class="badge"
+                                                        th:classappend="${project.status == 'In Progress'} ? ' text-bg-primary' :
                                                               (${project.status == 'Planning'} ? ' text-bg-secondary' :
                                                               (${project.status == 'UAT'} ? ' text-bg-success' : ' text-bg-warning'))"
                                                         th:text="${project.status}">Status</span>

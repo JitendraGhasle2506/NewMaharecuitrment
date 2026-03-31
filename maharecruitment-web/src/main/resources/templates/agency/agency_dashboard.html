@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Agency Dashboard | recruitment.gov.in</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/agency-dashboard.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="role-shell">
+
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Agency Dashboard', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2>Agency Control Center</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Hero Section -->
+                    <section class="hero-strip">
+                        <div>
+                            <h1>Welcome, <span th:text="${agencyName}">Agency User</span></h1>
+                            <p>Operational overview for recruitment performance and candidate submissions.</p>
+                        </div>
+                        <div class="dummy-tag" th:text="${status}">Active</div>
+                    </section>
+
+                    <!-- KPI Cards Grid -->
+                    <section class="kpi-grid">
+                        <article class="kpi-card">
+                            <p>Open Notifications</p>
+                            <h3 th:text="${totalOpenings}">0</h3>
+                        </article>
+                        <article class="kpi-card">
+                            <p>Candidates Submitted</p>
+                            <h3 th:text="${candidatesSubmitted}">0</h3>
+                        </article>
+                        <article class="kpi-card">
+                            <p>Interviews Scheduled</p>
+                            <h3 th:text="${interviewsScheduled}">0</h3>
+                        </article>
+                        <article class="kpi-card">
+                            <p>Successfully Onboarded</p>
+                            <h3 th:text="${onboardedEmployees}">0</h3>
+                        </article>
+                    </section>
+
+                    <!-- Content Grid -->
+                    <div class="row g-4 mt-1">
+                        <!-- Recent Activities (Left side - mirrored from HR project snapshot but adapted) -->
+                        <div class="col-lg-8">
+                            <section class="panel">
+                                <h4><i class="fas fa-history me-2"></i> Recent Recruitment Activities</h4>
+                                <div class="table-responsive mt-3">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Request ID</th>
+                                                <th>Project Name</th>
+                                                <th>Status</th>
+                                                <th class="text-end">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="notification : ${recentNotifications}">
+                                                <td><span class="fw-bold" th:text="${notification.title}">REQ-001</span></td>
+                                                <td th:text="${notification.context}">Project Alpha</td>
+                                                <td>
+                                                    <span class="badge" 
+                                                          th:classappend="${notification.status == 'RELEASED'} ? ' text-bg-warning' : ' text-bg-info'"
+                                                          th:text="${notification.status}">Pending</span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <a href="#" class="btn btn-sm btn-outline-primary rounded-pill px-3">View</a>
+                                                </td>
+                                            </tr>
+                                            <tr th:if="${#lists.isEmpty(recentNotifications)}">
+                                                <td colspan="4" class="text-center py-4 text-muted">No recent notifications found.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- Quick Actions (Right side) -->
+                        <div class="col-lg-4">
+                            <section class="panel">
+                                <h4><i class="fas fa-rocket me-2"></i> Quick Actions</h4>
+                                <div class="quick-action-list mt-3">
+                                    <a th:href="@{/agency/candidate/submission/list}" class="quick-action-item">
+                                        <i class="fas fa-user-plus text-primary"></i>
+                                        <span>Submit New Candidate</span>
+                                    </a>
+                                    <a th:href="@{/agency/notification/list}" class="quick-action-item">
+                                        <i class="fas fa-envelope-open text-primary"></i>
+                                        <span>View Open Announcements</span>
+                                    </a>
+                                    <a th:href="@{/agency/onboarding/list}" class="quick-action-item">
+                                        <i class="fas fa-tasks text-primary"></i>
+                                        <span>Track Onboarding</span>
+                                    </a>
+                                </div>
+
+                                <div class="mt-4 p-3 rounded-3" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
+                                    <p class="small text-muted mb-2 font-weight-bold" style="letter-spacing: 0.05em;">PERFORMANCE TREND</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="h4 mb-0 fw-bold">+12.5%</span>
+                                        <span class="text-success small"><i class="fas fa-caret-up"></i> month-over-month</span>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 6px; background: #e2e8f0;">
+                                        <div class="progress-bar" role="progressbar" style="width: 75%; background-color: var(--agency-brand);" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+</body>
+
+</html>

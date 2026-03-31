@@ -25,6 +25,8 @@ public interface AgencyNotificationTrackingRepository extends JpaRepository<Agen
             Long recruitmentNotificationId,
             Long agencyId);
 
+    long countByAgencyAgencyIdAndStatus(Long agencyId, AgencyNotificationTrackingStatus status);
+
     boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndStatus(
             Long recruitmentNotificationId,
             AgencyNotificationTrackingStatus status);
