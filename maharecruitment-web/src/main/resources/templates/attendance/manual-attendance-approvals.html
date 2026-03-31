@@ -11,11 +11,26 @@
     <th:block th:replace="~{header/header :: var-sidebar-header('Approvals', 'Attendance', ~{::section})}">
         <section>
             <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
+                <div class="header d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <h2 class="mb-0">Manual Attendance Approvals (<span th:text="${currentRoleType}"></span>)</h2>
-                    <a th:href="@{/hod1/attendance-module}" class="btn btn-sm btn-outline-secondary">
-                        <i class="fa fa-arrow-left"></i> Back to Home
-                    </a>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <form th:action="@{/hod1/manual-attendance}" method="get" id="filterForm" class="d-flex align-items-center gap-2">
+                            <input type="hidden" name="roleType" th:value="${currentRoleType}">
+                            
+                            <select name="month" class="form-select form-select-sm" style="width: 130px;" onchange="this.form.submit()">
+                                <option th:each="m : ${monthNames}" th:value="${m.key}" th:text="${m.value}" th:selected="${m.key == selectedMonth}"></option>
+                            </select>
+
+                            <select name="year" class="form-select form-select-sm" style="width: 100px;" onchange="this.form.submit()">
+                                <option th:each="y : ${yearsList}" th:value="${y}" th:text="${y}" th:selected="${y == selectedYear}"></option>
+                            </select>
+                        </form>
+
+                        <a th:href="@{/hod1/attendance-module}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fa fa-arrow-left"></i> Back to Home
+                        </a>
+                    </div>
                 </div>
 
                 <div class="card-body">

@@ -10,6 +10,8 @@ public class TourApplicationHODDTO {
     private Long employeeId;
     private String employeeCode;
     private String employeeName;
+    private String designation;
+    private String hodRemarks;
     private String tourCategory;
     private String timePeriod;
     private LocalDate startDate;

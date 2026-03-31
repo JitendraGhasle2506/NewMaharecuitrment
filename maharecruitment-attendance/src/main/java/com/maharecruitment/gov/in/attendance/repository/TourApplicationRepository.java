@@ -9,5 +9,7 @@ import com.maharecruitment.gov.in.attendance.entity.TourApplicationEntity;
 public interface TourApplicationRepository extends JpaRepository<TourApplicationEntity, Long> {
     List<TourApplicationEntity> findByEmployeeIdOrderByApplicationDateDesc(Long employeeId);
     List<TourApplicationEntity> findByEmployeeIdInAndStatusOrderByApplicationDateDesc(List<Long> employeeIds, String status);
+    
+    List<TourApplicationEntity> findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(List<Long> employeeIds, List<String> statuses);
     List<TourApplicationEntity> findByEmployeeIdAndStatus(Long employeeId, String status);
 }

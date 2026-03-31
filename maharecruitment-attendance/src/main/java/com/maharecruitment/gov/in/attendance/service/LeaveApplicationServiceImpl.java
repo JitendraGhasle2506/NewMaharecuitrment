@@ -48,7 +48,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     }
 
     @Override
-    public List<LeaveApplicationHODDTO> getPendingLeavesForHOD(Long hodUserId) {
+    public List<LeaveApplicationHODDTO> getPendingLeavesForHOD(Long hodUserId, String search) {
         List<EmployeeReportingMappingEntity> mappings = employeeReportingMappingRepository.findByHodUserId(hodUserId);
         if (mappings.isEmpty()) {
             return List.of();
@@ -63,17 +63,58 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             return List.of();
         }
 
+        return convertToHODDTO(leaves, employeeIds, search);
+    }
+
+    @Override
+    public List<LeaveApplicationHODDTO> getProcessedLeavesForHOD(Long hodUserId, String search) {
+        List<EmployeeReportingMappingEntity> mappings = employeeReportingMappingRepository.findByHodUserId(hodUserId);
+        if (mappings.isEmpty()) {
+            return List.of();
+        }
+        List<Long> employeeIds = mappings.stream()
+                .map(EmployeeReportingMappingEntity::getEmployeeId)
+                .collect(Collectors.toList());
+        
+        List<LeaveApplicationEntity> leaves = leaveApplicationRepository.findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(employeeIds, List.of("APPROVED", "REJECTED"));
+        
+        if (leaves.isEmpty()) {
+            return List.of();
+        }
+
+        return convertToHODDTO(leaves, employeeIds, search);
+    }
+
+    private List<LeaveApplicationHODDTO> convertToHODDTO(List<LeaveApplicationEntity> leaves, List<Long> employeeIds, String search) {
         Map<Long, EmployeeEntity> employeeMap = employeeRepository.findAllById(employeeIds).stream()
                 .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, emp -> emp));
 
         List<LeaveApplicationHODDTO> dtos = new ArrayList<>();
         for (LeaveApplicationEntity leave : leaves) {
             EmployeeEntity emp = employeeMap.get(leave.getEmployeeId());
+            
+            // Filter by search query (Name or Designation)
+            if (search != null && !search.trim().isEmpty()) {
+                String query = search.toLowerCase().trim();
+                boolean matchesName = emp != null && emp.getFullName() != null && emp.getFullName().toLowerCase().contains(query);
+                
+                String designationName = (emp != null && emp.getDesignation() != null) ? emp.getDesignation().getDesignationName() : null;
+                boolean matchesDesignation = designationName != null && designationName.toLowerCase().contains(query);
+                
+                if (!matchesName && !matchesDesignation) {
+                    continue;
+                }
+            }
+
             LeaveApplicationHODDTO dto = new LeaveApplicationHODDTO();
             dto.setLeaveId(leave.getLeaveId());
             dto.setEmployeeId(leave.getEmployeeId());
             dto.setEmployeeCode(emp != null ? emp.getEmployeeCode() : "");
             dto.setEmployeeName(emp != null ? emp.getFullName() : "Unknown");
+            
+            String designationName = (emp != null && emp.getDesignation() != null) ? emp.getDesignation().getDesignationName() : "";
+            dto.setDesignation(designationName);
+            
             dto.setLeaveType(leave.getLeaveType());
             dto.setLeaveCategory(leave.getLeaveCategory());
             dto.setStartDate(leave.getStartDate());
@@ -81,6 +122,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             dto.setDescription(leave.getDescription());
             dto.setApplicationDate(leave.getApplicationDate());
             dto.setStatus(leave.getStatus());
+            dto.setHodRemarks(leave.getHodRemarks());
             dtos.add(dto);
         }
         return dtos;

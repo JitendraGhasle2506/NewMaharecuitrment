@@ -48,7 +48,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
     }
 
     @Override
-    public List<TourApplicationHODDTO> getPendingToursForHOD(Long hodUserId) {
+    public List<TourApplicationHODDTO> getPendingToursForHOD(Long hodUserId, String search) {
         List<EmployeeReportingMappingEntity> mappings = employeeReportingMappingRepository.findByHodUserId(hodUserId);
         if (mappings.isEmpty()) {
             return List.of();
@@ -63,17 +63,58 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             return List.of();
         }
 
+        return convertToHODDTO(tours, employeeIds, search);
+    }
+
+    @Override
+    public List<TourApplicationHODDTO> getProcessedToursForHOD(Long hodUserId, String search) {
+        List<EmployeeReportingMappingEntity> mappings = employeeReportingMappingRepository.findByHodUserId(hodUserId);
+        if (mappings.isEmpty()) {
+            return List.of();
+        }
+        List<Long> employeeIds = mappings.stream()
+                .map(EmployeeReportingMappingEntity::getEmployeeId)
+                .collect(Collectors.toList());
+        
+        List<TourApplicationEntity> tours = tourApplicationRepository.findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(employeeIds, List.of("APPROVED", "REJECTED"));
+        
+        if (tours.isEmpty()) {
+            return List.of();
+        }
+
+        return convertToHODDTO(tours, employeeIds, search);
+    }
+
+    private List<TourApplicationHODDTO> convertToHODDTO(List<TourApplicationEntity> tours, List<Long> employeeIds, String search) {
         Map<Long, EmployeeEntity> employeeMap = employeeRepository.findAllById(employeeIds).stream()
                 .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, emp -> emp));
 
         List<TourApplicationHODDTO> dtos = new ArrayList<>();
         for (TourApplicationEntity tour : tours) {
             EmployeeEntity emp = employeeMap.get(tour.getEmployeeId());
+
+            // Filter by search query (Name or Designation)
+            if (search != null && !search.trim().isEmpty()) {
+                String query = search.toLowerCase().trim();
+                boolean matchesName = emp != null && emp.getFullName() != null && emp.getFullName().toLowerCase().contains(query);
+                
+                String designationName = (emp != null && emp.getDesignation() != null) ? emp.getDesignation().getDesignationName() : null;
+                boolean matchesDesignation = designationName != null && designationName.toLowerCase().contains(query);
+                
+                if (!matchesName && !matchesDesignation) {
+                    continue;
+                }
+            }
+
             TourApplicationHODDTO dto = new TourApplicationHODDTO();
             dto.setTourId(tour.getTourId());
             dto.setEmployeeId(tour.getEmployeeId());
             dto.setEmployeeCode(emp != null ? emp.getEmployeeCode() : "");
             dto.setEmployeeName(emp != null ? emp.getFullName() : "Unknown");
+            
+            String designationName = (emp != null && emp.getDesignation() != null) ? emp.getDesignation().getDesignationName() : "";
+            dto.setDesignation(designationName);
+            
             dto.setTourCategory(tour.getTourCategory());
             dto.setTimePeriod(tour.getTimePeriod());
             dto.setStartDate(tour.getStartDate());
@@ -81,6 +122,7 @@ public class TourApplicationServiceImpl implements TourApplicationService {
             dto.setDescription(tour.getDescription());
             dto.setApplicationDate(tour.getApplicationDate());
             dto.setStatus(tour.getStatus());
+            dto.setHodRemarks(tour.getHodRemarks());
             dtos.add(dto);
         }
         return dtos;

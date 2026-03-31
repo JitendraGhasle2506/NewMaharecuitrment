@@ -143,6 +143,7 @@
         .status-weekoff { color: #94a3b8 !important; }
         .status-leave { color: #8b5cf6 !important; }
         .status-tour { color: #db2777 !important; }
+        .status-pending { color: var(--warning-color) !important; }
 
         /* Modern Legend Chips */
         .attendance-legend {
@@ -194,6 +195,7 @@
         .circle-holiday { background: var(--info-color); }
         .circle-leave { background: #8b5cf6; }
         .circle-tour { background: #db2777; }
+        .circle-pending { background: var(--warning-color); }
         .circle-future { background: #e2e8f0; color: #94a3b8; }
 
         .btn-success {
@@ -332,6 +334,7 @@
 									<div class="legend-item"><div class="legend-circle circle-holiday">H</div><span>Holiday</span></div>
 									<div class="legend-item"><div class="legend-circle circle-leave">L</div><span>Leave</span></div>
 									<div class="legend-item"><div class="legend-circle circle-tour">T</div><span>Tour</span></div>
+									<div class="legend-item"><div class="legend-circle circle-pending">P</div><span>Pending Approval</span></div>
 									<div class="legend-item"><div class="legend-circle circle-future">F</div><span>Invalid Date</span></div>
 								</div>
 								
@@ -372,6 +375,7 @@
 
                                                         <span th:if="${day.status == 'LEAVE'}" class="status-leave" style="font-weight: bold; padding: 2px;">L</span>
                                                         <span th:if="${day.status == 'TOUR'}" class="status-tour" style="font-weight: bold; padding: 2px;">T</span>
+                                                        <span th:if="${day.status == 'PENDING'}" class="status-pending" style="font-weight: bold; padding: 2px;">P</span>
                                                         <span th:if="${day.status == 'FUTURE'}">F</span>
                                                     </td>
                                                 </tr>

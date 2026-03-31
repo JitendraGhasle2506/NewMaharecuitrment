@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.attendance.controller;
 
+import java.time.LocalDate;
 import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
 import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
 import jakarta.servlet.http.HttpSession;
@@ -22,12 +23,22 @@ public class ManualAttendanceApprovalController {
     private EmployeeRepository employeeRepository;
 
     @GetMapping
-    public String viewApprovals(Model model, HttpSession session, @RequestParam(required = false) String roleType) {
+    public String viewApprovals(
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String roleType,
+            Model model, HttpSession session) {
+        
         SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
         if (sessionUser == null) {
             model.addAttribute("errorMessage", "Session expired. Please log in again.");
             return "attendance/manual-attendance-approvals";
         }
+
+        // Default to current month/year if not provided
+        LocalDate now = LocalDate.now();
+        if (month == null) month = now.getMonthValue();
+        if (year == null) year = now.getYear();
 
         if (roleType == null) {
             roleType = (sessionUser.roles() != null && sessionUser.roles().contains("ROLE_HOD")) ? "HOD" : "MANAGER";
@@ -42,8 +53,25 @@ public class ManualAttendanceApprovalController {
             approverId = employee.getEmployeeId();
         }
 
-        model.addAttribute("pendingSummaries", attendanceService.getPendingSummaries(approverId, roleType));
+        model.addAttribute("pendingSummaries", attendanceService.getPendingSummaries(approverId, roleType, month, year));
         model.addAttribute("currentRoleType", roleType);
+        model.addAttribute("selectedMonth", month);
+        model.addAttribute("selectedYear", year);
+
+        // Add Month names and Year list
+        java.util.Map<Integer, String> monthNames = new java.util.TreeMap<>();
+        String[] months = new java.text.DateFormatSymbols().getMonths();
+        for (int i = 0; i < 12; i++) {
+            monthNames.put(i + 1, months[i]);
+        }
+        model.addAttribute("monthNames", monthNames);
+
+        java.util.List<Integer> years = new java.util.ArrayList<>();
+        int currentYear = now.getYear();
+        for (int i = currentYear - 2; i <= currentYear + 1; i++) {
+            years.add(i);
+        }
+        model.addAttribute("yearsList", years);
 
         return "attendance/manual-attendance-approvals";
     }
@@ -106,6 +134,38 @@ public class ManualAttendanceApprovalController {
             redirectAttrs.addFlashAttribute("successMessage", "Request " + status.toLowerCase() + " successfully.");
         } catch (Exception e) {
             redirectAttrs.addFlashAttribute("errorMessage", "Error processing request: " + e.getMessage());
+        }
+
+        return "redirect:/hod1/manual-attendance/details?userId=" + targetUserId + "&roleType=" + roleType;
+    }
+
+    @PostMapping("/bulk-action")
+    public String takeBulkAction(
+            @RequestParam("requestIds") java.util.List<Long> requestIds,
+            @RequestParam("userId") Long targetUserId,
+            @RequestParam("status") String status, 
+            @RequestParam("comments") String comments,
+            @RequestParam("roleType") String roleType,
+            HttpSession session, 
+            RedirectAttributes redirectAttrs) {
+
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser == null) return "redirect:/login";
+
+        Long approverId;
+        if ("HOD".equalsIgnoreCase(roleType)) {
+            approverId = sessionUser.id();
+        } else {
+            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
+                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            approverId = employee.getEmployeeId();
+        }
+
+        try {
+            attendanceService.bulkApproveRejectManualAttendance(requestIds, approverId, status, comments, roleType);
+            redirectAttrs.addFlashAttribute("successMessage", "Selected requests " + status.toLowerCase() + " successfully.");
+        } catch (Exception e) {
+            redirectAttrs.addFlashAttribute("errorMessage", "Error processing requests: " + e.getMessage());
         }
 
         return "redirect:/hod1/manual-attendance/details?userId=" + targetUserId + "&roleType=" + roleType;

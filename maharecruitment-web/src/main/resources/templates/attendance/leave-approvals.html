@@ -63,6 +63,28 @@
             min-width: 180px;
             border-radius: 8px;
         }
+        .filter-section {
+            background: #fff;
+            padding: 15px 25px;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .search-input {
+            border-radius: 20px 0 0 20px !important;
+            border-right: none;
+        }
+        .search-btn {
+            border-radius: 0 20px 20px 0 !important;
+            background: var(--primary-navy);
+            color: #fff;
+        }
+        .filter-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #718096;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            display: block;
+        }
     </style>
 </head>
 
@@ -87,25 +109,51 @@
                         </a>
                     </div>
                     
+                    <!-- Filter Section -->
+                    <div class="filter-section">
+                        <form th:action="@{/hod1/leaveApprovals}" method="get" id="filterForm" class="row g-3 justify-content-center">
+                            <div class="col-md-8">
+                                <label class="filter-label text-center d-block">Search Employee Name or Designation</label>
+                                <div class="input-group input-group-sm mb-2">
+                                    <input type="text" name="query" class="form-control search-input" th:value="${searchQuery}" placeholder="Search by name or designation...">
+                                    <button class="btn search-btn px-4" type="submit">
+                                        <i class="fa fa-search me-2"></i>Apply Search
+                                    </button>
+                                </div>
+                                <div class="text-center">
+                                    <a th:href="@{/hod1/leaveApprovals}" class="btn btn-link btn-sm text-decoration-none text-muted">
+                                        <i class="fa fa-refresh me-1"></i>Clear Search
+                                    </a>
+                                </div>
+                            </div>
+                            <input type="hidden" name="activeTab" id="activeTabInput" th:value="${param.activeTab}">
+                        </form>
+                    </div>
+
                     <!-- Tabs -->
                     <ul class="nav nav-tabs" id="approvalTabs" role="tablist">
                         <li class="nav-item">
-                            <button class="nav-link active" id="leave-tab" data-bs-toggle="tab" data-bs-target="#leave-pane" type="button" role="tab">
+                            <button class="nav-link" th:classappend="${param.activeTab == null or param.activeTab[0] == 'leave' ? 'active' : ''}" id="leave-tab" data-bs-toggle="tab" data-bs-target="#leave-pane" type="button" role="tab">
                                 <i class="fa fa-calendar-minus me-2"></i>Leave Requests
                                 <span class="badge bg-danger ms-2" th:if="${not #lists.isEmpty(pendingLeaves)}" th:text="${#lists.size(pendingLeaves)}"></span>
                             </button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link" id="tour-tab" data-bs-toggle="tab" data-bs-target="#tour-pane" type="button" role="tab">
+                            <button class="nav-link" th:classappend="${param.activeTab != null and param.activeTab[0] == 'tour' ? 'active' : ''}" id="tour-tab" data-bs-toggle="tab" data-bs-target="#tour-pane" type="button" role="tab">
                                 Tour Requests
                                 <span class="badge bg-danger ms-2" th:if="${not #lists.isEmpty(pendingTours)}" th:text="${#lists.size(pendingTours)}"></span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" th:classappend="${param.activeTab != null and param.activeTab[0] == 'history' ? 'active' : ''}" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" type="button" role="tab">
+                                <i class="fa fa-history me-2"></i>Approval History
                             </button>
                         </li>
                     </ul>
 
                     <div class="tab-content">
                         <!-- Leave Pane -->
-                        <div class="tab-pane fade show active p-4" id="leave-pane" role="tabpanel">
+                        <div class="tab-pane fade p-4" th:classappend="${param.activeTab == null or param.activeTab[0] == 'leave' ? 'show active' : ''}" id="leave-pane" role="tabpanel">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
                                     <thead>
@@ -123,6 +171,7 @@
                                         <tr th:each="leave : ${pendingLeaves}">
                                             <td>
                                                 <div class="fw-bold" th:text="${leave.employeeName}"></div>
+                                                <div class="small text-primary" th:text="${leave.designation}"></div>
                                                 <small class="text-muted" th:text="${leave.employeeCode}"></small>
                                             </td>
                                             <td>
@@ -160,7 +209,7 @@
                                         <tr th:if="${#lists.isEmpty(pendingLeaves)}">
                                             <td colspan="7" class="text-center py-5 text-muted">
                                                 <i class="fa fa-inbox fa-3x mb-3 d-block opacity-25"></i>
-                                                No pending leave requests found.
+                                                <span th:text="${not #strings.isEmpty(searchQuery) ? 'No results for ' + searchQuery : 'No pending leave requests found.'}"></span>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -169,7 +218,7 @@
                         </div>
 
                         <!-- Tour Pane -->
-                        <div class="tab-pane fade p-4" id="tour-pane" role="tabpanel">
+                        <div class="tab-pane fade p-4" th:classappend="${param.activeTab != null and param.activeTab[0] == 'tour' ? 'show active' : ''}" id="tour-pane" role="tabpanel">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
                                     <thead>
@@ -187,6 +236,7 @@
                                         <tr th:each="tour : ${pendingTours}">
                                             <td>
                                                 <div class="fw-bold" th:text="${tour.employeeName}"></div>
+                                                <div class="small text-primary" th:text="${tour.designation}"></div>
                                                 <small class="text-muted" th:text="${tour.employeeCode}"></small>
                                             </td>
                                             <td>
@@ -227,11 +277,128 @@
                                         <tr th:if="${#lists.isEmpty(pendingTours)}">
                                             <td colspan="7" class="text-center py-5 text-muted">
                                                 <i class="fa fa-inbox fa-3x mb-3 d-block opacity-25"></i>
-                                                No pending tour requests found.
+                                                <span th:text="${not #strings.isEmpty(searchQuery) ? 'No results for ' + searchQuery : 'No pending tour requests found.'}"></span>
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+
+                        <!-- History Pane -->
+                        <div class="tab-pane fade p-4" th:classappend="${param.activeTab != null and param.activeTab[0] == 'history' ? 'show active' : ''}" id="history-pane" role="tabpanel">
+                            <div class="row g-4">
+                                <!-- Leave History -->
+                                <div class="col-12">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-white py-3">
+                                            <h6 class="mb-0 fw-bold text-primary"><i class="fa fa-calendar-check me-2"></i>Leave History</h6>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0">
+                                                    <thead class="bg-light">
+                                                        <tr>
+                                                            <th>Employee</th>
+                                                            <th>Leave Details</th>
+                                                            <th>Period</th>
+                                                            <th>Applied On</th>
+                                                            <th>Status</th>
+                                                            <th>HOD Remarks</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr th:each="leave : ${processedLeaves}">
+                                                            <td>
+                                                                <div class="fw-bold" th:text="${leave.employeeName}"></div>
+                                                                <div class="small text-muted" th:text="${leave.designation}"></div>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge bg-light text-dark fw-bold" th:text="${leave.leaveType}"></span>
+                                                                <small class="text-muted d-block" th:text="${leave.leaveCategory}"></small>
+                                                            </td>
+                                                            <td>
+                                                                <div class="small">
+                                                                    <span th:text="${#temporals.format(leave.startDate, 'dd MMM yyyy')}"></span>
+                                                                    <span class="text-muted mx-1">-</span>
+                                                                    <span th:text="${#temporals.format(leave.endDate, 'dd MMM yyyy')}"></span>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <small class="text-muted d-block" th:text="${#temporals.format(leave.applicationDate, 'dd-MM-yyyy HH:mm')}"></small>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge" th:classappend="${leave.status == 'APPROVED' ? 'bg-success' : 'bg-danger'}" th:text="${leave.status}"></span>
+                                                            </td>
+                                                            <td>
+                                                                <p class="mb-0 small text-muted" style="max-width: 250px;" th:text="${leave.hodRemarks}"></p>
+                                                            </td>
+                                                        </tr>
+                                                        <tr th:if="${#lists.isEmpty(processedLeaves)}">
+                                                            <td colspan="6" class="text-center py-4 text-muted small">No processed leave requests found.</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tour History -->
+                                <div class="col-12">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-white py-3">
+                                            <h6 class="mb-0 fw-bold text-primary"><i class="fa fa-briefcase me-2"></i>Tour History</h6>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0">
+                                                    <thead class="bg-light">
+                                                        <tr>
+                                                            <th>Employee</th>
+                                                            <th>Tour Details</th>
+                                                            <th>Period</th>
+                                                            <th>Applied On</th>
+                                                            <th>Status</th>
+                                                            <th>HOD Remarks</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr th:each="tour : ${processedTours}">
+                                                            <td>
+                                                                <div class="fw-bold" th:text="${tour.employeeName}"></div>
+                                                                <div class="small text-muted" th:text="${tour.designation}"></div>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge bg-light text-dark fw-bold" th:text="${tour.tourCategory}"></span>
+                                                                <small class="text-muted d-block" th:if="${tour.tourCategory == 'Half Day'}" th:text="'(' + ${tour.timePeriod} + ')'"></small>
+                                                            </td>
+                                                            <td>
+                                                                <div class="small">
+                                                                    <span th:text="${#temporals.format(tour.startDate, 'dd MMM yyyy')}"></span>
+                                                                    <span th:if="${tour.tourCategory == 'Full Day'}" class="text-muted mx-1">-</span>
+                                                                    <span th:if="${tour.tourCategory == 'Full Day'}" th:text="${#temporals.format(tour.endDate, 'dd MMM yyyy')}"></span>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <small class="text-muted d-block" th:text="${#temporals.format(tour.applicationDate, 'dd-MM-yyyy HH:mm')}"></small>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge" th:classappend="${tour.status == 'APPROVED' ? 'bg-success' : 'bg-danger'}" th:text="${tour.status}"></span>
+                                                            </td>
+                                                            <td>
+                                                                <p class="mb-0 small text-muted" style="max-width: 250px;" th:text="${tour.hodRemarks}"></p>
+                                                            </td>
+                                                        </tr>
+                                                        <tr th:if="${#lists.isEmpty(processedTours)}">
+                                                            <td colspan="6" class="text-center py-4 text-muted small">No processed tour requests found.</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -242,19 +409,23 @@
             <form id="leaveApproveForm" th:action="@{/hod1/approveLeave}" method="post" style="display:none;">
                 <input type="hidden" name="leaveId" id="leaveApproveId">
                 <input type="hidden" name="remarks" id="leaveApproveRemarks">
+                <input type="hidden" name="query" th:value="${searchQuery}">
             </form>
             <form id="leaveRejectForm" th:action="@{/hod1/rejectLeave}" method="post" style="display:none;">
                 <input type="hidden" name="leaveId" id="leaveRejectId">
                 <input type="hidden" name="remarks" id="leaveRejectRemarks">
+                <input type="hidden" name="query" th:value="${searchQuery}">
             </form>
-
+ 
             <form id="tourApproveForm" th:action="@{/hod1/approveTour}" method="post" style="display:none;">
                 <input type="hidden" name="tourId" id="tourApproveId">
                 <input type="hidden" name="remarks" id="tourApproveRemarks">
+                <input type="hidden" name="query" th:value="${searchQuery}">
             </form>
             <form id="tourRejectForm" th:action="@{/hod1/rejectTour}" method="post" style="display:none;">
                 <input type="hidden" name="tourId" id="tourRejectId">
                 <input type="hidden" name="remarks" id="tourRejectRemarks">
+                <input type="hidden" name="query" th:value="${searchQuery}">
             </form>
         </section>
     </th:block>
@@ -262,6 +433,39 @@
     <script th:src="@{https://code.jquery.com/jquery-3.6.0.min.js}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        $(document).ready(function() {
+            // Tab change listener to sync state
+            const tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
+            tabs.forEach(tab => {
+                tab.addEventListener('shown.bs.tab', (event) => {
+                    const targetId = event.target.id;
+                    let activeTab = 'leave';
+                    if (targetId === 'tour-tab') activeTab = 'tour';
+                    else if (targetId === 'history-tab') activeTab = 'history';
+                    
+                    $('#activeTabInput').val(activeTab);
+                    localStorage.setItem('hod_active_tab', activeTab);
+                });
+            });
+
+            // Initial tab activation from param or localStorage
+            let requestedTab = '[[${param.activeTab != null ? param.activeTab[0] : ""}]]';
+            if (!requestedTab) {
+                requestedTab = localStorage.getItem('hod_active_tab') || 'leave';
+            }
+            
+            if (requestedTab === 'tour') {
+                const tourTab = document.getElementById('tour-tab');
+                if (tourTab) bootstrap.Tab.getOrCreateInstance(tourTab).show();
+            } else if (requestedTab === 'history') {
+                const historyTab = document.getElementById('history-tab');
+                if (historyTab) bootstrap.Tab.getOrCreateInstance(historyTab).show();
+            } else if (requestedTab === 'leave') {
+                const leaveTab = document.getElementById('leave-tab');
+                if (leaveTab) bootstrap.Tab.getOrCreateInstance(leaveTab).show();
+            }
+        });
+
         function submitAction(id, action, type) {
             var remarksId = (type === 'Leave' ? '#leave-remarks-' : '#tour-remarks-') + id;
             var remarks = $(remarksId).val();

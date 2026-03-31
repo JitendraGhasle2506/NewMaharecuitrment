@@ -13,14 +13,17 @@
 
 
             <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
+                <div class="header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h2 th:if="${not #lists.isEmpty(pendingRequests)}" class="mb-0">
                         Pending Requests for <span th:text="${pendingRequests[0].employeeName}"></span>
                     </h2>
                     <h2 th:if="${#lists.isEmpty(pendingRequests)}" class="mb-0">No Pending Requests</h2>
-                    <a th:href="@{/hod1/manual-attendance(roleType=${currentRoleType})}" class="btn btn-sm btn-outline-secondary">
-                        <i class="fa fa-arrow-left"></i> Back to Summary
-                    </a>
+                    
+                    <div class="d-flex gap-2 align-items-center">
+                        <a th:href="@{/hod1/manual-attendance(roleType=${currentRoleType})}" class="btn btn-outline-secondary">
+                            <i class="fa fa-arrow-left"></i> Back to Summary
+                        </a>
+                    </div>
                 </div>
 
                 <div class="card-body">
@@ -37,6 +40,9 @@
                         <table class="table table-bordered table-striped align-middle">
                             <thead class="table-light">
                                 <tr>
+                                    <th style="width: 40px; text-align: center;">
+                                        <input type="checkbox" id="selectAll" checked onclick="toggleAll(this)">
+                                    </th>
                                     <th>Date</th>
                                     <th>In Time</th>
                                     <th>Out Time</th>
@@ -47,6 +53,9 @@
                             </thead>
                             <tbody>
                                 <tr th:each="req : ${pendingRequests}">
+                                    <td style="text-align: center;">
+                                        <input type="checkbox" name="rowSelect" th:value="${req.id}" checked>
+                                    </td>
                                     <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
                                     <td th:text="${req.inTime}"></td>
                                     <td th:text="${req.outTime}"></td>
@@ -99,8 +108,73 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Bulk Action Buttons at Bottom -->
+                    <div th:if="${not #lists.isEmpty(pendingRequests)}" class="d-flex justify-content-end gap-3 mt-4 border-top pt-4">
+                        <form th:action="@{/hod1/manual-attendance/bulk-action}" method="post" id="bulkActionForm">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="userId" th:value="${targetUserId}">
+                            <input type="hidden" name="roleType" th:value="${currentRoleType}">
+                            <input type="hidden" name="status" id="bulkStatus" value="">
+                            <input type="hidden" name="comments" id="bulkComments" value="">
+                            
+                            <button type="button" class="btn btn-outline-danger" onclick="executeBulkAction('REJECTED')" title="Reject Selected">
+                                <i class="fa fa-times-circle me-1"></i> Bulk Reject
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="executeBulkAction('APPROVED')" title="Approve Selected">
+                                <i class="fa fa-check-double me-1"></i> Bulk Approve
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
+            
+            <script th:inline="javascript">
+                function toggleAll(source) {
+                    const checkboxes = document.querySelectorAll('input[name="rowSelect"]');
+                    checkboxes.forEach(cb => cb.checked = source.checked);
+                }
+
+                function executeBulkAction(status) {
+                    const selectedIds = Array.from(document.querySelectorAll('input[name="rowSelect"]:checked')).map(cb => cb.value);
+                    if (selectedIds.length === 0) {
+                        alert("Please select at least one request.");
+                        return;
+                    }
+
+                    let comments = "Bulk Approved";
+                    if (status === 'REJECTED') {
+                        comments = prompt("Please enter a reason for rejecting " + selectedIds.length + " selected requests:");
+                        if (comments === null) return; // User cancelled prompt
+                        if (comments.trim() === "") {
+                            alert("Rejection reason is required for bulk rejection.");
+                            return;
+                        }
+                    } else {
+                        if (!confirm("Are you sure you want to approve " + selectedIds.length + " selected requests?")) {
+                            return;
+                        }
+                    }
+                    
+                    const form = document.getElementById('bulkActionForm');
+                    document.getElementById('bulkStatus').value = status;
+                    document.getElementById('bulkComments').value = comments;
+
+                    // Clear any previous dynamic inputs
+                    form.querySelectorAll('.dynamic-id').forEach(el => el.remove());
+                    
+                    selectedIds.forEach(id => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'requestIds';
+                        input.value = id;
+                        input.className = 'dynamic-id';
+                        form.appendChild(input);
+                    });
+                    
+                    form.submit();
+                }
+            </script>
         </section>
     </th:block>
 </body>
