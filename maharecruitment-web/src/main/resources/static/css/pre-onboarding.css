@@ -26,6 +26,7 @@
 .pre-onboarding-card > .header h2 {
     color: var(--onboard-brand-strong);
     letter-spacing: -0.02em;
+    font-size: var(--heading-size-main);
 }
 
 .pre-onboarding-card > .header small {
@@ -87,7 +88,7 @@
 
 .pre-onboarding-hero-title {
     margin: 0;
-    font-size: clamp(1.25rem, 2vw, 1.75rem);
+    font-size: var(--heading-size-main);
     font-weight: 800;
     letter-spacing: -0.03em;
     color: var(--onboard-text);
@@ -164,7 +165,7 @@
 }
 
 .pre-onboarding-card .section-title {
-    font-size: 1.05rem;
+    font-size: var(--heading-size-sub);
     font-weight: 700;
     margin-bottom: 14px;
     color: var(--onboard-brand-strong);

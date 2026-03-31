@@ -94,20 +94,57 @@
                         </table>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-3" th:if="${designations.totalPages > 1}">
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!designations.first}"
-                            th:href="@{/master/designations(page=${designations.number - 1},size=${designations.size},includeInactive=${includeInactive})}">
-                            Previous
-                        </a>
-                        <span th:if="${designations.first}"></span>
-                        <span class="small text-muted">
-                            Page <span th:text="${designations.number + 1}"></span> of <span th:text="${designations.totalPages}"></span>
-                        </span>
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!designations.last}"
-                            th:href="@{/master/designations(page=${designations.number + 1},size=${designations.size},includeInactive=${includeInactive})}">
-                            Next
-                        </a>
-                        <span th:if="${designations.last}"></span>
+                    <div class="app-pagination-shell"
+                        th:if="${designations.totalPages > 1}"
+                        th:with="middleStart=${designations.number - 2 > 1 ? designations.number - 2 : 1},
+                                 middleEnd=${designations.number + 2 < designations.totalPages - 2 ? designations.number + 2 : designations.totalPages - 2},
+                                 showingFrom=${designations.totalElements == 0 ? 0 : designations.number * designations.size + 1},
+                                 showingTo=${designations.totalElements == 0 ? 0 : designations.number * designations.size + designations.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                <span th:text="${designations.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${designations.number + 1}">1</span> of <span th:text="${designations.totalPages}">1</span>
+                            </div>
+                        </div>
+                        <nav aria-label="Designation master pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${designations.first} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/master/designations(page=${designations.number - 1},size=${designations.size},includeInactive=${includeInactive})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:classappend="${designations.number == 0} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/master/designations(page=0,size=${designations.size},includeInactive=${includeInactive})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == designations.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/master/designations(page=${pageIndex},size=${designations.size},includeInactive=${includeInactive})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < designations.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${designations.totalPages > 1}"
+                                    th:classappend="${designations.number == designations.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/master/designations(page=${designations.totalPages - 1},size=${designations.size},includeInactive=${includeInactive})}"
+                                        th:text="${designations.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${designations.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/master/designations(page=${designations.number + 1},size=${designations.size},includeInactive=${includeInactive})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>

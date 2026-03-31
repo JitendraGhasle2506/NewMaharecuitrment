@@ -9,13 +9,19 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
+import com.maharecruitment.gov.in.auth.service.UserService;
 import com.maharecruitment.gov.in.common.mahaitprofile.entity.MahaItProfile;
 import com.maharecruitment.gov.in.common.mahaitprofile.repository.MahaItProfileRepository;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
@@ -26,6 +32,8 @@ import com.maharecruitment.gov.in.department.entity.DepartmentTaxRateMasterEntit
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationActivityRepository;
 import com.maharecruitment.gov.in.department.repository.DepartmentTaxRateMasterRepository;
+import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceAuditEntryView;
+import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceListItemView;
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceView;
 import com.maharecruitment.gov.in.invoice.entity.DepartmentTaxInvoiceEntity;
 import com.maharecruitment.gov.in.invoice.entity.DepartmentTaxInvoiceLineItemEntity;
@@ -56,6 +64,7 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
     private final DepartmentTaxRateMasterRepository taxRateMasterRepository;
     private final DepartmentProjectApplicationActivityRepository activityRepository;
     private final MahaItProfileRepository mahaItProfileRepository;
+    private final UserService userService;
     private final DepartmentTaxInvoiceRepository invoiceRepository;
     private final TaxInvoiceNumberGenerator numberGenerator;
     private final TaxInvoiceAmountCalculator amountCalculator;
@@ -68,6 +77,7 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
             DepartmentTaxRateMasterRepository taxRateMasterRepository,
             DepartmentProjectApplicationActivityRepository activityRepository,
             MahaItProfileRepository mahaItProfileRepository,
+            UserService userService,
             DepartmentTaxInvoiceRepository invoiceRepository,
             TaxInvoiceNumberGenerator numberGenerator,
             TaxInvoiceAmountCalculator amountCalculator,
@@ -78,11 +88,27 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
         this.taxRateMasterRepository = taxRateMasterRepository;
         this.activityRepository = activityRepository;
         this.mahaItProfileRepository = mahaItProfileRepository;
+        this.userService = userService;
         this.invoiceRepository = invoiceRepository;
         this.numberGenerator = numberGenerator;
         this.amountCalculator = amountCalculator;
         this.currencyToWordsConverter = currencyToWordsConverter;
         this.viewMapper = viewMapper;
+    }
+
+    @Override
+    public Page<TaxInvoiceListItemView> getGeneratedInvoices(Pageable pageable) {
+        Pageable resolvedPageable = pageable != null
+                ? pageable
+                : PageRequest.of(
+                        0,
+                        10,
+                        Sort.by(
+                                Sort.Order.desc("tiDate"),
+                                Sort.Order.desc("departmentTaxInvoiceId")));
+
+        return invoiceRepository.findByActiveTrue(resolvedPageable)
+                .map(this::toListItemView);
     }
 
     @Override
@@ -93,7 +119,7 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
         DepartmentTaxInvoiceEntity existingInvoice = invoiceRepository.findByRequestIdIgnoreCase(normalizedRequestId)
                 .orElse(null);
         if (existingInvoice != null) {
-            return viewMapper.toView(existingInvoice);
+            return toDetailedView(existingInvoice);
         }
 
         DepartmentProjectApplicationEntity application = applicationRepository.findByRequestIdIgnoreCase(
@@ -116,7 +142,7 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                 applicationId)
                 .orElse(null);
         if (existingInvoice != null) {
-            return viewMapper.toView(existingInvoice);
+            return toDetailedView(existingInvoice);
         }
 
         DepartmentProjectApplicationEntity application = applicationRepository.findById(applicationId)
@@ -138,7 +164,7 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                 applicationId)
                 .orElse(null);
         if (existingInvoice != null) {
-            return viewMapper.toView(existingInvoice);
+            return toDetailedView(existingInvoice);
         }
 
         DepartmentProjectApplicationEntity application = applicationRepository.findById(applicationId)
@@ -146,7 +172,7 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                         "Department request not found for application id: " + applicationId));
 
         ensurePreviewIsEligible(application);
-        return viewMapper.toView(buildInvoiceEntity(
+        return toDetailedView(buildInvoiceEntity(
                 application,
                 resolveActorEmail(application),
                 resolvePreviewNumber(application)));
@@ -163,7 +189,7 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                 applicationId)
                 .orElse(null);
         if (existingInvoice != null) {
-            return viewMapper.toView(existingInvoice);
+            return toDetailedView(existingInvoice);
         }
 
         DepartmentProjectApplicationEntity application = applicationRepository.findById(applicationId)
@@ -183,14 +209,14 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                     application.getRequestId(),
                     saved.getTiNumber(),
                     saved.getTotalAmount());
-            return viewMapper.toView(saved);
+            return toDetailedView(saved);
         } catch (DataIntegrityViolationException ex) {
             DepartmentTaxInvoiceEntity existingAfterConflict = invoiceRepository.findByDepartmentProjectApplicationId(
                     applicationId)
                     .orElseThrow(() -> new TaxInvoiceException(
                             "Unable to persist tax invoice for application id: " + applicationId,
                             ex));
-            return viewMapper.toView(existingAfterConflict);
+            return toDetailedView(existingAfterConflict);
         }
     }
 
@@ -492,6 +518,113 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
             throw new TaxInvoiceException("Request id is required.");
         }
         return normalized;
+    }
+
+    private TaxInvoiceView toDetailedView(DepartmentTaxInvoiceEntity entity) {
+        TaxInvoiceView view = viewMapper.toView(entity);
+        applyAuditDetails(view, entity);
+        return view;
+    }
+
+    private TaxInvoiceListItemView toListItemView(DepartmentTaxInvoiceEntity entity) {
+        InvoiceActorDetails generatedBy = resolveActorDetails(entity.getCreatedBy());
+        return TaxInvoiceListItemView.builder()
+                .departmentTaxInvoiceId(entity.getDepartmentTaxInvoiceId())
+                .departmentProjectApplicationId(entity.getDepartmentProjectApplicationId())
+                .requestId(entity.getRequestId())
+                .tiNumber(entity.getTiNumber())
+                .tiDate(entity.getTiDate())
+                .projectName(entity.getProjectName())
+                .billedTo(entity.getBilledTo())
+                .totalAmount(entity.getTotalAmount())
+                .generatedByUserId(generatedBy.userId())
+                .generatedByName(generatedBy.displayName())
+                .generatedByLoginId(generatedBy.loginId())
+                .generatedOn(entity.getCreatedDate())
+                .updatedDate(entity.getUpdatedDate())
+                .build();
+    }
+
+    private void applyAuditDetails(TaxInvoiceView view, DepartmentTaxInvoiceEntity entity) {
+        if (view == null || entity == null) {
+            return;
+        }
+
+        InvoiceActorDetails generatedBy = resolveActorDetails(entity.getCreatedBy());
+        InvoiceActorDetails updatedBy = resolveActorDetails(entity.getUpdatedBy());
+
+        view.setGeneratedByUserId(generatedBy.userId());
+        view.setGeneratedByName(generatedBy.displayName());
+        view.setGeneratedByLoginId(generatedBy.loginId());
+        view.setGeneratedOn(entity.getCreatedDate());
+        view.setLastUpdatedByUserId(updatedBy.userId());
+        view.setLastUpdatedByName(updatedBy.displayName());
+        view.setLastUpdatedByLoginId(updatedBy.loginId());
+        view.setLastUpdatedOn(entity.getUpdatedDate());
+        view.setAuditTrail(buildAuditTrail(entity, generatedBy, updatedBy));
+    }
+
+    private List<TaxInvoiceAuditEntryView> buildAuditTrail(
+            DepartmentTaxInvoiceEntity entity,
+            InvoiceActorDetails generatedBy,
+            InvoiceActorDetails updatedBy) {
+        List<TaxInvoiceAuditEntryView> auditTrail = new ArrayList<>();
+
+        if (entity.getCreatedDate() != null || StringUtils.hasText(entity.getCreatedBy())) {
+            auditTrail.add(TaxInvoiceAuditEntryView.builder()
+                    .actionLabel("Generated")
+                    .actorName(generatedBy.displayName())
+                    .actorUserId(generatedBy.userId())
+                    .actorLoginId(generatedBy.loginId())
+                    .actionTimestamp(entity.getCreatedDate())
+                    .details("Tax invoice generated for request " + entity.getRequestId() + ".")
+                    .build());
+        }
+
+        boolean hasSeparateUpdate = entity.getUpdatedDate() != null
+                && (entity.getCreatedDate() == null || !entity.getUpdatedDate().equals(entity.getCreatedDate())
+                        || !safeEquals(entity.getUpdatedBy(), entity.getCreatedBy()));
+
+        if (hasSeparateUpdate) {
+            auditTrail.add(TaxInvoiceAuditEntryView.builder()
+                    .actionLabel("Updated")
+                    .actorName(updatedBy.displayName())
+                    .actorUserId(updatedBy.userId())
+                    .actorLoginId(updatedBy.loginId())
+                    .actionTimestamp(entity.getUpdatedDate())
+                    .details("Tax invoice details were updated.")
+                    .build());
+        }
+
+        return auditTrail;
+    }
+
+    private InvoiceActorDetails resolveActorDetails(String actorLoginId) {
+        String normalizedLoginId = trimToNull(actorLoginId);
+        if (normalizedLoginId == null) {
+            return new InvoiceActorDetails(null, "-", null);
+        }
+
+        User user = userService.findUserByEmail(normalizedLoginId);
+        if (user == null) {
+            return new InvoiceActorDetails(null, normalizedLoginId, normalizedLoginId);
+        }
+
+        String displayName = trimToNull(user.getName());
+        return new InvoiceActorDetails(
+                user.getId(),
+                displayName != null ? displayName : normalizedLoginId,
+                normalizedLoginId);
+    }
+
+    private boolean safeEquals(String left, String right) {
+        if (left == null) {
+            return right == null;
+        }
+        return left.equals(right);
+    }
+
+    private record InvoiceActorDetails(Long userId, String displayName, String loginId) {
     }
 
     private String requireText(String value, String fieldName) {

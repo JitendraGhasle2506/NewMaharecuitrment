@@ -31,7 +31,7 @@
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                         <div class="col-md-6">
-                            <label class="form-label">Role</label>
+                            <label class="form-label">Role <span class="text-danger">*</span></label>
                             <select class="form-select" th:field="*{roleId}" th:disabled="${isEdit}">
                                 <option th:value="''">-- Select Role --</option>
                                 <option th:each="role : ${availableRoles}" th:value="${role.id}" th:text="${role.name}"></option>

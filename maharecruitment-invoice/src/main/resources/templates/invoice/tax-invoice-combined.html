@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Tax Invoice</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        body {
+            margin: 0;
+            background: #f8fafc;
+            font-family: Arial, sans-serif;
+        }
+
+        .invoice-page-shell {
+            display: grid;
+            gap: 0.9rem;
+            width: 100%;
+        }
+
+        .invoice-page-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding: 0.95rem 1.15rem;
+            border: 1px solid #d9e2ec;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .invoice-page-title {
+            margin: 0 0 0.2rem;
+            color: #0f172a;
+            font-size: 1.28rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .invoice-page-subtitle {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .invoice-combined-shell {
+            max-width: none;
+            width: 100%;
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .invoice-combined-section {
+            background: #fff;
+            border: 1px solid #d9e2ec;
+            border-radius: 14px;
+            padding: 8px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .invoice-frame-message {
+            display: none;
+            min-height: 260px;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 22px;
+            border: 1px dashed #f59e0b;
+            border-radius: 12px;
+            background: #fff7ed;
+            color: #9a3412;
+            text-align: center;
+        }
+
+        .invoice-frame-message.is-visible {
+            display: flex;
+        }
+
+        .invoice-frame-message h3 {
+            margin: 0 0 8px;
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .invoice-frame-message p {
+            margin: 0;
+            font-size: 0.96rem;
+            line-height: 1.5;
+        }
+
+        .invoice-frame {
+            width: 100%;
+            min-height: 760px;
+            display: block;
+            border: 0;
+            border-radius: 8px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .invoice-combined-toolbar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-top: 0.35rem;
+        }
+
+        .invoice-combined-print-btn {
+            border: 0;
+            border-radius: 10px;
+            padding: 10px 18px;
+            background: #1d4ed8;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(29, 78, 216, 0.2);
+        }
+
+        .invoice-combined-print-btn:disabled {
+            background: #94a3b8;
+            cursor: wait;
+            box-shadow: none;
+        }
+
+        @media (max-width: 767.98px) {
+            .invoice-page-shell {
+                gap: 0.75rem;
+            }
+
+            .invoice-page-toolbar {
+                padding: 0.8rem 0.9rem;
+                gap: 0.75rem;
+            }
+
+            .invoice-combined-section {
+                padding: 6px;
+            }
+
+            .invoice-frame {
+                min-height: 640px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Invoice', 'Tax Invoice', ~{::section})}">
+        <section class="invoice-page-shell">
+            <div class="invoice-page-toolbar no-print">
+                <div>
+                    <h2 class="invoice-page-title">Tax Invoice</h2>
+                </div>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        th:attr="data-fallback-url=@{/auditor/department-tax-invoices}"
+                        onclick="goBackToAuditList(event)">
+                    <i class="fa fa-arrow-left me-1"></i> Back
+                </button>
+            </div>
+
+            <div class="invoice-combined-shell">
+                <section class="invoice-combined-section">
+                    <div class="invoice-frame-message" id="oldInvoiceFrameMessage" aria-live="polite">
+                        <div>
+                            <h3>Session expired</h3>
+                            <p>Please login again and reopen the tax invoice page.</p>
+                        </div>
+                    </div>
+                    <iframe class="invoice-frame"
+                        id="oldInvoiceFrame"
+                        title="Old Tax Invoice"
+                        scrolling="no"
+                        th:src="@{/invoice/tax-invoices/application/{applicationId}/old(applicationId=${applicationId},embedded=true)}">
+                    </iframe>
+                </section>
+
+                <section class="invoice-combined-section">
+                    <div class="invoice-frame-message" id="newInvoiceFrameMessage" aria-live="polite">
+                        <div>
+                            <h3>Session expired</h3>
+                            <p>Please login again and reopen the tax invoice page.</p>
+                        </div>
+                    </div>
+                    <iframe class="invoice-frame"
+                        id="newInvoiceFrame"
+                        title="New Tax Invoice"
+                        scrolling="no"
+                        th:src="@{/invoice/tax-invoices/application/{applicationId}/new(applicationId=${applicationId},embedded=true)}">
+                    </iframe>
+                </section>
+
+                <div class="invoice-combined-toolbar no-print">
+                    <button id="printBothBtn" class="invoice-combined-print-btn" type="button" onclick="printBothInvoices()" disabled>
+                        Loading...
+                    </button>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script>
+        function goBackToAuditList(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            var trigger = event && event.currentTarget ? event.currentTarget : null;
+            var fallbackUrl = trigger ? trigger.getAttribute('data-fallback-url') : null;
+
+            if (window.history.length > 1) {
+                window.history.back();
+                return false;
+            }
+
+            if (fallbackUrl) {
+                window.location.assign(fallbackUrl);
+            }
+            return false;
+        }
+
+        function getFrameDocument(frame) {
+            if (!frame) {
+                return null;
+            }
+            return frame.contentDocument || (frame.contentWindow ? frame.contentWindow.document : null);
+        }
+
+        function getFrameLocation(frame) {
+            if (!frame || !frame.contentWindow) {
+                return null;
+            }
+            try {
+                return frame.contentWindow.location;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function resolveFrameState(frame) {
+            var locationRef = getFrameLocation(frame);
+            var pathname = locationRef && locationRef.pathname ? locationRef.pathname : '';
+            var search = locationRef && locationRef.search ? locationRef.search : '';
+            var params = new URLSearchParams(search);
+
+            if (pathname.endsWith('/login')) {
+                if (params.get('sessionExpired') === 'true') {
+                    return {
+                        kind: 'sessionExpired',
+                        title: 'Session expired',
+                        message: 'Please login again and reopen the tax invoice page.'
+                    };
+                }
+
+                return {
+                    kind: 'loginRequired',
+                    title: 'Login required',
+                    message: 'Please login to continue and reopen the tax invoice page.'
+                };
+            }
+
+            return {
+                kind: 'ready'
+            };
+        }
+
+        function setFrameMessage(frame, title, message) {
+            if (!frame) {
+                return;
+            }
+
+            var notice = document.getElementById(frame.id + 'Message');
+            if (!notice) {
+                return;
+            }
+
+            var titleNode = notice.querySelector('h3');
+            var messageNode = notice.querySelector('p');
+            if (titleNode) {
+                titleNode.textContent = title;
+            }
+            if (messageNode) {
+                messageNode.textContent = message;
+            }
+
+            notice.classList.add('is-visible');
+            frame.style.display = 'none';
+            frame.style.height = '0';
+        }
+
+        function clearFrameMessage(frame) {
+            if (!frame) {
+                return;
+            }
+
+            var notice = document.getElementById(frame.id + 'Message');
+            if (notice) {
+                notice.classList.remove('is-visible');
+            }
+            frame.style.display = 'block';
+        }
+
+        function resizeInvoiceFrame(frame) {
+            var doc = getFrameDocument(frame);
+            if (!doc) {
+                return;
+            }
+
+            if (doc.body) {
+                doc.body.style.overflow = 'hidden';
+            }
+            if (doc.documentElement) {
+                doc.documentElement.style.overflow = 'hidden';
+            }
+
+            frame.style.height = '1px';
+            var root = doc.getElementById('print-content') || doc.body;
+            var rootHeight = root ? root.scrollHeight : 0;
+            var bodyHeight = doc.body ? doc.body.scrollHeight : 0;
+            var htmlHeight = doc.documentElement ? doc.documentElement.scrollHeight : 0;
+            var targetHeight = Math.max(rootHeight, bodyHeight, htmlHeight, 720);
+            frame.style.height = targetHeight + 'px';
+        }
+
+        function collectPrintableStyles(doc, styleSet) {
+            if (!doc || !styleSet) {
+                return;
+            }
+
+            Array.from(doc.querySelectorAll('link[rel="stylesheet"], style')).forEach(function (node) {
+                styleSet.add(node.outerHTML);
+            });
+        }
+
+        function getPrintableContent(frame) {
+            var doc = getFrameDocument(frame);
+            if (!doc) {
+                return '';
+            }
+
+            var root = doc.getElementById('print-content');
+            return root ? root.outerHTML : doc.body.innerHTML;
+        }
+
+        function printWhenAssetsReady(printWindow) {
+            if (!printWindow) {
+                return;
+            }
+
+            function triggerPrint() {
+                printWindow.focus();
+                window.setTimeout(function () {
+                    printWindow.print();
+                    printWindow.close();
+                }, 250);
+            }
+
+            function waitForImages() {
+                var doc = printWindow.document;
+                var images = Array.from(doc.images || []);
+                var pending = images.filter(function (image) {
+                    return !image.complete;
+                });
+
+                if (!pending.length) {
+                    triggerPrint();
+                    return;
+                }
+
+                var remaining = pending.length;
+                function resolveImage() {
+                    remaining -= 1;
+                    if (remaining <= 0) {
+                        triggerPrint();
+                    }
+                }
+
+                pending.forEach(function (image) {
+                    image.addEventListener('load', resolveImage, { once: true });
+                    image.addEventListener('error', resolveImage, { once: true });
+                });
+            }
+
+            if (printWindow.document.readyState === 'complete') {
+                window.setTimeout(waitForImages, 100);
+                return;
+            }
+
+            printWindow.addEventListener('load', function () {
+                window.setTimeout(waitForImages, 100);
+            }, { once: true });
+        }
+
+        function printBothInvoices() {
+            var frames = ['oldInvoiceFrame', 'newInvoiceFrame']
+                .map(function (frameId) { return document.getElementById(frameId); })
+                .filter(Boolean);
+
+            if (!frames.length) {
+                return;
+            }
+
+            var styleSet = new Set();
+            var printableSections = '';
+
+            frames.forEach(function (frame, index) {
+                var doc = getFrameDocument(frame);
+                collectPrintableStyles(doc, styleSet);
+                printableSections += '<section class="combined-print-section'
+                    + (index < frames.length - 1 ? ' with-break' : '')
+                    + '">'
+                    + getPrintableContent(frame)
+                    + '</section>';
+            });
+
+            var printWindow = window.open('', '_blank');
+            var printStyles = '<style>'
+                + 'body{margin:0;background:#fff;}'
+                + '.combined-print-section{page-break-after:always;}'
+                + '.combined-print-section:last-child{page-break-after:auto;}'
+                + '.no-print{display:none !important;}'
+                + '</style>';
+
+            printWindow.document.write('<html><head><title>Tax Invoice</title>'
+                + Array.from(styleSet).join('')
+                + printStyles
+                + '</head><body>'
+                + printableSections
+                + '</body></html>');
+            printWindow.document.close();
+            printWhenAssetsReady(printWindow);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var printButton = document.getElementById('printBothBtn');
+            var frameStates = {
+                oldInvoiceFrame: 'loading',
+                newInvoiceFrame: 'loading'
+            };
+
+            function syncPrintButtonState() {
+                if (!printButton) {
+                    return;
+                }
+
+                var states = Object.values(frameStates);
+                if (states.includes('sessionExpired')) {
+                    printButton.disabled = true;
+                    printButton.textContent = 'Session expired';
+                    return;
+                }
+
+                if (states.includes('loginRequired')) {
+                    printButton.disabled = true;
+                    printButton.textContent = 'Login required';
+                    return;
+                }
+
+                var ready = states.every(function (state) {
+                    return state === 'ready';
+                });
+                printButton.disabled = !ready;
+                printButton.textContent = ready ? 'Print' : 'Loading...';
+            }
+
+            ['oldInvoiceFrame', 'newInvoiceFrame'].forEach(function (frameId) {
+                var frame = document.getElementById(frameId);
+                if (!frame) {
+                    return;
+                }
+
+                frame.addEventListener('load', function () {
+                    var state = resolveFrameState(frame);
+                    frameStates[frameId] = state.kind;
+
+                    if (state.kind === 'ready') {
+                        clearFrameMessage(frame);
+                        resizeInvoiceFrame(frame);
+                        window.setTimeout(function () { resizeInvoiceFrame(frame); }, 150);
+                        window.setTimeout(function () { resizeInvoiceFrame(frame); }, 500);
+                    } else {
+                        setFrameMessage(frame, state.title, state.message);
+                    }
+
+                    syncPrintButtonState();
+                });
+            });
+
+            window.addEventListener('resize', function () {
+                ['oldInvoiceFrame', 'newInvoiceFrame'].forEach(function (frameId) {
+                    resizeInvoiceFrame(document.getElementById(frameId));
+                });
+            });
+
+            syncPrintButtonState();
+        });
+    </script>
+</body>
+
+</html>

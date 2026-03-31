@@ -18,7 +18,7 @@
 
 .department-shell .profile-hero h3 {
     margin: 0 0 0.35rem;
-    font-size: 1.2rem;
+    font-size: var(--heading-size-main);
     color: var(--profile-text);
 }
 
@@ -36,7 +36,7 @@
 .department-shell .section-card h5 {
     border-bottom: 1px solid var(--profile-line);
     color: var(--profile-text);
-    font-size: 1rem;
+    font-size: var(--heading-size-sub);
     margin-bottom: 0.75rem;
     padding-bottom: 0.55rem;
 }

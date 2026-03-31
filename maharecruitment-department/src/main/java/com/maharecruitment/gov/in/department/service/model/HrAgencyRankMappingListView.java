@@ -10,4 +10,22 @@ import lombok.Getter;
 public class HrAgencyRankMappingListView {
 
     private List<HrAgencyRankMappingListRowView> rankMappings;
+
+    private List<HrAgencyRankReleaseOverviewGroupView> releaseGroups;
+
+    private int pageNumber;
+
+    private int pageSize;
+
+    private long totalElements;
+
+    private int totalPages;
+
+    private boolean hasPrevious;
+
+    private boolean hasNext;
+
+    private int showingFrom;
+
+    private int showingTo;
 }

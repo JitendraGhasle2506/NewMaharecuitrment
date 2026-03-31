@@ -143,15 +143,8 @@ public class DepartmentRegistrationPageController {
                 bindingResult.rejectValue("newDepartmentName", "registration.newDepartmentName",
                         "New department name is required.");
             }
-            if (isBlank(form.getNewSubDeptName())) {
-                bindingResult.rejectValue("newSubDeptName", "registration.newSubDeptName",
-                        "New sub-department name is required.");
-            }
         } else {
-            if (form.getSubDeptId() == null) {
-                bindingResult.rejectValue("subDeptId", "registration.subDeptId",
-                        "Sub-department selection is required.");
-            } else if (form.isOtherSubDepartmentSelected() && isBlank(form.getNewSubDeptName())) {
+            if (form.isOtherSubDepartmentSelected() && isBlank(form.getNewSubDeptName())) {
                 bindingResult.rejectValue("newSubDeptName", "registration.newSubDeptName",
                         "New sub-department name is required.");
             }

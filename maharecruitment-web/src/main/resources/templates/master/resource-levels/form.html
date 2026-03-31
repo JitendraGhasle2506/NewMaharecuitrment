@@ -28,25 +28,25 @@
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                         <div class="col-md-6">
-                            <label class="form-label">Level Code</label>
+                            <label class="form-label">Level Code  <span class="text-danger">*</span></label>
                             <input type="text" th:field="*{levelCode}" class="form-control" maxlength="10">
                             <div class="text-danger small" th:if="${#fields.hasErrors('levelCode')}" th:errors="*{levelCode}"></div>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Level Name</label>
+                            <label class="form-label">Level Name  <span class="text-danger">*</span></label>
                             <input type="text" th:field="*{levelName}" class="form-control" maxlength="50">
                             <div class="text-danger small" th:if="${#fields.hasErrors('levelName')}" th:errors="*{levelName}"></div>
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label">Min Experience</label>
+                            <label class="form-label">Min Experience  <span class="text-danger">*</span></label>
                             <input type="number" th:field="*{minExperience}" class="form-control" step="0.01" min="0">
                             <div class="text-danger small" th:if="${#fields.hasErrors('minExperience')}" th:errors="*{minExperience}"></div>
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label">Max Experience</label>
+                            <label class="form-label">Max Experience  <span class="text-danger">*</span></label>
                             <input type="number" th:field="*{maxExperience}" class="form-control" step="0.01" min="0">
                             <div class="text-danger small" th:if="${#fields.hasErrors('maxExperience')}" th:errors="*{maxExperience}"></div>
                         </div>

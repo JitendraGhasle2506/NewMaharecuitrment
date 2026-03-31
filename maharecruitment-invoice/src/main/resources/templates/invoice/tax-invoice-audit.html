@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Invoice Audit Details</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .invoice-audit-page {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .invoice-audit-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding: 1rem 1.25rem;
+            border: 1px solid #d9e2ec;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .invoice-audit-title {
+            margin: 0 0 0.2rem;
+            color: #0f172a;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .invoice-audit-subtitle {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .invoice-audit-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .invoice-audit-summary-card,
+        .invoice-audit-card {
+            border: 1px solid #d9e2ec;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .invoice-audit-summary-card {
+            padding: 1rem 1.1rem;
+        }
+
+        .invoice-audit-summary-label {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: #64748b;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .invoice-audit-summary-value {
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .invoice-audit-card-header {
+            padding: 1rem 1.25rem 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .invoice-audit-card-header h4 {
+            margin: 0 0 0.2rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .invoice-audit-card-header p {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.92rem;
+        }
+
+        .invoice-audit-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            padding: 1rem 1.25rem 1.25rem;
+        }
+
+        .invoice-audit-person-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1rem;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        .invoice-audit-person-card h5 {
+            margin: 0 0 0.75rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .invoice-audit-person-name {
+            margin-bottom: 0.35rem;
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .invoice-audit-meta {
+            display: grid;
+            gap: 0.3rem;
+            color: #475569;
+            font-size: 0.9rem;
+        }
+
+        .invoice-audit-table-wrap {
+            padding: 0 1.25rem 1.25rem;
+        }
+
+        .invoice-audit-table {
+            margin-bottom: 0;
+        }
+
+        .invoice-audit-table thead th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+
+        .invoice-audit-table td {
+            vertical-align: top;
+            color: #1e293b;
+        }
+
+        .invoice-audit-empty {
+            padding: 1.25rem !important;
+            text-align: center;
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Invoice', 'Invoice Audit Details', ~{::section})}">
+        <section class="invoice-audit-page">
+            <div class="invoice-audit-toolbar">
+                <div>
+                    <h2 class="invoice-audit-title">Invoice Audit Details</h2>
+                    <p class="invoice-audit-subtitle">Review who generated the invoice, who updated it, and the complete recorded activity trail.</p>
+                </div>
+                <a class="btn btn-outline-secondary btn-sm"
+                   th:href="${(contextPath != null ? contextPath : '') + backUrl}">
+                    <i class="fa fa-arrow-left me-1"></i> Back
+                </a>
+            </div>
+
+            <div class="invoice-audit-summary-grid">
+                <div class="invoice-audit-summary-card">
+                    <span class="invoice-audit-summary-label">Invoice No</span>
+                    <div class="invoice-audit-summary-value" th:text="${invoice.tiNumber}">TI-0001</div>
+                </div>
+                <div class="invoice-audit-summary-card">
+                    <span class="invoice-audit-summary-label">Request Id</span>
+                    <div class="invoice-audit-summary-value" th:text="${invoice.requestId}">DPA-0001</div>
+                </div>
+                <div class="invoice-audit-summary-card">
+                    <span class="invoice-audit-summary-label">Project Name</span>
+                    <div class="invoice-audit-summary-value" th:text="${invoice.projectName}">Project Name</div>
+                </div>
+                <div class="invoice-audit-summary-card">
+                    <span class="invoice-audit-summary-label">Application Id</span>
+                    <div class="invoice-audit-summary-value" th:text="${invoice.departmentProjectApplicationId != null ? invoice.departmentProjectApplicationId : '-'}">12</div>
+                </div>
+            </div>
+
+            <div class="invoice-audit-card">
+                <div class="invoice-audit-card-header">
+                    <h4>Audit Summary</h4>
+                    <p>Primary ownership details captured for this invoice record.</p>
+                </div>
+                <div class="invoice-audit-details-grid">
+                    <div class="invoice-audit-person-card">
+                        <h5>Generated By</h5>
+                        <div class="invoice-audit-person-name"
+                             th:text="${invoice.generatedByName != null ? invoice.generatedByName : '-'}">
+                            -
+                        </div>
+                        <div class="invoice-audit-meta">
+                            <span th:text="${invoice.generatedByUserId != null ? 'User Id: ' + invoice.generatedByUserId : 'User Id: -'}">
+                                User Id: -
+                            </span>
+                            <span th:text="${invoice.generatedByLoginId != null ? 'Login Id: ' + invoice.generatedByLoginId : 'Login Id: -'}">
+                                Login Id: -
+                            </span>
+                            <span th:text="${invoice.generatedOn != null ? 'Generated On: ' + #temporals.format(invoice.generatedOn, 'dd-MMM-yyyy HH:mm') : 'Generated On: -'}">
+                                Generated On: -
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="invoice-audit-person-card">
+                        <h5>Last Updated By</h5>
+                        <div class="invoice-audit-person-name"
+                             th:text="${invoice.lastUpdatedByName != null ? invoice.lastUpdatedByName : '-'}">
+                            -
+                        </div>
+                        <div class="invoice-audit-meta">
+                            <span th:text="${invoice.lastUpdatedByUserId != null ? 'User Id: ' + invoice.lastUpdatedByUserId : 'User Id: -'}">
+                                User Id: -
+                            </span>
+                            <span th:text="${invoice.lastUpdatedByLoginId != null ? 'Login Id: ' + invoice.lastUpdatedByLoginId : 'Login Id: -'}">
+                                Login Id: -
+                            </span>
+                            <span th:text="${invoice.lastUpdatedOn != null ? 'Updated On: ' + #temporals.format(invoice.lastUpdatedOn, 'dd-MMM-yyyy HH:mm') : 'Updated On: -'}">
+                                Updated On: -
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="invoice-audit-card">
+                <div class="invoice-audit-card-header">
+                    <h4>Invoice Activity</h4>
+                    <p>Recorded invoice lifecycle events available for this invoice.</p>
+                </div>
+                <div class="invoice-audit-table-wrap">
+                    <table class="table table-bordered invoice-audit-table">
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>User Name</th>
+                                <th>User Id</th>
+                                <th>Login Id</th>
+                                <th>Action Time</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(invoice.auditTrail)}">
+                                <td colspan="6" class="invoice-audit-empty">
+                                    No invoice audit activity available.
+                                </td>
+                            </tr>
+                            <tr th:each="activity : ${invoice.auditTrail}">
+                                <td class="fw-semibold" th:text="${activity.actionLabel != null ? activity.actionLabel : '-'}">Generated</td>
+                                <td th:text="${activity.actorName != null ? activity.actorName : '-'}">User Name</td>
+                                <td th:text="${activity.actorUserId != null ? activity.actorUserId : '-'}">1</td>
+                                <td th:text="${activity.actorLoginId != null ? activity.actorLoginId : '-'}">user@example.com</td>
+                                <td th:text="${activity.actionTimestamp != null ? #temporals.format(activity.actionTimestamp, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                    30-Mar-2026 14:30
+                                </td>
+                                <td th:text="${activity.details != null ? activity.details : '-'}">Tax invoice generated.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

@@ -55,6 +55,9 @@ import db.postmigration.V33__recruitment_internal_level_two_workflow_status_supp
 import db.postmigration.V38__auth_mahait_profile_menu_backfill;
 import db.postmigration.V39__mahait_profile_cin_number_support;
 import db.postmigration.V40__department_tax_invoice_support;
+import db.postmigration.V41__auth_auditor_department_tax_invoice_menu_backfill;
+import db.postmigration.V42__auth_department_onboarded_employees_menu_backfill;
+import db.postmigration.V43__auth_department_onboarded_employees_direct_menu_fix;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -115,7 +118,10 @@ public class PostSchemaFlywayRunner {
                         new V33__recruitment_internal_level_two_workflow_status_support(),
                         new V38__auth_mahait_profile_menu_backfill(),
                         new V39__mahait_profile_cin_number_support(),
-                        new V40__department_tax_invoice_support())
+                        new V40__department_tax_invoice_support(),
+                        new V41__auth_auditor_department_tax_invoice_menu_backfill(),
+                        new V42__auth_department_onboarded_employees_menu_backfill(),
+                        new V43__auth_department_onboarded_employees_direct_menu_fix())
                 .load();
 
         if (hasFailedPostSchemaMigration()) {

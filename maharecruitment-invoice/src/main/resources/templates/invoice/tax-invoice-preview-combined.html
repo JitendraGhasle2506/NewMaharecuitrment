@@ -272,6 +272,55 @@
             return root ? root.outerHTML : doc.body.innerHTML;
         }
 
+        function printWhenAssetsReady(printWindow) {
+            if (!printWindow) {
+                return;
+            }
+
+            function triggerPrint() {
+                printWindow.focus();
+                window.setTimeout(function () {
+                    printWindow.print();
+                    printWindow.close();
+                }, 250);
+            }
+
+            function waitForImages() {
+                var doc = printWindow.document;
+                var images = Array.from(doc.images || []);
+                var pending = images.filter(function (image) {
+                    return !image.complete;
+                });
+
+                if (!pending.length) {
+                    triggerPrint();
+                    return;
+                }
+
+                var remaining = pending.length;
+                function resolveImage() {
+                    remaining -= 1;
+                    if (remaining <= 0) {
+                        triggerPrint();
+                    }
+                }
+
+                pending.forEach(function (image) {
+                    image.addEventListener('load', resolveImage, { once: true });
+                    image.addEventListener('error', resolveImage, { once: true });
+                });
+            }
+
+            if (printWindow.document.readyState === 'complete') {
+                window.setTimeout(waitForImages, 100);
+                return;
+            }
+
+            printWindow.addEventListener('load', function () {
+                window.setTimeout(waitForImages, 100);
+            }, { once: true });
+        }
+
         function printBothPreviews() {
             var frames = ['oldPreviewFrame', 'newPreviewFrame']
                 .map(function (frameId) { return document.getElementById(frameId); })
@@ -309,9 +358,7 @@
                 + printableSections
                 + '</body></html>');
             printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-            printWindow.close();
+            printWhenAssetsReady(printWindow);
         }
 
         document.addEventListener('DOMContentLoaded', function () {

@@ -491,35 +491,54 @@
                     </div>
                     </div>
 
-                    <div class="pagination-shell" th:if="${requestSummaryPage.totalPages > 1}"
-                        th:with="startPage=${requestSummaryPage.number - 2 > 0 ? requestSummaryPage.number - 2 : 0},
-                                 endPage=${requestSummaryPage.number + 2 < requestSummaryPage.totalPages - 1 ? requestSummaryPage.number + 2 : requestSummaryPage.totalPages - 1}">
-                        <div class="pagination-summary">
-                            Page <span th:text="${requestSummaryPage.number + 1}">1</span> of
-                            <span th:text="${requestSummaryPage.totalPages}">1</span>
+                    <div class="app-pagination-shell"
+                        th:if="${requestSummaryPage.totalPages > 1}"
+                        th:with="middleStart=${requestSummaryPage.number - 2 > 1 ? requestSummaryPage.number - 2 : 1},
+                                 middleEnd=${requestSummaryPage.number + 2 < requestSummaryPage.totalPages - 2 ? requestSummaryPage.number + 2 : requestSummaryPage.totalPages - 2},
+                                 showingFrom=${requestSummaryPage.totalElements == 0 ? 0 : requestSummaryPage.number * requestSummaryPage.size + 1},
+                                 showingTo=${requestSummaryPage.totalElements == 0 ? 0 : requestSummaryPage.number * requestSummaryPage.size + requestSummaryPage.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                <span th:text="${requestSummaryPage.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${requestSummaryPage.number + 1}">1</span> of <span th:text="${requestSummaryPage.totalPages}">1</span>
+                            </div>
                         </div>
                         <nav aria-label="Internal vacancy candidate summary pagination">
-                            <ul class="pagination pagination-sm">
-                                <li class="page-item" th:classappend="${requestSummaryPage.first} ? ' disabled' : ''">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${requestSummaryPage.first} ? ' disabled'">
                                     <a class="page-link"
-                                        th:href="@{/hr/internal-vacancies/candidates(page=${requestSummaryPage.number - 1},size=${requestSummaryPage.size},search=${searchTerm})}">
-                                        Previous
-                                    </a>
+                                        th:href="@{/hr/internal-vacancies/candidates(page=${requestSummaryPage.number - 1},size=${requestSummaryPage.size},search=${searchTerm})}">Previous</a>
                                 </li>
-                                <li class="page-item"
-                                    th:each="pageIndex : ${#numbers.sequence(startPage, endPage)}"
-                                    th:classappend="${pageIndex == requestSummaryPage.number} ? ' active' : ''">
+                                <li class="page-item" th:classappend="${requestSummaryPage.number == 0} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/hr/internal-vacancies/candidates(page=${pageIndex},size=${requestSummaryPage.size},search=${searchTerm})}"
-                                        th:text="${pageIndex + 1}">
-                                        1
-                                    </a>
+                                        th:href="@{/hr/internal-vacancies/candidates(page=0,size=${requestSummaryPage.size},search=${searchTerm})}">1</a>
                                 </li>
-                                <li class="page-item" th:classappend="${requestSummaryPage.last} ? ' disabled' : ''">
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == requestSummaryPage.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/hr/internal-vacancies/candidates(page=${pageIndex},size=${requestSummaryPage.size},search=${searchTerm})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < requestSummaryPage.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${requestSummaryPage.totalPages > 1}"
+                                    th:classappend="${requestSummaryPage.number == requestSummaryPage.totalPages - 1} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/hr/internal-vacancies/candidates(page=${requestSummaryPage.number + 1},size=${requestSummaryPage.size},search=${searchTerm})}">
-                                        Next
-                                    </a>
+                                        th:href="@{/hr/internal-vacancies/candidates(page=${requestSummaryPage.totalPages - 1},size=${requestSummaryPage.size},search=${searchTerm})}"
+                                        th:text="${requestSummaryPage.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${requestSummaryPage.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-vacancies/candidates(page=${requestSummaryPage.number + 1},size=${requestSummaryPage.size},search=${searchTerm})}">Next</a>
                                 </li>
                             </ul>
                         </nav>

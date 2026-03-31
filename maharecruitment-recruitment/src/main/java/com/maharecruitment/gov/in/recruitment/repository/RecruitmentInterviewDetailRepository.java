@@ -356,6 +356,8 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             Long agencyId,
             String candidateEmail);
 
+    long countByAgencyAgencyIdAndInterviewDateTimeIsNotNull(Long agencyId);
+
     boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndActiveTrue(Long recruitmentNotificationId);
 
     boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateMobile(

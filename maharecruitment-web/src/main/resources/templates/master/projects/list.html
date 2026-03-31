@@ -67,20 +67,54 @@
                         </table>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-3" th:if="${projects.totalPages > 1}">
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!projects.first}"
-                            th:href="@{/master/projects(page=${projects.number - 1},size=${projects.size})}">
-                            Previous
-                        </a>
-                        <span th:if="${projects.first}"></span>
-                        <span class="small text-muted">
-                            Page <span th:text="${projects.number + 1}"></span> of <span th:text="${projects.totalPages}"></span>
-                        </span>
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!projects.last}"
-                            th:href="@{/master/projects(page=${projects.number + 1},size=${projects.size})}">
-                            Next
-                        </a>
-                        <span th:if="${projects.last}"></span>
+                    <div class="app-pagination-shell"
+                        th:if="${projects.totalPages > 1}"
+                        th:with="middleStart=${projects.number - 2 > 1 ? projects.number - 2 : 1},
+                                 middleEnd=${projects.number + 2 < projects.totalPages - 2 ? projects.number + 2 : projects.totalPages - 2},
+                                 showingFrom=${projects.totalElements == 0 ? 0 : projects.number * projects.size + 1},
+                                 showingTo=${projects.totalElements == 0 ? 0 : projects.number * projects.size + projects.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                <span th:text="${projects.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${projects.number + 1}">1</span> of <span th:text="${projects.totalPages}">1</span>
+                            </div>
+                        </div>
+                        <nav aria-label="Project master pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${projects.first} ? ' disabled'">
+                                    <a class="page-link" th:href="@{/master/projects(page=${projects.number - 1},size=${projects.size})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:classappend="${projects.number == 0} ? ' active'">
+                                    <a class="page-link" th:href="@{/master/projects(page=0,size=${projects.size})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == projects.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/master/projects(page=${pageIndex},size=${projects.size})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < projects.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${projects.totalPages > 1}"
+                                    th:classappend="${projects.number == projects.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/master/projects(page=${projects.totalPages - 1},size=${projects.size})}"
+                                        th:text="${projects.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${projects.last} ? ' disabled'">
+                                    <a class="page-link" th:href="@{/master/projects(page=${projects.number + 1},size=${projects.size})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>

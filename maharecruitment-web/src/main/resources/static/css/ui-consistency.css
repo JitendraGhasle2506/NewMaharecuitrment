@@ -1,0 +1,243 @@
+:root {
+    --ui-control-height: 44px;
+    --ui-control-height-compact: 40px;
+    --ui-control-radius: 10px;
+    --ui-control-padding-y: 0.55rem;
+    --ui-control-padding-x: 0.8rem;
+    --ui-table-header-font-size: 0.875rem;
+    --ui-table-body-font-size: 0.95rem;
+    --ui-table-cell-padding-y: 0.82rem;
+    --ui-table-cell-padding-x: 0.72rem;
+}
+
+body:not(.tax-invoice) .page-contents,
+body:not(.tax-invoice) .card,
+body:not(.tax-invoice) .card-header,
+body:not(.tax-invoice) .card-body {
+    font-size: var(--font-size-base);
+}
+
+body:not(.tax-invoice) .form-label,
+body:not(.tax-invoice) .filter-label,
+body:not(.tax-invoice) label[for]:not(.btn):not(.form-check-label),
+body:not(.tax-invoice) .page-contents label:not([class]):not(.btn) {
+    display: inline-block;
+    font-family: var(--form-font-family) !important;
+    font-size: var(--form-label-font-size) !important;
+    font-weight: 600 !important;
+    line-height: 1.4;
+    margin-bottom: 0.45rem;
+}
+
+body:not(.tax-invoice) .form-label.small,
+body:not(.tax-invoice) .filter-label.small,
+body:not(.tax-invoice) .form-check-label.small,
+body:not(.tax-invoice) label[for].small:not(.btn):not(.form-check-label) {
+    font-size: var(--form-label-font-size) !important;
+}
+
+body:not(.tax-invoice) .form-check-label {
+    font-size: var(--form-label-font-size) !important;
+    line-height: 1.45;
+}
+
+body:not(.tax-invoice) .form-control-sm,
+body:not(.tax-invoice) .form-select-sm,
+body:not(.tax-invoice) .page-contents input[type="text"]:not([class]),
+body:not(.tax-invoice) .page-contents input[type="number"]:not([class]),
+body:not(.tax-invoice) .page-contents input[type="date"]:not([class]),
+body:not(.tax-invoice) .page-contents input[type="datetime-local"]:not([class]),
+body:not(.tax-invoice) .page-contents input[type="email"]:not([class]),
+body:not(.tax-invoice) .page-contents input[type="search"]:not([class]),
+body:not(.tax-invoice) .page-contents input[type="tel"]:not([class]),
+body:not(.tax-invoice) .page-contents input[type="time"]:not([class]),
+body:not(.tax-invoice) .page-contents textarea:not([class]),
+body:not(.tax-invoice) .page-contents select:not([class]) {
+    min-height: var(--ui-control-height-compact) !important;
+    padding: 0.48rem 0.72rem !important;
+    font-size: var(--form-control-font-size) !important;
+    font-family: var(--form-font-family) !important;
+    line-height: var(--line-height-base) !important;
+    color: #1c3048;
+    background-color: #ffffff;
+    border: 1.25px solid #c7d3e0;
+    border-radius: var(--ui-control-radius);
+}
+
+body:not(.tax-invoice) .page-contents textarea:not([class]) {
+    min-height: calc(var(--ui-control-height) * 1.9) !important;
+}
+
+body:not(.tax-invoice) .form-control-sm:focus,
+body:not(.tax-invoice) .form-select-sm:focus,
+body:not(.tax-invoice) .page-contents input[type="text"]:not([class]):focus,
+body:not(.tax-invoice) .page-contents input[type="number"]:not([class]):focus,
+body:not(.tax-invoice) .page-contents input[type="date"]:not([class]):focus,
+body:not(.tax-invoice) .page-contents input[type="datetime-local"]:not([class]):focus,
+body:not(.tax-invoice) .page-contents input[type="email"]:not([class]):focus,
+body:not(.tax-invoice) .page-contents input[type="search"]:not([class]):focus,
+body:not(.tax-invoice) .page-contents input[type="tel"]:not([class]):focus,
+body:not(.tax-invoice) .page-contents input[type="time"]:not([class]):focus,
+body:not(.tax-invoice) .page-contents textarea:not([class]):focus,
+body:not(.tax-invoice) .page-contents select:not([class]):focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(31, 79, 120, 0.12);
+    outline: none;
+}
+
+body:not(.tax-invoice) .table-responsive {
+    border: 1px solid #d4dee8;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+body:not(.tax-invoice) .table-responsive > .table {
+    margin-bottom: 0;
+}
+
+body:not(.tax-invoice) .table {
+    margin-bottom: 0;
+    font-size: var(--ui-table-body-font-size) !important;
+}
+
+body:not(.tax-invoice) .table thead th {
+    font-size: var(--ui-table-header-font-size) !important;
+    padding: var(--ui-table-cell-padding-y) var(--ui-table-cell-padding-x);
+}
+
+body:not(.tax-invoice) .table tbody td,
+body:not(.tax-invoice) .table tfoot td {
+    font-size: var(--ui-table-body-font-size) !important;
+    padding: var(--ui-table-cell-padding-y) var(--ui-table-cell-padding-x);
+    vertical-align: middle;
+}
+
+body:not(.tax-invoice) .table.table-sm thead th,
+body:not(.tax-invoice) .table.table-sm tbody td,
+body:not(.tax-invoice) .table.table-sm tfoot td {
+    padding: 0.68rem 0.6rem;
+}
+
+body:not(.tax-invoice) .table thead.small th,
+body:not(.tax-invoice) .table tbody.small td,
+body:not(.tax-invoice) .table tfoot.small td,
+body:not(.tax-invoice) .table tr.small > th,
+body:not(.tax-invoice) .table tr.small > td {
+    font-size: inherit !important;
+}
+
+body:not(.tax-invoice) .table td .form-control,
+body:not(.tax-invoice) .table td .form-select,
+body:not(.tax-invoice) .table th .form-control,
+body:not(.tax-invoice) .table th .form-select {
+    min-height: var(--ui-control-height-compact) !important;
+    padding: 0.42rem 0.7rem !important;
+    font-size: var(--ui-table-body-font-size) !important;
+}
+
+body:not(.tax-invoice) .btn-sm {
+    font-size: 0.95rem;
+    padding: 0.45rem 0.9rem;
+}
+
+body:not(.tax-invoice) .app-pagination-shell {
+    margin-top: 1.2rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid #d4dee8;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+body:not(.tax-invoice) .app-pagination-summary {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+body:not(.tax-invoice) .app-pagination-meta {
+    color: #5f7287;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+body:not(.tax-invoice) .app-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+body:not(.tax-invoice) .app-pagination .page-link {
+    min-width: 2.45rem;
+    min-height: 2.45rem;
+    padding: 0.48rem 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid #c7d3e0;
+    background: #ffffff;
+    color: var(--primary);
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: none;
+    transition: all 0.2s ease;
+}
+
+body:not(.tax-invoice) .app-pagination .page-link:hover,
+body:not(.tax-invoice) .app-pagination .page-link:focus {
+    color: var(--primary-strong);
+    border-color: #9fb6cd;
+    background: #f8fbff;
+    box-shadow: 0 0 0 3px rgba(31, 79, 120, 0.08);
+}
+
+body:not(.tax-invoice) .app-pagination .page-item.active .page-link {
+    color: #ffffff;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-strong) 100%);
+    border-color: var(--primary);
+    box-shadow: 0 8px 16px rgba(31, 79, 120, 0.2);
+}
+
+body:not(.tax-invoice) .app-pagination .page-item.disabled .page-link {
+    color: #93a6ba;
+    background: #f6f9fc;
+    border-color: #d8e2ec;
+    pointer-events: none;
+    box-shadow: none;
+}
+
+body:not(.tax-invoice) .app-pagination .app-pagination-ellipsis {
+    min-width: auto;
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
+    border-color: transparent;
+    background: transparent;
+    color: #6d8095;
+    box-shadow: none;
+}
+
+@media (max-width: 767.98px) {
+    body:not(.tax-invoice) .app-pagination-shell {
+        align-items: stretch;
+        justify-content: center;
+        padding: 0.9rem;
+    }
+
+    body:not(.tax-invoice) .app-pagination-summary {
+        width: 100%;
+        text-align: center;
+    }
+
+    body:not(.tax-invoice) .app-pagination {
+        justify-content: center;
+    }
+}

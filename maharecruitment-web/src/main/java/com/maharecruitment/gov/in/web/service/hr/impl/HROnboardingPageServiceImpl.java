@@ -40,6 +40,7 @@ import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
+import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
@@ -290,27 +291,62 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
 
     @Override
     public Page<EmployeeListView> getOnboardedEmployees(String recruitmentType, Pageable pageable) {
-        return getEmployeesByStatus(recruitmentType, "ACTIVE", pageable);
+        return getOnboardedEmployees(recruitmentType, null, pageable);
     }
 
     @Override
     public Page<EmployeeListView> getEmployeesByStatus(String recruitmentType, String status, Pageable pageable) {
-        Page<EmployeeEntity> employees;
+        return getEmployeesByStatus(recruitmentType, status, null, pageable);
+    }
+
+    @Override
+    public Page<EmployeeListView> getOnboardedEmployees(String recruitmentType, String searchText, Pageable pageable) {
+        return getEmployeesByStatus(recruitmentType, "ACTIVE", searchText, pageable);
+    }
+
+    @Override
+    public Page<EmployeeListView> getEmployeesByStatus(
+            String recruitmentType,
+            String status,
+            String searchText,
+            Pageable pageable) {
         String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "ACTIVE";
-        if (StringUtils.hasText(recruitmentType) && !"ALL".equalsIgnoreCase(recruitmentType)) {
-            employees = employeeRepository.findByRecruitmentTypeAndStatus(
-                    recruitmentType.toUpperCase(),
-                    normalizedStatus,
-                    pageable);
-        } else {
-            employees = employeeRepository.findByStatus(normalizedStatus, pageable);
-        }
+        String normalizedRecruitmentType = normalizeRecruitmentType(recruitmentType);
+        String searchPattern = buildEmployeeSearchPattern(searchText);
+
+        Page<EmployeeEntity> employees = employeeRepository.findPageByStatusAndFilters(
+                normalizedStatus,
+                normalizedRecruitmentType,
+                searchPattern,
+                pageable);
 
         List<EmployeeListView> dtos = employees.getContent().stream()
                 .map(this::toEmployeeListView)
                 .toList();
         
         return new PageImpl<>(dtos, pageable, employees.getTotalElements());
+    }
+
+    @Override
+    public EmployeeOnboardingDetailView loadEmployeeDetail(Long employeeId) {
+        if (employeeId == null || employeeId < 1) {
+            throw new RecruitmentNotificationException("Valid employee id is required.");
+        }
+
+        EmployeeEntity employee = employeeRepository.findDetailedByEmployeeId(employeeId)
+                .orElseThrow(() -> new RecruitmentNotificationException("Employee not found."));
+        if (employee.getPreOnboarding() == null || employee.getPreOnboarding().getPreOnboardingId() == null) {
+            throw new RecruitmentNotificationException("Employee onboarding details are not available.");
+        }
+
+        AgencyPreOnboardingForm onboardingForm = loadOnboardingForm(employee.getPreOnboarding().getPreOnboardingId());
+        return new EmployeeOnboardingDetailView(
+                employee.getEmployeeId(),
+                employee.getEmployeeCode(),
+                employee.getStatus(),
+                employee.getRecruitmentType(),
+                employee.getResignationDate(),
+                onboardingForm);
     }
 
     @Override
@@ -488,11 +524,22 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     private EmployeeListView toEmployeeListView(EmployeeEntity entity) {
         String deptName = entity.getDepartmentRegistration() != null ? entity.getDepartmentRegistration().getDepartmentName() : "-";
         String designationName = entity.getDesignation() != null ? entity.getDesignation().getDesignationName() : "-";
+        String projectName = "-";
+        if (entity.getPreOnboarding() != null
+                && entity.getPreOnboarding().getInterviewDetail() != null
+                && entity.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() != null
+                && entity.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst() != null
+                && StringUtils.hasText(entity.getPreOnboarding().getInterviewDetail().getRecruitmentNotification()
+                        .getProjectMst().getProjectName())) {
+            projectName = entity.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst()
+                    .getProjectName();
+        }
 
         return new EmployeeListView(
                 entity.getEmployeeId(),
                 entity.getEmployeeCode(),
                 entity.getRequestId(),
+                projectName,
                 entity.getFullName(),
                 entity.getEmail(),
                 entity.getMobile(),
@@ -502,6 +549,20 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 entity.getRecruitmentType(),
                 entity.getAgency() != null ? entity.getAgency().getAgencyName() : "-",
                 entity.getStatus());
+    }
+
+    private String normalizeRecruitmentType(String recruitmentType) {
+        if (!StringUtils.hasText(recruitmentType) || "ALL".equalsIgnoreCase(recruitmentType)) {
+            return null;
+        }
+        return recruitmentType.trim().toUpperCase();
+    }
+
+    private String buildEmployeeSearchPattern(String searchText) {
+        if (!StringUtils.hasText(searchText)) {
+            return null;
+        }
+        return "%" + searchText.trim().toUpperCase() + "%";
     }
 
     private AgencyOnboardingCandidateView toOnboardingCandidateView(

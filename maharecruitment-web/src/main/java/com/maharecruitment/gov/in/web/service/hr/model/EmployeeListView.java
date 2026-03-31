@@ -6,6 +6,7 @@ public record EmployeeListView(
         Long employeeId,
         String employeeCode,
         String requestId,
+        String projectName,
         String fullName,
         String email,
         String mobile,

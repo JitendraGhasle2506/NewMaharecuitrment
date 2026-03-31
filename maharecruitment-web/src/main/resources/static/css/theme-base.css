@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Merriweather+Sans:wght@600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --font-family-base: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-family-heading: "Merriweather Sans", "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-size-xs: 0.8125rem;
+    --font-size-sm: 0.9286rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.2857rem;
+    --font-size-xl: 1.4286rem;
+    --heading-size-main: 1.4286rem;
+    --heading-size-sub: 1.2857rem;
+    --form-font-family: var(--font-family-base);
+    --form-label-font-size: 1rem;
+    --form-control-font-size: 1rem;
+    --line-height-base: 1.5;
+}
+
+html {
+    font-size: 14px;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+}
+
+body,
+button,
+input,
+select,
+textarea,
+.btn,
+.form-control,
+.form-select,
+.form-check-label,
+.dropdown-item,
+.table {
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
+}
+
+img,
+svg,
+canvas,
+video {
+    max-width: 100%;
+    height: auto;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    line-height: 1.25;
+}
+
+@media (max-width: 991.98px) {
+    body {
+        overflow-x: hidden;
+    }
+}

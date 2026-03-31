@@ -42,7 +42,7 @@ body.role-shell {
 
 .role-hero h1 {
     margin: 0;
-    font-size: clamp(1.3rem, 2.1vw, 1.7rem);
+    font-size: var(--heading-size-main);
     font-weight: 700;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
 }
@@ -105,7 +105,7 @@ body.role-shell {
 
 .panel h4 {
     margin: 0 0 0.8rem;
-    font-size: 1rem;
+    font-size: var(--heading-size-sub);
     font-weight: 700;
     color: var(--role-ink);
     font-family: "Merriweather Sans", "Public Sans", sans-serif;

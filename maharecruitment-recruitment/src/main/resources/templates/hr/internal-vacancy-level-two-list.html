@@ -216,29 +216,57 @@
                     </table>
                 </div>
 
-                <div class="pagination-bar px-3 pb-3" th:if="${candidatePage.totalPages > 1}">
-                    <div class="text-muted"
-                        th:text="${'Page ' + (candidatePage.number + 1) + ' of ' + candidatePage.totalPages}">
-                        Page 1 of 1
+                <div class="app-pagination-shell"
+                    th:if="${candidatePage.totalPages > 1}"
+                    th:with="middleStart=${candidatePage.number - 2 > 1 ? candidatePage.number - 2 : 1},
+                             middleEnd=${candidatePage.number + 2 < candidatePage.totalPages - 2 ? candidatePage.number + 2 : candidatePage.totalPages - 2},
+                             showingFrom=${candidatePage.totalElements == 0 ? 0 : candidatePage.number * candidatePage.size + 1},
+                             showingTo=${candidatePage.totalElements == 0 ? 0 : candidatePage.number * candidatePage.size + candidatePage.numberOfElements}">
+                    <div class="app-pagination-summary">
+                        <div class="app-pagination-meta">
+                            Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                            <span th:text="${candidatePage.totalElements}">10</span> entries
+                        </div>
+                        <div class="app-pagination-meta">
+                            Page <span th:text="${candidatePage.number + 1}">1</span> of <span th:text="${candidatePage.totalPages}">1</span>
+                        </div>
                     </div>
-                    <div class="page-links">
-                        <a th:if="${!candidatePage.first}"
-                            th:href="@{/hr/internal-vacancies/level-two(page=${candidatePage.number - 1},size=${pageSize},search=${searchTerm})}">
-                            Prev
-                        </a>
-                        <th:block th:each="pageNumber : ${#numbers.sequence(0, candidatePage.totalPages - 1)}">
-                            <span class="current" th:if="${pageNumber == candidatePage.number}" th:text="${pageNumber + 1}">1</span>
-                            <a th:if="${pageNumber != candidatePage.number}"
-                                th:href="@{/hr/internal-vacancies/level-two(page=${pageNumber},size=${pageSize},search=${searchTerm})}"
-                                th:text="${pageNumber + 1}">
-                                1
-                            </a>
-                        </th:block>
-                        <a th:if="${!candidatePage.last}"
-                            th:href="@{/hr/internal-vacancies/level-two(page=${candidatePage.number + 1},size=${pageSize},search=${searchTerm})}">
-                            Next
-                        </a>
-                    </div>
+                    <nav aria-label="Internal vacancy level two pagination">
+                        <ul class="pagination app-pagination mb-0">
+                            <li class="page-item" th:classappend="${candidatePage.first} ? ' disabled'">
+                                <a class="page-link"
+                                    th:href="@{/hr/internal-vacancies/level-two(page=${candidatePage.number - 1},size=${candidatePage.size},search=${searchTerm})}">Previous</a>
+                            </li>
+                            <li class="page-item" th:classappend="${candidatePage.number == 0} ? ' active'">
+                                <a class="page-link"
+                                    th:href="@{/hr/internal-vacancies/level-two(page=0,size=${candidatePage.size},search=${searchTerm})}">1</a>
+                            </li>
+                            <li class="page-item disabled" th:if="${middleStart > 1}">
+                                <span class="page-link app-pagination-ellipsis">...</span>
+                            </li>
+                            <th:block th:if="${middleStart <= middleEnd}">
+                                <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                    th:classappend="${pageIndex == candidatePage.number} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-vacancies/level-two(page=${pageIndex},size=${candidatePage.size},search=${searchTerm})}"
+                                        th:text="${pageIndex + 1}">2</a>
+                                </li>
+                            </th:block>
+                            <li class="page-item disabled" th:if="${middleEnd < candidatePage.totalPages - 2}">
+                                <span class="page-link app-pagination-ellipsis">...</span>
+                            </li>
+                            <li class="page-item" th:if="${candidatePage.totalPages > 1}"
+                                th:classappend="${candidatePage.number == candidatePage.totalPages - 1} ? ' active'">
+                                <a class="page-link"
+                                    th:href="@{/hr/internal-vacancies/level-two(page=${candidatePage.totalPages - 1},size=${candidatePage.size},search=${searchTerm})}"
+                                    th:text="${candidatePage.totalPages}">2</a>
+                            </li>
+                            <li class="page-item" th:classappend="${candidatePage.last} ? ' disabled'">
+                                <a class="page-link"
+                                    th:href="@{/hr/internal-vacancies/level-two(page=${candidatePage.number + 1},size=${candidatePage.size},search=${searchTerm})}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </section>

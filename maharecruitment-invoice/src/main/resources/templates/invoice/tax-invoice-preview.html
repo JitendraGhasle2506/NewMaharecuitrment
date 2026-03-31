@@ -7,6 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/print.css}" />
     <style>
         body.tax-invoice {
+            margin: 0;
             background: #fff;
             color: #000;
             font-size: 11pt;
@@ -14,19 +15,32 @@
         }
 
         .preview-page {
-            max-width: 1200px;
+            max-width: none;
             margin: 0 auto;
-            padding: 12px;
+            padding: 8px 10px 12px;
             background: #fff;
         }
 
         .preview-sheet {
             background: #fff;
             border: 0;
-            padding: 12px;
+            padding: 8px 6px 10px;
             box-shadow: none;
             font-size: 11pt;
             line-height: 1.35;
+        }
+
+        .tax-invoice.embedded-mode .preview-page {
+            max-width: none;
+            padding: 0;
+        }
+
+        .tax-invoice.embedded-mode .preview-sheet {
+            padding: 0;
+        }
+
+        .tax-invoice.embedded-mode .invoice-table {
+            margin-bottom: 8px;
         }
 
         .preview-banner {
@@ -137,11 +151,11 @@
 
         @media (max-width: 767.98px) {
             .preview-page {
-                padding: 10px;
+                padding: 6px 8px 10px;
             }
 
             .preview-sheet {
-                padding: 14px;
+                padding: 6px 4px 8px;
             }
 
             .invoice-table td,
@@ -153,7 +167,7 @@
     </style>
 </head>
 
-<body class="tax-invoice">
+<body class="tax-invoice" th:classappend="${#bools.isTrue(embeddedPreviewMode)} ? ' embedded-mode' : ''">
     <div class="preview-page">
         <div id="print-content" class="preview-sheet">
             <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}" class="preview-banner">
@@ -347,9 +361,61 @@
     </div>
 
     <script>
+        function printWhenAssetsReady(printWindow) {
+            if (!printWindow) {
+                return;
+            }
+
+            function triggerPrint() {
+                printWindow.focus();
+                window.setTimeout(function () {
+                    printWindow.print();
+                    printWindow.close();
+                }, 250);
+            }
+
+            function waitForImages() {
+                var doc = printWindow.document;
+                var images = Array.from(doc.images || []);
+                var pending = images.filter(function (image) {
+                    return !image.complete;
+                });
+
+                if (!pending.length) {
+                    triggerPrint();
+                    return;
+                }
+
+                var remaining = pending.length;
+                function resolveImage() {
+                    remaining -= 1;
+                    if (remaining <= 0) {
+                        triggerPrint();
+                    }
+                }
+
+                pending.forEach(function (image) {
+                    image.addEventListener('load', resolveImage, { once: true });
+                    image.addEventListener('error', resolveImage, { once: true });
+                });
+            }
+
+            if (printWindow.document.readyState === 'complete') {
+                window.setTimeout(waitForImages, 100);
+                return;
+            }
+
+            printWindow.addEventListener('load', function () {
+                window.setTimeout(waitForImages, 100);
+            }, { once: true });
+        }
+
         function printContent(id) {
             var content = document.getElementById(id).innerHTML;
             var win = window.open('', '_blank');
+            if (!win) {
+                return;
+            }
             var styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
                 .map(function (node) {
                     return node.outerHTML;
@@ -360,9 +426,7 @@
             win.document.write(content);
             win.document.write('</body></html>');
             win.document.close();
-            win.focus();
-            win.print();
-            win.close();
+            printWhenAssetsReady(win);
         }
     </script>
 </body>

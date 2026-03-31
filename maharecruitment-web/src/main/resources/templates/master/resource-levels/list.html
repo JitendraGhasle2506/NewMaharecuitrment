@@ -85,20 +85,57 @@
                         </table>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-3" th:if="${levels.totalPages > 1}">
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!levels.first}"
-                            th:href="@{/master/resource-levels(page=${levels.number - 1},size=${levels.size},includeInactive=${includeInactive})}">
-                            Previous
-                        </a>
-                        <span th:if="${levels.first}"></span>
-                        <span class="small text-muted">
-                            Page <span th:text="${levels.number + 1}"></span> of <span th:text="${levels.totalPages}"></span>
-                        </span>
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!levels.last}"
-                            th:href="@{/master/resource-levels(page=${levels.number + 1},size=${levels.size},includeInactive=${includeInactive})}">
-                            Next
-                        </a>
-                        <span th:if="${levels.last}"></span>
+                    <div class="app-pagination-shell"
+                        th:if="${levels.totalPages > 1}"
+                        th:with="middleStart=${levels.number - 2 > 1 ? levels.number - 2 : 1},
+                                 middleEnd=${levels.number + 2 < levels.totalPages - 2 ? levels.number + 2 : levels.totalPages - 2},
+                                 showingFrom=${levels.totalElements == 0 ? 0 : levels.number * levels.size + 1},
+                                 showingTo=${levels.totalElements == 0 ? 0 : levels.number * levels.size + levels.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                <span th:text="${levels.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${levels.number + 1}">1</span> of <span th:text="${levels.totalPages}">1</span>
+                            </div>
+                        </div>
+                        <nav aria-label="Resource level pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${levels.first} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/master/resource-levels(page=${levels.number - 1},size=${levels.size},includeInactive=${includeInactive})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:classappend="${levels.number == 0} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/master/resource-levels(page=0,size=${levels.size},includeInactive=${includeInactive})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == levels.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/master/resource-levels(page=${pageIndex},size=${levels.size},includeInactive=${includeInactive})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < levels.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${levels.totalPages > 1}"
+                                    th:classappend="${levels.number == levels.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/master/resource-levels(page=${levels.totalPages - 1},size=${levels.size},includeInactive=${includeInactive})}"
+                                        th:text="${levels.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${levels.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/master/resource-levels(page=${levels.number + 1},size=${levels.size},includeInactive=${includeInactive})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
