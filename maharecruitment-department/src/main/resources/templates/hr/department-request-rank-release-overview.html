@@ -4,6 +4,145 @@
 <head>
     <meta charset="UTF-8">
     <title>Rank Release Overview</title>
+    <style>
+        .rank-release-summary-table .toggle-link {
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #0d6efd;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .rank-release-summary-table .toggle-link:hover,
+        .rank-release-summary-table .toggle-link:focus-visible {
+            color: #0a58ca;
+            text-decoration: underline;
+        }
+
+        .rank-release-summary-table .project-link {
+            font-size: 0.97rem;
+        }
+
+        .rank-release-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin-top: .35rem;
+        }
+
+        .rank-release-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: .25rem .6rem;
+            border-radius: 999px;
+            background: #eef4ff;
+            color: #214a83;
+            font-size: .78rem;
+            font-weight: 600;
+        }
+
+        .rank-release-chip.is-success {
+            background: #e8f7ee;
+            color: #1f7a44;
+        }
+
+        .rank-release-chip.is-warning {
+            background: #fff4d6;
+            color: #9a6700;
+        }
+
+        .rank-release-detail-row td {
+            padding: 0;
+            background: #f8fbff;
+        }
+
+        .rank-release-detail-shell {
+            padding: 1rem 1rem 1.15rem;
+            border-top: 1px solid #dfe9f6;
+        }
+
+        .rank-release-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: .85rem;
+        }
+
+        .rank-release-detail-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .rank-release-detail-note {
+            margin: .2rem 0 0;
+            color: #6c757d;
+            font-size: .85rem;
+        }
+
+        .rank-release-detail-table {
+            margin-bottom: 0;
+        }
+
+        .rank-release-detail-table thead th {
+            white-space: nowrap;
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+        }
+
+        .rank-release-detail-table td {
+            background: #fff;
+        }
+
+        .agency-copy {
+            display: flex;
+            flex-direction: column;
+            gap: .1rem;
+        }
+
+        .agency-copy strong {
+            font-size: .92rem;
+            color: #1f2937;
+        }
+
+        .agency-copy small {
+            color: #6c757d;
+        }
+
+        .rank-release-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .rank-release-toolbar .form-select {
+            min-width: 140px;
+        }
+
+        .rank-release-summary {
+            color: #6c757d;
+            font-size: .92rem;
+        }
+
+        .rank-release-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .rank-release-pagination .pagination {
+            margin-bottom: 0;
+        }
+    </style>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
 </head>
 
@@ -30,67 +169,197 @@
                         previous released rank.
                     </div>
 
+                    <div class="rank-release-toolbar">
+                        <div class="rank-release-summary"
+                            th:text="${'Showing ' + rankReleaseListView.showingFrom + ' to ' + rankReleaseListView.showingTo + ' of ' + rankReleaseListView.totalElements + ' request groups'}">
+                            Showing 0 to 0 of 0 request groups
+                        </div>
+                        <form method="get" th:action="@{/hr/department-requests/rank-release-overview}" class="d-flex align-items-center gap-2">
+                            <input type="hidden" name="page" value="0">
+                            <label for="pageSize" class="form-label mb-0 text-muted">Show</label>
+                            <select id="pageSize" name="size" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="10" th:selected="${rankReleaseListView.pageSize == 10}">10</option>
+                                <option value="25" th:selected="${rankReleaseListView.pageSize == 25}">25</option>
+                                <option value="50" th:selected="${rankReleaseListView.pageSize == 50}">50</option>
+                                <option value="100" th:selected="${rankReleaseListView.pageSize == 100}">100</option>
+                            </select>
+                        </form>
+                    </div>
+
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle mb-0">
+                        <table class="table table-bordered table-hover align-middle mb-0 rank-release-summary-table">
                             <thead>
                                 <tr>
-                                    <th>Notification ID</th>
                                     <th>Request ID</th>
                                     <th>Project Name</th>
-                                    <th>Agency</th>
-                                    <th class="text-center">Rank</th>
-                                    <th class="text-center">Delay (Days)</th>
-                                    <th>Eligible On</th>
-                                    <th>Released On</th>
-                                    <th>Status</th>
+                                    <th>Department</th>
+                                    <th class="text-center">Notifications</th>
+                                    <th class="text-center">Released</th>
+                                    <th class="text-center">Pending</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr
-                                    th:if="${rankReleaseListView == null or #lists.isEmpty(rankReleaseListView.rankMappings)}">
-                                    <td colspan="9" class="text-center text-muted">
+                                    th:if="${rankReleaseListView == null or #lists.isEmpty(rankReleaseListView.releaseGroups)}">
+                                    <td colspan="6" class="text-center text-muted">
                                         No rank release records found.
                                     </td>
                                 </tr>
 
-                                <tr th:each="row : ${rankReleaseListView.rankMappings}">
-                                    <td
-                                        th:text="${row.recruitmentNotificationId != null ? row.recruitmentNotificationId : '-'}">
-                                        -
-                                    </td>
-                                    <td th:text="${row.requestId != null ? row.requestId : '-'}">REQ-000</td>
-                                    <td th:text="${row.projectName}">Project Name</td>
-                                    <td>
-                                        <div th:text="${row.agencyName}">Agency Name</div>
-                                        <small class="text-muted" th:text="${row.agencyEmail != null ? row.agencyEmail : '-'}">
-                                            agency@example.com
-                                        </small>
-                                    </td>
-                                    <td class="text-center" th:text="${row.rankNumber}">1</td>
-                                    <td class="text-center"
-                                        th:text="${row.delayFromPreviousRankDays != null ? row.delayFromPreviousRankDays : '-'}">
-                                        0
-                                    </td>
-                                    <td
-                                        th:text="${row.eligibleOn != null ? #temporals.format(row.eligibleOn, 'dd-MMM-yyyy HH:mm') : '-'}">
-                                        -
-                                    </td>
-                                    <td
-                                        th:text="${row.releasedOn != null ? #temporals.format(row.releasedOn, 'dd-MMM-yyyy HH:mm') : '-'}">
-                                        -
-                                    </td>
-                                    <td>
-                                        <span class="badge"
-                                            th:classappend="${row.releaseStatusCode == 'RELEASED'} ? ' text-bg-success' :
-                                                            (${row.releaseStatusCode == 'ELIGIBLE'} ? ' text-bg-primary' :
-                                                            (${row.releaseStatusCode == 'WAITING_DATE' or row.releaseStatusCode == 'WAITING_PREVIOUS'} ? ' text-bg-warning' : ' text-bg-danger'))"
-                                            th:text="${row.releaseStatusLabel != null ? row.releaseStatusLabel : '-'}">
-                                            Status
-                                        </span>
-                                    </td>
-                                </tr>
+                                <th:block th:each="group, groupStat : ${rankReleaseListView.releaseGroups}">
+                                    <tr th:with="collapseId=${'rank-release-detail-' + groupStat.count}">
+                                        <td>
+                                            <button type="button"
+                                                class="toggle-link"
+                                                data-bs-toggle="collapse"
+                                                th:attr="data-bs-target=${'#' + collapseId},
+                                                         aria-controls=${collapseId}"
+                                                aria-expanded="false"
+                                                th:text="${group.requestId != null ? group.requestId : '-'}">
+                                                REQ-000
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <button type="button"
+                                                class="toggle-link project-link"
+                                                data-bs-toggle="collapse"
+                                                th:attr="data-bs-target=${'#' + collapseId},
+                                                         aria-controls=${collapseId}"
+                                                aria-expanded="false"
+                                                th:text="${group.projectName != null ? group.projectName : '-'}">
+                                                Project Name
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <div th:text="${group.departmentName != null ? group.departmentName : '-'}">Department Name</div>
+                                            <small class="text-muted"
+                                                th:text="${group.subDepartmentName != null ? group.subDepartmentName : 'Sub-department not mapped'}">
+                                                Sub-department not mapped
+                                            </small>
+                                        </td>
+                                        <td class="text-center" th:text="${group.notificationCount}">1</td>
+                                        <td class="text-center">
+                                            <span class="rank-release-chip is-success"
+                                                th:text="${group.releasedCount}">0</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="rank-release-chip is-warning"
+                                                th:text="${group.pendingCount}">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="rank-release-detail-row" th:with="collapseId=${'rank-release-detail-' + groupStat.count}">
+                                        <td colspan="6">
+                                            <div class="collapse" th:id="${collapseId}">
+                                                <div class="rank-release-detail-shell">
+                                                    <div class="rank-release-detail-header">
+                                                        <div>
+                                                            <h3 class="rank-release-detail-title">Released Notification Details</h3>
+                                                            <p class="rank-release-detail-note">
+                                                                Review notification-wise agency release status for the selected request.
+                                                            </p>
+                                                        </div>
+                                                        <div class="rank-release-meta">
+                                                            <span class="rank-release-chip"
+                                                                th:text="${'Notifications: ' + group.notificationCount}">Notifications: 1</span>
+                                                            <span class="rank-release-chip is-success"
+                                                                th:text="${'Released: ' + group.releasedCount}">Released: 0</span>
+                                                            <span class="rank-release-chip is-warning"
+                                                                th:text="${'Pending: ' + group.pendingCount}">Pending: 0</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered table-sm align-middle rank-release-detail-table">
+                                                            <thead class="table-light">
+                                                                <tr>
+                                                                    <th>Notification ID</th>
+                                                                    <th>Agency</th>
+                                                                    <th class="text-center">Rank</th>
+                                                                    <th class="text-center">Delay (Days)</th>
+                                                                    <th>Eligible On</th>
+                                                                    <th>Released On</th>
+                                                                    <th>Status</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <tr th:each="detail : ${group.releaseDetails}">
+                                                                    <td
+                                                                        th:text="${detail.recruitmentNotificationId != null ? detail.recruitmentNotificationId : '-'}">
+                                                                        -
+                                                                    </td>
+                                                                    <td>
+                                                                        <div class="agency-copy">
+                                                                            <strong th:text="${detail.agencyName != null ? detail.agencyName : '-'}">Agency Name</strong>
+                                                                            <small th:text="${detail.agencyEmail != null ? detail.agencyEmail : '-'}">agency@example.com</small>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="text-center" th:text="${detail.rankNumber != null ? detail.rankNumber : '-'}">1</td>
+                                                                    <td class="text-center"
+                                                                        th:text="${detail.delayFromPreviousRankDays != null ? detail.delayFromPreviousRankDays : '-'}">
+                                                                        0
+                                                                    </td>
+                                                                    <td
+                                                                        th:text="${detail.eligibleOn != null ? #temporals.format(detail.eligibleOn, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                                                        -
+                                                                    </td>
+                                                                    <td
+                                                                        th:text="${detail.releasedOn != null ? #temporals.format(detail.releasedOn, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                                                        -
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="badge"
+                                                                            th:classappend="${detail.releaseStatusCode == 'RELEASED'} ? ' text-bg-success' :
+                                                                                            (${detail.releaseStatusCode == 'ELIGIBLE'} ? ' text-bg-primary' :
+                                                                                            (${detail.releaseStatusCode == 'WAITING_DATE' or detail.releaseStatusCode == 'WAITING_PREVIOUS'} ? ' text-bg-warning' : ' text-bg-danger'))"
+                                                                            th:text="${detail.releaseStatusLabel != null ? detail.releaseStatusLabel : '-'}">
+                                                                            Status
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </th:block>
                             </tbody>
                         </table>
+                    </div>
+
+                    <div class="rank-release-pagination"
+                        th:if="${rankReleaseListView != null and rankReleaseListView.totalPages > 1}"
+                        th:with="startPage=${rankReleaseListView.pageNumber - 2 > 0 ? rankReleaseListView.pageNumber - 2 : 0},
+                                 endPage=${rankReleaseListView.pageNumber + 2 < rankReleaseListView.totalPages - 1 ? rankReleaseListView.pageNumber + 2 : rankReleaseListView.totalPages - 1}">
+                        <div class="rank-release-summary">
+                            Page <span th:text="${rankReleaseListView.pageNumber + 1}">1</span> of
+                            <span th:text="${rankReleaseListView.totalPages}">1</span>
+                        </div>
+                        <nav aria-label="Rank release overview pagination">
+                            <ul class="pagination pagination-sm">
+                                <li class="page-item" th:classappend="${!rankReleaseListView.hasPrevious} ? 'disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/hr/department-requests/rank-release-overview(page=${rankReleaseListView.pageNumber - 1},size=${rankReleaseListView.pageSize})}">
+                                        Previous
+                                    </a>
+                                </li>
+                                <li class="page-item" th:each="pageIndex : ${#numbers.sequence(startPage, endPage)}"
+                                    th:classappend="${pageIndex == rankReleaseListView.pageNumber} ? 'active'">
+                                    <a class="page-link"
+                                        th:text="${pageIndex + 1}"
+                                        th:href="@{/hr/department-requests/rank-release-overview(page=${pageIndex},size=${rankReleaseListView.pageSize})}">
+                                        1
+                                    </a>
+                                </li>
+                                <li class="page-item" th:classappend="${!rankReleaseListView.hasNext} ? 'disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/hr/department-requests/rank-release-overview(page=${rankReleaseListView.pageNumber + 1},size=${rankReleaseListView.pageSize})}">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
