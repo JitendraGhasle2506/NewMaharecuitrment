@@ -20,5 +20,9 @@ public interface HROnboardingPageService {
 
     Page<EmployeeListView> getEmployeesByStatus(String recruitmentType, String status, Pageable pageable);
 
+    Page<EmployeeListView> getOnboardedEmployees(String recruitmentType, String searchText, Pageable pageable);
+
+    Page<EmployeeListView> getEmployeesByStatus(String recruitmentType, String status, String searchText, Pageable pageable);
+
     void markEmployeeResigned(Long employeeId);
 }
