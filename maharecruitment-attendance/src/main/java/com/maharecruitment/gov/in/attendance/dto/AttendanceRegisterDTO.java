@@ -43,4 +43,12 @@ public class AttendanceRegisterDTO {
     private List<AttendanceDayDTO> presentDays;
     private Double maxOutHour;
     private Long userId;
+    private Integer daysInMonth;
+
+    // Attendance Counts
+    private long totalPresent;
+    private long totalAbsent;
+    private long totalLeave;
+    private long totalHoliday;
+    private long totalWeekOff;
 }

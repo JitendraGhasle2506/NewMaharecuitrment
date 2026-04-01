@@ -467,6 +467,15 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			days.add(dayDTO);
 		}
 		dto.setAttendanceDays(days);
+		dto.setDaysInMonth(yearMonth.lengthOfMonth());
+		
+		// Calculate Summary Counts
+		dto.setTotalPresent(days.stream().filter(d -> "PRESENT".equals(d.getStatus())).count());
+		dto.setTotalAbsent(days.stream().filter(d -> "ABSENT".equals(d.getStatus())).count());
+		dto.setTotalLeave(days.stream().filter(d -> "LEAVE".equals(d.getStatus())).count());
+		dto.setTotalHoliday(days.stream().filter(d -> "HOLIDAY".equals(d.getStatus())).count());
+		dto.setTotalWeekOff(days.stream().filter(d -> "WEEK_OFF".equals(d.getStatus())).count());
+
 		return dto;
 	}
 
