@@ -15,11 +15,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
 
+import com.maharecruitment.gov.in.common.util.CookieUtil;
 import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -132,7 +132,6 @@ public class SecurityConfig {
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessHandler(logoutSuccessHandler)
                                                 .invalidateHttpSession(true)
-                                                .deleteCookies("JSESSIONID")
                                                 .permitAll())
                                 .headers(headers -> headers
                                                 .httpStrictTransportSecurity(
@@ -148,17 +147,9 @@ public class SecurityConfig {
         private static void clearSessionCookie(HttpServletRequest request, HttpServletResponse response) {
                 String contextPath = request.getContextPath();
                 String cookiePath = (contextPath == null || contextPath.isBlank()) ? "/" : contextPath;
+                boolean secureRequest = CookieUtil.isSecureRequest(request);
 
-                Cookie scopedCookie = new Cookie("JSESSIONID", "");
-                scopedCookie.setMaxAge(0);
-                scopedCookie.setPath(cookiePath);
-                scopedCookie.setHttpOnly(true);
-                response.addCookie(scopedCookie);
-
-                Cookie rootCookie = new Cookie("JSESSIONID", "");
-                rootCookie.setMaxAge(0);
-                rootCookie.setPath("/");
-                rootCookie.setHttpOnly(true);
-                response.addCookie(rootCookie);
+                response.addCookie(CookieUtil.deleteCookie("JSESSIONID", cookiePath, secureRequest));
+                response.addCookie(CookieUtil.deleteCookie("JSESSIONID", "/", secureRequest));
         }
 }

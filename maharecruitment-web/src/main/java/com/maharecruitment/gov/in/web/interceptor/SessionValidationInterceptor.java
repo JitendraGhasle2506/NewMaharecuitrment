@@ -6,7 +6,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import jakarta.servlet.http.Cookie;
+import com.maharecruitment.gov.in.common.util.CookieUtil;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -51,17 +52,9 @@ public class SessionValidationInterceptor implements HandlerInterceptor {
     private void clearSessionCookie(HttpServletRequest request, HttpServletResponse response) {
         String contextPath = request.getContextPath();
         String cookiePath = (contextPath == null || contextPath.isBlank()) ? "/" : contextPath;
+        boolean secureRequest = CookieUtil.isSecureRequest(request);
 
-        Cookie scopedCookie = new Cookie("JSESSIONID", "");
-        scopedCookie.setPath(cookiePath);
-        scopedCookie.setMaxAge(0);
-        scopedCookie.setHttpOnly(true);
-        response.addCookie(scopedCookie);
-
-        Cookie rootCookie = new Cookie("JSESSIONID", "");
-        rootCookie.setPath("/");
-        rootCookie.setMaxAge(0);
-        rootCookie.setHttpOnly(true);
-        response.addCookie(rootCookie);
+        response.addCookie(CookieUtil.deleteCookie("JSESSIONID", cookiePath, secureRequest));
+        response.addCookie(CookieUtil.deleteCookie("JSESSIONID", "/", secureRequest));
     }
 }

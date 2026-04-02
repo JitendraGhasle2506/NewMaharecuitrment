@@ -23,6 +23,9 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
                        HttpServletResponse response,
                        AccessDeniedException ex)
             throws IOException, ServletException {
+        boolean secureRequest = CookieUtil.isSecureRequest(request);
+        String contextPath = request.getContextPath();
+        String cookiePath = (contextPath == null || contextPath.isBlank()) ? "/" : contextPath;
 
         /* -----------------------------------------
            1.  Invalidate Session
@@ -37,7 +40,10 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie c : cookies) {
-                response.addCookie(CookieUtil.deleteSecureCookie(c.getName()));
+                response.addCookie(CookieUtil.deleteCookie(c.getName(), "/", secureRequest));
+                if (!"/".equals(cookiePath)) {
+                    response.addCookie(CookieUtil.deleteCookie(c.getName(), cookiePath, secureRequest));
+                }
             }
         }
 

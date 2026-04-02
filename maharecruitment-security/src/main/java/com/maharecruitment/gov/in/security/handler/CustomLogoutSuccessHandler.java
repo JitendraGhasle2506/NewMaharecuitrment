@@ -22,12 +22,18 @@ public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
                                 HttpServletResponse response,
                                 Authentication authentication)
             throws IOException, ServletException {
+        boolean secureRequest = CookieUtil.isSecureRequest(request);
+        String contextPath = request.getContextPath();
+        String cookiePath = (contextPath == null || contextPath.isBlank()) ? "/" : contextPath;
 
         // Delete all cookies
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie c : cookies) {
-                response.addCookie(CookieUtil.deleteSecureCookie(c.getName()));
+                response.addCookie(CookieUtil.deleteCookie(c.getName(), "/", secureRequest));
+                if (!"/".equals(cookiePath)) {
+                    response.addCookie(CookieUtil.deleteCookie(c.getName(), cookiePath, secureRequest));
+                }
             }
         }
 
