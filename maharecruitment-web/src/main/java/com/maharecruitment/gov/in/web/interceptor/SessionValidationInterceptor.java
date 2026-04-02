@@ -6,7 +6,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import com.maharecruitment.gov.in.common.util.CookieUtil;
+import com.maharecruitment.gov.in.common.security.ApplicationCookieService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,6 +16,11 @@ import jakarta.servlet.http.HttpSession;
 public class SessionValidationInterceptor implements HandlerInterceptor {
 
     private static final String SESSION_USER_KEY = "SESSION_USER";
+    private final ApplicationCookieService applicationCookieService;
+
+    public SessionValidationInterceptor(ApplicationCookieService applicationCookieService) {
+        this.applicationCookieService = applicationCookieService;
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -35,7 +40,7 @@ public class SessionValidationInterceptor implements HandlerInterceptor {
         if (session != null) {
             session.invalidate();
         }
-        clearSessionCookie(request, response);
+        applicationCookieService.expireManagedCookie(request, response, "JSESSIONID");
 
         String redirectUrl = request.getContextPath() + "/login?sessionExpired=true";
         if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
@@ -47,14 +52,5 @@ public class SessionValidationInterceptor implements HandlerInterceptor {
 
         response.sendRedirect(redirectUrl);
         return false;
-    }
-
-    private void clearSessionCookie(HttpServletRequest request, HttpServletResponse response) {
-        String contextPath = request.getContextPath();
-        String cookiePath = (contextPath == null || contextPath.isBlank()) ? "/" : contextPath;
-        boolean secureRequest = CookieUtil.isSecureRequest(request);
-
-        response.addCookie(CookieUtil.deleteCookie("JSESSIONID", cookiePath, secureRequest));
-        response.addCookie(CookieUtil.deleteCookie("JSESSIONID", "/", secureRequest));
     }
 }

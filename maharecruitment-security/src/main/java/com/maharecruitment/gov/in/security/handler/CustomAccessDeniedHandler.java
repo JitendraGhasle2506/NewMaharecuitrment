@@ -1,7 +1,6 @@
 package com.maharecruitment.gov.in.security.handler;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -11,22 +10,24 @@ import org.springframework.stereotype.Component;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
-import com.maharecruitment.gov.in.common.util.CookieUtil;
+import com.maharecruitment.gov.in.common.security.ApplicationCookieService;
 
 import java.io.IOException;
 
 @Component
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 
+    private final ApplicationCookieService applicationCookieService;
+
+    public CustomAccessDeniedHandler(ApplicationCookieService applicationCookieService) {
+        this.applicationCookieService = applicationCookieService;
+    }
+
     @Override
     public void handle(HttpServletRequest request,
                        HttpServletResponse response,
                        AccessDeniedException ex)
             throws IOException, ServletException {
-        boolean secureRequest = CookieUtil.isSecureRequest(request);
-        String contextPath = request.getContextPath();
-        String cookiePath = (contextPath == null || contextPath.isBlank()) ? "/" : contextPath;
-
         /* -----------------------------------------
            1.  Invalidate Session
         ----------------------------------------- */
@@ -37,15 +38,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         /* -----------------------------------------
            2. Securely Delete All Cookies
         ----------------------------------------- */
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie c : cookies) {
-                response.addCookie(CookieUtil.deleteCookie(c.getName(), "/", secureRequest));
-                if (!"/".equals(cookiePath)) {
-                    response.addCookie(CookieUtil.deleteCookie(c.getName(), cookiePath, secureRequest));
-                }
-            }
-        }
+        applicationCookieService.expireRequestCookies(request, response);
 
         /* -----------------------------------------
            3. AJAX Request? Return JSON

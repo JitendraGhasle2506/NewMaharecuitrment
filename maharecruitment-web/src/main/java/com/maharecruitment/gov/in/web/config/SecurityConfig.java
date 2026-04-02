@@ -15,7 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
 
-import com.maharecruitment.gov.in.common.util.CookieUtil;
+import com.maharecruitment.gov.in.common.security.ApplicationCookieService;
 import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
@@ -48,6 +48,7 @@ public class SecurityConfig {
         SecurityFilterChain filterChain(
                         HttpSecurity http,
                         DaoAuthenticationProvider authenticationProvider,
+                        ApplicationCookieService applicationCookieService,
                         com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler successHandler,
                         CustomLoginFailureHandler loginFailureHandler,
                         CustomAccessDeniedHandler accessDeniedHandler,
@@ -108,7 +109,7 @@ public class SecurityConfig {
                                                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                                                 .sessionFixation().migrateSession()
                                                 .invalidSessionStrategy((request, response) -> {
-                                                        clearSessionCookie(request, response);
+                                                        clearSessionCookie(request, response, applicationCookieService);
                                                         response.sendRedirect(
                                                                         request.getContextPath()
                                                                                         + "/login?sessionExpired=true");
@@ -118,7 +119,7 @@ public class SecurityConfig {
                                                 .expiredSessionStrategy(event -> {
                                                         HttpServletRequest request = event.getRequest();
                                                         HttpServletResponse response = event.getResponse();
-                                                        clearSessionCookie(request, response);
+                                                        clearSessionCookie(request, response, applicationCookieService);
                                                         response.sendRedirect(
                                                                         request.getContextPath()
                                                                                         + "/login?sessionExpired=true");
@@ -144,12 +145,10 @@ public class SecurityConfig {
                 return http.build();
         }
 
-        private static void clearSessionCookie(HttpServletRequest request, HttpServletResponse response) {
-                String contextPath = request.getContextPath();
-                String cookiePath = (contextPath == null || contextPath.isBlank()) ? "/" : contextPath;
-                boolean secureRequest = CookieUtil.isSecureRequest(request);
-
-                response.addCookie(CookieUtil.deleteCookie("JSESSIONID", cookiePath, secureRequest));
-                response.addCookie(CookieUtil.deleteCookie("JSESSIONID", "/", secureRequest));
+        private static void clearSessionCookie(
+                        HttpServletRequest request,
+                        HttpServletResponse response,
+                        ApplicationCookieService applicationCookieService) {
+                applicationCookieService.expireManagedCookie(request, response, "JSESSIONID");
         }
 }
