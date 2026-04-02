@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
+import com.maharecruitment.gov.in.recruitment.repository.projection.AgencyShortlistedCandidateProjectSummaryProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.AgencySelectedCandidateProjectSummaryProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.DepartmentNotificationCandidateSummaryProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyCandidateRequestSummaryMetricsProjection;
@@ -33,6 +34,72 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
     List<RecruitmentInterviewDetailEntity> findActiveCandidatesByNotificationAndAgency(
             @Param("recruitmentNotificationId") Long recruitmentNotificationId,
             @Param("agencyId") Long agencyId);
+
+    @Query("select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where candidate.agency.agencyId = :agencyId "
+            + "and candidate.active = true "
+            + "and candidate.candidateStatus in ("
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT, "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY"
+            + ") "
+            + "and candidate.finalDecisionStatus is null "
+            + "order by candidate.departmentShortlistedAt desc, candidate.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findAllShortlistedCandidatesByAgency(@Param("agencyId") Long agencyId);
+
+    @Query("select n.recruitmentNotificationId as recruitmentNotificationId, "
+            + "n.requestId as requestId, "
+            + "p.projectName as projectName, "
+            + "count(c.recruitmentInterviewDetailId) as shortlistedCandidatesCount, "
+            + "max(c.departmentShortlistedAt) as latestShortlistedAt "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join c.recruitmentNotification n "
+            + "join n.projectMst p "
+            + "where c.agency.agencyId = :agencyId "
+            + "and c.active = true "
+            + "and c.candidateStatus in ("
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT, "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY"
+            + ") "
+            + "and c.finalDecisionStatus is null "
+            + "group by n.recruitmentNotificationId, n.requestId, p.projectName "
+            + "order by max(c.departmentShortlistedAt) desc")
+    List<AgencyShortlistedCandidateProjectSummaryProjection> findShortlistedCandidateProjectSummariesByAgency(
+            @Param("agencyId") Long agencyId);
+
+    @Query(value = "select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where candidate.agency.agencyId = :agencyId "
+            + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
+            + "and candidate.active = true "
+            + "and candidate.candidateStatus in ("
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT, "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY"
+            + ") "
+            + "and candidate.finalDecisionStatus is null "
+            + "order by candidate.departmentShortlistedAt desc, candidate.createdDateTime desc",
+            countQuery = "select count(candidate.recruitmentInterviewDetailId) "
+                    + "from RecruitmentInterviewDetailEntity candidate "
+                    + "where candidate.agency.agencyId = :agencyId "
+                    + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
+                    + "and candidate.active = true "
+                    + "and candidate.candidateStatus in ("
+                    + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT, "
+                    + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY"
+                    + ") "
+                    + "and candidate.finalDecisionStatus is null")
+    Page<RecruitmentInterviewDetailEntity> findShortlistedCandidatesByAgency(
+            @Param("agencyId") Long agencyId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId,
+            Pageable pageable);
 
     @Query("select candidate "
             + "from RecruitmentInterviewDetailEntity candidate "

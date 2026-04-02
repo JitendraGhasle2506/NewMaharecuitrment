@@ -6,8 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
@@ -27,6 +29,15 @@ public interface AgencyRecruitmentNotificationPageService {
     void submitResponse(String actorEmail, Long recruitmentNotificationId);
 
     List<AgencySubmittedCandidateView> getSubmittedCandidates(String actorEmail, Long recruitmentNotificationId);
+
+    List<AgencyShortlistedCandidateProjectView> getShortlistedCandidateProjects(String actorEmail);
+
+    List<AgencyShortlistedCandidateView> getShortlistedCandidates(String actorEmail);
+
+    Page<AgencyShortlistedCandidateView> getShortlistedCandidates(
+            String actorEmail,
+            Long recruitmentNotificationId,
+            Pageable pageable);
 
     List<AgencySelectedCandidateProjectView> getSelectedCandidateProjects(String actorEmail);
 

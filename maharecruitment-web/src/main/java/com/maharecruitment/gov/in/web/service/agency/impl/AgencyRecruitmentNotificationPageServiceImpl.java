@@ -22,8 +22,10 @@ import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificat
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateInterviewScheduleInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
@@ -102,6 +104,27 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     public List<AgencySubmittedCandidateView> getSubmittedCandidates(String actorEmail, Long recruitmentNotificationId) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         return candidateService.getSubmittedCandidates(recruitmentNotificationId, context.agencyId());
+    }
+
+    @Override
+    public List<AgencyShortlistedCandidateProjectView> getShortlistedCandidateProjects(String actorEmail) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return candidateService.getShortlistedCandidateProjects(context.agencyId());
+    }
+
+    @Override
+    public List<AgencyShortlistedCandidateView> getShortlistedCandidates(String actorEmail) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return candidateService.getShortlistedCandidates(context.agencyId());
+    }
+
+    @Override
+    public Page<AgencyShortlistedCandidateView> getShortlistedCandidates(
+            String actorEmail,
+            Long recruitmentNotificationId,
+            Pageable pageable) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return candidateService.getShortlistedCandidates(context.agencyId(), recruitmentNotificationId, pageable);
     }
 
     @Override

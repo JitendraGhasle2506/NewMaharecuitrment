@@ -58,6 +58,7 @@ import db.postmigration.V40__department_tax_invoice_support;
 import db.postmigration.V41__auth_auditor_department_tax_invoice_menu_backfill;
 import db.postmigration.V42__auth_department_onboarded_employees_menu_backfill;
 import db.postmigration.V43__auth_department_onboarded_employees_direct_menu_fix;
+import db.postmigration.V44__auth_agency_shortlisted_candidates_menu_backfill;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -121,7 +122,8 @@ public class PostSchemaFlywayRunner {
                         new V40__department_tax_invoice_support(),
                         new V41__auth_auditor_department_tax_invoice_menu_backfill(),
                         new V42__auth_department_onboarded_employees_menu_backfill(),
-                        new V43__auth_department_onboarded_employees_direct_menu_fix())
+                        new V43__auth_department_onboarded_employees_direct_menu_fix(),
+                        new V44__auth_agency_shortlisted_candidates_menu_backfill())
                 .load();
 
         if (hasFailedPostSchemaMigration()) {

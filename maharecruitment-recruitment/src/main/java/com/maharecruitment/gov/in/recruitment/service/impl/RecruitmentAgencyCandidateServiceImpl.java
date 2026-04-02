@@ -10,6 +10,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -33,10 +35,12 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDet
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyCandidateService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationActionService;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateInterviewScheduleInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
 
 @Service
@@ -89,6 +93,50 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                                 "RESIGNED"))
                 .map(this::toSubmittedCandidateView)
                 .toList();
+    }
+
+    @Override
+    public List<AgencyShortlistedCandidateProjectView> getShortlistedCandidateProjects(Long agencyId) {
+        requirePositiveId(agencyId, "Agency id is required.");
+
+        return interviewDetailRepository.findShortlistedCandidateProjectSummariesByAgency(agencyId)
+                .stream()
+                .map(summary -> AgencyShortlistedCandidateProjectView.builder()
+                        .recruitmentNotificationId(summary.getRecruitmentNotificationId())
+                        .requestId(summary.getRequestId())
+                        .projectName(summary.getProjectName())
+                        .shortlistedCandidatesCount(summary.getShortlistedCandidatesCount() == null
+                                ? 0L
+                                : summary.getShortlistedCandidatesCount())
+                        .latestShortlistedAt(summary.getLatestShortlistedAt())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<AgencyShortlistedCandidateView> getShortlistedCandidates(Long agencyId) {
+        requirePositiveId(agencyId, "Agency id is required.");
+
+        return interviewDetailRepository.findAllShortlistedCandidatesByAgency(agencyId)
+                .stream()
+                .map(this::toShortlistedCandidateView)
+                .toList();
+    }
+
+    @Override
+    public Page<AgencyShortlistedCandidateView> getShortlistedCandidates(
+            Long agencyId,
+            Long recruitmentNotificationId,
+            Pageable pageable) {
+        requirePositiveId(agencyId, "Agency id is required.");
+        requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
+
+        Pageable resolvedPageable = pageable == null ? Pageable.unpaged() : pageable;
+        return interviewDetailRepository.findShortlistedCandidatesByAgency(
+                        agencyId,
+                        recruitmentNotificationId,
+                        resolvedPageable)
+                .map(this::toShortlistedCandidateView);
     }
 
     @Override
@@ -551,6 +599,44 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .preOnboardingCompleted(preOnboarding != null)
                 .preOnboardingSubmittedAt(preOnboarding != null ? preOnboarding.getSubmittedAt() : null)
                 .withdrawAllowed(isWithdrawAllowed(candidate, preOnboarding))
+                .build();
+    }
+
+    private AgencyShortlistedCandidateView toShortlistedCandidateView(RecruitmentInterviewDetailEntity candidate) {
+        String designationName = candidate.getDesignationVacancy() != null
+                && candidate.getDesignationVacancy().getDesignationMst() != null
+                        ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
+                        : "-";
+
+        return AgencyShortlistedCandidateView.builder()
+                .recruitmentNotificationId(candidate.getRecruitmentNotification() != null
+                        ? candidate.getRecruitmentNotification().getRecruitmentNotificationId()
+                        : null)
+                .requestId(candidate.getRecruitmentNotification() != null
+                        ? candidate.getRecruitmentNotification().getRequestId()
+                        : null)
+                .projectName(candidate.getRecruitmentNotification() != null
+                        && candidate.getRecruitmentNotification().getProjectMst() != null
+                                ? candidate.getRecruitmentNotification().getProjectMst().getProjectName()
+                                : "-")
+                .recruitmentInterviewDetailId(candidate.getRecruitmentInterviewDetailId())
+                .candidateName(candidate.getCandidateName())
+                .candidateEmail(candidate.getCandidateEmail())
+                .candidateMobile(candidate.getCandidateMobile())
+                .designationName(designationName)
+                .levelCode(candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null)
+                .totalExperience(candidate.getTotalExperience())
+                .relevantExperience(candidate.getRelevantExperience())
+                .joiningTime(candidate.getJoiningTime())
+                .resumeFilePath(candidate.getResumeFilePath())
+                .candidateStatus(candidate.getCandidateStatus())
+                .departmentShortlistedAt(candidate.getDepartmentShortlistedAt())
+                .departmentShortlistRemarks(candidate.getDepartmentShortlistRemarks())
+                .interviewDateTime(candidate.getInterviewDateTime())
+                .interviewTimeSlot(candidate.getInterviewTimeSlot())
+                .interviewLink(candidate.getInterviewLink())
+                .interviewRemarks(candidate.getInterviewRemarks())
+                .assessmentSubmitted(candidate.getAssessmentSubmitted())
                 .build();
     }
 
