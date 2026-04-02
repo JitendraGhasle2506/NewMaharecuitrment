@@ -71,7 +71,13 @@
                                                     th:classappend="${isExpanded} ? ' fa-chevron-down' : ' fa-chevron-right'"></i>
                                                 <span th:text="${item.requestId != null ? item.requestId : '-'}">REQ-0000</span>
                                             </a>
-                                            <div class="small text-muted">Click to view shortlisted candidates</div>
+                                            <div class="small mt-1">
+                                                <a th:href="${isExpanded} ? @{/agency/shortlisted-candidates} : @{/agency/shortlisted-candidates(open=${item.recruitmentNotificationId})}"
+                                                    class="text-decoration-underline"
+                                                    th:text="${isExpanded} ? 'Hide shortlisted candidates' : 'Show shortlisted candidates'">
+                                                    Show shortlisted candidates
+                                                </a>
+                                            </div>
                                         </td>
                                         <td>
                                             <a th:href="${isExpanded} ? @{/agency/shortlisted-candidates} : @{/agency/shortlisted-candidates(open=${item.recruitmentNotificationId})}"
@@ -79,7 +85,13 @@
                                                 <span class="fw-semibold"
                                                     th:text="${item.projectName != null ? item.projectName : '-'}">Project</span>
                                             </a>
-                                            <div class="small text-muted">Expand shortlist for this project</div>
+                                            <div class="small mt-1">
+                                                <a th:href="${isExpanded} ? @{/agency/shortlisted-candidates} : @{/agency/shortlisted-candidates(open=${item.recruitmentNotificationId})}"
+                                                    class="text-decoration-underline"
+                                                    th:text="${isExpanded} ? 'Hide project shortlist' : 'Show project shortlist'">
+                                                    Show project shortlist
+                                                </a>
+                                            </div>
                                         </td>
                                         <td class="text-end"
                                             th:text="${item.shortlistedCandidatesCount != null ? item.shortlistedCandidatesCount : 0}">
