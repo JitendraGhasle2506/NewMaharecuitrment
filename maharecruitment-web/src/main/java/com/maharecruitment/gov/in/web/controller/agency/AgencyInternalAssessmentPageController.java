@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
@@ -29,10 +30,18 @@ public class AgencyInternalAssessmentPageController {
     }
 
     @GetMapping
-    public String assessmentProjects(Principal principal, Model model) {
+    public String assessmentProjects(
+            @RequestParam(name = "open", required = false) Long openRecruitmentNotificationId,
+            Principal principal,
+            Model model) {
         String actorEmail = resolveActorEmail(principal);
         List<AgencyInternalAssessmentProjectView> assessmentProjects = pageService.getAssessmentSubmittedProjects(actorEmail);
+        List<AgencyInternalAssessmentCandidateView> expandedAssessmentCandidates = openRecruitmentNotificationId == null
+                ? List.of()
+                : pageService.getAssessmentSubmittedCandidates(actorEmail, openRecruitmentNotificationId);
         model.addAttribute("assessmentProjects", assessmentProjects);
+        model.addAttribute("expandedAssessmentCandidates", expandedAssessmentCandidates);
+        model.addAttribute("expandedRecruitmentNotificationId", openRecruitmentNotificationId);
         model.addAttribute("requestCount", assessmentProjects.size());
         model.addAttribute("submittedTotal", assessmentProjects.stream()
                 .map(AgencyInternalAssessmentProjectView::getAssessmentSubmittedCandidatesCount)
@@ -49,21 +58,8 @@ public class AgencyInternalAssessmentPageController {
 
     @GetMapping("/{recruitmentNotificationId}")
     public String assessmentCandidates(
-            @PathVariable Long recruitmentNotificationId,
-            Principal principal,
-            Model model) {
-        String actorEmail = resolveActorEmail(principal);
-        List<AgencyInternalAssessmentCandidateView> candidates = pageService.getAssessmentSubmittedCandidates(
-                actorEmail,
-                recruitmentNotificationId);
-        model.addAttribute("assessmentCandidates", candidates);
-        model.addAttribute("selectedRecruitmentNotificationId", recruitmentNotificationId);
-        if (!candidates.isEmpty()) {
-            AgencyInternalAssessmentCandidateView firstCandidate = candidates.get(0);
-            model.addAttribute("selectedRequestId", firstCandidate.getRequestId());
-            model.addAttribute("selectedProjectName", firstCandidate.getProjectName());
-        }
-        return "agency/internal-assessment-candidate-list";
+            @PathVariable Long recruitmentNotificationId) {
+        return "redirect:/agency/internal-assessments?open=" + recruitmentNotificationId;
     }
 
     @GetMapping("/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}")

@@ -166,6 +166,8 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "and notification.internalVacancyOpening is not null "
             + "and notification.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
             + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and not exists (select 1 from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null) "
             + "order by coalesce(candidate.assessmentSubmittedAt, candidate.createdDateTime) desc, "
             + "candidate.recruitmentInterviewDetailId desc")
     List<RecruitmentInterviewDetailEntity> findInternalAssessmentSubmittedCandidatesByAgency(
@@ -185,6 +187,8 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "and notification.internalVacancyOpening is not null "
             + "and notification.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
             + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and not exists (select 1 from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null) "
             + "order by coalesce(candidate.assessmentSubmittedAt, candidate.createdDateTime) desc, "
             + "candidate.recruitmentInterviewDetailId desc")
     List<RecruitmentInterviewDetailEntity> findInternalAssessmentSubmittedCandidatesByAgencyAndNotification(
@@ -205,7 +209,9 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "and candidate.assessmentSubmitted = true "
             + "and notification.internalVacancyOpening is not null "
             + "and notification.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
-            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN")
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and not exists (select 1 from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null)")
     Optional<RecruitmentInterviewDetailEntity> findInternalAssessmentSubmittedCandidateByAgencyAndNotificationAndId(
             @Param("agencyId") Long agencyId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId,
@@ -226,7 +232,9 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "and candidate.assessmentSubmitted = true "
             + "and notification.internalVacancyOpening is not null "
             + "and notification.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
-            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN")
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and not exists (select 1 from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null)")
     Optional<RecruitmentInterviewDetailEntity> findInternalAssessmentSubmittedCandidateByAgencyAndNotificationAndIdForUpdate(
             @Param("agencyId") Long agencyId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId,

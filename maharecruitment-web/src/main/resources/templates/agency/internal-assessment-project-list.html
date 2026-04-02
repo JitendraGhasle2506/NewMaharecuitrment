@@ -6,6 +6,70 @@
     <title>Internal Assessments</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <style>
+        .internal-assessment-page .page-stack {
+            display: grid;
+            gap: 18px;
+        }
+
+        .internal-assessment-page .hero-panel {
+            position: relative;
+            border: 1px solid #d9e3f0;
+            border-radius: 22px;
+            padding: 22px 24px;
+            background:
+                radial-gradient(circle at top right, rgba(14, 116, 144, 0.14), transparent 30%),
+                linear-gradient(135deg, #ffffff 0%, #f6fbff 55%, #eef6ff 100%);
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+        .internal-assessment-page .hero-eyebrow {
+            margin-bottom: 8px;
+            color: #0f766e;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .internal-assessment-page .hero-title {
+            margin: 0;
+            color: #0f172a;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .internal-assessment-page .hero-subtitle {
+            margin: 10px 0 0;
+            color: #475569;
+            max-width: 780px;
+            line-height: 1.7;
+        }
+
+        .internal-assessment-page .hero-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .internal-assessment-page .hero-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 14px;
+            border-radius: 999px;
+            border: 1px solid #d8e2ef;
+            background: rgba(255, 255, 255, 0.88);
+            color: #0f172a;
+            font-size: 0.92rem;
+            font-weight: 700;
+        }
+
+        .internal-assessment-page .hero-chip i {
+            color: #2563eb;
+        }
+
         .internal-assessment-page .metric-card,
         .internal-assessment-page .workspace-card {
             border: 1px solid #dbe3ef;
@@ -28,6 +92,24 @@
             display: grid;
             gap: 8px;
             padding: 14px 16px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .internal-assessment-page .metric-card::after {
+            content: "";
+            position: absolute;
+            inset: auto 0 0 0;
+            height: 4px;
+            background: linear-gradient(90deg, #1d4ed8 0%, #0f766e 100%);
+            opacity: 0.9;
+        }
+
+        .internal-assessment-page .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 22px 42px rgba(15, 23, 42, 0.1);
+            border-color: #cfe0f4;
         }
 
         .internal-assessment-page .metric-top {
@@ -53,6 +135,28 @@
             white-space: nowrap;
         }
 
+        .internal-assessment-page .metric-icon {
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 1rem;
+        }
+
+        .internal-assessment-page .metric-card:nth-child(2) .metric-icon {
+            background: #ecfeff;
+            color: #0f766e;
+        }
+
+        .internal-assessment-page .metric-card:nth-child(3) .metric-icon {
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
         .internal-assessment-page .metric-copy {
             margin-top: 0;
             color: #64748b;
@@ -70,6 +174,12 @@
             gap: 16px;
             margin-bottom: 18px;
             flex-wrap: wrap;
+        }
+
+        .internal-assessment-page .workspace-copy {
+            margin: 6px 0 0;
+            color: #64748b;
+            line-height: 1.6;
         }
 
         .internal-assessment-page .workspace-title {
@@ -102,12 +212,26 @@
 
         .internal-assessment-page .workspace-table thead th {
             white-space: nowrap;
+            background: #f8fbff;
+            color: #475569;
+            font-size: 0.78rem;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            border-bottom: 1px solid #dbe3ef;
         }
 
         .internal-assessment-page .workspace-table tbody td {
             vertical-align: middle;
             padding-top: 1rem;
             padding-bottom: 1rem;
+        }
+
+        .internal-assessment-page .workspace-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .internal-assessment-page .workspace-table tbody tr.table-active {
+            background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
         }
 
         .internal-assessment-page .workspace-row-index {
@@ -127,6 +251,12 @@
             font-weight: 700;
         }
 
+        .internal-assessment-page .workspace-subcopy {
+            color: #64748b;
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+
         .internal-assessment-page .request-id {
             display: inline-flex;
             align-items: center;
@@ -143,11 +273,189 @@
             white-space: nowrap;
         }
 
-        .internal-assessment-page .request-action {
-            border-radius: 999px;
-            padding: 10px 16px;
+        .internal-assessment-page .request-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #0f172a;
             font-weight: 700;
+            text-decoration: none;
+        }
+
+        .internal-assessment-page .request-link i {
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .internal-assessment-page .request-link:hover {
+            color: #0f172a;
+        }
+
+        .internal-assessment-page .request-link:focus-visible,
+        .internal-assessment-page .project-toggle-copy a:focus-visible {
+            outline: 2px solid #60a5fa;
+            outline-offset: 3px;
+            border-radius: 10px;
+        }
+
+        .internal-assessment-page .project-toggle-copy {
+            margin-top: 6px;
+        }
+
+        .internal-assessment-page .project-toggle-copy a {
+            color: #2563eb;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        .internal-assessment-page .expanded-row td {
+            padding: 0;
+            background: #f8fbff;
+        }
+
+        .internal-assessment-page .expanded-panel {
+            padding: 18px;
+            border-top: 1px solid #dbe3ef;
+            background: linear-gradient(180deg, #fbfdff 0%, #f6fbff 100%);
+            animation: panelReveal 0.22s ease-out;
+        }
+
+        .internal-assessment-page .expanded-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .internal-assessment-page .expanded-panel-title {
+            margin: 0;
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .internal-assessment-page .summary-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .internal-assessment-page .summary-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid #dbe3ef;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        .internal-assessment-page .summary-chip i {
+            color: #2563eb;
+        }
+
+        .internal-assessment-page .summary-chip.recommended i {
+            color: #15803d;
+        }
+
+        .internal-assessment-page .candidate-table-wrap {
+            overflow-x: auto;
+            border: 1px solid #dbe3ef;
+            border-radius: 16px;
+            background: #ffffff;
+        }
+
+        .internal-assessment-page .candidate-table {
+            margin-bottom: 0;
+            min-width: 860px;
+        }
+
+        .internal-assessment-page .candidate-table thead th {
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
             white-space: nowrap;
+        }
+
+        .internal-assessment-page .candidate-table td,
+        .internal-assessment-page .candidate-table th {
+            vertical-align: middle;
+        }
+
+        .internal-assessment-page .candidate-table tbody tr {
+            transition: background-color 0.18s ease;
+        }
+
+        .internal-assessment-page .candidate-table tbody tr:hover {
+            background: #f8fbff;
+        }
+
+        .internal-assessment-page .candidate-name {
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .internal-assessment-page .candidate-meta {
+            display: block;
+            margin-top: 3px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .internal-assessment-page .assessment-helper,
+        .internal-assessment-page .status-helper {
+            display: block;
+            margin-top: 6px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .internal-assessment-page .candidate-link {
+            white-space: nowrap;
+            border-radius: 999px;
+            font-weight: 700;
+            padding-inline: 14px;
+        }
+
+        .internal-assessment-page .helper-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            border: 1px solid #dbeafe;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+            color: #1e3a8a;
+        }
+
+        .internal-assessment-page .helper-banner i {
+            margin-top: 2px;
+        }
+
+        @keyframes panelReveal {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .internal-assessment-page .empty-state {
@@ -175,6 +483,10 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
+            .internal-assessment-page .hero-title {
+                font-size: 1.55rem;
+            }
+
         }
 
         @media (max-width: 767px) {
@@ -182,10 +494,20 @@
                 grid-template-columns: 1fr;
             }
 
+            .internal-assessment-page .hero-panel,
             .internal-assessment-page .workspace-card,
             .internal-assessment-page .workspace-table-wrap {
                 padding-left: 16px;
                 padding-right: 16px;
+            }
+
+            .internal-assessment-page .hero-chip-row,
+            .internal-assessment-page .summary-chip-row {
+                gap: 8px;
+            }
+
+            .internal-assessment-page .request-link {
+                align-items: flex-start;
             }
         }
     </style>
@@ -194,33 +516,73 @@
     <body class="agency-shell internal-assessment-page">
     <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Internal Assessments', ~{::section})}">
         <section>
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-top">
-                        <span class="metric-label small">Requests</span>
-                        <div class="metric-value h3 mb-0" th:text="${requestCount}">0</div>
+            <div class="page-stack">
+                <div class="hero-panel">
+                    <div class="hero-eyebrow">Agency Workspace</div>
+                    <h2 class="hero-title">Internal Assessment Workbench</h2>
+                    <div class="hero-chip-row">
+                        <span class="hero-chip">
+                            <i class="fa-solid fa-layer-group"></i>
+                            <span th:text="${requestCount + ' Requests'}">0 Requests</span>
+                        </span>
+                        <span class="hero-chip">
+                            <i class="fa-solid fa-clipboard-check"></i>
+                            <span th:text="${(submittedTotal != null ? submittedTotal : 0) + ' Assessments Submitted'}">0 Assessments Submitted</span>
+                        </span>
+                        <span class="hero-chip">
+                            <i class="fa-solid fa-user-check"></i>
+                            <span th:text="${(recommendedTotal != null ? recommendedTotal : 0) + ' Recommended Candidates'}">0 Recommended Candidates</span>
+                        </span>
                     </div>
-                    <div class="metric-copy small">Internal assessment request groups.</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-top">
-                        <span class="metric-label small">Assessment Submitted</span>
-                        <div class="metric-value h3 mb-0" th:text="${submittedTotal != null ? submittedTotal : 0}">0</div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-top">
+                            <div>
+                                <span class="metric-label small">Requests</span>
+                                <div class="metric-value h3 mb-0" th:text="${requestCount}">0</div>
+                            </div>
+                            <span class="metric-icon">
+                                <i class="fa-solid fa-layer-group"></i>
+                            </span>
+                        </div>
+                        <div class="metric-copy small">Internal assessment request groups.</div>
                     </div>
-                    <div class="metric-copy small">Candidates with submitted assessment feedback.</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-top">
-                        <span class="metric-label small">Recommended</span>
-                        <div class="metric-value h3 mb-0" th:text="${recommendedTotal != null ? recommendedTotal : 0}">0</div>
+                    <div class="metric-card">
+                        <div class="metric-top">
+                            <div>
+                                <span class="metric-label small">Assessment Submitted</span>
+                                <div class="metric-value h3 mb-0" th:text="${submittedTotal != null ? submittedTotal : 0}">0</div>
+                            </div>
+                            <span class="metric-icon">
+                                <i class="fa-solid fa-clipboard-check"></i>
+                            </span>
+                        </div>
+                        <div class="metric-copy small">Candidates with submitted assessment feedback.</div>
                     </div>
-                    <div class="metric-copy small">Candidates ready for Level 2 action.</div>
+                    <div class="metric-card">
+                        <div class="metric-top">
+                            <div>
+                                <span class="metric-label small">Recommended</span>
+                                <div class="metric-value h3 mb-0" th:text="${recommendedTotal != null ? recommendedTotal : 0}">0</div>
+                            </div>
+                            <span class="metric-icon">
+                                <i class="fa-solid fa-user-check"></i>
+                            </span>
+                        </div>
+                        <div class="metric-copy small">Candidates ready for Level 2 action.</div>
+                    </div>
                 </div>
-            </div>
 
             <div class="workspace-card">
                 <div class="workspace-header">
-                    <h3 class="workspace-title h5 mb-0">Request-wise Assessment Workspaces</h3>
+                    <div>
+                        <h3 class="workspace-title h5 mb-0">Request-wise Assessment Workspaces</h3>
+                        <p class="workspace-copy">
+                            Use the request ID or project name to expand candidates inline and open detailed assessment actions only when needed.
+                        </p>
+                    </div>
                     <span class="workspace-count small" th:text="${requestCount + ' Request Workspaces'}">0 Request Workspaces</span>
                 </div>
 
@@ -232,6 +594,11 @@
                     </p>
                 </div>
 
+                <div th:if="${!#lists.isEmpty(assessmentProjects)}" class="helper-banner">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Expand a request to review assessment candidates inline. The page only loads candidate rows for the request you open, so the screen stays responsive.</span>
+                </div>
+
                 <div th:if="${!#lists.isEmpty(assessmentProjects)}" class="workspace-table-wrap">
                     <table class="table table-hover workspace-table">
                         <thead>
@@ -241,35 +608,187 @@
                                 <th>Project</th>
                                 <th>Assessment Submitted</th>
                                 <th>Recommended</th>
-                                <th>Action</th>
+                                <th>Latest Assessment</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="item, stat : ${assessmentProjects}">
-                                <td class="workspace-row-index" th:text="${stat.count}">1</td>
-                                <td>
-                                    <span class="request-id small" th:text="${item.requestId != null ? item.requestId : '-'}">REQ-0000</span>
-                                </td>
-                                <td>
-                                    <div class="workspace-project">
-                                        <span class="workspace-project-name" th:text="${item.projectName != null ? item.projectName : 'Project not available'}">Project Name</span>
-                                    </div>
-                                </td>
-                                <td class="workspace-metric" th:text="${item.assessmentSubmittedCandidatesCount != null ? item.assessmentSubmittedCandidatesCount : 0}">0</td>
-                                <td class="workspace-metric" th:text="${item.recommendedCandidatesCount != null ? item.recommendedCandidatesCount : 0}">0</td>
-                                <td>
-                                    <a class="btn btn-primary request-action btn-sm"
-                                        th:href="@{/agency/internal-assessments/{recruitmentNotificationId}(recruitmentNotificationId=${item.recruitmentNotificationId})}">
-                                        Open Candidates
-                                    </a>
-                                </td>
-                            </tr>
+                            <th:block th:each="item, stat : ${assessmentProjects}"
+                                th:with="isExpanded=${expandedRecruitmentNotificationId != null and expandedRecruitmentNotificationId == item.recruitmentNotificationId}">
+                                <tr th:classappend="${isExpanded} ? 'table-active'">
+                                    <td class="workspace-row-index" th:text="${stat.count}">1</td>
+                                    <td>
+                                        <a th:href="${isExpanded} ? @{/agency/internal-assessments} : @{/agency/internal-assessments(open=${item.recruitmentNotificationId})}"
+                                            class="request-link">
+                                            <i class="fa-solid"
+                                                th:classappend="${isExpanded} ? ' fa-chevron-down' : ' fa-chevron-right'"></i>
+                                            <span class="request-id small"
+                                                th:text="${item.requestId != null ? item.requestId : '-'}">REQ-0000</span>
+                                        </a>
+                                        <div class="project-toggle-copy small">
+                                            <a th:href="${isExpanded} ? @{/agency/internal-assessments} : @{/agency/internal-assessments(open=${item.recruitmentNotificationId})}"
+                                                th:text="${isExpanded} ? 'Hide assessment candidates' : 'Show assessment candidates'">
+                                                Show assessment candidates
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="workspace-project">
+                                            <a th:href="${isExpanded} ? @{/agency/internal-assessments} : @{/agency/internal-assessments(open=${item.recruitmentNotificationId})}"
+                                                class="request-link">
+                                                <span class="workspace-project-name"
+                                                    th:text="${item.projectName != null ? item.projectName : 'Project not available'}">Project Name</span>
+                                            </a>
+                                            <span class="workspace-subcopy">Inline candidate review and Level 2 readiness</span>
+                                        </div>
+                                    </td>
+                                    <td class="workspace-metric" th:text="${item.assessmentSubmittedCandidatesCount != null ? item.assessmentSubmittedCandidatesCount : 0}">0</td>
+                                    <td class="workspace-metric" th:text="${item.recommendedCandidatesCount != null ? item.recommendedCandidatesCount : 0}">0</td>
+                                    <td class="workspace-metric"
+                                        th:text="${item.latestAssessmentSubmittedAt != null ? #temporals.format(item.latestAssessmentSubmittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        -
+                                    </td>
+                                </tr>
+                                <tr th:if="${isExpanded}"
+                                    class="expanded-row"
+                                    data-expanded-assessment="true">
+                                    <td colspan="6">
+                                        <div class="expanded-panel">
+                                            <div class="expanded-panel-header">
+                                                <div>
+                                                    <h4 class="expanded-panel-title h6">Assessment Submitted Candidates</h4>
+                                                    <div class="text-muted small"
+                                                        th:text="${(item.requestId != null ? item.requestId : '-') + ' | ' + (item.projectName != null ? item.projectName : '-')}">
+                                                        Request | Project
+                                                    </div>
+                                                    <div class="summary-chip-row">
+                                                        <span class="summary-chip">
+                                                            <i class="fa-solid fa-users"></i>
+                                                            <span th:text="${(item.assessmentSubmittedCandidatesCount != null ? item.assessmentSubmittedCandidatesCount : 0) + ' Candidates'}">0 Candidates</span>
+                                                        </span>
+                                                        <span class="summary-chip recommended">
+                                                            <i class="fa-solid fa-user-check"></i>
+                                                            <span th:text="${(item.recommendedCandidatesCount != null ? item.recommendedCandidatesCount : 0) + ' Recommended'}">0 Recommended</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <span class="workspace-count small"
+                                                    th:text="${item.latestAssessmentSubmittedAt != null ? 'Latest: ' + #temporals.format(item.latestAssessmentSubmittedAt, 'dd-MMM-yyyy HH:mm') : 'Latest: -'}">
+                                                    Latest: -
+                                                </span>
+                                            </div>
+
+                                            <div class="candidate-table-wrap">
+                                                <table class="table table-bordered table-sm candidate-table">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>Candidate</th>
+                                                            <th>Designation</th>
+                                                            <th>Assessment</th>
+                                                            <th>Recommendation</th>
+                                                            <th>Level 2 Status</th>
+                                                            <th class="text-center">View</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr th:if="${#lists.isEmpty(expandedAssessmentCandidates)}">
+                                                            <td colspan="7" class="text-center text-muted">
+                                                                No assessment submitted candidates are available for this request.
+                                                            </td>
+                                                        </tr>
+                                                        <tr th:each="candidate, candidateStat : ${expandedAssessmentCandidates}">
+                                                            <td th:text="${candidateStat.count}">1</td>
+                                                            <td>
+                                                                <div class="candidate-name"
+                                                                    th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">
+                                                                    Candidate
+                                                                </div>
+                                                                <small class="candidate-meta"
+                                                                    th:text="${(candidate.candidateEmail != null ? candidate.candidateEmail : '-') + ' | ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '-')}">
+                                                                    email | mobile
+                                                                </small>
+                                                            </td>
+                                                            <td th:text="${(candidate.designationName != null ? candidate.designationName : '-') + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">
+                                                                Designation | Level
+                                                            </td>
+                                                            <td>
+                                                                <div class="fw-semibold"
+                                                                    th:text="${candidate.assessmentSubmittedAt != null ? #temporals.format(candidate.assessmentSubmittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                                                    01-Apr-2026 10:30
+                                                                </div>
+                                                                <small class="assessment-helper"
+                                                                    th:text="${candidate.interviewerGrade != null ? 'Grade: ' + candidate.interviewerGrade : 'Grade: -'}">
+                                                                    Grade: A
+                                                                </small>
+                                                                <small class="assessment-helper"
+                                                                    th:if="${candidate.interviewAuthority != null and !#strings.isEmpty(candidate.interviewAuthority)}"
+                                                                    th:text="${'Authority: ' + candidate.interviewAuthority}">
+                                                                    Authority: HR Panel
+                                                                </small>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge"
+                                                                    th:classappend="${candidate.recommendationStatus == 'RECOMMENDED' ? ' text-bg-success' : ' text-bg-danger'}"
+                                                                    th:text="${candidate.recommendationStatus != null ? #strings.replace(candidate.recommendationStatus, '_', ' ') : '-'}">
+                                                                    RECOMMENDED
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge"
+                                                                    th:if="${candidate.workflowStatus != null}"
+                                                                    th:classappend="${' ' + candidate.workflowStatus.bootstrapBadgeClass}"
+                                                                    th:text="${candidate.workflowStatus.name()}">
+                                                                    READY_FOR_L2
+                                                                </span>
+                                                                <div class="status-helper"
+                                                                    th:if="${candidate.workflowStatus != null and candidate.levelTwoInterviewDateTime != null
+                                                                        and candidate.workflowStatus.name() != 'L2_RESCHEDULE_REQUESTED'}"
+                                                                    th:text="${#temporals.format(candidate.levelTwoInterviewDateTime, 'dd-MMM-yyyy')} + ' | ' + (candidate.levelTwoInterviewTimeSlot != null ? candidate.levelTwoInterviewTimeSlot : '-')">
+                                                                    01-Apr-2026 | 10:00 AM - 10:30 AM
+                                                                </div>
+                                                                <div class="status-helper"
+                                                                    th:if="${candidate.levelTwoTimeChangeRequested and candidate.levelTwoTimeChangeReason != null and !#strings.isEmpty(candidate.levelTwoTimeChangeReason)}"
+                                                                    th:text="${'Reschedule request: ' + candidate.levelTwoTimeChangeReason}">
+                                                                    Reschedule request: Reason
+                                                                </div>
+                                                                <span class="text-muted"
+                                                                    th:if="${candidate.workflowStatus == null}">
+                                                                    Not recommended for Level 2
+                                                                </span>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <a class="btn btn-outline-primary btn-sm candidate-link"
+                                                                    th:href="@{/agency/internal-assessments/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}(
+                                                                        recruitmentNotificationId=${candidate.recruitmentNotificationId},
+                                                                        recruitmentInterviewDetailId=${candidate.recruitmentInterviewDetailId})}">
+                                                                    <span th:text="${candidate.workflowStatus != null and candidate.workflowStatus.name() == 'L2_RESCHEDULE_REQUESTED' ? 'View & Reschedule' : 'View Assessment'}">
+                                                                        View Assessment
+                                                                    </span>
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </th:block>
                         </tbody>
                     </table>
                 </div>
             </div>
+            </div>
         </section>
     </th:block>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const expandedAssessment = document.querySelector('[data-expanded-assessment="true"]');
+            if (expandedAssessment) {
+                expandedAssessment.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        });
+    </script>
 </body>
 
 </html>
