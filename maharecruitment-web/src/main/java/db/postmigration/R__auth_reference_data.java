@@ -289,6 +289,14 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "HOD Dashboard", "/hod1/dashboard",
                                 "fa fa-user-tie",
                                 roleIds.get("ROLE_HOD"));
+                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Approve attendance",
+                                "/hod1/manual-attendance",
+                                "fa fa-calendar-check",
+                                roleIds.get("ROLE_HOD"));
+                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Approve leave",
+                                "/hod1/leaveApprovals",
+                                "fa fa-user-check",
+                                roleIds.get("ROLE_HOD"));
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "COO Dashboard", "/coo/dashboard",
                                 "fa fa-chart-line",
                                 roleIds.get("ROLE_COO"));
@@ -296,6 +304,32 @@ public class R__auth_reference_data extends BaseJavaMigration {
                                 "/employee/dashboard",
                                 "fa fa-id-badge",
                                 roleIds.get("ROLE_EMPLOYEE"));
+                Long employeeMasterMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Master", null,
+                                "fa fa-table-list", 0,
+                                roleIds.get("ROLE_EMPLOYEE"));
+                upsertSubMenu(jdbcTemplate, subMenuTable, employeeMasterMenuId, "Attendance Register",
+                                "/employee/intAttendance",
+                                "fa fa-calendar-check");
+
+                Long employeeLeaveMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Leave", null,
+                                "fa fa-user-check", 0,
+                                roleIds.get("ROLE_EMPLOYEE"));
+                upsertSubMenu(jdbcTemplate, subMenuTable, employeeLeaveMenuId, "Apply leave",
+                                "/employee/applyLeave",
+                                "fa fa-file-circle-plus");
+                upsertSubMenu(jdbcTemplate, subMenuTable, employeeLeaveMenuId, "View Leave",
+                                "/employee/viewLeave",
+                                "fa fa-eye");
+
+                Long employeeTourMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Tour", null,
+                                "fa fa-route", 0,
+                                roleIds.get("ROLE_EMPLOYEE"));
+                upsertSubMenu(jdbcTemplate, subMenuTable, employeeTourMenuId, "Apply Tour",
+                                "/employee/applyTour",
+                                "fa fa-file-circle-plus");
+                upsertSubMenu(jdbcTemplate, subMenuTable, employeeTourMenuId, "View Tour",
+                                "/employee/viewTour",
+                                "fa fa-eye");
         }
 
         private Map<String, Long> loadRoleIds(JdbcTemplate jdbcTemplate) {
