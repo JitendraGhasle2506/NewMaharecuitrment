@@ -33,6 +33,16 @@
             color: #64748b;
         }
 
+        .l2-detail .hero-copy,
+        .l2-detail .hero-actions,
+        .l2-detail .overview-grid > *,
+        .l2-detail .section-grid > *,
+        .l2-detail .mark-grid > *,
+        .l2-detail .panel-management-layout > *,
+        .l2-detail .feedback-review-grid > * {
+            min-width: 0;
+        }
+
         .l2-detail .overview-grid,
         .l2-detail .section-grid,
         .l2-detail .mark-grid {
@@ -57,6 +67,22 @@
         .l2-detail .mini-card,
         .l2-detail .section-card {
             padding: 18px;
+        }
+
+        .l2-detail .hero-copy,
+        .l2-detail .hero p,
+        .l2-detail .muted-copy,
+        .l2-detail .value,
+        .l2-detail .feedback-review-meta,
+        .l2-detail .panel-option-name,
+        .l2-detail .panel-option-copy,
+        .l2-detail .alert,
+        .l2-detail .alert-box,
+        .l2-detail textarea,
+        .l2-detail .table td,
+        .l2-detail .table th {
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .l2-detail .label {
@@ -110,6 +136,13 @@
         .l2-detail .table td,
         .l2-detail .table th {
             vertical-align: middle;
+        }
+
+        .l2-detail .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 16px;
         }
 
         .l2-detail .form-actions {
@@ -167,15 +200,23 @@
         }
 
         .l2-detail .panel-role-filter {
-            display: block;
+            display: inline-flex;
             margin: 0;
             cursor: pointer;
+            position: relative;
+            flex: 0 0 auto;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .l2-detail .panel-role-filter input {
             position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
             opacity: 0;
-            pointer-events: none;
+            cursor: pointer;
         }
 
         .l2-detail .panel-role-filter-label,
@@ -189,6 +230,11 @@
             color: #075985;
             font-size: 0.8rem;
             font-weight: 700;
+        }
+
+        .l2-detail .panel-role-filter:focus-within .panel-role-filter-label {
+            outline: 2px solid rgba(15, 118, 110, 0.2);
+            outline-offset: 2px;
         }
 
         .l2-detail .panel-role-filter input:checked + .panel-role-filter-label {
@@ -366,6 +412,18 @@
             font-weight: 700;
         }
 
+        @media (max-width: 1199px) {
+            .l2-detail .overview-grid,
+            .l2-detail .mark-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .l2-detail .section-grid,
+            .l2-detail .panel-management-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 991px) {
             .l2-detail .overview-grid,
             .l2-detail .section-grid,
@@ -377,6 +435,75 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        @media (max-width: 767px) {
+            .l2-detail .hero,
+            .l2-detail .section-card,
+            .l2-detail .mini-card {
+                border-radius: 16px;
+            }
+
+            .l2-detail .hero,
+            .l2-detail .section-card,
+            .l2-detail .mini-card,
+            .l2-detail .panel-filter-card,
+            .l2-detail .feedback-review-card {
+                padding: 16px;
+            }
+
+            .l2-detail .hero h2 {
+                font-size: 1.45rem;
+            }
+
+            .l2-detail .value {
+                font-size: 1rem;
+            }
+
+            .l2-detail .hero-actions {
+                width: 100%;
+            }
+
+            .l2-detail .hero-actions .btn,
+            .l2-detail .form-actions .btn {
+                width: 100%;
+            }
+
+            .l2-detail .panel-role-filter {
+                flex: 1 1 calc(50% - 8px);
+            }
+
+            .l2-detail .panel-role-filter-label {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 575px) {
+            .l2-detail .hero,
+            .l2-detail .section-card,
+            .l2-detail .mini-card,
+            .l2-detail .panel-filter-card,
+            .l2-detail .feedback-review-card {
+                padding: 14px;
+            }
+
+            .l2-detail .hero h2 {
+                font-size: 1.3rem;
+            }
+
+            .l2-detail .panel-option-body {
+                padding: 14px 46px 14px 14px;
+                border-radius: 16px;
+            }
+
+            .l2-detail .panel-checkbox {
+                top: 14px;
+                right: 14px;
+            }
+
+            .l2-detail .panel-role-filter {
+                flex-basis: 100%;
+            }
+        }
     </style>
 </head>
 
@@ -385,14 +512,14 @@
         <section>
             <div class="hero">
                 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-                    <div>
+                    <div class="hero-copy">
                         <h2 th:text="${detail.candidateName != null ? detail.candidateName : 'Level 2 Workflow'}">Candidate</h2>
                         <p class="mb-0 mt-2"
                             th:text="${(detail.requestId != null ? detail.requestId : '-') + ' | ' + (detail.projectName != null ? detail.projectName : '-') + ' | ' + (detail.designationName != null ? detail.designationName : '-') + ' | ' + (detail.levelCode != null ? detail.levelCode : '-')}">
                             REQ-0001 | Project | Designation | L2
                         </p>
                     </div>
-                    <div class="d-flex gap-2 flex-wrap">
+                    <div class="d-flex gap-2 flex-wrap hero-actions">
                         <button type="button" class="btn btn-outline-dark btn-sm"
                             th:if="${detail.resumeFilePath != null}"
                             th:attr="data-path=${detail.resumeFilePath}"
@@ -838,6 +965,8 @@
             const selectionSummary = document.getElementById('panelRoleSelectionSummary');
             const selectionSummaryBadges = document.getElementById('panelRoleSelectionSummaryBadges');
             const selectionSummaryCount = document.getElementById('panelRoleSelectionSummaryCount');
+            const scrollContainer = document.querySelector('.page-main-content');
+            const previousScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
 
             if (!roleFilterInputs.length || !panelGrid) {
                 return;
@@ -893,6 +1022,13 @@
                 } else {
                     selectionSummaryCount.textContent = visibleCount + ' eligible users available for the selected role filter.';
                 }
+            }
+
+            if (scrollContainer) {
+                requestAnimationFrame(() => {
+                    const maxScrollTop = Math.max(scrollContainer.scrollHeight - scrollContainer.clientHeight, 0);
+                    scrollContainer.scrollTop = Math.min(previousScrollTop, maxScrollTop);
+                });
             }
         }
 
