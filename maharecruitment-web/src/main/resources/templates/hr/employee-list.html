@@ -90,43 +90,48 @@
                         <h2 class="mb-0" th:text="${pageTitle != null ? pageTitle : 'Employees'}">Employees</h2>
                         <p class="text-muted mb-0" th:text="${pageSubtitle != null ? pageSubtitle : 'Employee list'}">Employee list</p>
                     </div>
-                    <div class="filter-group flex-grow-1">
-                        <form method="get"
-                            class="employee-filter-form"
-                            th:action="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
-                            <input type="hidden" name="page" value="0">
-                            <div class="employee-filter-field employee-filter-search">
-                                <label class="form-label mb-1">Search</label>
-                                <input type="text"
-                                    name="search"
-                                    class="form-control form-control-sm"
-                                    th:value="${searchTerm}"
-                                    placeholder="Request ID, project name, internal, external">
-                            </div>
-                            <div class="employee-filter-field">
-                                <label class="form-label mb-1">Type</label>
-                                <select name="type" class="form-select form-select-sm">
-                                    <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
-                                    <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
-                                    <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
-                                </select>
-                            </div>
-                            <div class="employee-filter-field">
-                                <label class="form-label mb-1">Page Size</label>
-                                <select name="size" class="form-select form-select-sm">
-                                    <option value="10" th:selected="${pageSize == 10}">10 per page</option>
-                                    <option value="25" th:selected="${pageSize == 25}">25 per page</option>
-                                    <option value="50" th:selected="${pageSize == 50}">50 per page</option>
-                                </select>
-                            </div>
-                            <div class="employee-filter-actions">
-                                <button type="submit" class="btn btn-primary btn-sm">Search</button>
-                                <a class="btn btn-outline-secondary btn-sm"
-                                    th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
-                                    Clear
-                                </a>
-                            </div>
-                        </form>
+                    <div class="d-flex align-items-end gap-2 flex-grow-1 justify-content-end flex-wrap">
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/hr/work-orders}">
+                            Work Orders
+                        </a>
+                        <div class="filter-group flex-grow-1" style="max-width: 860px;">
+                            <form method="get"
+                                class="employee-filter-form"
+                                th:action="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
+                                <input type="hidden" name="page" value="0">
+                                <div class="employee-filter-field employee-filter-search">
+                                    <label class="form-label mb-1">Search</label>
+                                    <input type="text"
+                                        name="search"
+                                        class="form-control form-control-sm"
+                                        th:value="${searchTerm}"
+                                        placeholder="Request ID, project name, internal, external">
+                                </div>
+                                <div class="employee-filter-field">
+                                    <label class="form-label mb-1">Type</label>
+                                    <select name="type" class="form-select form-select-sm">
+                                        <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
+                                        <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
+                                        <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
+                                    </select>
+                                </div>
+                                <div class="employee-filter-field">
+                                    <label class="form-label mb-1">Page Size</label>
+                                    <select name="size" class="form-select form-select-sm">
+                                        <option value="10" th:selected="${pageSize == 10}">10 per page</option>
+                                        <option value="25" th:selected="${pageSize == 25}">25 per page</option>
+                                        <option value="50" th:selected="${pageSize == 50}">50 per page</option>
+                                    </select>
+                                </div>
+                                <div class="employee-filter-actions">
+                                    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                                    <a class="btn btn-outline-secondary btn-sm"
+                                        th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
+                                        Clear
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body p-0">

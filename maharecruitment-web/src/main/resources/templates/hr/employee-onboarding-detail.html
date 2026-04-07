@@ -487,6 +487,61 @@
 
                     <div class="section-block">
                         <div class="section-heading">
+                            <h5 class="section-title">Work Orders</h5>
+                            <a class="btn btn-primary btn-sm"
+                                th:href="@{/hr/work-orders/new(employeeId=${employeeDetail.employeeId})}">
+                                Generate Work Order
+                            </a>
+                        </div>
+                        <div th:if="${#lists.isEmpty(employeeWorkOrders)}" class="text-muted">
+                            No work orders have been generated for this employee yet.
+                        </div>
+                        <div class="table-responsive" th:if="${!#lists.isEmpty(employeeWorkOrders)}">
+                            <table class="table table-sm align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Work Order</th>
+                                        <th>Type</th>
+                                        <th>Period</th>
+                                        <th>Version</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="workOrder : ${employeeWorkOrders}">
+                                        <td>
+                                            <div class="fw-semibold" th:text="${workOrder.workOrderNumber}">WO/2026-27/00001</div>
+                                            <div class="small text-muted"
+                                                th:text="${workOrder.workOrderDate != null ? #temporals.format(workOrder.workOrderDate, 'dd-MMM-yyyy') : '-'}">
+                                                01-Apr-2026
+                                            </div>
+                                        </td>
+                                        <td th:text="${workOrder.workOrderType}">NEW</td>
+                                        <td>
+                                            <div th:text="${workOrder.effectiveFrom != null ? #temporals.format(workOrder.effectiveFrom, 'dd-MMM-yyyy') : '-'}">01-Apr-2026</div>
+                                            <div class="small text-muted"
+                                                th:text="${workOrder.effectiveTo != null ? #temporals.format(workOrder.effectiveTo, 'dd-MMM-yyyy') : '-'}">
+                                                31-Mar-2027
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success-subtle text-success-emphasis" th:if="${workOrder.latestVersion}">Latest</span>
+                                            <span th:if="${!workOrder.latestVersion}">Historical</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a class="btn btn-outline-primary btn-sm"
+                                                th:href="@{/hr/work-orders/{id}(id=${workOrder.workOrderId})}">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-heading">
                             <h5 class="section-title">KYC And Uploaded Documents</h5>
                         </div>
                         <div class="row">

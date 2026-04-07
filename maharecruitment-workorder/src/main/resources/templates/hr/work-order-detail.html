@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Work Order Detail</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Work Orders', ~{::section})}">
+        <section th:with="detail=${workOrderDetail}">
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-start flex-wrap gap-3">
+                    <div>
+                        <h2 class="mb-1" th:text="${detail.workOrderNumber}">WO/2026-27/00001</h2>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-primary-subtle text-primary-emphasis" th:text="${detail.workOrderType}">NEW</span>
+                            <span class="badge bg-success-subtle text-success-emphasis" th:if="${detail.latestVersion}">Latest Version</span>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis" th:text="${detail.status}">GENERATED</span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/work-orders}">Back</a>
+                        <a class="btn btn-outline-primary btn-sm"
+                            th:if="${detail.documentAvailable}"
+                            th:href="@{/hr/work-orders/{id}/download(id=${detail.workOrderId})}">
+                            Download PDF
+                        </a>
+                        <a class="btn btn-primary btn-sm"
+                            th:if="${detail.latestVersion}"
+                            th:href="@{/hr/work-orders/{id}/extend(id=${detail.workOrderId})}">
+                            Extend
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4"><strong>Request ID</strong><div th:text="${detail.requestId}">REQ-001</div></div>
+                        <div class="col-md-4"><strong>Project</strong><div th:text="${detail.projectName}">Project</div></div>
+                        <div class="col-md-4"><strong>Reference Number</strong><div th:text="${detail.referenceNumber}">REF-001</div></div>
+                        <div class="col-md-4"><strong>Department</strong><div th:text="${detail.departmentName}">Department</div></div>
+                        <div class="col-md-4"><strong>Sub Department</strong><div th:text="${detail.subDepartmentName != null ? detail.subDepartmentName : '-'}">-</div></div>
+                        <div class="col-md-4"><strong>Agency</strong><div th:text="${detail.agencyName}">Agency</div></div>
+                        <div class="col-md-4"><strong>Agency Contact</strong><div th:text="${detail.agencyContactName != null ? detail.agencyContactName : '-'}">-</div></div>
+                        <div class="col-md-4"><strong>Agency Email</strong><div th:text="${detail.agencyOfficialEmail != null ? detail.agencyOfficialEmail : '-'}">-</div></div>
+                        <div class="col-md-4"><strong>Version</strong><div th:text="${detail.versionNumber}">1</div></div>
+                        <div class="col-md-4"><strong>Work-Order Date</strong><div th:text="${#temporals.format(detail.workOrderDate, 'dd-MMM-yyyy')}">01-Apr-2026</div></div>
+                        <div class="col-md-4"><strong>Effective From</strong><div th:text="${#temporals.format(detail.effectiveFrom, 'dd-MMM-yyyy')}">01-Apr-2026</div></div>
+                        <div class="col-md-4"><strong>Effective To</strong><div th:text="${#temporals.format(detail.effectiveTo, 'dd-MMM-yyyy')}">31-Mar-2027</div></div>
+                    </div>
+
+                    <div class="mt-4" th:if="${detail.purposeSummary != null}">
+                        <strong>Additional Instructions</strong>
+                        <p class="mb-0 text-muted" th:text="${detail.purposeSummary}">Instructions</p>
+                    </div>
+                    <div class="mt-3" th:if="${detail.extensionReason != null}">
+                        <strong>Extension Reason</strong>
+                        <p class="mb-0 text-muted" th:text="${detail.extensionReason}">Reason</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Mapped Employees</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-3">Employee</th>
+                                            <th>Code</th>
+                                            <th>Designation</th>
+                                            <th>Level</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="employee : ${detail.employees}">
+                                            <td class="ps-3">
+                                                <div class="fw-semibold" th:text="${employee.employeeName}">Employee</div>
+                                                <div class="small text-muted"
+                                                    th:text="${employee.joiningDate != null ? #temporals.format(employee.joiningDate, 'dd-MMM-yyyy') : '-'}">
+                                                    01-Apr-2026
+                                                </div>
+                                            </td>
+                                            <td th:text="${employee.employeeCode}">EMP0001</td>
+                                            <td th:text="${employee.designationName != null ? employee.designationName : '-'}">Designation</td>
+                                            <td th:text="${employee.levelCode != null ? employee.levelCode : '-'}">L1</td>
+                                            <td th:text="${employee.employmentStatus}">ACTIVE</td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(detail.employees)}">
+                                            <td colspan="5" class="text-center py-4 text-muted">No employees mapped.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card shadow-sm border-0 mb-4">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Version History</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush">
+                                <a class="list-group-item list-group-item-action px-0"
+                                    th:each="version : ${detail.versionHistory}"
+                                    th:href="@{/hr/work-orders/{id}(id=${version.workOrderId})}">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div>
+                                            <div class="fw-semibold" th:text="${version.workOrderNumber}">WO/2026-27/00001</div>
+                                            <div class="small text-muted">
+                                                <span th:text="${version.workOrderType}">NEW</span>
+                                                <span class="mx-1">|</span>
+                                                <span>Version <span th:text="${version.versionNumber}">1</span></span>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-success-subtle text-success-emphasis" th:if="${version.latestVersion}">Latest</span>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Audit Timeline</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline-item mb-3" th:each="entry : ${detail.auditTrail}">
+                                <div class="fw-semibold" th:text="${entry.activitySummary}">Generated</div>
+                                <div class="small text-muted">
+                                    <span th:text="${entry.actorName != null ? entry.actorName : '-'}">Actor</span>
+                                    <span class="mx-1">|</span>
+                                    <span th:text="${entry.occurredAt != null ? #temporals.format(entry.occurredAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        06-Apr-2026 17:00
+                                    </span>
+                                </div>
+                                <div class="small text-muted mt-1" th:text="${entry.activityDetails != null ? entry.activityDetails : ''}"></div>
+                            </div>
+                            <div th:if="${#lists.isEmpty(detail.auditTrail)}" class="text-muted small">
+                                No audit events recorded.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

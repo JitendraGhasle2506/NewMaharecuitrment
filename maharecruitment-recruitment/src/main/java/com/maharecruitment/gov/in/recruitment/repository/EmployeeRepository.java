@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.recruitment.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,6 +37,64 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             "preOnboarding.interviewDetail.recruitmentNotification",
             "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
     Optional<EmployeeEntity> findDetailedByEmployeeId(Long employeeId);
+
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.previousEmployments",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    @Query("select employee from EmployeeEntity employee where employee.employeeId in :employeeIds")
+    List<EmployeeEntity> findDetailedByEmployeeIdIn(@Param("employeeIds") Collection<Long> employeeIds);
+
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    List<EmployeeEntity> findByStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(String status);
+
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.previousEmployments",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    List<EmployeeEntity> findByAgencyAgencyIdAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
+            Long agencyId,
+            String status);
+
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.previousEmployments",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    @Query("select employee from EmployeeEntity employee "
+            + "where employee.agency.agencyId = :agencyId "
+            + "and upper(trim(coalesce(employee.recruitmentType, ''))) = :recruitmentType "
+            + "and upper(trim(coalesce(employee.status, ''))) = :status "
+            + "order by lower(employee.fullName), employee.employeeId")
+    List<EmployeeEntity> findWorkOrderCandidatesByAgencyRecruitmentTypeAndStatus(
+            @Param("agencyId") Long agencyId,
+            @Param("recruitmentType") String recruitmentType,
+            @Param("status") String status);
 
     @EntityGraph(attributePaths = {
             "agency",

@@ -17,6 +17,7 @@ import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationE
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
+import com.maharecruitment.gov.in.workorder.service.HrWorkOrderService;
 
 @Controller
 @RequestMapping("/hr/employees")
@@ -27,9 +28,13 @@ public class EmployeeListController {
     private static final int MAX_PAGE_SIZE = 50;
 
     private final HROnboardingPageService hrOnboardingPageService;
+    private final HrWorkOrderService hrWorkOrderService;
 
-    public EmployeeListController(HROnboardingPageService hrOnboardingPageService) {
+    public EmployeeListController(
+            HROnboardingPageService hrOnboardingPageService,
+            HrWorkOrderService hrWorkOrderService) {
         this.hrOnboardingPageService = hrOnboardingPageService;
+        this.hrWorkOrderService = hrWorkOrderService;
     }
 
     @GetMapping
@@ -71,6 +76,7 @@ public class EmployeeListController {
         try {
             EmployeeOnboardingDetailView employeeDetail = hrOnboardingPageService.loadEmployeeDetail(employeeId);
             model.addAttribute("employeeDetail", employeeDetail);
+            model.addAttribute("employeeWorkOrders", hrWorkOrderService.getEmployeeWorkOrders(employeeId));
             model.addAttribute("currentStatus", normalizedStatus);
             model.addAttribute("currentType", normalizedType);
             model.addAttribute("currentPage", resolvedPage);
