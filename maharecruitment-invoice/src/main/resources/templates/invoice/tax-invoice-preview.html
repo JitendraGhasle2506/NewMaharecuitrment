@@ -170,7 +170,8 @@
 <body class="tax-invoice" th:classappend="${#bools.isTrue(embeddedPreviewMode)} ? ' embedded-mode' : ''">
     <div class="preview-page">
         <div id="print-content" class="preview-sheet">
-            <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}" class="preview-banner">
+            <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}"
+                class="preview-banner">
                 Preview only. This page loads dynamic resource details from the request and does not replace the final
                 tax invoice layout.
             </div>
@@ -189,7 +190,7 @@
                 </tr>
                 <tr>
                     <td colspan="6" style="text-align:center;">
-                        <h3 style="margin:0;">TAX INVOICE</h3>
+                        <h3 style="margin:0;">PROFORMA INVOICE</h3>
                     </td>
                 </tr>
             </table>
@@ -212,7 +213,8 @@
                             </tr>
                             <tr>
                                 <td><b>Client GST Number:</b></td>
-                                <td th:text="${invoice.clientGstNumber != null ? invoice.clientGstNumber : '-'}">27AABCM3129H1DW</td>
+                                <td th:text="${invoice.clientGstNumber != null ? invoice.clientGstNumber : '-'}">
+                                    27AABCM3129H1DW</td>
                             </tr>
                             <tr>
                                 <td><b>Place Of Supply:</b></td>
@@ -268,24 +270,32 @@
                         <td class="text-center" th:text="${item.requiredPeriodDisplay}">01-12-2025 to 31-12-2025</td>
                         <td class="text-center" th:text="${item.sacHsn}">998313</td>
                         <td class="text-center" th:text="${item.quantity}">2</td>
-                        <td class="text-right">&#8377; <span th:text="${item.ratePerMonthDisplay}">1,65,705.00</span></td>
-                        <td class="text-right">&#8377; <span th:text="${item.totalAmountDisplay}">3,31,410.00</span></td>
+                        <td class="text-right">&#8377; <span th:text="${item.ratePerMonthDisplay}">1,65,705.00</span>
+                        </td>
+                        <td class="text-right">&#8377; <span th:text="${item.totalAmountDisplay}">3,31,410.00</span>
+                        </td>
                     </tr>
                     <tr>
                         <td colspan="6" class="text-right summary-label">1) BASIC Amount</td>
-                        <td class="text-right">&#8377; <span th:text="${invoice.baseAmountDisplay}">12,28,775.00</span></td>
+                        <td class="text-right">&#8377; <span th:text="${invoice.baseAmountDisplay}">12,28,775.00</span>
+                        </td>
                     </tr>
                     <tr>
-                        <td colspan="6" class="text-right summary-label" th:text="${'2) SGST @ ' + invoice.sgstRateDisplay + '%'}">2) SGST @ 9%</td>
-                        <td class="text-right">&#8377; <span th:text="${invoice.sgstAmountDisplay}">1,10,589.00</span></td>
+                        <td colspan="6" class="text-right summary-label"
+                            th:text="${'2) SGST @ ' + invoice.sgstRateDisplay + '%'}">2) SGST @ 9%</td>
+                        <td class="text-right">&#8377; <span th:text="${invoice.sgstAmountDisplay}">1,10,589.00</span>
+                        </td>
                     </tr>
                     <tr>
-                        <td colspan="6" class="text-right summary-label" th:text="${'3) CGST @ ' + invoice.cgstRateDisplay + '%'}">3) CGST @ 9%</td>
-                        <td class="text-right">&#8377; <span th:text="${invoice.cgstAmountDisplay}">1,10,589.00</span></td>
+                        <td colspan="6" class="text-right summary-label"
+                            th:text="${'3) CGST @ ' + invoice.cgstRateDisplay + '%'}">3) CGST @ 9%</td>
+                        <td class="text-right">&#8377; <span th:text="${invoice.cgstAmountDisplay}">1,10,589.00</span>
+                        </td>
                     </tr>
                     <tr>
                         <td colspan="6" class="text-right summary-label">Total</td>
-                        <td class="text-right summary-label">&#8377; <span th:text="${invoice.totalAmountDisplay}">14,49,954.00</span></td>
+                        <td class="text-right summary-label">&#8377; <span
+                                th:text="${invoice.totalAmountDisplay}">14,49,954.00</span></td>
                     </tr>
                 </tbody>
             </table>
@@ -319,11 +329,16 @@
                     <td>
                         <ol class="terms-list">
                             <li>Validity of Proforma Invoice is for 3 months from the date of issue of the invoice.</li>
-                            <li>MahaIT will start the service only after receipt of 100% advance payment and submission of RTGS details via email to manpowerfundreceipt@mahait.org.</li>
-                            <li>The resource pay rate shall be revised annually from the commencement date, i.e., 1st October of every year, with an increment of 8% for each manpower category.</li>
-                            <li>The above prices are inclusive of applicable taxes and MahaIT's operating margin @ 10%.</li>
-                            <li>Any manpower description change must be intimated within 8 days from the invoice date.</li>
-                            <li>Before depositing funds, standard deductions such as TDS must be applied wherever applicable.</li>
+                            <li>MahaIT will start the service only after receipt of 100% advance payment and submission
+                                of RTGS details via email to manpowerfundreceipt@mahait.org.</li>
+                            <li>The resource pay rate shall be revised annually from the commencement date, i.e., 1st
+                                October of every year, with an increment of 8% for each manpower category.</li>
+                            <li>The above prices are inclusive of applicable taxes and MahaIT's operating margin @ 10%.
+                            </li>
+                            <li>Any manpower description change must be intimated within 8 days from the invoice date.
+                            </li>
+                            <li>Before depositing funds, standard deductions such as TDS must be applied wherever
+                                applicable.</li>
                             <li>If GSTIN is not shared by the department, the transaction will be treated as B2C.</li>
                             <li>All disputes are subject to Mumbai jurisdiction.</li>
                         </ol>

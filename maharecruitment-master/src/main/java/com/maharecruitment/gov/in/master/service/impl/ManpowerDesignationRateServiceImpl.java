@@ -86,16 +86,19 @@ public class ManpowerDesignationRateServiceImpl implements ManpowerDesignationRa
     public ManpowerDesignationRateResponse getById(Long rateId, boolean includeInactive) {
         ManpowerDesignationRate entity = includeInactive
                 ? rateRepository.findById(rateId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Designation rate not found for id: " + rateId))
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Designation rate not found for id: " + rateId))
                 : rateRepository.findByRateIdAndActiveFlagIgnoreCase(rateId, ACTIVE)
                         .orElseThrow(
-                                () -> new ResourceNotFoundException("Active designation rate not found for id: " + rateId));
+                                () -> new ResourceNotFoundException(
+                                        "Active designation rate not found for id: " + rateId));
 
         return mapper.toResponse(entity);
     }
 
     @Override
-    public Page<ManpowerDesignationRateResponse> getAll(Long designationId, boolean includeInactive, Pageable pageable) {
+    public Page<ManpowerDesignationRateResponse> getAll(Long designationId, boolean includeInactive,
+            Pageable pageable) {
         Page<ManpowerDesignationRate> page;
         if (designationId == null) {
             page = includeInactive
@@ -163,4 +166,3 @@ public class ManpowerDesignationRateServiceImpl implements ManpowerDesignationRa
         return INACTIVE.equals(value.trim().toUpperCase(Locale.ROOT)) ? INACTIVE : ACTIVE;
     }
 }
-

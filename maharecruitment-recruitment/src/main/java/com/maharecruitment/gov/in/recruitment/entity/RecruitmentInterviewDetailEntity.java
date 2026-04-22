@@ -116,6 +116,9 @@ public class RecruitmentInterviewDetailEntity extends RecruitmentAuditable {
     @Column(name = "department_shortlist_remarks", length = 1000)
     private String departmentShortlistRemarks;
 
+    @Column(name = "interview_authority", length = 50)
+    private String interviewAuthority;
+
     @Column(name = "interview_scheduled_at")
     private LocalDateTime interviewScheduledAt;
 
@@ -185,6 +188,7 @@ public class RecruitmentInterviewDetailEntity extends RecruitmentAuditable {
         interviewLink = normalizeText(interviewLink);
         interviewRemarks = normalizeText(interviewRemarks);
         departmentShortlistRemarks = normalizeText(departmentShortlistRemarks);
+        interviewAuthority = normalizeText(interviewAuthority);
         departmentInterviewChangeReason = normalizeText(departmentInterviewChangeReason);
         finalDecisionStatus = normalizeText(finalDecisionStatus);
         finalDecisionRemarks = normalizeText(finalDecisionRemarks);

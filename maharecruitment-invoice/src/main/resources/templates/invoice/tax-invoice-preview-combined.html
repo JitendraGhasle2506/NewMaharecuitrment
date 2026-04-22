@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <title>Tax Invoice Preview</title>
+    <title>Proforma Invoice Preview</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <style>
         body {
@@ -50,7 +50,7 @@
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
         }
 
-        .preview-section + .preview-section {
+        .preview-section+.preview-section {
             margin-top: 18px;
         }
 
@@ -118,10 +118,7 @@
                     <p>Please login again and reopen the tax invoice preview.</p>
                 </div>
             </div>
-            <iframe class="preview-frame"
-                id="oldPreviewFrame"
-                title="Old Tax Invoice Preview"
-                scrolling="no"
+            <iframe class="preview-frame" id="oldPreviewFrame" title="Old Tax Invoice Preview" scrolling="no"
                 th:src="@{/invoice/tax-invoices/application/{applicationId}/preview/old(applicationId=${applicationId},embedded=true)}">
             </iframe>
         </section>
@@ -133,10 +130,7 @@
                     <p>Please login again and reopen the tax invoice preview.</p>
                 </div>
             </div>
-            <iframe class="preview-frame"
-                id="newPreviewFrame"
-                title="New Tax Invoice Preview"
-                scrolling="no"
+            <iframe class="preview-frame" id="newPreviewFrame" title="New Tax Invoice Preview" scrolling="no"
                 th:src="@{/invoice/tax-invoices/application/{applicationId}/preview/new(applicationId=${applicationId},embedded=true)}">
             </iframe>
         </section>

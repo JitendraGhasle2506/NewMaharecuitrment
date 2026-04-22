@@ -51,7 +51,7 @@ public class RecruitmentNotificationRankAssignmentServiceImpl
         Map<Long, AgencyGlobalRankEntity> existingByAgencyId = mapByAgency(existingMappings);
 
         Set<Long> requestedAgencyIds = new HashSet<>();
-        List<AgencyGlobalRankEntity> entitiesToSave = new ArrayList<>();
+        List<AgencyGlobalRankEntity> entitiesToSave = new java.util.ArrayList<>();
         LocalDateTime assignedAt = LocalDateTime.now();
 
         for (AgencyRankAssignmentCommand assignment : assignments) {
@@ -65,6 +65,9 @@ public class RecruitmentNotificationRankAssignmentServiceImpl
             }
 
             entity.setRankNumber(assignment.getRankNumber());
+            entity.setMappedCategories(assignment.getMappedCategories() != null 
+                    ? String.join(",", assignment.getMappedCategories()) 
+                    : null);
             entity.setAssignedDate(assignedAt);
             entitiesToSave.add(entity);
         }

@@ -448,6 +448,10 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .requiredQuantity(requirementEntity.getRequiredQuantity())
                 .durationInMonths(requirementEntity.getDurationInMonths())
                 .totalCost(requirementEntity.getTotalCost())
+                .agencyCommissionAmount(requirementEntity.getAgencyCommissionAmount())
+                .mahaItCommissionAmount(requirementEntity.getMahaItCommissionAmount())
+                .taxableAmount(requirementEntity.getTaxableAmount())
+                .gstAmount(requirementEntity.getGstAmount())
                 .build();
     }
 

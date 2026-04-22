@@ -79,6 +79,7 @@ public class DepartmentCandidateShortlistingServiceImpl implements DepartmentCan
             Long recruitmentInterviewDetailId,
             DepartmentCandidateReviewDecision reviewDecision,
             String reviewRemarks,
+            String interviewAuthority,
             String actorEmail) {
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
         candidateReviewService.applyCandidateReviewDecision(
@@ -87,7 +88,8 @@ public class DepartmentCandidateShortlistingServiceImpl implements DepartmentCan
                 recruitmentNotificationId,
                 recruitmentInterviewDetailId,
                 reviewDecision,
-                reviewRemarks);
+                reviewRemarks,
+                interviewAuthority);
     }
 
     @Override

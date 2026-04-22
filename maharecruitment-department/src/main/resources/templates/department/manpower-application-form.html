@@ -120,17 +120,28 @@
                                                 th:value="${requirement.requiredQuantity}">
                                         </td>
                                         <td>
-                                            <input type="number" min="3" class="form-control durationInMonthsInput"
+                                            <input type="number" min="1" class="form-control durationInMonthsInput"
                                                 data-field="durationInMonths"
                                                 th:name="${'resourceRequirements[' + stat.index + '].durationInMonths'}"
                                                 th:value="${requirement.durationInMonths}">
-                                        </td>
                                         <td>
                                             <span class="rowTotalCostText" th:text="${#numbers.formatDecimal(requirement.totalCost, 1, 'COMMA', 2, 'POINT')}"></span>
                                             <input type="hidden" class="rowTotalCostValue"
                                                 data-field="totalCost"
                                                 th:name="${'resourceRequirements[' + stat.index + '].totalCost'}"
                                                 th:value="${requirement.totalCost}">
+                                            <input type="hidden" data-field="agencyCommissionAmount"
+                                                th:name="${'resourceRequirements[' + stat.index + '].agencyCommissionAmount'}"
+                                                th:value="${requirement.agencyCommissionAmount}">
+                                            <input type="hidden" data-field="mahaItCommissionAmount"
+                                                th:name="${'resourceRequirements[' + stat.index + '].mahaItCommissionAmount'}"
+                                                th:value="${requirement.mahaItCommissionAmount}">
+                                            <input type="hidden" data-field="taxableAmount"
+                                                th:name="${'resourceRequirements[' + stat.index + '].taxableAmount'}"
+                                                th:value="${requirement.taxableAmount}">
+                                            <input type="hidden" data-field="gstAmount"
+                                                th:name="${'resourceRequirements[' + stat.index + '].gstAmount'}"
+                                                th:value="${requirement.gstAmount}">
                                         </td>
                                         <td>
                                             <button type="button" class="btn btn-outline-danger btn-sm removeRequirementButton">Remove</button>
@@ -145,7 +156,7 @@
                                 <table class="table table-sm table-bordered w-auto ms-auto mb-0">
                                     <tbody>
                                         <tr>
-                                            <th class="text-end">Total Estimated Cost (INR, Excluding Taxes)</th>
+                                            <th class="text-end">Total Manpower Value (Excl. Commissions & Taxes)</th>
                                             <td class="text-end"><span id="grandTotalCostText">0.00</span></td>
                                         </tr>
                                     </tbody>
@@ -169,7 +180,7 @@
 
                         <div class="row g-3">
                             <div class="col-md-12">
-                                <label class="form-label">Work Order Document <span class="text-danger">*</span></label>
+                                <label class="form-label">Work Order Document / Demand / Requisition Letter <span class="text-danger">*</span></label>
                                 <div class="mb-2" th:if="${applicationForm.existingWorkOrderFilePath != null}">
                                     <span class="badge bg-success">Current document available</span>
                                     <a class="ms-2"
@@ -281,7 +292,7 @@
                         <table class="table table-sm table-bordered w-auto ms-auto mb-0">
                             <tbody>
                                 <tr>
-                                    <th class="text-end">Grand Total (INR, Excluding Taxes)</th>
+                                    <th class="text-end">Total Manpower Value (Excl. Commissions & Taxes)</th>
                                     <td class="text-end"><span id="previewGrandTotalCost">0.00</span></td>
                                 </tr>
                             </tbody>

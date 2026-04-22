@@ -180,20 +180,24 @@
                                         <tr>
                                             <th class="ps-3">Designation</th>
                                             <th>Level</th>
-                                            <th class="text-end">Rate</th>
+                                            <th class="text-end">Rate/Month</th>
                                             <th class="text-center">Qty</th>
                                             <th class="text-center">Months</th>
-                                            <th class="text-end pe-3">Total</th>
+                                            <th class="text-end">Total Amount</th>
+                                            <th class="text-end">GST(18%)</th>
+                                            <th class="text-end pe-3">Grand Total</th>
                                         </tr>
                                     </thead>
                                     <tbody class="small">
                                         <tr th:each="requirement : ${applicationReviewDetail.resourceRequirements}">
                                             <td class="ps-3 fw-semibold" th:text="${requirement.designationName}">Designation</td>
                                             <td th:text="${requirement.levelName}">Level</td>
-                                            <td class="text-end" th:text="${#numbers.formatDecimal(requirement.monthlyRate != null ? requirement.monthlyRate : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end" th:text="${#numbers.formatDecimal((requirement.taxableAmount ?: 0) / (requirement.requiredQuantity * requirement.durationInMonths), 1, 'COMMA', 2, 'POINT')}">0.00</td>
                                             <td class="text-center" th:text="${requirement.requiredQuantity}">0</td>
                                             <td class="text-center" th:text="${requirement.durationInMonths}">0</td>
-                                            <td class="text-end pe-3 fw-bold" th:text="${#numbers.formatDecimal(requirement.totalCost != null ? requirement.totalCost : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end" th:text="${#numbers.formatDecimal(requirement.taxableAmount != null ? requirement.taxableAmount : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end text-muted" th:text="${#numbers.formatDecimal(requirement.gstAmount != null ? requirement.gstAmount : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end pe-3 fw-bold" th:text="${#numbers.formatDecimal((requirement.taxableAmount ?: 0) + (requirement.gstAmount ?: 0), 1, 'COMMA', 2, 'POINT')}">0.00</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -221,7 +225,7 @@
                                     <tfoot class="bg-light-subtle">
                                         <tr class="small">
                                             <td colspan="2" class="text-end ps-3">Sub-Total (Excl. Tax)</td>
-                                            <td class="text-end pe-3 fw-semibold" th:text="${#numbers.formatDecimal(applicationReviewDetail.totalEstimatedCost != null ? applicationReviewDetail.totalEstimatedCost : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end pe-3 fw-semibold" th:text="${#numbers.formatDecimal(applicationReviewDetail.taxableSubTotal != null ? applicationReviewDetail.taxableSubTotal : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
                                         </tr>
                                         <tr class="small">
                                             <td colspan="2" class="text-end ps-3">Total Tax Liability</td>
@@ -266,7 +270,7 @@
                             </div>
                             <hr class="opacity-25">
                             <div class="mb-3">
-                                <div class="info-label">Project Document (Work Order)</div>
+                                <div class="info-label">Project Document (Work Order / Demand / Requisition Letter)</div>
                                 <div class="mt-2">
                                     <a th:if="${applicationReviewDetail.workOrderAvailable}"
                                         class="btn btn-sm btn-light border w-100 text-start py-2" target="_blank"
@@ -296,7 +300,7 @@
                             <div class="alert alert-info border-0 small mb-4"
                                  th:if="${applicationReviewDetail.applicationStatus.name() == 'AUDITOR_APPROVED'}">
                                 This request is approved but not completed yet. You can still send it back for
-                                corrections or complete it after reviewing the final tax invoice draft.
+                                corrections or complete it after reviewing the final proforma invoice draft.
                             </div>
 
                             <!-- Auditor Review Form -->
@@ -337,7 +341,7 @@
                                                 applicationId=${applicationReviewDetail.departmentProjectApplicationId})}"
                                 method="post">
                                 <p class="form-section-note small text-muted mb-4">
-                                    Review the final tax invoice draft before completing this request. The final tax invoice
+                                    Review the final proforma invoice draft before completing this request. The final proforma invoice
                                     will be generated and opened immediately after completion.
                                 </p>
                                 <div class="mb-4">
@@ -350,7 +354,7 @@
                                         class="btn btn-primary fw-bold py-2 shadow-sm"
                                         data-bs-toggle="modal"
                                         data-bs-target="#taxInvoiceConfirmModal">
-                                        <i class="fa-solid fa-flag-checkered me-1"></i> Review Final Tax Invoice Draft, Generate & Complete
+                                        <i class="fa-solid fa-flag-checkered me-1"></i> Review Final proforma Invoice Draft, Generate & Complete
                                     </button>
                                 </div>
                             </form>
@@ -399,24 +403,24 @@
                         <div class="modal-header">
                             <div>
                                 <h5 class="modal-title fw-bold mb-1" id="approvalInvoicePreviewModalLabel">
-                                    Tax Invoice Preview Before Approval
+                                    Proforma Invoice Preview Before Approval
                                 </h5>
                                 <div class="small text-muted">
-                                    Review the draft tax invoice before approving this request.
+                                    Review the draft Proforma invoice before approving this request.
                                 </div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div class="alert alert-warning border-0 small mb-3">
-                                This preview shows the draft tax invoice for
+                                This preview shows the draft Proforma invoice for
                                 request <strong th:text="${applicationReviewDetail.requestId}">DPA-0000</strong>.
                                 The final invoice will be created only after completion.
                             </div>
                             <div class="preview-frame-shell border rounded overflow-hidden bg-white">
                                 <iframe id="approvalInvoicePreviewFrame"
                                     class="w-100 h-100 border-0"
-                                    title="Tax Invoice Preview Before Approval"
+                                    title="Proforma Invoice Preview Before Approval"
                                     src="about:blank"
                                     th:attr="data-preview-url=@{/invoice/tax-invoices/application/{applicationId}/preview(applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
                                 </iframe>
@@ -425,10 +429,9 @@
                                 <input class="form-check-input"
                                     type="checkbox"
                                     id="approvalPreviewConfirmed"
-                                    form="auditorReviewForm"
-                                    required>
+                                    form="auditorReviewForm">
                                 <label class="form-check-label small fw-semibold" for="approvalPreviewConfirmed">
-                                    I have reviewed the tax invoice preview and want to approve this request.
+                                    I have reviewed the Proforma invoice preview and want to approve this request.
                                 </label>
                             </div>
                         </div>
@@ -456,25 +459,25 @@
                         <div class="modal-header">
                             <div>
                                 <h5 class="modal-title fw-bold mb-1" id="taxInvoiceConfirmModalLabel">
-                                    Tax Invoice Preview
+                                    Proforma Invoice Preview
                                 </h5>
                                 <div class="small text-muted">
-                                    Review the invoice before completing this application and generating the final tax invoice.
+                                    Review the invoice before completing this application and generating the final proforma invoice.
                                 </div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div class="alert alert-info border-0 small mb-3">
-                                This preview shows the final tax invoice draft for request
+                                This preview shows the final Proforma invoice draft for request
                                 <strong th:text="${applicationReviewDetail.requestId}">DPA-0000</strong>.
-                                When you confirm completion, the actual tax invoice will be generated and opened automatically.
+                                When you confirm completion, the actual Proforma invoice will be generated and opened automatically.
                                 If generation fails, the completion will be rolled back and the status will remain unchanged.
                             </div>
                             <div class="preview-frame-shell border rounded overflow-hidden bg-white">
                                 <iframe id="taxInvoicePreviewFrame"
                                     class="w-100 h-100 border-0"
-                                    title="Tax Invoice Preview"
+                                    title="Proforma Invoice Preview"
                                     src="about:blank"
                                     th:attr="data-preview-url=@{/invoice/tax-invoices/application/{applicationId}/preview(applicationId=${applicationReviewDetail.departmentProjectApplicationId})}">
                                 </iframe>
@@ -485,11 +488,10 @@
                                     id="completionVerificationConfirmed"
                                     name="verificationConfirmed"
                                     value="true"
-                                    form="completionForm"
-                                    required>
+                                    form="completionForm">
                                 <label class="form-check-label small fw-semibold"
                                     for="completionVerificationConfirmed">
-                                    I have reviewed the final tax invoice draft and want to generate the final tax invoice and complete this request.
+                                    I have reviewed the final Proforma invoice draft and want to generate the final Proforma invoice and complete this request.
                                 </label>
                             </div>
                         </div>
@@ -498,7 +500,7 @@
                                 Cancel
                             </button>
                             <button type="submit" id="completionConfirmBtn" class="btn btn-primary fw-bold" form="completionForm">
-                                <i class="fa-solid fa-check me-1"></i> Confirm, Generate Tax Invoice & Complete
+                                <i class="fa-solid fa-check me-1"></i> Confirm, Generate Proforma Invoice & Complete
                             </button>
                         </div>
                     </div>

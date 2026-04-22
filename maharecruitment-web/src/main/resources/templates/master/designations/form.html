@@ -30,7 +30,12 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Category  <span class="text-danger">*</span></label>
-                            <input type="text" th:field="*{category}" class="form-control" maxlength="100">
+                            <select th:field="*{category}" class="form-select">
+                                <option value="">-- Select Category --</option>
+                                <option th:each="cat : ${availableCategories}" 
+                                        th:value="${cat.categoryName}" 
+                                        th:text="${cat.categoryName}"></option>
+                            </select>
                             <div class="text-danger small" th:if="${#fields.hasErrors('category')}" th:errors="*{category}"></div>
                         </div>
 

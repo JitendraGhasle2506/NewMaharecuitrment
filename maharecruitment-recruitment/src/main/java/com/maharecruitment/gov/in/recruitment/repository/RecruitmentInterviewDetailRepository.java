@@ -630,4 +630,50 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
     List<RecruitmentInterviewDetailEntity> findInterviewScheduleAvailableCandidatesForDepartmentByNotification(
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where c.active = true "
+            + "and c.interviewAuthority = 'MAHAIT_HR' "
+            + "and c.candidateStatus = "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+            + "and c.departmentShortlistedAt is not null "
+            + "and c.interviewDateTime is not null "
+            + "and c.finalDecisionStatus is null "
+            + "order by c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findExternalInterviewsForHR();
+
+    @Query(value = "select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "inner join RecruitmentExternalInterviewPanelMemberEntity panel on panel.recruitmentInterviewDetail.recruitmentInterviewDetailId = c.recruitmentInterviewDetailId "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where panel.panelUserId = :userId "
+            + "and c.active = true "
+            + "and c.candidateStatus = com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+            + "and (:search is null or upper(n.requestId) like :search or upper(p.projectName) like :search or upper(c.candidateName) like :search) "
+            + "order by case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc",
+            countQuery = "select count(c.recruitmentInterviewDetailId) "
+                    + "from RecruitmentInterviewDetailEntity c "
+                    + "join c.recruitmentNotification n "
+                    + "join n.projectMst p "
+                    + "inner join RecruitmentExternalInterviewPanelMemberEntity panel on panel.recruitmentInterviewDetail.recruitmentInterviewDetailId = c.recruitmentInterviewDetailId "
+                    + "where panel.panelUserId = :userId "
+                    + "and c.active = true "
+                    + "and c.candidateStatus = com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+                    + "and (:search is null or upper(n.requestId) like :search or upper(p.projectName) like :search or upper(c.candidateName) like :search)")
+    Page<RecruitmentInterviewDetailEntity> findAssignedExternalCandidatesForPanelUser(
+            @Param("userId") Long userId,
+            @Param("search") String search,
+            Pageable pageable);
+
 }

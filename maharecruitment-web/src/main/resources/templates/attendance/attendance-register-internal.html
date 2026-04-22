@@ -230,34 +230,60 @@
 
                 <div class="profile-card">
                     <div class="row">
-                        <!-- Left Column: Primary Details -->
-                        <div class="col-md-6 border-end">
-                            <div class="mb-3 d-flex align-items-center">
-                                <i class="fa fa-user text-primary me-3" style="width: 20px;"></i>
-                                <div>
-                                    <span class="info-label">Employee Name</span><br/>
-                                    <span class="info-value text-primary" th:text="${attendance.name}"></span>
+                        <!-- Left Column: Photo & Primary Details -->
+                        <div class="col-md-5 border-end d-flex align-items-center">
+                            <!-- Profile Photo -->
+                            <div class="me-4 shadow-sm" style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 3px solid #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                                <img th:if="${attendance.photoPath != null}" th:src="@{/files/serve(filePath=${attendance.photoPath})}" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div th:unless="${attendance.photoPath != null}" class="d-flex justify-content-center align-items-center bg-light text-secondary" style="width: 100%; height: 100%; font-size: 32px;">
+                                    <i class="fa fa-user"></i>
                                 </div>
                             </div>
-                            <div class="mb-3 d-flex align-items-center">
-                                <i class="fa fa-briefcase text-secondary me-3" style="width: 20px;"></i>
-                                <div>
-                                    <span class="info-label">Designation</span><br/>
-                                    <span class="info-value" th:text="${attendance.designation}"></span>
+                            <div>
+                                <h4 class="mb-1 text-primary fw-bold" th:text="${attendance.name}">Employee Name</h4>
+                                <div class="text-muted small fw-bold mb-2" th:text="${attendance.designation}">Designation</div>
+                                
+                                <div class="d-flex align-items-center mb-1">
+                                    <i class="fa fa-id-badge text-secondary me-2" style="width: 16px;"></i>
+                                    <span class="info-label" style="width: 100px;">Emp ID:</span>
+                                    <span class="info-value text-dark" th:text="${attendance.employeeCode ?: '-'}">-</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-1">
+                                    <i class="fa fa-calendar-alt text-secondary me-2" style="width: 16px;"></i>
+                                    <span class="info-label" style="width: 100px;">Joined:</span>
+                                    <span class="info-value text-dark" th:text="${attendance.joiningDate ?: '-'}">-</span>
                                 </div>
                             </div>
-                            <div class="mb-3 d-flex align-items-center">
-                                <i class="fa fa-building text-secondary me-3" style="width: 20px;"></i>
+                        </div>
+
+                        <!-- Middle Column: Contact & Organization -->
+                        <div class="col-md-4 border-end ps-md-4">
+                            <div class="mb-2 d-flex align-items-start">
+                                <i class="fa fa-phone-alt text-success me-3 mt-1" style="width: 20px;"></i>
+                                <div>
+                                    <span class="info-label">Mobile No</span><br/>
+                                    <span class="info-value" th:text="${attendance.mobile ?: '-'}">-</span>
+                                </div>
+                            </div>
+                            <div class="mb-2 d-flex align-items-start">
+                                <i class="fa fa-map-marker-alt text-danger me-3 mt-1" style="width: 20px;"></i>
+                                <div>
+                                    <span class="info-label">Address</span><br/>
+                                    <span class="info-value" style="font-size: 13px; line-height: 1.2; display: inline-block; max-width: 200px;" th:text="${attendance.address ?: '-'}">-</span>
+                                </div>
+                            </div>
+                            <div class="mb-2 d-flex align-items-center">
+                                <i class="fa fa-building text-primary me-3" style="width: 20px;"></i>
                                 <div>
                                     <span class="info-label">Organization</span><br/>
-                                    <span class="info-value" th:text="${attendance.organization}"></span>
+                                    <span class="info-value" th:text="${attendance.organization ?: '-'}">-</span>
                                 </div>
                             </div>
-                            <div class="mb-3 d-flex align-items-center">
-                                <i class="fa fa-folder-open text-secondary me-3" style="width: 20px;"></i>
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-folder-open text-warning me-3" style="width: 20px;"></i>
                                 <div>
                                     <span class="info-label">Project Name</span><br/>
-                                    <span class="info-value" th:text="${attendance.projectName ?: '-'}"></span>
+                                    <span class="info-value" th:text="${attendance.projectName ?: '-'}">-</span>
                                 </div>
                             </div>
                         </div>

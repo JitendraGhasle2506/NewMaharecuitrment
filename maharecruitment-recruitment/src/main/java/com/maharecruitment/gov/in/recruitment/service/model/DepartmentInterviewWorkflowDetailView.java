@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.recruitment.service.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
 
@@ -45,6 +46,17 @@ public class DepartmentInterviewWorkflowDetailView {
     private Long vacancyCount;
     private Long filledVacancyCount;
     private Long remainingVacancyCount;
-    private boolean selectionAllowed;
+    private String interviewAuthority;
+    private boolean panelAssigned;
+    private List<InternalVacancyLevelTwoPanelMemberView> panelMembers;
+    private int panelFeedbackSubmittedCount;
+    private List<InternalVacancyLevelTwoPanelFeedbackView> panelFeedbacks;
     private DepartmentInterviewAssessmentView assessment;
+
+    // MahaIT HR interview data — populated only when interviewAuthority = "MAHAIT_HR"
+    private int hrPanelFeedbackCount;
+    private List<InternalVacancyLevelTwoPanelFeedbackView> hrPanelFeedbacks;
+    private String hrFinalDecisionStatus;       // "SELECTED", "REJECTED", or null
+    private String hrFinalDecisionRemarks;
+    private double hrAverageScorePercentage;    // 0.0 – 100.0
 }

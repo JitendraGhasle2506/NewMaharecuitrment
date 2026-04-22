@@ -36,6 +36,10 @@ public class TaxInvoiceView {
     private String clientGstNumber;
     private String placeOfSupply;
     private BigDecimal baseAmount;
+    private BigDecimal agencyCommissionAmount;
+    private BigDecimal mahaItCommissionAmount;
+    private String agencyCommissionAmountDisplay;
+    private String mahaItCommissionAmountDisplay;
     private BigDecimal cgstRate;
     private BigDecimal cgstAmount;
     private BigDecimal sgstRate;

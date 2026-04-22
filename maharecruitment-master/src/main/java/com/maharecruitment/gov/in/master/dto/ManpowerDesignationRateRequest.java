@@ -29,4 +29,3 @@ public class ManpowerDesignationRateRequest {
     private LocalDate effectiveTo;
     private String activeFlag;
 }
-

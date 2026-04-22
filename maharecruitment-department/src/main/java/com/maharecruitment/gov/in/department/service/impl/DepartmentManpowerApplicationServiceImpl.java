@@ -6,8 +6,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -54,9 +56,11 @@ import com.maharecruitment.gov.in.master.dto.ManpowerDesignationMasterResponse;
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationRateResponse;
 import com.maharecruitment.gov.in.master.dto.ResourceLevelRefResponse;
 import com.maharecruitment.gov.in.master.entity.ProjectType;
+import com.maharecruitment.gov.in.master.entity.RateMaster;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationMasterService;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationRateService;
 import com.maharecruitment.gov.in.master.service.ProjectMstService;
+import com.maharecruitment.gov.in.master.repository.RateMasterRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
 import com.maharecruitment.gov.in.recruitment.service.model.AuditorApprovedNotificationCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.DesignationVacancyInput;
@@ -91,6 +95,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     private final DepartmentWorkOrderStorageService storageService;
     private final DepartmentProformaInvoiceRepository proformaInvoiceRepository;
     private final DepartmentTaxRateMasterRepository taxRateMasterRepository;
+    private final RateMasterRepository rateMasterRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public DepartmentManpowerApplicationServiceImpl(
@@ -107,6 +112,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             DepartmentWorkOrderStorageService storageService,
             DepartmentProformaInvoiceRepository proformaInvoiceRepository,
             DepartmentTaxRateMasterRepository taxRateMasterRepository,
+            RateMasterRepository rateMasterRepository,
             ApplicationEventPublisher applicationEventPublisher) {
         this.applicationRepository = applicationRepository;
         this.activityRepository = activityRepository;
@@ -121,6 +127,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         this.storageService = storageService;
         this.proformaInvoiceRepository = proformaInvoiceRepository;
         this.taxRateMasterRepository = taxRateMasterRepository;
+        this.rateMasterRepository = rateMasterRepository;
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
@@ -186,7 +193,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         DepartmentProjectApplicationEntity saved = applicationRepository.save(entity);
 
         if (createOperation) {
-            recordActivity(saved, DepartmentApplicationActivityType.CREATED, previousStatus, nextStatus, actorContext, form.getRemarks());
+            recordActivity(saved, DepartmentApplicationActivityType.CREATED, previousStatus, nextStatus, actorContext,
+                    form.getRemarks());
         } else if (previousStatus != nextStatus) {
             recordActivity(saved,
                     DepartmentApplicationActivityType.STATUS_CHANGED,
@@ -195,7 +203,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                     actorContext,
                     "Application moved to " + nextStatus.getDisplayName() + ".");
         } else if (!workOrderUploaded) {
-            recordActivity(saved, DepartmentApplicationActivityType.UPDATED, previousStatus, nextStatus, actorContext, form.getRemarks());
+            recordActivity(saved, DepartmentApplicationActivityType.UPDATED, previousStatus, nextStatus, actorContext,
+                    form.getRemarks());
         }
 
         if (workOrderUploaded) {
@@ -460,6 +469,20 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         return DepartmentApplicationStatus.COMPLETED;
     }
 
+    @Override
+    public Map<String, BigDecimal> getCommissionRates() {
+        Map<String, BigDecimal> rates = new HashMap<>();
+        rates.put("AGENCY", fetchActiveCommissionRate("AGENCY"));
+        rates.put("MAHAIT", fetchActiveCommissionRate("MAHAIT"));
+        return rates;
+    }
+
+    private BigDecimal fetchActiveCommissionRate(String type) {
+        return rateMasterRepository.findByTypeIgnoreCase(type)
+                .map(RateMaster::getRate)
+                .orElse(new BigDecimal("10.00")); // Fallback to 10%
+    }
+
     private DepartmentProjectApplicationForm toForm(DepartmentProjectApplicationEntity entity) {
         DepartmentProjectApplicationForm form = new DepartmentProjectApplicationForm();
         form.setDepartmentProjectApplicationId(entity.getDepartmentProjectApplicationId());
@@ -487,6 +510,10 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                     resourceForm.setRequiredQuantity(requirement.getRequiredQuantity());
                     resourceForm.setDurationInMonths(requirement.getDurationInMonths());
                     resourceForm.setTotalCost(requirement.getTotalCost());
+                    resourceForm.setAgencyCommissionAmount(requirement.getAgencyCommissionAmount());
+                    resourceForm.setMahaItCommissionAmount(requirement.getMahaItCommissionAmount());
+                    resourceForm.setTaxableAmount(requirement.getTaxableAmount());
+                    resourceForm.setGstAmount(requirement.getGstAmount());
                     return resourceForm;
                 })
                 .toList();
@@ -515,12 +542,34 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         }
 
         List<DepartmentProjectResourceRequirementEntity> entities = new ArrayList<>();
+        Map<String, BigDecimal> commissionRates = getCommissionRates();
+        BigDecimal agencyRatePercent = commissionRates.getOrDefault("AGENCY", new BigDecimal("10.00"));
+        BigDecimal mahaitRatePercent = commissionRates.getOrDefault("MAHAIT", new BigDecimal("10.00"));
+
+        BigDecimal agencyMultiplier = agencyRatePercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+        BigDecimal mahaitMultiplier = mahaitRatePercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+
         for (DepartmentProjectResourceRequirementForm requirement : requirements) {
             validateRequirement(requirement);
 
-            BigDecimal totalCost = requirement.getMonthlyRate()
+            BigDecimal manpowerValue = requirement.getMonthlyRate()
                     .multiply(BigDecimal.valueOf(requirement.getRequiredQuantity()))
                     .multiply(BigDecimal.valueOf(requirement.getDurationInMonths()))
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal agencyCommission = manpowerValue.multiply(agencyMultiplier)
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal subTotal1 = manpowerValue.add(agencyCommission);
+
+            BigDecimal mahaItCommission = subTotal1.multiply(mahaitMultiplier)
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal taxableAmount = subTotal1.add(mahaItCommission);
+
+            // For department side, we use a fixed 18% GST for estimation as per user
+            // request
+            BigDecimal gstAmount = taxableAmount.multiply(new BigDecimal("0.18"))
                     .setScale(2, RoundingMode.HALF_UP);
 
             DepartmentProjectResourceRequirementEntity entity = new DepartmentProjectResourceRequirementEntity();
@@ -531,7 +580,11 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             entity.setMonthlyRate(requirement.getMonthlyRate().setScale(2, RoundingMode.HALF_UP));
             entity.setRequiredQuantity(requirement.getRequiredQuantity());
             entity.setDurationInMonths(requirement.getDurationInMonths());
-            entity.setTotalCost(totalCost);
+            entity.setTotalCost(manpowerValue);
+            entity.setAgencyCommissionAmount(agencyCommission);
+            entity.setMahaItCommissionAmount(mahaItCommission);
+            entity.setTaxableAmount(taxableAmount);
+            entity.setGstAmount(gstAmount);
 
             entities.add(entity);
         }
@@ -566,7 +619,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         }
 
         return requirements.stream()
-                .map(DepartmentProjectResourceRequirementEntity::getTotalCost)
+                .map(req -> req.getTaxableAmount().add(req.getGstAmount()))
                 .reduce(ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
     }
@@ -692,8 +745,9 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
 
         User user = userAffiliationService.loadUserByEmail(actorEmail);
 
-        DepartmentRegistrationEntity departmentRegistration = userAffiliationService.resolvePrimaryDepartmentRegistration(
-                user);
+        DepartmentRegistrationEntity departmentRegistration = userAffiliationService
+                .resolvePrimaryDepartmentRegistration(
+                        user);
         if (departmentRegistration == null) {
             throw new DepartmentApplicationException("Department profile is not linked to this user.");
         }
@@ -715,8 +769,9 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
 
         User user = userAffiliationService.loadUserByEmail(actorEmail);
 
-        DepartmentRegistrationEntity departmentRegistration = userAffiliationService.resolvePrimaryDepartmentRegistration(
-                user);
+        DepartmentRegistrationEntity departmentRegistration = userAffiliationService
+                .resolvePrimaryDepartmentRegistration(
+                        user);
 
         return DepartmentActorContext.builder()
                 .userId(user.getId())
@@ -837,9 +892,16 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
 
     private void generateProformaInvoice(DepartmentProjectApplicationEntity application) {
         try {
-            BigDecimal baseAmount = application.getTotalEstimatedCost() != null ? application.getTotalEstimatedCost() : ZERO;
-            LocalDate applicableDate = application.getCreatedDate() != null ? application.getCreatedDate().toLocalDate() : LocalDate.now();
-            
+            BigDecimal taxableBase = application.getResourceRequirements().stream()
+                    .map(DepartmentProjectResourceRequirementEntity::getTaxableAmount)
+                    .filter(java.util.Objects::nonNull)
+                    .reduce(ZERO, BigDecimal::add)
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal baseAmount = taxableBase;
+            LocalDate applicableDate = application.getCreatedDate() != null ? application.getCreatedDate().toLocalDate()
+                    : LocalDate.now();
+
             BigDecimal taxAmount = calculateTaxAmount(baseAmount, applicableDate);
             BigDecimal totalAmount = baseAmount.add(taxAmount).setScale(2, RoundingMode.HALF_UP);
 
@@ -861,12 +923,12 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
             piEntity.setUpdatedDate(LocalDateTime.now());
 
             proformaInvoiceRepository.save(piEntity);
-            log.info("Proforma Invoice generated for application. applicationId={}, piNumber={}, totalAmount={}", 
+            log.info("Proforma Invoice generated for application. applicationId={}, piNumber={}, totalAmount={}",
                     application.getDepartmentProjectApplicationId(), piNumber, totalAmount);
         } catch (Exception e) {
-            log.error("Failed to generate Proforma Invoice for application {}. Reason: {}", 
+            log.error("Failed to generate Proforma Invoice for application {}. Reason: {}",
                     application.getDepartmentProjectApplicationId(), e.getMessage(), e);
-            // We don't throw exception here to avoid rolling back the approval, 
+            // We don't throw exception here to avoid rolling back the approval,
             // but in a real system we might want to ensure PI is generated.
         }
     }
@@ -879,7 +941,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
 
         BigDecimal hundred = BigDecimal.valueOf(100);
         return taxRates.stream()
-                .filter(taxRate -> taxRate.getRatePercentage() != null && taxRate.getRatePercentage().compareTo(BigDecimal.ZERO) > 0)
+                .filter(taxRate -> taxRate.getRatePercentage() != null
+                        && taxRate.getRatePercentage().compareTo(BigDecimal.ZERO) > 0)
                 .map(taxRate -> baseCost
                         .multiply(taxRate.getRatePercentage())
                         .divide(hundred, 2, RoundingMode.HALF_UP))
@@ -891,7 +954,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         int year = LocalDate.now().getYear();
         String prefix = "PI/" + year + "/";
         String maxPiNumber = proformaInvoiceRepository.findMaxPiNumberByPrefix(prefix + "%");
-        
+
         int nextSequence = 1;
         if (maxPiNumber != null && maxPiNumber.length() > prefix.length()) {
             try {
@@ -901,7 +964,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
                 log.warn("Unable to parse sequence from max PI number: {}. Starting from 1.", maxPiNumber);
             }
         }
-        
+
         return String.format("%s%05d", prefix, nextSequence);
     }
 
@@ -1206,7 +1269,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
 
         List<Long> distinctRecipients = recipients.stream().distinct().toList();
         if (distinctRecipients.isEmpty()) {
-            log.warn("No department recipients resolved for applicationId={}, requestId={}, departmentRegistrationId={}",
+            log.warn(
+                    "No department recipients resolved for applicationId={}, requestId={}, departmentRegistrationId={}",
                     applicationEntity.getDepartmentProjectApplicationId(),
                     applicationEntity.getRequestId(),
                     applicationEntity.getDepartmentRegistrationId());

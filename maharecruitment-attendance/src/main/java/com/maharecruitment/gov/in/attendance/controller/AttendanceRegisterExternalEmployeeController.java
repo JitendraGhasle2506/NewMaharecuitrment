@@ -153,12 +153,15 @@ public class AttendanceRegisterExternalEmployeeController {
     @PostMapping("/saveExternalAttendance")
     @ResponseBody
     public String saveExternalAttendance(
-            @ModelAttribute AttendanceRegisterWrapperDTO wrapper) {
+            @ModelAttribute AttendanceRegisterWrapperDTO wrapper, HttpSession session) {
+
+        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        Long actorUserId = user != null ? user.id() : null;
 
         List<AttendanceRegisterDTO> dtos = wrapper.getDtos();
 
-        if (dtos != null) {
-            attendanceService.saveExternalAttendance(dtos);
+        if (dtos != null && actorUserId != null) {
+            attendanceService.saveExternalAttendance(dtos, actorUserId);
         }
 
         return "Success";

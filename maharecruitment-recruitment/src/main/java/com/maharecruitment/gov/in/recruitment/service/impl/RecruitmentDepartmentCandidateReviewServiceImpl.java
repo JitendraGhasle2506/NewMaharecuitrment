@@ -144,7 +144,8 @@ public class RecruitmentDepartmentCandidateReviewServiceImpl implements Recruitm
             Long recruitmentNotificationId,
             Long recruitmentInterviewDetailId,
             DepartmentCandidateReviewDecision reviewDecision,
-            String reviewRemarks) {
+            String reviewRemarks,
+            String interviewAuthority) {
         requirePositiveId(departmentRegistrationId, "Department registration id is required.");
         requirePositiveId(departmentUserId, "Department user id is required.");
         requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
@@ -172,6 +173,17 @@ public class RecruitmentDepartmentCandidateReviewServiceImpl implements Recruitm
         RecruitmentCandidateStatus nextStatus = reviewDecision == DepartmentCandidateReviewDecision.SHORTLIST
                 ? RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT
                 : RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT;
+
+        if (reviewDecision == DepartmentCandidateReviewDecision.SHORTLIST) {
+            String normalizedAuthority = StringUtils.hasText(interviewAuthority) ? interviewAuthority.trim() : null;
+            if (normalizedAuthority == null) {
+                throw new RecruitmentNotificationException("Interview authority must be selected when shortlisting a candidate.");
+            }
+            if (!"DEPARTMENT".equals(normalizedAuthority) && !"MAHAIT_HR".equals(normalizedAuthority)) {
+                throw new RecruitmentNotificationException("Invalid interview authority selected.");
+            }
+            candidate.setInterviewAuthority(normalizedAuthority);
+        }
 
         candidate.setCandidateStatus(nextStatus);
         candidate.setDepartmentShortlistedAt(LocalDateTime.now());
@@ -221,6 +233,7 @@ public class RecruitmentDepartmentCandidateReviewServiceImpl implements Recruitm
                 .resumeOriginalName(candidate.getResumeOriginalName())
                 .resumeFilePath(candidate.getResumeFilePath())
                 .candidateStatus(candidate.getCandidateStatus())
+                .interviewAuthority(candidate.getInterviewAuthority())
                 .departmentShortlistRemarks(candidate.getDepartmentShortlistRemarks())
                 .submittedAt(candidate.getCreatedDateTime())
                 .interviewDateTime(candidate.getInterviewDateTime())

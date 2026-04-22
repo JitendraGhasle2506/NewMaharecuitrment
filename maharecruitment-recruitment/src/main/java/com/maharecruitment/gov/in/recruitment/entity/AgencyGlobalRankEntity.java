@@ -50,6 +50,9 @@ public class AgencyGlobalRankEntity extends RecruitmentAuditable {
     @Column(name = "rank_number", nullable = false)
     private Integer rankNumber;
 
+    @Column(name = "mapped_categories", length = 500)
+    private String mappedCategories;
+
     @Column(name = "assigned_date", nullable = false)
     private LocalDateTime assignedDate;
 

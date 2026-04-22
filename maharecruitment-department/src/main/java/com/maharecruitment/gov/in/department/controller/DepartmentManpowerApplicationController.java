@@ -1,8 +1,10 @@
 package com.maharecruitment.gov.in.department.controller;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,6 +141,12 @@ public class DepartmentManpowerApplicationController {
     public List<DepartmentTaxRateView> getApplicableTaxRates(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate applicableDate) {
         return taxRateQueryService.getApplicableTaxRates(applicableDate);
+    }
+
+    @GetMapping("/commission-rates")
+    @ResponseBody
+    public Map<String, BigDecimal> getCommissionRates() {
+        return manpowerApplicationService.getCommissionRates();
     }
 
     @GetMapping("/{applicationId}/activities")

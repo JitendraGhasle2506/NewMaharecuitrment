@@ -39,6 +39,10 @@ import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import com.maharecruitment.gov.in.attendance.entity.AttendanceRegisterActivityEntity;
+import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterActivityRepository;
+
+
 @Service
 @Transactional
 public class AttendanceRegisterServiceImpl implements AttendanceRegisterService {
@@ -62,6 +66,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 	@Autowired
 	private AttendanceLockRepository attendanceLockRepository;
+
+	@Autowired
+	private AttendanceRegisterActivityRepository activityRepository;
 
 	@Autowired
 	private ProjectMstRepository projectRepo;
@@ -377,6 +384,10 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				employee.getDepartmentRegistration() != null ? employee.getDepartmentRegistration().getAddress() : "-");
 		dto.setEmail(employee.getEmail());
 		dto.setMobile(employee.getMobile());
+		dto.setAddress(employee.getAddress());
+		dto.setEmployeeCode(employee.getEmployeeCode());
+		dto.setJoiningDate(employee.getJoiningDate() != null ? employee.getJoiningDate().toString() : "-");
+		dto.setPhotoPath(employee.getPreOnboarding() != null ? employee.getPreOnboarding().getPhotoFilePath() : null);
 
 		// Populate Reporting HOD and Manager
 		EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository.findByEmployeeId(employeeId);
@@ -504,7 +515,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	}
 
 	@Override
-	public void saveExternalAttendance(List<AttendanceRegisterDTO> dtos) {
+	public void saveExternalAttendance(List<AttendanceRegisterDTO> dtos, Long actorUserId) {
 		for (AttendanceRegisterDTO dto : dtos) {
 			if (dto.getAttendanceDays() != null && !dto.getAttendanceDays().isEmpty()) {
 				LocalDate firstDate = dto.getAttendanceDays().get(0).getDate();
@@ -528,6 +539,23 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 					}
 				}
 				attendanceRegisterRepo.save(entity);
+
+				// Log activity history
+				AttendanceRegisterActivityEntity activity = AttendanceRegisterActivityEntity.builder()
+						.employeeUserId(dto.getUserId())
+						.month(month)
+						.year(year)
+						.actorUserId(actorUserId)
+						.actionTimestamp(java.time.LocalDateTime.now())
+						.activityRemarks("External attendance updated/submitted")
+						.build();
+
+				for (AttendanceDayDTO dayDTO : dto.getAttendanceDays()) {
+					if (dayDTO.getStatus() != null) {
+						setActivityDayStatus(activity, dayDTO.getDate().getDayOfMonth(), dayDTO.getStatus());
+					}
+				}
+				activityRepository.save(activity);
 			}
 		}
 	}
@@ -627,6 +655,42 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			case 31:
 				entity.setD31(status);
 				break;
+		}
+	}
+
+	private void setActivityDayStatus(AttendanceRegisterActivityEntity entity, int day, String status) {
+		switch (day) {
+			case 1: entity.setD1(status); break;
+			case 2: entity.setD2(status); break;
+			case 3: entity.setD3(status); break;
+			case 4: entity.setD4(status); break;
+			case 5: entity.setD5(status); break;
+			case 6: entity.setD6(status); break;
+			case 7: entity.setD7(status); break;
+			case 8: entity.setD8(status); break;
+			case 9: entity.setD9(status); break;
+			case 10: entity.setD10(status); break;
+			case 11: entity.setD11(status); break;
+			case 12: entity.setD12(status); break;
+			case 13: entity.setD13(status); break;
+			case 14: entity.setD14(status); break;
+			case 15: entity.setD15(status); break;
+			case 16: entity.setD16(status); break;
+			case 17: entity.setD17(status); break;
+			case 18: entity.setD18(status); break;
+			case 19: entity.setD19(status); break;
+			case 20: entity.setD20(status); break;
+			case 21: entity.setD21(status); break;
+			case 22: entity.setD22(status); break;
+			case 23: entity.setD23(status); break;
+			case 24: entity.setD24(status); break;
+			case 25: entity.setD25(status); break;
+			case 26: entity.setD26(status); break;
+			case 27: entity.setD27(status); break;
+			case 28: entity.setD28(status); break;
+			case 29: entity.setD29(status); break;
+			case 30: entity.setD30(status); break;
+			case 31: entity.setD31(status); break;
 		}
 	}
 

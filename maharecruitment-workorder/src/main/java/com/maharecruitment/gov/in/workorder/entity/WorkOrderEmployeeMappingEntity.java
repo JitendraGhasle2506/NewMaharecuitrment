@@ -68,6 +68,26 @@ public class WorkOrderEmployeeMappingEntity {
     @Column(name = "employment_status", length = 20)
     private String employmentStatus;
 
+    @Column(name = "monthly_rate", precision = 14, scale = 2)
+    private java.math.BigDecimal monthlyRate;
+
+    @Column(name = "agency_commission_percent", precision = 5, scale = 2)
+    @Builder.Default
+    private java.math.BigDecimal agencyCommissionPercent = java.math.BigDecimal.valueOf(10);
+
+    @Column(name = "agency_commission_amount", precision = 14, scale = 2)
+    private java.math.BigDecimal agencyCommissionAmount;
+
+    @Column(name = "gst_percent", precision = 5, scale = 2)
+    @Builder.Default
+    private java.math.BigDecimal gstPercent = java.math.BigDecimal.valueOf(18);
+
+    @Column(name = "gst_amount", precision = 14, scale = 2)
+    private java.math.BigDecimal gstAmount;
+
+    @Column(name = "total_amount", precision = 14, scale = 2)
+    private java.math.BigDecimal totalAmount;
+
     @PrePersist
     @PreUpdate
     void normalize() {

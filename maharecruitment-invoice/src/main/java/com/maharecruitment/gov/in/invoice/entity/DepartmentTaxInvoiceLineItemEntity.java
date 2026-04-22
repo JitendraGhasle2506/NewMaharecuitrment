@@ -23,17 +23,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(
-        name = "department_tax_invoice_line_item",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uk_dep_tax_invoice_line_item_row",
-                        columnNames = { "department_tax_invoice_id", "line_no" })
-        },
-        indexes = {
-                @Index(name = "idx_dep_tax_invoice_line_item_invoice_id", columnList = "department_tax_invoice_id"),
-                @Index(name = "idx_dep_tax_invoice_line_item_requirement_id",
-                        columnList = "department_project_resource_requirement_id")
-        })
+@Table(name = "department_tax_invoice_line_item", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_dep_tax_invoice_line_item_row", columnNames = { "department_tax_invoice_id",
+                "line_no" })
+}, indexes = {
+        @Index(name = "idx_dep_tax_invoice_line_item_invoice_id", columnList = "department_tax_invoice_id"),
+        @Index(name = "idx_dep_tax_invoice_line_item_requirement_id", columnList = "department_project_resource_requirement_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor

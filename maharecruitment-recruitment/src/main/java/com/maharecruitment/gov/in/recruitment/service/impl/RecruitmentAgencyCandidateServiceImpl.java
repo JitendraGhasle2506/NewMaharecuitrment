@@ -392,6 +392,39 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         interviewDetailRepository.delete(candidateEntity);
     }
 
+    @Override
+    @Transactional
+    public void forwardInterviewRequest(
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId,
+            Long agencyId) {
+        requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
+        requirePositiveId(recruitmentInterviewDetailId, "Candidate id is required.");
+        requirePositiveId(agencyId, "Agency id is required.");
+
+        ensureNotificationReleasedForAgency(recruitmentNotificationId, agencyId);
+
+        RecruitmentInterviewDetailEntity candidateEntity = interviewDetailRepository
+                .findByRecruitmentInterviewDetailIdAndRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId(
+                        recruitmentInterviewDetailId,
+                        recruitmentNotificationId,
+                        agencyId)
+                .orElseThrow(() -> new RecruitmentNotificationException("Candidate record not found for this notification."));
+
+        if (candidateEntity.getCandidateStatus() != RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT) {
+            throw new RecruitmentNotificationException(
+                    "Interview request can only be forwarded for shortlisted candidates.");
+        }
+        
+        String auth = candidateEntity.getInterviewAuthority();
+        if (!"DEPARTMENT".equals(auth) && !"MAHAIT_HR".equals(auth)) {
+            throw new RecruitmentNotificationException("Interview authority must be DEPARTMENT or MAHAIT_HR to forward.");
+        }
+
+        candidateEntity.setCandidateStatus(RecruitmentCandidateStatus.INTERVIEW_REQUEST_SENT_BY_AGENCY);
+        interviewDetailRepository.save(candidateEntity);
+    }
+
     private AgencyNotificationTrackingEntity ensureNotificationReleasedForAgency(
             Long recruitmentNotificationId,
             Long agencyId) {
@@ -526,6 +559,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .designationName(designationName)
                 .levelCode(candidate.getDesignationVacancy().getLevelCode())
                 .candidateStatus(candidate.getCandidateStatus())
+                .interviewAuthority(candidate.getInterviewAuthority())
                 .resumeOriginalName(candidate.getResumeOriginalName())
                 .resumeFilePath(candidate.getResumeFilePath())
                 .interviewDateTime(candidate.getInterviewDateTime())

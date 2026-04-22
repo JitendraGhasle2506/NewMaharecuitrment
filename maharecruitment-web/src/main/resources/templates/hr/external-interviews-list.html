@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>MahaIT Recruitment - External Interviews</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Human Resources', 'External Interviews', ~{::section})}">
+        <section>
+            <div class="card basic-list-card fade-in">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0 text-primary">
+                            <i class="fas fa-handshake me-2"></i> External Candidate Interviews
+                        </h5>
+                        <small class="text-muted">Interviews scheduled for candidates where MahaIT HR is the selected authority</small>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="table-responsive mt-3">
+                        <table class="table table-hover align-middle custom-data-table" id="externalInterviewsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Request ID / Project</th>
+                                    <th>Candidate Details</th>
+                                    <th>Designation / Lvl</th>
+                                    <th>Agency</th>
+                                    <th>Interview Schedule</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${candidates == null or candidates.empty}">
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3 text-light-muted"></i>
+                                        <p class="mb-0">No external interviews currently scheduled for MahaIT HR.</p>
+                                    </td>
+                                </tr>
+                                <tr th:each="candidate, iterStat : ${candidates}">
+                                    <td th:text="${iterStat.count}"></td>
+                                    <td>
+                                        <div class="fw-bold text-dark" th:text="${candidate.requestId}"></div>
+                                        <small class="text-muted" th:text="${candidate.projectName}"></small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold" th:text="${candidate.candidateName}"></div>
+                                        <small class="text-muted"><i class="fas fa-envelope me-1"></i> <span th:text="${candidate.candidateEmail}"></span></small><br>
+                                        <small class="text-muted"><i class="fas fa-phone me-1"></i> <span th:text="${candidate.candidateMobile}"></span></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border" th:text="${candidate.designationName}"></span>
+                                        <span class="badge bg-secondary ms-1" th:text="${candidate.levelCode}"></span>
+                                        <div class="mt-1 small text-muted">
+                                            Exp: <span th:text="${candidate.totalExperience}"></span> Yrs (Rel: <span th:text="${candidate.relevantExperience}"></span> Yrs)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span th:text="${candidate.agencyName}"></span>
+                                    </td>
+                                    <td>
+                                        <div th:if="${candidate.interviewDateTime != null}">
+                                            <div class="text-primary fw-bold">
+                                                <i class="far fa-calendar-alt me-1"></i>
+                                                <span th:text="${#temporals.format(candidate.interviewDateTime, 'dd MMM yyyy')}"></span>
+                                            </div>
+                                            <div class="text-dark small mt-1">
+                                                <i class="far fa-clock me-1"></i>
+                                                <span th:text="${#temporals.format(candidate.interviewDateTime, 'hh:mm a')}"></span>
+                                            </div>
+                                        </div>
+                                        <div th:if="${candidate.interviewDateTime == null}">
+                                            <span class="badge bg-warning text-dark">Schedule Pending</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column gap-2">
+                                            <a th:href="@{/hr/external-interviews/{id}(id=${candidate.recruitmentInterviewDetailId})}"
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Assign Interview Panel">
+                                                <i class="fas fa-users-cog me-1"></i> Assign Panel
+                                            </a>
+                                            <button th:if="${candidate.resumeFilePath != null}"
+                                               type="button"
+                                               class="btn btn-sm btn-outline-secondary" 
+                                               th:attr="data-path=${candidate.resumeFilePath}"
+                                               onclick="openManagedDocument(this.getAttribute('data-path'))"
+                                               title="Download Resume">
+                                               <i class="fas fa-file-pdf"></i> Resume
+                                            </button>
+                                            
+                                            <a th:if="${candidate.interviewLink != null and !candidate.interviewLink.empty}"
+                                               th:href="${candidate.interviewLink}"
+                                               target="_blank"
+                                               class="btn btn-sm btn-primary tooltip-trigger" 
+                                               title="Join Scheduled Interview">
+                                                <i class="fas fa-video me-1"></i> Join Interview
+                                            </a>
+                                            <button th:if="${candidate.interviewLink == null or candidate.interviewLink.empty}"
+                                                    class="btn btn-sm btn-outline-secondary" disabled>
+                                                <i class="fas fa-video-slash me-1"></i> No Link
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <script th:inline="javascript">
+                const contextPath = /*[[@{/}]]*/ '/';
+                
+                document.addEventListener("DOMContentLoaded", function () {
+                    if (document.getElementById('externalInterviewsTable')) {
+                        if (document.querySelectorAll('#externalInterviewsTable tbody tr').length > 0 && 
+                            !document.querySelector('#externalInterviewsTable tbody tr td[colspan]')) {
+                            const dataTable = new simpleDatatables.DataTable("#externalInterviewsTable", {
+                                searchable: true,
+                                fixedHeight: false,
+                                perPage: 10
+                            });
+                        }
+                    }
+                });
+
+                function openManagedDocument(path) {
+                    if (!path) {
+                        return;
+                    }
+                    try {
+                        const encodedPath = encodeURIComponent(btoa(path));
+                        window.open(contextPath + "documents/view?path=" + encodedPath, "_blank");
+                    } catch (error) {
+                        alert("Unable to open resume document.");
+                    }
+                }
+            </script>
+        </section>
+    </th:block>
+</body>
+
+</html>

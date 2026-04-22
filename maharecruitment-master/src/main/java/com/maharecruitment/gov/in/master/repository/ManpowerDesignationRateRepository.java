@@ -37,4 +37,18 @@ public interface ManpowerDesignationRateRepository extends JpaRepository<Manpowe
             @Param("levelCode") String levelCode,
             @Param("effectiveFrom") LocalDate effectiveFrom,
             @Param("excludeId") Long excludeId);
+
+    @Query("""
+            SELECT r FROM ManpowerDesignationRate r
+            WHERE r.designationId = :designationId
+              AND LOWER(r.levelCode) = LOWER(:levelCode)
+              AND r.activeFlag = 'Y'
+              AND r.effectiveFrom <= :date
+              AND (r.effectiveTo IS NULL OR r.effectiveTo >= :date)
+            ORDER BY r.effectiveFrom DESC
+            """)
+    java.util.List<ManpowerDesignationRate> findActiveRates(
+            @Param("designationId") Long designationId,
+            @Param("levelCode") String levelCode,
+            @Param("date") LocalDate date);
 }

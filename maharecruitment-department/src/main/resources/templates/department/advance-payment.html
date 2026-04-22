@@ -90,6 +90,28 @@
                             </div>
 
                             <div class="col-md-6">
+                                <label class="form-label fw-semibold">Mode of Payment <span
+                                        class="text-danger">*</span></label>
+                                <select th:field="*{paymentMode}" class="form-select" id="paymentMode" required>
+                                    <option value="">-- Select Mode --</option>
+                                    <option value="RTGS">RTGS</option>
+                                    <option value="NEFT">NEFT</option>
+                                    <option value="CHEQUE">Cheque</option>
+                                </select>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('paymentMode')}"
+                                    th:errors="*{paymentMode}"></div>
+                            </div>
+
+                            <div class="col-md-6" id="chequeNoContainer" style="display: none;">
+                                <label class="form-label fw-semibold">Cheque No <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" th:field="*{chequeNumber}" class="form-control" id="chequeNumber"
+                                    placeholder="Enter Cheque Number" />
+                                <div class="text-danger small" th:if="${#fields.hasErrors('chequeNumber')}"
+                                    th:errors="*{chequeNumber}"></div>
+                            </div>
+
+                            <div class="col-md-6">
                                 <label class="form-label fw-semibold d-block">
                                     Payment Type <span class="text-danger">*</span>
                                 </label>
@@ -209,6 +231,22 @@
                         }
                     }
 
+                    const modeSelect = document.getElementById('paymentMode');
+                    const chequeContainer = document.getElementById('chequeNoContainer');
+                    const chequeInput = document.getElementById('chequeNumber');
+
+                    function toggleCheque() {
+                        if (modeSelect.value === 'CHEQUE') {
+                            chequeContainer.style.display = 'block';
+                            chequeInput.required = true;
+                        } else {
+                            chequeContainer.style.display = 'none';
+                            chequeInput.required = false;
+                            chequeInput.value = '';
+                        }
+                    }
+
+                    modeSelect.addEventListener('change', toggleCheque);
                     fullPayRadio.addEventListener('change', updateAmount);
                     partialPayRadio.addEventListener('change', updateAmount);
 
@@ -226,6 +264,7 @@
 
                     // Initial call
                     updateAmount();
+                    toggleCheque();
                 });
             </script>
         </section>

@@ -50,4 +50,9 @@ public interface RecruitmentAgencyCandidateService {
             Long recruitmentNotificationId,
             Long recruitmentInterviewDetailId,
             Long agencyId);
+
+    void forwardInterviewRequest(
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId,
+            Long agencyId);
 }

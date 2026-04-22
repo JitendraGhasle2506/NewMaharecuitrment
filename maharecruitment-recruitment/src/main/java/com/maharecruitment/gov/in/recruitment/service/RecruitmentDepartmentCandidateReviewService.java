@@ -30,5 +30,6 @@ public interface RecruitmentDepartmentCandidateReviewService {
             Long recruitmentNotificationId,
             Long recruitmentInterviewDetailId,
             DepartmentCandidateReviewDecision reviewDecision,
-            String reviewRemarks);
+            String reviewRemarks,
+            String interviewAuthority);
 }

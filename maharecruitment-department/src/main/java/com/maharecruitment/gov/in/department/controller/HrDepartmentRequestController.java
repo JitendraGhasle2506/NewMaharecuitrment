@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.department.controller;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -444,18 +445,32 @@ public class HrDepartmentRequestController {
 
     private HrAgencyRankMappingForm buildRankMappingForm(HrAgencyRankMappingView rankMappingView) {
         HrAgencyRankMappingForm form = new HrAgencyRankMappingForm();
-        if (rankMappingView == null || rankMappingView.getAssignedAgencyRanks() == null
-                || rankMappingView.getAssignedAgencyRanks().isEmpty()) {
+        if (rankMappingView == null || rankMappingView.getAvailableCategories() == null) {
             form.getRankRows().add(new HrAgencyRankRowForm());
             return form;
         }
 
-        rankMappingView.getAssignedAgencyRanks().forEach(assignedRank -> {
+        // Create one row per Available Category
+        rankMappingView.getAvailableCategories().forEach(category -> {
             HrAgencyRankRowForm row = new HrAgencyRankRowForm();
-            row.setAgencyId(assignedRank.getAgencyId());
-            row.setRankNumber(assignedRank.getRankNumber());
+            row.setCategoryName(category);
+            row.setRankNumber(1); // L1 by default in this view
+            
+            // Look for an agency assigned to this category
+            if (rankMappingView.getAssignedAgencyRanks() != null) {
+                rankMappingView.getAssignedAgencyRanks().stream()
+                        .filter(assigned -> assigned.getMappedCategories() != null && assigned.getMappedCategories().contains(category))
+                        .findFirst()
+                        .ifPresent(assigned -> row.setAgencyId(assigned.getAgencyId()));
+            }
+            
             form.getRankRows().add(row);
         });
+        
+        if (form.getRankRows().isEmpty()) {
+            form.getRankRows().add(new HrAgencyRankRowForm());
+        }
+        
         return form;
     }
 

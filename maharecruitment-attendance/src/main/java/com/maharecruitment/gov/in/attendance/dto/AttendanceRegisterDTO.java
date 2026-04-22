@@ -23,6 +23,9 @@ public class AttendanceRegisterDTO {
     private String organization;
     private String division;
     private String officeLocation;
+    private String address;
+    private String employeeCode;
+    private String joiningDate;
     private String level;
     private String projectName;
     private String reportingHOD;

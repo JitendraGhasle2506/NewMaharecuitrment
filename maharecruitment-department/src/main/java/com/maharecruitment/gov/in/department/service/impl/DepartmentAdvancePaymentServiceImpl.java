@@ -189,6 +189,8 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         entity.setTotalAmount(form.getTotalAmount());
         entity.setRemarks(form.getRemarks());
         entity.setUtrNumber(receiptReference);
+        entity.setPaymentMode(form.getPaymentMode());
+        entity.setChequeNumber(form.getChequeNumber());
         entity.setUpdatedBy(actorEmail);
         entity.setUpdatedDate(LocalDateTime.now());
 
@@ -241,6 +243,8 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         form.setTotalAmount(entity.getTotalAmount());
         form.setRemarks(entity.getRemarks());
         form.setUtrNumber(entity.getUtrNumber());
+        form.setPaymentMode(entity.getPaymentMode());
+        form.setChequeNumber(entity.getChequeNumber());
         form.setReceiptOriginalName(entity.getReceiptOriginalName());
         form.setReceiptFileType(entity.getReceiptFileType());
         
@@ -407,6 +411,8 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         form.setTotalAmount(entity.getTotalAmount());
         form.setRemarks(entity.getRemarks());
         form.setUtrNumber(entity.getUtrNumber());
+        form.setPaymentMode(entity.getPaymentMode());
+        form.setChequeNumber(entity.getChequeNumber());
         form.setReceiptOriginalName(entity.getReceiptOriginalName());
         form.setReceiptFileType(entity.getReceiptFileType());
         
@@ -490,6 +496,12 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         }
         if (!StringUtils.hasText(entity.getReceiptFilePath())) {
             throw new DepartmentApplicationException("Proof of payment document is required for submission.");
+        }
+        if (!StringUtils.hasText(entity.getPaymentMode())) {
+            throw new DepartmentApplicationException("Payment mode is required for submission.");
+        }
+        if ("CHEQUE".equals(entity.getPaymentMode()) && !StringUtils.hasText(entity.getChequeNumber())) {
+            throw new DepartmentApplicationException("Cheque number is required for submission when payment mode is Cheque.");
         }
     }
 

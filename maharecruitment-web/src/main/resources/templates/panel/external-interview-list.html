@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>MahaIT Recruitment - Assigned External Interviews</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="panel-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Verification & Approval', 'External Panel Interviews', ~{::section})}">
+        <section>
+            <div class="card basic-list-card fade-in">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h5 class="mb-0 text-primary">
+                            <i class="fas fa-user-check me-2"></i> External Panel Interviews
+                        </h5>
+                        <small class="text-muted">Candidates assigned to you for interview assessments</small>
+                    </div>
+                </div>
+
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show m-3" role="alert">
+                    <i class="fas fa-check-circle me-2"></i> <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive mt-2">
+                        <table class="table table-hover align-middle custom-data-table" id="panelInterviewsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Project / Request</th>
+                                    <th>Candidate Name</th>
+                                    <th>Designation / Lvl</th>
+                                    <th>Interview Schedule</th>
+                                    <th>Feedback Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${externalCandidates == null or externalCandidates.empty}">
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3 text-light-muted"></i>
+                                        <p class="mb-0">No external interviews are assigned to you at the moment.</p>
+                                    </td>
+                                </tr>
+                                <tr th:each="candidate, stat : ${externalCandidates}">
+                                    <td th:text="${stat.count + (candidatePage.number * candidatePage.size)}"></td>
+                                    <td>
+                                        <div class="fw-bold text-dark" th:text="${candidate.projectName}">Project</div>
+                                        <small class="text-muted" th:text="${candidate.requestId}">REQ-123</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold" th:text="${candidate.candidateName}"></div>
+                                        <small class="text-muted"><i class="fas fa-envelope me-1"></i> <span th:text="${candidate.candidateEmail}"></span></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border" th:text="${candidate.designationName}"></span>
+                                        <span class="badge bg-secondary ms-1" th:text="${candidate.levelCode}"></span>
+                                        <div class="mt-1 small text-muted">
+                                            Agency: <span th:text="${candidate.agencyName}"></span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div th:if="${candidate.interviewDateTime != null}">
+                                            <div class="text-primary fw-bold">
+                                                <i class="far fa-calendar-alt me-1"></i>
+                                                <span th:text="${#temporals.format(candidate.interviewDateTime, 'dd MMM yyyy')}"></span>
+                                            </div>
+                                            <div class="text-dark small mt-1">
+                                                <i class="far fa-clock me-1"></i>
+                                                <span th:text="${#temporals.format(candidate.interviewDateTime, 'hh:mm a')}"></span>
+                                            </div>
+                                        </div>
+                                        <div th:if="${candidate.interviewDateTime == null}">
+                                            <span class="badge bg-warning text-dark">Pending Scheduling</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div th:if="${candidate.feedbackSubmitted}">
+                                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Submitted</span>
+                                            <div class="small text-muted mt-1" th:text="${#temporals.format(candidate.feedbackSubmittedAt, 'dd MMM yy')}"></div>
+                                        </div>
+                                        <div th:if="${!candidate.feedbackSubmitted}">
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i> Pending</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column gap-2">
+                                            <a th:href="@{/panel/external-interviews/{id}(id=${candidate.recruitmentInterviewDetailId})}"
+                                               class="btn btn-sm btn-outline-primary"
+                                               th:text="${candidate.feedbackSubmitted ? 'View Detail' : 'Assess Candidate'}">
+                                                Assess Candidate
+                                            </a>
+                                            <a th:if="${candidate.interviewLink != null and !candidate.interviewLink.empty}"
+                                               th:href="${candidate.interviewLink}"
+                                               target="_blank"
+                                               class="btn btn-sm btn-primary tooltip-trigger" 
+                                               title="Join Structured Interview">
+                                                <i class="fas fa-video me-1"></i> Join Interview
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div th:if="${candidatePage != null and candidatePage.totalPages > 1}" class="d-flex justify-content-between align-items-center mt-3 flex-wrap">
+                        <div class="text-muted small">
+                            Showing <span th:text="${candidatePage.number * candidatePage.size + 1}"></span> to 
+                            <span th:text="${(candidatePage.number * candidatePage.size) + externalCandidates.size()}"></span> of 
+                            <span th:text="${candidatePage.totalElements}"></span> entries
+                        </div>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item" th:classappend="${candidatePage.first} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/panel/external-interviews(page=${candidatePage.number - 1}, size=${pageSize}, search=${searchTerm})}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                <li th:each="i : ${#numbers.sequence(0, candidatePage.totalPages - 1)}" 
+                                    class="page-item" th:classappend="${candidatePage.number == i} ? 'active'">
+                                    <a class="page-link" th:href="@{/panel/external-interviews(page=${i}, size=${pageSize}, search=${searchTerm})}" th:text="${i + 1}">1</a>
+                                </li>
+                                <li class="page-item" th:classappend="${candidatePage.last} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/panel/external-interviews(page=${candidatePage.number + 1}, size=${pageSize}, search=${searchTerm})}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <script th:inline="javascript">
+                const contextPath = /*[[@{/}]]*/ '/';
+                
+                document.addEventListener("DOMContentLoaded", function () {
+                    // Simple table initialization if required without conflict with pagination
+                    if (document.getElementById('panelInterviewsTable')) {
+                        if (document.querySelectorAll('#panelInterviewsTable tbody tr').length > 0 && 
+                            !document.querySelector('#panelInterviewsTable tbody tr td[colspan]')) {
+                            const dataTable = new simpleDatatables.DataTable("#panelInterviewsTable", {
+                                searchable: false,
+                                fixedHeight: false,
+                                paging: false // Backend does the pagination
+                            });
+                        }
+                    }
+                });
+            </script>
+        </section>
+    </th:block>
+</body>
+
+</html>

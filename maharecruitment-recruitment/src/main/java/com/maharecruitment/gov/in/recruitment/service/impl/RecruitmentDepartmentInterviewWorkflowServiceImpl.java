@@ -13,17 +13,23 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentFeedba
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentPanelMemberEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacancyEntity;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentExternalInterviewFeedbackEntity;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentExternalInterviewPanelMemberEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentAssessmentFeedbackRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentExternalInterviewFeedbackRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentExternalInterviewPanelMemberRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentDepartmentInterviewWorkflowService;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateFinalDecision;
-import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
-import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
-import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentPanelMemberInput;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentView;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelFeedbackView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoPanelMemberView;
 
 @Service
 @Transactional(readOnly = true)
@@ -39,14 +45,20 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository;
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
+    private final RecruitmentExternalInterviewPanelMemberRepository externalPanelMemberRepository;
+    private final RecruitmentExternalInterviewFeedbackRepository externalFeedbackRepository;
 
     public RecruitmentDepartmentInterviewWorkflowServiceImpl(
             RecruitmentInterviewDetailRepository interviewDetailRepository,
             RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository,
-            AgencyCandidatePreOnboardingRepository preOnboardingRepository) {
+            AgencyCandidatePreOnboardingRepository preOnboardingRepository,
+            RecruitmentExternalInterviewPanelMemberRepository externalPanelMemberRepository,
+            RecruitmentExternalInterviewFeedbackRepository externalFeedbackRepository) {
         this.interviewDetailRepository = interviewDetailRepository;
         this.assessmentFeedbackRepository = assessmentFeedbackRepository;
         this.preOnboardingRepository = preOnboardingRepository;
+        this.externalPanelMemberRepository = externalPanelMemberRepository;
+        this.externalFeedbackRepository = externalFeedbackRepository;
     }
 
     @Override
@@ -77,6 +89,26 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl
 
         String finalDecisionStatus = normalizeUpper(candidate.getFinalDecisionStatus());
         boolean selectionAllowed = true;
+
+        List<RecruitmentExternalInterviewPanelMemberEntity> externalPanelMembers = externalPanelMemberRepository
+                .findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(recruitmentInterviewDetailId);
+        List<RecruitmentExternalInterviewFeedbackEntity> externalFeedbacks = externalFeedbackRepository
+                .findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(recruitmentInterviewDetailId);
+
+        // Compute HR average score (used only when authority = MAHAIT_HR)
+        boolean isMahaitHr = "MAHAIT_HR".equals(candidate.getInterviewAuthority());
+        int hrAwarded  = 0;
+        int hrPossible = 0;
+        double hrPct   = 0.0;
+        if (isMahaitHr && !externalFeedbacks.isEmpty()) {
+            hrAwarded  = externalFeedbacks.stream().mapToInt(f ->
+                    safeInt(f.getCommunicationSkillMarks())
+                    + safeInt(f.getTechnicalSkillMarks())
+                    + safeInt(f.getLeadershipQualityMarks())
+                    + safeInt(f.getRelevantExperienceMarks())).sum();
+            hrPossible = 4 * 5 * externalFeedbacks.size();
+            hrPct      = hrPossible > 0 ? Math.round((hrAwarded * 100.0 / hrPossible) * 10.0) / 10.0 : 0.0;
+        }
 
         return DepartmentInterviewWorkflowDetailView.builder()
                 .recruitmentNotificationId(recruitmentNotificationId)
@@ -117,9 +149,57 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl
                 .vacancyCount(vacancyCount)
                 .filledVacancyCount(filledCount)
                 .remainingVacancyCount(remainingCount)
-                .selectionAllowed(selectionAllowed)
+                .interviewAuthority(candidate.getInterviewAuthority())
+                .panelAssigned(!externalPanelMembers.isEmpty())
+                .panelMembers(externalPanelMembers.stream().map(m -> InternalVacancyLevelTwoPanelMemberView.builder()
+                        .panelUserId(m.getPanelUserId())
+                        .panelMemberName(m.getPanelMemberName())
+                        .panelMemberDesignation(m.getPanelMemberDesignation())
+                        .build()).toList())
+                .panelFeedbackSubmittedCount(externalFeedbacks.size())
+                .panelFeedbacks(externalFeedbacks.stream().map(f -> InternalVacancyLevelTwoPanelFeedbackView.builder()
+                        .feedbackId(f.getRecruitmentExternalInterviewFeedbackId())
+                        .reviewerUserId(f.getReviewerUserId())
+                        .reviewerName(f.getReviewerName())
+                        .reviewerRoleLabel(f.getReviewerRoleLabel())
+                        .communicationSkillMarks(f.getCommunicationSkillMarks())
+                        .technicalSkillMarks(f.getTechnicalSkillMarks())
+                        .leadershipQualityMarks(f.getLeadershipQualityMarks())
+                        .relevantExperienceMarks(f.getRelevantExperienceMarks())
+                        .interviewerGrade(f.getInterviewerGrade())
+                        .recommendationStatus(f.getRecommendationStatus())
+                        .assessmentRemarks(f.getAssessmentRemarks())
+                        .finalRemarks(f.getFinalRemarks())
+                        .submittedAt(f.getSubmittedAt())
+                        .build()).toList())
                 .assessment(toAssessmentView(assessment))
+                // MahaIT HR fields
+                .hrPanelFeedbackCount(isMahaitHr ? externalFeedbacks.size() : 0)
+                .hrPanelFeedbacks(isMahaitHr
+                        ? externalFeedbacks.stream().map(f -> InternalVacancyLevelTwoPanelFeedbackView.builder()
+                                .feedbackId(f.getRecruitmentExternalInterviewFeedbackId())
+                                .reviewerUserId(f.getReviewerUserId())
+                                .reviewerName(f.getReviewerName())
+                                .reviewerRoleLabel(f.getReviewerRoleLabel())
+                                .communicationSkillMarks(f.getCommunicationSkillMarks())
+                                .technicalSkillMarks(f.getTechnicalSkillMarks())
+                                .leadershipQualityMarks(f.getLeadershipQualityMarks())
+                                .relevantExperienceMarks(f.getRelevantExperienceMarks())
+                                .interviewerGrade(f.getInterviewerGrade())
+                                .recommendationStatus(f.getRecommendationStatus())
+                                .assessmentRemarks(f.getAssessmentRemarks())
+                                .finalRemarks(f.getFinalRemarks())
+                                .submittedAt(f.getSubmittedAt())
+                                .build()).toList()
+                        : List.of())
+                .hrFinalDecisionStatus(isMahaitHr ? finalDecisionStatus : null)
+                .hrFinalDecisionRemarks(isMahaitHr ? candidate.getFinalDecisionRemarks() : null)
+                .hrAverageScorePercentage(hrPct)
                 .build();
+    }
+
+    private int safeInt(Integer value) {
+        return value != null ? value : 0;
     }
 
     @Override
@@ -274,9 +354,21 @@ public class RecruitmentDepartmentInterviewWorkflowServiceImpl
                 recruitmentNotificationId,
                 recruitmentInterviewDetailId);
 
-        if (!Boolean.TRUE.equals(candidate.getAssessmentSubmitted())) {
-            throw new RecruitmentNotificationException("Submit assessment report before final selection decision.");
+        boolean isMahaitHr = "MAHAIT_HR".equals(candidate.getInterviewAuthority());
+        if (isMahaitHr) {
+            long feedbackCount = externalFeedbackRepository
+                    .countByRecruitmentInterviewDetailRecruitmentInterviewDetailId(recruitmentInterviewDetailId);
+            if (feedbackCount < 2) {
+                throw new RecruitmentNotificationException(
+                        "At least two HR panel assessments must be submitted before final selection decision.");
+            }
+        } else {
+            if (!Boolean.TRUE.equals(candidate.getAssessmentSubmitted())) {
+                throw new RecruitmentNotificationException(
+                        "Submit assessment report before final selection decision.");
+            }
         }
+
         if (isCandidateOnboarded(recruitmentInterviewDetailId)) {
             throw new RecruitmentNotificationException(
                     "Candidate is already onboarded. Final decision is locked and cannot be changed.");

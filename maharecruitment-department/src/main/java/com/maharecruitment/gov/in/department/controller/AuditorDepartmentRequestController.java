@@ -189,6 +189,7 @@ public class AuditorDepartmentRequestController {
                     + "/applications/" + applicationId;
         }
     }
+    
 
     @PostMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/complete")
     public String completeApplication(

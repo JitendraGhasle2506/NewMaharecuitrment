@@ -283,18 +283,32 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
         LocalDate issueDate = resolveIssueDate(application);
         LocalDate referenceDate = resolveReferenceDate(application, issueDate);
         List<DepartmentTaxInvoiceLineItemEntity> lineItems = buildLineItems(requirements);
-        BigDecimal baseAmount = lineItems.stream()
-                .map(DepartmentTaxInvoiceLineItemEntity::getTotalAmount)
-                .reduce(ZERO, BigDecimal::add)
+
+        BigDecimal totalAgencyCommission = requirements.stream()
+                .map(DepartmentProjectResourceRequirementEntity::getAgencyCommissionAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        if (baseAmount.compareTo(ZERO) <= 0) {
+        BigDecimal totalMahaItCommission = requirements.stream()
+                .map(DepartmentProjectResourceRequirementEntity::getMahaItCommissionAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal taxableBase = requirements.stream()
+                .map(DepartmentProjectResourceRequirementEntity::getTaxableAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        if (taxableBase.compareTo(ZERO) <= 0) {
             throw new TaxInvoiceException("Tax invoice base amount must be greater than zero.");
         }
 
         BigDecimal cgstRate = resolveTaxRate(issueDate, "CGST");
         BigDecimal sgstRate = resolveTaxRate(issueDate, "SGST");
-        TaxInvoiceAmountBreakdown breakdown = amountCalculator.calculate(baseAmount, cgstRate, sgstRate);
+        TaxInvoiceAmountBreakdown breakdown = amountCalculator.calculate(taxableBase, cgstRate, sgstRate);
         MahaItProfile profile = resolveActiveProfile();
 
         String requestId = requireText(application.getRequestId(), "Request id");
@@ -315,6 +329,8 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                 .clientGstNumber(trimToNull(registration.getGstNo()))
                 .placeOfSupply(DEFAULT_PLACE_OF_SUPPLY)
                 .baseAmount(breakdown.baseAmount())
+                .agencyCommissionAmount(totalAgencyCommission)
+                .mahaItCommissionAmount(totalMahaItCommission)
                 .cgstRate(breakdown.cgstRate())
                 .cgstAmount(breakdown.cgstAmount())
                 .sgstRate(breakdown.sgstRate())
@@ -361,8 +377,8 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                 throw new TaxInvoiceException("Resource requirement monthly rate must be greater than zero.");
             }
 
-            BigDecimal totalAmount = requirement.getTotalCost() != null
-                    ? normalizeCurrency(requirement.getTotalCost())
+            BigDecimal totalAmount = requirement.getTaxableAmount() != null
+                    ? normalizeCurrency(requirement.getTaxableAmount())
                     : ratePerMonth
                             .multiply(BigDecimal.valueOf(quantity))
                             .multiply(BigDecimal.valueOf(durationInMonths))
@@ -372,13 +388,17 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                 throw new TaxInvoiceException("Resource requirement total cost must be greater than zero.");
             }
 
+            BigDecimal loadedRate = totalAmount.divide(
+                    BigDecimal.valueOf(quantity.longValue() * durationInMonths.longValue()),
+                    2, RoundingMode.HALF_UP);
+
             DepartmentTaxInvoiceLineItemEntity lineItem = DepartmentTaxInvoiceLineItemEntity.builder()
                     .departmentProjectResourceRequirementId(requirement.getDepartmentProjectResourceRequirementId())
                     .lineNumber(lineNumber++)
                     .description(designationName + " - " + levelName)
                     .sacHsn(DEFAULT_SAC_HSN)
                     .quantity(quantity)
-                    .ratePerMonth(ratePerMonth)
+                    .ratePerMonth(loadedRate)
                     .durationInMonths(durationInMonths)
                     .totalAmount(totalAmount)
                     .build();

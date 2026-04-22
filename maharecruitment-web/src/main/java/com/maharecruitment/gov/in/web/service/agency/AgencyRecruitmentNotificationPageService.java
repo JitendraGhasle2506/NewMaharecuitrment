@@ -55,4 +55,9 @@ public interface AgencyRecruitmentNotificationPageService {
             String actorEmail,
             Long recruitmentNotificationId,
             Long recruitmentInterviewDetailId);
+
+    void forwardInterviewRequest(
+            String actorEmail,
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId);
 }

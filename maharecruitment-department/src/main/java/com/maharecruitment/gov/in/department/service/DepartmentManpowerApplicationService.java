@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.department.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationMasterResponse;
 import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
@@ -49,4 +50,6 @@ public interface DepartmentManpowerApplicationService {
             Long applicationId,
             String remarks,
             String actorEmail);
+
+    Map<String, BigDecimal> getCommissionRates();
 }

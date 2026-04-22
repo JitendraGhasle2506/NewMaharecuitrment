@@ -101,6 +101,12 @@ public class DepartmentTaxInvoiceEntity extends Auditable {
     @Column(name = "base_amount", nullable = false, precision = 14, scale = 2)
     private BigDecimal baseAmount;
 
+    @Column(name = "agency_commission_amount", nullable = false, precision = 14, scale = 2)
+    private BigDecimal agencyCommissionAmount;
+
+    @Column(name = "mahait_commission_amount", nullable = false, precision = 14, scale = 2)
+    private BigDecimal mahaItCommissionAmount;
+
     @Column(name = "cgst_rate", nullable = false, precision = 8, scale = 4)
     private BigDecimal cgstRate;
 

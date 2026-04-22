@@ -37,6 +37,7 @@ import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardin
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
+import com.maharecruitment.gov.in.master.repository.ManpowerDesignationRateRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.workorder.dto.WorkOrderForm;
 import com.maharecruitment.gov.in.workorder.entity.WorkOrderEmployeeMappingEntity;
@@ -87,6 +88,7 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
     private final WorkOrderNumberGenerator workOrderNumberGenerator;
     private final WorkOrderPdfGenerator workOrderPdfGenerator;
     private final WorkOrderDocumentStorageService workOrderDocumentStorageService;
+    private final ManpowerDesignationRateRepository manpowerDesignationRateRepository;
     private final AuditTrailService auditTrailService;
     private final UserService userService;
 
@@ -99,6 +101,7 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
             WorkOrderNumberGenerator workOrderNumberGenerator,
             WorkOrderPdfGenerator workOrderPdfGenerator,
             WorkOrderDocumentStorageService workOrderDocumentStorageService,
+            ManpowerDesignationRateRepository manpowerDesignationRateRepository,
             AuditTrailService auditTrailService,
             UserService userService) {
         this.workOrderRepository = workOrderRepository;
@@ -109,6 +112,7 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
         this.workOrderNumberGenerator = workOrderNumberGenerator;
         this.workOrderPdfGenerator = workOrderPdfGenerator;
         this.workOrderDocumentStorageService = workOrderDocumentStorageService;
+        this.manpowerDesignationRateRepository = manpowerDesignationRateRepository;
         this.auditTrailService = auditTrailService;
         this.userService = userService;
     }
@@ -801,7 +805,25 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
 
     private List<WorkOrderEmployeeMappingEntity> buildEmployeeMappings(List<EmployeeEntity> employees) {
         List<WorkOrderEmployeeMappingEntity> mappings = new ArrayList<>();
+        java.math.BigDecimal commissionFactor = java.math.BigDecimal.valueOf(0.10);
+        java.math.BigDecimal gstFactor = java.math.BigDecimal.valueOf(0.18);
+        LocalDate referenceDate = LocalDate.now();
+
         for (EmployeeEntity employee : employees) {
+            java.math.BigDecimal rate = java.math.BigDecimal.ZERO;
+            if (employee.getDesignation() != null && StringUtils.hasText(employee.getLevelCode())) {
+                List<com.maharecruitment.gov.in.master.entity.ManpowerDesignationRate> rates = manpowerDesignationRateRepository
+                        .findActiveRates(employee.getDesignation().getDesignationId(), employee.getLevelCode(), referenceDate);
+                if (!rates.isEmpty()) {
+                    rate = rates.get(0).getGrossMonthlyCtc();
+                }
+            }
+
+            java.math.BigDecimal commission = rate.multiply(commissionFactor).setScale(2, java.math.RoundingMode.HALF_UP);
+            java.math.BigDecimal taxableAmount = rate.add(commission);
+            java.math.BigDecimal gstAmount = taxableAmount.multiply(gstFactor).setScale(2, java.math.RoundingMode.HALF_UP);
+            java.math.BigDecimal total = taxableAmount.add(gstAmount);
+
             mappings.add(WorkOrderEmployeeMappingEntity.builder()
                     .employeeId(employee.getEmployeeId())
                     .employeeCode(defaultText(employee.getEmployeeCode(), "EMP-" + employee.getEmployeeId()))
@@ -810,6 +832,10 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
                     .levelCode(trimToNull(employee.getLevelCode()))
                     .joiningDate(employee.getJoiningDate())
                     .employmentStatus(defaultText(employee.getStatus(), ACTIVE_STATUS))
+                    .monthlyRate(rate)
+                    .agencyCommissionAmount(commission)
+                    .gstAmount(gstAmount)
+                    .totalAmount(total)
                     .build());
         }
         return mappings;
@@ -825,6 +851,10 @@ public class HrWorkOrderServiceImpl implements HrWorkOrderService {
                         .levelCode(mapping.getLevelCode())
                         .joiningDate(mapping.getJoiningDate())
                         .employmentStatus(mapping.getEmploymentStatus())
+                        .monthlyRate(mapping.getMonthlyRate())
+                        .agencyCommissionAmount(mapping.getAgencyCommissionAmount())
+                        .gstAmount(mapping.getGstAmount())
+                        .totalAmount(mapping.getTotalAmount())
                         .build())
                 .toList();
     }

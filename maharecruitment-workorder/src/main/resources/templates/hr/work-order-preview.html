@@ -106,29 +106,33 @@
                         <table class="table table-sm align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-3">Employee</th>
-                                    <th>Code</th>
-                                    <th>Designation</th>
+                                    <th class="ps-3">Designation</th>
                                     <th>Level</th>
-                                    <th>Status</th>
+                                    <th class="text-center">Resources</th>
+                                    <th class="text-end">Rate</th>
+                                    <th class="text-end">Comm. (10%)</th>
+                                    <th class="text-end">GST (18%)</th>
+                                    <th class="text-end pe-3">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr th:each="employee : ${detail.employees}">
-                                    <td class="ps-3">
-                                        <div class="fw-semibold" th:text="${employee.employeeName}">Employee</div>
-                                        <div class="small text-muted"
-                                            th:text="${employee.joiningDate != null ? #temporals.format(employee.joiningDate, 'dd-MMM-yyyy') : '-'}">
-                                            01-Apr-2026
-                                        </div>
+                                <tr th:each="entry : ${detail.employees}"
+                                    th:if="${entryStat.first || (detail.employees[entryStat.index - 1].designationName != entry.designationName || detail.employees[entryStat.index - 1].levelCode != entry.levelCode)}">
+                                    <td class="ps-3 fw-semibold" th:text="${entry.designationName}">Designation</td>
+                                    <td th:text="${entry.levelCode}">L1</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary"
+                                            th:text="${#lists.size(detail.employees.?[designationName == '__${entry.designationName}__' && levelCode == '__${entry.levelCode}__'])}">
+                                            1
+                                        </span>
                                     </td>
-                                    <td th:text="${employee.employeeCode}">EMP0001</td>
-                                    <td th:text="${employee.designationName != null ? employee.designationName : '-'}">Designation</td>
-                                    <td th:text="${employee.levelCode != null ? employee.levelCode : '-'}">L1</td>
-                                    <td th:text="${employee.employmentStatus}">ACTIVE</td>
+                                    <td class="text-end" th:text="${#numbers.formatDecimal(entry.monthlyRate, 1, 'COMMA', 2, 'POINT')}">30000.00</td>
+                                    <td class="text-end" th:text="${#numbers.formatDecimal(entry.agencyCommissionAmount, 1, 'COMMA', 2, 'POINT')}">3000.00</td>
+                                    <td class="text-end" th:text="${#numbers.formatDecimal(entry.gstAmount, 1, 'COMMA', 2, 'POINT')}">5940.00</td>
+                                    <td class="text-end pe-3 fw-bold" th:text="${#numbers.formatDecimal(entry.totalAmount, 1, 'COMMA', 2, 'POINT')}">38940.00</td>
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(detail.employees)}">
-                                    <td colspan="5" class="text-center py-4 text-muted">No employees selected.</td>
+                                    <td colspan="7" class="text-center py-4 text-muted">No resources selected.</td>
                                 </tr>
                             </tbody>
                         </table>

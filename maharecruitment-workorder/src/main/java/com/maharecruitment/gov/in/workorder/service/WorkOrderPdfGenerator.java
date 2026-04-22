@@ -32,7 +32,7 @@ public class WorkOrderPdfGenerator {
     private static final float TABLE_ROW_HEIGHT = 22F;
     private static final float TABLE_TEXT_TOP_PADDING = 14F;
     private static final float TABLE_CELL_PADDING = 4F;
-    private static final float[] EMPLOYEE_TABLE_COLUMN_WIDTHS = { 28F, 75F, 130F, 142F, 50F, 80F };
+    private static final float[] EMPLOYEE_TABLE_COLUMN_WIDTHS = { 25F, 120F, 50F, 50F, 65F, 65F, 65F, 65F };
 
     public GeneratedWorkOrderDocument generate(WorkOrderDocumentContext context) {
         try {
@@ -101,31 +101,57 @@ public class WorkOrderPdfGenerator {
     private void addEmployeeTable(List<PdfElement> elements, List<WorkOrderEmployeeView> employees) {
         List<WorkOrderEmployeeView> safeEmployees = employees == null ? List.of() : employees;
         elements.add(new PdfTableRow(
-                List.of("Sr", "Code", "Employee", "Designation", "Level", "Joining"),
+                List.of("Sr", "Designation", "Level", "No.", "Rate", "Comm.", "GST", "Total"),
                 true,
                 0F));
 
         if (safeEmployees.isEmpty()) {
             elements.add(new PdfTableRow(
-                    List.of("-", "-", "No employees selected", "-", "-", "-"),
+                    List.of("-", "No resources selected", "-", "-", "-", "-", "-", "-"),
                     false,
                     8F));
             return;
         }
 
-        for (int index = 0; index < safeEmployees.size(); index++) {
-            WorkOrderEmployeeView employee = safeEmployees.get(index);
+        // Aggregate by Designation and Level
+        java.util.Map<String, List<WorkOrderEmployeeView>> aggregated = new java.util.LinkedHashMap<>();
+        for (WorkOrderEmployeeView emp : safeEmployees) {
+            String key = defaultText(emp.designationName(), "Unknown") + "|" + defaultText(emp.levelCode(), "-");
+            aggregated.computeIfAbsent(key, k -> new ArrayList<>()).add(emp);
+        }
+
+        int index = 1;
+        java.math.BigDecimal grandTotal = java.math.BigDecimal.ZERO;
+        for (java.util.Map.Entry<String, List<WorkOrderEmployeeView>> entry : aggregated.entrySet()) {
+            List<WorkOrderEmployeeView> group = entry.getValue();
+            WorkOrderEmployeeView first = group.get(0);
+            int count = group.size();
+
+            java.math.BigDecimal rate = first.monthlyRate() != null ? first.monthlyRate() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal comm = first.agencyCommissionAmount() != null ? first.agencyCommissionAmount() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal gst = first.gstAmount() != null ? first.gstAmount() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal perResourceTotal = first.totalAmount() != null ? first.totalAmount() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal rowTotal = perResourceTotal.multiply(java.math.BigDecimal.valueOf(count));
+            grandTotal = grandTotal.add(rowTotal);
+
             elements.add(new PdfTableRow(
                     List.of(
-                            String.valueOf(index + 1),
-                            defaultText(employee.employeeCode(), "-"),
-                            defaultText(employee.employeeName(), "-"),
-                            defaultText(employee.designationName(), "-"),
-                            defaultText(employee.levelCode(), "-"),
-                            formatDate(employee.joiningDate())),
+                            String.valueOf(index++),
+                            defaultText(first.designationName(), "-"),
+                            defaultText(first.levelCode(), "-"),
+                            String.valueOf(count),
+                            rate.toPlainString(),
+                            comm.toPlainString(),
+                            gst.toPlainString(),
+                            perResourceTotal.toPlainString()),
                     false,
-                    index == safeEmployees.size() - 1 ? 10F : 0F));
+                    0F));
         }
+
+        elements.add(new PdfTableRow(
+                List.of("", "Total Monthly Remuneration", "", "", "", "", "", grandTotal.toPlainString()),
+                true,
+                10F));
     }
 
     private byte[] writePdf(List<PdfElement> elements) throws IOException {
@@ -351,8 +377,7 @@ public class WorkOrderPdfGenerator {
         return "The deployment is aligned to department "
                 + defaultText(context.departmentName(), "-")
                 + (StringUtils.hasText(context.subDepartmentName()) ? " / " + context.subDepartmentName() : "")
-                + ". The following employees are mapped as part of this work order for execution, coordination, "
-                + "and service delivery within the approved project scope.";
+                + ". The following technical manpower resources are authorized for deployment within the approved project scope.";
     }
 
     private String escapePdfText(String value) {

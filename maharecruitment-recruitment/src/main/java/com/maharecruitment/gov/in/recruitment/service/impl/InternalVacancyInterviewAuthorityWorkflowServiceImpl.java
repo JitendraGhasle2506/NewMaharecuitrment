@@ -127,7 +127,7 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                 .vacancyCount(vacancyCount)
                 .filledVacancyCount(filledCount)
                 .remainingVacancyCount(remainingCount)
-                .selectionAllowed(false)
+                //.selectionAllowed(false)
                 .assessment(toAssessmentView(assessment))
                 .build();
     }

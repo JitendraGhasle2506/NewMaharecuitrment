@@ -19,6 +19,7 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacan
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.repository.AgencyGlobalRankRepository;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
@@ -48,18 +49,21 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
         private final RecruitmentNotificationRepository notificationRepository;
         private final ResourceLevelExperienceRepository resourceLevelExperienceRepository;
         private final EmployeeRepository employeeRepository;
+        private final AgencyGlobalRankRepository agencyGlobalRankRepository;
 
         public RecruitmentAgencyNotificationQueryServiceImpl(
                         AgencyNotificationTrackingRepository trackingRepository,
                         AgencyMasterRepository agencyRepository,
                         RecruitmentNotificationRepository notificationRepository,
                         ResourceLevelExperienceRepository resourceLevelExperienceRepository,
-                        EmployeeRepository employeeRepository) {
+                        EmployeeRepository employeeRepository,
+                        AgencyGlobalRankRepository agencyGlobalRankRepository) {
                 this.trackingRepository = trackingRepository;
                 this.agencyRepository = agencyRepository;
                 this.notificationRepository = notificationRepository;
                 this.resourceLevelExperienceRepository = resourceLevelExperienceRepository;
                 this.employeeRepository = employeeRepository;
+                this.agencyGlobalRankRepository = agencyGlobalRankRepository;
         }
 
         @Override
@@ -144,7 +148,23 @@ public class RecruitmentAgencyNotificationQueryServiceImpl implements Recruitmen
                                 ? notification.getProjectMst().getProjectId()
                                 : null;
 
+                // Specialized Filtering: Filter vacancies based on Agency Specialization Categories
+                String agencyCategoriesStr = agencyGlobalRankRepository.findByAgencyAgencyId(agencyId)
+                                .map(com.maharecruitment.gov.in.recruitment.entity.AgencyGlobalRankEntity::getMappedCategories)
+                                .orElse(null);
+
+                final Set<String> agencyCategories = (agencyCategoriesStr != null)
+                                ? java.util.Arrays.stream(agencyCategoriesStr.split(","))
+                                                .map(String::trim)
+                                                .map(String::toUpperCase)
+                                                .collect(java.util.stream.Collectors.toSet())
+                                : Set.of();
+
                 List<DesignationVacancyView> vacancies = notification.getDesignationVacancies().stream()
+                                .filter(v -> {
+                                        String cat = v.getDesignationMst().getCategory();
+                                        return cat != null && agencyCategories.contains(cat.trim().toUpperCase());
+                                })
                                 .map(this::toVacancyView)
                                 .toList();
 

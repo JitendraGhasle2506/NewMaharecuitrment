@@ -187,7 +187,8 @@
                     </div>
                     <div>
                         <h2 class="fw-bold text-dark mb-1">Generated Department Tax Invoices</h2>
-                        <p class="text-muted mb-0">Review all completed and generated department tax invoices from the auditor dashboard.</p>
+                        <p class="text-muted mb-0">Review all completed and generated department tax invoices from the
+                            auditor dashboard.</p>
                     </div>
                 </div>
                 <div class="invoice-meta-chip">
@@ -196,7 +197,8 @@
                 </div>
             </div>
 
-            <div th:if="${successMessage}" class="alert alert-success border-0 shadow-sm" th:text="${successMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success border-0 shadow-sm" th:text="${successMessage}">
+            </div>
             <div th:if="${errorMessage}" class="alert alert-danger border-0 shadow-sm" th:text="${errorMessage}"></div>
 
             <div class="card invoice-summary-card">
@@ -229,29 +231,33 @@
                             <tr th:each="invoice : ${taxInvoices.content}">
                                 <td class="invoice-request-cell">
                                     <a class="invoice-request-link"
-                                       th:href="@{/invoice/tax-invoices/application/{applicationId}(applicationId=${invoice.departmentProjectApplicationId})}"
-                                       >
+                                        th:href="@{/invoice/tax-invoices/application/{applicationId}(applicationId=${invoice.departmentProjectApplicationId})}">
                                         <span class="invoice-request-id" th:text="${invoice.requestId}">DPA-0001</span>
-                                        <span class="invoice-request-caption" th:text="${invoice.tiNumber != null ? invoice.tiNumber : 'Tax Invoice'}">Tax Invoice</span>
+                                        <span class="invoice-request-caption"
+                                            th:text="${invoice.tiNumber != null ? invoice.tiNumber : 'Tax Invoice'}">Tax
+                                            Invoice</span>
                                     </a>
                                 </td>
                                 <td class="invoice-project-cell">
-                                    <div class="invoice-project-name" th:text="${invoice.projectName != null ? invoice.projectName : '-'}">Project Name</div>
+                                    <div class="invoice-project-name"
+                                        th:text="${invoice.projectName != null ? invoice.projectName : '-'}">Project
+                                        Name</div>
                                 </td>
                                 <td class="invoice-generated-cell">
                                     <div class="invoice-generated-on"
-                                    th:text="${invoice.generatedOn != null ? #temporals.format(invoice.generatedOn, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        th:text="${invoice.generatedOn != null ? #temporals.format(invoice.generatedOn, 'dd-MMM-yyyy HH:mm') : '-'}">
                                         -
                                     </div>
                                 </td>
                                 <td class="invoice-action-cell pe-4 text-end">
                                     <div class="invoice-action-group">
                                         <a class="btn btn-light btn-sm border rounded-pill px-3 fw-semibold text-primary"
-                                           th:href="@{/invoice/tax-invoices/application/{applicationId}(applicationId=${invoice.departmentProjectApplicationId})}">
-                                            View Invoice <i class="fa-solid fa-arrow-up-right-from-square ms-1 small"></i>
+                                            th:href="@{/invoice/tax-invoices/application/{applicationId}(applicationId=${invoice.departmentProjectApplicationId})}">
+                                            View Invoice <i
+                                                class="fa-solid fa-arrow-up-right-from-square ms-1 small"></i>
                                         </a>
                                         <a class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold"
-                                           th:href="@{/invoice/tax-invoices/application/{applicationId}/audit(applicationId=${invoice.departmentProjectApplicationId})}">
+                                            th:href="@{/invoice/tax-invoices/application/{applicationId}/audit(applicationId=${invoice.departmentProjectApplicationId})}">
                                             View Audit Details
                                         </a>
                                     </div>
@@ -262,8 +268,7 @@
                 </div>
             </div>
 
-            <div class="app-pagination-shell"
-                th:if="${taxInvoices.totalPages > 1}"
+            <div class="app-pagination-shell" th:if="${taxInvoices.totalPages > 1}"
                 th:with="middleStart=${taxInvoices.number - 2 > 1 ? taxInvoices.number - 2 : 1},
                          middleEnd=${taxInvoices.number + 2 < taxInvoices.totalPages - 2 ? taxInvoices.number + 2 : taxInvoices.totalPages - 2},
                          showingFrom=${taxInvoices.totalElements == 0 ? 0 : taxInvoices.number * taxInvoices.size + 1},
@@ -274,7 +279,8 @@
                         <span th:text="${taxInvoices.totalElements}">10</span> entries
                     </div>
                     <div class="app-pagination-meta">
-                        Page <span th:text="${taxInvoices.number + 1}">1</span> of <span th:text="${taxInvoices.totalPages}">1</span>
+                        Page <span th:text="${taxInvoices.number + 1}">1</span> of <span
+                            th:text="${taxInvoices.totalPages}">1</span>
                     </div>
                 </div>
                 <nav aria-label="Department tax invoice pagination">
@@ -284,7 +290,8 @@
                                 th:href="@{/auditor/department-tax-invoices(page=${taxInvoices.number - 1},size=${taxInvoices.size})}">Previous</a>
                         </li>
                         <li class="page-item" th:classappend="${taxInvoices.number == 0} ? ' active'">
-                            <a class="page-link" th:href="@{/auditor/department-tax-invoices(page=0,size=${taxInvoices.size})}">1</a>
+                            <a class="page-link"
+                                th:href="@{/auditor/department-tax-invoices(page=0,size=${taxInvoices.size})}">1</a>
                         </li>
                         <li class="page-item disabled" th:if="${middleStart > 1}">
                             <span class="page-link app-pagination-ellipsis">...</span>

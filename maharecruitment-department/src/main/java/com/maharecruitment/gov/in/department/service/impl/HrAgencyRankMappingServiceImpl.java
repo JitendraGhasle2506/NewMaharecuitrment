@@ -38,6 +38,7 @@ import com.maharecruitment.gov.in.master.entity.SubDepartment;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
+import com.maharecruitment.gov.in.master.repository.DesignationCategoryMasterRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyGlobalRankEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingStatus;
@@ -58,6 +59,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
 
     private static final int DEFAULT_RANK_RELEASE_PAGE_SIZE = 10;
     private static final int MAX_RANK_RELEASE_PAGE_SIZE = 100;
+    private static final java.util.Set<String> RESTRICTED_CATEGORIES = java.util.Set.of("Technical", "Techno Functional", "Operation & Project Management", "Support");
 
     private final HrDepartmentRequestService hrDepartmentRequestService;
     private final RecruitmentNotificationRepository recruitmentNotificationRepository;
@@ -69,6 +71,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
     private final DepartmentProjectApplicationRepository departmentProjectApplicationRepository;
     private final DepartmentMstRepository departmentMstRepository;
     private final SubDepartmentRepository subDepartmentRepository;
+    private final DesignationCategoryMasterRepository designationCategoryMasterRepository;
 
     public HrAgencyRankMappingServiceImpl(
             HrDepartmentRequestService hrDepartmentRequestService,
@@ -80,7 +83,8 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
             AgencyMasterRepository agencyMasterRepository,
             DepartmentProjectApplicationRepository departmentProjectApplicationRepository,
             DepartmentMstRepository departmentMstRepository,
-            SubDepartmentRepository subDepartmentRepository) {
+            SubDepartmentRepository subDepartmentRepository,
+            DesignationCategoryMasterRepository designationCategoryMasterRepository) {
         this.hrDepartmentRequestService = hrDepartmentRequestService;
         this.recruitmentNotificationRepository = recruitmentNotificationRepository;
         this.agencyGlobalRankRepository = agencyGlobalRankRepository;
@@ -91,6 +95,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
         this.departmentProjectApplicationRepository = departmentProjectApplicationRepository;
         this.departmentMstRepository = departmentMstRepository;
         this.subDepartmentRepository = subDepartmentRepository;
+        this.designationCategoryMasterRepository = designationCategoryMasterRepository;
     }
 
     @Override
@@ -242,15 +247,26 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
 
     @Override
     public HrAgencyRankMappingView getGlobalRankMappingView() {
+        // Fetch only Rank 1 mappings as they represent the L1 agencies for specific categories
         List<AgencyGlobalRankEntity> assignedRanks = agencyGlobalRankRepository
-                .findAllWithAgencyOrderByRankNumberAscAgencyAgencyIdAsc();
+                .findByRankNumberWithAgencyOrderByAgencyAgencyIdAsc(1);
 
         List<HrAgencyOptionView> agencyOptions = buildAgencyOptions(assignedRanks);
+        
+        // Fetch all active categories from the DesignationCategoryMaster
+        List<String> activeCategories = designationCategoryMasterRepository.findByActiveFlag("Y")
+                .stream()
+                .map(cat -> cat.getCategoryName())
+                .collect(Collectors.toList());
+
         List<HrAssignedAgencyRankView> assignedAgencyRanks = assignedRanks.stream()
                 .map(rankEntity -> HrAssignedAgencyRankView.builder()
                         .agencyId(rankEntity.getAgency().getAgencyId())
                         .agencyName(rankEntity.getAgency().getAgencyName())
                         .rankNumber(rankEntity.getRankNumber())
+                        .mappedCategories(rankEntity.getMappedCategories() != null 
+                                ? List.of(rankEntity.getMappedCategories().split(",")) 
+                                : List.of())
                         .build())
                 .toList();
 
@@ -261,6 +277,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
                 .projectName("All Recruitment Notifications")
                 .recruitmentNotificationAvailable(true)
                 .agencyOptions(agencyOptions)
+                .availableCategories(activeCategories)
                 .assignedAgencyRanks(assignedAgencyRanks)
                 .build();
     }
@@ -278,6 +295,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
         RecruitmentNotificationEntity recruitmentNotification = resolveRecruitmentNotification(
                 applicationReviewDetail.getRequestId());
 
+        // For request-specific mapping, we also show existing mappings
         List<AgencyGlobalRankEntity> assignedRanks = agencyGlobalRankRepository
                 .findAllWithAgencyOrderByRankNumberAscAgencyAgencyIdAsc();
 
@@ -287,6 +305,9 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
                         .agencyId(rankEntity.getAgency().getAgencyId())
                         .agencyName(rankEntity.getAgency().getAgencyName())
                         .rankNumber(rankEntity.getRankNumber())
+                        .mappedCategories(rankEntity.getMappedCategories() != null 
+                                ? List.of(rankEntity.getMappedCategories().split(",")) 
+                                : List.of())
                         .build())
                 .toList();
 
@@ -311,22 +332,62 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
     @Override
     @Transactional
     public void assignGlobalAgencyRanks(List<HrAgencyRankRowForm> rankRows) {
-        List<HrAgencyRankRowForm> normalizedRows = normalizeRows(rankRows);
-        validateRows(normalizedRows);
+        if (rankRows == null || rankRows.isEmpty()) {
+            throw new DepartmentApplicationException("No mappings provided.");
+        }
 
-        List<AgencyRankAssignmentCommand> assignmentCommands = normalizedRows.stream()
-                .map(row -> AgencyRankAssignmentCommand.builder()
-                        .agencyId(row.getAgencyId())
-                        .rankNumber(row.getRankNumber())
-                        .build())
-                .toList();
+        // Fetch all active categories from the DesignationCategoryMaster
+        List<String> allActiveCategoriesNames = designationCategoryMasterRepository.findByActiveFlag("Y")
+                .stream()
+                .map(cat -> cat.getCategoryName())
+                .collect(Collectors.toList());
 
-        try {
-            recruitmentNotificationRankAssignmentService.assignAgencyRanks(
-                    null,
-                    assignmentCommands);
-        } catch (RecruitmentNotificationException ex) {
-            throw new DepartmentApplicationException(ex.getMessage());
+        // 0. Validation for established restricted categories
+        validateRestrictedCategoryMappings(rankRows);
+
+        // 1. Clear ALL existing global rank mappings
+        agencyGlobalRankRepository.deleteAll();
+        agencyGlobalRankRepository.flush();
+
+        // 2. Group incoming categories by Agency ID
+        // The UI now sends one row per category. Multiple rows might have the same agencyId.
+        Map<Long, List<String>> categoriesByAgencyId = new HashMap<>();
+        for (HrAgencyRankRowForm row : rankRows) {
+            if (row.getAgencyId() != null && StringUtils.hasText(row.getCategoryName())) {
+                categoriesByAgencyId.computeIfAbsent(row.getAgencyId(), id -> new ArrayList<>())
+                        .add(row.getCategoryName());
+            }
+        }
+
+        // 3. Save Rank 1 Mappings
+        for (Map.Entry<Long, List<String>> entry : categoriesByAgencyId.entrySet()) {
+            Long agencyId = entry.getKey();
+            List<String> categories = entry.getValue();
+
+            AgencyMaster agency = agencyMasterRepository.findById(agencyId)
+                    .orElseThrow(() -> new DepartmentApplicationException("Agency not found: " + agencyId));
+            
+            AgencyGlobalRankEntity rankEntity = new AgencyGlobalRankEntity();
+            rankEntity.setAgency(agency);
+            rankEntity.setRankNumber(1);
+            rankEntity.setMappedCategories(String.join(",", categories));
+            rankEntity.setAssignedDate(LocalDateTime.now());
+            agencyGlobalRankRepository.save(rankEntity);
+        }
+
+        // 4. Save Rank 2 Mappings for unmapped agencies
+        List<AgencyMaster> allActiveAgencies = agencyMasterRepository.findByStatusOrderByAgencyNameAsc(AgencyStatus.ACTIVE);
+        String allCategoriesStr = String.join(",", allActiveCategoriesNames);
+
+        for (AgencyMaster agency : allActiveAgencies) {
+            if (!categoriesByAgencyId.containsKey(agency.getAgencyId())) {
+                AgencyGlobalRankEntity rankEntity = new AgencyGlobalRankEntity();
+                rankEntity.setAgency(agency);
+                rankEntity.setRankNumber(2);
+                rankEntity.setMappedCategories(allCategoriesStr);
+                rankEntity.setAssignedDate(LocalDateTime.now());
+                agencyGlobalRankRepository.save(rankEntity);
+            }
         }
     }
 
@@ -415,6 +476,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
             HrAgencyRankRowForm normalizedRow = new HrAgencyRankRowForm();
             normalizedRow.setAgencyId(row.getAgencyId());
             normalizedRow.setRankNumber(row.getRankNumber());
+            normalizedRow.setMappedCategories(row.getMappedCategories() != null ? new java.util.ArrayList<>(row.getMappedCategories()) : new java.util.ArrayList<>());
             normalizedRows.add(normalizedRow);
         }
         return normalizedRows;
@@ -858,4 +920,36 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
         }
         return subDepartmentNameById.getOrDefault(subDepartmentId, "Sub-Department " + subDepartmentId);
     }
+
+    private void validateRestrictedCategoryMappings(List<HrAgencyRankRowForm> incomingRows) {
+        List<AgencyGlobalRankEntity> existingRankOneMappings = agencyGlobalRankRepository
+                .findByRankNumberWithAgencyOrderByAgencyAgencyIdAsc(1);
+
+        for (AgencyGlobalRankEntity existingMapping : existingRankOneMappings) {
+            String mappedStr = existingMapping.getMappedCategories();
+            if (!StringUtils.hasText(mappedStr)) {
+                continue;
+            }
+
+            List<String> categories = List.of(mappedStr.split(","));
+            for (String category : categories) {
+                if (RESTRICTED_CATEGORIES.contains(category)) {
+                    // Find if this category is being changed in the incoming rows
+                    incomingRows.stream()
+                            .filter(row -> category.equals(row.getCategoryName()))
+                            .findFirst()
+                            .ifPresent(incomingRow -> {
+                                if (incomingRow.getAgencyId() != null && 
+                                    !existingMapping.getAgency().getAgencyId().equals(incomingRow.getAgencyId())) {
+                                    
+                                    throw new DepartmentApplicationException(String.format(
+                                            "The agency mapping for '%s' category is already established with '%s' and cannot be changed.",
+                                            category, existingMapping.getAgency().getAgencyName()));
+                                }
+                            });
+                }
+            }
+        }
+    }
+
 }

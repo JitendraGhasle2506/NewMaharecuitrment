@@ -43,6 +43,7 @@ public class AuditorDepartmentApplicationReviewDetailView {
 
     private LocalDate taxApplicableDate;
     private BigDecimal totalTaxAmount;
+    private BigDecimal taxableSubTotal;
     private BigDecimal totalCostIncludingTax;
     private List<AuditorApplicationTaxComponentView> taxComponents;
 

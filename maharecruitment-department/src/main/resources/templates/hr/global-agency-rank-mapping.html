@@ -9,139 +9,240 @@
 
 <body class="hr-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Global Agency Rank Mapping', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="mb-0">Global Agency Rank Mapping</h2>
-                        <small class="text-muted">Configure one rank order for all agencies across all recruitment notifications</small>
+    <section>
+        <div class="mapping-container">
+            <div class="glass-card">
+                <div class="card-header-gradient">
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <div>
+                            <h2 class="text-white mb-0">Global Agency Specialization</h2>
+                            <p class="text-white-50 small mb-0">Map L1 Rank Agencies to Designation Categories</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card-body">
-                    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
-                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+                <div class="card-body p-4">
+                    <div class="alert alert-custom-success mb-4" th:if="${successMessage}">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <span th:text="${successMessage}"></span>
+                    </div>
+                    <div class="alert alert-custom-danger mb-4" th:if="${errorMessage}">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <span th:text="${errorMessage}"></span>
+                    </div>
 
-                    <div class="alert alert-info mb-3">
-                        Save rank once here. Notification release for agencies will follow these global ranks and rank release rules.
+                    <div class="info-banner mb-4">
+                        <div class="d-flex align-items-start">
+                            <div class="info-icon me-3">
+                                <i class="bi bi-info-circle-fill"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1 text-primary">Ranking Rules</h6>
+                                <p class="mb-0 text-muted small">
+                                    Agencies assigned here get <strong>Rank 1</strong> for their selected categories. 
+                                    All other active agencies will automatically be treated as <strong>Rank 2</strong> for all categories.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <form th:action="@{/hr/department-requests/global-agency-rank-mapping}"
                         th:object="${rankMappingForm}" method="post" id="rankMappingForm">
 
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h5 class="mb-0">Rank Configuration</h5>
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="addRowButton">
-                                Add Row
-                            </button>
-                        </div>
-
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm align-middle" id="rankMappingTable">
+                        <div class="table-responsive custom-scroll">
+                            <table class="table table-hover align-middle custom-table" id="rankMappingTable">
                                 <thead>
                                     <tr>
-                                        <th width="60%">Agency</th>
-                                        <th width="20%">Rank</th>
-                                        <th width="20%">Action</th>
+                                        <th style="width: 40%;">Designation Category</th>
+                                        <th style="width: 60%;">L1 Rank Agency</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="rank-row" th:each="row, rowStat : *{rankRows}">
+                                    <tr th:each="row, rowStat : ${rankMappingForm.rankRows}" class="rank-row">
                                         <td>
-                                            <select class="form-select agency-select"
-                                                th:name="|rankRows[${rowStat.index}].agencyId|">
-                                                <option value="">-- Select Agency --</option>
-                                                <option th:each="agencyOption : ${agencyRankMappingView.agencyOptions}"
-                                                    th:value="${agencyOption.agencyId}"
-                                                    th:text="${agencyOption.agencyName + ' (' + agencyOption.officialEmail + ')'}"
-                                                    th:selected="${row.agencyId != null and row.agencyId == agencyOption.agencyId}">
-                                                </option>
-                                            </select>
+                                            <div class="category-info">
+                                                <i class="bi bi-tag-fill text-primary me-2"></i>
+                                                <span class="fw-bold text-dark" th:text="${row.categoryName}">Technical</span>
+                                                <input type="hidden" th:name="|rankRows[${rowStat.index}].categoryName|" th:value="${row.categoryName}">
+                                            </div>
                                         </td>
                                         <td>
-                                            <input type="number" class="form-control rank-input" min="1"
-                                                th:name="|rankRows[${rowStat.index}].rankNumber|"
-                                                th:value="${row.rankNumber}">
-                                        </td>
-                                        <td>
-                                            <button type="button" class="btn btn-outline-danger btn-sm remove-row">
-                                                Remove
-                                            </button>
+                                            <div class="agency-select-wrapper">
+                                                <select class="form-select agency-select custom-select shadow-sm" 
+                                                        th:name="|rankRows[${rowStat.index}].agencyId|">
+                                                    <option value="">-- No L1 Agency Assigned --</option>
+                                                    <option th:each="opt : ${agencyRankMappingView.agencyOptions}"
+                                                            th:value="${opt.agencyId}"
+                                                            th:text="${opt.agencyName}"
+                                                            th:selected="${row.agencyId != null and opt.agencyId == row.agencyId}">
+                                                    </option>
+                                                </select>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-success">Save Global Rank Mapping</button>
-                        </div>
 
-                        <select class="d-none" id="agencyOptionsTemplate">
-                            <option value="">-- Select Agency --</option>
-                            <option th:each="agencyOption : ${agencyRankMappingView.agencyOptions}"
-                                th:value="${agencyOption.agencyId}"
-                                th:text="${agencyOption.agencyName + ' (' + agencyOption.officialEmail + ')'}">
-                            </option>
-                        </select>
+
+                        <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded-3 border-dashed shadow-sm">
+                            <div class="d-flex align-items-center text-muted">
+                                <i class="bi bi-info-circle-fill me-2 fs-5 text-primary"></i>
+                                <small>Selected agencies will be Rank 1 (L1) for the respective category. All other agencies will be Rank 2 for all categories.</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg px-5 shadow rounded-pill">
+                                <i class="bi bi-check2-circle me-2"></i> Save Global Mapping
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
-        </section>
-    </th:block>
+        </div>
+    </section>
 
-    <script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --border-radius: 16px;
+        }
+
+        .hr-shell {
+            background: #f8fafc;
+        }
+
+        .mapping-container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-header-gradient {
+            background: var(--primary-gradient);
+            padding: 1.5rem 2rem;
+            display: flex;
+        }
+
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .info-banner {
+            background: #eef2ff;
+            border-left: 5px solid #6366f1;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .info-icon {
+            color: #6366f1;
+            font-size: 1.25rem;
+        }
+
+        .table thead th {
+            background: #f8fafc;
+            color: #64748b;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 1rem 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .rank-row td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .category-info {
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+        }
+
+        .agency-select-wrapper .form-select {
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            padding: 0.625rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .agency-select-wrapper .form-select:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .border-dashed {
+            border: 2px dashed #e2e8f0 !important;
+        }
+
+        .rounded-pill {
+            border-radius: 50rem !important;
+        }
+
+        .alert-custom-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+        }
+
+        .alert-custom-danger {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+        }
+    </style>
+    <script th:inline="javascript">
         (function () {
-            const tableBody = document.querySelector('#rankMappingTable tbody');
-            const addRowButton = document.getElementById('addRowButton');
-            const optionsTemplate = document.getElementById('agencyOptionsTemplate');
+            document.addEventListener('DOMContentLoaded', function() {
+                const restrictedCategories = ['Technical', 'Techno Functional', 'Operation & Project Management', 'Support'];
+                const selects = document.querySelectorAll('.agency-select');
+                
+                selects.forEach(select => {
+                    // Store initial state
+                    const initialValue = select.value;
+                    const initialText = select.options[select.selectedIndex].text;
+                    const categoryName = select.closest('tr').querySelector('.fw-bold').innerText.trim();
 
-            function resequenceRows() {
-                const rows = tableBody.querySelectorAll('tr.rank-row');
-                rows.forEach((row, index) => {
-                    const agencySelect = row.querySelector('.agency-select');
-                    const rankInput = row.querySelector('.rank-input');
-                    agencySelect.name = `rankRows[${index}].agencyId`;
-                    rankInput.name = `rankRows[${index}].rankNumber`;
+                    select.addEventListener('change', function() {
+                        const isRestricted = restrictedCategories.some(cat => 
+                            categoryName.toLowerCase() === cat.toLowerCase()
+                        );
+
+                        // If it's a restricted category and there was an initial assignment that's being changed
+                        if (isRestricted && initialValue && this.value !== initialValue) {
+                            const newAgencyText = this.options[this.selectedIndex].text;
+                            alert(`${newAgencyText} cannot map to ${categoryName}. ${initialText} is already mapped to ${categoryName}.`);
+                            
+                            // Reset to initial value
+                            this.value = initialValue;
+                            return false;
+                        }
+                    });
                 });
-            }
-
-            function addRow() {
-                const row = document.createElement('tr');
-                row.classList.add('rank-row');
-                row.innerHTML = `
-                    <td>
-                        <select class="form-select agency-select">
-                            ${optionsTemplate.innerHTML}
-                        </select>
-                    </td>
-                    <td>
-                        <input type="number" class="form-control rank-input" min="1">
-                    </td>
-                    <td>
-                        <button type="button" class="btn btn-outline-danger btn-sm remove-row">Remove</button>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-                resequenceRows();
-            }
-
-            tableBody.addEventListener('click', function (event) {
-                if (!event.target.classList.contains('remove-row')) {
-                    return;
-                }
-                const rows = tableBody.querySelectorAll('tr.rank-row');
-                if (rows.length <= 1) {
-                    return;
-                }
-                event.target.closest('tr.rank-row').remove();
-                resequenceRows();
             });
-
-            addRowButton.addEventListener('click', addRow);
-            resequenceRows();
         })();
     </script>
 </body>
-
 </html>

@@ -96,6 +96,10 @@
                                             <th class="text-end">Rate</th>
                                             <th class="text-center">Qty</th>
                                             <th class="text-center">Months</th>
+                                            <th class="text-end">Cost</th>
+                                            <th class="text-end">Agency Comm.</th>
+                                            <th class="text-end">MahaIT Comm.</th>
+                                            <th class="text-end">GST(18%)</th>
                                             <th class="text-end">Total</th>
                                         </tr>
                                     </thead>
@@ -103,13 +107,17 @@
                                         <tr th:if="${#lists.isEmpty(applicationReviewDetail.resourceRequirements)}">
                                             <td colspan="6" class="text-center py-4 text-muted">No resource requirements found.</td>
                                         </tr>
-                                        <tr th:each="requirement : ${applicationReviewDetail.resourceRequirements}">
+                                         <tr th:each="requirement : ${applicationReviewDetail.resourceRequirements}">
                                             <td class="fw-semibold" th:text="${requirement.designationName}">Designation</td>
                                             <td th:text="${requirement.levelName}">Level</td>
                                             <td class="text-end" th:text="${#numbers.formatDecimal(requirement.monthlyRate != null ? requirement.monthlyRate : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
                                             <td class="text-center" th:text="${requirement.requiredQuantity}">0</td>
                                             <td class="text-center" th:text="${requirement.durationInMonths}">0</td>
-                                            <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(requirement.totalCost != null ? requirement.totalCost : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end" th:text="${#numbers.formatDecimal(requirement.totalCost != null ? requirement.totalCost : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end text-muted" th:text="${#numbers.formatDecimal(requirement.agencyCommissionAmount != null ? requirement.agencyCommissionAmount : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end text-muted" th:text="${#numbers.formatDecimal(requirement.mahaItCommissionAmount != null ? requirement.mahaItCommissionAmount : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end text-muted" th:text="${#numbers.formatDecimal(requirement.gstAmount != null ? requirement.gstAmount : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end fw-bold" th:text="${#numbers.formatDecimal((requirement.taxableAmount ?: 0) + (requirement.gstAmount ?: 0), 1, 'COMMA', 2, 'POINT')}">0.00</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -163,7 +171,7 @@
                         </div>
                         <div class="card-body p-4">
                             <div class="mb-4">
-                                <div class="info-label">Work Order Document</div>
+                                <div class="info-label">Work Order Document / Demand / Requisition Letter</div>
                                 <div class="mt-2">
                                     <a th:if="${applicationReviewDetail.workOrderAvailable}" 
                                        th:href="@{/hr/department-requests/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/download-work-order(

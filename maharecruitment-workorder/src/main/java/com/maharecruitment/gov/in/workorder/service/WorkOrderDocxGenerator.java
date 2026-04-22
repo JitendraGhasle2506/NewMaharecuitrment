@@ -125,37 +125,65 @@ public class WorkOrderDocxGenerator {
 
     private void addEmployeeTable(XWPFDocument document, List<WorkOrderEmployeeView> employees) {
         List<WorkOrderEmployeeView> safeEmployees = employees == null ? List.of() : employees;
-        XWPFTable table = document.createTable(Math.max(safeEmployees.size(), 1) + 1, 6);
+        
+        // Aggregate by Designation and Level
+        java.util.Map<String, List<WorkOrderEmployeeView>> aggregated = new java.util.LinkedHashMap<>();
+        for (WorkOrderEmployeeView emp : safeEmployees) {
+            String key = defaultText(emp.designationName(), "Unknown") + "|" + defaultText(emp.levelCode(), "-");
+            aggregated.computeIfAbsent(key, k -> new java.util.ArrayList<>()).add(emp);
+        }
+
+        XWPFTable table = document.createTable(Math.max(aggregated.size(), 1) + 2, 8); // +2 for header and footer
 
         XWPFTableRow headerRow = table.getRow(0);
         headerRow.getCell(0).setText("Sr. No.");
-        headerRow.getCell(1).setText("Employee Code");
-        headerRow.getCell(2).setText("Employee Name");
-        headerRow.getCell(3).setText("Designation");
-        headerRow.getCell(4).setText("Level");
-        headerRow.getCell(5).setText("Joining Date");
+        headerRow.getCell(1).setText("Designation");
+        headerRow.getCell(2).setText("Level");
+        headerRow.getCell(3).setText("No.");
+        headerRow.getCell(4).setText("Rate");
+        headerRow.getCell(5).setText("Comm.");
+        headerRow.getCell(6).setText("GST");
+        headerRow.getCell(7).setText("Total");
 
-        if (safeEmployees.isEmpty()) {
+        if (aggregated.isEmpty()) {
             XWPFTableRow row = table.getRow(1);
             row.getCell(0).setText("-");
-            row.getCell(1).setText("-");
-            row.getCell(2).setText("No employees selected");
-            row.getCell(3).setText("-");
-            row.getCell(4).setText("-");
-            row.getCell(5).setText("-");
+            row.getCell(1).setText("No resources selected");
+            for (int i = 2; i < 8; i++) row.getCell(i).setText("-");
             return;
         }
 
-        for (int index = 0; index < safeEmployees.size(); index++) {
-            WorkOrderEmployeeView employee = safeEmployees.get(index);
-            XWPFTableRow row = table.getRow(index + 1);
-            row.getCell(0).setText(String.valueOf(index + 1));
-            row.getCell(1).setText(defaultText(employee.employeeCode(), "-"));
-            row.getCell(2).setText(defaultText(employee.employeeName(), "-"));
-            row.getCell(3).setText(defaultText(employee.designationName(), "-"));
-            row.getCell(4).setText(defaultText(employee.levelCode(), "-"));
-            row.getCell(5).setText(formatDate(employee.joiningDate()));
+        int index = 1;
+        java.math.BigDecimal grandTotal = java.math.BigDecimal.ZERO;
+        for (java.util.Map.Entry<String, List<WorkOrderEmployeeView>> entry : aggregated.entrySet()) {
+            List<WorkOrderEmployeeView> group = entry.getValue();
+            WorkOrderEmployeeView first = group.get(0);
+            int count = group.size();
+
+            java.math.BigDecimal rate = first.monthlyRate() != null ? first.monthlyRate() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal comm = first.agencyCommissionAmount() != null ? first.agencyCommissionAmount() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal gst = first.gstAmount() != null ? first.gstAmount() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal perResourceTotal = first.totalAmount() != null ? first.totalAmount() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal rowTotal = perResourceTotal.multiply(java.math.BigDecimal.valueOf(count));
+            grandTotal = grandTotal.add(rowTotal);
+
+            XWPFTableRow row = table.getRow(index);
+            row.getCell(0).setText(String.valueOf(index));
+            row.getCell(1).setText(defaultText(first.designationName(), "-"));
+            row.getCell(2).setText(defaultText(first.levelCode(), "-"));
+            row.getCell(3).setText(String.valueOf(count));
+            row.getCell(4).setText(rate.toPlainString());
+            row.getCell(5).setText(comm.toPlainString());
+            row.getCell(6).setText(gst.toPlainString());
+            row.getCell(7).setText(perResourceTotal.toPlainString());
+            index++;
         }
+
+        XWPFTableRow footerRow = table.getRow(index);
+        footerRow.getCell(0).setText("");
+        footerRow.getCell(1).setText("Total Monthly Remuneration");
+        for (int i = 2; i < 7; i++) footerRow.getCell(i).setText("");
+        footerRow.getCell(7).setText(grandTotal.toPlainString());
     }
 
     private String buildLeadParagraph(WorkOrderDocumentContext context) {
@@ -192,8 +220,7 @@ public class WorkOrderDocxGenerator {
         return "The deployment is aligned to department "
                 + defaultText(context.departmentName(), "-")
                 + (StringUtils.hasText(context.subDepartmentName()) ? " / " + context.subDepartmentName() : "")
-                + ". The following employees are mapped as part of this work order for execution, coordination, "
-                + "and service delivery within the approved project scope.";
+                + ". The following technical manpower resources are authorized for deployment within the approved project scope.";
     }
 
     private void addKeyValueLine(XWPFDocument document, String key, String value) {

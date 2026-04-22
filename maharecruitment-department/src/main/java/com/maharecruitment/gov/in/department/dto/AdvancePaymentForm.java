@@ -57,4 +57,9 @@ public class AdvancePaymentForm {
     private String utrNumber;
 
     private String paymentType; // "FULL" or "PARTIAL"
+
+    @NotBlank(message = "Payment mode is required")
+    private String paymentMode;
+
+    private String chequeNumber;
 }

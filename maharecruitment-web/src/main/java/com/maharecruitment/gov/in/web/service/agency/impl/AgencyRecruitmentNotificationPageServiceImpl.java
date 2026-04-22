@@ -239,6 +239,19 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
         }
     }
 
+    @Override
+    @Transactional
+    public void forwardInterviewRequest(
+            String actorEmail,
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        candidateService.forwardInterviewRequest(
+                recruitmentNotificationId,
+                recruitmentInterviewDetailId,
+                context.agencyId());
+    }
+
     private void validateBatchForm(AgencyCandidateBatchForm candidateBatchForm) {
         if (candidateBatchForm == null) {
             throw new RecruitmentNotificationException("Candidate form is required.");

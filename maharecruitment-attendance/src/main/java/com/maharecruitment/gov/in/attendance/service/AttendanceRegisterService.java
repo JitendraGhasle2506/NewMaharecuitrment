@@ -15,7 +15,7 @@ public interface AttendanceRegisterService {
 
 	public List<AttendanceRegisterDTO> getExternalAttendance(Long departmentId, int month, int year);
 
-	public void saveExternalAttendance(List<AttendanceRegisterDTO> dtos);
+	public void saveExternalAttendance(List<AttendanceRegisterDTO> dtos, Long actorUserId);
 
 	List<AttendanceReportDTO> getAttendanceReportData(Long regId, Long subDeptId, Integer month, Integer year,
 			Long projectId);

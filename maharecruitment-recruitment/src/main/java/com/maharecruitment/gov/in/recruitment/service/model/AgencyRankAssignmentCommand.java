@@ -10,5 +10,7 @@ public class AgencyRankAssignmentCommand {
     private Long agencyId;
 
     private Integer rankNumber;
+
+    private java.util.List<String> mappedCategories;
 }
 

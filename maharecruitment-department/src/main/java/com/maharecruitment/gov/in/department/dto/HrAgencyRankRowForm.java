@@ -9,6 +9,10 @@ public class HrAgencyRankRowForm {
 
     private Long agencyId;
 
+    private String categoryName;
+
     private Integer rankNumber;
+
+    private java.util.List<String> mappedCategories;
 }
 

@@ -151,10 +151,8 @@
                 <div>
                     <h2 class="invoice-page-title">Tax Invoice</h2>
                 </div>
-                <button type="button"
-                        class="btn btn-outline-secondary btn-sm"
-                        th:attr="data-fallback-url=@{/auditor/department-tax-invoices}"
-                        onclick="goBackToAuditList(event)">
+                <button type="button" class="btn btn-outline-secondary btn-sm"
+                    th:attr="data-fallback-url=@{/auditor/department-tax-invoices}" onclick="goBackToAuditList(event)">
                     <i class="fa fa-arrow-left me-1"></i> Back
                 </button>
             </div>
@@ -167,10 +165,7 @@
                             <p>Please login again and reopen the tax invoice page.</p>
                         </div>
                     </div>
-                    <iframe class="invoice-frame"
-                        id="oldInvoiceFrame"
-                        title="Old Tax Invoice"
-                        scrolling="no"
+                    <iframe class="invoice-frame" id="oldInvoiceFrame" title="Old Tax Invoice" scrolling="no"
                         th:src="@{/invoice/tax-invoices/application/{applicationId}/old(applicationId=${applicationId},embedded=true)}">
                     </iframe>
                 </section>
@@ -182,16 +177,14 @@
                             <p>Please login again and reopen the tax invoice page.</p>
                         </div>
                     </div>
-                    <iframe class="invoice-frame"
-                        id="newInvoiceFrame"
-                        title="New Tax Invoice"
-                        scrolling="no"
+                    <iframe class="invoice-frame" id="newInvoiceFrame" title="New Tax Invoice" scrolling="no"
                         th:src="@{/invoice/tax-invoices/application/{applicationId}/new(applicationId=${applicationId},embedded=true)}">
                     </iframe>
                 </section>
 
                 <div class="invoice-combined-toolbar no-print">
-                    <button id="printBothBtn" class="invoice-combined-print-btn" type="button" onclick="printBothInvoices()" disabled>
+                    <button id="printBothBtn" class="invoice-combined-print-btn" type="button"
+                        onclick="printBothInvoices()" disabled>
                         Loading...
                     </button>
                 </div>

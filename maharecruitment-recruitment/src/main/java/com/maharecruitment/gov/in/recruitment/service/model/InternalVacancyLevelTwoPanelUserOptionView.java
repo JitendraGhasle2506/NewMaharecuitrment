@@ -16,4 +16,5 @@ public class InternalVacancyLevelTwoPanelUserOptionView {
     private String displayLabel;
     private String roleLabelCsv;
     private List<String> roleLabels;
+    private String designationName;
 }

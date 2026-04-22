@@ -28,6 +28,7 @@ public class DepartmentSubmittedCandidateView {
     private String resumeOriginalName;
     private String resumeFilePath;
     private RecruitmentCandidateStatus candidateStatus;
+    private String interviewAuthority;
     private String departmentShortlistRemarks;
     private LocalDateTime submittedAt;
     private LocalDateTime interviewDateTime;

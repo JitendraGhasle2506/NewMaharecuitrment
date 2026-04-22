@@ -22,6 +22,26 @@ public class WorkOrderEmployeeView {
     private String levelCode;
     private LocalDate joiningDate;
     private String employmentStatus;
+    private java.math.BigDecimal monthlyRate;
+    private java.math.BigDecimal agencyCommissionAmount;
+    private java.math.BigDecimal gstAmount;
+    private java.math.BigDecimal totalAmount;
+
+    public java.math.BigDecimal monthlyRate() {
+        return monthlyRate;
+    }
+
+    public java.math.BigDecimal agencyCommissionAmount() {
+        return agencyCommissionAmount;
+    }
+
+    public java.math.BigDecimal gstAmount() {
+        return gstAmount;
+    }
+
+    public java.math.BigDecimal totalAmount() {
+        return totalAmount;
+    }
 
     public Long employeeId() {
         return employeeId;

@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <title>Tax Invoice</title>
+    <title>Proforma Invoice</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/print.css}" />
     <style>
@@ -54,7 +54,8 @@
 <body class="tax-invoice" th:classappend="${#bools.isTrue(embeddedPreviewMode)} ? ' embedded-mode' : ''">
     <div class="invoice-page">
         <div id="print-content" class="invoice-container">
-            <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}" class="alert alert-warning" style="margin-bottom: 12px;">
+            <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}"
+                class="alert alert-warning" style="margin-bottom: 12px;">
                 Preview only. The final tax invoice number will be assigned after final completion.
             </div>
             <table class="table bor-0">
@@ -71,7 +72,7 @@
                 </tr>
                 <tr>
                     <td colspan="6" style="text-align:center;">
-                        <h3 style="margin:0;">TAX INVOICE</h3>
+                        <h3 style="margin:0;">PROFORMA INVOICE</h3>
                     </td>
                 </tr>
             </table>
@@ -175,7 +176,8 @@
                 <tr>
                     <td><b>Grand Total (Incl. Tax)</b></td>
                     <td class="text-center">-</td>
-                    <td class="text-right"><b>&#8377; <span th:text="${invoice.totalAmountDisplay}">1,132,800.00</span></b></td>
+                    <td class="text-right"><b>&#8377; <span
+                                th:text="${invoice.totalAmountDisplay}">1,132,800.00</span></b></td>
                 </tr>
             </table>
 
@@ -212,14 +214,27 @@
                     <td colspan="8" style="padding:8px;">
                         <ol style="padding-left:18px; margin:0;">
                             <li>Validity of Proforma Invoice is for 3 months from the date of issue of the invoice.</li>
-                            <li>MahaIT will start the service only after receipt of 100% advance payment and submission of RTGS details via email to manpowerfundreceipt@mahait.org.</li>
-                            <li>The resource pay rate shall be revised annually from the commencement date, i.e., 1st October of every year, with an increment of 8% for each manpower category and shall be considered as the new base rate for that year.</li>
-                            <li>The above prices are inclusive of applicable taxes and MahaIT's operating margin @ 10%.</li>
-                            <li>Any modification in the manpower description must be intimated to MahaIT within 8 days from the date of this Proforma Invoice. The respective rates may vary depending on the change or modification suggested.</li>
-                            <li>After receiving 100% advance payment from the user department or client through RTGS, NEFT, Demand Draft, or Cheque, as per the details mentioned above, the work order for providing resources will be issued.</li>
-                            <li>It is solely the responsibility of the department to ensure that the manpower resources demanded are utilized only for the technical duties as required.</li>
-                            <li>Before depositing funds, it must be ensured that standard deductions such as Income Tax (TDS @ 2%) are deducted and mentioned in the fund disbursement letter. If the customer or department does not share the GSTIN, the transaction shall be treated as B2C sales.</li>
-                            <li>If the service is not provided within 60 days, the amount paid shall be treated as a trade deposit and shall be eligible for refund.</li>
+                            <li>MahaIT will start the service only after receipt of 100% advance payment and submission
+                                of RTGS details via email to manpowerfundreceipt@mahait.org.</li>
+                            <li>The resource pay rate shall be revised annually from the commencement date, i.e., 1st
+                                October of every year, with an increment of 8% for each manpower category and shall be
+                                considered as the new base rate for that year.</li>
+                            <li>The above prices are inclusive of applicable taxes and MahaIT's operating margin @ 10%.
+                            </li>
+                            <li>Any modification in the manpower description must be intimated to MahaIT within 8 days
+                                from the date of this Proforma Invoice. The respective rates may vary depending on the
+                                change or modification suggested.</li>
+                            <li>After receiving 100% advance payment from the user department or client through RTGS,
+                                NEFT, Demand Draft, or Cheque, as per the details mentioned above, the work order for
+                                providing resources will be issued.</li>
+                            <li>It is solely the responsibility of the department to ensure that the manpower resources
+                                demanded are utilized only for the technical duties as required.</li>
+                            <li>Before depositing funds, it must be ensured that standard deductions such as Income Tax
+                                (TDS @ 2%) are deducted and mentioned in the fund disbursement letter. If the customer
+                                or department does not share the GSTIN, the transaction shall be treated as B2C sales.
+                            </li>
+                            <li>If the service is not provided within 60 days, the amount paid shall be treated as a
+                                trade deposit and shall be eligible for refund.</li>
                             <li>All disputes are subject to Mumbai jurisdiction.</li>
                         </ol>
                     </td>

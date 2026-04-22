@@ -69,6 +69,8 @@ public class TaxInvoiceViewMapper {
                 .clientGstNumber(entity.getClientGstNumber())
                 .placeOfSupply(entity.getPlaceOfSupply())
                 .baseAmount(entity.getBaseAmount())
+                .agencyCommissionAmount(entity.getAgencyCommissionAmount())
+                .mahaItCommissionAmount(entity.getMahaItCommissionAmount())
                 .cgstRate(entity.getCgstRate())
                 .cgstAmount(entity.getCgstAmount())
                 .sgstRate(entity.getSgstRate())
@@ -90,6 +92,8 @@ public class TaxInvoiceViewMapper {
                 .build();
 
         view.setBaseAmountDisplay(displayFormatter.formatAmount(entity.getBaseAmount()));
+        view.setAgencyCommissionAmountDisplay(displayFormatter.formatAmount(entity.getAgencyCommissionAmount()));
+        view.setMahaItCommissionAmountDisplay(displayFormatter.formatAmount(entity.getMahaItCommissionAmount()));
         view.setCgstRateDisplay(displayFormatter.formatRate(entity.getCgstRate()));
         view.setCgstAmountDisplay(displayFormatter.formatAmount(entity.getCgstAmount()));
         view.setSgstRateDisplay(displayFormatter.formatRate(entity.getSgstRate()));
@@ -112,7 +116,8 @@ public class TaxInvoiceViewMapper {
                 .resourceRequirementId(entity.getDepartmentProjectResourceRequirementId())
                 .lineNumber(entity.getLineNumber())
                 .description(entity.getDescription())
-                .requiredPeriodDisplay(buildRequiredPeriodDisplay(requiredPeriodStartDate, entity.getDurationInMonths()))
+                .requiredPeriodDisplay(
+                        buildRequiredPeriodDisplay(requiredPeriodStartDate, entity.getDurationInMonths()))
                 .sacHsn(entity.getSacHsn())
                 .quantity(entity.getQuantity())
                 .durationInMonths(entity.getDurationInMonths())

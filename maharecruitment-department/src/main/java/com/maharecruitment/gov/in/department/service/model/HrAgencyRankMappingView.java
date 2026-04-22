@@ -32,6 +32,8 @@ public class HrAgencyRankMappingView {
     private boolean recruitmentNotificationAvailable;
 
     private List<HrAgencyOptionView> agencyOptions;
+    
+    private List<String> availableCategories;
 
     private List<HrAssignedAgencyRankView> assignedAgencyRanks;
 }

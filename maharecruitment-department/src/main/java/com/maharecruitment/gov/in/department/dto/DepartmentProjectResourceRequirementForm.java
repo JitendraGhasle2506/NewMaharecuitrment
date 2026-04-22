@@ -38,10 +38,15 @@ public class DepartmentProjectResourceRequirementForm {
     private Integer requiredQuantity;
 
     @NotNull(message = "Duration in months is required.")
-    @Min(value = 3, message = "Duration in months must be at least 3.")
+    @Min(value = 1, message = "Duration in months must be at least 1.")
     private Integer durationInMonths;
 
     @NotNull(message = "Total cost is required.")
     @DecimalMin(value = "0.01", message = "Total cost must be greater than zero.")
     private BigDecimal totalCost;
+
+    private BigDecimal agencyCommissionAmount;
+    private BigDecimal mahaItCommissionAmount;
+    private BigDecimal taxableAmount;
+    private BigDecimal gstAmount;
 }

@@ -36,6 +36,8 @@ public class AgencySubmittedCandidateView {
 
     private RecruitmentCandidateStatus candidateStatus;
 
+    private String interviewAuthority;
+
     private String resumeOriginalName;
 
     private String resumeFilePath;
