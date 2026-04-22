@@ -1,0 +1,32 @@
+<jboss-deployment-structure>
+    <deployment>
+
+        <!-- Disable WildFly JPA + Bean Validation subsystems -->
+        <exclude-subsystems>
+            <subsystem name="jpa"/>
+            <subsystem name="bean-validation"/>
+        </exclude-subsystems>
+
+        <!-- IMPORTANT: exclude ALL hibernate + validation modules -->
+        <exclusions>
+            <module name="jakarta.persistence.api"/>
+            <module name="jakarta.transaction.api"/>
+
+            <module name="org.hibernate"/>
+            <module name="org.hibernate.jpa"/>
+
+            <module name="org.hibernate.validator"/>
+            <module name="org.hibernate.validator.cdi"/>
+            <module name="jakarta.validation.api"/>
+
+            <module name="org.jboss.as.jpa"/>
+            <module name="org.jboss.as.bean-validation"/>
+        </exclusions>
+
+        <!-- isolate deployment (very important) -->
+       <!-- <dependencies>
+            <module name="jakarta.api" export="true"/>
+        </dependencies>-->
+
+    </deployment>
+</jboss-deployment-structure>

@@ -27,128 +27,177 @@ import jakarta.servlet.http.HttpServletResponse;
 @EnableWebSecurity
 public class SecurityConfig {
 
-        @Bean
-        public static PasswordEncoder passwordEncoder() {
-                return new BCryptPasswordEncoder();
-        }
+    @Bean
+     static PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-        @Bean
-        AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-                return config.getAuthenticationManager();
-        }
+    @Bean
+    AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 
-        @Bean
-        DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService) {
-                DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-                authProvider.setPasswordEncoder(passwordEncoder());
-                return authProvider;
-        }
+    @Bean
+    DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService) {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
 
-        @Bean
-        SecurityFilterChain filterChain(
-                        HttpSecurity http,
-                        DaoAuthenticationProvider authenticationProvider,
-                        ApplicationCookieService applicationCookieService,
-                        com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler successHandler,
-                        CustomLoginFailureHandler loginFailureHandler,
-                        CustomAccessDeniedHandler accessDeniedHandler,
-                        CustomLogoutSuccessHandler logoutSuccessHandler) throws Exception {
+    @Bean
+    SecurityFilterChain filterChain(
+            HttpSecurity http,
+            DaoAuthenticationProvider authenticationProvider,
+            ApplicationCookieService applicationCookieService,
+            com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler successHandler,
+            CustomLoginFailureHandler loginFailureHandler,
+            CustomAccessDeniedHandler accessDeniedHandler,
+            CustomLogoutSuccessHandler logoutSuccessHandler) throws Exception {
 
-                http.authenticationProvider(authenticationProvider);
+        http.authenticationProvider(authenticationProvider);
 
-                http
-                                .csrf(Customizer.withDefaults())
-                                .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers(
-                                                                "/", "/index", "/login", "/doLogin", "/register/**",
-                                                                "/registration**", "/js/**", "/css/**",
-                                                                "/img/**", "/images/**", "/icons/**", "/webjars/**",
-                                                                "/test/**", "/otp/**",
-                                                                "/error", "/error/**")
-                                                .permitAll()
+        http
+            // 🔥 (Optional) disable CSRF temporarily if needed
+            .csrf(Customizer.withDefaults())
 
-                                                // .requestMatchers("/api/master/agencies/**").hasAuthority("ROLE_ADMIN")
-                                                // .requestMatchers("/master/agencies/**").hasAuthority("ROLE_ADMIN")
-                                                .requestMatchers("/common/mahait-profile/**")
-                                                .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR")
-                                                .requestMatchers("/home", "/common/**").authenticated()
-                                                .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
-                                                .requestMatchers("/hr/department/payment/**")
-                                                .hasAnyAuthority("ROLE_HR", "ROLE_AUDITOR")
-                                                .requestMatchers("/hr/**", "/employees/**").hasAuthority("ROLE_HR")
-                                                .requestMatchers("/agency/**").hasAuthority("ROLE_AGENCY")
-                                                .requestMatchers("/user/**").hasAuthority("ROLE_USER")
-                                                .requestMatchers("/panel/**")
-                                                .hasAnyAuthority("ROLE_COO", "ROLE_HOD", "ROLE_HOD1", "ROLE_STM", "ROLE_HR", "ROLE_PM", "ROLE_EMPLOYEE")
-                                                .requestMatchers("/interview-authority/**")
-                                                .hasAnyAuthority("ROLE_HOD", "ROLE_PM", "ROLE_STM")
-                                                .requestMatchers("/stm/**").hasAuthority("ROLE_STM")
-                                                .requestMatchers("/pm/**").hasAuthority("ROLE_PM")
-                                                .requestMatchers("/hod1/**", "/hod2/**").hasAuthority("ROLE_HOD")
-                                                .requestMatchers("/coo/**").hasAnyAuthority("ROLE_COO", "ROLE_AUDITOR")
-                                                .requestMatchers("/employee/**").hasAuthority("ROLE_EMPLOYEE")
-                                                .requestMatchers("/department/payment/*/receipt")
-                                                .hasAnyAuthority("ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AUDITOR")
-                                                .requestMatchers("/invoice/**")
-                                                .hasAnyAuthority("ROLE_ADMIN", "ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AUDITOR")
-                                                .requestMatchers("/department/**").hasAuthority("ROLE_DEPARTMENT")
-                                                .requestMatchers("/auditor/**").hasAuthority("ROLE_AUDITOR")
+            .authorizeHttpRequests(auth -> auth
 
-                                                // Existing project module URLs
-                                                .requestMatchers("/attendance/**", "/eservicebook/**", "/pension/**",
-                                                                "/hrms/**", "/payroll/**")
-                                                .hasAuthority("ROLE_ADMIN")
-                                                .anyRequest().authenticated())
-                                .formLogin(form -> form
-                                                .loginPage("/login")
-                                                .loginProcessingUrl("/doLogin")
-                                                .successHandler(successHandler)
-                                                .failureHandler(loginFailureHandler)
-                                                .permitAll())
-                                .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                                                .sessionFixation().migrateSession()
-                                                .invalidSessionStrategy((request, response) -> {
-                                                        clearSessionCookie(request, response, applicationCookieService);
-                                                        response.sendRedirect(
-                                                                        request.getContextPath()
-                                                                                        + "/login?sessionExpired=true");
-                                                })
-                                                .maximumSessions(1)
-                                                .maxSessionsPreventsLogin(false)
-                                                .expiredSessionStrategy(event -> {
-                                                        HttpServletRequest request = event.getRequest();
-                                                        HttpServletResponse response = event.getResponse();
-                                                        clearSessionCookie(request, response, applicationCookieService);
-                                                        response.sendRedirect(
-                                                                        request.getContextPath()
-                                                                                        + "/login?sessionExpired=true");
-                                                }))
-                                .exceptionHandling(ex -> ex
-                                                .accessDeniedHandler(accessDeniedHandler)
-                                                .authenticationEntryPoint((req, res, authEx) -> res
-                                                                .sendRedirect(req.getContextPath()
-                                                                                + "/login?unauthenticated=true")))
-                                .logout(logout -> logout
-                                                .logoutUrl("/logout")
-                                                .logoutSuccessHandler(logoutSuccessHandler)
-                                                .invalidateHttpSession(true)
-                                                .permitAll())
-                                .headers(headers -> headers
-                                                .httpStrictTransportSecurity(
-                                                                hsts -> hsts.includeSubDomains(true).preload(true))
-                                                .frameOptions(frame -> frame.sameOrigin())
-                                                .cacheControl(cache -> {
-                                                })
-                                                .addHeaderWriter(new CacheControlHeadersWriter()));
+                // ✅ IMPORTANT: keep login FIRST
+                .requestMatchers("/login", "/doLogin").permitAll()
 
-                return http.build();
-        }
+                .requestMatchers(
+                        "/", "/index", "/register/**",
+                        "/registration**", "/js/**", "/css/**",
+                        "/img/**", "/images/**", "/icons/**", "/webjars/**",
+                        "/test/**", "/otp/**",
+                        "/error", "/error/**"
+                ).permitAll()
 
-        private static void clearSessionCookie(
-                        HttpServletRequest request,
-                        HttpServletResponse response,
-                        ApplicationCookieService applicationCookieService) {
-                applicationCookieService.expireManagedCookie(request, response, "JSESSIONID");
-        }
+                .requestMatchers("/common/mahait-profile/**")
+                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR")
+
+                .requestMatchers("/home", "/common/**").authenticated()
+                .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
+
+                .requestMatchers("/hr/department/payment/**")
+                    .hasAnyAuthority("ROLE_HR", "ROLE_AUDITOR")
+
+                .requestMatchers("/hr/**", "/employees/**").hasAuthority("ROLE_HR")
+                .requestMatchers("/agency/**").hasAuthority("ROLE_AGENCY")
+                .requestMatchers("/user/**").hasAuthority("ROLE_USER")
+
+                .requestMatchers("/panel/**")
+                    .hasAnyAuthority("ROLE_COO", "ROLE_HOD", "ROLE_HOD1", "ROLE_STM", "ROLE_HR", "ROLE_PM", "ROLE_EMPLOYEE")
+
+                .requestMatchers("/interview-authority/**")
+                    .hasAnyAuthority("ROLE_HOD", "ROLE_PM", "ROLE_STM")
+
+                .requestMatchers("/stm/**").hasAuthority("ROLE_STM")
+                .requestMatchers("/pm/**").hasAuthority("ROLE_PM")
+                .requestMatchers("/hod1/**", "/hod2/**").hasAuthority("ROLE_HOD")
+
+                .requestMatchers("/coo/**")
+                    .hasAnyAuthority("ROLE_COO", "ROLE_AUDITOR")
+
+                .requestMatchers("/employee/**").hasAuthority("ROLE_EMPLOYEE")
+
+                .requestMatchers("/department/payment/*/receipt")
+                    .hasAnyAuthority("ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AUDITOR")
+
+                .requestMatchers("/invoice/**")
+                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AUDITOR")
+
+                .requestMatchers("/department/**").hasAuthority("ROLE_DEPARTMENT")
+                .requestMatchers("/auditor/**").hasAuthority("ROLE_AUDITOR")
+
+                .requestMatchers("/attendance/**", "/eservicebook/**", "/pension/**",
+                                 "/hrms/**", "/payroll/**")
+                    .hasAuthority("ROLE_ADMIN")
+
+                .anyRequest().authenticated()
+            )
+
+            .formLogin(form -> form
+                .loginPage("/login")
+                .loginProcessingUrl("/doLogin")
+                .successHandler(successHandler)
+                .failureHandler(loginFailureHandler)
+                .permitAll()
+            )
+
+				/*
+				 * .sessionManagement(session -> session
+				 * .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+				 * .sessionFixation().migrateSession()
+				 * 
+				 * // ✅ FIX: prevent loop .invalidSessionStrategy((request, response) -> {
+				 * String uri = request.getRequestURI();
+				 * System.out.println("uri---------SessionCreationPolicy.IF_REQUIRED---------"+
+				 * uri); if (!uri.contains("/login")) { clearSessionCookie(request, response,
+				 * applicationCookieService); response.sendRedirect(request.getContextPath() +
+				 * "/login?sessionExpired=true"); } })
+				 * 
+				 * .maximumSessions(1) .maxSessionsPreventsLogin(false)
+				 * 
+				 * // ✅ FIX: prevent loop .expiredSessionStrategy(event -> { HttpServletRequest
+				 * request = event.getRequest(); HttpServletResponse response =
+				 * event.getResponse(); String uri = request.getRequestURI();
+				 * System.out.println(
+				 * "uri---------SessionCreationPolicy.IF_REQUIRED-----not----"+uri); if
+				 * (!uri.contains("/login")) { clearSessionCookie(request, response,
+				 * applicationCookieService); response.sendRedirect(request.getContextPath() +
+				 * "/login?sessionExpired=true"); } }) )
+				 */
+            
+            .sessionManagement(session -> session
+            	    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+            	    .sessionFixation().migrateSession()
+            	    .maximumSessions(1)
+            	)
+            
+            
+            .exceptionHandling(ex -> ex
+                .accessDeniedHandler(accessDeniedHandler)
+
+                // ✅ FIX: prevent infinite redirect
+                .authenticationEntryPoint((req, res, authEx) -> {
+                    String uri = req.getRequestURI();
+                    if (!uri.equals(req.getContextPath() + "/login")) {
+                        res.sendRedirect(req.getContextPath() + "/login");
+                    }
+                })
+            )
+
+				/*
+				 * .logout(logout -> logout .logoutUrl("/logout")
+				 * .logoutSuccessHandler(logoutSuccessHandler) .invalidateHttpSession(true)
+				 * .permitAll() )
+				 */
+
+            .logout(logout -> logout
+            	    .logoutUrl("/logout")
+            	    .logoutSuccessHandler((request, response, authentication) -> {
+            	        request.getSession().invalidate();
+            	        response.sendRedirect(request.getContextPath() + "/login?logout=true");
+            	    })
+            	    .deleteCookies("JSESSIONID")
+            	)
+            
+            .headers(headers -> headers
+                .httpStrictTransportSecurity(
+                        hsts -> hsts.includeSubDomains(true).preload(true))
+                .frameOptions(frame -> frame.sameOrigin())
+                .cacheControl(cache -> {})
+                .addHeaderWriter(new CacheControlHeadersWriter())
+            );
+
+        return http.build();
+    }
+
+    private static void clearSessionCookie(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            ApplicationCookieService applicationCookieService) {
+        applicationCookieService.expireManagedCookie(request, response, "JSESSIONID");
+    }
 }
