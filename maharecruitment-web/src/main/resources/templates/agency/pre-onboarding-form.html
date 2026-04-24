@@ -93,8 +93,9 @@
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label class="form-label">Mobile <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <input type="text" class="form-control" th:field="*{mobile}" pattern="[0-9]{10,15}"
-                                                th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
+                                            <input type="text" class="form-control" th:field="*{mobile}" pattern="[0-9]{10}"
+                                                maxlength="10" th:readonly="*{hrFlow}"
+                                                th:classappend="*{hrFlow} ? 'readonly-field'" required />
                                         </div>
                                     </div>
                                     <div class="row">

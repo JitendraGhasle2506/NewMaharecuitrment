@@ -26,6 +26,8 @@
 			--tour-bg: #f3ebfa;
 			--future: #99a5b3;
 			--future-bg: #f3f5f7;
+			--pre-joining: #64748b;
+			--pre-joining-bg: #f1f5f9;
 		}
 
 		.attendance-register-card {
@@ -205,6 +207,7 @@
 		.circle-tour { background: var(--tour); }
 		.circle-weekoff { background: var(--weekoff-bg); color: var(--weekoff); }
 		.circle-future { background: var(--future-bg); color: var(--future); }
+		.circle-pre-joining { background: var(--pre-joining-bg); color: var(--pre-joining); border: 1px dashed var(--pre-joining); }
 
 		.bulk-toolbar {
 			display: grid;
@@ -288,7 +291,7 @@
 			min-width: 100%;
 			border-collapse: separate;
 			border-spacing: 0;
-			font-size: 0.88rem;
+			font-size: 0.82rem;
 			color: var(--attendance-ink);
 		}
 
@@ -330,15 +333,15 @@
 			z-index: 8;
 		}
 
-		.col-request { left: 0; min-width: 120px; width: 120px; }
-		.col-employee { left: 120px; min-width: 220px; width: 220px; }
-		.col-designation { left: 340px; min-width: 190px; width: 190px; }
-		.col-level { left: 530px; min-width: 100px; width: 100px; }
-		.col-agency { left: 630px; min-width: 220px; width: 220px; }
-		.day-column { min-width: 58px; width: 58px; }
+		.col-request { left: 0; min-width: 80px; width: 80px; }
+		.col-employee { left: 80px; min-width: 160px; width: 160px; }
+		.col-designation { left: 240px; min-width: 140px; width: 140px; }
+		.col-level { left: 380px; min-width: 60px; width: 60px; }
+		.col-agency { left: 440px; min-width: 160px; width: 160px; }
+		.day-column { min-width: 34px; width: 34px; }
 
 		.cell-content {
-			padding: 12px 10px;
+			padding: 8px 6px;
 		}
 
 		.cell-content.left {
@@ -352,19 +355,19 @@
 
 		.cell-subtext {
 			display: block;
-			margin-top: 4px;
-			font-size: 0.78rem;
+			margin-top: 2px;
+			font-size: 0.7rem;
 			color: var(--attendance-muted);
 		}
 
 		.attendance-select {
 			width: 100%;
-			min-height: 42px;
+			min-height: 32px;
 			border: 0;
 			background: transparent;
 			text-align: center;
 			text-align-last: center;
-			font-size: 0.95rem;
+			font-size: 0.85rem;
 			font-weight: 800;
 			cursor: pointer;
 			outline: 0;
@@ -387,16 +390,28 @@
 			background: var(--future-bg) !important;
 		}
 
-		.future-marker {
+		.pre-joining-cell {
+			background: var(--pre-joining-bg) !important;
+		}
+
+		.future-marker, .pre-joining-marker {
 			display: inline-flex;
 			width: 100%;
-			min-height: 42px;
+			min-height: 32px;
 			align-items: center;
 			justify-content: center;
-			font-size: 0.9rem;
+			font-size: 0.85rem;
 			font-weight: 800;
+		}
+
+		.future-marker {
 			color: var(--future);
 			background: var(--future-bg);
+		}
+
+		.pre-joining-marker {
+			color: var(--pre-joining);
+			background: var(--pre-joining-bg);
 		}
 
 		.table-actions {
@@ -598,6 +613,10 @@
 											<div class="legend-circle circle-future">F</div>
 											<span>Invalid or Future Date</span>
 										</div>
+										<div class="legend-item">
+											<div class="legend-circle circle-pre-joining">N</div>
+											<span>Pre-Joining Date</span>
+										</div>
 									</div>
 								</div>
 
@@ -725,7 +744,7 @@
 															</div>
 														</td>
 														<td th:each="day, dayStat : ${emp.attendanceDays}" class="day-column"
-															th:classappend="${day.status == 'FUTURE' ? ' future-cell' : ''}">
+															th:classappend="${day.status == 'FUTURE' ? ' future-cell' : (day.status == 'PRE_JOINING' ? ' pre-joining-cell' : '')}">
 															<input type="hidden"
 																th:name="'dtos[' + ${empStat.index} + '].attendanceDays[' + ${dayStat.index} + '].date'"
 																th:value="${#temporals.format(day.date, 'yyyy-MM-dd')}" />
@@ -748,6 +767,7 @@
 																<option value="HOLIDAY" th:selected="${day.status == 'HOLIDAY'}">H</option>
 															</select>
 															<span th:if="${day.status == 'FUTURE'}" class="future-marker">F</span>
+															<span th:if="${day.status == 'PRE_JOINING'}" class="pre-joining-marker" title="Prior to Joining Date">N</span>
 														</td>
 													</tr>
 												</tbody>

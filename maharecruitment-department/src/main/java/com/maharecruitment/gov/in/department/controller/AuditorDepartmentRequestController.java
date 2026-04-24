@@ -38,274 +38,283 @@ import jakarta.validation.Valid;
 @RequestMapping("/auditor/department-requests")
 public class AuditorDepartmentRequestController {
 
-    private static final Logger log = LoggerFactory.getLogger(AuditorDepartmentRequestController.class);
+        private static final Logger log = LoggerFactory.getLogger(AuditorDepartmentRequestController.class);
 
-    private final AuditorDepartmentRequestService auditorDepartmentRequestService;
-    private final DepartmentWorkOrderStorageService workOrderStorageService;
-    private final DepartmentProfileDocumentStorageService profileDocumentStorageService;
+        private final AuditorDepartmentRequestService auditorDepartmentRequestService;
+        private final DepartmentWorkOrderStorageService workOrderStorageService;
+        private final DepartmentProfileDocumentStorageService profileDocumentStorageService;
 
-    public AuditorDepartmentRequestController(
-            AuditorDepartmentRequestService auditorDepartmentRequestService,
-            DepartmentWorkOrderStorageService workOrderStorageService,
-            DepartmentProfileDocumentStorageService profileDocumentStorageService) {
-        this.auditorDepartmentRequestService = auditorDepartmentRequestService;
-        this.workOrderStorageService = workOrderStorageService;
-        this.profileDocumentStorageService = profileDocumentStorageService;
-    }
-
-    @GetMapping
-    public String departmentRequestSummary(Model model) {
-        try {
-            model.addAttribute("parentDepartmentRequests", auditorDepartmentRequestService.getParentDepartmentRequests());
-        } catch (DepartmentApplicationException ex) {
-            log.warn("Unable to load auditor parent department queue. reason={}", ex.getMessage());
-            model.addAttribute("errorMessage", ex.getMessage());
-            model.addAttribute("parentDepartmentRequests", List.of());
-        } catch (Exception ex) {
-            log.error("Unexpected error while loading auditor parent department queue.", ex);
-            model.addAttribute(
-                    "errorMessage",
-                    "Unable to load parent departments right now. Please try again.");
-            model.addAttribute("parentDepartmentRequests", List.of());
-        }
-        return "auditor/department-request-list";
-    }
-
-    @GetMapping("/{departmentId}/subdepartments")
-    public String subDepartmentProjectCounts(
-            @PathVariable Long departmentId,
-            Model model,
-            RedirectAttributes redirectAttributes) {
-        try {
-            model.addAttribute(
-                    "subDepartmentRequest",
-                    auditorDepartmentRequestService.getSubDepartmentProjectCounts(departmentId));
-            return "auditor/department-request-subdepartment-list";
-        } catch (DepartmentApplicationException ex) {
-            log.warn("Unable to load auditor sub-department queue for departmentId={}, reason={}",
-                    departmentId,
-                    ex.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/auditor/department-requests";
-        }
-    }
-
-    @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications")
-    public String queueApplications(
-            @PathVariable Long departmentId,
-            @PathVariable Long subDepartmentId,
-            Model model,
-            RedirectAttributes redirectAttributes) {
-        try {
-            model.addAttribute(
-                    "applicationDetail",
-                    auditorDepartmentRequestService.getSubDepartmentApplications(departmentId, subDepartmentId));
-            return "auditor/department-request-applications";
-        } catch (DepartmentApplicationException ex) {
-            log.warn("Unable to load auditor queue applications for departmentId={}, subDepartmentId={}, reason={}",
-                    departmentId,
-                    subDepartmentId,
-                    ex.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments";
-        }
-    }
-
-    @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}")
-    public String applicationDetail(
-            @PathVariable Long departmentId,
-            @PathVariable Long subDepartmentId,
-            @PathVariable Long applicationId,
-            Model model,
-            RedirectAttributes redirectAttributes) {
-        try {
-            AuditorDepartmentApplicationReviewDetailView reviewDetail = auditorDepartmentRequestService
-                    .getApplicationReviewDetail(departmentId, subDepartmentId, applicationId);
-            populateReviewModel(model, reviewDetail);
-            if (!model.containsAttribute("reviewForm")) {
-                model.addAttribute("reviewForm", new AuditorDepartmentReviewForm());
-            }
-            return "auditor/department-request-application-detail";
-        } catch (DepartmentApplicationException ex) {
-            log.warn("Unable to load auditor application detail. departmentId={}, subDepartmentId={}, applicationId={}, reason={}",
-                    departmentId,
-                    subDepartmentId,
-                    applicationId,
-                    ex.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
-                    + "/applications";
-        }
-    }
-
-    @PostMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/review")
-    public String reviewApplicationByAuditor(
-            @PathVariable Long departmentId,
-            @PathVariable Long subDepartmentId,
-            @PathVariable Long applicationId,
-            @Valid @ModelAttribute("reviewForm") AuditorDepartmentReviewForm reviewForm,
-            BindingResult bindingResult,
-            Model model,
-            Principal principal,
-            RedirectAttributes redirectAttributes) {
-        if (isRemarksMandatory(reviewForm.getDecision()) && !StringUtils.hasText(reviewForm.getRemarks())) {
-            bindingResult.rejectValue("remarks", "reviewForm.remarks.required",
-                    "Remarks are required for send back decision.");
+        public AuditorDepartmentRequestController(
+                        AuditorDepartmentRequestService auditorDepartmentRequestService,
+                        DepartmentWorkOrderStorageService workOrderStorageService,
+                        DepartmentProfileDocumentStorageService profileDocumentStorageService) {
+                this.auditorDepartmentRequestService = auditorDepartmentRequestService;
+                this.workOrderStorageService = workOrderStorageService;
+                this.profileDocumentStorageService = profileDocumentStorageService;
         }
 
-        if (bindingResult.hasErrors()) {
-            try {
-                AuditorDepartmentApplicationReviewDetailView reviewDetail = auditorDepartmentRequestService
-                        .getApplicationReviewDetail(departmentId, subDepartmentId, applicationId);
-                populateReviewModel(model, reviewDetail);
-                return "auditor/department-request-application-detail";
-            } catch (DepartmentApplicationException ex) {
-                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        @GetMapping
+        public String departmentRequestSummary(Model model) {
+                try {
+                        model.addAttribute("parentDepartmentRequests",
+                                        auditorDepartmentRequestService.getParentDepartmentRequests());
+                } catch (DepartmentApplicationException ex) {
+                        log.warn("Unable to load auditor parent department queue. reason={}", ex.getMessage());
+                        model.addAttribute("errorMessage", ex.getMessage());
+                        model.addAttribute("parentDepartmentRequests", List.of());
+                } catch (Exception ex) {
+                        log.error("Unexpected error while loading auditor parent department queue.", ex);
+                        model.addAttribute(
+                                        "errorMessage",
+                                        "Unable to load parent departments right now. Please try again.");
+                        model.addAttribute("parentDepartmentRequests", List.of());
+                }
+                return "auditor/department-request-list";
+        }
+
+        @GetMapping("/{departmentId}/subdepartments")
+        public String subDepartmentProjectCounts(
+                        @PathVariable Long departmentId,
+                        Model model,
+                        RedirectAttributes redirectAttributes) {
+                try {
+                        model.addAttribute(
+                                        "subDepartmentRequest",
+                                        auditorDepartmentRequestService.getSubDepartmentProjectCounts(departmentId));
+                        return "auditor/department-request-subdepartment-list";
+                } catch (DepartmentApplicationException ex) {
+                        log.warn("Unable to load auditor sub-department queue for departmentId={}, reason={}",
+                                        departmentId,
+                                        ex.getMessage());
+                        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                        return "redirect:/auditor/department-requests";
+                }
+        }
+
+        @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications")
+        public String queueApplications(
+                        @PathVariable Long departmentId,
+                        @PathVariable Long subDepartmentId,
+                        Model model,
+                        RedirectAttributes redirectAttributes) {
+                try {
+                        model.addAttribute(
+                                        "applicationDetail",
+                                        auditorDepartmentRequestService.getSubDepartmentApplications(departmentId,
+                                                        subDepartmentId));
+                        return "auditor/department-request-applications";
+                } catch (DepartmentApplicationException ex) {
+                        log.warn("Unable to load auditor queue applications for departmentId={}, subDepartmentId={}, reason={}",
+                                        departmentId,
+                                        subDepartmentId,
+                                        ex.getMessage());
+                        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                        return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments";
+                }
+        }
+
+        @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}")
+        public String applicationDetail(
+                        @PathVariable Long departmentId,
+                        @PathVariable Long subDepartmentId,
+                        @PathVariable Long applicationId,
+                        Model model,
+                        RedirectAttributes redirectAttributes) {
+                try {
+                        AuditorDepartmentApplicationReviewDetailView reviewDetail = auditorDepartmentRequestService
+                                        .getApplicationReviewDetail(departmentId, subDepartmentId, applicationId);
+                        populateReviewModel(model, reviewDetail);
+                        if (!model.containsAttribute("reviewForm")) {
+                                model.addAttribute("reviewForm", new AuditorDepartmentReviewForm());
+                        }
+                        return "auditor/department-request-application-detail";
+                } catch (DepartmentApplicationException ex) {
+                        log.warn("Unable to load auditor application detail. departmentId={}, subDepartmentId={}, applicationId={}, reason={}",
+                                        departmentId,
+                                        subDepartmentId,
+                                        applicationId,
+                                        ex.getMessage());
+                        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                        return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/"
+                                        + subDepartmentId
+                                        + "/applications";
+                }
+        }
+
+        @PostMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/review")
+        public String reviewApplicationByAuditor(
+                        @PathVariable Long departmentId,
+                        @PathVariable Long subDepartmentId,
+                        @PathVariable Long applicationId,
+                        @Valid @ModelAttribute("reviewForm") AuditorDepartmentReviewForm reviewForm,
+                        BindingResult bindingResult,
+                        Model model,
+                        Principal principal,
+                        RedirectAttributes redirectAttributes) {
+                if (isRemarksMandatory(reviewForm.getDecision()) && !StringUtils.hasText(reviewForm.getRemarks())) {
+                        bindingResult.rejectValue("remarks", "reviewForm.remarks.required",
+                                        "Remarks are required for send back decision.");
+                }
+
+                if (bindingResult.hasErrors()) {
+                        try {
+                                AuditorDepartmentApplicationReviewDetailView reviewDetail = auditorDepartmentRequestService
+                                                .getApplicationReviewDetail(departmentId, subDepartmentId,
+                                                                applicationId);
+                                populateReviewModel(model, reviewDetail);
+                                return "auditor/department-request-application-detail";
+                        } catch (DepartmentApplicationException ex) {
+                                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                                return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/"
+                                                + subDepartmentId
+                                                + "/applications";
+                        }
+                }
+
+                try {
+                        auditorDepartmentRequestService.reviewApplicationByAuditor(
+                                        departmentId,
+                                        subDepartmentId,
+                                        applicationId,
+                                        reviewForm.getDecision(),
+                                        reviewForm.getRemarks(),
+                                        resolveActorEmail(principal));
+
+                        redirectAttributes.addFlashAttribute("successMessage",
+                                        "Auditor decision applied successfully.");
+                        return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/"
+                                        + subDepartmentId
+                                        + "/applications/" + applicationId;
+                } catch (DepartmentApplicationException ex) {
+                        log.warn("Unable to apply auditor decision. departmentId={}, subDepartmentId={}, applicationId={}, reason={}",
+                                        departmentId,
+                                        subDepartmentId,
+                                        applicationId,
+                                        ex.getMessage());
+                        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                        return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/"
+                                        + subDepartmentId
+                                        + "/applications/" + applicationId;
+                }
+        }
+
+        @PostMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/complete")
+        public String completeApplication(
+                        @PathVariable Long departmentId,
+                        @PathVariable Long subDepartmentId,
+                        @PathVariable Long applicationId,
+                        @RequestParam(name = "completionRemarks", required = false) String completionRemarks,
+                        @RequestParam(name = "verificationConfirmed", defaultValue = "false") boolean verificationConfirmed,
+                        Principal principal,
+                        RedirectAttributes redirectAttributes) {
+                if (!verificationConfirmed) {
+                        redirectAttributes.addFlashAttribute(
+                                        "errorMessage",
+                                        "Please review the tax invoice preview and confirm completion.");
+                        return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/"
+                                        + subDepartmentId
+                                        + "/applications/" + applicationId;
+                }
+
+                try {
+                        auditorDepartmentRequestService.completeApplication(
+                                        departmentId,
+                                        subDepartmentId,
+                                        applicationId,
+                                        completionRemarks,
+                                        resolveActorEmail(principal));
+                        redirectAttributes.addFlashAttribute(
+                                        "successMessage",
+                                        "Application marked completed successfully. Proforma Invoice generated.");
+                        return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/"
+                                        + subDepartmentId
+                                        + "/applications/" + applicationId;
+                } catch (DepartmentApplicationException ex) {
+                        log.warn("Unable to complete application. departmentId={}, subDepartmentId={}, applicationId={}, reason={}",
+                                        departmentId,
+                                        subDepartmentId,
+                                        applicationId,
+                                        ex.getMessage());
+                        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                } catch (RuntimeException ex) {
+                        log.error(
+                                        "Unable to complete application because tax invoice generation failed. departmentId={}, subDepartmentId={}, applicationId={}",
+                                        departmentId,
+                                        subDepartmentId,
+                                        applicationId,
+                                        ex);
+                        redirectAttributes.addFlashAttribute(
+                                        "errorMessage",
+                                        "Unable to complete application because final proforma invoice generation failed. No changes were saved.");
+                }
+
                 return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
-                        + "/applications";
-            }
+                                + "/applications/" + applicationId;
         }
 
-        try {
-            auditorDepartmentRequestService.reviewApplicationByAuditor(
-                    departmentId,
-                    subDepartmentId,
-                    applicationId,
-                    reviewForm.getDecision(),
-                    reviewForm.getRemarks(),
-                    resolveActorEmail(principal));
+        @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/download-work-order")
+        public ResponseEntity<Resource> downloadWorkOrder(
+                        @PathVariable Long departmentId,
+                        @PathVariable Long subDepartmentId,
+                        @PathVariable Long applicationId) {
+                WorkOrderDocumentView documentView = auditorDepartmentRequestService.getApplicationWorkOrderDocument(
+                                departmentId,
+                                subDepartmentId,
+                                applicationId);
+                Resource resource = workOrderStorageService.loadAsResource(documentView.getFullPath());
 
-            redirectAttributes.addFlashAttribute("successMessage", "Auditor decision applied successfully.");
-            return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
-                    + "/applications/" + applicationId;
-        } catch (DepartmentApplicationException ex) {
-            log.warn("Unable to apply auditor decision. departmentId={}, subDepartmentId={}, applicationId={}, reason={}",
-                    departmentId,
-                    subDepartmentId,
-                    applicationId,
-                    ex.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
-                    + "/applications/" + applicationId;
-        }
-    }
-    
+                String contentType = documentView.getContentType() != null
+                                ? documentView.getContentType()
+                                : MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
-    @PostMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/complete")
-    public String completeApplication(
-            @PathVariable Long departmentId,
-            @PathVariable Long subDepartmentId,
-            @PathVariable Long applicationId,
-            @RequestParam(name = "completionRemarks", required = false) String completionRemarks,
-            @RequestParam(name = "verificationConfirmed", defaultValue = "false") boolean verificationConfirmed,
-            Principal principal,
-            RedirectAttributes redirectAttributes) {
-        if (!verificationConfirmed) {
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "Please review the tax invoice preview and confirm completion.");
-            return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
-                    + "/applications/" + applicationId;
+                return ResponseEntity.ok()
+                                .contentType(MediaType.parseMediaType(contentType))
+                                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                                                .filename(documentView.getOriginalFileName())
+                                                .build()
+                                                .toString())
+                                .body(resource);
         }
 
-        try {
-            auditorDepartmentRequestService.completeApplication(
-                    departmentId,
-                    subDepartmentId,
-                    applicationId,
-                    completionRemarks,
-                    resolveActorEmail(principal));
-            redirectAttributes.addFlashAttribute(
-                    "successMessage",
-                    "Application marked completed successfully. Tax invoice generated.");
-            return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
-                    + "/applications/" + applicationId;
-        } catch (DepartmentApplicationException ex) {
-            log.warn("Unable to complete application. departmentId={}, subDepartmentId={}, applicationId={}, reason={}",
-                    departmentId,
-                    subDepartmentId,
-                    applicationId,
-                    ex.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-        } catch (RuntimeException ex) {
-            log.error(
-                    "Unable to complete application because tax invoice generation failed. departmentId={}, subDepartmentId={}, applicationId={}",
-                    departmentId,
-                    subDepartmentId,
-                    applicationId,
-                    ex);
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "Unable to complete application because final tax invoice generation failed. No changes were saved.");
+        @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/registration-documents/{documentType}")
+        public ResponseEntity<Resource> downloadRegistrationDocument(
+                        @PathVariable Long departmentId,
+                        @PathVariable Long subDepartmentId,
+                        @PathVariable Long applicationId,
+                        @PathVariable String documentType) {
+                DepartmentProfileDocumentType profileDocumentType = DepartmentProfileDocumentType.from(documentType);
+                WorkOrderDocumentView documentView = auditorDepartmentRequestService.getDepartmentRegistrationDocument(
+                                departmentId,
+                                subDepartmentId,
+                                applicationId,
+                                profileDocumentType);
+                Resource resource = profileDocumentStorageService.loadAsResource(documentView.getFullPath());
+
+                String contentType = documentView.getContentType() != null
+                                ? documentView.getContentType()
+                                : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+
+                return ResponseEntity.ok()
+                                .contentType(MediaType.parseMediaType(contentType))
+                                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                                                .filename(documentView.getOriginalFileName())
+                                                .build()
+                                                .toString())
+                                .body(resource);
         }
 
-        return "redirect:/auditor/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
-                + "/applications/" + applicationId;
-    }
-
-    @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/download-work-order")
-    public ResponseEntity<Resource> downloadWorkOrder(
-            @PathVariable Long departmentId,
-            @PathVariable Long subDepartmentId,
-            @PathVariable Long applicationId) {
-        WorkOrderDocumentView documentView = auditorDepartmentRequestService.getApplicationWorkOrderDocument(
-                departmentId,
-                subDepartmentId,
-                applicationId);
-        Resource resource = workOrderStorageService.loadAsResource(documentView.getFullPath());
-
-        String contentType = documentView.getContentType() != null
-                ? documentView.getContentType()
-                : MediaType.APPLICATION_OCTET_STREAM_VALUE;
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
-                        .filename(documentView.getOriginalFileName())
-                        .build()
-                        .toString())
-                .body(resource);
-    }
-
-    @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}/registration-documents/{documentType}")
-    public ResponseEntity<Resource> downloadRegistrationDocument(
-            @PathVariable Long departmentId,
-            @PathVariable Long subDepartmentId,
-            @PathVariable Long applicationId,
-            @PathVariable String documentType) {
-        DepartmentProfileDocumentType profileDocumentType = DepartmentProfileDocumentType.from(documentType);
-        WorkOrderDocumentView documentView = auditorDepartmentRequestService.getDepartmentRegistrationDocument(
-                departmentId,
-                subDepartmentId,
-                applicationId,
-                profileDocumentType);
-        Resource resource = profileDocumentStorageService.loadAsResource(documentView.getFullPath());
-
-        String contentType = documentView.getContentType() != null
-                ? documentView.getContentType()
-                : MediaType.APPLICATION_OCTET_STREAM_VALUE;
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
-                        .filename(documentView.getOriginalFileName())
-                        .build()
-                        .toString())
-                .body(resource);
-    }
-
-    private void populateReviewModel(Model model, AuditorDepartmentApplicationReviewDetailView reviewDetail) {
-        model.addAttribute("applicationReviewDetail", reviewDetail);
-    }
-
-    private String resolveActorEmail(Principal principal) {
-        if (principal == null || !StringUtils.hasText(principal.getName())) {
-            throw new DepartmentApplicationException("Authenticated user is required.");
+        private void populateReviewModel(Model model, AuditorDepartmentApplicationReviewDetailView reviewDetail) {
+                model.addAttribute("applicationReviewDetail", reviewDetail);
         }
-        return principal.getName();
-    }
 
-    private boolean isRemarksMandatory(AuditorReviewDecision decision) {
-        return decision == AuditorReviewDecision.SEND_BACK;
-    }
+        private String resolveActorEmail(Principal principal) {
+                if (principal == null || !StringUtils.hasText(principal.getName())) {
+                        throw new DepartmentApplicationException("Authenticated user is required.");
+                }
+                return principal.getName();
+        }
+
+        private boolean isRemarksMandatory(AuditorReviewDecision decision) {
+                return decision == AuditorReviewDecision.SEND_BACK;
+        }
 }

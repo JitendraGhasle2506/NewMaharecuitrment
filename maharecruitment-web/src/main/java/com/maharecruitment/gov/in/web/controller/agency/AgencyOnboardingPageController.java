@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jakarta.validation.Valid;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
@@ -79,12 +82,27 @@ public class AgencyOnboardingPageController {
     @PostMapping("/pre/{recruitmentInterviewDetailId}")
     public String savePreOnboarding(
             @PathVariable Long recruitmentInterviewDetailId,
-            @ModelAttribute("preOnboardingForm") AgencyPreOnboardingForm form,
+            @Valid @ModelAttribute("preOnboardingForm") AgencyPreOnboardingForm form,
+            BindingResult bindingResult,
             Principal principal,
             Model model,
             RedirectAttributes redirectAttributes) {
         String actorEmail = resolveActorEmail(principal);
         form.setRecruitmentInterviewDetailId(recruitmentInterviewDetailId);
+
+        if (bindingResult.hasErrors()) {
+            try {
+                AgencyPreOnboardingForm referenceForm = onboardingPageService.loadPreOnboardingForm(
+                        actorEmail,
+                        recruitmentInterviewDetailId);
+                mergeReadonlyFields(referenceForm, form);
+                model.addAttribute("preOnboardingForm", form);
+                return "agency/pre-onboarding-form";
+            } catch (RecruitmentNotificationException ex) {
+                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                return "redirect:/agency/selected-candidates";
+            }
+        }
 
         try {
             onboardingPageService.savePreOnboarding(actorEmail, recruitmentInterviewDetailId, form);

@@ -325,7 +325,7 @@ public class HrDepartmentRequestController {
                     reviewForm.getRemarks(),
                     resolveActorEmail(principal));
 
-            redirectAttributes.addFlashAttribute("successMessage", "HR review decision applied successfully.");
+            redirectAttributes.addFlashAttribute("successMessage", "HR review decision applied successfully and forwarded to the auditor");
             return "redirect:/hr/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
                     + "/applications/" + applicationId;
         } catch (DepartmentApplicationException ex) {

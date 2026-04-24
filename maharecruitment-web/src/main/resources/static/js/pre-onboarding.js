@@ -384,8 +384,8 @@
         const value = mobileInput.value.trim();
         setFieldValidity(mobileInput, "");
         if (!value) return true;
-        if (!/^[0-9]{10,15}$/.test(value)) {
-            setFieldValidity(mobileInput, "Mobile number must be 10 to 15 digits.");
+        if (!/^[0-9]{10}$/.test(value)) {
+            setFieldValidity(mobileInput, "Mobile number must be exactly 10 digits.");
             return false;
         }
         return true;
@@ -576,7 +576,12 @@
 
     [mobileInput, panInput, aadhaarInput].forEach(function (el) {
         if (el) {
-            el.addEventListener("input", checkFormValidity);
+            el.addEventListener("input", function() {
+                if (el === mobileInput) {
+                    this.value = this.value.replace(/[^0-9]/g, "").substring(0, 10);
+                }
+                checkFormValidity();
+            });
         }
     });
 

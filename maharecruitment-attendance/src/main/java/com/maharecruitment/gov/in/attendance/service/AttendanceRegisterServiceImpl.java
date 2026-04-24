@@ -135,7 +135,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			boolean onTour = approvedTours.stream()
 					.anyMatch(t -> !fDate.isBefore(t.getStartDate()) && !fDate.isAfter(t.getEndDate()));
 
-			if (onLeave) {
+			if (emp.getJoiningDate() != null && date.isBefore(emp.getJoiningDate())) {
+				dayDTO.setStatus("PRE_JOINING");
+			} else if (onLeave) {
 				dayDTO.setStatus("LEAVE");
 			} else if (onTour) {
 				dayDTO.setStatus("TOUR");
