@@ -231,7 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     subDepartmentSelect.addEventListener("change", updateSubDepartmentState);
     declarationBox.addEventListener("scroll", enableDeclarationAcceptance);
-    //agreeCheckbox.addEventListener("change", toggleSubmitState);
+    agreeCheckbox.addEventListener("change", toggleSubmitState);
     mobileVerification.onChange(toggleSubmitState);
     emailVerification.onChange(toggleSubmitState);
 
