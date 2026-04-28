@@ -35,7 +35,7 @@ public class MobileOtpChannelHandler implements OtpChannelHandler {
     }
 
     @Override
-    public void dispatchOtp(String reference, String otp) {
+    public void dispatchOtp(String purpose, String reference, String otp) {
         otpDispatchService.sendMobileOtp(reference, otp);
     }
 }

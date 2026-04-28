@@ -5,14 +5,20 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -26,11 +32,13 @@ import jakarta.servlet.http.HttpSession;
 @Service
 public class OtpVerificationServiceImpl implements OtpVerificationService {
 
+    private static final Logger log = LoggerFactory.getLogger(OtpVerificationServiceImpl.class);
     private static final String SESSION_KEY = "otp.verification.state";
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final Map<VerificationChannel, OtpChannelHandler> handlers;
     private final OtpVerificationProperties properties;
+    private final Map<String, SendThrottleState> sendThrottleStore = new ConcurrentHashMap<>();
 
     public OtpVerificationServiceImpl(
             List<OtpChannelHandler> handlers,
@@ -45,13 +53,16 @@ public class OtpVerificationServiceImpl implements OtpVerificationService {
         OtpChannelHandler handler = getHandler(channel);
         String normalizedPurpose = normalizePurpose(purpose);
         String normalizedReference = handler.normalizeReference(reference);
+        String throttleKey = toThrottleKey(normalizedPurpose, channel, normalizedReference);
+        Instant reservedAt = reserveSendSlot(throttleKey);
         String otp = generateOtp();
         VerificationState pendingState = VerificationState.pending(normalizedReference, hash(otp), expiry());
 
         try {
-            handler.dispatchOtp(normalizedReference, otp);
+            handler.dispatchOtp(normalizedPurpose, normalizedReference, otp);
             getSessionStore(session).put(toStateKey(normalizedPurpose, channel), pendingState);
         } catch (RuntimeException ex) {
+            rollbackSendSlot(throttleKey, reservedAt);
             getSessionStore(session).remove(toStateKey(normalizedPurpose, channel));
             throw ex;
         }
@@ -192,6 +203,64 @@ public class OtpVerificationServiceImpl implements OtpVerificationService {
         return purpose + ":" + channel.name();
     }
 
+    private String toThrottleKey(String purpose, VerificationChannel channel, String reference) {
+        return purpose + ":" + channel.name() + ":" + reference;
+    }
+
+    private Instant reserveSendSlot(String throttleKey) {
+        Instant now = Instant.now();
+        SendThrottleState state = sendThrottleStore.computeIfAbsent(throttleKey, key -> new SendThrottleState());
+        synchronized (state) {
+            pruneSendHistory(state, now);
+
+            Instant lastSentAt = state.requestTimes.peekLast();
+            if (lastSentAt != null) {
+                Instant resendAllowedAt = lastSentAt.plusSeconds(properties.getResendCooldownSeconds());
+                if (now.isBefore(resendAllowedAt)) {
+                    throw new IllegalArgumentException(
+                            "OTP already sent. Please wait " + secondsUntil(now, resendAllowedAt)
+                                    + " seconds before requesting a new OTP.");
+                }
+            }
+
+            if (state.requestTimes.size() >= properties.getMaxSendAttempts()) {
+                Instant oldestRequest = state.requestTimes.peekFirst();
+                Instant retryAt = oldestRequest.plusSeconds(properties.getSendWindowSeconds());
+                throw new IllegalArgumentException(
+                        "Too many OTP requests. Please wait " + secondsUntil(now, retryAt)
+                                + " seconds before trying again.");
+            }
+
+            state.requestTimes.addLast(now);
+            return now;
+        }
+    }
+
+    private void rollbackSendSlot(String throttleKey, Instant reservedAt) {
+        SendThrottleState state = sendThrottleStore.get(throttleKey);
+        if (state == null) {
+            return;
+        }
+
+        synchronized (state) {
+            state.requestTimes.removeLastOccurrence(reservedAt);
+            if (state.requestTimes.isEmpty()) {
+                sendThrottleStore.remove(throttleKey, state);
+            }
+        }
+    }
+
+    private void pruneSendHistory(SendThrottleState state, Instant now) {
+        Instant cutoff = now.minusSeconds(properties.getSendWindowSeconds());
+        while (!state.requestTimes.isEmpty() && state.requestTimes.peekFirst().isBefore(cutoff)) {
+            state.requestTimes.removeFirst();
+        }
+    }
+
+    private long secondsUntil(Instant now, Instant target) {
+        return Math.max(1, Duration.between(now, target).getSeconds());
+    }
+
     private String hash(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -228,5 +297,9 @@ public class OtpVerificationServiceImpl implements OtpVerificationService {
         private boolean matches(String submittedHash) {
             return otpHash.equals(submittedHash);
         }
+    }
+
+    private static final class SendThrottleState {
+        private final Deque<Instant> requestTimes = new ArrayDeque<>();
     }
 }

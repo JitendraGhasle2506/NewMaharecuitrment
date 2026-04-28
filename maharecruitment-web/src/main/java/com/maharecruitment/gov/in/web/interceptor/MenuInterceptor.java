@@ -72,8 +72,9 @@ public class MenuInterceptor implements HandlerInterceptor {
                 .filter(authority -> !authority.isBlank())
                 .toList();
 
-        if (!(authentication.getPrincipal() instanceof UserDetails userDetails)) {
-            return true;
+        String loginIdentifier = authentication.getName();
+        if (authentication.getPrincipal() instanceof UserDetails userDetails) {
+            loginIdentifier = userDetails.getUsername();
         }
 
         Map<String, String> roleTargetUrlMap = CommonConstant.getDashboardUrls();
@@ -94,12 +95,12 @@ public class MenuInterceptor implements HandlerInterceptor {
         }
 
         // Keep the user lookup to align with existing module contract and future per-user menu logic.
-        userService.findUserByEmail(userDetails.getUsername());
+        userService.findUserByEmail(loginIdentifier);
 
         List<MstMenu> menus = mstMenuService.findMenusByRoleIds(roleIds);
         session.setAttribute(MENUS_KEY, menus);
         if (roles != null && !roles.isEmpty() && menus.isEmpty()) {
-            LOGGER.warn("No DB menus found for authenticated user {} with roles {}", userDetails.getUsername(), roles);
+            LOGGER.warn("No DB menus found for authenticated user {} with roles {}", loginIdentifier, roles);
         }
 
         List<Long> menuIds = menus.stream()

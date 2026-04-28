@@ -8,5 +8,5 @@ public interface OtpChannelHandler {
 
     String normalizeReference(String reference);
 
-    void dispatchOtp(String reference, String otp);
+    void dispatchOtp(String purpose, String reference, String otp);
 }

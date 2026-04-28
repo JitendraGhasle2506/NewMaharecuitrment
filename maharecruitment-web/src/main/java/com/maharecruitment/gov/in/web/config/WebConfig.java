@@ -25,7 +25,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(sessionValidationInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/", "/index", "/login", "/doLogin")
+                .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send")
                 .excludePathPatterns("/register/**", "/registration**")
                 .excludePathPatterns("/css/**", "/js/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/error/**")
@@ -33,7 +33,7 @@ public class WebConfig implements WebMvcConfigurer {
 
         registry.addInterceptor(menuInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/", "/index", "/login", "/doLogin")
+                .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send")
                 .excludePathPatterns("/register/**", "/registration**")
                 .excludePathPatterns("/css/**", "/js/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/error/**")
