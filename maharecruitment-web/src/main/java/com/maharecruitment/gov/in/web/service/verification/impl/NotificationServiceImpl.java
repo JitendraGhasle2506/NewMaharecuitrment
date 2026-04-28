@@ -14,6 +14,7 @@ import org.springframework.web.client.RestClient;
 
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
+import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
 @Service
 public class NotificationServiceImpl implements OtpDispatchService, AccountNotificationService {
@@ -45,6 +46,11 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
     @Override
     public void sendEmailOtp(String email, String otp) {
+        sendEmailOtp(email, otp, null);
+    }
+
+    @Override
+    public void sendEmailOtp(String email, String otp, String purpose) {
         if (!isEnabled("notification.email.enabled", true)) {
             log.info("Email dispatch is disabled. Skipping OTP email for address {}.", email);
             return;
@@ -53,13 +59,21 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(getFromAddress());
         message.setTo(email);
-        message.setSubject("MahaIT Recruitment Email Verification OTP");
-        message.setText("Your email verification OTP is " + otp + ". It is valid for 10 minutes.");
+        if (VerificationPurposes.LOGIN_AUTHENTICATION.equalsIgnoreCase(valueOrBlank(purpose))) {
+            message.setSubject("Maha Recruitment Portal Login OTP");
+            message.setText(buildLoginOtpEmailBody(otp));
+        } else {
+            message.setSubject("MahaIT Recruitment Email Verification OTP");
+            message.setText("Your email verification OTP is " + otp + ". It is valid for "
+                    + resolveOtpValidityText() + ".");
+        }
 
         try {
             mailSender.send(message);
         } catch (Exception ex) {
-            throw new IllegalStateException("Failed to send email verification OTP.", ex);
+            log.error("Failed to send email verification OTP to {} from {}. Reason: {}",
+                    email, message.getFrom(), extractFailureReason(ex), ex);
+            throw new IllegalStateException(buildFailureMessage("Failed to send email verification OTP.", ex), ex);
         }
     }
 
@@ -75,24 +89,29 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
             message.setFrom(getFromAddress());
             message.setTo(email);
             message.setSubject("MahaIT Recruitment Department Account Created");
-            message.setText("""
-                    Dear %s,
+            message.setText(
+                    """
+                            Dear %s,
 
-                    Your department registration has been submitted successfully and a department user account has been created.
+                            Your department registration has been submitted successfully and a department user account has been created.
 
-                    Username: %s
-                    Temporary Password: %s
+                            Username: %s
+                            Temporary Password: %s
 
-                    Please sign in and change the password after first login.
+                            Please sign in and change the password after first login.
 
-                    Regards,
-                    MahaIT Recruitment
-                    """.formatted(contactName, username, temporaryPassword));
+                            Regards,
+                            MahaIT Recruitment
+                            """
+                            .formatted(contactName, username, temporaryPassword));
 
             try {
                 mailSender.send(message);
             } catch (Exception ex) {
-                throw new IllegalStateException("Failed to send department account credentials.", ex);
+                log.error("Failed to send department account credentials to {} from {}. Reason: {}",
+                        email, message.getFrom(), extractFailureReason(ex), ex);
+                throw new IllegalStateException(
+                        buildFailureMessage("Failed to send department account credentials.", ex), ex);
             }
         } else {
             log.info("Email dispatch is disabled. Skipping department credential email for {}.", email);
@@ -141,7 +160,8 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                 mailSender.send(message);
             } catch (Exception ex) {
                 emailFailure = ex;
-                log.warn("Failed to send employee credential email to {}.", email, ex);
+                log.warn("Failed to send employee credential email to {} from {}. Reason: {}",
+                        email, message.getFrom(), extractFailureReason(ex), ex);
             }
         } else {
             log.info("Email dispatch is disabled. Skipping employee credential email for {}.", email);
@@ -202,16 +222,77 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         try {
             mailSender.send(message);
         } catch (Exception ex) {
-            throw new IllegalStateException("Failed to send agency account credentials.", ex);
+            log.error("Failed to send agency account credentials to {} from {}. Reason: {}",
+                    email, message.getFrom(), extractFailureReason(ex), ex);
+            throw new IllegalStateException(buildFailureMessage("Failed to send agency account credentials.", ex), ex);
         }
+    }
+
+    private String buildFailureMessage(String baseMessage, Exception ex) {
+        String reason = extractFailureReason(ex);
+        if (!StringUtils.hasText(reason) || baseMessage.contains(reason)) {
+            return baseMessage;
+        }
+        return baseMessage + " " + reason;
+    }
+
+    private String buildLoginOtpEmailBody(String otp) {
+        return """
+                Dear User,
+
+                Your One-Time Password (OTP) for login to the Maha Recruitment Portal is:
+
+                %s
+
+                This OTP is valid for %s. Please do not share this OTP with anyone for security reasons.
+
+                If you did not request this OTP, please ignore this email.
+
+                This is an automated message. Please do not reply to this email.
+
+                Regards,
+                Maha Recruitment Team
+                """.formatted(otp, resolveOtpValidityText());
+    }
+
+    private String extractFailureReason(Throwable throwable) {
+        Throwable current = throwable;
+        String fallback = "Unexpected mail transport error.";
+        while (current != null) {
+            if (StringUtils.hasText(current.getMessage())) {
+                fallback = current.getMessage().trim();
+            }
+            current = current.getCause();
+        }
+        return fallback;
+    }
+
+    private String resolveOtpValidityText() {
+        int expirySeconds = environment.getProperty("otp.verification.expiry-seconds", Integer.class, 600);
+        if (expirySeconds % 60 == 0) {
+            int minutes = expirySeconds / 60;
+            return minutes == 1 ? "1 minute" : minutes + " minutes";
+        }
+        return expirySeconds == 1 ? "1 second" : expirySeconds + " seconds";
+    }
+
+    private String valueOrBlank(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private String getFromAddress() {
         String fromAddress = getProperty("spring.mail.from.email");
-        if (!StringUtils.hasText(fromAddress)) {
-            fromAddress = getProperty("spring.mail.username");
+        if (StringUtils.hasText(fromAddress)) {
+            return fromAddress;
         }
-        return fromAddress;
+
+        String username = getProperty("spring.mail.username");
+        if (StringUtils.hasText(username) && username.contains("@")) {
+            return username;
+        }
+
+        throw new IllegalStateException(
+                "Email sender address is not configured. Set spring.mail.from.email or SMTP_FROM_EMAIL to a verified sender address.");
     }
 
     private void sendSmsMessage(String mobileNo, String message, String context) {

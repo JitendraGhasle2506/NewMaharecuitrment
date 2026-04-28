@@ -235,6 +235,123 @@
     border-color: #cbd5e1;
 }
 
+.channel-select {
+    min-height: 48px;
+    border-radius: 10px;
+    border: 1px solid var(--login-line);
+    padding: 0.62rem 1rem;
+    font-size: var(--form-control-font-size, 1rem);
+    font-family: var(--form-font-family, "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif);
+}
+
+.login-mode-switch {
+    display: flex;
+    gap: 0.75rem;
+    margin: 1.5rem 0 1.25rem;
+    padding: 0.35rem;
+    border-radius: 14px;
+    background: rgba(31, 79, 120, 0.08);
+}
+
+.login-mode-option {
+    flex: 1;
+    margin: 0;
+}
+
+.login-mode-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.login-mode-option span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    color: var(--login-muted);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.login-mode-option input:checked + span {
+    background: #ffffff;
+    color: var(--login-brand-deep);
+    box-shadow: 0 10px 18px rgba(31, 79, 120, 0.12);
+}
+
+.login-mode-option input:focus-visible + span {
+    outline: 2px solid var(--login-brand);
+    outline-offset: 2px;
+}
+
+.login-mode-panel {
+    animation: panelFade 0.25s ease;
+}
+
+.login-mode-panel.is-hidden {
+    display: none;
+}
+
+.otp-login-form {
+    padding-top: 0.15rem;
+}
+
+.otp-entry-section {
+    display: none;
+}
+
+.otp-entry-section.is-visible {
+    display: block;
+}
+
+@keyframes panelFade {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.otp-send-row {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.otp-status {
+    min-height: 1.35rem;
+    margin-top: 0.7rem;
+    font-size: 0.9rem;
+    color: var(--login-muted);
+}
+
+.otp-timing {
+    min-height: 1.2rem;
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--login-muted);
+}
+
+.otp-status.is-error {
+    color: #b42318;
+}
+
+.otp-status.is-pending {
+    color: #935f0d;
+}
+
+.otp-status.is-success {
+    color: #0f7b6c;
+}
+
 /* Captcha adjustments */
 .CaptchaWrap {
     display: flex;
@@ -332,6 +449,10 @@
 
     .auth-card {
         border-radius: 20px;
+    }
+
+    .login-mode-switch {
+        flex-direction: column;
     }
 }
 

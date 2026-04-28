@@ -13,6 +13,12 @@ public class OtpVerificationProperties {
 
     private int otpLength = 6;
 
+    private int resendCooldownSeconds = 60;
+
+    private int maxSendAttempts = 5;
+
+    private int sendWindowSeconds = 600;
+
     public int getExpirySeconds() {
         return expirySeconds;
     }
@@ -35,5 +41,29 @@ public class OtpVerificationProperties {
 
     public void setOtpLength(int otpLength) {
         this.otpLength = otpLength;
+    }
+
+    public int getResendCooldownSeconds() {
+        return resendCooldownSeconds;
+    }
+
+    public void setResendCooldownSeconds(int resendCooldownSeconds) {
+        this.resendCooldownSeconds = resendCooldownSeconds;
+    }
+
+    public int getMaxSendAttempts() {
+        return maxSendAttempts;
+    }
+
+    public void setMaxSendAttempts(int maxSendAttempts) {
+        this.maxSendAttempts = maxSendAttempts;
+    }
+
+    public int getSendWindowSeconds() {
+        return sendWindowSeconds;
+    }
+
+    public void setSendWindowSeconds(int sendWindowSeconds) {
+        this.sendWindowSeconds = sendWindowSeconds;
     }
 }

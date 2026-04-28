@@ -59,9 +59,9 @@
                 <div class="col-lg-5">
                     <section class="auth-card">
                         <h2>Sign In</h2>
-                        <p class="auth-subtext">Use your registered email and password.</p>
+                        <p class="auth-subtext">Use your registered username, email, or mobile number to sign in.</p>
 
-                        <div th:if="${param.error}" class="alert alert-danger">Invalid Email or Password</div>
+                        <div th:if="${param.error}" class="alert alert-danger">Invalid username, email, mobile number, or password.</div>
                         <div th:if="${param.logout}" class="alert alert-success">You have been logged out.</div>
                         <div th:if="${param.sessionExpired}" class="alert alert-warning">Session expired. Please login
                             again.</div>
@@ -79,13 +79,65 @@
                         <div th:if="${param.registered != null and generatedUsername == null}"
                             class="alert alert-success">Department registration submitted successfully. Please wait for
                             approval.</div>
+                        <div th:if="${otpErrorMessage != null}" class="alert alert-danger" th:text="${otpErrorMessage}">
+                            OTP login failed.
+                        </div>
 
-                        <form id="loginForm" method="post" th:action="@{/doLogin}" class="form-horizontal">
+                        <div class="login-mode-switch" role="radiogroup" aria-label="Login method">
+                            <label class="login-mode-option">
+                                <input type="radio" name="loginMode" value="otp" checked>
+                                <span>OTP Login</span>
+                            </label>
+                            <label class="login-mode-option">
+                                <input type="radio" name="loginMode" value="password">
+                                <span>Username & Password</span>
+                            </label>
+                        </div>
+
+                        <form id="otpLoginForm" method="post" th:action="@{/login/otp}" class="form-horizontal login-mode-panel otp-login-form"
+                            th:attr="data-otp-send-url=@{/login/otp/send},data-csrf-token=${_csrf.token},data-login-mode=otp,data-otp-expiry-seconds=${otpExpirySeconds},data-otp-resend-cooldown-seconds=${otpResendCooldownSeconds}">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                             <div class="form-group mb-3">
-                                <label for="username" class="control-label">Email</label>
+                                <label for="otpIdentifier" class="control-label">Username / Email / Mobile</label>
+                                <input type="text" id="otpIdentifier" name="identifier" class="form-control"
+                                    placeholder="Enter registered username, email, or mobile number"
+                                    th:value="${otpIdentifier}" required />
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="otpChannel" class="control-label">Receive OTP via</label>
+                                <select id="otpChannel" name="channel" class="form-select channel-select" required>
+                                    <option value="EMAIL" th:selected="${otpChannel == null or otpChannel == 'EMAIL'}">Email OTP</option>
+                                    <option value="MOBILE" th:selected="${otpChannel == 'MOBILE'}">Mobile OTP</option>
+                                </select>
+                            </div>
+                            <div class="form-group mb-3">
+                                <div class="otp-send-row">
+                                    <button type="button" id="sendLoginOtpBtn" class="btn btn-outline-primary w-100">Send OTP</button>
+                                </div>
+                                <div id="otpLoginStatus" class="otp-status" aria-live="polite"></div>
+                                <div id="otpLoginTiming" class="otp-timing" aria-live="polite"></div>
+                            </div>
+                            <div id="loginOtpSection" class="form-group mb-3 otp-entry-section">
+                                <label for="loginOtp" class="control-label">OTP</label>
+                                <input type="text" id="loginOtp" name="otp" class="form-control"
+                                    placeholder="Enter 6 digit OTP" inputmode="numeric" maxlength="6" required />
+                            </div>
+                            <div class="form-group mb-0 d-grid">
+                                <button type="submit" class="btn btn-primary btn-login">Login with OTP</button>
+                            </div>
+                            <div class="form-group mt-3 mb-0 d-grid">
+                                <a th:href="@{/register/department-registration}"
+                                    class="btn btn-outline-secondary">Department Registration</a>
+                            </div>
+                        </form>
+
+                        <form id="loginForm" method="post" th:action="@{/doLogin}" class="form-horizontal login-mode-panel is-hidden"
+                            data-login-mode="password">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                            <div class="form-group mb-3">
+                                <label for="username" class="control-label">Username / Email / Mobile</label>
                                 <input type="text" id="username" name="username" class="form-control"
-                                    placeholder="Enter email address" required />
+                                    placeholder="Enter registered username, email, or mobile number" required />
                             </div>
                             <div class="form-group mb-3">
                                 <label for="password" class="control-label">Password</label>
@@ -139,10 +191,20 @@
 
             var authCard = document.querySelector('.auth-card');
             var loginForm = document.getElementById('loginForm');
+            var otpLoginForm = document.getElementById('otpLoginForm');
 
             if (loginForm) {
                 loginForm.style.display = 'none';
                 loginForm.querySelectorAll('input, button, textarea, select, a').forEach(function (element) {
+                    if ('disabled' in element) {
+                        element.disabled = true;
+                    }
+                });
+            }
+
+            if (otpLoginForm) {
+                otpLoginForm.style.display = 'none';
+                otpLoginForm.querySelectorAll('input, button, textarea, select, a').forEach(function (element) {
                     if ('disabled' in element) {
                         element.disabled = true;
                     }
@@ -170,6 +232,7 @@
         });
     </script>
     <script th:src="@{/js/captcha.js}"></script>
+    <script th:src="@{/js/login-otp.js}"></script>
 </body>
 
 </html>

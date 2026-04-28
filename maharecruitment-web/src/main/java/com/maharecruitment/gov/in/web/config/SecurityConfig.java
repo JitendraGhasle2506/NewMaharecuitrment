@@ -63,7 +63,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
 
                 // ✅ IMPORTANT: keep login FIRST
-                .requestMatchers("/login", "/doLogin").permitAll()
+                .requestMatchers("/login", "/doLogin", "/login/otp", "/login/otp/send").permitAll()
 
                 .requestMatchers(
                         "/", "/index", "/register/**",

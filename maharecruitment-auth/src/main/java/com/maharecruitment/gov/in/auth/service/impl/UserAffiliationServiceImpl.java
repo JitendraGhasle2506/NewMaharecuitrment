@@ -142,47 +142,6 @@ public class UserAffiliationServiceImpl implements UserAffiliationService {
         userProfileRepository.save(profile);
     }
 
-	/*
-	 * @Override public void synchronizePrimaryDepartment(User user,
-	 * DepartmentRegistrationEntity departmentRegistration) { if (user == null ||
-	 * user.getId() == null) { throw new
-	 * IllegalArgumentException("Saved user is required to synchronize department mapping."
-	 * ); }
-	 * 
-	 * LocalDateTime now = LocalDateTime.now(); String actor = user.getEmail();
-	 * List<UserDepartmentMappingEntity> mappings = userDepartmentMappingRepository
-	 * .findByUser_IdOrderByUserDepartmentMappingIdAsc(user.getId());
-	 * 
-	 * UserDepartmentMappingEntity target = null; if (departmentRegistration != null
-	 * && departmentRegistration.getDepartmentRegistrationId() != null) { target =
-	 * userDepartmentMappingRepository.
-	 * findByUser_IdAndDepartmentRegistration_DepartmentRegistrationId(
-	 * user.getId(),
-	 * departmentRegistration.getDepartmentRegistrationId()).orElse(null); }
-	 * 
-	 * for (UserDepartmentMappingEntity mapping : mappings) { boolean wasActive =
-	 * Boolean.TRUE.equals(mapping.getActive()); boolean matchesTarget = target !=
-	 * null && Objects.equals(mapping.getUserDepartmentMappingId(),
-	 * target.getUserDepartmentMappingId());
-	 * mapping.setPrimaryMapping(matchesTarget); mapping.setActive(matchesTarget);
-	 * mapping.setUpdatedBy(actor); mapping.setUpdatedDate(now); if (matchesTarget)
-	 * { if (mapping.getEffectiveFrom() == null) { mapping.setEffectiveFrom(now); }
-	 * mapping.setEffectiveTo(null); } else if (wasActive &&
-	 * mapping.getEffectiveTo() == null) { mapping.setEffectiveTo(now); } }
-	 * 
-	 * if (departmentRegistration != null &&
-	 * departmentRegistration.getDepartmentRegistrationId() != null && target ==
-	 * null) { target = new UserDepartmentMappingEntity(); target.setUser(user);
-	 * target.setDepartmentRegistration(departmentRegistration);
-	 * target.setPrimaryMapping(Boolean.TRUE); target.setActive(Boolean.TRUE);
-	 * target.setEffectiveFrom(now); target.setCreatedBy(actor);
-	 * target.setCreatedDate(now); target.setUpdatedBy(actor);
-	 * target.setUpdatedDate(now); mappings.add(target); }
-	 * 
-	 * user.setDepartmentRegistrationId(departmentRegistration);
-	 * userRepository.save(user); userDepartmentMappingRepository.saveAll(mappings);
-	 * }
-	 */
     @Transactional
     public void synchronizePrimaryDepartment(User user,
                                              DepartmentRegistrationEntity departmentRegistration) {
