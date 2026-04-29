@@ -180,10 +180,12 @@
                                         <tr>
                                             <th class="ps-3">Designation</th>
                                             <th>Level</th>
-                                            <th class="text-end">Rate/Month</th>
+                                            <th class="text-end">Rate</th>
                                             <th class="text-center">Qty</th>
                                             <th class="text-center">Months</th>
-                                            <th class="text-end">Total Amount</th>
+                                            <th class="text-end">Cost</th>
+                                            <th class="text-end">Agency Comm.</th>
+                                            <th class="text-end">MahaIT Comm.</th>
                                             <th class="text-end">GST(18%)</th>
                                             <th class="text-end pe-3">Grand Total</th>
                                         </tr>
@@ -192,10 +194,12 @@
                                         <tr th:each="requirement : ${applicationReviewDetail.resourceRequirements}">
                                             <td class="ps-3 fw-semibold" th:text="${requirement.designationName}">Designation</td>
                                             <td th:text="${requirement.levelName}">Level</td>
-                                            <td class="text-end" th:text="${#numbers.formatDecimal((requirement.taxableAmount ?: 0) / (requirement.requiredQuantity * requirement.durationInMonths), 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end" th:text="${#numbers.formatDecimal(requirement.monthlyRate != null ? requirement.monthlyRate : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
                                             <td class="text-center" th:text="${requirement.requiredQuantity}">0</td>
                                             <td class="text-center" th:text="${requirement.durationInMonths}">0</td>
-                                            <td class="text-end" th:text="${#numbers.formatDecimal(requirement.taxableAmount != null ? requirement.taxableAmount : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end" th:text="${#numbers.formatDecimal(requirement.totalCost != null ? requirement.totalCost : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end text-muted" th:text="${#numbers.formatDecimal(requirement.agencyCommissionAmount != null ? requirement.agencyCommissionAmount : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                            <td class="text-end text-muted" th:text="${#numbers.formatDecimal(requirement.mahaItCommissionAmount != null ? requirement.mahaItCommissionAmount : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
                                             <td class="text-end text-muted" th:text="${#numbers.formatDecimal(requirement.gstAmount != null ? requirement.gstAmount : 0, 1, 'COMMA', 2, 'POINT')}">0.00</td>
                                             <td class="text-end pe-3 fw-bold" th:text="${#numbers.formatDecimal((requirement.taxableAmount ?: 0) + (requirement.gstAmount ?: 0), 1, 'COMMA', 2, 'POINT')}">0.00</td>
                                         </tr>
