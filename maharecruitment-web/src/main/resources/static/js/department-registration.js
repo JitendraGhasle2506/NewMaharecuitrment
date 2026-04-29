@@ -39,6 +39,18 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     };
 
+    const createUnavailableVerification = (statusElement, message) => {
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.classList.remove("is-pending", "is-success");
+            statusElement.classList.add("is-error");
+        }
+        return {
+            isVerified: () => false,
+            onChange: () => {}
+        };
+    };
+
     const disableOtpControls = (sendButton, verifyButton, otpInput, otpSection) => {
         if (sendButton) {
             sendButton.disabled = true;
@@ -159,9 +171,30 @@ document.addEventListener("DOMContentLoaded", () => {
         statusElement: document.getElementById("emailVerificationStatus")
     };
 
+    const initializeOtpVerification = (config, statusElement, channelLabel) => {
+        if (typeof window.createOtpVerification !== "function") {
+            return createUnavailableVerification(
+                statusElement,
+                `${channelLabel} OTP is temporarily unavailable. Please refresh the page and try again.`
+            );
+        }
+
+        try {
+            return window.createOtpVerification(config);
+        } catch (error) {
+            if (window.console && typeof window.console.error === "function") {
+                window.console.error(`${channelLabel} OTP setup failed.`, error);
+            }
+            return createUnavailableVerification(
+                statusElement,
+                `${channelLabel} OTP is temporarily unavailable. Please refresh the page and try again.`
+            );
+        }
+    };
+
     const mobileVerification = otpBypassEnabled
         ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP bypass enabled for testing.")
-        : window.createOtpVerification({
+        : initializeOtpVerification({
             purpose: verificationPurpose,
             channel: "MOBILE",
             referenceInput: primaryMobileInput,
@@ -175,11 +208,11 @@ document.addEventListener("DOMContentLoaded", () => {
             csrfToken,
             initialVerified: form.dataset.mobileVerified === "true",
             initialVerifiedMessage: "Primary mobile number already verified."
-        });
+        }, mobileOtpElements.statusElement, "Mobile");
 
     const emailVerification = otpBypassEnabled
         ? createBypassVerification(emailOtpElements.statusElement, "Email OTP bypass enabled for testing.")
-        : window.createOtpVerification({
+        : initializeOtpVerification({
             purpose: verificationPurpose,
             channel: "EMAIL",
             referenceInput: primaryEmailInput,
@@ -193,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
             csrfToken,
             initialVerified: form.dataset.emailVerified === "true",
             initialVerifiedMessage: "Primary email address already verified."
-        });
+        }, emailOtpElements.statusElement, "Email");
 
     if (otpBypassEnabled) {
         disableOtpControls(
@@ -231,7 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     subDepartmentSelect.addEventListener("change", updateSubDepartmentState);
     declarationBox.addEventListener("scroll", enableDeclarationAcceptance);
-    //agreeCheckbox.addEventListener("change", toggleSubmitState);
+    agreeCheckbox.addEventListener("change", toggleSubmitState);
     mobileVerification.onChange(toggleSubmitState);
     emailVerification.onChange(toggleSubmitState);
 

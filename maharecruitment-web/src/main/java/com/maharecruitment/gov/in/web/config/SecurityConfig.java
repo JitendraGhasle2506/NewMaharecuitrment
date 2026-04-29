@@ -64,6 +64,7 @@ public class SecurityConfig {
 
                 // ✅ IMPORTANT: keep login FIRST
                 .requestMatchers("/login", "/doLogin", "/login/otp", "/login/otp/send").permitAll()
+                .requestMatchers("/api/verifications/otp/**").permitAll()
 
                 .requestMatchers(
                         "/", "/index", "/register/**",

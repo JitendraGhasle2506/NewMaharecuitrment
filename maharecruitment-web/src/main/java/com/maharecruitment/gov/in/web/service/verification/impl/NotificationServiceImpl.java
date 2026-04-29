@@ -62,10 +62,12 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         if (VerificationPurposes.LOGIN_AUTHENTICATION.equalsIgnoreCase(valueOrBlank(purpose))) {
             message.setSubject("Maha Recruitment Portal Login OTP");
             message.setText(buildLoginOtpEmailBody(otp));
+        } else if (VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT.equalsIgnoreCase(valueOrBlank(purpose))) {
+            message.setSubject("MahaIT Recruitment Department Registration Email Verification OTP");
+            message.setText(buildDepartmentRegistrationOtpEmailBody(otp, email));
         } else {
             message.setSubject("MahaIT Recruitment Email Verification OTP");
-            message.setText("Your email verification OTP is " + otp + ". It is valid for "
-                    + resolveOtpValidityText() + ".");
+            message.setText(buildGenericVerificationOtpEmailBody(otp));
         }
 
         try {
@@ -249,6 +251,44 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                 If you did not request this OTP, please ignore this email.
 
                 This is an automated message. Please do not reply to this email.
+
+                Regards,
+                Maha Recruitment Team
+                """.formatted(otp, resolveOtpValidityText());
+    }
+
+    private String buildDepartmentRegistrationOtpEmailBody(String otp, String email) {
+        return """
+                Dear User,
+
+                We received a request to verify %s for department registration on MahaIT Recruitment.
+
+                Your One-Time Password (OTP) is:
+
+                %s
+
+                This OTP is valid for %s. Do not share this OTP with anyone.
+
+                If you did not initiate this request, please ignore this email.
+
+                This is an automated message. Please do not reply to this email.
+
+                Regards,
+                Maha Recruitment Team
+                """.formatted(email, otp, resolveOtpValidityText());
+    }
+
+    private String buildGenericVerificationOtpEmailBody(String otp) {
+        return """
+                Dear User,
+
+                Your email verification OTP is:
+
+                %s
+
+                This OTP is valid for %s. Do not share this OTP with anyone.
+
+                If you did not request this OTP, please ignore this email.
 
                 Regards,
                 Maha Recruitment Team

@@ -19,9 +19,14 @@
         }
     };
 
+    const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
+
     const createOtpVerification = (config) => {
         if (!config || !config.referenceInput || !config.sendButton || !config.verifyButton) {
             throw new Error("OTP verification configuration is incomplete.");
+        }
+        if (!config.sendUrl || !config.verifyUrl) {
+            throw new Error("OTP verification endpoints are not configured.");
         }
 
         const defaults = channelMessages[config.channel] || channelMessages.EMAIL;
@@ -36,7 +41,7 @@
                 return;
             }
             config.statusElement.textContent = message || "";
-            config.statusElement.classList.remove("is-pending", "is-error");
+            config.statusElement.classList.remove("is-pending", "is-error", "is-success");
             if (mode) {
                 config.statusElement.classList.add(mode);
             }
@@ -47,25 +52,53 @@
         };
 
         const apiPost = async (url, payload) => {
-            const response = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": config.csrfToken || ""
-                },
-                body: JSON.stringify(payload)
-            });
+            const controller = typeof AbortController === "function" ? new AbortController() : null;
+            const timeoutMs = Number(config.requestTimeoutMs || DEFAULT_REQUEST_TIMEOUT_MS);
+            const timeoutId = controller
+                ? window.setTimeout(() => controller.abort(), timeoutMs)
+                : null;
 
-            const data = await response.json().catch(() => ({
-                message: "Unexpected response received.",
-                verified: false
-            }));
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": config.csrfToken || ""
+                    },
+                    body: JSON.stringify(payload),
+                    signal: controller ? controller.signal : undefined
+                });
 
-            if (!response.ok) {
-                throw new Error(data.message || "Request failed.");
+                const rawResponse = await response.text();
+                let data;
+                try {
+                    data = rawResponse
+                        ? JSON.parse(rawResponse)
+                        : { message: "", verified: false };
+                } catch (parseError) {
+                    data = {
+                        message: response.ok
+                            ? "Unexpected response received."
+                            : rawResponse || "Request failed.",
+                        verified: false
+                    };
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Request failed.");
+                }
+
+                return data;
+            } catch (error) {
+                if (error && error.name === "AbortError") {
+                    throw new Error("OTP request timed out. Please try again. If the issue continues, contact support.");
+                }
+                throw error;
+            } finally {
+                if (timeoutId) {
+                    window.clearTimeout(timeoutId);
+                }
             }
-
-            return data;
         };
 
         const reset = () => {
@@ -84,8 +117,12 @@
             const reference = config.referenceInput.value.trim();
             if (!validateReference || !validateReference(reference)) {
                 setStatus(defaults.invalidReference, "is-error");
+                config.referenceInput.focus();
                 return;
             }
+
+            config.sendButton.disabled = true;
+            setStatus("Sending OTP...", "is-pending");
 
             try {
                 const data = await apiPost(config.sendUrl, {
@@ -97,8 +134,13 @@
                     config.otpSection.style.display = "flex";
                 }
                 setStatus(data.message, "is-pending");
+                if (config.otpInput) {
+                    config.otpInput.focus();
+                }
             } catch (error) {
                 setStatus(error.message, "is-error");
+            } finally {
+                config.sendButton.disabled = false;
             }
         };
 
@@ -106,8 +148,14 @@
             const otp = config.otpInput ? config.otpInput.value.trim() : "";
             if (!/^[0-9]{6}$/.test(otp)) {
                 setStatus(defaults.invalidOtp, "is-error");
+                if (config.otpInput) {
+                    config.otpInput.focus();
+                }
                 return;
             }
+
+            config.verifyButton.disabled = true;
+            setStatus("Verifying OTP...", "is-pending");
 
             try {
                 const data = await apiPost(config.verifyUrl, {
@@ -120,12 +168,14 @@
                 if (config.otpSection) {
                     config.otpSection.style.display = "none";
                 }
-                setStatus(data.message, null);
+                setStatus(data.message, "is-success");
                 notify();
             } catch (error) {
                 state.verified = false;
                 setStatus(error.message, "is-error");
                 notify();
+            } finally {
+                config.verifyButton.disabled = false;
             }
         };
 

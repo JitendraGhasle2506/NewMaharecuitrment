@@ -423,20 +423,6 @@
 
 	<script th:src="@{/js/otp-verification.js}"></script>
 	<script th:src="@{/js/department-registration.js}"></script>
-	<script>
-		$(document).ready(function () {
-			$('#agreeCheckbox').on('change', function () {
-				if ($(this).is(':checked')) {
-					console.log("checked");
-					$('#registerBtn').prop('disabled', false);
-				} else {
-					console.log("unchecked");
-					$('#registerBtn').prop('disabled', true);
-
-				}
-			});
-		});
-	</script>
 </body>
 
 </html>
