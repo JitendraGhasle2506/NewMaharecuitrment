@@ -89,7 +89,9 @@ public class DepartmentRegistrationPageController {
             redirectAttributes.addFlashAttribute("generatedPassword", result.temporaryPassword());
             return "redirect:/login";
         } catch (RuntimeException ex) {
-            model.addAttribute("errorMessage", ex.getMessage());
+            if (!applyRegistrationError(bindingResult, form, ex)) {
+                model.addAttribute("errorMessage", ex.getMessage());
+            }
             populateForm(model, form, session);
             return "register/department-registration";
         }
@@ -202,6 +204,44 @@ public class DepartmentRegistrationPageController {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private boolean applyRegistrationError(
+            BindingResult bindingResult,
+            DepartmentRegistrationForm form,
+            RuntimeException ex) {
+        String message = ex.getMessage();
+        if (!StringUtils.hasText(message)) {
+            return false;
+        }
+
+        if ("This department/sub-department combination is already registered.".equals(message)) {
+            String field = form.getSubDeptId() != null ? "subDeptId" : "departmentId";
+            bindingResult.rejectValue(field, "registration.departmentCombinationDuplicate", message);
+            return true;
+        }
+
+        if ("A registration already exists for the provided GST number.".equals(message)) {
+            bindingResult.rejectValue("gstNo", "registration.gstDuplicate", message);
+            return true;
+        }
+
+        if ("A registration already exists for the provided PAN number.".equals(message)) {
+            bindingResult.rejectValue("panNo", "registration.panDuplicate", message);
+            return true;
+        }
+
+        if ("A registration already exists for the provided TAN number.".equals(message)) {
+            bindingResult.rejectValue("tanNo", "registration.tanDuplicate", message);
+            return true;
+        }
+
+        if ("Selected sub-department does not belong to the chosen department.".equals(message)) {
+            bindingResult.rejectValue("subDeptId", "registration.subDepartmentMismatch", message);
+            return true;
+        }
+
+        return false;
     }
 
     private void stageUploadedFiles(DepartmentRegistrationForm form, BindingResult bindingResult) {
