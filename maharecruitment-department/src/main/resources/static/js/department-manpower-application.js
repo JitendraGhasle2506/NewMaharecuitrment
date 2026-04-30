@@ -23,6 +23,7 @@
     const taxBreakupBody = document.getElementById("taxBreakupBody");
     const totalTaxAmountText = document.getElementById("totalTaxAmountText");
     const grandTotalIncludingTaxText = document.getElementById("grandTotalIncludingTaxText");
+    const workOrderNumberInput = formElement.querySelector('[name="workOrderNumber"]');
     const workOrderFileInput = document.getElementById("workOrderFileInput");
     const workOrderValidationMessage = document.getElementById("workOrderValidationMessage");
     const existingWorkOrderFilePathInput = formElement.querySelector('[name="existingWorkOrderFilePath"]');
@@ -417,6 +418,10 @@
     }
 
     function onPreviewSubmitClick() {
+        if (!validateWorkOrderNumber()) {
+            return;
+        }
+
         if (!validateWorkOrderFile(workOrderFileInput || { files: [] })) {
             return;
         }
@@ -445,6 +450,7 @@
     function buildPreviewContent() {
         const previewProjectName = document.getElementById("previewProjectName");
         const previewApplicationType = document.getElementById("previewApplicationType");
+        const previewWorkOrderNumber = document.getElementById("previewWorkOrderNumber");
         const previewTableBody = document.getElementById("previewResourceRequirementBody");
 
         if (!previewTableBody) {
@@ -453,6 +459,9 @@
 
         previewProjectName.textContent = formElement.querySelector('[name="projectName"]')?.value || "";
         previewApplicationType.textContent = formElement.querySelector('[name="applicationType"] option:checked')?.textContent || "";
+        if (previewWorkOrderNumber) {
+            previewWorkOrderNumber.textContent = workOrderNumberInput?.value?.trim() || "";
+        }
 
         previewTableBody.innerHTML = "";
         const rows = resourceRequirementTableBody?.querySelectorAll("tr") || [];
@@ -493,6 +502,17 @@
         const taxComponents = buildTaxComponents(totalTaxable);
         updatePreviewTaxSummary(totalManpower, totalAgencyComm, totalMahaItComm, totalTaxable, taxComponents);
         return true;
+    }
+
+    function validateWorkOrderNumber() {
+        const workOrderNumber = workOrderNumberInput?.value?.trim() || "";
+        if (workOrderNumber.length > 0) {
+            return true;
+        }
+
+        alert("Work Order Number is mandatory.");
+        workOrderNumberInput?.focus();
+        return false;
     }
 
     function resetLevelSelect() {

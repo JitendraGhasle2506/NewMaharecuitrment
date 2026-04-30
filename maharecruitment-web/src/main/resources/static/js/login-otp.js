@@ -51,6 +51,9 @@
         var otpResendCooldownSeconds = parseInt(form.dataset.otpResendCooldownSeconds || "60", 10);
         var expiryTimerId = null;
         var resendTimerId = null;
+        var hasSentOtpOnce = false;
+        var initialSendButtonLabel = "Send OTP";
+        var resendButtonLabel = "Resend OTP";
 
         var setStatus = function (message, mode) {
             statusElement.textContent = message || "";
@@ -58,6 +61,10 @@
             if (mode) {
                 statusElement.classList.add(mode);
             }
+        };
+
+        var updateSendButtonLabel = function () {
+            sendButton.textContent = hasSentOtpOnce ? resendButtonLabel : initialSendButtonLabel;
         };
 
         var formatDuration = function (totalSeconds) {
@@ -147,6 +154,8 @@
             setStatus("", null);
             setTiming("");
             sendButton.disabled = false;
+            hasSentOtpOnce = false;
+            updateSendButtonLabel();
             setOtpSectionVisible(false);
         };
 
@@ -193,6 +202,8 @@
                     throw new Error(data.message || "Unable to send OTP.");
                 }
 
+                hasSentOtpOnce = true;
+                updateSendButtonLabel();
                 setStatus(data.message || "OTP sent successfully.", "is-success");
                 setOtpSectionVisible(true);
                 startOtpTimers();
@@ -210,5 +221,6 @@
 
         setOtpSectionVisible(false);
         setTiming("");
+        updateSendButtonLabel();
     });
 })();

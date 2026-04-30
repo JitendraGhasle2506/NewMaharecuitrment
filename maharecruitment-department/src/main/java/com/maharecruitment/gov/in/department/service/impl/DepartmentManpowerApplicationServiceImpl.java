@@ -494,6 +494,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         form.setApplicationType(entity.getApplicationType());
         form.setRemarks(entity.getRemarks());
         form.setMahaitContact(entity.getMahaitContact());
+        form.setWorkOrderNumber(entity.getWorkOrderNumber());
         form.setExistingWorkOrderFilePath(entity.getWorkOrderFilePath());
         form.setExistingWorkOrderOriginalName(entity.getWorkOrderOriginalName());
         form.setTotalEstimatedCost(entity.getTotalEstimatedCost());
@@ -528,6 +529,7 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         entity.setApplicationType(form.getApplicationType());
         entity.setRemarks(form.getRemarks());
         entity.setMahaitContact(form.getMahaitContact());
+        entity.setWorkOrderNumber(form.getWorkOrderNumber());
     }
 
     private List<DepartmentProjectResourceRequirementEntity> toRequirementEntities(

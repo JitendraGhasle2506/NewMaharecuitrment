@@ -83,6 +83,9 @@ public class DepartmentProjectApplicationEntity extends Auditable {
     @Column(name = "mahait_contact", length = 100)
     private String mahaitContact;
 
+    @Column(name = "work_order_number", length = 100)
+    private String workOrderNumber;
+
     @Column(name = "work_order_original_name", length = 255)
     private String workOrderOriginalName;
 
@@ -148,6 +151,9 @@ public class DepartmentProjectApplicationEntity extends Auditable {
         }
         if (mahaitContact != null) {
             mahaitContact = mahaitContact.trim();
+        }
+        if (workOrderNumber != null) {
+            workOrderNumber = workOrderNumber.trim();
         }
         if (remarks != null) {
             remarks = remarks.trim();

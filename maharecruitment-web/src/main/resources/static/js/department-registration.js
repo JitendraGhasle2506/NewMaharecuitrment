@@ -11,6 +11,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const declarationBox = document.getElementById("declarationBox");
     const agreeCheckbox = document.getElementById("agreeCheckbox");
     const registerButton = document.getElementById("registerBtn");
+    const documentInputs = ["gstFile", "panFile", "tanFile"]
+        .map((fieldId) => document.getElementById(fieldId))
+        .filter((input) => input);
     const csrfTokenInput = form.querySelector('input[name="_csrf"]');
     const verificationPurpose = form.dataset.verificationPurpose;
     const otpBypassEnabled = form.dataset.otpBypassEnabled === "true";
@@ -77,6 +80,26 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!visible) {
             element.value = "";
         }
+    };
+
+    const isPdfFile = (file) => {
+        if (!file) {
+            return true;
+        }
+
+        const fileName = file.name || "";
+        const contentType = file.type || "";
+        return /\.pdf$/i.test(fileName) && contentType.toLowerCase() === "application/pdf";
+    };
+
+    const validatePdfSelection = (input) => {
+        const [file] = input.files || [];
+        if (!isPdfFile(file)) {
+            input.value = "";
+            alert("Only PDF files are allowed for GST, PAN, and TAN documents.");
+            return false;
+        }
+        return true;
     };
 
     const enableDeclarationAcceptance = () => {
@@ -267,6 +290,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    documentInputs.forEach((input) => {
+        input.addEventListener("change", () => {
+            validatePdfSelection(input);
+        });
+    });
+
     departmentSelect.addEventListener("change", () => {
         updateDepartmentState(false);
     });
@@ -274,6 +303,13 @@ document.addEventListener("DOMContentLoaded", () => {
     subDepartmentSelect.addEventListener("change", updateSubDepartmentState);
     declarationBox.addEventListener("scroll", enableDeclarationAcceptance);
     agreeCheckbox.addEventListener("change", toggleSubmitState);
+    form.addEventListener("submit", (event) => {
+        const invalidInput = documentInputs.find((input) => !validatePdfSelection(input));
+        if (invalidInput) {
+            event.preventDefault();
+            invalidInput.focus();
+        }
+    });
     mobileVerification.onChange(toggleSubmitState);
     emailVerification.onChange(toggleSubmitState);
 
