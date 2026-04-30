@@ -14,6 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const csrfTokenInput = form.querySelector('input[name="_csrf"]');
     const verificationPurpose = form.dataset.verificationPurpose;
     const otpBypassEnabled = form.dataset.otpBypassEnabled === "true";
+    const mobileOtpEnabled = form.dataset.mobileOtpEnabled === "true";
+    const emailOtpEnabled = form.dataset.emailOtpEnabled === "true";
 
     const primaryMobileInput = document.getElementById("primaryMobile");
     const primaryEmailInput = document.getElementById("primaryEmail");
@@ -192,7 +194,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    const mobileVerification = otpBypassEnabled
+    const mobileVerification = !mobileOtpEnabled
+        ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP is disabled in this environment.")
+        : otpBypassEnabled
         ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP bypass enabled for testing.")
         : initializeOtpVerification({
             purpose: verificationPurpose,
@@ -210,7 +214,9 @@ document.addEventListener("DOMContentLoaded", () => {
             initialVerifiedMessage: "Primary mobile number already verified."
         }, mobileOtpElements.statusElement, "Mobile");
 
-    const emailVerification = otpBypassEnabled
+    const emailVerification = !emailOtpEnabled
+        ? createBypassVerification(emailOtpElements.statusElement, "Email OTP is disabled in this environment.")
+        : otpBypassEnabled
         ? createBypassVerification(emailOtpElements.statusElement, "Email OTP bypass enabled for testing.")
         : initializeOtpVerification({
             purpose: verificationPurpose,
@@ -228,13 +234,16 @@ document.addEventListener("DOMContentLoaded", () => {
             initialVerifiedMessage: "Primary email address already verified."
         }, emailOtpElements.statusElement, "Email");
 
-    if (otpBypassEnabled) {
+    if (otpBypassEnabled || !mobileOtpEnabled) {
         disableOtpControls(
             mobileOtpElements.sendButton,
             mobileOtpElements.verifyButton,
             mobileOtpElements.otpInput,
             mobileOtpElements.otpSection
         );
+    }
+
+    if (otpBypassEnabled || !emailOtpEnabled) {
         disableOtpControls(
             emailOtpElements.sendButton,
             emailOtpElements.verifyButton,

@@ -12,6 +12,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
+import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
@@ -24,19 +25,22 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
     private final JavaMailSender mailSender;
     private final RestClient restClient;
     private final Environment environment;
+    private final NotificationChannelProperties notificationChannelProperties;
 
     public NotificationServiceImpl(
             JavaMailSender mailSender,
             RestClient restClient,
-            Environment environment) {
+            Environment environment,
+            NotificationChannelProperties notificationChannelProperties) {
         this.mailSender = mailSender;
         this.restClient = restClient;
         this.environment = environment;
+        this.notificationChannelProperties = notificationChannelProperties;
     }
 
     @Override
     public void sendMobileOtp(String mobileNo, String otp) {
-        if (!isEnabled("notification.sms.enabled", true)) {
+        if (!notificationChannelProperties.isSmsEnabled()) {
             log.info("SMS dispatch is disabled. Skipping OTP SMS for mobile {}.", mobileNo);
             return;
         }
@@ -51,7 +55,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
     @Override
     public void sendEmailOtp(String email, String otp, String purpose) {
-        if (!isEnabled("notification.email.enabled", true)) {
+        if (!notificationChannelProperties.isEmailEnabled()) {
             log.info("Email dispatch is disabled. Skipping OTP email for address {}.", email);
             return;
         }
@@ -86,7 +90,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
             String contactName,
             String username,
             String temporaryPassword) {
-        if (isEnabled("notification.email.enabled", true)) {
+        if (notificationChannelProperties.isEmailEnabled()) {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(getFromAddress());
             message.setTo(email);
@@ -122,7 +126,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         String smsMessage = "MahaIT Recruitment: Dept account created. Username: %s Password: %s. "
                 .formatted(username, temporaryPassword)
                 + "Please change password after first login.";
-        if (isEnabled("notification.sms.enabled", true)) {
+        if (notificationChannelProperties.isSmsEnabled()) {
             sendSmsMessage(mobileNo, smsMessage, "department credentials");
         } else {
             log.info("SMS dispatch is disabled. Skipping department credential SMS for mobile {}.", mobileNo);
@@ -139,7 +143,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         Exception emailFailure = null;
         Exception smsFailure = null;
 
-        if (isEnabled("notification.email.enabled", true)) {
+        if (notificationChannelProperties.isEmailEnabled()) {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(getFromAddress());
             message.setTo(email);
@@ -172,7 +176,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         String smsMessage = "MahaIT Recruitment: Employee account created. Username: %s Password: %s. "
                 .formatted(username, temporaryPassword)
                 + "Please change password after first login.";
-        if (isEnabled("notification.sms.enabled", true)) {
+        if (notificationChannelProperties.isSmsEnabled()) {
             try {
                 sendSmsMessage(mobileNo, smsMessage, "employee credentials");
             } catch (Exception ex) {
@@ -198,7 +202,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
     @Override
     public void sendAgencyCredentials(String email, String contactName, String temporaryPassword) {
-        if (!isEnabled("notification.email.enabled", true)) {
+        if (!notificationChannelProperties.isEmailEnabled()) {
             log.info("Email dispatch is disabled. Skipping agency credential email for {}.", email);
             return;
         }
@@ -366,14 +370,6 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to dispatch " + context + " SMS.", ex);
         }
-    }
-
-    private boolean isEnabled(String key, boolean defaultValue) {
-        String value = environment.getProperty(key);
-        if (!StringUtils.hasText(value) || value.contains("${")) {
-            return defaultValue;
-        }
-        return Boolean.parseBoolean(value.trim());
     }
 
     private String getProperty(String key) {
