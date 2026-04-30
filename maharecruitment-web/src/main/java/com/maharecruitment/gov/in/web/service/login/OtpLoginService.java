@@ -1,6 +1,5 @@
 package com.maharecruitment.gov.in.web.service.login;
 
-import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,6 +9,7 @@ import org.springframework.util.StringUtils;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.service.CustomUserDetailsService;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
+import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
@@ -22,17 +22,17 @@ public class OtpLoginService {
     private final CustomUserDetailsService userDetailsService;
     private final UserAffiliationService userAffiliationService;
     private final OtpVerificationService otpVerificationService;
-    private final Environment environment;
+    private final NotificationChannelProperties notificationChannelProperties;
 
     public OtpLoginService(
             CustomUserDetailsService userDetailsService,
             UserAffiliationService userAffiliationService,
             OtpVerificationService otpVerificationService,
-            Environment environment) {
+            NotificationChannelProperties notificationChannelProperties) {
         this.userDetailsService = userDetailsService;
         this.userAffiliationService = userAffiliationService;
         this.otpVerificationService = otpVerificationService;
-        this.environment = environment;
+        this.notificationChannelProperties = notificationChannelProperties;
     }
 
     public void sendOtp(HttpSession session, String identifier, VerificationChannel channel) {
@@ -69,21 +69,13 @@ public class OtpLoginService {
     }
 
     private void ensureChannelEnabled(VerificationChannel channel) {
-        String propertyKey = channel == VerificationChannel.EMAIL
-                ? "notification.email.enabled"
-                : "notification.sms.enabled";
+        boolean enabled = channel == VerificationChannel.EMAIL
+                ? notificationChannelProperties.isEmailEnabled()
+                : notificationChannelProperties.isSmsEnabled();
 
-        if (!isEnabled(propertyKey, true)) {
+        if (!enabled) {
             String channelLabel = channel == VerificationChannel.EMAIL ? "Email" : "Mobile";
             throw new IllegalStateException(channelLabel + " OTP login is not enabled in this environment.");
         }
-    }
-
-    private boolean isEnabled(String key, boolean defaultValue) {
-        String value = environment.getProperty(key);
-        if (!StringUtils.hasText(value) || value.contains("${")) {
-            return defaultValue;
-        }
-        return Boolean.parseBoolean(value.trim());
     }
 }

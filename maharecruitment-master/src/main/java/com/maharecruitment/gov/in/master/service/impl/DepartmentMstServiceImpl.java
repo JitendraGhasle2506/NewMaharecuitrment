@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.master.dto.DepartmentRequest;
@@ -25,14 +26,17 @@ public class DepartmentMstServiceImpl implements DepartmentMstService {
     private final DepartmentMstRepository departmentRepository;
     private final SubDepartmentRepository subDepartmentRepository;
     private final DepartmentMapper mapper;
+    private final JdbcTemplate jdbcTemplate;
 
     public DepartmentMstServiceImpl(
             DepartmentMstRepository departmentRepository,
             SubDepartmentRepository subDepartmentRepository,
-            DepartmentMapper mapper) {
+            DepartmentMapper mapper,
+            JdbcTemplate jdbcTemplate) {
         this.departmentRepository = departmentRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.mapper = mapper;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -44,6 +48,7 @@ public class DepartmentMstServiceImpl implements DepartmentMstService {
         DepartmentMst entity = new DepartmentMst();
         entity.setDepartmentName(departmentName);
 
+        syncIdentitySequence("department_mst", "department_id");
         return mapper.toResponse(departmentRepository.save(entity), false);
     }
 
@@ -94,6 +99,28 @@ public class DepartmentMstServiceImpl implements DepartmentMstService {
 
     private String normalizeName(String value) {
         return value == null ? null : value.trim();
+    }
+
+    private void syncIdentitySequence(String tableName, String idColumn) {
+        String sequenceName = jdbcTemplate.queryForObject(
+                "select pg_get_serial_sequence(?, ?)",
+                String.class,
+                tableName,
+                idColumn);
+
+        if (sequenceName == null || sequenceName.isBlank()) {
+            return;
+        }
+
+        Long nextValue = jdbcTemplate.queryForObject(
+                "select coalesce(max(" + idColumn + "), 0) + 1 from " + tableName,
+                Long.class);
+
+        jdbcTemplate.queryForObject(
+                "select setval(cast(? as regclass), ?, false)",
+                Long.class,
+                sequenceName,
+                nextValue);
     }
 
     @Override

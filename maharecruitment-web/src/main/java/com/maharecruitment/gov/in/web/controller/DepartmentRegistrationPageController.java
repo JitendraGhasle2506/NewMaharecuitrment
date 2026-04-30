@@ -44,6 +44,8 @@ public class DepartmentRegistrationPageController {
     private final OtpVerificationService otpVerificationService;
     private final FileStorageService fileStorageService;
     private final boolean otpBypassEnabled;
+    private final boolean mobileOtpEnabled;
+    private final boolean emailOtpEnabled;
 
     public DepartmentRegistrationPageController(
             DepartmentMstService departmentService,
@@ -51,13 +53,17 @@ public class DepartmentRegistrationPageController {
             DepartmentRegistrationPageService registrationPageService,
             OtpVerificationService otpVerificationService,
             FileStorageService fileStorageService,
-            @Value("${registration.department.otp-bypass-enabled:false}") boolean otpBypassEnabled) {
+            @Value("${registration.department.otp-bypass-enabled:false}") boolean otpBypassEnabled,
+            @Value("${registration.department.mobile-otp-enabled:true}") boolean mobileOtpEnabled,
+            @Value("${registration.department.email-otp-enabled:true}") boolean emailOtpEnabled) {
         this.departmentService = departmentService;
         this.subDepartmentService = subDepartmentService;
         this.registrationPageService = registrationPageService;
         this.otpVerificationService = otpVerificationService;
         this.fileStorageService = fileStorageService;
         this.otpBypassEnabled = otpBypassEnabled;
+        this.mobileOtpEnabled = mobileOtpEnabled;
+        this.emailOtpEnabled = emailOtpEnabled;
     }
 
     @GetMapping("/department-registration")
@@ -89,7 +95,9 @@ public class DepartmentRegistrationPageController {
             redirectAttributes.addFlashAttribute("generatedPassword", result.temporaryPassword());
             return "redirect:/login";
         } catch (RuntimeException ex) {
-            model.addAttribute("errorMessage", ex.getMessage());
+            if (!applyRegistrationError(bindingResult, form, ex)) {
+                model.addAttribute("errorMessage", ex.getMessage());
+            }
             populateForm(model, form, session);
             return "register/department-registration";
         }
@@ -106,20 +114,22 @@ public class DepartmentRegistrationPageController {
         model.addAttribute("departments", getDepartments());
         model.addAttribute("subDepartments", getSubDepartmentsForForm(form));
         model.addAttribute("primaryMobileVerified",
-                otpBypassEnabled
+                !isMobileOtpRequired()
                         || otpVerificationService.isVerified(
                                 session,
                                 VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
                                 VerificationChannel.MOBILE,
                                 form.getPrimaryMobile()));
         model.addAttribute("primaryEmailVerified",
-                otpBypassEnabled
+                !isEmailOtpRequired()
                         || otpVerificationService.isVerified(
                                 session,
                                 VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
                                 VerificationChannel.EMAIL,
                                 form.getPrimaryEmail()));
         model.addAttribute("otpBypassEnabled", otpBypassEnabled);
+        model.addAttribute("mobileOtpEnabled", isMobileOtpRequired());
+        model.addAttribute("emailOtpEnabled", isEmailOtpRequired());
         model.addAttribute("verificationPurpose", VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
     }
 
@@ -177,7 +187,7 @@ public class DepartmentRegistrationPageController {
                     "Secondary mobile must be different from primary mobile.");
         }
 
-        if (!otpBypassEnabled) {
+        if (isMobileOtpRequired()) {
             if (!bindingResult.hasFieldErrors("primaryMobile")
                     && !otpVerificationService.isVerified(
                             session,
@@ -187,7 +197,9 @@ public class DepartmentRegistrationPageController {
                 bindingResult.rejectValue("primaryMobile", "registration.primaryMobileVerification",
                         "Primary mobile number must be verified through OTP.");
             }
+        }
 
+        if (isEmailOtpRequired()) {
             if (!bindingResult.hasFieldErrors("primaryEmail")
                     && !otpVerificationService.isVerified(
                             session,
@@ -202,6 +214,52 @@ public class DepartmentRegistrationPageController {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private boolean isMobileOtpRequired() {
+        return !otpBypassEnabled && mobileOtpEnabled;
+    }
+
+    private boolean isEmailOtpRequired() {
+        return !otpBypassEnabled && emailOtpEnabled;
+    }
+
+    private boolean applyRegistrationError(
+            BindingResult bindingResult,
+            DepartmentRegistrationForm form,
+            RuntimeException ex) {
+        String message = ex.getMessage();
+        if (!StringUtils.hasText(message)) {
+            return false;
+        }
+
+        if ("This department/sub-department combination is already registered.".equals(message)) {
+            String field = form.getSubDeptId() != null ? "subDeptId" : "departmentId";
+            bindingResult.rejectValue(field, "registration.departmentCombinationDuplicate", message);
+            return true;
+        }
+
+        if ("A registration already exists for the provided GST number.".equals(message)) {
+            bindingResult.rejectValue("gstNo", "registration.gstDuplicate", message);
+            return true;
+        }
+
+        if ("A registration already exists for the provided PAN number.".equals(message)) {
+            bindingResult.rejectValue("panNo", "registration.panDuplicate", message);
+            return true;
+        }
+
+        if ("A registration already exists for the provided TAN number.".equals(message)) {
+            bindingResult.rejectValue("tanNo", "registration.tanDuplicate", message);
+            return true;
+        }
+
+        if ("Selected sub-department does not belong to the chosen department.".equals(message)) {
+            bindingResult.rejectValue("subDeptId", "registration.subDepartmentMismatch", message);
+            return true;
+        }
+
+        return false;
     }
 
     private void stageUploadedFiles(DepartmentRegistrationForm form, BindingResult bindingResult) {

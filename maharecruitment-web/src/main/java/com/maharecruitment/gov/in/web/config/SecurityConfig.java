@@ -22,6 +22,7 @@ import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @Configuration
 @EnableWebSecurity
@@ -64,6 +65,7 @@ public class SecurityConfig {
 
                 // ✅ IMPORTANT: keep login FIRST
                 .requestMatchers("/login", "/doLogin", "/login/otp", "/login/otp/send").permitAll()
+                .requestMatchers("/api/verifications/otp/**").permitAll()
 
                 .requestMatchers(
                         "/", "/index", "/register/**",
@@ -177,7 +179,10 @@ public class SecurityConfig {
             .logout(logout -> logout
             	    .logoutUrl("/logout")
             	    .logoutSuccessHandler((request, response, authentication) -> {
-            	        request.getSession().invalidate();
+            	        HttpSession session = request.getSession(false);
+            	        if (session != null) {
+            	            session.invalidate();
+            	        }
             	        response.sendRedirect(request.getContextPath() + "/login?logout=true");
             	    })
             	    .deleteCookies("JSESSIONID")

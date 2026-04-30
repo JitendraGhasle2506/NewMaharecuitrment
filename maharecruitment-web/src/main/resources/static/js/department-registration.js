@@ -14,6 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const csrfTokenInput = form.querySelector('input[name="_csrf"]');
     const verificationPurpose = form.dataset.verificationPurpose;
     const otpBypassEnabled = form.dataset.otpBypassEnabled === "true";
+    const mobileOtpEnabled = form.dataset.mobileOtpEnabled === "true";
+    const emailOtpEnabled = form.dataset.emailOtpEnabled === "true";
 
     const primaryMobileInput = document.getElementById("primaryMobile");
     const primaryEmailInput = document.getElementById("primaryEmail");
@@ -35,6 +37,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return {
             isVerified: () => true,
+            onChange: () => {}
+        };
+    };
+
+    const createUnavailableVerification = (statusElement, message) => {
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.classList.remove("is-pending", "is-success");
+            statusElement.classList.add("is-error");
+        }
+        return {
+            isVerified: () => false,
             onChange: () => {}
         };
     };
@@ -159,9 +173,32 @@ document.addEventListener("DOMContentLoaded", () => {
         statusElement: document.getElementById("emailVerificationStatus")
     };
 
-    const mobileVerification = otpBypassEnabled
+    const initializeOtpVerification = (config, statusElement, channelLabel) => {
+        if (typeof window.createOtpVerification !== "function") {
+            return createUnavailableVerification(
+                statusElement,
+                `${channelLabel} OTP is temporarily unavailable. Please refresh the page and try again.`
+            );
+        }
+
+        try {
+            return window.createOtpVerification(config);
+        } catch (error) {
+            if (window.console && typeof window.console.error === "function") {
+                window.console.error(`${channelLabel} OTP setup failed.`, error);
+            }
+            return createUnavailableVerification(
+                statusElement,
+                `${channelLabel} OTP is temporarily unavailable. Please refresh the page and try again.`
+            );
+        }
+    };
+
+    const mobileVerification = !mobileOtpEnabled
+        ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP is disabled in this environment.")
+        : otpBypassEnabled
         ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP bypass enabled for testing.")
-        : window.createOtpVerification({
+        : initializeOtpVerification({
             purpose: verificationPurpose,
             channel: "MOBILE",
             referenceInput: primaryMobileInput,
@@ -175,11 +212,13 @@ document.addEventListener("DOMContentLoaded", () => {
             csrfToken,
             initialVerified: form.dataset.mobileVerified === "true",
             initialVerifiedMessage: "Primary mobile number already verified."
-        });
+        }, mobileOtpElements.statusElement, "Mobile");
 
-    const emailVerification = otpBypassEnabled
+    const emailVerification = !emailOtpEnabled
+        ? createBypassVerification(emailOtpElements.statusElement, "Email OTP is disabled in this environment.")
+        : otpBypassEnabled
         ? createBypassVerification(emailOtpElements.statusElement, "Email OTP bypass enabled for testing.")
-        : window.createOtpVerification({
+        : initializeOtpVerification({
             purpose: verificationPurpose,
             channel: "EMAIL",
             referenceInput: primaryEmailInput,
@@ -193,15 +232,18 @@ document.addEventListener("DOMContentLoaded", () => {
             csrfToken,
             initialVerified: form.dataset.emailVerified === "true",
             initialVerifiedMessage: "Primary email address already verified."
-        });
+        }, emailOtpElements.statusElement, "Email");
 
-    if (otpBypassEnabled) {
+    if (otpBypassEnabled || !mobileOtpEnabled) {
         disableOtpControls(
             mobileOtpElements.sendButton,
             mobileOtpElements.verifyButton,
             mobileOtpElements.otpInput,
             mobileOtpElements.otpSection
         );
+    }
+
+    if (otpBypassEnabled || !emailOtpEnabled) {
         disableOtpControls(
             emailOtpElements.sendButton,
             emailOtpElements.verifyButton,

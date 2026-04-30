@@ -275,6 +275,10 @@ body.portal-shell.department-registration-shell {
     color: #b42929;
 }
 
+.verification-status.is-success {
+    color: #1f7a3d;
+}
+
 .form-actions {
     display: flex;
     justify-content: space-between;
