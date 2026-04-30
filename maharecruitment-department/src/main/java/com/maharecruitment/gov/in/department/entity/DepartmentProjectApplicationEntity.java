@@ -74,6 +74,9 @@ public class DepartmentProjectApplicationEntity extends Auditable {
     @Column(name = "is_active", nullable = false)
     private Boolean active = true;
 
+    @Column(name = "is_partial_payment_allowed")
+    private Boolean isPartialPaymentAllowed = false;
+
     @Column(name = "total_estimated_cost", precision = 14, scale = 2)
     private BigDecimal totalEstimatedCost;
 

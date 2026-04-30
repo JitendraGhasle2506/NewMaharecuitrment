@@ -75,64 +75,6 @@
             margin-bottom: 24px;
         }
 
-        .rating-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 24px;
-        }
-
-        .rating-item {
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .rating-item label {
-            display: flex;
-            justify-content: space-between;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #0f172a;
-        }
-
-        .rating-item .score-display {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #2563eb;
-        }
-
-        /* Custom Range Slider */
-        input[type=range] {
-            height: 6px;
-            -webkit-appearance: none;
-            margin: 10px 0;
-            width: 100%;
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-
-        input[type=range]:focus {
-            outline: none;
-        }
-
-        input[type=range]::-webkit-slider-thumb {
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #2563eb;
-            cursor: pointer;
-            -webkit-appearance: none;
-            margin-top: -7px;
-        }
-        
-        .error-message {
-            color: #dc3545;
-            font-size: 0.85rem;
-            margin-top: 4px;
-        }
-
         /* Assessment Table Styling */
         .assessment-table {
             width: 100%;
@@ -160,65 +102,58 @@
             vertical-align: middle;
         }
 
-        .assessment-table tr:last-child td {
-            border-bottom: none;
-        }
-
         .assessment-table .criteria-title {
             font-weight: 700;
             color: #0f172a;
             text-transform: uppercase;
         }
 
-        .mark-input-box {
-            width: 60px;
-            height: 38px;
-            text-align: center;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-weight: 600;
+        .assessment-table .meta-row td {
+            background: #f8fafc;
         }
 
-        .criteria-remark-input {
-            width: 100%;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 8px 12px;
-        }
-
-        .section-header-blue {
-            color: #1e40af;
+        .assessment-table .meta-label {
+            display: block;
             font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 16px;
+            margin-bottom: 6px;
+            color: #475569;
+            font-size: 0.85rem;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.85rem;
+            margin-top: 4px;
         }
     </style>
 </head>
 
 <body class="panel-detail">
-    <th:block th:replace="~{header/header :: var-sidebar-header('Verification & Approval', 'External Candidate Assessment', ~{::section})}">
+    <th:block
+        th:replace="~{header/header :: var-sidebar-header('Verification & Approval', 'External Candidate Assessment', ~{::section})}">
         <section>
             <div class="hero fade-in">
                 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
                     <div>
                         <h2 th:text="${detail.candidateName}">Candidate Name</h2>
                         <p class="mb-0 mt-2">
-                            <i class="fas fa-project-diagram me-1"></i> <span th:text="${detail.projectName}">Project</span>
+                            <i class="fas fa-project-diagram me-1"></i> <span
+                                th:text="${detail.projectName}">Project</span>
                             <span class="mx-2">|</span>
                             <i class="fas fa-id-badge me-1"></i> <span th:text="${detail.requestId}">REQ-ID</span>
                             <span class="mx-2">|</span>
-                            <i class="fas fa-user-tag me-1"></i> <span th:text="${detail.designationName}">Designation</span>
+                            <i class="fas fa-user-tag me-1"></i> <span
+                                th:text="${detail.designationName}">Designation</span>
                         </p>
                     </div>
                     <div class="hero-actions">
                         <button th:if="${detail.resumeFilePath != null}" type="button" class="btn btn-outline-dark"
-                            th:attr="data-path=${detail.resumeFilePath}" onclick="openManagedDocument(this.getAttribute('data-path'))">
+                            th:attr="data-path=${detail.resumeFilePath}"
+                            onclick="openManagedDocument(this.getAttribute('data-path'))">
                             <i class="fas fa-file-pdf me-1"></i> View Resume
                         </button>
                         <a th:if="${detail.interviewLink != null and !detail.interviewLink.empty}"
-                           th:href="${detail.interviewLink}"
-                           target="_blank"
-                           class="btn btn-primary">
+                            th:href="${detail.interviewLink}" target="_blank" class="btn btn-primary">
                             <i class="fas fa-video me-1"></i> Join Interview
                         </a>
                         <a class="btn btn-outline-secondary" th:href="@{/panel/external-interviews}">
@@ -232,7 +167,7 @@
                 <i class="fas fa-check-circle me-2"></i> <span th:text="${successMessage}"></span>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-            
+
             <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -241,8 +176,12 @@
             <div class="overview-grid">
                 <div class="mini-card fade-in">
                     <span class="label">Interview Schedule</span>
-                    <div class="value" th:text="${detail.interviewDateTime != null ? #temporals.format(detail.interviewDateTime, 'dd MMM yyyy') : 'TBD'}">Date</div>
-                    <div class="muted-copy mt-1" th:text="${detail.interviewTimeSlot != null ? detail.interviewTimeSlot : 'No time slot'}">Time</div>
+                    <div class="value"
+                        th:text="${detail.interviewDateTime != null ? #temporals.format(detail.interviewDateTime, 'dd MMM yyyy') : 'TBD'}">
+                        Date</div>
+                    <div class="muted-copy mt-1"
+                        th:text="${detail.interviewTimeSlot != null ? detail.interviewTimeSlot : 'No time slot'}">Time
+                    </div>
                 </div>
                 <div class="mini-card fade-in" style="animation-delay: 0.1s">
                     <span class="label">Agency</span>
@@ -257,138 +196,128 @@
                 <div class="mini-card fade-in" style="animation-delay: 0.3s">
                     <span class="label">Assessment Status</span>
                     <div class="value">
-                        <span th:if="${detail.feedbackSubmitted}" class="text-success"><i class="fas fa-check-circle me-1"></i> Submitted</span>
-                        <span th:if="${!detail.feedbackSubmitted}" class="text-warning"><i class="fas fa-clock me-1"></i> Pending</span>
+                        <span th:if="${detail.feedbackSubmitted}" class="text-success"><i
+                                class="fas fa-check-circle me-1"></i> Submitted</span>
+                        <span th:if="${!detail.feedbackSubmitted}" class="text-warning"><i
+                                class="fas fa-clock me-1"></i> Pending</span>
                     </div>
                     <div class="muted-copy mt-1" th:if="${detail.feedbackSubmitted}">
-                        <span th:text="${#temporals.format(detail.feedbackSubmittedAt, 'dd MMM yyyy HH:mm')}">Date</span>
+                        <span
+                            th:text="${#temporals.format(detail.feedbackSubmittedAt, 'dd MMM yyyy HH:mm')}">Date</span>
                     </div>
                     <div class="muted-copy mt-1" th:if="${!detail.feedbackSubmitted}">Required</div>
                 </div>
             </div>
 
-            <!-- Feedback Form Section -->
             <div class="section-card fade-in border-primary border-top border-3">
                 <h5 class="section-title">
                     <i class="fas fa-clipboard-check me-2 text-primary"></i> Interview Assessment Sheet
                 </h5>
-                <p class="text-muted mb-4">Please rate the candidate on a scale of 0 to 5 and provide your overall grade and recommendation.</p>
+                <p class="text-muted mb-4">Please rate the candidate on a scale of 0 to 5 and provide your overall grade
+                    and recommendation.</p>
 
                 <div th:if="${detail.feedbackSubmitted}" class="alert alert-info mb-4">
-                    <i class="fas fa-info-circle me-2"></i> You have already submitted your feedback. You may update it if necessary, provided the final department decision hasn't been made yet.
+                    <i class="fas fa-info-circle me-2"></i> You have already submitted your feedback. You may update it
+                    if necessary, provided the final department decision hasn't been made yet.
                 </div>
 
-                <form th:action="@{/panel/external-interviews/{id}/feedback(id=${detail.recruitmentInterviewDetailId})}" 
-                      method="post" th:object="${feedbackForm}">
-                    
+                <form th:action="@{/panel/external-interviews/{id}/feedback(id=${detail.recruitmentInterviewDetailId})}"
+                    method="post" th:object="${feedbackForm}">
+
                     <div class="table-responsive">
+                        <input type="hidden" name="leadershipQualityMarks" value="0" />
                         <table class="assessment-table">
                             <thead>
                                 <tr>
                                     <th style="width: 80px;">SR NO</th>
                                     <th>INTERVIEW CRITERIA</th>
-                                    <th style="width: 120px; text-align: center;">MARKS</th>
+                                    <th style="width: 100px; text-align: center;">MARKS</th>
                                     <th>REMARKS</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Communication -->
                                 <tr>
                                     <td>1</td>
                                     <td class="criteria-title">COMMUNICATION SKILLS</td>
                                     <td class="text-center fw-bold">5</td>
                                     <td>
-                                        <div class="d-flex gap-2">
-                                            <input type="number" th:field="*{communicationSkillMarks}" class="mark-input-box" min="0" max="5" placeholder="0">
-                                            <input type="text" class="criteria-remark-input" placeholder="Criteria specific notes (optional)">
-                                        </div>
-                                        <div th:if="${#fields.hasErrors('communicationSkillMarks')}" th:errors="*{communicationSkillMarks}" class="error-message"></div>
+                                        <select th:field="*{communicationSkillMarks}" class="form-select form-select-sm"
+                                            style="width: 100%;" required>
+                                            <option th:each="score : ${#numbers.sequence(0,5)}" th:value="${score}"
+                                                th:text="${score}"></option>
+                                        </select>
                                     </td>
                                 </tr>
-                                <!-- Technical -->
                                 <tr>
-                                    <td>2</td>
+                                    <td>3</td>
                                     <td class="criteria-title">TECHNICAL SKILLS</td>
                                     <td class="text-center fw-bold">5</td>
                                     <td>
-                                        <div class="d-flex gap-2">
-                                            <input type="number" th:field="*{technicalSkillMarks}" class="mark-input-box" min="0" max="5" placeholder="0">
-                                            <input type="text" class="criteria-remark-input" placeholder="Technical assessment details">
-                                        </div>
-                                        <div th:if="${#fields.hasErrors('technicalSkillMarks')}" th:errors="*{technicalSkillMarks}" class="error-message"></div>
+                                        <select th:field="*{technicalSkillMarks}" class="form-select form-select-sm"
+                                            style="width: 100%;" required>
+                                            <option th:each="score : ${#numbers.sequence(0,5)}" th:value="${score}"
+                                                th:text="${score}"></option>
+                                        </select>
                                     </td>
                                 </tr>
-                                <!-- Leadership -->
-                                <tr>
-                                    <td>3</td>
-                                    <td class="criteria-title">LEADERSHIP QUALITY</td>
-                                    <td class="text-center fw-bold">5</td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <input type="number" th:field="*{leadershipQualityMarks}" class="mark-input-box" min="0" max="5" placeholder="0">
-                                            <input type="text" class="criteria-remark-input" placeholder="Leadership potential">
-                                        </div>
-                                        <div th:if="${#fields.hasErrors('leadershipQualityMarks')}" th:errors="*{leadershipQualityMarks}" class="error-message"></div>
-                                    </td>
-                                </tr>
-                                <!-- Relevant Exp -->
                                 <tr>
                                     <td>4</td>
-                                    <td class="criteria-title">PROJECT EXPERIENCE / RELEVANT EXP</td>
+                                    <td class="criteria-title">PROJECT EXPERIENCE</td>
                                     <td class="text-center fw-bold">5</td>
                                     <td>
-                                        <div class="d-flex gap-2">
-                                            <input type="number" th:field="*{relevantExperienceMarks}" class="mark-input-box" min="0" max="5" placeholder="0">
-                                            <input type="text" class="criteria-remark-input" placeholder="Project handling experience">
-                                        </div>
-                                        <div th:if="${#fields.hasErrors('relevantExperienceMarks')}" th:errors="*{relevantExperienceMarks}" class="error-message"></div>
+                                        <select th:field="*{relevantExperienceMarks}" class="form-select form-select-sm"
+                                            style="width: 100%;" required>
+                                            <option th:each="score : ${#numbers.sequence(0,5)}" th:value="${score}"
+                                                th:text="${score}"></option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr class="meta-row border-top border-2">
+                                    <td colspan="2">
+                                        <label class="meta-label">Remarks:</label>
+                                        <textarea class="form-control" th:field="*{assessmentRemarks}" rows="3"
+                                            placeholder="Candidate strengths, concerns, and observations"></textarea>
+                                        <div th:if="${#fields.hasErrors('assessmentRemarks')}"
+                                            th:errors="*{assessmentRemarks}" class="error-message"></div>
+                                    </td>
+                                    <td>
+                                        <label class="meta-label">Grade :</label>
+                                        <select class="form-select" th:field="*{interviewerGrade}" required>
+                                            <option value="">Select Grade</option>
+                                            <option value="A">A</option>
+                                            <option value="B">B</option>
+                                            <option value="C">C</option>
+                                        </select>
+                                        <div th:if="${#fields.hasErrors('interviewerGrade')}"
+                                            th:errors="*{interviewerGrade}" class="error-message"></div>
+                                    </td>
+                                    <td>
+                                        <label class="meta-label">Recommendation Status:</label>
+                                        <select class="form-select" th:field="*{recommendationStatus}" required>
+                                            <option value="" disabled selected>Select Recommendation</option>
+                                            <option value="RECOMMENDED" class="text-success fw-bold">Recommended
+                                            </option>
+                                            <option value="NOT_RECOMMENDED" class="text-danger fw-bold">Not Recommended
+                                            </option>
+                                        </select>
+                                        <div th:if="${#fields.hasErrors('recommendationStatus')}"
+                                            th:errors="*{recommendationStatus}" class="error-message"></div>
+                                    </td>
+                                </tr>
+                                <tr class="meta-row border-top border-2">
+                                    <td colspan="4">
+                                        <label class="meta-label">Final Remarks:</label>
+                                        <textarea class="form-control" th:field="*{finalRemarks}" rows="3"
+                                            placeholder="Final recommendation note for approval flow"></textarea>
+                                        <div th:if="${#fields.hasErrors('finalRemarks')}" th:errors="*{finalRemarks}"
+                                            class="error-message"></div>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <p class="small text-muted mb-4">Select marks from 0 to 5 for each criteria.</p>
 
-                    <div class="row g-4 mb-4">
-                        <div class="col-md-5">
-                            <label class="form-label fw-bold">Remarks:</label>
-                            <textarea class="form-control" th:field="*{assessmentRemarks}" rows="4" 
-                                      placeholder="Candidate strengths, concerns, and observations"></textarea>
-                            <div th:if="${#fields.hasErrors('assessmentRemarks')}" th:errors="*{assessmentRemarks}" class="error-message"></div>
-                        </div>
-                        
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Grade :</label>
-                            <select class="form-select" th:field="*{interviewerGrade}">
-                                <option value="" selected>Select Grade</option>
-                                <option value="A">A</option>
-                                <option value="B">B</option>
-                                <option value="C">C</option>
-                                <option value="D">D</option>
-                            </select>
-                            <div th:if="${#fields.hasErrors('interviewerGrade')}" th:errors="*{interviewerGrade}" class="error-message"></div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Recommendation Status:</label>
-                            <select class="form-select" th:field="*{recommendationStatus}">
-                                <option value="" disabled selected>Select Status</option>
-                                <option value="RECOMMENDED" class="text-success fw-bold">Recommended</option>
-                                <option value="NOT_RECOMMENDED" class="text-danger fw-bold">Not Recommended</option>
-                                <option value="ON_HOLD" class="text-warning fw-bold">On Hold</option>
-                            </select>
-                            <div th:if="${#fields.hasErrors('recommendationStatus')}" th:errors="*{recommendationStatus}" class="error-message"></div>
-                        </div>
-
-                        <div class="col-12 mt-4">
-                            <h6 class="section-header-blue">Final Remarks</h6>
-                            <textarea class="form-control" th:field="*{finalRemarks}" rows="3" 
-                                      placeholder="Final recommendation note for approval flow"></textarea>
-                            <div th:if="${#fields.hasErrors('finalRemarks')}" th:errors="*{finalRemarks}" class="error-message"></div>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <div class="d-flex justify-content-end mt-4 pt-3 border-top">
                         <button type="submit" class="btn btn-primary px-4">
                             <i class="fas fa-paper-plane me-1"></i> Submit Assessment
                         </button>

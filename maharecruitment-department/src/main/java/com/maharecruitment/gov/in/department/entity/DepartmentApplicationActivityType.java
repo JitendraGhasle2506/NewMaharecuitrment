@@ -7,5 +7,6 @@ public enum DepartmentApplicationActivityType {
     WORK_ORDER_UPLOADED,
     HR_REVIEWED,
     AUDITOR_REVIEWED,
+    PARTIAL_PAYMENT_AUTHORIZED,
     COMPLETED
 }

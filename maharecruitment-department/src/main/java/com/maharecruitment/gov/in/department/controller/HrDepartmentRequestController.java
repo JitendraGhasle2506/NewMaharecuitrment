@@ -428,6 +428,35 @@ public class HrDepartmentRequestController {
         }
     }
 
+    @GetMapping("/advance-payment/authorization")
+    public String advancePaymentAuthorizationList(Model model) {
+        try {
+            model.addAttribute("authorizationList", hrDepartmentRequestService.getApplicationsForPaymentAuthorization());
+        } catch (Exception ex) {
+            log.error("Error loading advance payment authorization list", ex);
+            model.addAttribute("errorMessage", "Unable to load authorization list.");
+            model.addAttribute("authorizationList", List.of());
+        }
+        return "hr/advance-payment-authorization";
+    }
+
+    @PostMapping("/advance-payment/authorize")
+    public String authorizePartialPayment(
+            @RequestParam Long applicationId,
+            @RequestParam boolean allowed,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+        try {
+            hrDepartmentRequestService.authorizePartialPayment(applicationId, allowed, resolveActorEmail(principal));
+            redirectAttributes.addFlashAttribute("successMessage", 
+                    "Partial payment " + (allowed ? "authorized" : "revoked") + " successfully.");
+        } catch (Exception ex) {
+            log.error("Error toggling partial payment authorization", ex);
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/hr/department-requests/advance-payment/authorization";
+    }
+
     private void populateReviewModel(Model model, HrDepartmentApplicationReviewDetailView reviewDetail) {
         model.addAttribute("applicationReviewDetail", reviewDetail);
     }

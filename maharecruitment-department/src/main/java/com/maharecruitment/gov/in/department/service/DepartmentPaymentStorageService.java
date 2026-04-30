@@ -79,8 +79,9 @@ public class DepartmentPaymentStorageService {
                     .build();
         } catch (IOException ex) {
             log.error("Unable to store payment receipt document.", ex);
-            throw new DepartmentApplicationException("Unable to store payment receipt document.");
+            throw new DepartmentApplicationException("Unable to store payment receipt document: " + ex.getMessage());
         }
+
     }
 
     public Resource loadAsResource(String fullPath) {

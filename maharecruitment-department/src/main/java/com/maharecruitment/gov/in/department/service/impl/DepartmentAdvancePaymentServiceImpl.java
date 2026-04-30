@@ -82,9 +82,12 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
         DepartmentProjectApplicationEntity app = findOwnedApplication(applicationId, actorContext);
 
-        // Check if payment already exists for this application
-        if (paymentRepository.existsByApplication(app)) {
-            throw new DepartmentApplicationException("An advance payment has already been initiated for this project.");
+        // Check if a payment is already in progress (non-terminal statuses)
+        long pendingCount = paymentRepository.countByApplicationAndApplicationStatusNotIn(app, 
+                List.of(DepartmentApplicationStatus.AUDITOR_APPROVED, DepartmentApplicationStatus.HR_REJECTED));
+        
+        if (pendingCount > 0) {
+            throw new DepartmentApplicationException("A payment record for this project is already being processed.");
         }
 
         AdvancePaymentForm form = new AdvancePaymentForm();
@@ -99,7 +102,7 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             form.setPiNumber(invoice.tiNumber());
             form.setTotalPiAmount(invoice.totalAmount());
             
-            // Calculate previously paid amounts for this application (excluding current if editing, but this is initialize)
+            // Calculate previously approved amounts
             List<DepartmentAdvancePaymentEntity> pastPayments = paymentRepository
                     .findByApplicationAndApplicationStatusNotIn(app, List.of(DepartmentApplicationStatus.HR_REJECTED));
             
@@ -107,10 +110,19 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                     .map(DepartmentAdvancePaymentEntity::getTotalAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             
+            BigDecimal balance = invoice.totalAmount().subtract(paidAmount);
+            
+            if (balance.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new DepartmentApplicationException("This project is already fully paid.");
+            }
+
             form.setPartialAmount(paidAmount);
-            form.setBalanceAmount(invoice.totalAmount().subtract(paidAmount));
-            form.setTotalAmount(invoice.totalAmount().subtract(paidAmount)); // Default to paying balance
+            form.setBalanceAmount(balance);
+            form.setTotalAmount(balance); // Default to full remaining balance
             form.setPaymentType("FULL");
+            form.setPartialPaymentAllowed(Boolean.TRUE.equals(app.getIsPartialPaymentAllowed()));
+        } else {
+            throw new DepartmentApplicationException("No proforma invoice found for this project. Please contact HR.");
         }
 
         return form;
@@ -154,10 +166,12 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             DepartmentProjectApplicationEntity app = findOwnedApplication(form.getDepartmentProjectApplicationId(),
                     actorContext);
 
-            // Guard against duplicate creation
-            if (paymentRepository.existsByApplication(app)) {
-                throw new DepartmentApplicationException(
-                        "An advance payment record already exists for this project application.");
+            // Allow new record only if no other record is in progress
+            long pendingCount = paymentRepository.countByApplicationAndApplicationStatusNotIn(app, 
+                    List.of(DepartmentApplicationStatus.AUDITOR_APPROVED, DepartmentApplicationStatus.HR_REJECTED));
+            
+            if (pendingCount > 0) {
+                throw new DepartmentApplicationException("A payment record for this project is already being processed.");
             }
 
             entity = new DepartmentAdvancePaymentEntity();
@@ -249,6 +263,7 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         form.setReceiptFileType(entity.getReceiptFileType());
         
         populatePiInfoInForm(form, entity.getApplication());
+        form.setPartialPaymentAllowed(Boolean.TRUE.equals(entity.getApplication().getIsPartialPaymentAllowed()));
         
         return form;
     }
@@ -268,12 +283,8 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                         actorContext.getDepartmentRegistrationId(),
                         List.of(DepartmentApplicationStatus.COMPLETED));
 
-        // Use explicit ID-based check for robustness
-        List<Long> initiatedAppIds = paymentRepository
-                .findApplicationIdsByDepartmentRegistrationId(actorContext.getDepartmentRegistrationId());
-
         return applications.stream()
-                .filter(entity -> !initiatedAppIds.contains(entity.getDepartmentProjectApplicationId()))
+                .filter(this::isEligibleForNewAdvancePayment)
                 .map(entity -> DepartmentProjectApplicationSummaryView.builder()
                         .departmentProjectApplicationId(entity.getDepartmentProjectApplicationId())
                         .requestId(entity.getRequestId())
@@ -284,6 +295,32 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                         .build())
                 .toList();
     }
+
+    private boolean isEligibleForNewAdvancePayment(DepartmentProjectApplicationEntity application) {
+        // 1. Check if there is already a payment in progress
+        long pendingCount = paymentRepository.countByApplicationAndApplicationStatusNotIn(application, 
+                List.of(DepartmentApplicationStatus.AUDITOR_APPROVED, DepartmentApplicationStatus.HR_REJECTED));
+        if (pendingCount > 0) {
+            return false;
+        }
+
+        // 2. Check if there is still a balance to pay
+        Optional<TaxInvoiceInfo> invoiceOpt = findTaxInvoiceInfo(application.getDepartmentProjectApplicationId());
+        if (invoiceOpt.isEmpty()) {
+            return false;
+        }
+
+        BigDecimal totalPiAmount = invoiceOpt.get().totalAmount();
+        List<DepartmentAdvancePaymentEntity> payments = paymentRepository
+                .findByApplicationAndApplicationStatusNotIn(application, List.of(DepartmentApplicationStatus.HR_REJECTED));
+        
+        BigDecimal paidAmount = payments.stream()
+                .map(DepartmentAdvancePaymentEntity::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return totalPiAmount.subtract(paidAmount).compareTo(BigDecimal.ZERO) > 0;
+    }
+
 
     @Override
     public boolean isReceiptNumberDuplicate(String receiptNumber, Long paymentId) {
@@ -417,6 +454,7 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         form.setReceiptFileType(entity.getReceiptFileType());
         
         populatePiInfoInForm(form, entity.getApplication());
+        form.setPartialPaymentAllowed(Boolean.TRUE.equals(entity.getApplication().getIsPartialPaymentAllowed()));
         
         return form;
     }

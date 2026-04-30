@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Advance Payment Authorization | HR Dashboard</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .auth-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .auth-table thead th {
+            background-color: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+            color: #475569;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.025em;
+            padding: 1rem;
+        }
+
+        .auth-table tbody td {
+            padding: 1rem;
+            vertical-align: middle;
+            color: #1e293b;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-enabled {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-disabled {
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2563eb;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .page-hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-hero-copy h2 {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .empty-state {
+            padding: 4rem 1rem;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Advance Payment Authorization', ~{::section})}">
+        <section class="p-2">
+            <div class="page-hero">
+                <div class="page-hero-copy">
+                    <p class="text-primary mb-1 fw-medium small text-uppercase tracking-wider">Payment Management</p>
+                    <h2 class="text-dark">Advance Payment Authorization</h2>
+                    <p class="text-muted mb-0">Manage which applications are authorized to make partial advance payments.</p>
+                </div>
+                <a th:href="@{/hr/dashboard}" class="btn btn-outline-secondary btn-sm shadow-sm px-3">
+                    <i class="fa fa-arrow-left me-2"></i>Back
+                </a>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger border-0 shadow-sm mb-4" th:text="${errorMessage}"></div>
+
+            <div class="auth-container">
+                <div class="table-responsive">
+                    <table class="table auth-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Project Name</th>
+                                <th>Department</th>
+                                <th>Total Cost</th>
+                                <th class="text-center">Partial Payment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(authorizationList)}">
+                                <td colspan="5" class="empty-state">
+                                    <i class="fa-solid fa-file-circle-exclamation"></i>
+                                    <h5>No Applications Found</h5>
+                                    <p>Only applications with approved proforma invoices appear here.</p>
+                                </td>
+                            </tr>
+                            <tr th:each="item : ${authorizationList}">
+                                <td>
+                                    <span class="fw-bold text-primary" th:text="${item.requestId}">REQ-123</span>
+                                </td>
+                                <td>
+                                    <div class="fw-medium" th:text="${item.projectName}">Project Name</div>
+                                </td>
+                                <td>
+                                    <div class="small fw-medium" th:text="${item.departmentName}">Department</div>
+                                    <div class="small text-muted" th:text="${item.subDepartmentName}">Sub Department</div>
+                                </td>
+                                <td>
+                                    <span class="fw-bold" th:text="${'₹ ' + #numbers.formatDecimal(item.totalEstimatedCost, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex flex-column align-items-center gap-2">
+                                        <form th:action="@{/hr/department-requests/advance-payment/authorize}" method="post">
+                                            <input type="hidden" name="applicationId" th:value="${item.departmentProjectApplicationId}">
+                                            <input type="hidden" name="allowed" th:value="${!item.partialPaymentAllowed}">
+                                            <label class="switch">
+                                                <input type="checkbox" th:checked="${item.partialPaymentAllowed}" onchange="this.form.submit()">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </form>
+                                        <span class="status-badge" th:classappend="${item.partialPaymentAllowed ? 'status-enabled' : 'status-disabled'}"
+                                              th:text="${item.partialPaymentAllowed ? 'Authorized' : 'Disabled'}">
+                                            Status
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

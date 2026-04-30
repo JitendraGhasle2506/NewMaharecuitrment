@@ -19,6 +19,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.project.notification.service.NotificationService;
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.department.entity.DepartmentApplicationActivityType;
+import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationActivityEntity;
+import com.maharecruitment.gov.in.department.service.model.HrPartialPaymentAuthorizationView;
+
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
@@ -28,6 +35,8 @@ import com.maharecruitment.gov.in.department.entity.HrReviewDecision;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationActivityRepository;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
+import com.maharecruitment.gov.in.department.repository.DepartmentAdvancePaymentRepository;
+
 import com.maharecruitment.gov.in.department.repository.projection.DepartmentSubmittedProjectCountProjection;
 import com.maharecruitment.gov.in.department.service.DepartmentManpowerApplicationService;
 import com.maharecruitment.gov.in.department.service.HrDepartmentRequestService;
@@ -63,6 +72,8 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
     private final DepartmentManpowerApplicationService manpowerApplicationService;
     private final DepartmentMstRepository departmentMstRepository;
     private final SubDepartmentRepository subDepartmentRepository;
+    private final UserRepository userRepository;
+    private final DepartmentAdvancePaymentRepository departmentAdvancePaymentRepository;
 
     public HrDepartmentRequestServiceImpl(
             DepartmentRegistrationRepository departmentRegistrationRepository,
@@ -70,13 +81,17 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
             DepartmentProjectApplicationActivityRepository activityRepository,
             DepartmentManpowerApplicationService manpowerApplicationService,
             DepartmentMstRepository departmentMstRepository,
-            SubDepartmentRepository subDepartmentRepository) {
+            SubDepartmentRepository subDepartmentRepository,
+            UserRepository userRepository,
+            DepartmentAdvancePaymentRepository departmentAdvancePaymentRepository) {
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.departmentProjectApplicationRepository = departmentProjectApplicationRepository;
         this.activityRepository = activityRepository;
         this.manpowerApplicationService = manpowerApplicationService;
         this.departmentMstRepository = departmentMstRepository;
         this.subDepartmentRepository = subDepartmentRepository;
+        this.userRepository = userRepository;
+        this.departmentAdvancePaymentRepository = departmentAdvancePaymentRepository;
     }
 
     @Override
@@ -422,6 +437,88 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .fullPath(application.getWorkOrderFilePath())
                 .contentType(application.getWorkOrderFileType())
                 .build();
+    }
+
+    @Override
+    public List<HrPartialPaymentAuthorizationView> getApplicationsForPaymentAuthorization() {
+        List<DepartmentProjectApplicationEntity> allEligible = departmentProjectApplicationRepository
+                .findByApplicationStatusInOrderByDepartmentProjectApplicationIdDesc(
+                        List.of(DepartmentApplicationStatus.AUDITOR_APPROVED, DepartmentApplicationStatus.COMPLETED));
+
+        return allEligible.stream()
+                .filter(this::isEligibleForAuthorizationDashboard)
+                .map(this::toPartialPaymentAuthView)
+                .toList();
+    }
+
+    private boolean isEligibleForAuthorizationDashboard(DepartmentProjectApplicationEntity application) {
+        // 1. Exclude if there's any payment record currently "in-progress" (not approved/rejected)
+        long pendingPayments = departmentAdvancePaymentRepository.countByApplicationAndApplicationStatusNotIn(
+                application,
+                List.of(DepartmentApplicationStatus.AUDITOR_APPROVED, DepartmentApplicationStatus.HR_REJECTED));
+        
+        if (pendingPayments > 0) {
+            return false;
+        }
+
+        // 2. Ideally exclude if the balance is zero, but that requires expensive native queries.
+        // For now, requirement specifies "whose advance payment is done", which usually means pending checks.
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public void authorizePartialPayment(Long applicationId, boolean allowed, String actorEmail) {
+        DepartmentProjectApplicationEntity application = departmentProjectApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new DepartmentApplicationException("Application not found."));
+
+        if (application.getApplicationStatus() != DepartmentApplicationStatus.AUDITOR_APPROVED && 
+            application.getApplicationStatus() != DepartmentApplicationStatus.COMPLETED) {
+            throw new DepartmentApplicationException("Partial payment can only be authorized for approved proforma invoices.");
+        }
+
+        application.setIsPartialPaymentAllowed(allowed);
+        departmentProjectApplicationRepository.save(application);
+
+        User actor = userRepository.findByEmailIgnoreCase(actorEmail)
+                .orElseThrow(() -> new DepartmentApplicationException("Actor not found."));
+
+        recordAuthorizationActivity(application, allowed, actor);
+    }
+
+    private HrPartialPaymentAuthorizationView toPartialPaymentAuthView(DepartmentProjectApplicationEntity application) {
+        String departmentName = departmentMstRepository.findById(application.getDepartmentId())
+                .map(DepartmentMst::getDepartmentName)
+                .orElse("Dept-" + application.getDepartmentId());
+
+        String subDepartmentName = subDepartmentRepository.findById(application.getSubDepartmentId())
+                .map(SubDepartment::getSubDeptName)
+                .orElse("SubDept-" + application.getSubDepartmentId());
+
+        return HrPartialPaymentAuthorizationView.builder()
+                .departmentProjectApplicationId(application.getDepartmentProjectApplicationId())
+                .requestId(application.getRequestId())
+                .projectName(application.getProjectName())
+                .departmentName(departmentName)
+                .subDepartmentName(subDepartmentName)
+                .totalEstimatedCost(application.getTotalEstimatedCost())
+                .partialPaymentAllowed(Boolean.TRUE.equals(application.getIsPartialPaymentAllowed()))
+                .build();
+    }
+
+    private void recordAuthorizationActivity(DepartmentProjectApplicationEntity application, boolean allowed, User actor) {
+        DepartmentProjectApplicationActivityEntity activity = new DepartmentProjectApplicationActivityEntity();
+        activity.setApplication(application);
+        activity.setActivityType(DepartmentApplicationActivityType.UPDATED);
+        activity.setPreviousStatus(application.getApplicationStatus());
+
+        activity.setNewStatus(application.getApplicationStatus());
+        activity.setActorUserId(actor.getId());
+        activity.setActorEmail(actor.getEmail());
+        activity.setActorName(actor.getName());
+        activity.setActivityRemarks(allowed ? "Partial payment AUTHORIZED by HR." : "Partial payment REVOKED by HR.");
+        activity.setActionTimestamp(java.time.LocalDateTime.now());
+        activityRepository.save(activity);
     }
 
     private HrDepartmentSubmittedApplicationView toSubmittedApplicationView(

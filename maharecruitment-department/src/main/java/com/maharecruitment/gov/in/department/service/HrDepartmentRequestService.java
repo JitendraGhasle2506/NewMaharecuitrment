@@ -35,4 +35,8 @@ public interface HrDepartmentRequestService {
             Long departmentId,
             Long subDepartmentId,
             Long applicationId);
+
+    List<com.maharecruitment.gov.in.department.service.model.HrPartialPaymentAuthorizationView> getApplicationsForPaymentAuthorization();
+
+    void authorizePartialPayment(Long applicationId, boolean allowed, String actorEmail);
 }
