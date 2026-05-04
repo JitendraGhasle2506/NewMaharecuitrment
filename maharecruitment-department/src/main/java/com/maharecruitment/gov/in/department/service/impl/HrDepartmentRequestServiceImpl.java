@@ -324,6 +324,67 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
     }
 
     @Override
+    public List<HrDepartmentSubmittedApplicationView> getAllSubmittedApplications() {
+        List<DepartmentProjectApplicationEntity> applications = departmentProjectApplicationRepository
+                .findByApplicationStatusInOrderByDepartmentProjectApplicationIdDesc(SUBMITTED_STATUSES);
+
+        if (applications.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> departmentIds = applications.stream()
+                .map(DepartmentProjectApplicationEntity::getDepartmentId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Map<Long, String> departmentNameMasterById = departmentMstRepository.findAllById(departmentIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        DepartmentMst::getDepartmentId,
+                        DepartmentMst::getDepartmentName,
+                        (first, second) -> first,
+                        LinkedHashMap::new));
+
+        Set<Long> departmentRegistrationIds = applications.stream()
+                .map(DepartmentProjectApplicationEntity::getDepartmentRegistrationId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Map<Long, String> departmentNameFallbackById = departmentRegistrationRepository.findAllById(departmentRegistrationIds)
+                .stream()
+                .filter(registration -> registration.getDepartmentId() != null)
+                .filter(registration -> StringUtils.hasText(registration.getDepartmentName()))
+                .collect(Collectors.toMap(
+                        DepartmentRegistrationEntity::getDepartmentId,
+                        DepartmentRegistrationEntity::getDepartmentName,
+                        (first, second) -> first,
+                        LinkedHashMap::new));
+
+        Set<Long> subDepartmentIds = applications.stream()
+                .map(DepartmentProjectApplicationEntity::getSubDepartmentId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Map<Long, String> subDepartmentNameById = subDepartmentRepository.findAllById(subDepartmentIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        SubDepartment::getSubDeptId,
+                        SubDepartment::getSubDeptName,
+                        (first, second) -> first,
+                        LinkedHashMap::new));
+
+        return applications.stream()
+                .map(application -> toSubmittedApplicationView(
+                        application,
+                        resolveDepartmentName(
+                                application.getDepartmentId(),
+                                departmentNameMasterById,
+                                departmentNameFallbackById),
+                        resolveSubDepartmentName(application.getSubDepartmentId(), subDepartmentNameById)))
+                .toList();
+    }
+
+    @Override
     public HrDepartmentApplicationReviewDetailView getApplicationReviewDetail(
             Long departmentId,
             Long subDepartmentId,
@@ -523,7 +584,18 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
 
     private HrDepartmentSubmittedApplicationView toSubmittedApplicationView(
             DepartmentProjectApplicationEntity applicationEntity) {
+        return toSubmittedApplicationView(applicationEntity, null, null);
+    }
+
+    private HrDepartmentSubmittedApplicationView toSubmittedApplicationView(
+            DepartmentProjectApplicationEntity applicationEntity,
+            String departmentName,
+            String subDepartmentName) {
         return HrDepartmentSubmittedApplicationView.builder()
+                .departmentId(applicationEntity.getDepartmentId())
+                .departmentName(departmentName)
+                .subDepartmentId(applicationEntity.getSubDepartmentId())
+                .subDepartmentName(subDepartmentName)
                 .departmentProjectApplicationId(applicationEntity.getDepartmentProjectApplicationId())
                 .requestId(applicationEntity.getRequestId())
                 .projectName(applicationEntity.getProjectName())
@@ -534,6 +606,14 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .createdDate(applicationEntity.getCreatedDate())
                 .updatedDate(applicationEntity.getUpdatedDate())
                 .build();
+    }
+
+    private String resolveSubDepartmentName(Long subDepartmentId, Map<Long, String> subDepartmentNameById) {
+        if (subDepartmentId == null) {
+            return UNMAPPED_SUB_DEPARTMENT;
+        }
+
+        return subDepartmentNameById.getOrDefault(subDepartmentId, "Sub-Department " + subDepartmentId);
     }
 
     private HrDepartmentApplicationResourceRequirementView toRequirementView(

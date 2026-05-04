@@ -13,6 +13,10 @@ import lombok.Getter;
 @Builder
 public class HrDepartmentSubmittedApplicationView {
 
+    private Long departmentId;
+    private String departmentName;
+    private Long subDepartmentId;
+    private String subDepartmentName;
     private Long departmentProjectApplicationId;
     private String requestId;
     private String projectName;

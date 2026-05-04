@@ -37,14 +37,16 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="summary-card">
+                    <a class="summary-card d-block h-100 text-decoration-none text-reset"
+                       th:href="@{/hr/department-requests/applications}"
+                       aria-label="Open total project applications list">
                         <div class="summary-icon bg-soft-success">
                             <i class="fa-solid fa-file-invoice"></i>
                         </div>
                         <div class="summary-value" 
                              th:text="${#aggregates.sum(parentDepartmentRequests.![projectApplicationCount])}">0</div>
                         <div class="summary-label">Total Project Applications</div>
-                    </div>
+                    </a>
                 </div>
                 <div class="col-md-4">
                     <div class="summary-card">

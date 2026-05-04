@@ -259,6 +259,22 @@ public class HrDepartmentRequestController {
         }
     }
 
+    @GetMapping("/applications")
+    public String allSubmittedApplications(Model model) {
+        try {
+            model.addAttribute("applicationSummaries", hrDepartmentRequestService.getAllSubmittedApplications());
+        } catch (DepartmentApplicationException ex) {
+            log.warn("Unable to load HR submitted applications. reason={}", ex.getMessage());
+            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("applicationSummaries", List.of());
+        } catch (Exception ex) {
+            log.error("Unexpected error while loading HR submitted applications.", ex);
+            model.addAttribute("errorMessage", "Unable to load submitted applications right now. Please try again.");
+            model.addAttribute("applicationSummaries", List.of());
+        }
+        return "hr/department-request-all-applications";
+    }
+
     @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}")
     public String applicationDetail(
             @PathVariable Long departmentId,

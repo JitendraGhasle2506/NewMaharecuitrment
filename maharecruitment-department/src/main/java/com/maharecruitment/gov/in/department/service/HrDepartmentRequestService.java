@@ -6,6 +6,7 @@ import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.entity.HrReviewDecision;
 import com.maharecruitment.gov.in.department.service.model.HrDepartmentSubDepartmentRequestView;
 import com.maharecruitment.gov.in.department.service.model.HrDepartmentApplicationReviewDetailView;
+import com.maharecruitment.gov.in.department.service.model.HrDepartmentSubmittedApplicationView;
 import com.maharecruitment.gov.in.department.service.model.HrParentDepartmentRequestView;
 import com.maharecruitment.gov.in.department.service.model.HrSubDepartmentApplicationDetailView;
 import com.maharecruitment.gov.in.department.service.model.WorkOrderDocumentView;
@@ -17,6 +18,8 @@ public interface HrDepartmentRequestService {
     HrDepartmentSubDepartmentRequestView getSubDepartmentProjectCounts(Long departmentId);
 
     HrSubDepartmentApplicationDetailView getSubDepartmentApplications(Long departmentId, Long subDepartmentId);
+
+    List<HrDepartmentSubmittedApplicationView> getAllSubmittedApplications();
 
     HrDepartmentApplicationReviewDetailView getApplicationReviewDetail(
             Long departmentId,
