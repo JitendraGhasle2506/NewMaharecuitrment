@@ -9,11 +9,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "daily_attendance_internal_employee")
-public class DailyAttendanceInternalEntity {
+public class DailyAttendanceInternalEntity extends AttendanceAuditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

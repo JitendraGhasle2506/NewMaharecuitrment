@@ -26,7 +26,7 @@ public class InternalAttendanceSyncScheduler {
             zone = "${attendance.integration.internal.scheduler-zone:Asia/Kolkata}")
     public void syncCurrentMonthAttendance() {
         try {
-            InternalAttendanceSyncResult result = internalAttendanceSyncService.syncCurrentMonthAttendance();
+            InternalAttendanceSyncResult result = internalAttendanceSyncService.syncScheduledAttendance();
             log.info(
                     "Internal attendance sync completed. startDate={}, endDate={}, attempted={}, synced={}, skipped={}, failed={}, upsertedRows={}",
                     result.getStartDate(),

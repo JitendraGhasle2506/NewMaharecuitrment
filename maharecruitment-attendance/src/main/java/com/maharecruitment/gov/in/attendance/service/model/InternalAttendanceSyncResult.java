@@ -1,8 +1,13 @@
 package com.maharecruitment.gov.in.attendance.service.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDate;
 
-public class InternalAttendanceSyncResult {
+public class InternalAttendanceSyncResult implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private final boolean enabled;
     private final LocalDate startDate;

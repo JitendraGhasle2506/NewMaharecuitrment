@@ -180,8 +180,14 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     List<EmployeeEntity> findByDesignation_DesignationNameIgnoreCaseAndStatusIgnoreCase(String designationName, String status);
 
     @Query("select employee from EmployeeEntity employee "
-            + "where trim(coalesce(employee.aadhaarNumber, '')) <> '' "
+            + "where upper(trim(coalesce(employee.recruitmentType, ''))) = 'INTERNAL' "
+            + "and trim(coalesce(employee.aadhaarNumber, '')) <> '' "
             + "order by employee.employeeId")
-    List<EmployeeEntity> findAttendanceSyncCandidates();
+    List<EmployeeEntity> findInternalAttendanceSyncCandidates();
+
+    @Query("select count(employee) from EmployeeEntity employee "
+            + "where upper(trim(coalesce(employee.recruitmentType, ''))) = 'INTERNAL' "
+            + "and trim(coalesce(employee.aadhaarNumber, '')) <> ''")
+    long countInternalAttendanceSyncCandidates();
 
 }

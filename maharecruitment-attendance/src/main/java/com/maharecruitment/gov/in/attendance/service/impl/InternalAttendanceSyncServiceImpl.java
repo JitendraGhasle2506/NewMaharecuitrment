@@ -61,10 +61,15 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
     }
 
     @Override
-    public InternalAttendanceSyncResult syncCurrentMonthAttendance() {
+    public InternalAttendanceSyncResult syncScheduledAttendance() {
         LocalDate today = LocalDate.now(resolveZoneId());
         LocalDate startDate = resolveSyncStartDate(today);
         LocalDate endDate = resolveSyncEndDate(today);
+        return syncAttendance(startDate, endDate);
+    }
+
+    @Override
+    public InternalAttendanceSyncResult syncAttendance(LocalDate startDate, LocalDate endDate) {
         validateSyncRange(startDate, endDate);
 
         if (!properties.isEnabled()) {
@@ -72,7 +77,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
             return new InternalAttendanceSyncResult(false, startDate, endDate, 0, 0, 0, 0, 0);
         }
 
-        List<EmployeeEntity> candidates = employeeRepository.findAttendanceSyncCandidates();
+        List<EmployeeEntity> candidates = employeeRepository.findInternalAttendanceSyncCandidates();
         Map<String, List<EmployeeEntity>> employeesByUniqueCode = new LinkedHashMap<>();
         int skippedEmployees = 0;
 
@@ -133,6 +138,11 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                 skippedEmployees,
                 failedEmployees,
                 upsertedRows);
+    }
+
+    @Override
+    public long countEligibleInternalEmployees() {
+        return employeeRepository.countInternalAttendanceSyncCandidates();
     }
 
     protected int syncEmployeeAttendance(
@@ -324,10 +334,10 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
 
     private void validateSyncRange(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
-            throw new IllegalStateException("Attendance sync range could not be resolved.");
+            throw new IllegalArgumentException("Attendance sync range could not be resolved.");
         }
         if (endDate.isBefore(startDate)) {
-            throw new IllegalStateException("Attendance sync end date cannot be before the start date.");
+            throw new IllegalArgumentException("Attendance sync end date cannot be before the start date.");
         }
     }
 
