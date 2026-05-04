@@ -81,6 +81,75 @@
             gap: 24px;
         }
 
+        .external-detail .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .external-detail .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .external-detail .status-pill.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .external-detail .status-pill.neutral {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .external-detail .assigned-panel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .external-detail .assigned-panel-card {
+            padding: 18px;
+            border: 1px solid #dbe3ef;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .external-detail .assigned-panel-index {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .external-detail .assigned-panel-name {
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .external-detail .assigned-panel-role {
+            color: #475569;
+            font-size: 0.92rem;
+            margin: 0;
+        }
+
         .external-detail .panel-filter-card {
             padding: 18px;
             border: 1px solid #dbe3ef;
@@ -254,6 +323,42 @@
                         <span th:if="${!detail.panelAssigned}" class="text-warning"><i class="fas fa-clock me-1"></i> Pending</span>
                     </div>
                     <div class="muted-copy mt-1" th:text="${detail.panelMembers != null ? detail.panelMembers.size() + ' Members' : '0 Members'}">Count</div>
+                </div>
+            </div>
+
+            <div class="section-card fade-in">
+                <div class="section-header">
+                    <div>
+                        <h5 class="section-title mb-1"><i class="fas fa-user-check me-2"></i> Assigned Members</h5>
+                        <div class="muted-copy">Current interview panel assigned for this external candidate.</div>
+                    </div>
+                    <span th:if="${detail.panelAssigned}" class="status-pill success">
+                        <i class="fas fa-check-circle"></i> Assigned
+                    </span>
+                    <span th:if="${!detail.panelAssigned}" class="status-pill neutral">
+                        <i class="fas fa-clock"></i> Pending
+                    </span>
+                </div>
+
+                <div class="muted-copy mb-3" th:if="${detail.panelAssignedAt != null}"
+                    th:text="${'Assigned on ' + #temporals.format(detail.panelAssignedAt, 'dd MMM yyyy HH:mm')}">
+                    Assigned on
+                </div>
+
+                <div th:if="${#lists.isEmpty(detail.panelMembers)}" class="alert alert-info mb-0">
+                    No panel members have been assigned yet.
+                </div>
+
+                <div th:if="${!#lists.isEmpty(detail.panelMembers)}" class="assigned-panel-grid">
+                    <div th:each="member, stat : ${detail.panelMembers}" class="assigned-panel-card">
+                        <div class="assigned-panel-index" th:text="${stat.count}">1</div>
+                        <div class="assigned-panel-name"
+                            th:text="${member.panelMemberName != null ? member.panelMemberName : '-'}">Member Name</div>
+                        <p class="assigned-panel-role mb-0">
+                            <i class="fas fa-briefcase me-1 text-primary"></i>
+                            <span th:text="${member.panelMemberDesignation != null ? member.panelMemberDesignation : '-'}">Designation</span>
+                        </p>
+                    </div>
                 </div>
             </div>
 
