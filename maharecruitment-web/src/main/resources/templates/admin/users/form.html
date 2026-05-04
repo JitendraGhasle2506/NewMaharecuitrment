@@ -78,6 +78,7 @@
 							<label class="form-label">Roles <span class="text-danger">*</span></label>
 							<select class="form-select" multiple th:field="*{roleIds}">
 								<option th:each="role : ${availableRoles}" th:value="${role.id}"
+									th:attr="data-role-name=${role.name}"
 									th:text="${role.name}"></option>
 							</select> <small class="text-muted">Hold Ctrl to select multiple
 								roles.</small>
@@ -85,7 +86,7 @@
 								th:if="${#fields.hasErrors('roleIds')}" th:errors="*{roleIds}"></div>
 						</div>
 
-						<div class="col-md-6">
+						<div class="col-md-6" id="departmentFieldGroup">
 							<label class="form-label">Department (Optional)</label> <select
 								class="form-select" th:field="*{departmentRegistrationId}">
 								<option th:value="''">-- Select Department --</option>
@@ -98,7 +99,7 @@
 								th:errors="*{departmentRegistrationId}"></div>
 						</div>
 
-						<div class="col-md-6">
+						<div class="col-md-6" id="agencyFieldGroup">
 							<label class="form-label">Agency (Optional)</label> <select
 								class="form-select" th:field="*{agencyId}">
 								<option th:value="''">-- Select Agency --</option>
@@ -120,6 +121,43 @@
 			</div>
 		</section>
 	</th:block>
+	<script th:inline="javascript">
+		document.addEventListener('DOMContentLoaded', function() {
+			const roleSelect = document.getElementById('roleIds');
+			const departmentFieldGroup = document.getElementById('departmentFieldGroup');
+			const agencyFieldGroup = document.getElementById('agencyFieldGroup');
+			const departmentSelect = document.getElementById('departmentRegistrationId');
+			const agencySelect = document.getElementById('agencyId');
+			const departmentRoleName = /*[[${departmentRoleName}]]*/ 'ROLE_DEPARTMENT';
+			const agencyRoleName = /*[[${agencyRoleName}]]*/ 'ROLE_AGENCY';
+
+			if (!roleSelect || !departmentFieldGroup || !agencyFieldGroup
+					|| !departmentSelect || !agencySelect) {
+				return;
+			}
+
+			function hasSelectedRole(roleName) {
+				return Array.from(roleSelect.selectedOptions || []).some(function(option) {
+					return option.dataset.roleName === roleName;
+				});
+			}
+
+			function toggleField(groupElement, fieldElement, shouldShow) {
+				groupElement.classList.toggle('d-none', !shouldShow);
+				fieldElement.disabled = !shouldShow;
+			}
+
+			function syncAffiliationFields() {
+				toggleField(departmentFieldGroup, departmentSelect,
+						hasSelectedRole(departmentRoleName));
+				toggleField(agencyFieldGroup, agencySelect,
+						hasSelectedRole(agencyRoleName));
+			}
+
+			roleSelect.addEventListener('change', syncAffiliationFields);
+			syncAffiliationFields();
+		});
+	</script>
 </body>
 
 </html>

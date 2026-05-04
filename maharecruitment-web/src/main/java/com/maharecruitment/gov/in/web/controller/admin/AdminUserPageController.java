@@ -36,6 +36,8 @@ import jakarta.validation.Valid;
 public class AdminUserPageController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminUserPageController.class);
+    private static final String ROLE_DEPARTMENT = "ROLE_DEPARTMENT";
+    private static final String ROLE_AGENCY = "ROLE_AGENCY";
 
     private final UserManagementService userManagementService;
     private final RoleManagementService roleManagementService;
@@ -93,6 +95,7 @@ public class AdminUserPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        normalizeAffiliationSelection(form);
         validateRoleSelection(form, bindingResult);
         validateAffiliationSelection(form, bindingResult);
         if (form.getPassword() == null || form.getPassword().isBlank()) {
@@ -125,6 +128,7 @@ public class AdminUserPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        normalizeAffiliationSelection(form);
         validateRoleSelection(form, bindingResult);
         validateAffiliationSelection(form, bindingResult);
         if (bindingResult.hasErrors()) {
@@ -162,6 +166,8 @@ public class AdminUserPageController {
         model.addAttribute("userId", userId);
         model.addAttribute("isEdit", userId != null);
         model.addAttribute("availableRoles", roleManagementService.getAll());
+        model.addAttribute("departmentRoleName", ROLE_DEPARTMENT);
+        model.addAttribute("agencyRoleName", ROLE_AGENCY);
         model.addAttribute("departments", departmentRegistrationRepository.findAll(
                 Sort.by(Sort.Direction.ASC, "departmentName")));
         model.addAttribute("agencies", agencyMasterRepository.findAll(
@@ -211,6 +217,26 @@ public class AdminUserPageController {
         if (agencyId != null && !agencyMasterRepository.existsById(agencyId)) {
             bindingResult.rejectValue("agencyId", "user.agencyId", "Selected agency is not registered.");
         }
+    }
+
+    private void normalizeAffiliationSelection(UserForm form) {
+        if (!hasSelectedRole(form, ROLE_DEPARTMENT)) {
+            form.setDepartmentRegistrationId(null);
+        }
+
+        if (!hasSelectedRole(form, ROLE_AGENCY)) {
+            form.setAgencyId(null);
+        }
+    }
+
+    private boolean hasSelectedRole(UserForm form, String roleName) {
+        if (form.getRoleIds() == null || form.getRoleIds().isEmpty()) {
+            return false;
+        }
+
+        return roleManagementService.getAll().stream()
+                .filter(role -> form.getRoleIds().contains(role.getId()))
+                .anyMatch(role -> roleName.equalsIgnoreCase(role.getName()));
     }
 
     private void clearSensitiveFields(UserForm form) {
