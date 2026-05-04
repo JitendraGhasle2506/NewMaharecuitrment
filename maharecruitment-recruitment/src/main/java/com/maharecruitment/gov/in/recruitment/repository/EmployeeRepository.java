@@ -48,6 +48,24 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             "preOnboarding.interviewDetail",
             "preOnboarding.interviewDetail.recruitmentNotification",
             "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    @Query("select employee from EmployeeEntity employee "
+            + "where upper(trim(employee.email)) = upper(trim(:email)) "
+            + "order by case when employee.preOnboarding is not null then 0 else 1 end, "
+            + "case when upper(coalesce(employee.status, '')) = 'ACTIVE' then 0 else 1 end, "
+            + "coalesce(employee.onboardingDate, employee.joiningDate) desc, "
+            + "employee.employeeId desc")
+    List<EmployeeEntity> findDetailedProfilesByEmail(@Param("email") String email);
+
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.previousEmployments",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
     @Query("select employee from EmployeeEntity employee where employee.employeeId in :employeeIds")
     List<EmployeeEntity> findDetailedByEmployeeIdIn(@Param("employeeIds") Collection<Long> employeeIds);
 

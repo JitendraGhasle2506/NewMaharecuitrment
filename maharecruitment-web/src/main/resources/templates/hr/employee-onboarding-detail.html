@@ -246,15 +246,18 @@
 </head>
 
 <body class="hr-shell employee-detail-page">
-    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Employee Onboarding Details', ~{::section})}">
+    <th:block th:replace="~{header/header :: var-sidebar-header(${shellSection != null ? shellSection : 'HR'}, ${shellTitle != null ? shellTitle : 'Employee Onboarding Details'}, ~{::section})}">
         <section>
             <div class="card add-emp-card pre-onboarding-card">
                 <div class="header d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <div>
-                        <h2 class="mb-0">Employee Onboarding Details</h2>
-                        <small class="text-muted">Full employee profile captured during onboarding, including HR verification, documents, and previous employment.</small>
+                        <h2 class="mb-0" th:text="${pageHeading != null ? pageHeading : 'Employee Onboarding Details'}">Employee Onboarding Details</h2>
+                        <small class="text-muted"
+                            th:text="${pageSubtitle != null ? pageSubtitle : 'Full employee profile captured during onboarding, including HR verification, documents, and previous employment.'}">
+                            Full employee profile captured during onboarding, including HR verification, documents, and previous employment.
+                        </small>
                     </div>
-                    <a class="btn btn-outline-secondary btn-sm"
+                    <a th:if="${showBackButton == null or showBackButton}" class="btn btn-outline-secondary btn-sm"
                         th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})} : @{/hr/employees(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
                         Back to Employees
                     </a>
@@ -269,7 +272,8 @@
                             <div class="employee-hero-heading">
                                 <div class="employee-hero-name-block">
                                     <h3 class="pre-onboarding-hero-title" th:text="${detail.name != null ? detail.name : 'Employee'}">Employee</h3>
-                                    <p class="employee-hero-subtitle">
+                                    <p class="employee-hero-subtitle"
+                                        th:text="${heroSubtitle != null ? heroSubtitle : 'Review the approved onboarding record, candidate profile, employment history, and uploaded documents.'}">
                                         Review the approved onboarding record, candidate profile, employment history, and uploaded documents.
                                     </p>
                                 </div>
@@ -485,7 +489,7 @@
                         </div>
                     </div>
 
-                    <div class="section-block">
+                    <div class="section-block" th:if="${showWorkOrders == null or showWorkOrders}">
                         <div class="section-heading">
                             <h5 class="section-title">Work Orders</h5>
                             <a class="btn btn-primary btn-sm"

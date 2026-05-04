@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>My Profile</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/pre-onboarding.css}" />
+    <style>
+        .employee-home .employee-home-card {
+            overflow: hidden;
+        }
+
+        .employee-home .employee-home-card > .header {
+            padding: 28px 30px 24px;
+            border-bottom: 1px solid rgba(11, 47, 73, 0.08);
+            background:
+                radial-gradient(circle at top right, rgba(28, 126, 214, 0.18), transparent 32%),
+                linear-gradient(135deg, rgba(17, 139, 122, 0.08), rgba(255, 255, 255, 0.96) 52%, rgba(28, 126, 214, 0.06));
+        }
+
+        .employee-home .employee-home-card > .header h2 {
+            color: #12344f;
+        }
+
+        .employee-home .employee-home-card > .header small {
+            display: block;
+            max-width: 70ch;
+            line-height: 1.6;
+        }
+
+        .employee-home .employee-home-body {
+            padding: 28px;
+            background: linear-gradient(180deg, #f5fbff 0%, #eef6f7 100%);
+        }
+
+        .employee-home .employee-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(290px, 0.95fr) minmax(220px, 0.72fr);
+            gap: 22px;
+            border: 1px solid rgba(15, 58, 86, 0.08);
+            border-radius: 28px;
+            padding: 26px;
+            background:
+                radial-gradient(circle at top left, rgba(16, 185, 129, 0.16), transparent 32%),
+                radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.14), transparent 30%),
+                linear-gradient(135deg, #ffffff 0%, #f6fbff 58%, #edf9f5 100%);
+            box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
+            margin-bottom: 22px;
+        }
+
+        .employee-home .hero-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .employee-home .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            border-radius: 999px;
+            padding: 7px 14px;
+            background: rgba(13, 110, 253, 0.1);
+            color: #0f4c81;
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .employee-home .hero-title {
+            margin: 0;
+            color: #102a43;
+            font-size: clamp(1.9rem, 2.8vw, 2.6rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .employee-home .hero-subtitle {
+            margin: 0;
+            color: #516576;
+            line-height: 1.65;
+            max-width: 58ch;
+        }
+
+        .employee-home .status-row,
+        .employee-home .verification-row,
+        .employee-home .action-grid,
+        .employee-home .metric-grid,
+        .employee-home .info-grid,
+        .employee-home .employment-grid,
+        .employee-home .doc-action-grid,
+        .employee-home .checklist-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .employee-home .status-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .employee-home .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-size: 0.83rem;
+            font-weight: 700;
+        }
+
+        .employee-home .status-pill.active {
+            background: rgba(22, 163, 74, 0.12);
+            color: #166534;
+        }
+
+        .employee-home .status-pill.inactive {
+            background: rgba(220, 38, 38, 0.12);
+            color: #991b1b;
+        }
+
+        .employee-home .status-pill.type {
+            background: rgba(37, 99, 235, 0.12);
+            color: #1d4ed8;
+        }
+
+        .employee-home .hero-note {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 4px solid #16a34a;
+            border-radius: 14px;
+            padding: 14px 16px;
+            background: rgba(240, 253, 244, 0.96);
+            color: #285943;
+        }
+
+        .employee-home .hero-summary,
+        .employee-home .photo-panel,
+        .employee-home .panel-section,
+        .employee-home .metric-card,
+        .employee-home .action-card,
+        .employee-home .employment-card,
+        .employee-home .document-card,
+        .employee-home .timeline-card {
+            border: 1px solid rgba(15, 58, 86, 0.1);
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+        }
+
+        .employee-home .hero-summary {
+            padding: 18px;
+            display: grid;
+            gap: 12px;
+            align-content: start;
+        }
+
+        .employee-home .hero-summary-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .employee-home .hero-summary-title {
+            margin: 0;
+            color: #12344f;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .employee-home .summary-stack {
+            display: grid;
+            gap: 10px;
+        }
+
+        .employee-home .summary-card {
+            min-height: 88px;
+            border-radius: 18px;
+        }
+
+        .employee-home .photo-panel {
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .employee-home .photo-frame {
+            width: min(100%, 180px);
+            aspect-ratio: 4 / 5;
+            border-radius: 22px;
+            border: 1px dashed rgba(59, 130, 246, 0.26);
+            background: linear-gradient(180deg, #eef7ff 0%, #f7fafc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .employee-home .photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .employee-home .photo-empty {
+            display: grid;
+            place-items: center;
+            gap: 10px;
+            color: #6b7f92;
+            text-align: center;
+            padding: 18px;
+        }
+
+        .employee-home .photo-empty i {
+            font-size: 2rem;
+            color: #4f8bc9;
+        }
+
+        .employee-home .photo-caption {
+            text-align: center;
+        }
+
+        .employee-home .photo-caption strong {
+            display: block;
+            color: #12344f;
+        }
+
+        .employee-home .photo-caption small {
+            color: #607385;
+        }
+
+        .employee-home .verification-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .employee-home .verification-chip {
+            border-radius: 16px;
+            padding: 12px;
+            background: #f8fbff;
+        }
+
+        .employee-home .verification-chip strong {
+            display: block;
+            color: #12344f;
+            font-size: 0.92rem;
+        }
+
+        .employee-home .verification-chip span {
+            color: #607385;
+            font-size: 0.82rem;
+        }
+
+        .employee-home .verification-chip.ok {
+            background: rgba(240, 253, 244, 0.95);
+            color: #166534;
+        }
+
+        .employee-home .verification-chip.pending {
+            background: rgba(255, 247, 237, 0.96);
+            color: #9a3412;
+        }
+
+        .employee-home .metric-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-bottom: 22px;
+        }
+
+        .employee-home .metric-card {
+            padding: 18px 20px;
+        }
+
+        .employee-home .metric-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #607385;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .employee-home .metric-value {
+            color: #0f2b44;
+            font-size: 1.32rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .employee-home .metric-meta {
+            margin-top: 6px;
+            color: #6b7f92;
+            font-size: 0.86rem;
+        }
+
+        .employee-home .content-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.95fr);
+            gap: 22px;
+            align-items: start;
+        }
+
+        .employee-home .main-column,
+        .employee-home .side-column {
+            display: grid;
+            gap: 22px;
+        }
+
+        .employee-home .panel-section {
+            padding: 22px;
+        }
+
+        .employee-home .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .employee-home .panel-title {
+            margin: 0 0 4px;
+            color: #12344f;
+            font-size: 1.16rem;
+            font-weight: 700;
+        }
+
+        .employee-home .panel-copy {
+            margin: 0;
+            color: #607385;
+            line-height: 1.55;
+        }
+
+        .employee-home .info-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .employee-home .info-card {
+            border: 1px solid rgba(15, 58, 86, 0.08);
+            border-radius: 18px;
+            padding: 16px 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+        }
+
+        .employee-home .info-card.wide {
+            grid-column: 1 / -1;
+        }
+
+        .employee-home .info-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #607385;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .employee-home .info-value {
+            color: #0f2b44;
+            font-size: 0.98rem;
+            font-weight: 700;
+            line-height: 1.45;
+            word-break: break-word;
+            white-space: pre-line;
+        }
+
+        .employee-home .action-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .employee-home .action-card {
+            padding: 16px;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .employee-home .action-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(37, 99, 235, 0.22);
+            box-shadow: 0 18px 30px rgba(37, 99, 235, 0.08);
+        }
+
+        .employee-home .action-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            margin-bottom: 12px;
+        }
+
+        .employee-home .action-icon.blue {
+            background: rgba(37, 99, 235, 0.12);
+            color: #1d4ed8;
+        }
+
+        .employee-home .action-icon.green {
+            background: rgba(22, 163, 74, 0.12);
+            color: #15803d;
+        }
+
+        .employee-home .action-icon.orange {
+            background: rgba(249, 115, 22, 0.12);
+            color: #c2410c;
+        }
+
+        .employee-home .action-icon.teal {
+            background: rgba(13, 148, 136, 0.12);
+            color: #0f766e;
+        }
+
+        .employee-home .action-title {
+            color: #12344f;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .employee-home .action-copy {
+            color: #607385;
+            line-height: 1.55;
+            font-size: 0.9rem;
+        }
+
+        .employee-home .doc-action-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .employee-home .document-card {
+            padding: 16px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .employee-home .document-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .employee-home .document-card-title {
+            margin: 0;
+            color: #12344f;
+            font-size: 0.98rem;
+            font-weight: 700;
+        }
+
+        .employee-home .document-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .employee-home .document-status.available {
+            background: rgba(22, 163, 74, 0.12);
+            color: #166534;
+        }
+
+        .employee-home .document-status.missing {
+            background: rgba(148, 163, 184, 0.16);
+            color: #475569;
+        }
+
+        .employee-home .document-meta {
+            color: #607385;
+            font-size: 0.88rem;
+            line-height: 1.55;
+            word-break: break-word;
+        }
+
+        .employee-home .employment-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .employee-home .employment-card {
+            padding: 18px;
+        }
+
+        .employee-home .employment-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 6px 12px;
+            background: rgba(15, 23, 42, 0.05);
+            color: #425466;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 12px;
+        }
+
+        .employee-home .employment-company {
+            color: #12344f;
+            font-size: 1.04rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .employee-home .employment-designation {
+            color: #475569;
+            margin-bottom: 12px;
+        }
+
+        .employee-home .employment-dates {
+            display: grid;
+            gap: 8px;
+            color: #607385;
+            font-size: 0.9rem;
+        }
+
+        .employee-home .timeline-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .employee-home .timeline-card {
+            padding: 16px;
+        }
+
+        .employee-home .timeline-label {
+            display: block;
+            color: #607385;
+            font-size: 0.77rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .employee-home .timeline-value {
+            color: #12344f;
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
+        .employee-home .checklist-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .employee-home .checklist-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border: 1px solid rgba(15, 58, 86, 0.08);
+            border-radius: 16px;
+            padding: 12px 14px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .employee-home .checklist-name {
+            color: #12344f;
+            font-weight: 600;
+        }
+
+        .employee-home .checklist-state {
+            font-size: 0.77rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .employee-home .checklist-state.done {
+            color: #15803d;
+        }
+
+        .employee-home .checklist-state.pending {
+            color: #9ca3af;
+        }
+
+        .employee-home .empty-copy {
+            color: #607385;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        @media (max-width: 1199.98px) {
+            .employee-home .employee-hero {
+                grid-template-columns: minmax(0, 1fr) minmax(280px, 0.95fr);
+            }
+
+            .employee-home .photo-panel {
+                grid-column: 1 / -1;
+                display: grid;
+                grid-template-columns: 180px 1fr;
+                align-items: center;
+            }
+
+            .employee-home .metric-grid,
+            .employee-home .employment-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .employee-home .content-grid,
+            .employee-home .employee-hero,
+            .employee-home .photo-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .employee-home .metric-grid,
+            .employee-home .info-grid,
+            .employee-home .action-grid,
+            .employee-home .doc-action-grid,
+            .employee-home .employment-grid,
+            .employee-home .verification-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .employee-home .employee-home-body {
+                padding: 18px;
+            }
+
+            .employee-home .employee-hero,
+            .employee-home .panel-section {
+                padding: 18px;
+                border-radius: 22px;
+            }
+
+            .employee-home .employee-home-card > .header {
+                padding: 22px 20px 18px;
+            }
+
+            .employee-home .hero-title {
+                font-size: 1.7rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="employee-home">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Employee', 'My Profile', ~{::section})}">
+        <section th:with="
+                detail=${employeeDetail.onboardingForm},
+                checklistDone=${(detail.docEducationalCert ? 1 : 0)
+                    + (detail.docExperienceLetter ? 1 : 0)
+                    + (detail.docRelievingLetter ? 1 : 0)
+                    + (detail.docPayslips ? 1 : 0)
+                    + (detail.docDeclarationForm ? 1 : 0)
+                    + (detail.docNda ? 1 : 0)
+                    + (detail.docMedicalFitness ? 1 : 0)
+                    + (detail.docAddressProof ? 1 : 0)
+                    + (detail.docPassportPhoto ? 1 : 0)
+                    + (detail.docAadhaar ? 1 : 0)
+                    + (detail.docPan ? 1 : 0)},
+                checklistTotal=${11}">
+            <div class="card add-emp-card pre-onboarding-card employee-home-card">
+                <div class="header">
+                    <h2 class="mb-0" th:text="${pageHeading != null ? pageHeading : 'My Profile'}">My Profile</h2>
+                    <small class="text-muted"
+                        th:text="${pageSubtitle != null ? pageSubtitle : 'All details submitted by agency and confirmed by HR are available here.'}">
+                        All details submitted by agency and confirmed by HR are available here.
+                    </small>
+                </div>
+
+                <div class="employee-home-body">
+                    <div class="employee-hero">
+                        <div class="hero-copy">
+                            <span class="hero-eyebrow">
+                                <i class="fa-solid fa-user-shield"></i>
+                                Employee Workspace
+                            </span>
+
+                            <div>
+                                <h3 class="hero-title" th:text="${detail.name != null ? detail.name : 'Employee'}">Employee</h3>
+                                <p class="hero-subtitle">
+                                    Review your approved onboarding profile, track key employment details, and open your most-used employee actions from one place.
+                                </p>
+                            </div>
+
+                            <div class="status-row">
+                                <span class="status-pill"
+                                    th:classappend="${employeeDetail.status == 'RESIGNED'} ? ' inactive' : ' active'">
+                                    <i class="fa-solid" th:classappend="${employeeDetail.status == 'RESIGNED'} ? ' fa-user-slash' : ' fa-circle-check'"></i>
+                                    <span th:text="${employeeDetail.status != null ? employeeDetail.status : 'ACTIVE'}">ACTIVE</span>
+                                </span>
+                                <span class="status-pill type">
+                                    <i class="fa-solid fa-briefcase"></i>
+                                    <span th:text="${employeeDetail.recruitmentType != null ? employeeDetail.recruitmentType : 'UNKNOWN'}">INTERNAL</span>
+                                </span>
+                                <span class="status-pill type">
+                                    <i class="fa-solid fa-id-badge"></i>
+                                    <span th:text="${employeeDetail.employeeCode != null ? employeeDetail.employeeCode : '-'}">EMP001</span>
+                                </span>
+                            </div>
+
+                            <div class="hero-note">
+                                <i class="fa-solid fa-circle-info"></i>
+                                <div>
+                                    Agency-submitted data and HR-confirmed profile details are shown below for quick verification and everyday reference.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hero-summary">
+                            <div class="hero-summary-head">
+                                <h4 class="hero-summary-title">Profile Snapshot</h4>
+                                <span class="status-pill active" th:if="${detail.hrVerified}">
+                                    <i class="fa-solid fa-badge-check"></i> HR Verified
+                                </span>
+                                <span class="status-pill inactive" th:if="${!detail.hrVerified}">
+                                    <i class="fa-solid fa-hourglass-half"></i> Pending HR Review
+                                </span>
+                            </div>
+
+                            <div class="summary-stack">
+                                <div class="summary-card">
+                                    <span class="summary-card-label">Project</span>
+                                    <strong class="summary-card-value" th:text="${detail.projectName != null ? detail.projectName : '-'}">Project</strong>
+                                    <span class="summary-card-subvalue" th:text="${detail.requestId != null ? detail.requestId : 'Request unavailable'}">REQ-0001</span>
+                                </div>
+                                <div class="summary-card">
+                                    <span class="summary-card-label">Department</span>
+                                    <strong class="summary-card-value" th:text="${detail.department != null ? detail.department : '-'}">Department</strong>
+                                    <span class="summary-card-subvalue" th:text="${detail.subDeptName != null ? detail.subDeptName : 'Sub department unavailable'}">Sub Department</span>
+                                </div>
+                                <div class="summary-card">
+                                    <span class="summary-card-label">Role Assignment</span>
+                                    <strong class="summary-card-value" th:text="${detail.designation != null ? detail.designation : '-'}">Designation</strong>
+                                    <span class="summary-card-subvalue" th:text="${detail.levelCode != null ? detail.levelCode : 'Level code unavailable'}">Level</span>
+                                </div>
+                                <div class="summary-card">
+                                    <span class="summary-card-label">Joining And HR Onboarding</span>
+                                    <strong class="summary-card-value"
+                                        th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd MMM yyyy') : '-'}">01 Apr 2026</strong>
+                                    <span class="summary-card-subvalue"
+                                        th:text="${detail.hrOnboardingDate != null ? 'HR confirmed on ' + #temporals.format(detail.hrOnboardingDate, 'dd MMM yyyy') : 'HR onboarding date unavailable'}">
+                                        HR confirmed
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="photo-panel">
+                            <div class="photo-frame">
+                                <img id="employeePhotoPreview" class="d-none"
+                                    th:attr="data-managed-path=${detail.existingPhotoFilePath}, data-managed-name=${detail.existingPhotoFileName}"
+                                    alt="Employee Photo" />
+                                <div id="employeePhotoEmpty" class="photo-empty">
+                                    <i class="fa-regular fa-image"></i>
+                                    <span>No photo uploaded</span>
+                                </div>
+                            </div>
+                            <div class="photo-caption">
+                                <strong th:text="${detail.name != null ? detail.name : 'Employee'}">Employee</strong>
+                                <small th:text="${detail.designation != null ? detail.designation : 'Designation unavailable'}">Designation</small>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm"
+                                th:if="${detail.existingPhotoFilePath != null}"
+                                th:attr="data-path=${detail.existingPhotoFilePath}"
+                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                <i class="fa-regular fa-image me-1"></i> View Photo
+                            </button>
+                            <div class="verification-row">
+                                <div class="verification-chip" th:classappend="${detail.agencyFlag} ? ' ok' : ' pending'">
+                                    <strong th:text="${detail.agencyFlag ? 'Agency Verified' : 'Agency Review Pending'}">Agency Verified</strong>
+                                    <span>Agency submitted the onboarding record.</span>
+                                </div>
+                                <div class="verification-chip" th:classappend="${detail.hrVerified} ? ' ok' : ' pending'">
+                                    <strong th:text="${detail.hrVerified ? 'HR Confirmed' : 'HR Confirmation Pending'}">HR Confirmed</strong>
+                                    <span>Final employee profile validation status.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metric-grid">
+                        <div class="metric-card">
+                            <span class="metric-label">Experience</span>
+                            <div class="metric-value">
+                                <span th:text="${detail.totalExperienceYears != null ? detail.totalExperienceYears : 0}">0</span>Y
+                                <span th:text="${detail.totalExperienceMonths != null ? detail.totalExperienceMonths : 0}">0</span>M
+                            </div>
+                            <div class="metric-meta">Prior experience captured during onboarding.</div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Checklist Completion</span>
+                            <div class="metric-value" th:text="${checklistDone + ' / ' + checklistTotal}">0 / 11</div>
+                            <div class="metric-meta">Submitted document checklist items.</div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Agency</span>
+                            <div class="metric-value" th:text="${detail.agencyName != null ? detail.agencyName : '-'}">Agency</div>
+                            <div class="metric-meta">Current sourcing and onboarding partner.</div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">HR Location</span>
+                            <div class="metric-value" th:text="${detail.hrOnboardingLocation != null ? detail.hrOnboardingLocation : '-'}">Location</div>
+                            <div class="metric-meta">HR confirmation and onboarding location.</div>
+                        </div>
+                    </div>
+
+                    <div class="content-grid">
+                        <div class="main-column">
+                            <div class="panel-section">
+                                <div class="panel-header">
+                                    <div>
+                                        <h4 class="panel-title">Personal Details</h4>
+                                        <p class="panel-copy">Your primary profile and contact information as recorded during onboarding.</p>
+                                    </div>
+                                </div>
+                                <div class="info-grid">
+                                    <div class="info-card">
+                                        <span class="info-label">Full Name</span>
+                                        <div class="info-value" th:text="${detail.name != null ? detail.name : '-'}">Name</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Email</span>
+                                        <div class="info-value" th:text="${detail.email != null ? detail.email : '-'}">Email</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Mobile</span>
+                                        <div class="info-value" th:text="${detail.mobile != null ? detail.mobile : '-'}">Mobile</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Date Of Birth</span>
+                                        <div class="info-value"
+                                            th:text="${detail.dob != null ? #temporals.format(detail.dob, 'dd MMM yyyy') : '-'}">DOB</div>
+                                    </div>
+                                    <div class="info-card wide">
+                                        <span class="info-label">Address</span>
+                                        <div class="info-value" th:text="${detail.address != null ? detail.address : '-'}">Address</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="panel-section">
+                                <div class="panel-header">
+                                    <div>
+                                        <h4 class="panel-title">Employment Assignment</h4>
+                                        <p class="panel-copy">Project, department, role, and onboarding milestones linked to your employee record.</p>
+                                    </div>
+                                </div>
+                                <div class="info-grid">
+                                    <div class="info-card">
+                                        <span class="info-label">Employee Code</span>
+                                        <div class="info-value" th:text="${employeeDetail.employeeCode != null ? employeeDetail.employeeCode : '-'}">EMP001</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Recruitment Type</span>
+                                        <div class="info-value" th:text="${employeeDetail.recruitmentType != null ? employeeDetail.recruitmentType : '-'}">INTERNAL</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Request ID</span>
+                                        <div class="info-value" th:text="${detail.requestId != null ? detail.requestId : '-'}">REQ-0001</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Project</span>
+                                        <div class="info-value" th:text="${detail.projectName != null ? detail.projectName : '-'}">Project</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Department</span>
+                                        <div class="info-value" th:text="${detail.department != null ? detail.department : '-'}">Department</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Sub Department</span>
+                                        <div class="info-value" th:text="${detail.subDeptName != null ? detail.subDeptName : '-'}">Sub Department</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Designation</span>
+                                        <div class="info-value" th:text="${detail.designation != null ? detail.designation : '-'}">Designation</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Level Code</span>
+                                        <div class="info-value" th:text="${detail.levelCode != null ? detail.levelCode : '-'}">Level</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Joining Date</span>
+                                        <div class="info-value"
+                                            th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd MMM yyyy') : '-'}">Joining Date</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Onboarding Date</span>
+                                        <div class="info-value"
+                                            th:text="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd MMM yyyy') : '-'}">Onboarding Date</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">HR Onboarding Date</span>
+                                        <div class="info-value"
+                                            th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd MMM yyyy') : '-'}">HR Date</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">Resignation Date</span>
+                                        <div class="info-value"
+                                            th:text="${employeeDetail.resignationDate != null ? #temporals.format(employeeDetail.resignationDate, 'dd MMM yyyy') : '-'}">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="panel-section">
+                                <div class="panel-header">
+                                    <div>
+                                        <h4 class="panel-title">KYC And Uploaded Documents</h4>
+                                        <p class="panel-copy">Identity details and the uploaded files attached to your onboarding profile.</p>
+                                    </div>
+                                </div>
+                                <div class="info-grid">
+                                    <div class="info-card">
+                                        <span class="info-label">Aadhaar Number</span>
+                                        <div class="info-value" th:text="${detail.aadhaar != null ? detail.aadhaar : '-'}">Aadhaar</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <span class="info-label">PAN Number</span>
+                                        <div class="info-value" th:text="${detail.pan != null ? detail.pan : '-'}">PAN</div>
+                                    </div>
+                                </div>
+                                <div class="doc-action-grid mt-3">
+                                    <div class="document-card">
+                                        <div class="document-card-header">
+                                            <h5 class="document-card-title">Photo</h5>
+                                            <span class="document-status" th:classappend="${detail.existingPhotoFilePath != null} ? ' available' : ' missing'">
+                                                <i class="fa-solid" th:classappend="${detail.existingPhotoFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
+                                                <span th:text="${detail.existingPhotoFilePath != null ? 'Available' : 'Missing'}">Available</span>
+                                            </span>
+                                        </div>
+                                        <div class="document-meta" th:text="${detail.existingPhotoFileName != null ? detail.existingPhotoFileName : 'No photo uploaded yet.'}">Photo file</div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                            th:if="${detail.existingPhotoFilePath != null}"
+                                            th:attr="data-path=${detail.existingPhotoFilePath}"
+                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                            View Photo
+                                        </button>
+                                    </div>
+                                    <div class="document-card">
+                                        <div class="document-card-header">
+                                            <h5 class="document-card-title">Aadhaar Copy</h5>
+                                            <span class="document-status" th:classappend="${detail.existingAadhaarFilePath != null} ? ' available' : ' missing'">
+                                                <i class="fa-solid" th:classappend="${detail.existingAadhaarFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
+                                                <span th:text="${detail.existingAadhaarFilePath != null ? 'Available' : 'Missing'}">Available</span>
+                                            </span>
+                                        </div>
+                                        <div class="document-meta" th:text="${detail.existingAadhaarFileName != null ? detail.existingAadhaarFileName : 'No Aadhaar file uploaded yet.'}">Aadhaar file</div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                            th:if="${detail.existingAadhaarFilePath != null}"
+                                            th:attr="data-path=${detail.existingAadhaarFilePath}"
+                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                            View Aadhaar
+                                        </button>
+                                    </div>
+                                    <div class="document-card">
+                                        <div class="document-card-header">
+                                            <h5 class="document-card-title">PAN Copy</h5>
+                                            <span class="document-status" th:classappend="${detail.existingPanFilePath != null} ? ' available' : ' missing'">
+                                                <i class="fa-solid" th:classappend="${detail.existingPanFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
+                                                <span th:text="${detail.existingPanFilePath != null ? 'Available' : 'Missing'}">Available</span>
+                                            </span>
+                                        </div>
+                                        <div class="document-meta" th:text="${detail.existingPanFileName != null ? detail.existingPanFileName : 'No PAN file uploaded yet.'}">PAN file</div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                            th:if="${detail.existingPanFilePath != null}"
+                                            th:attr="data-path=${detail.existingPanFilePath}"
+                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                            View PAN
+                                        </button>
+                                    </div>
+                                    <div class="document-card">
+                                        <div class="document-card-header">
+                                            <h5 class="document-card-title">Experience Document</h5>
+                                            <span class="document-status" th:classappend="${detail.existingExperienceDocFilePath != null} ? ' available' : ' missing'">
+                                                <i class="fa-solid" th:classappend="${detail.existingExperienceDocFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
+                                                <span th:text="${detail.existingExperienceDocFilePath != null ? 'Available' : 'Missing'}">Available</span>
+                                            </span>
+                                        </div>
+                                        <div class="document-meta" th:text="${detail.existingExperienceDocFileName != null ? detail.existingExperienceDocFileName : 'No experience document uploaded yet.'}">Experience file</div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                            th:if="${detail.existingExperienceDocFilePath != null}"
+                                            th:attr="data-path=${detail.existingExperienceDocFilePath}"
+                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                            View Experience Doc
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="panel-section">
+                                <div class="panel-header">
+                                    <div>
+                                        <h4 class="panel-title">Previous Employment</h4>
+                                        <p class="panel-copy">Employment history shared during onboarding for verification and continuity.</p>
+                                    </div>
+                                </div>
+
+                                <p class="empty-copy" th:if="${#lists.isEmpty(detail.previousEmployments)}">
+                                    No previous employment records were captured during onboarding.
+                                </p>
+
+                                <div class="employment-grid" th:if="${!#lists.isEmpty(detail.previousEmployments)}">
+                                    <div class="employment-card" th:each="employment, stat : ${detail.previousEmployments}">
+                                        <span class="employment-kicker">
+                                            <i class="fa-solid fa-building"></i>
+                                            <span th:text="${'Employment #' + (stat.index + 1)}">Employment #1</span>
+                                        </span>
+                                        <div class="employment-company" th:text="${employment.companyName != null ? employment.companyName : '-'}">Company Name</div>
+                                        <div class="employment-designation" th:text="${employment.designation != null ? employment.designation : 'Designation unavailable'}">Designation</div>
+                                        <div class="employment-dates">
+                                            <div>
+                                                <strong>Start:</strong>
+                                                <span th:text="${employment.startDate != null ? #temporals.format(employment.startDate, 'dd MMM yyyy') : '-'}">01 Jan 2020</span>
+                                            </div>
+                                            <div>
+                                                <strong>End:</strong>
+                                                <span th:text="${employment.endDate != null ? #temporals.format(employment.endDate, 'dd MMM yyyy') : '-'}">31 Dec 2022</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="side-column">
+                            <div class="panel-section">
+                                <div class="panel-header">
+                                    <div>
+                                        <h4 class="panel-title">Quick Actions</h4>
+                                        <p class="panel-copy">Open the most common employee tasks directly from your dashboard.</p>
+                                    </div>
+                                </div>
+                                <div class="action-grid">
+                                    <a class="action-card" th:href="@{/employee/intAttendance}">
+                                        <span class="action-icon blue"><i class="fa-regular fa-calendar-check"></i></span>
+                                        <div class="action-title">Attendance</div>
+                                        <div class="action-copy">View your monthly attendance and manual requests.</div>
+                                    </a>
+                                    <a class="action-card" th:href="@{/employee/applyLeave}">
+                                        <span class="action-icon green"><i class="fa-regular fa-paper-plane"></i></span>
+                                        <div class="action-title">Apply Leave</div>
+                                        <div class="action-copy">Submit a new leave request from your employee account.</div>
+                                    </a>
+                                    <a class="action-card" th:href="@{/employee/viewLeave}">
+                                        <span class="action-icon orange"><i class="fa-regular fa-folder-open"></i></span>
+                                        <div class="action-title">Leave History</div>
+                                        <div class="action-copy">Review approved, pending, and rejected leave applications.</div>
+                                    </a>
+                                    <a class="action-card" th:href="@{/employee/applyTour}">
+                                        <span class="action-icon teal"><i class="fa-solid fa-route"></i></span>
+                                        <div class="action-title">Apply Tour</div>
+                                        <div class="action-copy">Create a new travel or tour application.</div>
+                                    </a>
+                                    <a class="action-card" th:href="@{/employee/viewTour}">
+                                        <span class="action-icon blue"><i class="fa-solid fa-suitcase-rolling"></i></span>
+                                        <div class="action-title">Tour History</div>
+                                        <div class="action-copy">Track submitted tour requests and their status.</div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="panel-section">
+                                <div class="panel-header">
+                                    <div>
+                                        <h4 class="panel-title">Verification Timeline</h4>
+                                        <p class="panel-copy">Key dates from your onboarding journey.</p>
+                                    </div>
+                                </div>
+                                <div class="timeline-list">
+                                    <div class="timeline-card">
+                                        <span class="timeline-label">Joining Date</span>
+                                        <div class="timeline-value" th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd MMM yyyy') : '-'}">Date</div>
+                                    </div>
+                                    <div class="timeline-card">
+                                        <span class="timeline-label">Portal Onboarding Date</span>
+                                        <div class="timeline-value" th:text="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd MMM yyyy') : '-'}">Date</div>
+                                    </div>
+                                    <div class="timeline-card">
+                                        <span class="timeline-label">HR Confirmation Date</span>
+                                        <div class="timeline-value" th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd MMM yyyy') : '-'}">Date</div>
+                                    </div>
+                                    <div class="timeline-card">
+                                        <span class="timeline-label">HR Onboarding Location</span>
+                                        <div class="timeline-value" th:text="${detail.hrOnboardingLocation != null ? detail.hrOnboardingLocation : '-'}">Location</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="panel-section">
+                                <div class="panel-header">
+                                    <div>
+                                        <h4 class="panel-title">Document Checklist</h4>
+                                        <p class="panel-copy">Checklist items marked during your onboarding verification.</p>
+                                    </div>
+                                </div>
+                                <div class="checklist-grid">
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">Educational Certificates</span>
+                                        <span class="checklist-state" th:classappend="${detail.docEducationalCert} ? ' done' : ' pending'"
+                                            th:text="${detail.docEducationalCert ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">Experience Letter</span>
+                                        <span class="checklist-state" th:classappend="${detail.docExperienceLetter} ? ' done' : ' pending'"
+                                            th:text="${detail.docExperienceLetter ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">Relieving Letter</span>
+                                        <span class="checklist-state" th:classappend="${detail.docRelievingLetter} ? ' done' : ' pending'"
+                                            th:text="${detail.docRelievingLetter ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">Salary Payslips</span>
+                                        <span class="checklist-state" th:classappend="${detail.docPayslips} ? ' done' : ' pending'"
+                                            th:text="${detail.docPayslips ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">Declaration Form</span>
+                                        <span class="checklist-state" th:classappend="${detail.docDeclarationForm} ? ' done' : ' pending'"
+                                            th:text="${detail.docDeclarationForm ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">NDA Document</span>
+                                        <span class="checklist-state" th:classappend="${detail.docNda} ? ' done' : ' pending'"
+                                            th:text="${detail.docNda ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">Medical Fitness Certificate</span>
+                                        <span class="checklist-state" th:classappend="${detail.docMedicalFitness} ? ' done' : ' pending'"
+                                            th:text="${detail.docMedicalFitness ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">Address Proof</span>
+                                        <span class="checklist-state" th:classappend="${detail.docAddressProof} ? ' done' : ' pending'"
+                                            th:text="${detail.docAddressProof ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">Passport Photo</span>
+                                        <span class="checklist-state" th:classappend="${detail.docPassportPhoto} ? ' done' : ' pending'"
+                                            th:text="${detail.docPassportPhoto ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">Aadhaar Copy</span>
+                                        <span class="checklist-state" th:classappend="${detail.docAadhaar} ? ' done' : ' pending'"
+                                            th:text="${detail.docAadhaar ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="checklist-name">PAN Copy</span>
+                                        <span class="checklist-state" th:classappend="${detail.docPan} ? ' done' : ' pending'"
+                                            th:text="${detail.docPan ? 'Submitted' : 'Pending'}">Submitted</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:inline="javascript">
+        window.employeeDashboardConfig = { contextPath: /*[[@{/}]]*/ '/' };
+
+        function openManagedDocument(path) {
+            if (!path) {
+                return;
+            }
+            try {
+                const contextPath = window.employeeDashboardConfig && window.employeeDashboardConfig.contextPath
+                    ? window.employeeDashboardConfig.contextPath
+                    : "/";
+                const encodedPath = encodeURIComponent(btoa(path));
+                window.open(contextPath + "documents/view?path=" + encodedPath, "_blank");
+            } catch (error) {
+                window.alert("Unable to open the uploaded document.");
+            }
+        }
+
+        (function hydrateEmployeePhotoPreview() {
+            const image = document.getElementById("employeePhotoPreview");
+            const emptyState = document.getElementById("employeePhotoEmpty");
+            if (!image) {
+                return;
+            }
+
+            const managedPath = image.getAttribute("data-managed-path");
+            if (!managedPath) {
+                return;
+            }
+
+            try {
+                const contextPath = window.employeeDashboardConfig && window.employeeDashboardConfig.contextPath
+                    ? window.employeeDashboardConfig.contextPath
+                    : "/";
+                const encodedPath = encodeURIComponent(btoa(managedPath));
+                image.src = contextPath + "documents/view?path=" + encodedPath;
+                image.classList.remove("d-none");
+                if (emptyState) {
+                    emptyState.classList.add("d-none");
+                }
+            } catch (error) {
+                if (emptyState) {
+                    emptyState.classList.remove("d-none");
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>
