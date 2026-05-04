@@ -65,6 +65,7 @@
                         <div th:if="${param.logout}" class="alert alert-success">You have been logged out.</div>
                         <div th:if="${param.sessionExpired}" class="alert alert-warning">Session expired. Please login
                             again.</div>
+                        <div th:if="${param.csrfExpired}" class="alert alert-warning">Your page session expired while submitting the request. Please login again and retry.</div>
                         <div th:if="${param.unauthenticated}" class="alert alert-warning">Please login to continue.
                         </div>
                         <div th:if="${param.accessDenied}" class="alert alert-danger">Access denied for requested

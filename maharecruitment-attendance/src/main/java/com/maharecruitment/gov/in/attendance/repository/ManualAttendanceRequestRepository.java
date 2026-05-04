@@ -14,6 +14,12 @@ public interface ManualAttendanceRequestRepository extends JpaRepository<ManualA
 
     List<ManualAttendanceRequestEntity> findByUserIdAndAttendanceDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
 
+    List<ManualAttendanceRequestEntity> findByUserIdAndAttendanceDateBetweenAndHodStatusIgnoreCase(
+            Long userId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String hodStatus);
+
     List<ManualAttendanceRequestEntity> findByUserIdOrderByAttendanceDateDesc(Long userId);
 
     List<ManualAttendanceRequestEntity> findByManagerIdAndManagerStatus(Long managerId, String managerStatus);

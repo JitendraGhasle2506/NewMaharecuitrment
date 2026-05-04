@@ -179,4 +179,9 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     List<EmployeeEntity> findByDesignation_DesignationNameIgnoreCaseAndStatusIgnoreCase(String designationName, String status);
 
+    @Query("select employee from EmployeeEntity employee "
+            + "where trim(coalesce(employee.aadhaarNumber, '')) <> '' "
+            + "order by employee.employeeId")
+    List<EmployeeEntity> findAttendanceSyncCandidates();
+
 }

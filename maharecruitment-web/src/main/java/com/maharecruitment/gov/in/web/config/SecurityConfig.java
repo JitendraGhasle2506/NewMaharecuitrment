@@ -165,7 +165,7 @@ public class SecurityConfig {
                 .authenticationEntryPoint((req, res, authEx) -> {
                     String uri = req.getRequestURI();
                     if (!uri.equals(req.getContextPath() + "/login")) {
-                        res.sendRedirect(req.getContextPath() + "/login");
+                        res.sendRedirect(req.getContextPath() + "/login?unauthenticated=true");
                     }
                 })
             )

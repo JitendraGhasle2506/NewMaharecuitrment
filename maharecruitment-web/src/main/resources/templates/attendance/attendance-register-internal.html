@@ -45,24 +45,250 @@
         }
 
         .profile-card {
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-            border-radius: 12px;
-            border: 1px solid var(--card-border);
-            background: #ffffff;
-            padding: 32px;
-            margin-bottom: 28px;
             position: relative;
             overflow: hidden;
+            margin-bottom: 28px;
+            border: 1px solid #d7e4f2;
+            border-radius: 24px;
+            background:
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 26%),
+                linear-gradient(155deg, #ffffff 0%, #f7fbff 56%, #eef5fb 100%);
+            box-shadow: 0 26px 60px -34px rgba(15, 23, 42, 0.34);
+            padding: 0;
         }
 
         .profile-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 6px;
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(31, 79, 120, 0.08), transparent 18%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0));
+            pointer-events: none;
+        }
+
+        .profile-card::after {
+            content: '';
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            top: -150px;
+            right: -120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(31, 79, 120, 0.12), transparent 68%);
+            pointer-events: none;
+        }
+
+        .profile-hero {
+            position: relative;
+            z-index: 1;
+            padding: 28px 30px 22px;
+            border-bottom: 1px solid rgba(215, 228, 242, 0.9);
+        }
+
+        .profile-identity {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .profile-headline {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .profile-avatar-shell {
+            flex-shrink: 0;
+            padding: 8px;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(215, 228, 242, 0.95);
+            box-shadow: 0 16px 38px -28px rgba(15, 23, 42, 0.35);
+        }
+
+        .profile-avatar {
+            width: 112px;
+            height: 112px;
+            border-radius: 26px;
+            object-fit: cover;
+            display: block;
+            border: 4px solid rgba(255, 255, 255, 0.96);
+            background: #f1f5f9;
+        }
+
+        .profile-avatar-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 34px;
+        }
+
+        .profile-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .profile-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 7px 13px;
+            border-radius: 999px;
+            background: rgba(31, 79, 120, 0.1);
+            color: var(--primary-color);
+            border: 1px solid rgba(31, 79, 120, 0.08);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .profile-chip-soft {
+            background: rgba(255, 255, 255, 0.92);
+            border-color: #dbe7f4;
+            color: #475569;
+        }
+
+        .profile-name {
+            margin: 0;
+            color: var(--text-main);
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+        }
+
+        .profile-role {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0 0;
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .profile-role-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #94a3b8;
+        }
+
+        .profile-facts {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 24px;
+        }
+
+        .profile-fact {
+            padding: 15px 16px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid #dbe7f4;
+            box-shadow: 0 14px 34px -30px rgba(15, 23, 42, 0.34);
+        }
+
+        .profile-fact-label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .profile-fact-value {
+            display: block;
+            color: var(--text-main);
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .profile-dashboard-grid {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            padding: 22px 30px 30px;
+        }
+
+        .profile-panel-card {
             height: 100%;
-            background: var(--primary-color);
+            padding: 20px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid #dbe7f4;
+            box-shadow: 0 18px 38px -32px rgba(15, 23, 42, 0.38);
+        }
+
+        .profile-panel-card-accent {
+            background: linear-gradient(180deg, rgba(249, 252, 255, 0.98), rgba(239, 247, 255, 0.96));
+        }
+
+        .profile-panel-title {
+            margin: 0 0 18px;
+            color: var(--secondary-color);
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+        }
+
+        .profile-detail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .profile-detail-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .profile-detail-icon {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
+            color: var(--primary-color);
+            border: 1px solid #e2e8f0;
+        }
+
+        .profile-detail-copy {
+            min-width: 0;
+        }
+
+        .profile-detail-label {
+            display: block;
+            margin-bottom: 3px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .profile-detail-value {
+            display: block;
+            color: var(--text-main);
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.35;
+            word-break: break-word;
         }
 
         .section-title {
@@ -84,6 +310,130 @@
             flex: 1;
             height: 1px;
             background: var(--card-border);
+        }
+
+        .today-attendance-card {
+            margin-top: 0;
+            padding: 0;
+            border-radius: 0;
+            border: none;
+            background: transparent;
+        }
+
+        .today-attendance-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .today-attendance-item {
+            padding: 14px 12px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #ffffff, #f3f8fd);
+            border: 1px solid #d5e3f0;
+            text-align: center;
+        }
+
+        .today-attendance-item:nth-child(1) {
+            background: linear-gradient(180deg, #effaf5, #e3f6ec);
+            border-color: #bfe7ce;
+        }
+
+        .today-attendance-item:nth-child(2) {
+            background: linear-gradient(180deg, #eff8ff, #e3f1ff);
+            border-color: #c6ddf7;
+        }
+
+        .today-attendance-item:nth-child(3) {
+            background: linear-gradient(180deg, #fff8ed, #fff1da);
+            border-color: #f4ddae;
+        }
+
+        .today-attendance-label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .today-attendance-value {
+            display: block;
+            color: var(--text-main);
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .month-picker-card {
+            margin-top: 18px;
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid #dbe7f4;
+            background: rgba(255, 255, 255, 0.88);
+        }
+
+        .month-picker-card .input-group-text,
+        .month-picker-card .form-control {
+            min-height: 48px;
+            border-color: #dbe7f4;
+            background: #fff;
+        }
+
+        .month-picker-card .form-control {
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .month-picker-help {
+            margin: 0 0 12px;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1199.98px) {
+            .profile-facts,
+            .profile-dashboard-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .profile-hero,
+            .profile-dashboard-grid {
+                padding-left: 22px;
+                padding-right: 22px;
+            }
+
+            .profile-identity {
+                align-items: flex-start;
+            }
+
+            .profile-dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .profile-hero {
+                padding-top: 22px;
+            }
+
+            .profile-identity {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .profile-name {
+                font-size: 26px;
+            }
+
+            .profile-facts,
+            .today-attendance-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Attendance Table Refinement */
@@ -112,6 +462,7 @@
             border-bottom: 1px solid var(--card-border);
             border-right: 1px solid var(--card-border);
             transition: all 0.2s;
+            vertical-align: top;
         }
 
         .attendance-table tr:last-child td {
@@ -135,6 +486,85 @@
 
         .attendance-select:focus {
             transform: scale(1.1);
+        }
+
+        .attendance-day-cell {
+            min-width: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .attendance-status {
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .inout-matrix {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            overflow: hidden;
+            min-width: 1100px;
+        }
+
+        .inout-matrix th,
+        .inout-matrix td {
+            border-right: 1px solid var(--card-border);
+            border-bottom: 1px solid var(--card-border);
+            padding: 10px 6px;
+            text-align: center;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .inout-matrix th {
+            background: #f1f5f9;
+            color: var(--secondary-color);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .inout-matrix tr:last-child td {
+            border-bottom: none;
+        }
+
+        .inout-matrix th:last-child,
+        .inout-matrix td:last-child {
+            border-right: none;
+        }
+
+        .inout-matrix .row-label {
+            min-width: 130px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-main);
+            background: #f8fafc;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+        }
+
+        .inout-matrix .day-head-label {
+            min-width: 130px;
+            text-align: left;
+            position: sticky;
+            left: 0;
+            z-index: 2;
+        }
+
+        .inout-matrix .time-value {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .inout-matrix .time-empty {
+            color: var(--text-muted);
         }
 
         .status-present { color: var(--success-color) !important; }
@@ -229,95 +659,137 @@
                 </ul>
 
                 <div class="profile-card">
-                    <div class="row">
-                        <!-- Left Column: Photo & Primary Details -->
-                        <div class="col-md-5 border-end d-flex align-items-center">
-                            <!-- Profile Photo -->
-                            <div class="me-4 shadow-sm" style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 3px solid #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-                                <img th:if="${attendance.photoPath != null}" th:src="@{/files/serve(filePath=${attendance.photoPath})}" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover;">
-                                <div th:unless="${attendance.photoPath != null}" class="d-flex justify-content-center align-items-center bg-light text-secondary" style="width: 100%; height: 100%; font-size: 32px;">
+                    <div class="profile-hero">
+                        <div class="profile-identity">
+                            <div class="profile-avatar-shell">
+                                <img th:if="${attendance.photoPath != null}" class="profile-avatar" th:src="@{/files/serve(filePath=${attendance.photoPath})}" alt="Profile Photo">
+                                <div th:unless="${attendance.photoPath != null}" class="profile-avatar profile-avatar-fallback">
                                     <i class="fa fa-user"></i>
                                 </div>
                             </div>
-                            <div>
-                                <h4 class="mb-1 text-primary fw-bold" th:text="${attendance.name}">Employee Name</h4>
-                                <div class="text-muted small fw-bold mb-2" th:text="${attendance.designation}">Designation</div>
-                                
-                                <div class="d-flex align-items-center mb-1">
-                                    <i class="fa fa-id-badge text-secondary me-2" style="width: 16px;"></i>
-                                    <span class="info-label" style="width: 100px;">Emp ID:</span>
-                                    <span class="info-value text-dark" th:text="${attendance.employeeCode ?: '-'}">-</span>
+                            <div class="profile-headline">
+                                <div class="profile-chip-row">
+                                    <span class="profile-chip">Employee Attendance</span>
+                                    <span class="profile-chip profile-chip-soft" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
+                                    <span class="profile-chip profile-chip-soft" th:text="${attendance.employeeCode ?: 'Employee'}">EMP-001</span>
                                 </div>
-                                <div class="d-flex align-items-center mb-1">
-                                    <i class="fa fa-calendar-alt text-secondary me-2" style="width: 16px;"></i>
-                                    <span class="info-label" style="width: 100px;">Joined:</span>
-                                    <span class="info-value text-dark" th:text="${attendance.joiningDate ?: '-'}">-</span>
+                                <h3 class="profile-name" th:text="${attendance.name}">Employee Name</h3>
+                                <div class="profile-role">
+                                    <span th:text="${attendance.designation ?: 'Employee'}">Designation</span>
+                                    <span class="profile-role-dot"></span>
+                                    <span th:text="${attendance.organization ?: 'Organization'}">Organization</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Middle Column: Contact & Organization -->
-                        <div class="col-md-4 border-end ps-md-4">
-                            <div class="mb-2 d-flex align-items-start">
-                                <i class="fa fa-phone-alt text-success me-3 mt-1" style="width: 20px;"></i>
-                                <div>
-                                    <span class="info-label">Mobile No</span><br/>
-                                    <span class="info-value" th:text="${attendance.mobile ?: '-'}">-</span>
-                                </div>
+                        <div class="profile-facts">
+                            <div class="profile-fact">
+                                <span class="profile-fact-label">Employee ID</span>
+                                <span class="profile-fact-value" th:text="${attendance.employeeCode ?: '-'}">-</span>
                             </div>
-                            <div class="mb-2 d-flex align-items-start">
-                                <i class="fa fa-map-marker-alt text-danger me-3 mt-1" style="width: 20px;"></i>
-                                <div>
-                                    <span class="info-label">Address</span><br/>
-                                    <span class="info-value" style="font-size: 13px; line-height: 1.2; display: inline-block; max-width: 200px;" th:text="${attendance.address ?: '-'}">-</span>
-                                </div>
+                            <div class="profile-fact">
+                                <span class="profile-fact-label">Joining Date</span>
+                                <span class="profile-fact-value" th:text="${attendance.joiningDate ?: '-'}">-</span>
                             </div>
-                            <div class="mb-2 d-flex align-items-center">
-                                <i class="fa fa-building text-primary me-3" style="width: 20px;"></i>
-                                <div>
-                                    <span class="info-label">Organization</span><br/>
-                                    <span class="info-value" th:text="${attendance.organization ?: '-'}">-</span>
-                                </div>
+                            <div class="profile-fact">
+                                <span class="profile-fact-label">Level</span>
+                                <span class="profile-fact-value" th:text="${attendance.level ?: '-'}">-</span>
                             </div>
-                            <div class="d-flex align-items-center">
-                                <i class="fa fa-folder-open text-warning me-3" style="width: 20px;"></i>
-                                <div>
-                                    <span class="info-label">Project Name</span><br/>
-                                    <span class="info-value" th:text="${attendance.projectName ?: '-'}">-</span>
-                                </div>
+                            <div class="profile-fact">
+                                <span class="profile-fact-label">Request ID</span>
+                                <span class="profile-fact-value" th:text="${attendance.requestId ?: '-'}">-</span>
                             </div>
                         </div>
-                        
-                        <!-- Right Column: Reporting & Calendar -->
-                        <div class="col-md-6 ps-md-4">
-                            <div class="mb-3 d-flex align-items-center">
-                                <i class="fa fa-user-tie text-secondary me-3" style="width: 20px;"></i>
-                                <div>
-                                    <span class="info-label">Reporting HOD</span><br/>
-                                    <span class="info-value" th:text="${attendance.reportingHOD ?: '-'}"></span>
+                    </div>
+
+                    <div class="profile-dashboard-grid">
+                        <div class="profile-panel-card profile-panel-card-accent">
+                            <h6 class="profile-panel-title">Today's Attendance</h6>
+                            <div class="today-attendance-card">
+                                <div class="today-attendance-grid">
+                                    <div class="today-attendance-item">
+                                        <span class="today-attendance-label">In Time</span>
+                                        <span class="today-attendance-value" th:text="${attendance.todayInTime ?: '-'}">-</span>
+                                    </div>
+                                    <div class="today-attendance-item">
+                                        <span class="today-attendance-label">Out Time</span>
+                                        <span class="today-attendance-value" th:text="${attendance.todayOutTime ?: '-'}">-</span>
+                                    </div>
+                                    <div class="today-attendance-item">
+                                        <span class="today-attendance-label">Status</span>
+                                        <span class="today-attendance-value" th:text="${attendance.todayStatus ?: '-'}">-</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="mb-3 d-flex align-items-center">
-                                <i class="fa fa-user-check text-secondary me-3" style="width: 20px;"></i>
-                                <div>
-                                    <span class="info-label">Reporting Manager</span><br/>
-                                    <span class="info-value" th:text="${attendance.reportingManager ?: '-'}"></span>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <h6 class="section-title">Data for Month</h6>
+
+                            <div class="month-picker-card">
+                                <h6 class="profile-panel-title mb-2">Data for Month</h6>
+                                <p class="month-picker-help">Choose a month to refresh the attendance register for that period.</p>
                                 <form th:action="@{/employee/fetchMyAttendance}" method="post">
                                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                     <div class="input-group">
-                                        <span class="input-group-text datepicker-icon" style="cursor: pointer; background: #f8fafc; border-right: none;">
+                                        <span class="input-group-text datepicker-icon" style="cursor: pointer; border-right: none;">
                                             <i class="fa fa-calendar text-primary"></i>
                                         </span>
-                                        <input type="text" name="dateRange" id="dateRangePicker" class="form-control" 
-                                               th:value="${attendance.dateRange}" readonly 
-                                               style="background-color: #fff; cursor: pointer; border-left: none; font-weight: 600;">
+                                        <input type="text" name="dateRange" id="dateRangePicker" class="form-control"
+                                               th:value="${attendance.dateRange}" readonly
+                                               style="cursor: pointer; border-left: none;">
                                     </div>
                                 </form>
+                            </div>
+                        </div>
+
+                        <div class="profile-panel-card">
+                            <h6 class="profile-panel-title">Contact Details</h6>
+                            <div class="profile-detail-list">
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-phone-alt"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Mobile Number</span>
+                                        <span class="profile-detail-value" th:text="${attendance.mobile ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-map-marker-alt"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Address</span>
+                                        <span class="profile-detail-value" th:text="${attendance.address ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-building"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Office Location</span>
+                                        <span class="profile-detail-value" th:text="${attendance.officeLocation ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-panel-card">
+                            <h6 class="profile-panel-title">Work Structure</h6>
+                            <div class="profile-detail-list">
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-folder-open"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Project Name</span>
+                                        <span class="profile-detail-value" th:text="${attendance.projectName ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-user-tie"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Reporting HOD</span>
+                                        <span class="profile-detail-value" th:text="${attendance.reportingHOD ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-user-check"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Reporting Manager</span>
+                                        <span class="profile-detail-value" th:text="${attendance.reportingManager ?: '-'}">-</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -390,6 +862,9 @@
                         <button class="nav-link active" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">Attendance Register</button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="inout-tab" data-bs-toggle="tab" data-bs-target="#inout" type="button" role="tab" style="color:var(--info-color);">Attendance In/Out</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" style="color:var(--warning-color);">Pending Requests</button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -437,28 +912,31 @@
                                                     <td style="text-align: left; padding-left: 10px;" th:text="${attendance.name}"></td>
                                                     <td th:each="day, dayStat : ${attendance.attendanceDays}"
                                                         th:class="${day.status == 'HOLIDAY' ? 'status-holiday' : (day.status == 'WEEK_OFF' ? 'status-weekoff' : '')}">
-                                                        
-                                                        <input type="hidden" th:name="'attendanceDays[' + ${dayStat.index} + '].date'" th:value="${day.date}" />
-                                                        
-                                                        <select th:if="${!day.date.isAfter(today) and (day.status == 'PRESENT' or day.status == 'ABSENT' or day.status == 'WEEK_OFF' or day.status == 'HOLIDAY' or day.status == '')}"
-                                                                th:name="'attendanceDays[' + ${dayStat.index} + '].status'"
-                                                                class="attendance-select border-0"
-                                                                th:disabled="${day.status == 'PRESENT'}"
-                                                                th:classappend="${day.status == 'PRESENT' ? 'status-present' : 
-                                                                              (day.status == 'ABSENT' || day.status == '' ? 'status-absent' : 
-                                                                              (day.status == 'WEEK_OFF' ? 'status-weekoff' : 
-                                                                              (day.status == 'HOLIDAY' ? 'status-holiday' : '')))}">
-                                                                <option value="" th:selected="${day.status == '' || day.status == null}"></option>
-                                                                <option value="PRESENT" th:selected="${day.status == 'PRESENT'}">P</option>
-                                                                <option value="ABSENT" th:selected="${day.status == 'ABSENT'}">A</option>
-                                                                <option value="WEEK_OFF" th:selected="${day.status == 'WEEK_OFF'}">W</option>
-                                                                <option value="HOLIDAY" th:selected="${day.status == 'HOLIDAY'}">H</option>
-                                                        </select>
+                                                        <div class="attendance-day-cell" th:title="${day.status}">
+                                                            <input type="hidden" th:name="'attendanceDays[' + ${dayStat.index} + '].date'" th:value="${day.date}" />
 
-                                                        <span th:if="${day.status == 'LEAVE'}" class="status-leave" style="font-weight: bold; padding: 2px;">L</span>
-                                                        <span th:if="${day.status == 'TOUR'}" class="status-tour" style="font-weight: bold; padding: 2px;">T</span>
-                                                        <span th:if="${day.status == 'PENDING'}" class="status-pending" style="font-weight: bold; padding: 2px;">P</span>
-                                                        <span th:if="${day.status == 'FUTURE'}">F</span>
+                                                            <div class="attendance-status">
+                                                                <select th:if="${!day.date.isAfter(today) and (day.status == 'PRESENT' or day.status == 'ABSENT' or day.status == 'WEEK_OFF' or day.status == 'HOLIDAY' or day.status == '')}"
+                                                                        th:name="'attendanceDays[' + ${dayStat.index} + '].status'"
+                                                                        class="attendance-select border-0"
+                                                                        th:disabled="${day.status == 'PRESENT'}"
+                                                                        th:classappend="${day.status == 'PRESENT' ? 'status-present' : 
+                                                                                      (day.status == 'ABSENT' || day.status == '' ? 'status-absent' : 
+                                                                                      (day.status == 'WEEK_OFF' ? 'status-weekoff' : 
+                                                                                      (day.status == 'HOLIDAY' ? 'status-holiday' : '')))}">
+                                                                            <option value="" th:selected="${day.status == '' || day.status == null}"></option>
+                                                                            <option value="PRESENT" th:selected="${day.status == 'PRESENT'}">P</option>
+                                                                            <option value="ABSENT" th:selected="${day.status == 'ABSENT'}">A</option>
+                                                                            <option value="WEEK_OFF" th:selected="${day.status == 'WEEK_OFF'}">W</option>
+                                                                            <option value="HOLIDAY" th:selected="${day.status == 'HOLIDAY'}">H</option>
+                                                                </select>
+
+                                                                <span th:if="${day.status == 'LEAVE'}" class="status-leave" style="font-weight: bold; padding: 2px;">L</span>
+                                                                <span th:if="${day.status == 'TOUR'}" class="status-tour" style="font-weight: bold; padding: 2px;">T</span>
+                                                                <span th:if="${day.status == 'PENDING'}" class="status-pending" style="font-weight: bold; padding: 2px;">P</span>
+                                                                <span th:if="${day.status == 'FUTURE'}">F</span>
+                                                            </div>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -468,6 +946,48 @@
                                         <button type="submit" class="btn btn-success">Submit</button>
                                     </div>
                                 </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance In/Out Tab -->
+                    <div class="tab-pane fade" id="inout" role="tabpanel">
+                        <div class="card mt-3" style="width:100%;">
+                            <div class="card-header" style="background:linear-gradient(180deg, #1f4f78, #163a59); color:#fff; padding:15px 25px;">
+                                <h4 class="mb-0"><i class="fa fa-right-left me-2"></i>Attendance In / Out Time</h4>
+                            </div>
+                            <div class="body">
+                                <div class="table-responsive">
+                                    <table class="inout-matrix">
+                                        <thead>
+                                            <tr>
+                                                <th class="day-head-label">Day</th>
+                                                <th th:each="day : ${attendance.attendanceDays}"
+                                                    th:text="${#temporals.format(day.date, 'dd')}">01</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="row-label">In Time</td>
+                                                <td th:each="day : ${attendance.attendanceDays}"
+                                                    th:class="${day.inTime != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
+                                                    th:text="${day.inTime != null ? day.inTime : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="row-label">Out Time</td>
+                                                <td th:each="day : ${attendance.attendanceDays}"
+                                                    th:class="${day.outTime != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
+                                                    th:text="${day.outTime != null ? day.outTime : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="row-label">Total Time</td>
+                                                <td th:each="day : ${attendance.attendanceDays}"
+                                                    th:class="${day.stayHours != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
+                                                    th:text="${day.stayHours != null ? day.stayHours : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>

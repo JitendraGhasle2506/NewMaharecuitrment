@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.web.service.employee.impl;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -62,6 +63,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     private EmployeeOnboardingDetailView buildDetailView(EmployeeEntity employee) {
         AgencyPreOnboardingForm onboardingForm = hrOnboardingPageService
                 .loadOnboardingForm(employee.getPreOnboarding().getPreOnboardingId());
+        applyEmployeeMasterOverrides(onboardingForm, employee);
         return new EmployeeOnboardingDetailView(
                 employee.getEmployeeId(),
                 employee.getEmployeeCode(),
@@ -69,6 +71,54 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
                 employee.getRecruitmentType(),
                 employee.getResignationDate(),
                 onboardingForm);
+    }
+
+    private void applyEmployeeMasterOverrides(AgencyPreOnboardingForm form, EmployeeEntity employee) {
+        if (form == null || employee == null) {
+            return;
+        }
+
+        form.setName(preferEmployeeText(employee.getFullName(), form.getName()));
+        form.setEmail(preferEmployeeText(employee.getEmail(), form.getEmail()));
+        form.setMobile(preferEmployeeText(employee.getMobile(), form.getMobile()));
+        form.setAddress(preferEmployeeText(employee.getAddress(), form.getAddress()));
+        form.setAadhaar(preferEmployeeText(employee.getAadhaarNumber(), form.getAadhaar()));
+        form.setPan(preferEmployeeText(employee.getPanNumber(), form.getPan()));
+        form.setRequestId(preferEmployeeText(employee.getRequestId(), form.getRequestId()));
+        form.setLevelCode(preferEmployeeText(employee.getLevelCode(), form.getLevelCode()));
+
+        form.setDob(preferEmployeeDate(employee.getDateOfBirth(), form.getDob()));
+        form.setJoiningDate(preferEmployeeDate(employee.getJoiningDate(), form.getJoiningDate()));
+        form.setOnboardingDate(preferEmployeeDate(employee.getOnboardingDate(), form.getOnboardingDate()));
+
+        if (employee.getDepartmentRegistration() != null) {
+            form.setDepartment(preferEmployeeText(
+                    employee.getDepartmentRegistration().getDepartmentName(),
+                    form.getDepartment()));
+        }
+        if (employee.getSubDepartment() != null) {
+            form.setSubDeptName(preferEmployeeText(
+                    employee.getSubDepartment().getSubDeptName(),
+                    form.getSubDeptName()));
+        }
+        if (employee.getAgency() != null) {
+            form.setAgencyName(preferEmployeeText(
+                    employee.getAgency().getAgencyName(),
+                    form.getAgencyName()));
+        }
+        if (employee.getDesignation() != null) {
+            form.setDesignation(preferEmployeeText(
+                    employee.getDesignation().getDesignationName(),
+                    form.getDesignation()));
+        }
+    }
+
+    private String preferEmployeeText(String employeeValue, String fallbackValue) {
+        return StringUtils.hasText(employeeValue) ? employeeValue.trim() : fallbackValue;
+    }
+
+    private LocalDate preferEmployeeDate(LocalDate employeeValue, LocalDate fallbackValue) {
+        return employeeValue != null ? employeeValue : fallbackValue;
     }
 
     private boolean hasOnboardingDetails(EmployeeEntity employee) {

@@ -3,22 +3,24 @@ package com.maharecruitment.gov.in.attendance.controller;
 import java.text.DateFormatSymbols;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ModelAttribute;
 
+import com.maharecruitment.gov.in.attendance.dto.AttendanceDayDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceRegisterDTO;
 import com.maharecruitment.gov.in.attendance.dto.ManualAttendanceRequestDTO;
-import java.util.List;
-import java.util.stream.Collectors;
 import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
 import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
@@ -46,8 +48,6 @@ public class AttendanceRegisterInternalEmployeeController {
                 .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
 
         Long employeeId = employee.getEmployeeId();
-        String employeeCode = employee.getEmployeeCode();
-
         
         if (employeeId == null) {
             model.addAttribute("error", "Employee mapping not found in user account.");
@@ -58,34 +58,7 @@ public class AttendanceRegisterInternalEmployeeController {
         LocalDate today = LocalDate.now();
         int month = today.getMonthValue();
         int year = today.getYear();
-
-        AttendanceRegisterDTO attendance = attendanceService.getInternalAttendanceForEmployee(employee.getEmployeeId(), month, year);
-        attendance.setDateRange(String.format("%02d-%d", month, year));
-        
-        model.addAttribute("attendance", attendance);
-        model.addAttribute("selectedMonth", month);
-        model.addAttribute("selectedYear", year);
-        model.addAttribute("monthNames", getMonthNames());
-        model.addAttribute("today", today);
-        
-        YearMonth yearMonth = YearMonth.of(year, month);
-        model.addAttribute("daysInMonth", yearMonth.lengthOfMonth());
-        
-        List<ManualAttendanceRequestDTO> allRequests = attendanceService.getMyManualRequests(employee.getEmployeeId());
-        final int fMonth = month;
-        final int fYear = year;
-        model.addAttribute("pendingRequests", allRequests.stream()
-            .filter(r -> r.getAttendanceDate().getMonthValue() == fMonth && r.getAttendanceDate().getYear() == fYear)
-            .filter(r -> "PENDING".equalsIgnoreCase(r.getHodStatus()))
-            .collect(Collectors.toList()));
-        model.addAttribute("approvedRequests", allRequests.stream()
-            .filter(r -> r.getAttendanceDate().getMonthValue() == fMonth && r.getAttendanceDate().getYear() == fYear)
-            .filter(r -> "APPROVED".equalsIgnoreCase(r.getHodStatus()))
-            .collect(Collectors.toList()));
-        model.addAttribute("rejectedRequests", allRequests.stream()
-            .filter(r -> r.getAttendanceDate().getMonthValue() == fMonth && r.getAttendanceDate().getYear() == fYear)
-            .filter(r -> "REJECTED".equalsIgnoreCase(r.getHodStatus()))
-            .collect(Collectors.toList()));
+        populateAttendanceView(model, employee, month, year, today);
 
         return "attendance/attendance-register-internal";
     }
@@ -99,7 +72,6 @@ public class AttendanceRegisterInternalEmployeeController {
                 .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
 
         Long employeeId = employee.getEmployeeId();
-        String employeeCode = employee.getEmployeeCode();
         if (employeeId == null) {
             model.addAttribute("error", "Employee mapping not found in user account.");
             return "attendance/attendance-register-internal";
@@ -120,18 +92,30 @@ public class AttendanceRegisterInternalEmployeeController {
             }
         }
 
+        populateAttendanceView(model, employee, month, year, LocalDate.now());
+
+        return "attendance/attendance-register-internal";
+    }
+
+    private void populateAttendanceView(
+            Model model,
+            EmployeeEntity employee,
+            int month,
+            int year,
+            LocalDate today) {
         AttendanceRegisterDTO attendance = attendanceService.getInternalAttendanceForEmployee(employee.getEmployeeId(), month, year);
         attendance.setDateRange(String.format("%02d-%d", month, year));
-        
+
         model.addAttribute("attendance", attendance);
         model.addAttribute("selectedMonth", month);
         model.addAttribute("selectedYear", year);
         model.addAttribute("monthNames", getMonthNames());
-        model.addAttribute("today", LocalDate.now());
+        model.addAttribute("today", today);
+        model.addAttribute("attendanceTimeRows", extractAttendanceTimeRows(attendance));
 
         YearMonth yearMonth = YearMonth.of(year, month);
         model.addAttribute("daysInMonth", yearMonth.lengthOfMonth());
-        
+
         List<ManualAttendanceRequestDTO> allRequests = attendanceService.getMyManualRequests(employee.getEmployeeId());
         final int fMonth = month;
         final int fYear = year;
@@ -147,8 +131,16 @@ public class AttendanceRegisterInternalEmployeeController {
             .filter(r -> r.getAttendanceDate().getMonthValue() == fMonth && r.getAttendanceDate().getYear() == fYear)
             .filter(r -> "REJECTED".equalsIgnoreCase(r.getHodStatus()))
             .collect(Collectors.toList()));
+    }
 
-        return "attendance/attendance-register-internal";
+    private List<AttendanceDayDTO> extractAttendanceTimeRows(AttendanceRegisterDTO attendance) {
+        if (attendance == null || attendance.getAttendanceDays() == null) {
+            return List.of();
+        }
+
+        return attendance.getAttendanceDays().stream()
+                .filter(day -> day != null && (StringUtils.hasText(day.getInTime()) || StringUtils.hasText(day.getOutTime())))
+                .collect(Collectors.toList());
     }
 
     private Map<Integer, String> getMonthNames() {

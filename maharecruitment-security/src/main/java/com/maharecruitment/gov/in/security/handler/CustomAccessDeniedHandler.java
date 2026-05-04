@@ -4,11 +4,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.csrf.CsrfException;
 
 import com.maharecruitment.gov.in.common.security.ApplicationCookieService;
 
@@ -28,49 +30,21 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
                        HttpServletResponse response,
                        AccessDeniedException ex)
             throws IOException, ServletException {
-        /* -----------------------------------------
-           1.  Invalidate Session
-        ----------------------------------------- */
-        if (request.getSession(false) != null) {
-            request.getSession().invalidate();
-        }
-
-        /* -----------------------------------------
-           2. Securely Delete All Cookies
-        ----------------------------------------- */
-        applicationCookieService.expireRequestCookies(request, response);
-
-        /* -----------------------------------------
-           3. AJAX Request? Return JSON
-        ----------------------------------------- */
-        if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"ACCESS_DENIED\",\"redirect\":\"" + request.getContextPath() + "/login?accessDenied=true\"}");
+        Authentication authentication = resolveAuthentication(request);
+        if (shouldTreatAsSessionOrCsrfFailure(ex, authentication)) {
+            handleSessionOrCsrfFailure(request, response, ex);
             return;
         }
 
-        /* -----------------------------------------
-           4. Dynamic Role Detection (any role)
-        ----------------------------------------- */
-        String userRole = "ANONYMOUS";
-
-        if (request.getUserPrincipal() instanceof Authentication auth) {
-            userRole = auth.getAuthorities()
-                    .stream()
-                    .map(a -> a.getAuthority())
-                    .reduce((a, b) -> a + ", " + b)
-                    .orElse("NO_ROLE");
+        if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"ACCESS_DENIED\"}");
+            return;
         }
 
-        /* -----------------------------------------
-           5. Requested URL
-        ----------------------------------------- */
+        String userRole = resolveUserRole(authentication);
         String url = request.getRequestURI();
-
-        /* -----------------------------------------
-           6. Create Beautiful 403 Page
-        ----------------------------------------- */
         response.setStatus(403);
         response.setContentType("text/html;charset=UTF-8");
 
@@ -89,7 +63,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
                             <div class="card-body text-center">
                                 <h1 class="display-4 text-danger">403</h1>
                                 <h3 class="mb-3">Access Denied</h3>
-                                <p class="mb-2">Your session was terminated for security reasons.</p>
+                                <p class="mb-2">You do not have permission to access the requested module.</p>
                                 <p class="text-muted mb-2">Role: <strong>%s</strong></p>
                                 <p class="text-muted mb-4">URL: <strong>%s</strong></p>
                                 <a href="%s/login?accessDenied=true" class="btn btn-primary btn-lg px-4">Go to Login</a>
@@ -101,5 +75,62 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
                 """.formatted(userRole, url, request.getContextPath());
 
         response.getWriter().write(html);
+    }
+
+    private boolean shouldTreatAsSessionOrCsrfFailure(
+            AccessDeniedException exception,
+            Authentication authentication) {
+        return exception instanceof CsrfException
+                || authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken;
+    }
+
+    private void handleSessionOrCsrfFailure(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            AccessDeniedException exception) throws IOException {
+        if (request.getSession(false) != null) {
+            request.getSession().invalidate();
+        }
+        applicationCookieService.expireRequestCookies(request, response);
+
+        String loginRedirect = buildLoginRedirect(request, exception);
+        if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"SESSION_EXPIRED\",\"redirect\":\"" + loginRedirect + "\"}");
+            return;
+        }
+
+        response.sendRedirect(loginRedirect);
+    }
+
+    private String buildLoginRedirect(HttpServletRequest request, AccessDeniedException exception) {
+        if (exception instanceof CsrfException) {
+            return request.getContextPath() + "/login?csrfExpired=true";
+        }
+
+        if (request.getRequestedSessionId() != null) {
+            return request.getContextPath() + "/login?sessionExpired=true";
+        }
+
+        return request.getContextPath() + "/login?unauthenticated=true";
+    }
+
+    private Authentication resolveAuthentication(HttpServletRequest request) {
+        return request.getUserPrincipal() instanceof Authentication auth ? auth : null;
+    }
+
+    private String resolveUserRole(Authentication authentication) {
+        if (authentication == null) {
+            return "ANONYMOUS";
+        }
+
+        return authentication.getAuthorities()
+                .stream()
+                .map(a -> a.getAuthority())
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("NO_ROLE");
     }
 }
