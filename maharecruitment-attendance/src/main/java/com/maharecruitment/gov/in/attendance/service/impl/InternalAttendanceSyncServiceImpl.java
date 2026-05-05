@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.attendance.service.impl;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
@@ -201,6 +202,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                         LinkedHashMap::new));
 
         List<DailyAttendanceInternalEntity> entitiesToSave = new ArrayList<>();
+        LocalDateTime syncTimestamp = LocalDateTime.now(resolveZoneId());
         for (InternalAttendanceDayRecord apiRecord : apiRecordByDate.values().stream()
                 .sorted(Comparator.comparing(InternalAttendanceDayRecord::getAttendanceDate))
                 .toList()) {
@@ -222,6 +224,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                     attendanceDate,
                     new DailyAttendanceInternalEntity());
             applyApiRecord(entity, employee, apiRecord);
+            stampAuditFields(entity, syncTimestamp);
             entitiesToSave.add(entity);
         }
 
@@ -245,6 +248,13 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         entity.setStatus(mapApiStatus(apiRecord.getStatus()));
         entity.setMonth(apiRecord.getAttendanceDate().getMonthValue());
         entity.setYear(apiRecord.getAttendanceDate().getYear());
+    }
+
+    private void stampAuditFields(DailyAttendanceInternalEntity entity, LocalDateTime syncTimestamp) {
+        if (entity.getCreatedDate() == null) {
+            entity.setCreatedDate(syncTimestamp);
+        }
+        entity.setUpdatedDate(syncTimestamp);
     }
 
     private DailyAttendanceInternalEntity pickLatestPersistedRow(
