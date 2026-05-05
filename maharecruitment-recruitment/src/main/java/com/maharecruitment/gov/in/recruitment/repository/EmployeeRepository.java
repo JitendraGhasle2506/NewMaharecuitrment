@@ -205,6 +205,29 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "order by employee.employeeId")
     List<EmployeeEntity> findInternalAttendanceSyncCandidates();
 
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    @Query("select employee from EmployeeEntity employee "
+            + "where upper(trim(coalesce(employee.recruitmentType, ''))) = 'INTERNAL' "
+            + "and (:agencyId is null or employee.agency.agencyId = :agencyId) "
+            + "and (:departmentRegistrationId is null "
+            + "or employee.departmentRegistration.departmentRegistrationId = :departmentRegistrationId) "
+            + "and (:subDepartmentId is null or employee.subDepartment.subDeptId = :subDepartmentId) "
+            + "and (:employeeStatus is null or upper(trim(coalesce(employee.status, ''))) = :employeeStatus) "
+            + "order by lower(coalesce(employee.fullName, '')), employee.employeeId")
+    List<EmployeeEntity> findDetailedInternalEmployeesForAttendanceReport(
+            @Param("agencyId") Long agencyId,
+            @Param("departmentRegistrationId") Long departmentRegistrationId,
+            @Param("subDepartmentId") Long subDepartmentId,
+            @Param("employeeStatus") String employeeStatus);
+
     @Query("select count(employee) from EmployeeEntity employee "
             + "where upper(trim(coalesce(employee.recruitmentType, ''))) = 'INTERNAL' "
             + "and trim(coalesce(employee.aadhaarNumber, '')) <> ''")

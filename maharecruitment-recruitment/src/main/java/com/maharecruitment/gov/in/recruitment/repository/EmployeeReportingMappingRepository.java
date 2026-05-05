@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.recruitment.repository;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,12 +10,14 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEnt
 
 @Repository
 public interface EmployeeReportingMappingRepository extends JpaRepository<EmployeeReportingMappingEntity, Long> {
-    
+
     List<EmployeeReportingMappingEntity> findByProjectId(Long projectId);
-    
+
     List<EmployeeReportingMappingEntity> findByManagerEmployeeId(Long managerEmployeeId);
-    
+
     List<EmployeeReportingMappingEntity> findByHodUserId(Long hodUserId);
-    
+
+    List<EmployeeReportingMappingEntity> findByEmployeeIdIn(Collection<Long> employeeIds);
+
     EmployeeReportingMappingEntity findByEmployeeId(Long employeeId);
 }

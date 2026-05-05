@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.attendance.repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,7 +15,16 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
 
     List<DailyAttendanceInternalEntity> findByAttendanceDateBetween(LocalDate startDate, LocalDate endDate);
 
-    List<DailyAttendanceInternalEntity> findByEmployeeIdAndAttendanceDateBetween(Long employeeId, LocalDate startDate, LocalDate endDate);
+    List<DailyAttendanceInternalEntity> findByEmployeeIdAndAttendanceDateBetween(
+            Long employeeId,
+            LocalDate startDate,
+            LocalDate endDate);
+
+    List<DailyAttendanceInternalEntity> findByEmployeeIdInAndAttendanceDateBetween(
+            Collection<Long> employeeIds,
+            LocalDate startDate,
+            LocalDate endDate);
+
     Optional<DailyAttendanceInternalEntity> findByEmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);
 
     List<DailyAttendanceInternalEntity> findByEmployeeIdAndMonthAndYear(Long employeeId, Integer month, Integer year);
