@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.maharecruitment.gov.in.attendance.service.InternalAttendanceReportPdfGenerator;
+import com.maharecruitment.gov.in.attendance.service.InternalAttendanceReportTimeCsvGenerator;
 import com.maharecruitment.gov.in.attendance.service.InternalEmployeeAttendanceReportService;
 import com.maharecruitment.gov.in.attendance.service.model.GeneratedAttendanceReportDocument;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportFilter;
@@ -41,14 +42,17 @@ public class InternalAttendanceReportController {
 
     private final InternalEmployeeAttendanceReportService internalAttendanceReportService;
     private final InternalAttendanceReportPdfGenerator internalAttendanceReportPdfGenerator;
+    private final InternalAttendanceReportTimeCsvGenerator internalAttendanceReportTimeCsvGenerator;
     private final AgencyMasterRepository agencyMasterRepository;
 
     public InternalAttendanceReportController(
             InternalEmployeeAttendanceReportService internalAttendanceReportService,
             InternalAttendanceReportPdfGenerator internalAttendanceReportPdfGenerator,
+            InternalAttendanceReportTimeCsvGenerator internalAttendanceReportTimeCsvGenerator,
             AgencyMasterRepository agencyMasterRepository) {
         this.internalAttendanceReportService = internalAttendanceReportService;
         this.internalAttendanceReportPdfGenerator = internalAttendanceReportPdfGenerator;
+        this.internalAttendanceReportTimeCsvGenerator = internalAttendanceReportTimeCsvGenerator;
         this.agencyMasterRepository = agencyMasterRepository;
     }
 
@@ -72,12 +76,22 @@ public class InternalAttendanceReportController {
     public ResponseEntity<byte[]> downloadPdfReport(@ModelAttribute InternalAttendanceReportFilter filter) {
         InternalAttendanceReportView report = internalAttendanceReportService.buildReport(filter);
         GeneratedAttendanceReportDocument document = internalAttendanceReportPdfGenerator.generate(report);
+        return buildDownloadResponse(document);
+    }
 
+    @GetMapping("/download/time-csv")
+    public ResponseEntity<byte[]> downloadAttendanceTimeReport(@ModelAttribute InternalAttendanceReportFilter filter) {
+        InternalAttendanceReportView report = internalAttendanceReportService.buildReport(filter);
+        GeneratedAttendanceReportDocument document = internalAttendanceReportTimeCsvGenerator.generate(report);
+        return buildDownloadResponse(document);
+    }
+
+    private ResponseEntity<byte[]> buildDownloadResponse(GeneratedAttendanceReportDocument document) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(ContentDisposition.attachment()
                 .filename(document.originalFileName(), StandardCharsets.UTF_8)
                 .build());
-        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentType(MediaType.parseMediaType(document.contentType()));
         headers.setContentLength(document.size());
 
         return ResponseEntity.ok()

@@ -408,9 +408,13 @@
                                     th:href="@{/hr/internal-attendance-report/download/pdf(month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
                                     <i class="fas fa-file-pdf me-1"></i> Download PDF
                                 </a>
+                                <a class="btn btn-outline-primary btn-sm"
+                                    th:href="@{/hr/internal-attendance-report/download/time-csv(month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
+                                    <i class="fas fa-clock me-1"></i> Download In/Out Time CSV
+                                </a>
                             <button type="button" class="btn btn-outline-success btn-sm"
                                 onclick="exportInternalAttendanceReport()">
-                                <i class="fas fa-file-excel me-1"></i> Export CSV
+                                <i class="fas fa-file-excel me-1"></i> Export Screen CSV
                             </button>
                         </div>
                     </div>
