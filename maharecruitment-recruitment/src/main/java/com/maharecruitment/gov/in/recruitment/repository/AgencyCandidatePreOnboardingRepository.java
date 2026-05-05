@@ -68,6 +68,22 @@ public interface AgencyCandidatePreOnboardingRepository extends JpaRepository<Ag
     Optional<AgencyCandidatePreOnboardingEntity> findByInterviewDetailRecruitmentInterviewDetailId(
             Long recruitmentInterviewDetailId);
 
+    @Query("select case when count(preOnboarding) > 0 then true else false end "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where (:excludePreOnboardingId is null or preOnboarding.preOnboardingId <> :excludePreOnboardingId) "
+            + "and trim(coalesce(preOnboarding.aadhaarNumber, '')) = :aadhaarNumber")
+    boolean existsByAadhaarNumberExcludingPreOnboardingId(
+            @Param("aadhaarNumber") String aadhaarNumber,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
+
+    @Query("select case when count(preOnboarding) > 0 then true else false end "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where (:excludePreOnboardingId is null or preOnboarding.preOnboardingId <> :excludePreOnboardingId) "
+            + "and upper(trim(coalesce(preOnboarding.panNumber, ''))) = upper(trim(:panNumber))")
+    boolean existsByPanNumberExcludingPreOnboardingId(
+            @Param("panNumber") String panNumber,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
+
     long countByInterviewDetailAgencyAgencyId(Long agencyId);
 
     long countByInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndOnboardedAtIsNotNull(

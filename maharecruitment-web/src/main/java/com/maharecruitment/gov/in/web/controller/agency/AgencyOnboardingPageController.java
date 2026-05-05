@@ -1,9 +1,11 @@
 package com.maharecruitment.gov.in.web.controller.agency;
 
 import java.security.Principal;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -13,12 +15,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import jakarta.validation.Valid;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
+import com.maharecruitment.gov.in.web.service.onboarding.CandidateIdentityValidationService;
 import com.maharecruitment.gov.in.web.service.agency.AgencyOnboardingPageService;
 
 @Controller
@@ -28,9 +32,13 @@ public class AgencyOnboardingPageController {
     private static final Logger log = LoggerFactory.getLogger(AgencyOnboardingPageController.class);
 
     private final AgencyOnboardingPageService onboardingPageService;
+    private final CandidateIdentityValidationService candidateIdentityValidationService;
 
-    public AgencyOnboardingPageController(AgencyOnboardingPageService onboardingPageService) {
+    public AgencyOnboardingPageController(
+            AgencyOnboardingPageService onboardingPageService,
+            CandidateIdentityValidationService candidateIdentityValidationService) {
         this.onboardingPageService = onboardingPageService;
+        this.candidateIdentityValidationService = candidateIdentityValidationService;
     }
 
     @GetMapping
@@ -134,6 +142,31 @@ public class AgencyOnboardingPageController {
                 return "redirect:/agency/selected-candidates";
             }
         }
+    }
+
+    @GetMapping("/pre/validate-aadhaar")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> validateAadhaar(
+            @RequestParam("aadhaar") String aadhaar,
+            @RequestParam(name = "preOnboardingId", required = false) Long preOnboardingId,
+            Principal principal) {
+        String actorEmail = resolveActorEmail(principal);
+        boolean duplicate = candidateIdentityValidationService.isAadhaarDuplicate(preOnboardingId, aadhaar);
+        if (duplicate) {
+            log.info(
+                    "Aadhaar duplicate check failed. actorEmail={}, preOnboardingId={}",
+                    actorEmail,
+                    preOnboardingId);
+        } else {
+            log.debug(
+                    "Aadhaar duplicate check passed. actorEmail={}, preOnboardingId={}",
+                    actorEmail,
+                    preOnboardingId);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "duplicate", duplicate,
+                "message", duplicate ? "Aadhaar number already exists in the system." : ""));
     }
 
     @PostMapping("/{employeeId}/resign")

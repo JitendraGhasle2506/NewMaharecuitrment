@@ -42,6 +42,7 @@ import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandi
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
+import com.maharecruitment.gov.in.web.service.onboarding.CandidateIdentityValidationService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 
@@ -63,6 +64,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     private final UserManagementService userManagementService;
     private final RoleRepository roleRepository;
     private final AccountNotificationService accountNotificationService;
+    private final CandidateIdentityValidationService candidateIdentityValidationService;
     private final FileStorageService fileStorageService;
 
     public HROnboardingPageServiceImpl(
@@ -76,6 +78,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             UserManagementService userManagementService,
             RoleRepository roleRepository,
             AccountNotificationService accountNotificationService,
+            CandidateIdentityValidationService candidateIdentityValidationService,
             FileStorageService fileStorageService) {
         this.preOnboardingRepository = preOnboardingRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
@@ -87,6 +90,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         this.userManagementService = userManagementService;
         this.roleRepository = roleRepository;
         this.accountNotificationService = accountNotificationService;
+        this.candidateIdentityValidationService = candidateIdentityValidationService;
         this.fileStorageService = fileStorageService;
     }
 
@@ -182,6 +186,10 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     @Override
     @Transactional
     public EmployeeOnboardingResult saveOnboarding(Long preOnboardingId, AgencyPreOnboardingForm form, String actorEmail) {
+        log.info(
+                "Processing HR onboarding. preOnboardingId={}, actorEmail={}",
+                preOnboardingId,
+                actorEmail);
         AgencyCandidatePreOnboardingEntity entity = preOnboardingRepository.findById(preOnboardingId)
                 .orElseThrow(() -> new RecruitmentNotificationException("Onboarding record not found."));
 
@@ -201,6 +209,10 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         if (entity.getOnboardedAt() != null) {
             throw new RecruitmentNotificationException("Candidate is already onboarded.");
         }
+        candidateIdentityValidationService.validateUniqueGovernmentIds(
+                entity.getPreOnboardingId(),
+                entity.getAadhaarNumber(),
+                entity.getPanNumber());
 
         var interview = entity.getInterviewDetail();
         var notification = interview.getRecruitmentNotification();
@@ -282,9 +294,19 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             EmployeeOnboardingResult accountResult = createEmployeeAccessAccount(entity, departmentRegistration,
                     savedEmployee);
             replacedPaths.forEach(fileStorageService::deleteQuietly);
+            log.info(
+                    "HR onboarding completed successfully. preOnboardingId={}, actorEmail={}, employeeId={}",
+                    preOnboardingId,
+                    actorEmail,
+                    savedEmployee.getEmployeeId());
             return accountResult;
         } catch (RuntimeException ex) {
             newlyUploadedPaths.forEach(fileStorageService::deleteQuietly);
+            log.warn(
+                    "HR onboarding failed. preOnboardingId={}, actorEmail={}, reason={}",
+                    preOnboardingId,
+                    actorEmail,
+                    ex.getMessage());
             throw ex;
         }
     }

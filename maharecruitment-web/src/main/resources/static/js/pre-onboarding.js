@@ -21,6 +21,8 @@
     const dobInput = document.getElementById("dob");
     const panInput = document.getElementById("pan");
     const aadhaarInput = form.querySelector("[name='aadhaar']");
+    const aadhaarValidationMessage = document.getElementById("aadhaarValidationMessage");
+    const preOnboardingIdInput = form.querySelector("[name='preOnboardingId']");
     const candidatePhotoInput = document.getElementById("uploadImage");
     const candidatePhotoPreview = document.getElementById("candidatePhotoPreview");
     const candidatePhotoEmpty = document.getElementById("candidatePhotoEmpty");
@@ -33,6 +35,18 @@
     const existingPhotoName = candidatePhotoPreview
         ? (candidatePhotoPreview.getAttribute("data-managed-name") || "")
         : "";
+    const defaultAadhaarMessage = aadhaarValidationMessage
+        ? aadhaarValidationMessage.textContent
+        : "Aadhaar number must be exactly 12 digits.";
+    let aadhaarValidationState = {
+        checkedValue: "",
+        requestedValue: "",
+        pending: false,
+        duplicate: false,
+        message: ""
+    };
+    let aadhaarValidationTimer = null;
+    let aadhaarValidationRequest = null;
 
     function attachRowEvents(row) {
         row.querySelectorAll(".experience-date").forEach(function (input) {
@@ -131,6 +145,107 @@
         } else {
             field.classList.remove("is-invalid", "is-valid");
         }
+    }
+
+    function setAadhaarFieldValidity(message) {
+        if (aadhaarValidationMessage) {
+            aadhaarValidationMessage.textContent = message || defaultAadhaarMessage;
+        }
+        setFieldValidity(aadhaarInput, message || "");
+    }
+
+    function resetAadhaarDuplicateState() {
+        aadhaarValidationState.checkedValue = "";
+        aadhaarValidationState.requestedValue = "";
+        aadhaarValidationState.pending = false;
+        aadhaarValidationState.duplicate = false;
+        aadhaarValidationState.message = "";
+    }
+
+    function cancelAadhaarValidationRequest() {
+        if (aadhaarValidationTimer) {
+            clearTimeout(aadhaarValidationTimer);
+            aadhaarValidationTimer = null;
+        }
+        if (aadhaarValidationRequest) {
+            aadhaarValidationRequest.abort();
+            aadhaarValidationRequest = null;
+        }
+    }
+
+    function scheduleAadhaarDuplicateCheck(value) {
+        if (!aadhaarInput || hrFlow || !value || value.length !== 12) {
+            return;
+        }
+
+        if (aadhaarValidationState.pending && aadhaarValidationState.requestedValue === value) {
+            return;
+        }
+        if (aadhaarValidationState.checkedValue === value) {
+            return;
+        }
+
+        cancelAadhaarValidationRequest();
+        aadhaarValidationState.pending = true;
+        aadhaarValidationState.requestedValue = value;
+        aadhaarValidationState.duplicate = false;
+        aadhaarValidationState.message = "";
+
+        aadhaarValidationTimer = window.setTimeout(function () {
+            const contextPath = window.preOnboardingConfig && window.preOnboardingConfig.contextPath
+                ? window.preOnboardingConfig.contextPath
+                : "/";
+            const params = new URLSearchParams();
+            params.set("aadhaar", value);
+            if (preOnboardingIdInput && preOnboardingIdInput.value) {
+                params.set("preOnboardingId", preOnboardingIdInput.value);
+            }
+
+            aadhaarValidationRequest = new AbortController();
+            fetch(contextPath + "agency/onboarding/pre/validate-aadhaar?" + params.toString(), {
+                method: "GET",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                signal: aadhaarValidationRequest.signal
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error("Aadhaar validation request failed.");
+                    }
+                    return response.json();
+                })
+                .then(function (payload) {
+                    if (aadhaarInput.value.trim() !== value) {
+                        return;
+                    }
+
+                    aadhaarValidationState.pending = false;
+                    aadhaarValidationState.requestedValue = "";
+                    aadhaarValidationState.checkedValue = value;
+                    aadhaarValidationState.duplicate = Boolean(payload && payload.duplicate);
+                    aadhaarValidationState.message = payload && payload.message ? payload.message : "";
+                    aadhaarValidationRequest = null;
+                    checkFormValidity();
+                })
+                .catch(function (error) {
+                    if (error && error.name === "AbortError") {
+                        return;
+                    }
+
+                    if (aadhaarInput.value.trim() !== value) {
+                        return;
+                    }
+
+                    aadhaarValidationState.pending = false;
+                    aadhaarValidationState.requestedValue = "";
+                    aadhaarValidationState.checkedValue = value;
+                    aadhaarValidationState.duplicate = true;
+                    aadhaarValidationState.message = "Unable to validate Aadhaar right now. Please try again.";
+                    aadhaarValidationRequest = null;
+                    checkFormValidity();
+                });
+        }, 350);
     }
 
     function clearEmploymentFieldValidity(row) {
@@ -429,13 +544,30 @@
     function validateAadhaar() {
         if (!aadhaarInput) return true;
         const value = aadhaarInput.value.trim();
-        setFieldValidity(aadhaarInput, "");
+        setAadhaarFieldValidity("");
         if (!value) return true;
         
         if (!/^[0-9]{12}$/.test(value)) {
-            setFieldValidity(aadhaarInput, "Aadhaar must be exactly 12 digits.");
+            setAadhaarFieldValidity("Aadhaar must be exactly 12 digits.");
             return false;
         }
+
+        if (aadhaarValidationState.pending && aadhaarValidationState.requestedValue === value) {
+            setAadhaarFieldValidity("Checking Aadhaar number...");
+            return false;
+        }
+
+        if (aadhaarValidationState.checkedValue !== value) {
+            scheduleAadhaarDuplicateCheck(value);
+            setAadhaarFieldValidity("Checking Aadhaar number...");
+            return false;
+        }
+
+        if (aadhaarValidationState.duplicate) {
+            setAadhaarFieldValidity(aadhaarValidationState.message || "Aadhaar number already exists in the system.");
+            return false;
+        }
+
         return true;
     }
 
@@ -579,6 +711,16 @@
             el.addEventListener("input", function() {
                 if (el === mobileInput) {
                     this.value = this.value.replace(/[^0-9]/g, "").substring(0, 10);
+                }
+                if (el === aadhaarInput) {
+                    this.value = this.value.replace(/[^0-9]/g, "").substring(0, 12);
+                    if (this.value !== aadhaarValidationState.checkedValue) {
+                        cancelAadhaarValidationRequest();
+                        resetAadhaarDuplicateState();
+                        if (aadhaarValidationMessage) {
+                            aadhaarValidationMessage.textContent = defaultAadhaarMessage;
+                        }
+                    }
                 }
                 checkFormValidity();
             });

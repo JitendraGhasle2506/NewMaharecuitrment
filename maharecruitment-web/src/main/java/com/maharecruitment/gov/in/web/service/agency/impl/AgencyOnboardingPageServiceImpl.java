@@ -14,6 +14,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -42,12 +44,14 @@ import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.service.agency.AgencyOnboardingPageService;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardedEmployeeView;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
+import com.maharecruitment.gov.in.web.service.onboarding.CandidateIdentityValidationService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 
 @Service
 @Transactional(readOnly = true)
 public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageService {
 
+    private static final Logger log = LoggerFactory.getLogger(AgencyOnboardingPageServiceImpl.class);
     private static final Pattern AADHAAR_PATTERN = Pattern.compile("^[0-9]{12}$");
     private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
     private static final String DEFAULT_VALUE = "-";
@@ -61,6 +65,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
     private final SubDepartmentRepository subDepartmentRepository;
     private final ResourceLevelExperienceRepository resourceLevelExperienceRepository;
+    private final CandidateIdentityValidationService candidateIdentityValidationService;
     private final FileStorageService fileStorageService;
 
     public AgencyOnboardingPageServiceImpl(
@@ -73,6 +78,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             DepartmentRegistrationRepository departmentRegistrationRepository,
             SubDepartmentRepository subDepartmentRepository,
             ResourceLevelExperienceRepository resourceLevelExperienceRepository,
+            CandidateIdentityValidationService candidateIdentityValidationService,
             FileStorageService fileStorageService) {
         this.userAffiliationService = userAffiliationService;
         this.agencyMasterRepository = agencyMasterRepository;
@@ -83,6 +89,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.resourceLevelExperienceRepository = resourceLevelExperienceRepository;
+        this.candidateIdentityValidationService = candidateIdentityValidationService;
         this.fileStorageService = fileStorageService;
     }
 
@@ -149,6 +156,12 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             throw new RecruitmentNotificationException("Pre-onboarding form is required.");
         }
 
+        log.info(
+                "Processing agency pre-onboarding submission. candidateId={}, actorEmail={}, preOnboardingId={}",
+                recruitmentInterviewDetailId,
+                actorEmail,
+                form.getPreOnboardingId());
+
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         RecruitmentInterviewDetailEntity candidate = loadSelectedCandidate(recruitmentInterviewDetailId,
                 context.agencyId());
@@ -162,6 +175,12 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null);
         ExperienceBreakdown experience = calculateExperience(employmentRows);
         validateForm(form, employmentRows, experience, minExperienceYears);
+        String normalizedAadhaar = normalizeAadhaar(form.getAadhaar());
+        String normalizedPan = normalizePan(form.getPan());
+        candidateIdentityValidationService.validateUniqueGovernmentIds(
+                existing != null ? existing.getPreOnboardingId() : null,
+                normalizedAadhaar,
+                normalizedPan);
 
         List<String> newlyUploadedPaths = new ArrayList<>();
         List<String> replacedPaths = new ArrayList<>();
@@ -200,8 +219,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             entity.setAddress(form.getAddress().trim());
             entity.setJoiningDate(form.getJoiningDate());
             entity.setOnboardingDate(form.getOnboardingDate());
-            entity.setAadhaarNumber(form.getAadhaar().trim());
-            entity.setPanNumber(form.getPan().trim().toUpperCase());
+            entity.setAadhaarNumber(normalizedAadhaar);
+            entity.setPanNumber(normalizedPan);
             entity.setTotalExperienceYears(experience.years());
             entity.setTotalExperienceMonths(experience.months());
             entity.setDocEducationalCert(form.isDocEducationalCert());
@@ -254,8 +273,19 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
 
             preOnboardingRepository.save(entity);
             replacedPaths.forEach(fileStorageService::deleteQuietly);
+            log.info(
+                    "Agency pre-onboarding saved successfully. candidateId={}, actorEmail={}, preOnboardingId={}",
+                    recruitmentInterviewDetailId,
+                    actorEmail,
+                    entity.getPreOnboardingId());
         } catch (RuntimeException ex) {
             newlyUploadedPaths.forEach(fileStorageService::deleteQuietly);
+            log.warn(
+                    "Agency pre-onboarding save failed. candidateId={}, actorEmail={}, preOnboardingId={}, reason={}",
+                    recruitmentInterviewDetailId,
+                    actorEmail,
+                    existing != null ? existing.getPreOnboardingId() : form.getPreOnboardingId(),
+                    ex.getMessage());
             throw ex;
         }
     }
@@ -574,6 +604,14 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 uploadResult.fullPath(),
                 uploadResult.contentType(),
                 uploadResult.size());
+    }
+
+    private String normalizeAadhaar(String value) {
+        return StringUtils.hasText(value) ? value.trim().replaceAll("\\s+", "") : null;
+    }
+
+    private String normalizePan(String value) {
+        return StringUtils.hasText(value) ? value.trim().toUpperCase() : null;
     }
 
     private void applyUploadedDocument(

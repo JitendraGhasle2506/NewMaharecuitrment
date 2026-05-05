@@ -57,6 +57,8 @@ public class AgencyPreOnboardingForm {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate onboardingDate;
 
+    @NotBlank(message = "Aadhaar number is required")
+    @Pattern(regexp = "^[0-9]{12}$", message = "Aadhaar number must be exactly 12 digits")
     private String aadhaar;
 
     private String pan;

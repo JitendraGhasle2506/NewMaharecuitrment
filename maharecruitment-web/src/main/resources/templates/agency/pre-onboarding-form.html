@@ -208,8 +208,9 @@
                                 <div class="col-md-6 form-group">
                                     <label class="form-label">Aadhaar Number <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
                                     <input type="text" class="form-control" th:field="*{aadhaar}" maxlength="12"
-                                        pattern="[0-9]{12}" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                        minlength="12" inputmode="numeric" pattern="[0-9]{12}" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                         placeholder="Enter 12-digit Aadhaar number" required />
+                                    <div class="invalid-feedback" id="aadhaarValidationMessage">Aadhaar number must be exactly 12 digits.</div>
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label class="form-label">Upload Aadhaar Document <span class="text-danger" th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.existingAadhaarFilePath == null}">*</span></label>
