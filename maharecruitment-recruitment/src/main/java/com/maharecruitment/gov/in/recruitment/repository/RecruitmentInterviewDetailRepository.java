@@ -426,7 +426,7 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
     InternalVacancyCandidateRequestSummaryMetricsProjection summarizeInternalVacancyCandidateRequestMetrics(
             @Param("searchPattern") String searchPattern);
 
-    boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateEmailIgnoreCase(
+    boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateEmailIgnoreCase(
             Long recruitmentNotificationId,
             Long agencyId,
             String candidateEmail);
@@ -435,7 +435,7 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
 
     boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndActiveTrue(Long recruitmentNotificationId);
 
-    boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateMobile(
+    boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateMobile(
             Long recruitmentNotificationId,
             Long agencyId,
             String candidateMobile);

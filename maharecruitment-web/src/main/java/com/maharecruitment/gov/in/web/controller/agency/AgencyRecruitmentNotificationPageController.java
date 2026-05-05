@@ -26,6 +26,8 @@ import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateRowForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewScheduleForm;
 import com.maharecruitment.gov.in.web.service.agency.AgencyRecruitmentNotificationPageService;
 
+import jakarta.validation.Valid;
+
 @Controller
 @RequestMapping("/agency/recruitment-notifications")
 public class AgencyRecruitmentNotificationPageController {
@@ -141,7 +143,7 @@ public class AgencyRecruitmentNotificationPageController {
     @PostMapping("/{recruitmentNotificationId}/candidates")
     public String submitCandidates(
             @PathVariable Long recruitmentNotificationId,
-            @ModelAttribute("candidateForm") AgencyCandidateBatchForm candidateForm,
+            @Valid @ModelAttribute("candidateForm") AgencyCandidateBatchForm candidateForm,
             BindingResult bindingResult,
             Principal principal,
             Model model,

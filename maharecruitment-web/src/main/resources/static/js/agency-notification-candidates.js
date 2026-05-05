@@ -21,6 +21,7 @@
     var designationSelect = document.getElementById("designationVacancySelect");
     var submitButton = document.getElementById("submitCandidatesButton");
     var designationHelpText = document.getElementById("designationVacancyHelpText");
+    var existingSubmittedContacts = loadExistingSubmittedContacts();
 
     if (!form || !tableBody || !addRowButton || !designationSelect || !submitButton) {
         return;
@@ -32,8 +33,14 @@
         row.innerHTML =
             '<td class="text-center candidate-index">' + (index + 1) + "</td>" +
             '<td><input type="text" class="form-control" name="candidates[' + index + '].candidateName" required></td>' +
-            '<td><input type="email" class="form-control" name="candidates[' + index + '].email" required></td>' +
-            '<td><input type="text" class="form-control mobile-input" name="candidates[' + index + '].mobile" pattern="[0-9]{10,15}" maxlength="15" required></td>' +
+            '<td>' +
+            '<input type="email" class="form-control email-input" name="candidates[' + index + '].email" maxlength="255" required>' +
+            '<div class="invalid-feedback">Please enter a valid email address.</div>' +
+            "</td>" +
+            '<td>' +
+            '<input type="text" class="form-control mobile-input" name="candidates[' + index + '].mobile" pattern="[0-9]{10}" maxlength="10" inputmode="numeric" required>' +
+            '<div class="invalid-feedback">Mobile number must be 10 digits.</div>' +
+            "</td>" +
             '<td><input type="text" class="form-control" name="candidates[' + index + '].candidateEducation" required></td>' +
             '<td><input type="number" class="form-control total-exp-input" name="candidates[' + index + '].totalExp" min="0" step="0.1" required></td>' +
             '<td><input type="number" class="form-control relevant-exp-input" name="candidates[' + index + '].relevantExp" min="0" step="0.1" required></td>' +
@@ -55,9 +62,13 @@
         row.querySelectorAll("input, select").forEach(function (field) {
             if (field.type === "file") {
                 field.value = "";
+                field.classList.remove("is-invalid");
+                field.setCustomValidity("");
                 return;
             }
             field.value = "";
+            field.classList.remove("is-invalid");
+            field.setCustomValidity("");
         });
     }
 
@@ -85,6 +96,8 @@
         }
         var index = tableBody.querySelectorAll(".candidate-input-row").length;
         tableBody.appendChild(createRow(index));
+        validateAllEmailFields();
+        validateAllMobileFields();
     });
 
     tableBody.addEventListener("click", function (event) {
@@ -95,18 +108,169 @@
         var rows = tableBody.querySelectorAll(".candidate-input-row");
         if (rows.length <= 1) {
             clearRowValues(rows[0]);
+            validateAllEmailFields();
+            validateAllMobileFields();
             return;
         }
 
         event.target.closest(".candidate-input-row").remove();
         resequenceRows();
+        validateAllEmailFields();
+        validateAllMobileFields();
     });
 
     tableBody.addEventListener("input", function (event) {
         if (event.target.classList.contains("mobile-input")) {
             event.target.value = event.target.value.replace(/[^0-9]/g, "");
+            validateAllMobileFields();
+            return;
+        }
+        if (event.target.classList.contains("email-input")) {
+            validateAllEmailFields();
         }
     });
+
+    tableBody.addEventListener("focusout", function (event) {
+        if (event.target.classList.contains("mobile-input")) {
+            validateAllMobileFields();
+            return;
+        }
+        if (event.target.classList.contains("email-input")) {
+            validateAllEmailFields();
+        }
+    });
+
+    function normalizeEmail(value) {
+        return (value || "").trim().toLowerCase();
+    }
+
+    function normalizeMobile(value) {
+        return (value || "").replace(/[^0-9]/g, "");
+    }
+
+    function loadExistingSubmittedContacts() {
+        var emails = new Set();
+        var mobiles = new Set();
+
+        document.querySelectorAll(".submitted-candidate-contact").forEach(function (row) {
+            var email = normalizeEmail(row.getAttribute("data-candidate-email"));
+            var mobile = normalizeMobile(row.getAttribute("data-candidate-mobile"));
+
+            if (email) {
+                emails.add(email);
+            }
+            if (mobile) {
+                mobiles.add(mobile);
+            }
+        });
+
+        return {
+            emails: emails,
+            mobiles: mobiles
+        };
+    }
+
+    function buildDuplicateCounts(selector, normalizer) {
+        var counts = new Map();
+
+        tableBody.querySelectorAll(selector).forEach(function (field) {
+            var value = normalizer(field.value);
+            if (!value) {
+                return;
+            }
+            counts.set(value, (counts.get(value) || 0) + 1);
+        });
+
+        return counts;
+    }
+
+    function setFieldValidity(field, message) {
+        if (!field) {
+            return true;
+        }
+
+        var feedback = field.parentElement ? field.parentElement.querySelector(".invalid-feedback") : null;
+        field.setCustomValidity(message || "");
+        field.classList.toggle("is-invalid", !!message);
+
+        if (feedback && message) {
+            feedback.textContent = message;
+        }
+
+        return !message;
+    }
+
+    function validateEmailField(field, duplicateCounts) {
+        if (!field) {
+            return true;
+        }
+
+        var value = normalizeEmail(field.value);
+        field.value = value;
+
+        if (!value) {
+            return setFieldValidity(field, "Candidate email is required.");
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            return setFieldValidity(field, "Please enter a valid email address.");
+        }
+        if (existingSubmittedContacts.emails.has(value)) {
+            return setFieldValidity(field, "Email already exists in submitted candidates.");
+        }
+        if (duplicateCounts && (duplicateCounts.get(value) || 0) > 1) {
+            return setFieldValidity(field, "Email is duplicated in another row.");
+        }
+        return setFieldValidity(field, "");
+    }
+
+    function validateMobileField(field, duplicateCounts) {
+        if (!field) {
+            return true;
+        }
+
+        var value = normalizeMobile(field.value);
+        field.value = value;
+
+        if (!value) {
+            return setFieldValidity(field, "Candidate mobile is required.");
+        }
+        if (!/^[0-9]{10}$/.test(value)) {
+            return setFieldValidity(field, "Mobile number must be 10 digits.");
+        }
+        if (existingSubmittedContacts.mobiles.has(value)) {
+            return setFieldValidity(field, "Mobile number already exists in submitted candidates.");
+        }
+        if (duplicateCounts && (duplicateCounts.get(value) || 0) > 1) {
+            return setFieldValidity(field, "Mobile number is duplicated in another row.");
+        }
+        return setFieldValidity(field, "");
+    }
+
+    function validateAllEmailFields() {
+        var valid = true;
+        var duplicateCounts = buildDuplicateCounts(".email-input", normalizeEmail);
+
+        tableBody.querySelectorAll(".email-input").forEach(function (field) {
+            if (!validateEmailField(field, duplicateCounts)) {
+                valid = false;
+            }
+        });
+
+        return valid;
+    }
+
+    function validateAllMobileFields() {
+        var valid = true;
+        var duplicateCounts = buildDuplicateCounts(".mobile-input", normalizeMobile);
+
+        tableBody.querySelectorAll(".mobile-input").forEach(function (field) {
+            if (!validateMobileField(field, duplicateCounts)) {
+                valid = false;
+            }
+        });
+
+        return valid;
+    }
 
     function validateFileInput(fileInput, rowNumber) {
         if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
@@ -122,11 +286,11 @@
         return true;
     }
 
-    function validateDuplicateValues(selector, label) {
+    function validateDuplicateValues(selector, label, normalizer) {
         var values = new Set();
         var valid = true;
         tableBody.querySelectorAll(selector).forEach(function (field, index) {
-            var value = (field.value || "").trim().toLowerCase();
+            var value = normalizer ? normalizer(field.value) : (field.value || "").trim().toLowerCase();
             if (!value) {
                 return;
             }
@@ -251,6 +415,8 @@
     updateVacancyState();
 
     form.addEventListener("submit", function (event) {
+        form.classList.add("was-validated");
+
         if (!designationSelect.value) {
             alert("Please select designation.");
             event.preventDefault();
@@ -265,6 +431,17 @@
 
         var valid = true;
 
+        if (!validateAllEmailFields()) {
+            valid = false;
+        }
+        if (!validateAllMobileFields()) {
+            valid = false;
+        }
+
+        if (!form.checkValidity()) {
+            valid = false;
+        }
+
         tableBody.querySelectorAll(".candidate-input-row").forEach(function (row, index) {
             var rowNumber = index + 1;
             var fileInput = row.querySelector(".resume-file-input");
@@ -273,12 +450,6 @@
             }
         });
 
-        if (!validateDuplicateValues('input[name$=".email"]', "Email")) {
-            valid = false;
-        }
-        if (!validateDuplicateValues('input[name$=".mobile"]', "Mobile")) {
-            valid = false;
-        }
         if (!validateExperienceRows()) {
             valid = false;
         }

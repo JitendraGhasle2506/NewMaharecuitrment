@@ -526,6 +526,7 @@
         }
 
         @media (max-width: 1200px) {
+
             .page-hero,
             .overview-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -647,7 +648,8 @@
                         <div class="overview-card">
                             <div class="overview-label">Responded</div>
                             <div class="overview-value" th:text="${notificationMetrics.respondedNotifications}">0</div>
-                            <div class="overview-note">Notifications where the agency response is already submitted</div>
+                            <div class="overview-note">Notifications where the agency response is already submitted
+                            </div>
                         </div>
                     </div>
 
@@ -662,12 +664,8 @@
                                     <span class="filter-input-icon">
                                         <i class="fa fa-search" aria-hidden="true"></i>
                                     </span>
-                                    <input type="text"
-                                        id="notificationSearch"
-                                        class="form-control"
-                                        name="search"
-                                        th:value="${searchTerm}"
-                                        placeholder="Search by request ID or project name">
+                                    <input type="text" id="notificationSearch" class="form-control" name="search"
+                                        th:value="${searchTerm}" placeholder="Search by request ID or project name">
                                 </div>
                             </div>
                             <div class="filter-field">
@@ -714,8 +712,7 @@
                     <div th:if="${#lists.isEmpty(notifications)}" class="empty-state">
                         <h5>No notifications available</h5>
                         <p>No recruitment notifications are currently visible for your agency.</p>
-                        <a class="btn btn-outline-secondary"
-                            th:if="${!#strings.isEmpty(searchTerm)}"
+                        <a class="btn btn-outline-secondary" th:if="${!#strings.isEmpty(searchTerm)}"
                             th:href="@{/agency/recruitment-notifications}">
                             Clear Search
                         </a>
@@ -728,7 +725,7 @@
                                     <tr>
                                         <th>#</th>
                                         <th>Request</th>
-                                        <th>Project Details</th>
+                                        <!-- <th>Project Details</th> -->
                                         <th>Notified At</th>
                                         <th>Tracking Status</th>
                                         <th>Workflow Status</th>
@@ -743,14 +740,15 @@
                                         </td>
                                         <td>
                                             <div class="request-cell">
-                                            <a th:href="@{/agency/recruitment-notifications/{id}(id=${item.recruitmentNotificationId})}"
-                                                class="request-link">
-                                                <span th:text="${item.requestId != null ? item.requestId : 'Request'}">REQ-0000</span>
-                                                <span class="request-link-indicator">Open details</span>
-                                            </a>
-                                        </div>
-                                    </td>
-                                        <td>
+                                                <a th:href="@{/agency/recruitment-notifications/{id}(id=${item.recruitmentNotificationId})}"
+                                                    class="request-link">
+                                                    <span
+                                                        th:text="${item.requestId != null ? item.requestId : 'Request'}">REQ-0000</span>
+                                                    <span class="request-link-indicator">Open details</span>
+                                                </a>
+                                            </div>
+                                        </td>
+                                        <!--  <td>
                                             <div class="project-name"
                                                 th:text="${item.projectName != null ? item.projectName : '-'}">Project Name</div>
                                             <div class="project-meta-row">
@@ -763,7 +761,7 @@
                                                     Dept Reg <span th:text="${item.departmentRegistrationId}">101</span>
                                                 </span>
                                             </div>
-                                        </td>
+                                        </td> -->
                                         <td>
                                             <div class="date-cell">
                                                 <div class="date-primary"
@@ -799,7 +797,8 @@
                                                     th:href="@{/agency/recruitment-notifications/{id}(id=${item.recruitmentNotificationId})}">
                                                     View Details
                                                 </a>
-                                                <div class="row-action-note">Open this notification to review and respond.</div>
+                                                <div class="row-action-note">Open this notification to review and
+                                                    respond.</div>
                                             </div>
                                         </td>
                                     </tr>
@@ -808,19 +807,20 @@
                         </div>
                     </div>
 
-                    <div class="app-pagination-shell"
-                        th:if="${notificationPage.totalPages > 1}"
+                    <div class="app-pagination-shell" th:if="${notificationPage.totalPages > 1}"
                         th:with="middleStart=${notificationPage.number - 2 > 1 ? notificationPage.number - 2 : 1},
                                  middleEnd=${notificationPage.number + 2 < notificationPage.totalPages - 2 ? notificationPage.number + 2 : notificationPage.totalPages - 2},
                                  showingFrom=${notificationPage.totalElements == 0 ? 0 : notificationPage.number * notificationPage.size + 1},
                                  showingTo=${notificationPage.totalElements == 0 ? 0 : notificationPage.number * notificationPage.size + notificationPage.numberOfElements}">
                         <div class="app-pagination-summary">
                             <div class="app-pagination-meta">
-                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                Showing <span th:text="${showingFrom}">1</span> to <span
+                                    th:text="${showingTo}">10</span> of
                                 <span th:text="${notificationPage.totalElements}">10</span> entries
                             </div>
                             <div class="app-pagination-meta">
-                                Page <span th:text="${notificationPage.number + 1}">1</span> of <span th:text="${notificationPage.totalPages}">1</span>
+                                Page <span th:text="${notificationPage.number + 1}">1</span> of <span
+                                    th:text="${notificationPage.totalPages}">1</span>
                             </div>
                         </div>
                         <nav aria-label="Agency recruitment notification pagination">
@@ -837,7 +837,8 @@
                                     <span class="page-link app-pagination-ellipsis">...</span>
                                 </li>
                                 <th:block th:if="${middleStart <= middleEnd}">
-                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                    <li class="page-item"
+                                        th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
                                         th:classappend="${pageIndex == notificationPage.number} ? ' active'">
                                         <a class="page-link"
                                             th:href="@{/agency/recruitment-notifications(page=${pageIndex},size=${notificationPage.size},search=${searchTerm})}"

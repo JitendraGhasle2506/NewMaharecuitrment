@@ -259,21 +259,23 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             }
 
             if (interviewDetailRepository
-                    .existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateEmailIgnoreCase(
+                    .existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateEmailIgnoreCase(
                             recruitmentNotificationId,
                             agencyId,
                             normalizedEmail)) {
                 throw new RecruitmentNotificationException(
-                        "Candidate email already submitted for this notification: " + normalizedEmail);
+                        "Candidate email already exists in submitted candidates for this notification: "
+                                + normalizedEmail);
             }
 
             if (interviewDetailRepository
-                    .existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateMobile(
+                    .existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateMobile(
                             recruitmentNotificationId,
                             agencyId,
                             normalizedInput.getMobile())) {
                 throw new RecruitmentNotificationException(
-                        "Candidate mobile already submitted for this notification: " + normalizedInput.getMobile());
+                        "Candidate mobile already exists in submitted candidates for this notification: "
+                                + normalizedInput.getMobile());
             }
 
             RecruitmentInterviewDetailEntity candidateEntity = new RecruitmentInterviewDetailEntity();
@@ -486,9 +488,9 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         if (!StringUtils.hasText(input.getMobile())) {
             throw new RecruitmentNotificationException("Candidate mobile is required in row " + rowNumber + ".");
         }
-        if (!input.getMobile().matches("^[0-9]{10,15}$")) {
+        if (!input.getMobile().matches("^[0-9]{10}$")) {
             throw new RecruitmentNotificationException(
-                    "Candidate mobile must be 10 to 15 digits in row " + rowNumber + ".");
+                    "Candidate mobile must be 10 digits in row " + rowNumber + ".");
         }
         if (!StringUtils.hasText(input.getCandidateEducation())) {
             throw new RecruitmentNotificationException("Candidate qualification is required in row " + rowNumber + ".");

@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.web.service.agency.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +40,9 @@ import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 @Service
 @Transactional(readOnly = true)
 public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecruitmentNotificationPageService {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    private static final Pattern MOBILE_PATTERN = Pattern.compile("^[0-9]{10}$");
 
     private final RecruitmentAgencyNotificationQueryService queryService;
     private final RecruitmentAgencyNotificationActionService actionService;
@@ -156,19 +160,24 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
                 AgencyCandidateRowForm candidateRow = candidateBatchForm.getCandidates().get(index);
                 int rowNumber = index + 1;
                 validateRowForm(candidateRow, rowNumber);
+                String normalizedCandidateName = trim(candidateRow.getCandidateName());
+                String normalizedEmail = trim(candidateRow.getEmail());
+                String normalizedMobile = trim(candidateRow.getMobile());
+                String normalizedEducation = trim(candidateRow.getCandidateEducation());
+                String normalizedJoiningTime = trim(candidateRow.getJoiningTime());
 
                 MultipartFile resumeFile = candidateRow.getResumeFile();
                 FileUploadResult uploadResult = fileStorageService.store(resumeFile, "recruitment/agency-candidate-resume");
                 uploadedFilePaths.add(uploadResult.fullPath());
 
                 candidateInputs.add(AgencyCandidateSubmissionInput.builder()
-                        .candidateName(candidateRow.getCandidateName())
-                        .email(candidateRow.getEmail())
-                        .mobile(candidateRow.getMobile())
-                        .candidateEducation(candidateRow.getCandidateEducation())
+                        .candidateName(normalizedCandidateName)
+                        .email(normalizedEmail)
+                        .mobile(normalizedMobile)
+                        .candidateEducation(normalizedEducation)
                         .totalExperience(candidateRow.getTotalExp())
                         .relevantExperience(candidateRow.getRelevantExp())
-                        .joiningTime(candidateRow.getJoiningTime())
+                        .joiningTime(normalizedJoiningTime)
                         .resumeOriginalName(uploadResult.originalFileName())
                         .resumeFilePath(uploadResult.fullPath())
                         .resumeFileType(uploadResult.contentType())
@@ -274,8 +283,14 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
         if (!StringUtils.hasText(rowForm.getEmail())) {
             throw new RecruitmentNotificationException("Candidate email is required at row " + rowNumber + ".");
         }
+        if (!EMAIL_PATTERN.matcher(trim(rowForm.getEmail())).matches()) {
+            throw new RecruitmentNotificationException("Candidate email must be valid at row " + rowNumber + ".");
+        }
         if (!StringUtils.hasText(rowForm.getMobile())) {
             throw new RecruitmentNotificationException("Candidate mobile is required at row " + rowNumber + ".");
+        }
+        if (!MOBILE_PATTERN.matcher(trim(rowForm.getMobile())).matches()) {
+            throw new RecruitmentNotificationException("Candidate mobile must be 10 digits at row " + rowNumber + ".");
         }
         if (!StringUtils.hasText(rowForm.getCandidateEducation())) {
             throw new RecruitmentNotificationException("Candidate qualification is required at row " + rowNumber + ".");
@@ -312,6 +327,10 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     }
 
     private record AgencyUserContext(Long userId, Long agencyId) {
+    }
+
+    private String trim(String value) {
+        return value == null ? null : value.trim();
     }
 
     private java.time.LocalDateTime resolveInterviewDateTime(AgencyInterviewScheduleForm interviewScheduleForm) {
