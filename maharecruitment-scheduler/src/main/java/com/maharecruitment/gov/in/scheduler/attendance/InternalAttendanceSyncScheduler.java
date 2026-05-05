@@ -1,4 +1,4 @@
-package com.maharecruitment.gov.in.attendance.scheduler;
+package com.maharecruitment.gov.in.scheduler.attendance;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +10,11 @@ import com.maharecruitment.gov.in.attendance.service.InternalAttendanceSyncServi
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceSyncResult;
 
 @Component
-@ConditionalOnProperty(prefix = "attendance.integration.internal", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+        prefix = "attendance.integration.internal",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 public class InternalAttendanceSyncScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(InternalAttendanceSyncScheduler.class);
@@ -24,7 +28,7 @@ public class InternalAttendanceSyncScheduler {
     @Scheduled(
             cron = "${attendance.integration.internal.scheduler-cron:0 5 11,23 * * *}",
             zone = "${attendance.integration.internal.scheduler-zone:Asia/Kolkata}")
-    public void syncCurrentMonthAttendance() {
+    public void syncInternalAttendance() {
         try {
             InternalAttendanceSyncResult result = internalAttendanceSyncService.syncScheduledAttendance();
             log.info(

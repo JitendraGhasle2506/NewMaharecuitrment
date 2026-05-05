@@ -196,6 +196,7 @@
 		<module>maharecruitment-agency</module>
 		<module>maharecruitment-recruitment</module>
 		<module>maharecruitment-attendance</module>
+		<module>maharecruitment-scheduler</module>
 		<module>maharecruitment-invoice</module>
 		<module>maharecruitment-workorder</module>
 		<module>maharecruitment-dashboard</module>

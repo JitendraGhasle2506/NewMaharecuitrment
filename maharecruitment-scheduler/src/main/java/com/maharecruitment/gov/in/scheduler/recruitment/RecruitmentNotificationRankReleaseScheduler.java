@@ -1,4 +1,4 @@
-package com.maharecruitment.gov.in.recruitment.scheduler;
+package com.maharecruitment.gov.in.scheduler.recruitment;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,4 +33,3 @@ public class RecruitmentNotificationRankReleaseScheduler {
         }
     }
 }
-
