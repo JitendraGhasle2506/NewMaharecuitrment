@@ -177,10 +177,14 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         validateForm(form, employmentRows, experience, minExperienceYears);
         String normalizedAadhaar = normalizeAadhaar(form.getAadhaar());
         String normalizedPan = normalizePan(form.getPan());
-        candidateIdentityValidationService.validateUniqueGovernmentIds(
+        String normalizedEmail = normalizeEmail(form.getEmail());
+        String normalizedMobile = normalizeMobile(form.getMobile());
+        candidateIdentityValidationService.validateUniqueCandidateDetails(
                 existing != null ? existing.getPreOnboardingId() : null,
                 normalizedAadhaar,
-                normalizedPan);
+                normalizedPan,
+                normalizedEmail,
+                normalizedMobile);
 
         List<String> newlyUploadedPaths = new ArrayList<>();
         List<String> replacedPaths = new ArrayList<>();
@@ -213,8 +217,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
 
             entity.setAgencyUserId(context.userId());
             entity.setCandidateName(form.getName().trim());
-            entity.setCandidateEmail(form.getEmail().trim());
-            entity.setCandidateMobile(form.getMobile().trim());
+            entity.setCandidateEmail(normalizedEmail);
+            entity.setCandidateMobile(normalizedMobile);
             entity.setDateOfBirth(form.getDob());
             entity.setAddress(form.getAddress().trim());
             entity.setJoiningDate(form.getJoiningDate());
@@ -612,6 +616,14 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
 
     private String normalizePan(String value) {
         return StringUtils.hasText(value) ? value.trim().toUpperCase() : null;
+    }
+
+    private String normalizeEmail(String value) {
+        return StringUtils.hasText(value) ? value.trim().toLowerCase() : null;
+    }
+
+    private String normalizeMobile(String value) {
+        return StringUtils.hasText(value) ? value.trim().replaceAll("\\s+", "") : null;
     }
 
     private void applyUploadedDocument(

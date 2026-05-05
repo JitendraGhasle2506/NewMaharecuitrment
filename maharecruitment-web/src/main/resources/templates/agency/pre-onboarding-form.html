@@ -90,12 +90,14 @@
                                         <div class="col-md-4 form-group">
                                             <label class="form-label">Email <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
                                             <input type="email" class="form-control" th:field="*{email}" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
+                                            <div class="invalid-feedback" id="emailValidationMessage">Please enter a valid email address.</div>
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label class="form-label">Mobile <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
                                             <input type="text" class="form-control" th:field="*{mobile}" pattern="[0-9]{10}"
                                                 maxlength="10" th:readonly="*{hrFlow}"
                                                 th:classappend="*{hrFlow} ? 'readonly-field'" required />
+                                            <div class="invalid-feedback" id="mobileValidationMessage">Mobile number must be exactly 10 digits.</div>
                                         </div>
                                     </div>
                                     <div class="row">
@@ -233,7 +235,7 @@
                                     <input type="text" class="form-control" th:field="*{pan}" id="pan" maxlength="10"
                                         th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                         placeholder="ABCDE1234F" style="text-transform: uppercase;" required />
-                                    <div class="invalid-feedback">Please enter a valid PAN (e.g., ABCDE1234F).</div>
+                                    <div class="invalid-feedback" id="panValidationMessage">Please enter a valid PAN (e.g., ABCDE1234F).</div>
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label class="form-label">Upload PAN Document <span class="text-danger" th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.existingPanFilePath == null}">*</span></label>

@@ -169,6 +169,63 @@ public class AgencyOnboardingPageController {
                 "message", duplicate ? "Aadhaar number already exists in the system." : ""));
     }
 
+    @GetMapping("/pre/validate-pan")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> validatePan(
+            @RequestParam("pan") String pan,
+            @RequestParam(name = "preOnboardingId", required = false) Long preOnboardingId,
+            Principal principal) {
+        String actorEmail = resolveActorEmail(principal);
+        boolean duplicate = candidateIdentityValidationService.isPanDuplicate(preOnboardingId, pan);
+        if (duplicate) {
+            log.info("PAN duplicate check failed. actorEmail={}, preOnboardingId={}", actorEmail, preOnboardingId);
+        } else {
+            log.debug("PAN duplicate check passed. actorEmail={}, preOnboardingId={}", actorEmail, preOnboardingId);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "duplicate", duplicate,
+                "message", duplicate ? "PAN number already exists in the system." : ""));
+    }
+
+    @GetMapping("/pre/validate-email")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> validateEmail(
+            @RequestParam("email") String email,
+            @RequestParam(name = "preOnboardingId", required = false) Long preOnboardingId,
+            Principal principal) {
+        String actorEmail = resolveActorEmail(principal);
+        boolean duplicate = candidateIdentityValidationService.isEmailDuplicate(preOnboardingId, email);
+        if (duplicate) {
+            log.info("Email duplicate check failed. actorEmail={}, preOnboardingId={}", actorEmail, preOnboardingId);
+        } else {
+            log.debug("Email duplicate check passed. actorEmail={}, preOnboardingId={}", actorEmail, preOnboardingId);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "duplicate", duplicate,
+                "message", duplicate ? "Email already exists in the system." : ""));
+    }
+
+    @GetMapping("/pre/validate-mobile")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> validateMobile(
+            @RequestParam("mobile") String mobile,
+            @RequestParam(name = "preOnboardingId", required = false) Long preOnboardingId,
+            Principal principal) {
+        String actorEmail = resolveActorEmail(principal);
+        boolean duplicate = candidateIdentityValidationService.isMobileDuplicate(preOnboardingId, mobile);
+        if (duplicate) {
+            log.info("Mobile duplicate check failed. actorEmail={}, preOnboardingId={}", actorEmail, preOnboardingId);
+        } else {
+            log.debug("Mobile duplicate check passed. actorEmail={}, preOnboardingId={}", actorEmail, preOnboardingId);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "duplicate", duplicate,
+                "message", duplicate ? "Mobile number already exists in the system." : ""));
+    }
+
     @PostMapping("/{employeeId}/resign")
     public String resignEmployee(
             @PathVariable Long employeeId,

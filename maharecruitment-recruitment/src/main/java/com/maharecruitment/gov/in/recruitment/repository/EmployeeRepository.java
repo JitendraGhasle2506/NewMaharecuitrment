@@ -169,6 +169,16 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "where upper(trim(coalesce(employee.panNumber, ''))) = upper(trim(:panNumber))")
     boolean existsByNormalizedPanNumber(@Param("panNumber") String panNumber);
 
+    @Query("select case when count(employee) > 0 then true else false end "
+            + "from EmployeeEntity employee "
+            + "where lower(trim(coalesce(employee.email, ''))) = lower(trim(:email))")
+    boolean existsByNormalizedEmail(@Param("email") String email);
+
+    @Query("select case when count(employee) > 0 then true else false end "
+            + "from EmployeeEntity employee "
+            + "where trim(coalesce(employee.mobile, '')) = :mobile")
+    boolean existsByNormalizedMobile(@Param("mobile") String mobile);
+
     boolean existsByPreOnboardingInterviewDetailRecruitmentInterviewDetailIdAndStatusIgnoreCase(
             Long recruitmentInterviewDetailId, String status);
 

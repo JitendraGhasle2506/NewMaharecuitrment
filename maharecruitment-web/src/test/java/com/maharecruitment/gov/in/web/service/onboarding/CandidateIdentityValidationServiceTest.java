@@ -22,8 +22,14 @@ class CandidateIdentityValidationServiceTest {
     private final AtomicBoolean duplicateEmployeeAadhaar = new AtomicBoolean(false);
     private final AtomicBoolean duplicatePreOnboardingPan = new AtomicBoolean(false);
     private final AtomicBoolean duplicateEmployeePan = new AtomicBoolean(false);
+    private final AtomicBoolean duplicatePreOnboardingEmail = new AtomicBoolean(false);
+    private final AtomicBoolean duplicateEmployeeEmail = new AtomicBoolean(false);
+    private final AtomicBoolean duplicatePreOnboardingMobile = new AtomicBoolean(false);
+    private final AtomicBoolean duplicateEmployeeMobile = new AtomicBoolean(false);
     private final AtomicReference<String> capturedAadhaar = new AtomicReference<>();
     private final AtomicReference<String> capturedPan = new AtomicReference<>();
+    private final AtomicReference<String> capturedEmail = new AtomicReference<>();
+    private final AtomicReference<String> capturedMobile = new AtomicReference<>();
 
     private CandidateIdentityValidationService service;
 
@@ -40,6 +46,14 @@ class CandidateIdentityValidationServiceTest {
                         capturedPan.set((String) args[0]);
                         yield duplicatePreOnboardingPan.get();
                     }
+                    case "existsByCandidateEmailExcludingPreOnboardingId" -> {
+                        capturedEmail.set((String) args[0]);
+                        yield duplicatePreOnboardingEmail.get();
+                    }
+                    case "existsByCandidateMobileExcludingPreOnboardingId" -> {
+                        capturedMobile.set((String) args[0]);
+                        yield duplicatePreOnboardingMobile.get();
+                    }
                     default -> throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
                 });
 
@@ -53,6 +67,14 @@ class CandidateIdentityValidationServiceTest {
                     case "existsByNormalizedPanNumber" -> {
                         capturedPan.set((String) args[0]);
                         yield duplicateEmployeePan.get();
+                    }
+                    case "existsByNormalizedEmail" -> {
+                        capturedEmail.set((String) args[0]);
+                        yield duplicateEmployeeEmail.get();
+                    }
+                    case "existsByNormalizedMobile" -> {
+                        capturedMobile.set((String) args[0]);
+                        yield duplicateEmployeeMobile.get();
                     }
                     default -> throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
                 });
@@ -88,6 +110,53 @@ class CandidateIdentityValidationServiceTest {
                 () -> service.validateUniqueGovernmentIds(null, "123412341234", "abcde1234f"));
 
         assertEquals("PAN number already exists in the system.", exception.getMessage());
+    }
+
+    @Test
+    void validateUniqueCandidateDetailsNormalizesEmailAndMobileBeforeLookup() {
+        assertDoesNotThrow(() -> service.validateUniqueCandidateDetails(
+                9L,
+                "1234 1234 1234",
+                "abcde1234f",
+                " Test.User@Example.com ",
+                "9876543210"));
+
+        assertEquals("123412341234", capturedAadhaar.get());
+        assertEquals("ABCDE1234F", capturedPan.get());
+        assertEquals("test.user@example.com", capturedEmail.get());
+        assertEquals("9876543210", capturedMobile.get());
+    }
+
+    @Test
+    void validateUniqueCandidateDetailsRejectsDuplicateEmail() {
+        duplicateEmployeeEmail.set(true);
+
+        RecruitmentNotificationException exception = assertThrows(
+                RecruitmentNotificationException.class,
+                () -> service.validateUniqueCandidateDetails(
+                        null,
+                        "123412341234",
+                        "ABCDE1234F",
+                        "duplicate@example.com",
+                        "9876543210"));
+
+        assertEquals("Email already exists in the system.", exception.getMessage());
+    }
+
+    @Test
+    void validateUniqueCandidateDetailsRejectsDuplicateMobile() {
+        duplicatePreOnboardingMobile.set(true);
+
+        RecruitmentNotificationException exception = assertThrows(
+                RecruitmentNotificationException.class,
+                () -> service.validateUniqueCandidateDetails(
+                        null,
+                        "123412341234",
+                        "ABCDE1234F",
+                        "unique@example.com",
+                        "9876543210"));
+
+        assertEquals("Mobile number already exists in the system.", exception.getMessage());
     }
 
     private static <T> T proxyWithDefaults(Class<T> type, InvocationHandler handler) {

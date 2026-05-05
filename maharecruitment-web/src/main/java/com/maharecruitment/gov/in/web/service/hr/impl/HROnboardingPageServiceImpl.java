@@ -209,10 +209,12 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         if (entity.getOnboardedAt() != null) {
             throw new RecruitmentNotificationException("Candidate is already onboarded.");
         }
-        candidateIdentityValidationService.validateUniqueGovernmentIds(
+        candidateIdentityValidationService.validateUniqueCandidateDetails(
                 entity.getPreOnboardingId(),
                 entity.getAadhaarNumber(),
-                entity.getPanNumber());
+                entity.getPanNumber(),
+                entity.getCandidateEmail(),
+                entity.getCandidateMobile());
 
         var interview = entity.getInterviewDetail();
         var notification = interview.getRecruitmentNotification();

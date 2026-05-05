@@ -32,6 +32,18 @@ public class CandidateIdentityValidationService {
         validateUniquePan(currentPreOnboardingId, panNumber);
     }
 
+    public void validateUniqueCandidateDetails(
+            Long currentPreOnboardingId,
+            String aadhaarNumber,
+            String panNumber,
+            String email,
+            String mobile) {
+        validateUniqueAadhaar(currentPreOnboardingId, aadhaarNumber);
+        validateUniquePan(currentPreOnboardingId, panNumber);
+        validateUniqueEmail(currentPreOnboardingId, email);
+        validateUniqueMobile(currentPreOnboardingId, mobile);
+    }
+
     public boolean isAadhaarDuplicate(Long currentPreOnboardingId, String aadhaarNumber) {
         String normalizedAadhaar = normalizeAadhaar(aadhaarNumber);
         if (!StringUtils.hasText(normalizedAadhaar)) {
@@ -55,16 +67,10 @@ public class CandidateIdentityValidationService {
         return false;
     }
 
-    private void validateUniqueAadhaar(Long currentPreOnboardingId, String aadhaarNumber) {
-        if (isAadhaarDuplicate(currentPreOnboardingId, aadhaarNumber)) {
-            throw new RecruitmentNotificationException("Aadhaar number already exists in the system.");
-        }
-    }
-
-    private void validateUniquePan(Long currentPreOnboardingId, String panNumber) {
+    public boolean isPanDuplicate(Long currentPreOnboardingId, String panNumber) {
         String normalizedPan = normalizePan(panNumber);
         if (!StringUtils.hasText(normalizedPan)) {
-            return;
+            return false;
         }
 
         boolean duplicateInPreOnboarding = preOnboardingRepository.existsByPanNumberExcludingPreOnboardingId(
@@ -78,7 +84,79 @@ public class CandidateIdentityValidationService {
                     maskPan(normalizedPan),
                     duplicateInPreOnboarding,
                     duplicateInEmployees);
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean isEmailDuplicate(Long currentPreOnboardingId, String email) {
+        String normalizedEmail = normalizeEmail(email);
+        if (!StringUtils.hasText(normalizedEmail)) {
+            return false;
+        }
+
+        boolean duplicateInPreOnboarding = preOnboardingRepository.existsByCandidateEmailExcludingPreOnboardingId(
+                normalizedEmail,
+                currentPreOnboardingId);
+        boolean duplicateInEmployees = employeeRepository.existsByNormalizedEmail(normalizedEmail);
+        if (duplicateInPreOnboarding || duplicateInEmployees) {
+            log.warn(
+                    "Duplicate email detected during onboarding validation. preOnboardingId={}, maskedEmail={}, duplicateInPreOnboarding={}, duplicateInEmployees={}",
+                    currentPreOnboardingId,
+                    maskEmail(normalizedEmail),
+                    duplicateInPreOnboarding,
+                    duplicateInEmployees);
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean isMobileDuplicate(Long currentPreOnboardingId, String mobile) {
+        String normalizedMobile = normalizeMobile(mobile);
+        if (!StringUtils.hasText(normalizedMobile)) {
+            return false;
+        }
+
+        boolean duplicateInPreOnboarding = preOnboardingRepository.existsByCandidateMobileExcludingPreOnboardingId(
+                normalizedMobile,
+                currentPreOnboardingId);
+        boolean duplicateInEmployees = employeeRepository.existsByNormalizedMobile(normalizedMobile);
+        if (duplicateInPreOnboarding || duplicateInEmployees) {
+            log.warn(
+                    "Duplicate mobile detected during onboarding validation. preOnboardingId={}, maskedMobile={}, duplicateInPreOnboarding={}, duplicateInEmployees={}",
+                    currentPreOnboardingId,
+                    maskMobile(normalizedMobile),
+                    duplicateInPreOnboarding,
+                    duplicateInEmployees);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void validateUniqueAadhaar(Long currentPreOnboardingId, String aadhaarNumber) {
+        if (isAadhaarDuplicate(currentPreOnboardingId, aadhaarNumber)) {
+            throw new RecruitmentNotificationException("Aadhaar number already exists in the system.");
+        }
+    }
+
+    private void validateUniquePan(Long currentPreOnboardingId, String panNumber) {
+        if (isPanDuplicate(currentPreOnboardingId, panNumber)) {
             throw new RecruitmentNotificationException("PAN number already exists in the system.");
+        }
+    }
+
+    private void validateUniqueEmail(Long currentPreOnboardingId, String email) {
+        if (isEmailDuplicate(currentPreOnboardingId, email)) {
+            throw new RecruitmentNotificationException("Email already exists in the system.");
+        }
+    }
+
+    private void validateUniqueMobile(Long currentPreOnboardingId, String mobile) {
+        if (isMobileDuplicate(currentPreOnboardingId, mobile)) {
+            throw new RecruitmentNotificationException("Mobile number already exists in the system.");
         }
     }
 
@@ -88,6 +166,14 @@ public class CandidateIdentityValidationService {
 
     private String normalizePan(String value) {
         return StringUtils.hasText(value) ? value.trim().toUpperCase() : null;
+    }
+
+    private String normalizeEmail(String value) {
+        return StringUtils.hasText(value) ? value.trim().toLowerCase() : null;
+    }
+
+    private String normalizeMobile(String value) {
+        return StringUtils.hasText(value) ? value.trim().replaceAll("\\s+", "") : null;
     }
 
     private String maskAadhaar(String value) {
@@ -102,5 +188,23 @@ public class CandidateIdentityValidationService {
             return "****";
         }
         return value.substring(0, 3) + "******" + value.substring(value.length() - 1);
+    }
+
+    private String maskEmail(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "****";
+        }
+        int atIndex = value.indexOf('@');
+        if (atIndex <= 1) {
+            return "****";
+        }
+        return value.substring(0, 2) + "****" + value.substring(atIndex);
+    }
+
+    private String maskMobile(String value) {
+        if (!StringUtils.hasText(value) || value.length() < 4) {
+            return "****";
+        }
+        return "XXXXXX" + value.substring(value.length() - 4);
     }
 }

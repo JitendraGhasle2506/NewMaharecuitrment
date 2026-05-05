@@ -15,12 +15,16 @@
     const requiredCheckboxSelector = "[data-required-doc='true'], #agencyFlag";
     
     // Core inputs for validation
+    const emailInput = form.querySelector("[name='email']");
     const mobileInput = form.querySelector("[name='mobile']");
     const joiningDateInput = document.getElementById("joiningDate");
     const onboardingDateInput = document.getElementById("onboardingDate");
     const dobInput = document.getElementById("dob");
     const panInput = document.getElementById("pan");
     const aadhaarInput = form.querySelector("[name='aadhaar']");
+    const emailValidationMessage = document.getElementById("emailValidationMessage");
+    const mobileValidationMessage = document.getElementById("mobileValidationMessage");
+    const panValidationMessage = document.getElementById("panValidationMessage");
     const aadhaarValidationMessage = document.getElementById("aadhaarValidationMessage");
     const preOnboardingIdInput = form.querySelector("[name='preOnboardingId']");
     const candidatePhotoInput = document.getElementById("uploadImage");
@@ -38,15 +42,50 @@
     const defaultAadhaarMessage = aadhaarValidationMessage
         ? aadhaarValidationMessage.textContent
         : "Aadhaar number must be exactly 12 digits.";
-    let aadhaarValidationState = {
-        checkedValue: "",
-        requestedValue: "",
-        pending: false,
-        duplicate: false,
-        message: ""
+    const asyncValidationState = {
+        aadhaar: createAsyncValidationState(),
+        pan: createAsyncValidationState(),
+        email: createAsyncValidationState(),
+        mobile: createAsyncValidationState()
     };
-    let aadhaarValidationTimer = null;
-    let aadhaarValidationRequest = null;
+    const validationConfig = {
+        aadhaar: {
+            input: aadhaarInput,
+            messageElement: aadhaarValidationMessage,
+            defaultMessage: defaultAadhaarMessage,
+            endpoint: "agency/onboarding/pre/validate-aadhaar",
+            paramName: "aadhaar",
+            checkingMessage: "Checking Aadhaar number...",
+            requestErrorMessage: "Unable to validate Aadhaar right now. Please try again."
+        },
+        pan: {
+            input: panInput,
+            messageElement: panValidationMessage,
+            defaultMessage: panValidationMessage ? panValidationMessage.textContent : "Please enter a valid PAN (e.g., ABCDE1234F).",
+            endpoint: "agency/onboarding/pre/validate-pan",
+            paramName: "pan",
+            checkingMessage: "Checking PAN number...",
+            requestErrorMessage: "Unable to validate PAN right now. Please try again."
+        },
+        email: {
+            input: emailInput,
+            messageElement: emailValidationMessage,
+            defaultMessage: emailValidationMessage ? emailValidationMessage.textContent : "Please enter a valid email address.",
+            endpoint: "agency/onboarding/pre/validate-email",
+            paramName: "email",
+            checkingMessage: "Checking email address...",
+            requestErrorMessage: "Unable to validate email right now. Please try again."
+        },
+        mobile: {
+            input: mobileInput,
+            messageElement: mobileValidationMessage,
+            defaultMessage: mobileValidationMessage ? mobileValidationMessage.textContent : "Mobile number must be exactly 10 digits.",
+            endpoint: "agency/onboarding/pre/validate-mobile",
+            paramName: "mobile",
+            checkingMessage: "Checking mobile number...",
+            requestErrorMessage: "Unable to validate mobile right now. Please try again."
+        }
+    };
 
     function attachRowEvents(row) {
         row.querySelectorAll(".experience-date").forEach(function (input) {
@@ -147,105 +186,164 @@
         }
     }
 
-    function setAadhaarFieldValidity(message) {
-        if (aadhaarValidationMessage) {
-            aadhaarValidationMessage.textContent = message || defaultAadhaarMessage;
-        }
-        setFieldValidity(aadhaarInput, message || "");
+    function createAsyncValidationState() {
+        return {
+            checkedValue: "",
+            requestedValue: "",
+            pending: false,
+            duplicate: false,
+            message: "",
+            timer: null,
+            request: null
+        };
     }
 
-    function resetAadhaarDuplicateState() {
-        aadhaarValidationState.checkedValue = "";
-        aadhaarValidationState.requestedValue = "";
-        aadhaarValidationState.pending = false;
-        aadhaarValidationState.duplicate = false;
-        aadhaarValidationState.message = "";
+    function normalizeAadhaarValue(value) {
+        return (value || "").trim();
     }
 
-    function cancelAadhaarValidationRequest() {
-        if (aadhaarValidationTimer) {
-            clearTimeout(aadhaarValidationTimer);
-            aadhaarValidationTimer = null;
-        }
-        if (aadhaarValidationRequest) {
-            aadhaarValidationRequest.abort();
-            aadhaarValidationRequest = null;
+    function normalizePanValue(value) {
+        return (value || "").toUpperCase().trim();
+    }
+
+    function normalizeEmailValue(value) {
+        return (value || "").trim().toLowerCase();
+    }
+
+    function normalizeMobileValue(value) {
+        return (value || "").trim();
+    }
+
+    function getNormalizedAsyncValue(fieldKey) {
+        const input = validationConfig[fieldKey] && validationConfig[fieldKey].input;
+        const rawValue = input ? input.value : "";
+        switch (fieldKey) {
+            case "pan":
+                return normalizePanValue(rawValue);
+            case "email":
+                return normalizeEmailValue(rawValue);
+            case "mobile":
+                return normalizeMobileValue(rawValue);
+            default:
+                return normalizeAadhaarValue(rawValue);
         }
     }
 
-    function scheduleAadhaarDuplicateCheck(value) {
-        if (!aadhaarInput || hrFlow || !value || value.length !== 12) {
+    function setAsyncFieldValidity(fieldKey, message) {
+        const config = validationConfig[fieldKey];
+        if (!config || !config.input) {
+            return;
+        }
+        if (config.messageElement) {
+            config.messageElement.textContent = message || config.defaultMessage;
+        }
+        setFieldValidity(config.input, message || "");
+    }
+
+    function resetAsyncValidationState(fieldKey) {
+        const state = asyncValidationState[fieldKey];
+        if (!state) {
+            return;
+        }
+        state.checkedValue = "";
+        state.requestedValue = "";
+        state.pending = false;
+        state.duplicate = false;
+        state.message = "";
+    }
+
+    function cancelAsyncValidationRequest(fieldKey) {
+        const state = asyncValidationState[fieldKey];
+        if (!state) {
+            return;
+        }
+        if (state.timer) {
+            clearTimeout(state.timer);
+            state.timer = null;
+        }
+        if (state.request) {
+            state.request.abort();
+            state.request = null;
+        }
+    }
+
+    function scheduleAsyncDuplicateCheck(fieldKey, value) {
+        const config = validationConfig[fieldKey];
+        const state = asyncValidationState[fieldKey];
+        if (!config || !config.input || hrFlow || !value) {
+            return;
+        }
+        if (state.pending && state.requestedValue === value) {
+            return;
+        }
+        if (state.checkedValue === value) {
             return;
         }
 
-        if (aadhaarValidationState.pending && aadhaarValidationState.requestedValue === value) {
-            return;
-        }
-        if (aadhaarValidationState.checkedValue === value) {
-            return;
-        }
+        cancelAsyncValidationRequest(fieldKey);
+        state.pending = true;
+        state.requestedValue = value;
+        state.duplicate = false;
+        state.message = "";
 
-        cancelAadhaarValidationRequest();
-        aadhaarValidationState.pending = true;
-        aadhaarValidationState.requestedValue = value;
-        aadhaarValidationState.duplicate = false;
-        aadhaarValidationState.message = "";
-
-        aadhaarValidationTimer = window.setTimeout(function () {
+        state.timer = window.setTimeout(function () {
             const contextPath = window.preOnboardingConfig && window.preOnboardingConfig.contextPath
                 ? window.preOnboardingConfig.contextPath
                 : "/";
             const params = new URLSearchParams();
-            params.set("aadhaar", value);
+            params.set(config.paramName, value);
             if (preOnboardingIdInput && preOnboardingIdInput.value) {
                 params.set("preOnboardingId", preOnboardingIdInput.value);
             }
 
-            aadhaarValidationRequest = new AbortController();
-            fetch(contextPath + "agency/onboarding/pre/validate-aadhaar?" + params.toString(), {
+            state.request = new AbortController();
+            fetch(contextPath + config.endpoint + "?" + params.toString(), {
                 method: "GET",
                 headers: {
                     "X-Requested-With": "XMLHttpRequest"
                 },
-                signal: aadhaarValidationRequest.signal
+                signal: state.request.signal
             })
                 .then(function (response) {
                     if (!response.ok) {
-                        throw new Error("Aadhaar validation request failed.");
+                        throw new Error("Validation request failed.");
                     }
                     return response.json();
                 })
                 .then(function (payload) {
-                    if (aadhaarInput.value.trim() !== value) {
+                    if (getNormalizedAsyncValue(fieldKey) !== value) {
                         return;
                     }
 
-                    aadhaarValidationState.pending = false;
-                    aadhaarValidationState.requestedValue = "";
-                    aadhaarValidationState.checkedValue = value;
-                    aadhaarValidationState.duplicate = Boolean(payload && payload.duplicate);
-                    aadhaarValidationState.message = payload && payload.message ? payload.message : "";
-                    aadhaarValidationRequest = null;
+                    state.pending = false;
+                    state.requestedValue = "";
+                    state.checkedValue = value;
+                    state.duplicate = Boolean(payload && payload.duplicate);
+                    state.message = payload && payload.message ? payload.message : "";
+                    state.request = null;
                     checkFormValidity();
                 })
                 .catch(function (error) {
                     if (error && error.name === "AbortError") {
                         return;
                     }
-
-                    if (aadhaarInput.value.trim() !== value) {
+                    if (getNormalizedAsyncValue(fieldKey) !== value) {
                         return;
                     }
 
-                    aadhaarValidationState.pending = false;
-                    aadhaarValidationState.requestedValue = "";
-                    aadhaarValidationState.checkedValue = value;
-                    aadhaarValidationState.duplicate = true;
-                    aadhaarValidationState.message = "Unable to validate Aadhaar right now. Please try again.";
-                    aadhaarValidationRequest = null;
+                    state.pending = false;
+                    state.requestedValue = "";
+                    state.checkedValue = value;
+                    state.duplicate = true;
+                    state.message = config.requestErrorMessage;
+                    state.request = null;
                     checkFormValidity();
                 });
         }, 350);
+    }
+
+    function setAadhaarFieldValidity(message) {
+        setAsyncFieldValidity("aadhaar", message);
     }
 
     function clearEmploymentFieldValidity(row) {
@@ -497,10 +595,24 @@
     function validateMobile() {
         if (!mobileInput) return true;
         const value = mobileInput.value.trim();
-        setFieldValidity(mobileInput, "");
+        setAsyncFieldValidity("mobile", "");
         if (!value) return true;
         if (!/^[0-9]{10}$/.test(value)) {
-            setFieldValidity(mobileInput, "Mobile number must be exactly 10 digits.");
+            setAsyncFieldValidity("mobile", "Mobile number must be exactly 10 digits.");
+            return false;
+        }
+        const state = asyncValidationState.mobile;
+        if (state.pending && state.requestedValue === value) {
+            setAsyncFieldValidity("mobile", validationConfig.mobile.checkingMessage);
+            return false;
+        }
+        if (state.checkedValue !== value) {
+            scheduleAsyncDuplicateCheck("mobile", value);
+            setAsyncFieldValidity("mobile", validationConfig.mobile.checkingMessage);
+            return false;
+        }
+        if (state.duplicate) {
+            setAsyncFieldValidity("mobile", state.message || "Mobile number already exists in the system.");
             return false;
         }
         return true;
@@ -531,13 +643,57 @@
         if (!panInput) return true;
         const value = panInput.value.toUpperCase().trim();
         panInput.value = value; // Auto-capitalize
-        setFieldValidity(panInput, "");
+        setAsyncFieldValidity("pan", "");
         if (!value) return true;
         
         if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value)) {
-            setFieldValidity(panInput, "Invalid PAN format (e.g., ABCDE1234F).");
+            setAsyncFieldValidity("pan", "Invalid PAN format (e.g., ABCDE1234F).");
             return false;
         }
+        const state = asyncValidationState.pan;
+        if (state.pending && state.requestedValue === value) {
+            setAsyncFieldValidity("pan", validationConfig.pan.checkingMessage);
+            return false;
+        }
+        if (state.checkedValue !== value) {
+            scheduleAsyncDuplicateCheck("pan", value);
+            setAsyncFieldValidity("pan", validationConfig.pan.checkingMessage);
+            return false;
+        }
+        if (state.duplicate) {
+            setAsyncFieldValidity("pan", state.message || "PAN number already exists in the system.");
+            return false;
+        }
+        return true;
+    }
+
+    function validateEmail() {
+        if (!emailInput) return true;
+        const value = emailInput.value.trim();
+        setAsyncFieldValidity("email", "");
+        if (!value) return true;
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            setAsyncFieldValidity("email", "Please enter a valid email address.");
+            return false;
+        }
+
+        const normalizedValue = normalizeEmailValue(value);
+        const state = asyncValidationState.email;
+        if (state.pending && state.requestedValue === normalizedValue) {
+            setAsyncFieldValidity("email", validationConfig.email.checkingMessage);
+            return false;
+        }
+        if (state.checkedValue !== normalizedValue) {
+            scheduleAsyncDuplicateCheck("email", normalizedValue);
+            setAsyncFieldValidity("email", validationConfig.email.checkingMessage);
+            return false;
+        }
+        if (state.duplicate) {
+            setAsyncFieldValidity("email", state.message || "Email already exists in the system.");
+            return false;
+        }
+
         return true;
     }
 
@@ -552,19 +708,20 @@
             return false;
         }
 
-        if (aadhaarValidationState.pending && aadhaarValidationState.requestedValue === value) {
-            setAadhaarFieldValidity("Checking Aadhaar number...");
+        const state = asyncValidationState.aadhaar;
+        if (state.pending && state.requestedValue === value) {
+            setAadhaarFieldValidity(validationConfig.aadhaar.checkingMessage);
             return false;
         }
 
-        if (aadhaarValidationState.checkedValue !== value) {
-            scheduleAadhaarDuplicateCheck(value);
-            setAadhaarFieldValidity("Checking Aadhaar number...");
+        if (state.checkedValue !== value) {
+            scheduleAsyncDuplicateCheck("aadhaar", value);
+            setAadhaarFieldValidity(validationConfig.aadhaar.checkingMessage);
             return false;
         }
 
-        if (aadhaarValidationState.duplicate) {
-            setAadhaarFieldValidity(aadhaarValidationState.message || "Aadhaar number already exists in the system.");
+        if (state.duplicate) {
+            setAadhaarFieldValidity(state.message || "Aadhaar number already exists in the system.");
             return false;
         }
 
@@ -662,6 +819,7 @@
         });
         const employmentValid = validateEmploymentRows().valid;
         const datesValid = validateJoiningAndOnboardingDates();
+        const emailValid = validateEmail();
         const mobileValid = validateMobile();
         const dobValid = validateDOB();
         const panValid = validatePAN();
@@ -669,7 +827,7 @@
         
         const isBasicValid = form.checkValidity();
 
-        submitBtn.disabled = !requiredDocsComplete || !employmentValid || !datesValid || !mobileValid || !dobValid || !panValid || !aadhaarValid || !isBasicValid;
+        submitBtn.disabled = !requiredDocsComplete || !employmentValid || !datesValid || !emailValid || !mobileValid || !dobValid || !panValid || !aadhaarValid || !isBasicValid;
     }
 
     function openManagedDocument(path) {
@@ -706,20 +864,35 @@
         }
     });
 
-    [mobileInput, panInput, aadhaarInput].forEach(function (el) {
+    [emailInput, mobileInput, panInput, aadhaarInput].forEach(function (el) {
         if (el) {
             el.addEventListener("input", function() {
+                if (el === emailInput) {
+                    this.value = this.value.replace(/\s+/g, "");
+                }
                 if (el === mobileInput) {
                     this.value = this.value.replace(/[^0-9]/g, "").substring(0, 10);
                 }
+                if (el === panInput) {
+                    this.value = this.value.toUpperCase();
+                }
                 if (el === aadhaarInput) {
                     this.value = this.value.replace(/[^0-9]/g, "").substring(0, 12);
-                    if (this.value !== aadhaarValidationState.checkedValue) {
-                        cancelAadhaarValidationRequest();
-                        resetAadhaarDuplicateState();
-                        if (aadhaarValidationMessage) {
-                            aadhaarValidationMessage.textContent = defaultAadhaarMessage;
-                        }
+                }
+
+                const fieldKey = el === emailInput
+                    ? "email"
+                    : el === mobileInput
+                        ? "mobile"
+                        : el === panInput
+                            ? "pan"
+                            : "aadhaar";
+                const normalizedValue = getNormalizedAsyncValue(fieldKey);
+                if (normalizedValue !== asyncValidationState[fieldKey].checkedValue) {
+                    cancelAsyncValidationRequest(fieldKey);
+                    resetAsyncValidationState(fieldKey);
+                    if (validationConfig[fieldKey].messageElement) {
+                        validationConfig[fieldKey].messageElement.textContent = validationConfig[fieldKey].defaultMessage;
                     }
                 }
                 checkFormValidity();
@@ -733,12 +906,6 @@
         const hrCheck = document.getElementById("hrVerified");
         [hrLoc, hrDate].forEach(el => el && el.addEventListener("input", checkFormValidity));
         if (hrCheck) hrCheck.addEventListener("change", checkFormValidity);
-    }
-
-    if (panInput) {
-        panInput.addEventListener("input", function() {
-            this.value = this.value.toUpperCase();
-        });
     }
 
     if (candidatePhotoInput) {

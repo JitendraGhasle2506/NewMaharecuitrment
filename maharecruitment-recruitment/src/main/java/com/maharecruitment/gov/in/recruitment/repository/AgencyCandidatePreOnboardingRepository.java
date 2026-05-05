@@ -84,6 +84,22 @@ public interface AgencyCandidatePreOnboardingRepository extends JpaRepository<Ag
             @Param("panNumber") String panNumber,
             @Param("excludePreOnboardingId") Long excludePreOnboardingId);
 
+    @Query("select case when count(preOnboarding) > 0 then true else false end "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where (:excludePreOnboardingId is null or preOnboarding.preOnboardingId <> :excludePreOnboardingId) "
+            + "and lower(trim(coalesce(preOnboarding.candidateEmail, ''))) = lower(trim(:email))")
+    boolean existsByCandidateEmailExcludingPreOnboardingId(
+            @Param("email") String email,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
+
+    @Query("select case when count(preOnboarding) > 0 then true else false end "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where (:excludePreOnboardingId is null or preOnboarding.preOnboardingId <> :excludePreOnboardingId) "
+            + "and trim(coalesce(preOnboarding.candidateMobile, '')) = :mobile")
+    boolean existsByCandidateMobileExcludingPreOnboardingId(
+            @Param("mobile") String mobile,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
+
     long countByInterviewDetailAgencyAgencyId(Long agencyId);
 
     long countByInterviewDetailDesignationVacancyRecruitmentDesignationVacancyIdAndOnboardedAtIsNotNull(
