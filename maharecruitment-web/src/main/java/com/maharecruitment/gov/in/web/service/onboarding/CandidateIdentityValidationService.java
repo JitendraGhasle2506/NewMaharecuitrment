@@ -1,10 +1,13 @@
 package com.maharecruitment.gov.in.web.service.onboarding;
 
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
@@ -49,11 +52,19 @@ public class CandidateIdentityValidationService {
         if (!StringUtils.hasText(normalizedAadhaar)) {
             return false;
         }
+        if (matchesCurrentPreOnboardingValue(
+                currentPreOnboardingId,
+                normalizedAadhaar,
+                this::normalizeAadhaar,
+                AgencyCandidatePreOnboardingEntity::getAadhaarNumber)) {
+            return false;
+        }
 
         boolean duplicateInPreOnboarding = preOnboardingRepository.existsByAadhaarNumberExcludingPreOnboardingId(
                 normalizedAadhaar,
                 currentPreOnboardingId);
-        boolean duplicateInEmployees = employeeRepository.existsByNormalizedAadhaarNumber(normalizedAadhaar);
+        boolean duplicateInEmployees = employeeRepository
+                .existsByNormalizedAadhaarNumberExcludingPreOnboardingId(normalizedAadhaar, currentPreOnboardingId);
         if (duplicateInPreOnboarding || duplicateInEmployees) {
             log.warn(
                     "Duplicate Aadhaar detected during onboarding validation. preOnboardingId={}, maskedAadhaar={}, duplicateInPreOnboarding={}, duplicateInEmployees={}",
@@ -72,11 +83,19 @@ public class CandidateIdentityValidationService {
         if (!StringUtils.hasText(normalizedPan)) {
             return false;
         }
+        if (matchesCurrentPreOnboardingValue(
+                currentPreOnboardingId,
+                normalizedPan,
+                this::normalizePan,
+                AgencyCandidatePreOnboardingEntity::getPanNumber)) {
+            return false;
+        }
 
         boolean duplicateInPreOnboarding = preOnboardingRepository.existsByPanNumberExcludingPreOnboardingId(
                 normalizedPan,
                 currentPreOnboardingId);
-        boolean duplicateInEmployees = employeeRepository.existsByNormalizedPanNumber(normalizedPan);
+        boolean duplicateInEmployees = employeeRepository
+                .existsByNormalizedPanNumberExcludingPreOnboardingId(normalizedPan, currentPreOnboardingId);
         if (duplicateInPreOnboarding || duplicateInEmployees) {
             log.warn(
                     "Duplicate PAN detected during onboarding validation. preOnboardingId={}, maskedPan={}, duplicateInPreOnboarding={}, duplicateInEmployees={}",
@@ -95,11 +114,19 @@ public class CandidateIdentityValidationService {
         if (!StringUtils.hasText(normalizedEmail)) {
             return false;
         }
+        if (matchesCurrentPreOnboardingValue(
+                currentPreOnboardingId,
+                normalizedEmail,
+                this::normalizeEmail,
+                AgencyCandidatePreOnboardingEntity::getCandidateEmail)) {
+            return false;
+        }
 
         boolean duplicateInPreOnboarding = preOnboardingRepository.existsByCandidateEmailExcludingPreOnboardingId(
                 normalizedEmail,
                 currentPreOnboardingId);
-        boolean duplicateInEmployees = employeeRepository.existsByNormalizedEmail(normalizedEmail);
+        boolean duplicateInEmployees = employeeRepository
+                .existsByNormalizedEmailExcludingPreOnboardingId(normalizedEmail, currentPreOnboardingId);
         if (duplicateInPreOnboarding || duplicateInEmployees) {
             log.warn(
                     "Duplicate email detected during onboarding validation. preOnboardingId={}, maskedEmail={}, duplicateInPreOnboarding={}, duplicateInEmployees={}",
@@ -118,11 +145,19 @@ public class CandidateIdentityValidationService {
         if (!StringUtils.hasText(normalizedMobile)) {
             return false;
         }
+        if (matchesCurrentPreOnboardingValue(
+                currentPreOnboardingId,
+                normalizedMobile,
+                this::normalizeMobile,
+                AgencyCandidatePreOnboardingEntity::getCandidateMobile)) {
+            return false;
+        }
 
         boolean duplicateInPreOnboarding = preOnboardingRepository.existsByCandidateMobileExcludingPreOnboardingId(
                 normalizedMobile,
                 currentPreOnboardingId);
-        boolean duplicateInEmployees = employeeRepository.existsByNormalizedMobile(normalizedMobile);
+        boolean duplicateInEmployees = employeeRepository
+                .existsByNormalizedMobileExcludingPreOnboardingId(normalizedMobile, currentPreOnboardingId);
         if (duplicateInPreOnboarding || duplicateInEmployees) {
             log.warn(
                     "Duplicate mobile detected during onboarding validation. preOnboardingId={}, maskedMobile={}, duplicateInPreOnboarding={}, duplicateInEmployees={}",
@@ -174,6 +209,25 @@ public class CandidateIdentityValidationService {
 
     private String normalizeMobile(String value) {
         return StringUtils.hasText(value) ? value.trim().replaceAll("\\s+", "") : null;
+    }
+
+    private boolean matchesCurrentPreOnboardingValue(
+            Long currentPreOnboardingId,
+            String normalizedSubmittedValue,
+            java.util.function.Function<String, String> normalizer,
+            java.util.function.Function<AgencyCandidatePreOnboardingEntity, String> fieldExtractor) {
+        if (currentPreOnboardingId == null || !StringUtils.hasText(normalizedSubmittedValue)) {
+            return false;
+        }
+
+        Optional<AgencyCandidatePreOnboardingEntity> currentPreOnboarding = preOnboardingRepository
+                .findById(currentPreOnboardingId);
+        if (currentPreOnboarding.isEmpty()) {
+            return false;
+        }
+
+        String currentStoredValue = normalizer.apply(fieldExtractor.apply(currentPreOnboarding.get()));
+        return normalizedSubmittedValue.equals(currentStoredValue);
     }
 
     private String maskAadhaar(String value) {

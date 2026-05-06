@@ -53,6 +53,10 @@ public class PreOnboardingSchemaGuardRunner {
                     statement.execute(
                             "alter table " + TABLE_NAME + " alter column submitted_at set not null");
                 }
+                if (columnExists(connection, TABLE_NAME, "onboarding_date")) {
+                    statement.execute(
+                            "alter table " + TABLE_NAME + " alter column onboarding_date drop not null");
+                }
             }
 
             LOGGER.info("Pre-onboarding schema guard applied successfully for table '{}'", TABLE_NAME);

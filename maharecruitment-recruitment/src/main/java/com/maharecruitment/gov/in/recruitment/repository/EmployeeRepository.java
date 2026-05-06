@@ -169,23 +169,55 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     @Query("select case when count(employee) > 0 then true else false end "
             + "from EmployeeEntity employee "
-            + "where trim(coalesce(employee.aadhaarNumber, '')) = :aadhaarNumber")
-    boolean existsByNormalizedAadhaarNumber(@Param("aadhaarNumber") String aadhaarNumber);
+            + "left join employee.preOnboarding preOnboarding "
+            + "where trim(coalesce(employee.aadhaarNumber, '')) = :aadhaarNumber "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "and (preOnboarding is null or preOnboarding.onboardedAt is not null) "
+            + "and (:excludePreOnboardingId is null or preOnboarding is null "
+            + "or preOnboarding.preOnboardingId <> :excludePreOnboardingId)")
+    boolean existsByNormalizedAadhaarNumberExcludingPreOnboardingId(
+            @Param("aadhaarNumber") String aadhaarNumber,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
 
     @Query("select case when count(employee) > 0 then true else false end "
             + "from EmployeeEntity employee "
-            + "where upper(trim(coalesce(employee.panNumber, ''))) = upper(trim(:panNumber))")
-    boolean existsByNormalizedPanNumber(@Param("panNumber") String panNumber);
+            + "left join employee.preOnboarding preOnboarding "
+            + "where upper(trim(coalesce(employee.panNumber, ''))) = upper(trim(:panNumber)) "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "and (preOnboarding is null or preOnboarding.onboardedAt is not null) "
+            + "and (:excludePreOnboardingId is null or preOnboarding is null "
+            + "or preOnboarding.preOnboardingId <> :excludePreOnboardingId)")
+    boolean existsByNormalizedPanNumberExcludingPreOnboardingId(
+            @Param("panNumber") String panNumber,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
 
     @Query("select case when count(employee) > 0 then true else false end "
             + "from EmployeeEntity employee "
-            + "where lower(trim(coalesce(employee.email, ''))) = lower(trim(:email))")
-    boolean existsByNormalizedEmail(@Param("email") String email);
+            + "left join employee.preOnboarding preOnboarding "
+            + "where lower(trim(coalesce(employee.email, ''))) = lower(trim(:email)) "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "and (preOnboarding is null or preOnboarding.onboardedAt is not null) "
+            + "and (:excludePreOnboardingId is null or preOnboarding is null "
+            + "or preOnboarding.preOnboardingId <> :excludePreOnboardingId)")
+    boolean existsByNormalizedEmailExcludingPreOnboardingId(
+            @Param("email") String email,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
 
     @Query("select case when count(employee) > 0 then true else false end "
             + "from EmployeeEntity employee "
-            + "where trim(coalesce(employee.mobile, '')) = :mobile")
-    boolean existsByNormalizedMobile(@Param("mobile") String mobile);
+            + "left join employee.preOnboarding preOnboarding "
+            + "where trim(coalesce(employee.mobile, '')) = :mobile "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "and (preOnboarding is null or preOnboarding.onboardedAt is not null) "
+            + "and (:excludePreOnboardingId is null or preOnboarding is null "
+            + "or preOnboarding.preOnboardingId <> :excludePreOnboardingId)")
+    boolean existsByNormalizedMobileExcludingPreOnboardingId(
+            @Param("mobile") String mobile,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
 
     boolean existsByPreOnboardingInterviewDetailRecruitmentInterviewDetailIdAndStatusIgnoreCase(
             Long recruitmentInterviewDetailId, String status);

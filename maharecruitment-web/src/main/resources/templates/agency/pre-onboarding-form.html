@@ -185,41 +185,36 @@
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-4 form-group">
+                                <div class="col-md-6 form-group">
                                     <label class="form-label">Level Code</label>
                                     <input type="text" class="form-control readonly-field" th:field="*{levelCode}"
                                         readonly />
                                 </div>
-                                <div class="col-md-4 form-group">
+                                <div class="col-md-6 form-group">
                                     <label class="form-label">Joining Date <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
                                     <input type="date" class="form-control" th:field="*{joiningDate}" id="joiningDate"
                                         th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
                                 </div>
-                                <div class="col-md-4 form-group">
-                                    <label class="form-label">Onboarding Date <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="date" class="form-control" th:field="*{onboardingDate}"
-                                        id="onboardingDate" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required />
-                                    <div class="invalid-feedback">Onboarding date cannot be before joining date.</div>
-                                </div>
                             </div>
                         </div>
 
-                        <div class="section-block">
+                        <div class="section-block kyc-section">
                             <h5 class="section-title">KYC Details</h5>
-                            <div class="row">
-                                <div class="col-md-6 form-group">
+                            <div class="row g-3 kyc-row">
+                                <div class="col-lg-6 form-group kyc-field">
                                     <label class="form-label">Aadhaar Number <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="text" class="form-control" th:field="*{aadhaar}" maxlength="12"
+                                    <input type="text" class="form-control kyc-input" th:field="*{aadhaar}" maxlength="12"
                                         minlength="12" inputmode="numeric" pattern="[0-9]{12}" th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                         placeholder="Enter 12-digit Aadhaar number" required />
                                     <div class="invalid-feedback" id="aadhaarValidationMessage">Aadhaar number must be exactly 12 digits.</div>
                                 </div>
-                                <div class="col-md-6 form-group">
+                                <div class="col-lg-6 form-group kyc-field kyc-upload-field">
                                     <label class="form-label">Upload Aadhaar Document <span class="text-danger" th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.existingAadhaarFilePath == null}">*</span></label>
-                                    <input type="file" class="form-control" th:field="*{aadhaarFile}"
+                                    <input type="file" class="form-control kyc-input" th:field="*{aadhaarFile}"
                                         accept=".pdf,.jpg,.jpeg,.png" th:disabled="*{hrFlow}" />
-                                    <small class="text-muted" th:if="${!preOnboardingForm.hrFlow}">PDF, JPG, PNG up to 10MB</small>
-                                    <div class="existing-file" th:if="${preOnboardingForm.existingAadhaarFilePath}">
+                                    <small class="text-muted kyc-helper" th:if="${!preOnboardingForm.hrFlow}">PDF, JPG, PNG up to 10MB</small>
+                                    <small class="text-muted kyc-helper" th:if="${preOnboardingForm.hrFlow}">Previously uploaded document is available below.</small>
+                                    <div class="existing-file kyc-existing-file" th:if="${preOnboardingForm.existingAadhaarFilePath}">
                                         <button type="button" class="btn btn-outline-secondary btn-sm mt-2"
                                             th:attr="data-path=${preOnboardingForm.existingAadhaarFilePath}"
                                             onclick="openManagedDocument(this.getAttribute('data-path'))">View Existing
@@ -229,19 +224,21 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6 form-group">
+                            <div class="row g-3 kyc-row">
+                                <div class="col-lg-6 form-group kyc-field">
                                     <label class="form-label">PAN Number <span class="text-danger" th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="text" class="form-control" th:field="*{pan}" id="pan" maxlength="10"
+                                    <input type="text" class="form-control kyc-input kyc-pan-input" th:field="*{pan}" id="pan" maxlength="10"
                                         th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        placeholder="ABCDE1234F" style="text-transform: uppercase;" required />
+                                        placeholder="ABCDE1234F" required />
                                     <div class="invalid-feedback" id="panValidationMessage">Please enter a valid PAN (e.g., ABCDE1234F).</div>
                                 </div>
-                                <div class="col-md-6 form-group">
+                                <div class="col-lg-6 form-group kyc-field kyc-upload-field">
                                     <label class="form-label">Upload PAN Document <span class="text-danger" th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.existingPanFilePath == null}">*</span></label>
-                                    <input type="file" class="form-control" th:field="*{panFile}"
+                                    <input type="file" class="form-control kyc-input" th:field="*{panFile}"
                                         accept=".pdf,.jpg,.jpeg,.png" th:disabled="*{hrFlow}" />
-                                    <div class="existing-file" th:if="${preOnboardingForm.existingPanFilePath}">
+                                    <small class="text-muted kyc-helper" th:if="${!preOnboardingForm.hrFlow}">PDF, JPG, PNG up to 10MB</small>
+                                    <small class="text-muted kyc-helper" th:if="${preOnboardingForm.hrFlow}">Previously uploaded document is available below.</small>
+                                    <div class="existing-file kyc-existing-file" th:if="${preOnboardingForm.existingPanFilePath}">
                                         <button type="button" class="btn btn-outline-secondary btn-sm mt-2"
                                             th:attr="data-path=${preOnboardingForm.existingPanFilePath}"
                                             onclick="openManagedDocument(this.getAttribute('data-path'))">View Existing

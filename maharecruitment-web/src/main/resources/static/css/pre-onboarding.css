@@ -176,6 +176,68 @@
     color: var(--onboard-text);
 }
 
+.kyc-section {
+    overflow: hidden;
+}
+
+.kyc-row + .kyc-row {
+    margin-top: 0;
+}
+
+.kyc-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    height: 100%;
+}
+
+.kyc-field .form-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 0;
+    margin-bottom: 0;
+    line-height: 1.35;
+}
+
+.kyc-input {
+    min-height: 40px;
+}
+
+.kyc-pan-input {
+    text-transform: uppercase;
+}
+
+.kyc-upload-field .form-control[type="file"] {
+    padding-block: 0.42rem;
+}
+
+.kyc-helper {
+    display: block;
+    min-height: 0;
+    margin-top: 0;
+    font-size: 0.78rem;
+    line-height: 1.25;
+}
+
+.kyc-existing-file {
+    margin-top: 2px;
+    padding: 8px 10px;
+    border: 1px dashed #d7e0ea;
+    border-radius: 10px;
+    background: #fbfdff;
+}
+
+.kyc-existing-file .btn {
+    margin-top: 0 !important;
+    padding: 0.28rem 0.65rem;
+}
+
+.kyc-existing-file small {
+    word-break: break-word;
+    line-height: 1.3;
+}
+
 .readonly-field {
     background-color: #f8fbff;
 }
@@ -444,6 +506,10 @@
 
     .passport-photo-file-name {
         max-width: 100%;
+    }
+
+    .kyc-field .form-label {
+        min-height: auto;
     }
 
     .employment-row-header {

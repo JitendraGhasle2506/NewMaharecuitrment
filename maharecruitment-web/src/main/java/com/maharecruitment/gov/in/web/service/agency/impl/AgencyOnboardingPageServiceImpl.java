@@ -222,7 +222,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             entity.setDateOfBirth(form.getDob());
             entity.setAddress(form.getAddress().trim());
             entity.setJoiningDate(form.getJoiningDate());
-            entity.setOnboardingDate(form.getOnboardingDate());
+            entity.setOnboardingDate(null);
             entity.setAadhaarNumber(normalizedAadhaar);
             entity.setPanNumber(normalizedPan);
             entity.setTotalExperienceYears(experience.years());
@@ -380,7 +380,6 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         form.setDob(existing.getDateOfBirth());
         form.setAddress(existing.getAddress());
         form.setJoiningDate(existing.getJoiningDate());
-        form.setOnboardingDate(existing.getOnboardingDate());
         form.setAadhaar(existing.getAadhaarNumber());
         form.setPan(existing.getPanNumber());
         form.setTotalExperienceYears(existing.getTotalExperienceYears());
@@ -534,12 +533,6 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         }
         if (form.getJoiningDate() == null) {
             throw new RecruitmentNotificationException("Joining date is required.");
-        }
-        if (form.getOnboardingDate() == null) {
-            throw new RecruitmentNotificationException("Onboarding date is required.");
-        }
-        if (form.getOnboardingDate().isBefore(form.getJoiningDate())) {
-            throw new RecruitmentNotificationException("Onboarding date cannot be before joining date.");
         }
         if (!StringUtils.hasText(form.getAadhaar())) {
             throw new RecruitmentNotificationException("Aadhaar number is required.");

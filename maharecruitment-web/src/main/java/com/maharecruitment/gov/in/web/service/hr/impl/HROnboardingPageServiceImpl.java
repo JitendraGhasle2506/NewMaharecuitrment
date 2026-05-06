@@ -272,7 +272,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             employee.setAddress(entity.getAddress());
             employee.setDateOfBirth(entity.getDateOfBirth());
             employee.setJoiningDate(entity.getJoiningDate());
-            employee.setOnboardingDate(entity.getOnboardingDate());
+            employee.setOnboardingDate(entity.getHrOnboardingDate());
             employee.setPanNumber(entity.getPanNumber());
             employee.setAadhaarNumber(entity.getAadhaarNumber());
 

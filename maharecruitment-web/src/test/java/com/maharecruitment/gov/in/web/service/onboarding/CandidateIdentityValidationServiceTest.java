@@ -6,12 +6,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
@@ -30,6 +32,11 @@ class CandidateIdentityValidationServiceTest {
     private final AtomicReference<String> capturedPan = new AtomicReference<>();
     private final AtomicReference<String> capturedEmail = new AtomicReference<>();
     private final AtomicReference<String> capturedMobile = new AtomicReference<>();
+    private final AtomicReference<Long> capturedEmployeeAadhaarExcludedPreOnboardingId = new AtomicReference<>();
+    private final AtomicReference<Long> capturedEmployeePanExcludedPreOnboardingId = new AtomicReference<>();
+    private final AtomicReference<Long> capturedEmployeeEmailExcludedPreOnboardingId = new AtomicReference<>();
+    private final AtomicReference<Long> capturedEmployeeMobileExcludedPreOnboardingId = new AtomicReference<>();
+    private final AtomicReference<AgencyCandidatePreOnboardingEntity> currentPreOnboarding = new AtomicReference<>();
 
     private CandidateIdentityValidationService service;
 
@@ -54,26 +61,39 @@ class CandidateIdentityValidationServiceTest {
                         capturedMobile.set((String) args[0]);
                         yield duplicatePreOnboardingMobile.get();
                     }
+                    case "findById" -> {
+                        Long requestedId = (Long) args[0];
+                        AgencyCandidatePreOnboardingEntity entity = currentPreOnboarding.get();
+                        if (entity == null || entity.getPreOnboardingId() == null
+                                || !entity.getPreOnboardingId().equals(requestedId)) {
+                            yield Optional.empty();
+                        }
+                        yield Optional.of(entity);
+                    }
                     default -> throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
                 });
 
         EmployeeRepository employeeRepository = proxyWithDefaults(
                 EmployeeRepository.class,
                 (proxy, method, args) -> switch (method.getName()) {
-                    case "existsByNormalizedAadhaarNumber" -> {
+                    case "existsByNormalizedAadhaarNumberExcludingPreOnboardingId" -> {
                         capturedAadhaar.set((String) args[0]);
+                        capturedEmployeeAadhaarExcludedPreOnboardingId.set((Long) args[1]);
                         yield duplicateEmployeeAadhaar.get();
                     }
-                    case "existsByNormalizedPanNumber" -> {
+                    case "existsByNormalizedPanNumberExcludingPreOnboardingId" -> {
                         capturedPan.set((String) args[0]);
+                        capturedEmployeePanExcludedPreOnboardingId.set((Long) args[1]);
                         yield duplicateEmployeePan.get();
                     }
-                    case "existsByNormalizedEmail" -> {
+                    case "existsByNormalizedEmailExcludingPreOnboardingId" -> {
                         capturedEmail.set((String) args[0]);
+                        capturedEmployeeEmailExcludedPreOnboardingId.set((Long) args[1]);
                         yield duplicateEmployeeEmail.get();
                     }
-                    case "existsByNormalizedMobile" -> {
+                    case "existsByNormalizedMobileExcludingPreOnboardingId" -> {
                         capturedMobile.set((String) args[0]);
+                        capturedEmployeeMobileExcludedPreOnboardingId.set((Long) args[1]);
                         yield duplicateEmployeeMobile.get();
                     }
                     default -> throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
@@ -125,6 +145,10 @@ class CandidateIdentityValidationServiceTest {
         assertEquals("ABCDE1234F", capturedPan.get());
         assertEquals("test.user@example.com", capturedEmail.get());
         assertEquals("9876543210", capturedMobile.get());
+        assertEquals(9L, capturedEmployeeAadhaarExcludedPreOnboardingId.get());
+        assertEquals(9L, capturedEmployeePanExcludedPreOnboardingId.get());
+        assertEquals(9L, capturedEmployeeEmailExcludedPreOnboardingId.get());
+        assertEquals(9L, capturedEmployeeMobileExcludedPreOnboardingId.get());
     }
 
     @Test
@@ -157,6 +181,33 @@ class CandidateIdentityValidationServiceTest {
                         "9876543210"));
 
         assertEquals("Mobile number already exists in the system.", exception.getMessage());
+    }
+
+    @Test
+    void validateUniqueCandidateDetailsAllowsEditingWhenValuesMatchCurrentPreOnboardingRecord() {
+        duplicatePreOnboardingAadhaar.set(true);
+        duplicateEmployeeAadhaar.set(true);
+        duplicatePreOnboardingPan.set(true);
+        duplicateEmployeePan.set(true);
+        duplicatePreOnboardingEmail.set(true);
+        duplicateEmployeeEmail.set(true);
+        duplicatePreOnboardingMobile.set(true);
+        duplicateEmployeeMobile.set(true);
+
+        AgencyCandidatePreOnboardingEntity entity = new AgencyCandidatePreOnboardingEntity();
+        entity.setPreOnboardingId(9L);
+        entity.setAadhaarNumber("123412341234");
+        entity.setPanNumber("ABCDE1234F");
+        entity.setCandidateEmail("test.user@example.com");
+        entity.setCandidateMobile("9876543210");
+        currentPreOnboarding.set(entity);
+
+        assertDoesNotThrow(() -> service.validateUniqueCandidateDetails(
+                9L,
+                "1234 1234 1234",
+                "abcde1234f",
+                " Test.User@Example.com ",
+                "9876543210"));
     }
 
     private static <T> T proxyWithDefaults(Class<T> type, InvocationHandler handler) {
