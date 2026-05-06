@@ -16,7 +16,6 @@ import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
-import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyCandidateService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationActionService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationQueryService;
@@ -50,7 +49,6 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     private final UserAffiliationService userAffiliationService;
     private final AgencyMasterRepository agencyMasterRepository;
     private final FileStorageService fileStorageService;
-    private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
 
     public AgencyRecruitmentNotificationPageServiceImpl(
             RecruitmentAgencyNotificationQueryService queryService,
@@ -58,15 +56,13 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
             RecruitmentAgencyCandidateService candidateService,
             UserAffiliationService userAffiliationService,
             AgencyMasterRepository agencyMasterRepository,
-            FileStorageService fileStorageService,
-            AgencyCandidatePreOnboardingRepository preOnboardingRepository) {
+            FileStorageService fileStorageService) {
         this.queryService = queryService;
         this.actionService = actionService;
         this.candidateService = candidateService;
         this.userAffiliationService = userAffiliationService;
         this.agencyMasterRepository = agencyMasterRepository;
         this.fileStorageService = fileStorageService;
-        this.preOnboardingRepository = preOnboardingRepository;
     }
 
     @Override
@@ -227,25 +223,7 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
             Long recruitmentNotificationId,
             Long recruitmentInterviewDetailId) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        var preOnboarding = preOnboardingRepository.findByInterviewDetailIdAndAgencyIdForForm(
-                recruitmentInterviewDetailId,
-                context.agencyId()).orElse(null);
-        String resumeFilePath = candidateService.getSubmittedCandidates(recruitmentNotificationId, context.agencyId())
-                .stream()
-                .filter(candidate -> recruitmentInterviewDetailId.equals(candidate.getRecruitmentInterviewDetailId()))
-                .map(AgencySubmittedCandidateView::getResumeFilePath)
-                .findFirst()
-                .orElse(null);
         candidateService.withdrawCandidate(recruitmentNotificationId, recruitmentInterviewDetailId, context.agencyId());
-        if (StringUtils.hasText(resumeFilePath)) {
-            fileStorageService.deleteQuietly(resumeFilePath);
-        }
-        if (preOnboarding != null) {
-            fileStorageService.deleteQuietly(preOnboarding.getAadhaarFilePath());
-            fileStorageService.deleteQuietly(preOnboarding.getPanFilePath());
-            fileStorageService.deleteQuietly(preOnboarding.getExperienceDocFilePath());
-            fileStorageService.deleteQuietly(preOnboarding.getPhotoFilePath());
-        }
     }
 
     @Override

@@ -725,7 +725,7 @@
                                     <tr>
                                         <th>#</th>
                                         <th>Request</th>
-                                        <!-- <th>Project Details</th> -->
+                                        <th>Project Details</th>
                                         <th>Notified At</th>
                                         <th>Tracking Status</th>
                                         <th>Workflow Status</th>
@@ -748,20 +748,22 @@
                                                 </a>
                                             </div>
                                         </td>
-                                        <!--  <td>
+                                        <td>
                                             <div class="project-name"
-                                                th:text="${item.projectName != null ? item.projectName : '-'}">Project Name</div>
-                                            <div class="project-meta-row">
+                                                th:text="${item.projectName != null ? item.projectName : '-'}">Project
+                                                Name</div>
+                                            <!-- <div class="project-meta-row">
                                                 <span class="project-meta-pill" th:if="${item.releasedRank != null}">
                                                     <i class="fa fa-signal" aria-hidden="true"></i>
                                                     Rank <span th:text="${item.releasedRank}">1</span>
                                                 </span>
-                                                <span class="project-meta-pill" th:if="${item.departmentRegistrationId != null}">
+                                                <span class="project-meta-pill"
+                                                    th:if="${item.departmentRegistrationId != null}">
                                                     <i class="fa fa-building-o" aria-hidden="true"></i>
                                                     Dept Reg <span th:text="${item.departmentRegistrationId}">101</span>
                                                 </span>
-                                            </div>
-                                        </td> -->
+                                            </div> -->
+                                        </td>
                                         <td>
                                             <div class="date-cell">
                                                 <div class="date-primary"
@@ -773,7 +775,7 @@
                                         </td>
                                         <td>
                                             <div class="status-stack">
-                                                <div class="status-caption">Agency Tracking</div>
+                                                <!-- <div class="status-caption">Agency Tracking</div> -->
                                                 <span class="status-badge"
                                                     th:classappend="${item.trackingStatus.name() == 'RESPONDED' ? ' tracking-responded' : (item.trackingStatus.name() == 'READ' ? ' tracking-read' : ' tracking-released')}"
                                                     th:text="${#strings.replace(item.trackingStatus.name(), '_', ' ')}">
@@ -783,7 +785,7 @@
                                         </td>
                                         <td>
                                             <div class="status-stack">
-                                                <div class="status-caption">Notification State</div>
+                                                <!-- <div class="status-caption">Notification State</div> -->
                                                 <span class="status-badge"
                                                     th:classappend="${item.notificationStatus.name() == 'IN_PROGRESS' ? ' notification-in-progress' : ' notification-pending'}"
                                                     th:text="${#strings.replace(item.notificationStatus.name(), '_', ' ')}">

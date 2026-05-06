@@ -162,8 +162,61 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     List<EmployeeEntity> findByAgencyAgencyIdOrderByOnboardingDateDescEmployeeIdDesc(Long agencyId);
 
-    List<EmployeeEntity> findByAgencyAgencyIdAndStatusOrderByOnboardingDateDescEmployeeIdDesc(Long agencyId,
-            String status);
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    @Query(value = "select employee "
+            + "from EmployeeEntity employee "
+            + "join employee.preOnboarding preOnboarding "
+            + "where employee.agency.agencyId = :agencyId "
+            + "and upper(trim(coalesce(employee.status, ''))) in :statuses "
+            + "and preOnboarding.onboardedAt is not null "
+            + "and trim(coalesce(employee.employeeCode, '')) <> '' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "order by employee.onboardingDate desc, employee.employeeId desc",
+            countQuery = "select count(employee) "
+                    + "from EmployeeEntity employee "
+                    + "join employee.preOnboarding preOnboarding "
+                    + "where employee.agency.agencyId = :agencyId "
+                    + "and upper(trim(coalesce(employee.status, ''))) in :statuses "
+                    + "and preOnboarding.onboardedAt is not null "
+                    + "and trim(coalesce(employee.employeeCode, '')) <> '' "
+                    + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+                    + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' ")
+    Page<EmployeeEntity> findPageByAgencyAgencyIdAndStatuses(
+            @Param("agencyId") Long agencyId,
+            @Param("statuses") Collection<String> statuses,
+            Pageable pageable);
+
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    @Query("select employee "
+            + "from EmployeeEntity employee "
+            + "join employee.preOnboarding preOnboarding "
+            + "where employee.agency.agencyId = :agencyId "
+            + "and upper(trim(coalesce(employee.status, ''))) = :status "
+            + "and preOnboarding.onboardedAt is not null "
+            + "and trim(coalesce(employee.employeeCode, '')) <> '' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "order by employee.onboardingDate desc, employee.employeeId desc")
+    List<EmployeeEntity> findByAgencyAgencyIdAndStatusOrderByOnboardingDateDescEmployeeIdDesc(
+            @Param("agencyId") Long agencyId,
+            @Param("status") String status);
 
     Optional<EmployeeEntity> findByEmployeeIdAndAgencyAgencyId(Long employeeId, Long agencyId);
 

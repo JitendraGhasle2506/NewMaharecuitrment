@@ -40,20 +40,20 @@
                                     <th>Designation</th>
                                     <th>Joining Date</th>
                                     <th>Onboarding Date</th>
-                                    <th th:if="${currentStatus == 'RESIGNED'}">Resignation Date</th>
+                                    <th th:if="${currentStatus == 'RESIGNED' or currentStatus == 'ALL'}">Resignation Date</th>
                                     <th>Status</th>
-                                    <th th:if="${currentStatus == 'ACTIVE'}">Action</th>
+                                    <th th:if="${currentStatus == 'ACTIVE' or currentStatus == 'ALL'}">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(onboardedEmployees)}">
-                                    <td th:colspan="${currentStatus == 'ACTIVE'} ? 11 : 11"
+                                    <td th:colspan="${currentStatus == 'ALL'} ? 12 : 11"
                                         class="text-center text-muted">
                                         No onboarded employees found for this agency.
                                     </td>
                                 </tr>
                                 <tr th:each="employee, stat : ${onboardedEmployees}">
-                                    <td th:text="${stat.count}">1</td>
+                                    <td th:text="${employeePage != null ? (employeePage.number * employeePage.size) + stat.count : stat.count}">1</td>
                                     <td th:text="${employee.employeeCode() != null ? employee.employeeCode() : '-'}">
                                         EMP000001</td>
                                     <td th:text="${employee.requestId() != null ? employee.requestId() : '-'}">REQ-0001
@@ -90,7 +90,7 @@
                                         th:text="${employee.onboardingDate() != null ? #temporals.format(employee.onboardingDate(), 'dd-MMM-yyyy') : '-'}">
                                         05-Apr-2026
                                     </td>
-                                    <td th:if="${currentStatus == 'RESIGNED'}"
+                                    <td th:if="${currentStatus == 'RESIGNED' or currentStatus == 'ALL'}"
                                         th:text="${employee.resignationDate() != null ? #temporals.format(employee.resignationDate(), 'dd-MMM-yyyy') : '-'}">
                                         16-Mar-2026
                                     </td>
@@ -101,15 +101,53 @@
                                             ACTIVE
                                         </span>
                                     </td>
-                                    <td th:if="${currentStatus == 'ACTIVE'}">
-                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                    <td th:if="${currentStatus == 'ACTIVE' or currentStatus == 'ALL'}">
+                                        <button type="button"
+                                            th:if="${employee.status() != null and employee.status() != 'RESIGNED'}"
+                                            class="btn btn-outline-danger btn-sm"
                                             th:attr="onclick='openResignModal(' + ${employee.employeeId()} + ', \'' + ${employee.candidateName()} + '\')'">
                                             Mark Resigned
                                         </button>
+                                        <span th:if="${employee.status() != null and employee.status() == 'RESIGNED'}"
+                                            class="text-muted">-</span>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3"
+                        th:if="${employeePage != null and employeePage.totalPages > 1}">
+                        <div class="small text-muted"
+                            th:text="${'Showing page ' + (employeePage.number + 1) + ' of ' + employeePage.totalPages + ' | Total records: ' + employeePage.totalElements}">
+                            Showing page 1 of 1 | Total records: 0
+                        </div>
+                        <nav aria-label="Agency onboarding pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item" th:classappend="${employeePage.first} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="${employeePage.first} ? '#' : (currentStatus == 'RESIGNED'
+                                            ? @{/agency/onboarding/resigned(page=${employeePage.number - 1},size=${employeePage.size})}
+                                            : @{/agency/onboarding(page=${employeePage.number - 1},size=${employeePage.size})})}">
+                                        Previous
+                                    </a>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link"
+                                        th:text="${(employeePage.number + 1) + ' / ' + employeePage.totalPages}">
+                                        1 / 1
+                                    </span>
+                                </li>
+                                <li class="page-item" th:classappend="${employeePage.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="${employeePage.last} ? '#' : (currentStatus == 'RESIGNED'
+                                            ? @{/agency/onboarding/resigned(page=${employeePage.number + 1},size=${employeePage.size})}
+                                            : @{/agency/onboarding(page=${employeePage.number + 1},size=${employeePage.size})})}">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -119,6 +157,8 @@
                 <div class="modal-dialog">
                     <form id="resignForm" method="post">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input type="hidden" name="page" th:value="${employeePage != null ? employeePage.number : 0}">
+                        <input type="hidden" name="size" th:value="${employeePage != null ? employeePage.size : 10}">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title" id="resignModalLabel">Mark Employee Resigned</h5>

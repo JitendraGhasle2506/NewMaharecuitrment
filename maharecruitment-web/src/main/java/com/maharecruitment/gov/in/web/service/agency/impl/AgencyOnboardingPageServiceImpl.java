@@ -14,6 +14,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -55,6 +57,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     private static final Pattern AADHAAR_PATTERN = Pattern.compile("^[0-9]{12}$");
     private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
     private static final String DEFAULT_VALUE = "-";
+    private static final List<String> CURRENT_ONBOARDED_STATUSES = List.of("ACTIVE", "RESIGNED");
 
     private final UserAffiliationService userAffiliationService;
     private final AgencyMasterRepository agencyMasterRepository;
@@ -306,20 +309,14 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     }
 
     @Override
-    public List<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail) {
-        return getEmployeesByStatus(actorEmail, "ACTIVE");
+    public Page<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail, Pageable pageable) {
+        return getEmployeesByStatuses(actorEmail, CURRENT_ONBOARDED_STATUSES, pageable);
     }
 
     @Override
-    public List<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status) {
-        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+    public Page<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status, Pageable pageable) {
         String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "ACTIVE";
-        return employeeRepository.findByAgencyAgencyIdAndStatusOrderByOnboardingDateDescEmployeeIdDesc(
-                context.agencyId(),
-                normalizedStatus)
-                .stream()
-                .map(this::toOnboardedEmployeeView)
-                .toList();
+        return getEmployeesByStatuses(actorEmail, List.of(normalizedStatus), pageable);
     }
 
     @Override
@@ -790,6 +787,25 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         return resourceLevelExperienceRepository.findByLevelCodeIgnoreCaseAndActiveFlagIgnoreCase(levelCode, "Y")
                 .map(level -> level.getMinExperience())
                 .orElse(null);
+    }
+
+    private Page<AgencyOnboardedEmployeeView> getEmployeesByStatuses(
+            String actorEmail,
+            List<String> statuses,
+            Pageable pageable) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        List<String> normalizedStatuses = statuses == null
+                ? CURRENT_ONBOARDED_STATUSES
+                : statuses.stream()
+                        .filter(StringUtils::hasText)
+                        .map(value -> value.trim().toUpperCase())
+                        .distinct()
+                        .toList();
+        return employeeRepository.findPageByAgencyAgencyIdAndStatuses(
+                context.agencyId(),
+                normalizedStatuses.isEmpty() ? CURRENT_ONBOARDED_STATUSES : normalizedStatuses,
+                pageable)
+                .map(this::toOnboardedEmployeeView);
     }
 
     private AgencyUserContext resolveAgencyUserContext(String actorEmail) {
