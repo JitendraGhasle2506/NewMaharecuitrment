@@ -6,6 +6,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -42,20 +44,34 @@ public class AgencyOnboardingPageController {
     }
 
     @GetMapping
-    public String onboardingReadyCandidates(Principal principal, Model model) {
+    public String onboardingReadyCandidates(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
+            Principal principal,
+            Model model) {
         String actorEmail = resolveActorEmail(principal);
-        model.addAttribute("onboardedEmployees", onboardingPageService.getOnboardedEmployees(actorEmail));
+        Pageable pageable = PageRequest.of(Math.max(0, page), size);
+        model.addAttribute("onboardedEmployees", onboardingPageService.getOnboardedEmployees(actorEmail, search, pageable));
         model.addAttribute("currentStatus", "ACTIVE");
+        model.addAttribute("search", search);
         model.addAttribute("pageTitle", "Onboarded Employees");
         model.addAttribute("pageSubtitle", "Agency-wise active onboarded employees.");
         return "agency/onboarding-list";
     }
 
     @GetMapping("/resigned")
-    public String resignedEmployees(Principal principal, Model model) {
+    public String resignedEmployees(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
+            Principal principal,
+            Model model) {
         String actorEmail = resolveActorEmail(principal);
-        model.addAttribute("onboardedEmployees", onboardingPageService.getEmployeesByStatus(actorEmail, "RESIGNED"));
+        Pageable pageable = PageRequest.of(Math.max(0, page), size);
+        model.addAttribute("onboardedEmployees", onboardingPageService.getEmployeesByStatus(actorEmail, "RESIGNED", search, pageable));
         model.addAttribute("currentStatus", "RESIGNED");
+        model.addAttribute("search", search);
         model.addAttribute("pageTitle", "Resigned Employees");
         model.addAttribute("pageSubtitle", "Agency employees who resigned and reopened their vacancy.");
         return "agency/onboarding-list";

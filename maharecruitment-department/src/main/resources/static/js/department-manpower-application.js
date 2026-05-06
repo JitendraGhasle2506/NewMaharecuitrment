@@ -39,6 +39,7 @@
     let applicableTaxRates = [];
     let commissionRates = { AGENCY: 10, MAHAIT: 10 };
     let selectedWorkOrderObjectUrl = null;
+    let levelFetchController = null;
 
     initializeExistingRows();
     loadApplicableTaxRates();
@@ -71,14 +72,22 @@
     function onDesignationChange() {
         const designationId = designationSelectElement.value;
         resetLevelSelect();
+
+        if (levelFetchController) {
+            levelFetchController.abort();
+        }
+
         if (!designationId) {
             return;
         }
 
+        levelFetchController = new AbortController();
         const levelEndpoint = `${contextPath}/department/manpower/by-designation/${designationId}`;
-        fetch(levelEndpoint)
+
+        fetch(levelEndpoint, { signal: levelFetchController.signal })
             .then((response) => response.json())
             .then((levels) => {
+                resetLevelSelect(); // Secondary clear just in case
                 levels.forEach((level) => {
                     const optionElement = document.createElement("option");
                     optionElement.value = level.levelCode;
@@ -87,6 +96,7 @@
                 });
             })
             .catch((error) => {
+                if (error.name === 'AbortError') return;
                 console.error("Unable to load levels by designation.", error);
             });
     }
@@ -553,7 +563,7 @@
         // Build commissions for the display
         const commissions = [
             { label: `Agency Commission (${formatPercentage(commissionRates.AGENCY)}%)`, amount: totalAgencyComm },
-            { label: `MahaIT Commission (${formatPercentage(commissionRates.MAHAIT)}%)`, amount: totalMahaItComm }
+            { label: `MahaIT Commission (${formatPercentage(commissionRates.MAHAIT)}%) <br>(Total Manpower Value + Agency Commission) * ${formatPercentage(commissionRates.MAHAIT)}%`, amount: totalMahaItComm }
         ];
 
         const taxComponents = buildTaxComponents(totalTaxable);
@@ -585,7 +595,7 @@
 
         const commissions = [
             { label: `Agency Commission (${formatPercentage(commissionRates.AGENCY)}%)`, amount: totalAgencyComm },
-            { label: `MahaIT Commission (${formatPercentage(commissionRates.MAHAIT)}%)`, amount: totalMahaItComm }
+            { label: `MahaIT Commission (${formatPercentage(commissionRates.MAHAIT)}%) <br>(Total Manpower Value + Agency Commission) * ${formatPercentage(commissionRates.MAHAIT)}%`, amount: totalMahaItComm }
         ];
 
         renderFinancialBreakdownRows(previewTaxBreakupBody, commissions, taxComponents);
@@ -616,7 +626,7 @@
         commissions.forEach(comm => {
             const row = document.createElement("tr");
             row.innerHTML = `
-                <th class="text-end text-muted small">${escapeHtml(comm.label)}</th>
+                <th class="text-end text-muted small">${comm.label}</th>
                 <td class="text-end small">${formatCurrency(comm.amount)}</td>
             `;
             container.appendChild(row);

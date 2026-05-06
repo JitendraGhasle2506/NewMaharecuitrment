@@ -2,10 +2,13 @@ package com.maharecruitment.gov.in.department.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.entity.HrReviewDecision;
-import com.maharecruitment.gov.in.department.service.model.HrDepartmentSubDepartmentRequestView;
 import com.maharecruitment.gov.in.department.service.model.HrDepartmentApplicationReviewDetailView;
+import com.maharecruitment.gov.in.department.service.model.HrDepartmentSubDepartmentRequestView;
 import com.maharecruitment.gov.in.department.service.model.HrDepartmentSubmittedApplicationView;
 import com.maharecruitment.gov.in.department.service.model.HrParentDepartmentRequestView;
 import com.maharecruitment.gov.in.department.service.model.HrSubDepartmentApplicationDetailView;
@@ -39,7 +42,7 @@ public interface HrDepartmentRequestService {
             Long subDepartmentId,
             Long applicationId);
 
-    List<com.maharecruitment.gov.in.department.service.model.HrPartialPaymentAuthorizationView> getApplicationsForPaymentAuthorization();
+    Page<com.maharecruitment.gov.in.department.service.model.HrPartialPaymentAuthorizationView> getApplicationsForPaymentAuthorization(Pageable pageable);
 
     void authorizePartialPayment(Long applicationId, boolean allowed, String actorEmail);
 }

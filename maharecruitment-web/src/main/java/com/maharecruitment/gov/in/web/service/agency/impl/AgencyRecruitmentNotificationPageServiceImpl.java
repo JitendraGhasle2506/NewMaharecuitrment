@@ -126,9 +126,10 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     public Page<AgencyShortlistedCandidateView> getShortlistedCandidates(
             String actorEmail,
             Long recruitmentNotificationId,
+            String search,
             Pageable pageable) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        return candidateService.getShortlistedCandidates(context.agencyId(), recruitmentNotificationId, pageable);
+        return candidateService.getShortlistedCandidates(context.agencyId(), recruitmentNotificationId, search, pageable);
     }
 
     @Override
@@ -138,9 +139,9 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     }
 
     @Override
-    public List<AgencySelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId) {
+    public Page<AgencySelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId, String search, Pageable pageable) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        return candidateService.getSelectedCandidates(context.agencyId(), recruitmentNotificationId);
+        return candidateService.getSelectedCandidates(context.agencyId(), recruitmentNotificationId, search, pageable);
     }
 
     @Override

@@ -19,6 +19,17 @@
                     <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
                     <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0"><i
+                                        class="fas fa-search text-muted"></i></span>
+                                <input type="text" class="form-control border-start-0" placeholder="Search applications..."
+                                    id="searchInput" />
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover align-middle mb-0">
                             <thead>
@@ -33,23 +44,23 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr th:if="${#lists.isEmpty(applications)}">
+                                <tr th:if="${applications.isEmpty()}">
                                     <td colspan="7" class="text-center text-muted">No applications found.</td>
                                 </tr>
-                                <tr th:each="applicationSummary : ${applications}">
+                                <tr th:each="applicationSummary, itemStat : ${applications.content}">
                                     <td th:text="${applicationSummary.requestId}">DPA-20260310-ABC123</td>
                                     <td th:text="${applicationSummary.projectName}">Project Name</td>
                                     <td
                                         th:text="${#strings.replace(applicationSummary.applicationType.name(), '_', ' ')}">
                                         APPLICATION TYPE</td>
                                     <td>
-                                        <span class="badge" th:classappend="${
+                                        <span class="badge rounded-pill" th:classappend="${
                                                 applicationSummary.applicationStatus.name() == 'COMPLETED' ? ' text-bg-success' :
                                                 (applicationSummary.applicationStatus.name() == 'HR_REJECTED' ? ' text-bg-danger' :
                                                 (applicationSummary.applicationStatus.name() == 'HR_SENT_BACK' || applicationSummary.applicationStatus.name() == 'AUDITOR_SENT_BACK' ? ' text-bg-warning' :
                                                 (applicationSummary.applicationStatus.name() == 'DRAFT' ? ' text-bg-secondary' : ' text-bg-primary')))
                                               }"
-                                            th:text="${applicationSummary.applicationStatus.statusCode + ' - ' + applicationSummary.applicationStatus.displayName}">
+                                            th:text="${applicationSummary.applicationStatus.displayName}">
                                             DRAFT
                                         </span>
                                     </td>
@@ -69,10 +80,76 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Pagination Section -->
+                    <div class="app-pagination-shell mt-3" th:if="${applications.totalPages > 1}"
+                        th:with="middleStart=${applications.number - 2 > 1 ? applications.number - 2 : 1},
+                                 middleEnd=${applications.number + 2 < applications.totalPages - 2 ? applications.number + 2 : applications.totalPages - 2},
+                                 showingFrom=${applications.totalElements == 0 ? 0 : applications.number * applications.size + 1},
+                                 showingTo=${applications.totalElements == 0 ? 0 : applications.number * applications.size + applications.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta small text-muted">
+                                Showing <span th:text="${showingFrom}" class="fw-bold">1</span> to <span
+                                    th:text="${showingTo}" class="fw-bold">10</span> of
+                                <span th:text="${applications.totalElements}" class="fw-bold">10</span> entries
+                            </div>
+                        </div>
+                        <nav aria-label="Manpower application pagination">
+                            <ul class="pagination app-pagination pagination-sm mb-0">
+                                <li class="page-item" th:classappend="${applications.first} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/department/manpower/list(page=${applications.number - 1},size=${applications.size})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:classappend="${applications.number == 0} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/department/manpower/list(page=0,size=${applications.size})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item"
+                                        th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == applications.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/department/manpower/list(page=${pageIndex},size=${applications.size})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < applications.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${applications.totalPages > 1}"
+                                    th:classappend="${applications.number == applications.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/department/manpower/list(page=${applications.totalPages - 1},size=${applications.size})}"
+                                        th:text="${applications.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${applications.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/department/manpower/list(page=${applications.number + 1},size=${applications.size})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         </section>
     </th:block>
+    <script>
+        document.getElementById('searchInput').addEventListener('input', function () {
+            var filter = this.value.toLowerCase();
+            var rows = document.querySelectorAll('table tbody tr');
+            rows.forEach(function (row) {
+                var text = row.innerText.toLowerCase();
+                // Ensure we don't hide the "No records found" row if it's there, 
+                // or handle it gracefully.
+                if (row.cells.length > 1) {
+                    row.style.display = text.includes(filter) ? '' : 'none';
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

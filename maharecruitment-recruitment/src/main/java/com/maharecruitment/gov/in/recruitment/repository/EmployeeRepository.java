@@ -157,6 +157,38 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     List<EmployeeEntity> findByAgencyAgencyIdAndStatusOrderByOnboardingDateDescEmployeeIdDesc(Long agencyId,
             String status);
 
+    @Query(value = "select e from EmployeeEntity e "
+            + "left join e.preOnboarding pre "
+            + "left join pre.interviewDetail interview "
+            + "left join interview.recruitmentNotification notification "
+            + "left join notification.projectMst project "
+            + "where e.agency.agencyId = :agencyId "
+            + "and upper(e.status) = :status "
+            + "and (:search is null or "
+            + "upper(e.fullName) like :search or "
+            + "upper(e.employeeCode) like :search or "
+            + "upper(e.email) like :search or "
+            + "upper(project.projectName) like :search or "
+            + "upper(e.requestId) like :search)",
+            countQuery = "select count(e) from EmployeeEntity e "
+            + "left join e.preOnboarding pre "
+            + "left join pre.interviewDetail interview "
+            + "left join interview.recruitmentNotification notification "
+            + "left join notification.projectMst project "
+            + "where e.agency.agencyId = :agencyId "
+            + "and upper(e.status) = :status "
+            + "and (:search is null or "
+            + "upper(e.fullName) like :search or "
+            + "upper(e.employeeCode) like :search or "
+            + "upper(e.email) like :search or "
+            + "upper(project.projectName) like :search or "
+            + "upper(e.requestId) like :search)")
+    Page<EmployeeEntity> findByAgencyAndStatusWithSearch(
+            @Param("agencyId") Long agencyId,
+            @Param("status") String status,
+            @Param("search") String search,
+            Pageable pageable);
+
     Optional<EmployeeEntity> findByEmployeeIdAndAgencyAgencyId(Long employeeId, Long agencyId);
 
     @Query("select case when count(employee) > 0 then true else false end "

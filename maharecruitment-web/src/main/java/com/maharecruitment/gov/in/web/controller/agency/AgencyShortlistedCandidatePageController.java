@@ -3,7 +3,9 @@ package com.maharecruitment.gov.in.web.controller.agency;
 import java.security.Principal;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,19 +35,23 @@ public class AgencyShortlistedCandidatePageController {
     @GetMapping
     public String shortlistedCandidateProjects(
             @RequestParam(name = "open", required = false) Long openRecruitmentNotificationId,
+            @RequestParam(name = "search", required = false) String search,
+            @PageableDefault(size = 10) Pageable pageable,
             Principal principal,
             Model model) {
         String actorEmail = resolveActorEmail(principal);
         List<AgencyShortlistedCandidateProjectView> shortlistedProjects = pageService
                 .getShortlistedCandidateProjects(actorEmail);
-        List<AgencyShortlistedCandidateView> expandedShortlistedCandidates = openRecruitmentNotificationId == null
-                ? List.of()
-                : pageService.getShortlistedCandidates(actorEmail, openRecruitmentNotificationId, Pageable.unpaged())
-                        .getContent();
+        
+        Page<AgencyShortlistedCandidateView> candidatePage = openRecruitmentNotificationId == null
+                ? Page.empty()
+                : pageService.getShortlistedCandidates(actorEmail, openRecruitmentNotificationId, search, pageable);
 
         model.addAttribute("shortlistedProjects", shortlistedProjects);
-        model.addAttribute("expandedShortlistedCandidates", expandedShortlistedCandidates);
+        model.addAttribute("expandedShortlistedCandidates", candidatePage.getContent());
+        model.addAttribute("candidatePage", candidatePage);
         model.addAttribute("expandedRecruitmentNotificationId", openRecruitmentNotificationId);
+        model.addAttribute("searchTerm", search != null ? search : "");
         return "agency/shortlisted-candidate-project-list";
     }
 

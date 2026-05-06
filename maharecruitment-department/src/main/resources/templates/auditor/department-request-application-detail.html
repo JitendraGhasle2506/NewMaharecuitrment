@@ -260,7 +260,7 @@
                             <div class="mb-3">
                                 <div class="info-label">Current Phase</div>
                                 <span class="badge badge-premium text-bg-primary fs-6 py-2 px-3" 
-                                      th:text="${applicationReviewDetail.applicationStatus.statusCode + ' - ' + #strings.replace(applicationReviewDetail.applicationStatus.name(), '_', ' ')}">
+                                      th:text="${#strings.replace(applicationReviewDetail.applicationStatus.name(), '_', ' ')}">
                                     STATUS
                                 </span>
                             </div>

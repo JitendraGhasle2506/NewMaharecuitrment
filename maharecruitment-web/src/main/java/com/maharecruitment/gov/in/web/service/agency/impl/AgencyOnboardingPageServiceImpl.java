@@ -16,6 +16,9 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -306,20 +309,28 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     }
 
     @Override
-    public List<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail) {
-        return getEmployeesByStatus(actorEmail, "ACTIVE");
+    public Page<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail, String search, Pageable pageable) {
+        return getEmployeesByStatus(actorEmail, "ACTIVE", search, pageable);
     }
 
     @Override
-    public List<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status) {
+    public Page<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status, String search, Pageable pageable) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "ACTIVE";
-        return employeeRepository.findByAgencyAgencyIdAndStatusOrderByOnboardingDateDescEmployeeIdDesc(
+        
+        String searchPattern = StringUtils.hasText(search) ? "%" + search.trim().toUpperCase() + "%" : null;
+
+        Page<EmployeeEntity> pagedEntities = employeeRepository.findByAgencyAndStatusWithSearch(
                 context.agencyId(),
-                normalizedStatus)
-                .stream()
+                normalizedStatus,
+                searchPattern,
+                pageable);
+
+        List<AgencyOnboardedEmployeeView> content = pagedEntities.getContent().stream()
                 .map(this::toOnboardedEmployeeView)
                 .toList();
+
+        return new PageImpl<>(content, pageable, pagedEntities.getTotalElements());
     }
 
     @Override

@@ -37,11 +37,12 @@ public interface AgencyRecruitmentNotificationPageService {
     Page<AgencyShortlistedCandidateView> getShortlistedCandidates(
             String actorEmail,
             Long recruitmentNotificationId,
+            String search,
             Pageable pageable);
 
     List<AgencySelectedCandidateProjectView> getSelectedCandidateProjects(String actorEmail);
 
-    List<AgencySelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId);
+    Page<AgencySelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId, String search, Pageable pageable);
 
     void submitCandidates(String actorEmail, Long recruitmentNotificationId, AgencyCandidateBatchForm candidateBatchForm);
 

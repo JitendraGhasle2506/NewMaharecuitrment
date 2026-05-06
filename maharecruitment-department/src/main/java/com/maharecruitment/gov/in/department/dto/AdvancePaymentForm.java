@@ -63,4 +63,5 @@ public class AdvancePaymentForm {
     private String paymentMode;
 
     private String chequeNumber;
+    private String rejectionRemarks;
 }

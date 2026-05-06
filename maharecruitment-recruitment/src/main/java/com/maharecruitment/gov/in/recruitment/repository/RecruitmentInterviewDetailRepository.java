@@ -85,9 +85,14 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY"
             + ") "
             + "and candidate.finalDecisionStatus is null "
+            + "and (:searchPattern is null or upper(candidate.candidateName) like :searchPattern "
+            + "or upper(candidate.candidateEmail) like :searchPattern "
+            + "or upper(designation.designationName) like :searchPattern) "
             + "order by candidate.departmentShortlistedAt desc, candidate.createdDateTime desc",
             countQuery = "select count(candidate.recruitmentInterviewDetailId) "
                     + "from RecruitmentInterviewDetailEntity candidate "
+                    + "left join candidate.designationVacancy vacancy "
+                    + "left join vacancy.designationMst designation "
                     + "where candidate.agency.agencyId = :agencyId "
                     + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
                     + "and candidate.active = true "
@@ -95,10 +100,14 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
                     + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT, "
                     + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY"
                     + ") "
-                    + "and candidate.finalDecisionStatus is null")
+                    + "and candidate.finalDecisionStatus is null "
+                    + "and (:searchPattern is null or upper(candidate.candidateName) like :searchPattern "
+                    + "or upper(candidate.candidateEmail) like :searchPattern "
+                    + "or upper(designation.designationName) like :searchPattern)")
     Page<RecruitmentInterviewDetailEntity> findShortlistedCandidatesByAgency(
             @Param("agencyId") Long agencyId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId,
+            @Param("searchPattern") String searchPattern,
             Pageable pageable);
 
     @Query("select candidate "
@@ -116,7 +125,7 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "order by candidate.finalDecisionAt desc, candidate.createdDateTime desc")
     List<RecruitmentInterviewDetailEntity> findSelectedCandidatesByAgency(@Param("agencyId") Long agencyId);
 
-    @Query("select candidate "
+    @Query(value = "select candidate "
             + "from RecruitmentInterviewDetailEntity candidate "
             + "join fetch candidate.recruitmentNotification notification "
             + "join fetch notification.projectMst project "
@@ -126,13 +135,32 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
             + "and candidate.active = true "
             + "and candidate.finalDecisionStatus = 'SELECTED' "
+            + "and (:searchPattern is null or upper(candidate.candidateName) like :searchPattern "
+            + "or upper(candidate.candidateEmail) like :searchPattern "
+            + "or upper(designation.designationName) like :searchPattern) "
             + "and not exists (select preOnboarding.preOnboardingId "
             + "from AgencyCandidatePreOnboardingEntity preOnboarding "
             + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null) "
-            + "order by candidate.finalDecisionAt desc, candidate.createdDateTime desc")
-    List<RecruitmentInterviewDetailEntity> findSelectedCandidatesByAgencyAndNotification(
+            + "order by candidate.finalDecisionAt desc, candidate.createdDateTime desc",
+            countQuery = "select count(candidate.recruitmentInterviewDetailId) "
+                    + "from RecruitmentInterviewDetailEntity candidate "
+                    + "left join candidate.designationVacancy vacancy "
+                    + "left join vacancy.designationMst designation "
+                    + "where candidate.agency.agencyId = :agencyId "
+                    + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
+                    + "and candidate.active = true "
+                    + "and candidate.finalDecisionStatus = 'SELECTED' "
+                    + "and (:searchPattern is null or upper(candidate.candidateName) like :searchPattern "
+                    + "or upper(candidate.candidateEmail) like :searchPattern "
+                    + "or upper(designation.designationName) like :searchPattern) "
+                    + "and not exists (select preOnboarding.preOnboardingId "
+                    + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+                    + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null)")
+    Page<RecruitmentInterviewDetailEntity> findSelectedCandidatesByAgencyAndNotification(
             @Param("agencyId") Long agencyId,
-            @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId,
+            @Param("searchPattern") String searchPattern,
+            Pageable pageable);
 
     @Query("select n.recruitmentNotificationId as recruitmentNotificationId, "
             + "n.requestId as requestId, "

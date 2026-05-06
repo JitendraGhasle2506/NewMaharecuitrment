@@ -24,13 +24,14 @@ public interface RecruitmentAgencyCandidateService {
     Page<AgencyShortlistedCandidateView> getShortlistedCandidates(
             Long agencyId,
             Long recruitmentNotificationId,
+            String search,
             Pageable pageable);
 
     List<AgencySelectedCandidateProjectView> getSelectedCandidateProjects(Long agencyId);
 
     List<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId);
 
-    List<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId, Long recruitmentNotificationId);
+    Page<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId, Long recruitmentNotificationId, String search, Pageable pageable);
 
     void submitCandidates(
             Long recruitmentNotificationId,

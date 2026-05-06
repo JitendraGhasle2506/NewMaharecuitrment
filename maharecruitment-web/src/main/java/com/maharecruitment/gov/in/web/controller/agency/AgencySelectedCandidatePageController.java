@@ -2,15 +2,20 @@ package com.maharecruitment.gov.in.web.controller.agency;
 
 import java.security.Principal;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
 import com.maharecruitment.gov.in.web.service.agency.AgencyRecruitmentNotificationPageService;
 
 @Controller
@@ -33,11 +38,16 @@ public class AgencySelectedCandidatePageController {
     @GetMapping("/{recruitmentNotificationId}")
     public String selectedCandidatesByProject(
             @PathVariable Long recruitmentNotificationId,
+            @RequestParam(name = "search", required = false) String search,
+            @PageableDefault(size = 10) Pageable pageable,
             Principal principal,
             Model model) {
         String actorEmail = resolveActorEmail(principal);
-        model.addAttribute("selectedCandidates", pageService.getSelectedCandidates(actorEmail, recruitmentNotificationId));
+        Page<AgencySelectedCandidateView> candidatePage = pageService.getSelectedCandidates(actorEmail, recruitmentNotificationId, search, pageable);
+        model.addAttribute("selectedCandidates", candidatePage.getContent());
+        model.addAttribute("candidatePage", candidatePage);
         model.addAttribute("selectedRecruitmentNotificationId", recruitmentNotificationId);
+        model.addAttribute("searchTerm", search != null ? search : "");
         return "agency/selected-candidate-list";
     }
 

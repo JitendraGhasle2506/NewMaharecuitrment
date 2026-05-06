@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationMasterResponse;
 import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
@@ -22,7 +25,7 @@ public interface DepartmentManpowerApplicationService {
 
     Long saveApplication(DepartmentProjectApplicationForm form, String actionStatus, String actorEmail);
 
-    List<DepartmentProjectApplicationSummaryView> getApplicationSummaries(String actorEmail);
+    Page<DepartmentProjectApplicationSummaryView> getApplicationSummaries(String actorEmail, Pageable pageable);
 
     List<DepartmentProjectApplicationActivityView> getApplicationActivities(Long applicationId, String actorEmail);
 
