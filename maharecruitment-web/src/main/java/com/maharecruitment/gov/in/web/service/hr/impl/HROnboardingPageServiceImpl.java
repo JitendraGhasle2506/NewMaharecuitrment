@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -263,7 +264,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
 
             // CREATE EMPLOYEE RECORD
             EmployeeEntity employee = new EmployeeEntity();
-            employee.setEmployeeCode("PENDING"); // TEMPORARY PLACEHOLDER TO AVOID NOT-NULL CONSTRAINT
+            employee.setEmployeeCode(generateTemporaryEmployeeCode());
             employee.setPreOnboarding(entity);
             employee.setFullName(entity.getCandidateName());
             employee.setEmail(entity.getCandidateEmail());
@@ -543,6 +544,10 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             subDepartmentRepository.findById(departmentRegistration.getSubDeptId())
                     .ifPresent(employee::setSubDepartment);
         }
+    }
+
+    private String generateTemporaryEmployeeCode() {
+        return "TMP-" + UUID.randomUUID().toString().replace("-", "");
     }
 
     private EmployeeListView toEmployeeListView(EmployeeEntity entity) {

@@ -110,6 +110,12 @@
             font-weight: 700;
         }
 
+        .invoice-document-title {
+            margin: 0;
+            font-size: 0.92rem;
+            letter-spacing: 0.04em;
+        }
+
         .signature-row td {
             height: 120px;
             vertical-align: bottom;
@@ -178,6 +184,60 @@
                 font-size: 9pt;
             }
         }
+
+        @media print {
+            .preview-page,
+            .preview-sheet {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .preview-banner,
+            .preview-actions {
+                display: none !important;
+            }
+
+            .invoice-brand-table {
+                margin-bottom: 3px !important;
+            }
+
+            .nested-detail-table td {
+                padding: 0 !important;
+            }
+
+            .terms-list {
+                font-size: 6.5pt;
+                line-height: 1.0;
+            }
+
+            .terms-list li {
+                margin-bottom: 0;
+            }
+
+            .signature-row td {
+                height: 42px !important;
+                padding-top: 1px !important;
+                padding-bottom: 1px !important;
+            }
+
+            .qr-wrapper {
+                min-height: 64px;
+            }
+
+            .footer-block {
+                font-size: 6.1pt !important;
+                line-height: 1 !important;
+            }
+
+            img[alt="MahaIT Logo"] {
+                width: 42px !important;
+            }
+
+            .invoice-document-title {
+                font-size: 7.2pt !important;
+                letter-spacing: 0.05em;
+            }
+        }
     </style>
 </head>
 
@@ -190,7 +250,7 @@
                 tax invoice layout.
             </div>
 
-            <table class="table bor-0">
+            <table class="table bor-0 invoice-brand-table">
                 <tr>
                     <td class="text-center">
                         <img th:src="@{/img/mahait_logo.png}" width="70" alt="MahaIT Logo">
@@ -204,19 +264,19 @@
                 </tr>
                 <tr>
                     <td colspan="6" style="text-align:center;">
-                        <h3 style="margin:0;">PROFORMA INVOICE</h3>
+                        <h3 class="invoice-document-title">PROFORMA INVOICE</h3>
                     </td>
                 </tr>
             </table>
 
-            <table class="table table-bordered table-invoice">
+            <table class="table table-bordered table-invoice invoice-meta-table">
                 <tr>
                     <td colspan="3" width="40%">
                         <b>TI No:</b>
                         <span th:text="${invoice.tiNumber}">TI-2025-26-00001</span>
                     </td>
                     <td colspan="3" rowspan="2" style="padding:8px; vertical-align:top;">
-                        <table class="nested-detail-table">
+                        <table class="nested-detail-table invoice-detail-grid">
                             <tr>
                                 <td width="180"><b>Date:</b></td>
                                 <td th:text="${#temporals.format(invoice.tiDate, 'dd/MM/yyyy')}">10/07/2025</td>
@@ -254,7 +314,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="3">
+                    <td colspan="3" class="invoice-billed-to">
                         <b>To,</b><br>
                         <span th:text="${invoice.billedTo}">Department Name</span><br>
                         <span th:text="${invoice.billingAddress}">Address</span>
@@ -262,7 +322,16 @@
                 </tr>
             </table>
 
-            <table class="table table-bordered table-invoice">
+            <table class="table table-bordered table-invoice invoice-items-table">
+                <colgroup>
+                    <col style="width: 8%;">
+                    <col style="width: 27%;">
+                    <col style="width: 19%;">
+                    <col style="width: 11%;">
+                    <col style="width: 8%;">
+                    <col style="width: 13%;">
+                    <col style="width: 14%;">
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Sr No.</th>
@@ -314,7 +383,7 @@
                 </tbody>
             </table>
 
-            <table class="table table-bordered table-invoice">
+            <table class="table table-bordered table-invoice invoice-account-table">
                 <tr>
                     <th width="50%">Bank Account Details</th>
                     <th width="50%">Company Details</th>
@@ -335,7 +404,7 @@
                 </tr>
             </table>
 
-            <table class="table table-bordered table-invoice">
+            <table class="table table-bordered table-invoice invoice-terms-table">
                 <tr>
                     <th class="text-center">Terms &amp; Conditions</th>
                 </tr>
@@ -360,7 +429,7 @@
                 </tr>
             </table>
 
-            <table class="table table-bordered table-invoice signature-row">
+            <table class="table table-bordered table-invoice invoice-signature-table signature-row">
                 <tr>
                     <td class="text-center" width="35%">Customer's Seal and Signature</td>
                     <td class="text-center" width="30%">
@@ -382,7 +451,7 @@
                 </tr>
             </table>
 
-            <div class="footer-block text-center small">
+            <div class="footer-block invoice-footer text-center small">
                 <span th:text="${invoice.companyAddress}">Corporate Office Address</span><br>
                 Contact: +91 22 22174600 | Website: www.mahait.org
             </div>
