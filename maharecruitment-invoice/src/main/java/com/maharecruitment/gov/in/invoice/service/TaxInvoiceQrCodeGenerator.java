@@ -21,7 +21,7 @@ import com.maharecruitment.gov.in.invoice.exception.TaxInvoiceException;
 public class TaxInvoiceQrCodeGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(TaxInvoiceQrCodeGenerator.class);
-    private static final int QR_SIZE = 300;
+    private static final int QR_SIZE = 420;
     private static final String DATA_URL_PREFIX = "data:image/png;base64,";
     private static final String ZXING_QR_WRITER = "com.google.zxing.qrcode.QRCodeWriter";
     private static final String ZXING_BARCODE_FORMAT = "com.google.zxing.BarcodeFormat";
@@ -62,18 +62,13 @@ public class TaxInvoiceQrCodeGenerator {
 
     private String buildPayload(TaxInvoiceView invoice) {
         StringBuilder payload = new StringBuilder();
-        appendLine(payload, "MAHAIT TAX INVOICE");
-        appendLine(payload, "AUTHORITY_NAME", resolveAuthorityName(invoice));
-        appendLine(payload, "PROJECT_NAME", invoice.getProjectName());
-        appendLine(payload, "TI_NO", invoice.getTiNumber());
-        appendLine(payload, "REQUEST_ID", invoice.getRequestId());
-        appendLine(payload, "TI_DATE", formatDate(invoice.getTiDate()));
-        appendLine(payload, "BASE_AMOUNT", formatAmount(invoice.getBaseAmount()));
-        appendLine(payload, "TAX_AMOUNT", formatAmount(invoice.getTaxAmount()));
-        appendLine(payload, "GRAND_TOTAL", formatAmount(invoice.getTotalAmount()));
-        appendLine(payload, "APPLICATION_ID", safeNumber(invoice.getDepartmentProjectApplicationId()));
-        appendLine(payload, "BILLED_TO", invoice.getBilledTo());
-        appendLine(payload, "GSTIN", invoice.getGstNumber());
+        appendLine(payload, "MAHAIT PROFORMA INVOICE");
+        appendLine(payload, "TI NO: " + normalize(invoice.getTiNumber()));
+        appendLine(payload, "REQUEST ID: " + normalize(invoice.getRequestId()));
+        appendLine(payload, "DATE: " + formatDate(invoice.getTiDate()));
+        appendLine(payload, "TOTAL: INR " + formatAmount(invoice.getTotalAmount()));
+        appendLine(payload, "BILLED TO: " + normalize(invoice.getBilledTo()));
+        appendLine(payload, "APP ID: " + safeNumber(invoice.getDepartmentProjectApplicationId()));
         return payload.toString().trim();
     }
 
@@ -102,9 +97,9 @@ public class TaxInvoiceQrCodeGenerator {
         Class<?> errorCorrectionLevelClass = Class.forName(ZXING_ERROR_CORRECTION_LEVEL);
 
         java.util.Map<Object, Object> hints = new java.util.HashMap<>();
-        hints.put(Enum.valueOf(hintTypeClass.asSubclass(Enum.class), "MARGIN"), 0);
+        hints.put(Enum.valueOf(hintTypeClass.asSubclass(Enum.class), "MARGIN"), 2);
         hints.put(Enum.valueOf(hintTypeClass.asSubclass(Enum.class), "ERROR_CORRECTION"),
-                Enum.valueOf(errorCorrectionLevelClass.asSubclass(Enum.class), "Q"));
+                Enum.valueOf(errorCorrectionLevelClass.asSubclass(Enum.class), "M"));
 
         Method encodeMethod = writerClass.getMethod("encode", String.class, barcodeFormatClass, int.class, int.class,
                 java.util.Map.class);
@@ -127,17 +122,6 @@ public class TaxInvoiceQrCodeGenerator {
             payload.append('\n');
         }
         payload.append(normalize(value));
-    }
-
-    private void appendLine(StringBuilder payload, String key, String value) {
-        String normalizedValue = normalize(value);
-        if (!StringUtils.hasText(normalizedValue)) {
-            return;
-        }
-        if (payload.length() > 0) {
-            payload.append('\n');
-        }
-        payload.append(key).append('=').append(normalizedValue);
     }
 
     private String normalize(String value) {

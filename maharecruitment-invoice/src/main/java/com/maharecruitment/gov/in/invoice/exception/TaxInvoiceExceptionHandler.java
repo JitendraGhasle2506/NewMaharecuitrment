@@ -46,19 +46,25 @@ public class TaxInvoiceExceptionHandler {
     }
 
     private String resolveTitle(HttpStatus status) {
-        return switch (status) {
-            case NOT_FOUND -> "Tax Invoice Not Found";
-            case CONFLICT -> "Tax Invoice Preview Not Ready";
-            case BAD_REQUEST -> "Tax Invoice Data Error";
-            default -> "Tax Invoice Error";
-        };
+        if (status == HttpStatus.NOT_FOUND) {
+            return "Tax Invoice Not Found";
+        }
+        if (status == HttpStatus.CONFLICT) {
+            return "Tax Invoice Preview Not Ready";
+        }
+        if (status == HttpStatus.BAD_REQUEST) {
+            return "Tax Invoice Data Error";
+        }
+        return "Tax Invoice Error";
     }
 
     private String resolveIcon(HttpStatus status) {
-        return switch (status) {
-            case NOT_FOUND -> "404.svg";
-            case CONFLICT, BAD_REQUEST -> "400.svg";
-            default -> "500.svg";
-        };
+        if (status == HttpStatus.NOT_FOUND) {
+            return "404.svg";
+        }
+        if (status == HttpStatus.CONFLICT || status == HttpStatus.BAD_REQUEST) {
+            return "400.svg";
+        }
+        return "500.svg";
     }
 }

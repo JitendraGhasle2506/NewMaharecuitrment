@@ -119,24 +119,38 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 92px;
+            min-height: 168px;
+        }
+
+        .qr-block {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
         }
 
         .qr-code-image {
-            width: 86px;
-            height: 86px;
+            width: 160px;
+            height: 160px;
             object-fit: contain;
         }
 
         .qr-placeholder {
-            width: 86px;
-            height: 86px;
+            width: 160px;
+            height: 160px;
             border: 1px dashed #64748b;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
             color: #1e3a8a;
+        }
+
+        .qr-caption {
+            font-size: 8pt;
+            line-height: 1.2;
+            text-align: center;
+            font-weight: 600;
         }
 
         .terms-list {
@@ -352,7 +366,11 @@
                     <td class="text-center" width="30%">
                         <div class="qr-wrapper">
                             <th:block th:if="${!#strings.isEmpty(invoice.qrCodeDataUrl)}">
-                                <img th:src="${invoice.qrCodeDataUrl}" class="qr-code-image" alt="Tax Invoice QR Code">
+                                <div class="qr-block">
+                                    <img th:src="${invoice.qrCodeDataUrl}" class="qr-code-image"
+                                        alt="Tax Invoice QR Code">
+                                    <div class="qr-caption">Scan for invoice details</div>
+                                </div>
                             </th:block>
                             <div th:if="${#strings.isEmpty(invoice.qrCodeDataUrl)}" class="qr-placeholder">QR</div>
                         </div>
