@@ -34,6 +34,7 @@ import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalR
 import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
 import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
+import com.maharecruitment.gov.in.attendance.service.AttendanceStatusResolver;
 import com.maharecruitment.gov.in.attendance.service.InternalEmployeeAttendanceReportService;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportFilter;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportRow;
@@ -376,7 +377,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             return "T";
         }
         if (attendance != null) {
-            return mapStatusToCode(attendance.getStatus(), attendance);
+            return AttendanceStatusResolver.resolveStatusCode(attendance);
         }
         if (date.isAfter(today)) {
             return "";
@@ -410,39 +411,32 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
         return date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY;
     }
 
-    private String mapStatusToCode(String status, DailyAttendanceInternalEntity attendance) {
-        if (!StringUtils.hasText(status)) {
-            if (attendance != null && (StringUtils.hasText(attendance.getInTime()) || StringUtils.hasText(attendance.getOutTime()))) {
-                return "P";
-            }
-            return "";
-        }
-
-        return switch (status.trim().toUpperCase(Locale.ENGLISH)) {
-            case "P", "PRESENT" -> "P";
-            case "A", "ABSENT" -> "A";
-            case "W", "WO", "WEEK_OFF" -> "W";
-            case "H", "HOLIDAY" -> "H";
-            case "L", "LEAVE" -> "L";
-            case "T", "TOUR" -> "T";
-            default -> status.trim().toUpperCase(Locale.ENGLISH);
-        };
-    }
-
     private void applyStatusCount(InternalAttendanceReportRow row, String statusCode) {
         if (!StringUtils.hasText(statusCode)) {
             return;
         }
 
         switch (statusCode) {
-            case "P" -> row.setPresentCount(row.getPresentCount() + 1);
-            case "A" -> row.setAbsentCount(row.getAbsentCount() + 1);
-            case "L" -> row.setLeaveCount(row.getLeaveCount() + 1);
-            case "H" -> row.setHolidayCount(row.getHolidayCount() + 1);
-            case "W" -> row.setWeekOffCount(row.getWeekOffCount() + 1);
-            case "T" -> row.setTourCount(row.getTourCount() + 1);
-            default -> {
-            }
+            case "P":
+                row.setPresentCount(row.getPresentCount() + 1);
+                break;
+            case "A":
+                row.setAbsentCount(row.getAbsentCount() + 1);
+                break;
+            case "L":
+                row.setLeaveCount(row.getLeaveCount() + 1);
+                break;
+            case "H":
+                row.setHolidayCount(row.getHolidayCount() + 1);
+                break;
+            case "W":
+                row.setWeekOffCount(row.getWeekOffCount() + 1);
+                break;
+            case "T":
+                row.setTourCount(row.getTourCount() + 1);
+                break;
+            default:
+                break;
         }
     }
 

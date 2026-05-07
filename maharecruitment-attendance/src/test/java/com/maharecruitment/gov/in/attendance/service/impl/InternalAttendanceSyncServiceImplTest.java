@@ -168,12 +168,16 @@ class InternalAttendanceSyncServiceImplTest {
                 new Class<?>[] { type },
                 (proxy, method, args) -> {
                     if (method.getDeclaringClass() == Object.class) {
-                        return switch (method.getName()) {
-                            case "toString" -> type.getSimpleName() + "Stub";
-                            case "hashCode" -> System.identityHashCode(proxy);
-                            case "equals" -> proxy == args[0];
-                            default -> null;
-                        };
+                        switch (method.getName()) {
+                            case "toString":
+                                return type.getSimpleName() + "Stub";
+                            case "hashCode":
+                                return System.identityHashCode(proxy);
+                            case "equals":
+                                return proxy == args[0];
+                            default:
+                                return null;
+                        }
                     }
                     return handler.invoke(proxy, method, args);
                 }));

@@ -891,10 +891,6 @@
 									<div class="legend-item"><div class="legend-circle circle-future">F</div><span>Invalid Date</span></div>
 								</div>
 								
-                                <div th:if="${attendance.totalLeave == 0}" class="alert alert-light border-0 py-2 small mb-3 mx-3 mt-2" style="background-color: #f8fafc; color: #64748b; border-radius: 8px;">
-                                    <i class="fa fa-info-circle me-2"></i> Note: You have not applied for any leave for this particular month.
-                                </div>
-                                
                                 <form id="bulkAttendanceForm" th:action="@{/employee/manual-attendance/submit-bulk}" method="post">
                                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                     <input type="hidden" name="month" th:value="${selectedMonth}">

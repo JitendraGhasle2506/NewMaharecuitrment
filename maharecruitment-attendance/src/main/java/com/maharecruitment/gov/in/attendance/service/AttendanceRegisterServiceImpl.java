@@ -324,7 +324,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 					dayDTO.setInTime(daily.getInTime());
 					dayDTO.setOutTime(daily.getOutTime());
 					dayDTO.setStayHours(daily.getTotalHours());
-					dayDTO.setStatus(daily.getStatus());
+					dayDTO.setStatus(AttendanceStatusResolver.resolveDisplayStatus(daily));
 				} else {
 					dayDTO.setStatus("FUTURE");
 				}
@@ -410,7 +410,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		if (todayAttendance != null) {
 			dto.setTodayInTime(todayAttendance.getInTime());
 			dto.setTodayOutTime(todayAttendance.getOutTime());
-			dto.setTodayStatus(todayAttendance.getStatus());
+			dto.setTodayStatus(AttendanceStatusResolver.resolveDisplayStatus(todayAttendance));
 		} else {
 			dto.setTodayInTime("-");
 			dto.setTodayOutTime("-");
@@ -463,7 +463,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				dayDTO.setInTime(daily.getInTime());
 				dayDTO.setOutTime(daily.getOutTime());
 				dayDTO.setStayHours(daily.getTotalHours());
-				dayDTO.setStatus(daily.getStatus());
+				dayDTO.setStatus(AttendanceStatusResolver.resolveDisplayStatus(daily));
 			} else if (pendingDates.contains(date)) {
 				dayDTO.setStatus("PENDING");
 			} else if (holidayDates.contains(date)) {
@@ -838,24 +838,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	}
 
 	private String mapStatusToCode(String status) {
-		if (status == null)
-			return "";
-		switch (status.toUpperCase()) {
-			case "PRESENT":
-				return "P";
-			case "ABSENT":
-				return "A";
-			case "WEEK_OFF":
-				return "W";
-			case "LEAVE":
-				return "L";
-			case "TOUR":
-				return "T";
-			case "HOLIDAY":
-				return "H";
-			default:
-				return status;
-		}
+		return AttendanceStatusResolver.resolveStatusCode(status);
 	}
 
 	@Override
