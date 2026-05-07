@@ -3,7 +3,12 @@ package com.maharecruitment.gov.in.auth.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.auth.entity.MstSubMenu;
@@ -15,9 +20,42 @@ public interface MstSubMenuRepository extends JpaRepository<MstSubMenu, Long> {
 
     List<MstSubMenu> findAllByOrderBySubMenuIdAsc();
 
+    @EntityGraph(attributePaths = { "menu", "roles" })
+    @Query(
+            value = """
+                    select sm
+                    from MstSubMenu sm
+                    left join sm.menu menu
+                    order by upper(coalesce(menu.menuNameEnglish, '')),
+                             upper(coalesce(sm.subMenuNameEnglish, '')),
+                             sm.subMenuId
+                    """,
+            countQuery = "select count(sm) from MstSubMenu sm")
+    Page<MstSubMenu> findAllWithMenuAndRoles(Pageable pageable);
+
+    @EntityGraph(attributePaths = { "menu", "roles" })
+    Optional<MstSubMenu> findBySubMenuId(Long subMenuId);
+
     List<MstSubMenu> findByMenuMenuIdInOrderByMenuMenuIdAscSubMenuIdAsc(List<Long> menuIds);
 
     List<MstSubMenu> findByMenuMenuIdInAndIsActiveOrderByMenuMenuIdAscSubMenuIdAsc(List<Long> menuIds, Character isActive);
+
+    @EntityGraph(attributePaths = { "menu" })
+    @Query("""
+            select distinct sm
+            from MstSubMenu sm
+            join sm.menu m
+            left join sm.roles sr
+            left join m.roles mr
+            where m.menuId in :menuIds
+              and (
+                    sr.id in :roleIds
+                    or (sr.id is null and mr.id in :roleIds)
+                  )
+            """)
+    List<MstSubMenu> findVisibleSubMenusByMenuIdsAndRoleIds(
+            @Param("menuIds") List<Long> menuIds,
+            @Param("roleIds") List<Long> roleIds);
 
     Optional<MstSubMenu> findByMenuMenuIdAndSubMenuNameEnglishIgnoreCase(Long menuId, String subMenuNameEnglish);
 

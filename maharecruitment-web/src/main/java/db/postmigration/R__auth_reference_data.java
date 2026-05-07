@@ -103,6 +103,7 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 String menuTable = resolveTableName(connection, "mstmenu", "mst_menu", "MstMenu");
                 String subMenuTable = resolveTableName(connection, "sub_menu_mst");
                 String menuRoleTable = resolveTableName(connection, "menu_role");
+                String subMenuRoleTable = resolveTableName(connection, "sub_menu_role");
 
                 if (menuTable == null || subMenuTable == null || menuRoleTable == null) {
                         return;
@@ -353,6 +354,8 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 upsertSubMenu(jdbcTemplate, subMenuTable, employeeTourMenuId, "View Tour",
                                 "/employee/viewTour",
                                 "fa fa-eye");
+
+                syncSubMenuRoleMappings(jdbcTemplate, subMenuTable, menuRoleTable, subMenuRoleTable);
         }
 
         private Map<String, Long> loadRoleIds(JdbcTemplate jdbcTemplate) {
@@ -486,9 +489,33 @@ public class R__auth_reference_data extends BaseJavaMigration {
                                         url,
                                         name,
                                         icon,
-                                        "Y",
-                                        subMenuId);
+                                         "Y",
+                                         subMenuId);
+                 }
+         }
+
+        private void syncSubMenuRoleMappings(
+                        JdbcTemplate jdbcTemplate,
+                        String subMenuTable,
+                        String menuRoleTable,
+                        String subMenuRoleTable) {
+                if (subMenuTable == null || menuRoleTable == null || subMenuRoleTable == null) {
+                        return;
                 }
+
+                String subMenuTableRef = sqlIdentifier(subMenuTable);
+                String menuRoleTableRef = sqlIdentifier(menuRoleTable);
+                String subMenuRoleTableRef = sqlIdentifier(subMenuRoleTable);
+
+                jdbcTemplate.update(
+                                "insert into " + subMenuRoleTableRef + " (sub_menu_id, id) "
+                                                + "select sm.sub_menu_id, mr.id "
+                                                + "from " + subMenuTableRef + " sm "
+                                                + "join " + menuRoleTableRef + " mr on mr.menu_id = sm.menu_id "
+                                                + "where not exists ("
+                                                + "    select 1 from " + subMenuRoleTableRef + " smr "
+                                                + "    where smr.sub_menu_id = sm.sub_menu_id"
+                                                + ")");
         }
 
         private JdbcTemplate jdbcTemplate(Context context) {

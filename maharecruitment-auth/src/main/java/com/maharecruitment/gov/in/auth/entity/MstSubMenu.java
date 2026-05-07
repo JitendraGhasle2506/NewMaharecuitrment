@@ -1,11 +1,16 @@
 package com.maharecruitment.gov.in.auth.entity;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
@@ -45,4 +50,8 @@ public class MstSubMenu {
     @ManyToOne
     @JoinColumn(name = "MENU_ID")
     private MstMenu menu;
+
+    @ManyToMany
+    @JoinTable(name = "sub_menu_role", joinColumns = @JoinColumn(name = "sub_menu_id"), inverseJoinColumns = @JoinColumn(name = "id"))
+    private Set<Role> roles = new HashSet<>();
 }

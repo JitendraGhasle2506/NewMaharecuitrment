@@ -1,5 +1,8 @@
 package com.maharecruitment.gov.in.web.dto.admin;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -32,4 +35,6 @@ public class SubMenuForm {
 
     @NotBlank(message = "Status is required")
     private String isActive = "Y";
+
+    private List<Long> roleIds = new ArrayList<>();
 }

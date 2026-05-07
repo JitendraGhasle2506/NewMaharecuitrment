@@ -35,19 +35,26 @@
                                     <th>Parent Menu</th>
                                     <th>Name</th>
                                     <th>URL</th>
+                                    <th>Mapped Roles</th>
                                     <th>Status</th>
                                     <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:if="${subMenus.isEmpty()}">
-                                    <td colspan="6" class="text-center text-muted">No records found</td>
+                                    <td colspan="7" class="text-center text-muted">No records found</td>
                                 </tr>
                                 <tr th:each="subMenu : ${subMenus.content}">
                                     <td th:text="${subMenu.subMenuId}"></td>
                                     <td th:text="${subMenu.menu != null ? subMenu.menu.menuNameEnglish : '-'}"></td>
                                     <td th:text="${subMenu.subMenuNameEnglish}"></td>
                                     <td th:text="${subMenu.url}"></td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1" th:if="${subMenu.roles != null and !subMenu.roles.isEmpty()}">
+                                            <span class="badge text-bg-light border" th:each="role : ${subMenu.roles}" th:text="${role.name}"></span>
+                                        </div>
+                                        <span class="text-muted" th:if="${subMenu.roles == null or subMenu.roles.isEmpty()}">-</span>
+                                    </td>
                                     <td>
                                         <span class="badge"
                                             th:classappend="${subMenu.isActive == 'Y'} ? ' text-bg-success' : ' text-bg-secondary'"

@@ -8,5 +8,5 @@ public interface MstSubMenuService {
 
     List<MstSubMenu> getAllSubMenus();
 
-    List<MstSubMenu> getSubMenusByMenuIds(List<Long> menuIds);
+    List<MstSubMenu> getSubMenusByMenuIdsAndRoleIds(List<Long> menuIds, List<Long> roleIds);
 }

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,7 @@ import com.maharecruitment.gov.in.auth.service.MstMenuService;
 import com.maharecruitment.gov.in.auth.service.MstSubMenuService;
 import com.maharecruitment.gov.in.auth.service.RoleService;
 import com.maharecruitment.gov.in.auth.service.UserService;
+import com.maharecruitment.gov.in.web.service.navigation.NavigationService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -40,16 +43,19 @@ public class MenuInterceptor implements HandlerInterceptor {
     private final MstSubMenuService mstSubMenuService;
     private final UserService userService;
     private final RoleService roleService;
+    private final NavigationService navigationService;
 
     public MenuInterceptor(
             MstMenuService mstMenuService,
             MstSubMenuService mstSubMenuService,
             UserService userService,
-            RoleService roleService) {
+            RoleService roleService,
+            NavigationService navigationService) {
         this.mstMenuService = mstMenuService;
         this.mstSubMenuService = mstSubMenuService;
         this.userService = userService;
         this.roleService = roleService;
+        this.navigationService = navigationService;
     }
 
     @Override
@@ -98,7 +104,6 @@ public class MenuInterceptor implements HandlerInterceptor {
         userService.findUserByEmail(loginIdentifier);
 
         List<MstMenu> menus = mstMenuService.findMenusByRoleIds(roleIds);
-        session.setAttribute(MENUS_KEY, menus);
         if (roles != null && !roles.isEmpty() && menus.isEmpty()) {
             LOGGER.warn("No DB menus found for authenticated user {} with roles {}", loginIdentifier, roles);
         }
@@ -108,9 +113,27 @@ public class MenuInterceptor implements HandlerInterceptor {
                 .filter(Objects::nonNull)
                 .toList();
 
-        List<MstSubMenu> subMenus = mstSubMenuService.getSubMenusByMenuIds(menuIds);
+        List<MstSubMenu> subMenus = mstSubMenuService.getSubMenusByMenuIdsAndRoleIds(menuIds, roleIds).stream()
+                .filter(subMenu -> navigationService.canAccessUrl(subMenu.getUrl(), roles))
+                .toList();
+        Set<Long> visibleParentMenuIds = subMenus.stream()
+                .map(MstSubMenu::getMenu)
+                .filter(Objects::nonNull)
+                .map(MstMenu::getMenuId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<MstMenu> visibleMenus = menus.stream()
+                .filter(menu -> !isParentMenu(menu) || visibleParentMenuIds.contains(menu.getMenuId()))
+                .toList();
+
+        session.setAttribute(MENUS_KEY, visibleMenus);
         session.setAttribute(SUB_MENUS_KEY, subMenus);
 
         return true;
+    }
+
+    private boolean isParentMenu(MstMenu menu) {
+        return menu != null && menu.getIsSubMenu() != null && menu.getIsSubMenu() == 0;
     }
 }

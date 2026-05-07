@@ -1,6 +1,8 @@
 package com.maharecruitment.gov.in.auth.service.impl;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 
@@ -10,6 +12,11 @@ import com.maharecruitment.gov.in.auth.service.MstSubMenuService;
 
 @Service
 public class MstSubMenuServiceImpl implements MstSubMenuService {
+
+    private static final Comparator<MstSubMenu> SUB_MENU_ORDER = Comparator
+            .comparing((MstSubMenu subMenu) -> subMenu.getMenu() != null ? subMenu.getMenu().getMenuId() : null,
+                    Comparator.nullsLast(Long::compareTo))
+            .thenComparing(MstSubMenu::getSubMenuId, Comparator.nullsLast(Long::compareTo));
 
     private final MstSubMenuRepository mstSubMenuRepository;
 
@@ -23,10 +30,15 @@ public class MstSubMenuServiceImpl implements MstSubMenuService {
     }
 
     @Override
-    public List<MstSubMenu> getSubMenusByMenuIds(List<Long> menuIds) {
-        if (menuIds == null || menuIds.isEmpty()) {
+    public List<MstSubMenu> getSubMenusByMenuIdsAndRoleIds(List<Long> menuIds, List<Long> roleIds) {
+        if (menuIds == null || menuIds.isEmpty() || roleIds == null || roleIds.isEmpty()) {
             return List.of();
         }
-        return mstSubMenuRepository.findByMenuMenuIdInAndIsActiveOrderByMenuMenuIdAscSubMenuIdAsc(menuIds, 'Y');
+        return mstSubMenuRepository.findVisibleSubMenusByMenuIdsAndRoleIds(menuIds, roleIds)
+                .stream()
+                .filter(Objects::nonNull)
+                .filter(subMenu -> subMenu.getIsActive() == null || Character.toUpperCase(subMenu.getIsActive()) == 'Y')
+                .sorted(SUB_MENU_ORDER)
+                .toList();
     }
 }

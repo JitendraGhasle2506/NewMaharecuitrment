@@ -7,4 +7,6 @@ public interface NavigationService {
     String resolveHomeUrl(List<String> roles);
 
     String resolvePrimaryRoleLabel(List<String> roles);
+
+    boolean canAccessUrl(String url, List<String> roles);
 }
