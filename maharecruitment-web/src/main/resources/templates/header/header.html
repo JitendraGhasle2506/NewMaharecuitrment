@@ -37,7 +37,7 @@
                 <p class="sidebar-section-title">Navigation</p>
 
                 <ul class="list-unstyled components">
-                    <li class="active">
+                    <li>
                         <a th:href="${homePageUrl}">
                             <i class="fa fa-house"></i>
                             <span>Home</span>
@@ -211,6 +211,7 @@
         <script>
             (() => {
                 const appShell = document.getElementById('appShell');
+                const sidebar = document.getElementById('sidebar');
                 const sidebarToggle = document.getElementById('sidebarCollapse');
 
                 if (appShell && sidebarToggle) {
@@ -221,6 +222,105 @@
                         }
                         appShell.classList.toggle('sidebar-collapsed');
                     });
+                }
+
+                const normalizePath = (value) => {
+                    if (!value) {
+                        return '';
+                    }
+
+                    try {
+                        const url = new URL(value, window.location.origin);
+                        const normalized = url.pathname.replace(/\/+$/, '');
+                        return normalized || '/';
+                    } catch (error) {
+                        return '';
+                    }
+                };
+
+                const countSharedSegments = (leftPath, rightPath) => {
+                    const leftSegments = normalizePath(leftPath).split('/').filter(Boolean);
+                    const rightSegments = normalizePath(rightPath).split('/').filter(Boolean);
+                    const sharedCount = Math.min(leftSegments.length, rightSegments.length);
+
+                    let index = 0;
+                    while (index < sharedCount && leftSegments[index] === rightSegments[index]) {
+                        index += 1;
+                    }
+
+                    return index;
+                };
+
+                const scoreLink = (currentPath, linkPath) => {
+                    if (!linkPath || linkPath === '#') {
+                        return -1;
+                    }
+
+                    if (currentPath === linkPath) {
+                        return 10000 + linkPath.length;
+                    }
+
+                    if (linkPath !== '/' && currentPath.startsWith(linkPath + '/')) {
+                        return 5000 + linkPath.length;
+                    }
+
+                    const sharedSegments = countSharedSegments(currentPath, linkPath);
+                    return sharedSegments >= 2 ? (sharedSegments * 100) + linkPath.length : -1;
+                };
+
+                const activateLink = (link) => {
+                    if (!link) {
+                        return;
+                    }
+
+                    const activeItem = link.closest('li');
+                    if (activeItem) {
+                        activeItem.classList.add('active');
+                    }
+
+                    const parentSubmenu = link.closest('.submenu');
+                    if (!parentSubmenu) {
+                        return;
+                    }
+
+                    parentSubmenu.classList.add('open');
+
+                    const parentMenuItem = parentSubmenu.closest('.menu-item');
+                    if (parentMenuItem) {
+                        parentMenuItem.classList.add('active');
+                    }
+
+                    const toggleLink = parentMenuItem?.querySelector('.toggle-submenu');
+                    if (toggleLink) {
+                        toggleLink.classList.add('expanded');
+                    }
+                };
+
+                if (sidebar) {
+                    const currentPath = normalizePath(window.location.pathname);
+                    const navigationLinks = Array.from(
+                        sidebar.querySelectorAll('.components > li.menu-item > a[href]:not([href="#"]), .components .submenu a[href]:not([href="#"])')
+                    );
+
+                    let bestMatch = null;
+                    let bestScore = -1;
+
+                    navigationLinks.forEach((link) => {
+                        const score = scoreLink(currentPath, normalizePath(link.getAttribute('href')));
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMatch = link;
+                        }
+                    });
+
+                    if (bestMatch) {
+                        activateLink(bestMatch);
+                    } else {
+                        const homeLink = sidebar.querySelector('.components > li:first-child a[href]');
+                        if (homeLink && currentPath === normalizePath(homeLink.getAttribute('href'))) {
+                            activateLink(homeLink);
+                        }
+                    }
                 }
 
                 document.querySelectorAll('.toggle-submenu').forEach((toggleLink) => {
