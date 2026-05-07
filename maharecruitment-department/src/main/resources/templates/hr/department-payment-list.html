@@ -23,28 +23,39 @@
                     <p class="text-muted mb-3">Below are the advance payment requests pending your review and
                         verification.</p>
 
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0"><i
+                                        class="fas fa-search text-muted"></i></span>
+                                <input type="text" class="form-control border-start-0" placeholder="Filter payments..."
+                                    id="searchInput" />
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle mb-0">
+                        <table id="paymentReviewTable" class="table table-bordered table-hover align-middle mb-0">
                             <thead>
-                                <tr>
-                                    <th>#</th>
+                                 <tr>
+                                    <th class="no-sort">#</th>
                                     <th>Request ID</th>
                                     <th>Project Name</th>
                                     <th>Receipt Number</th>
                                     <th>Amount (INR)</th>
                                     <th>Status</th>
                                     <th>Last Updated</th>
-                                    <th class="text-center">Action</th>
+                                    <th class="text-center no-sort" sec:authorize="hasAuthority('ROLE_AUDITOR')">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr th:if="${#lists.isEmpty(payments)}">
-                                    <td colspan="8" class="text-center text-muted">
-                                        No pending advance payment requests found.
-                                    </td>
-                                </tr>
-                                <tr th:each="payment, stat : ${payments}">
-                                    <td th:text="${stat.count}"></td>
+                                 <tr th:if="${payments.isEmpty()}">
+                                     <td th:colspan="${#authorization.expression('hasAuthority(''ROLE_AUDITOR'')') ? 8 : 7}" class="text-center text-muted">
+                                         No pending advance payment requests found.
+                                     </td>
+                                 </tr>
+                                <tr th:each="payment, stat : ${payments.content}">
+                                    <td th:text="${payments.number * payments.size + stat.count}"></td>
                                     <td th:text="${payment.application != null ? payment.application.requestId : '-'}">
                                     </td>
                                     <td
@@ -55,19 +66,16 @@
                                         th:text="${payment.totalAmount != null ? #numbers.formatDecimal(payment.totalAmount, 1, 'COMMA', 2, 'POINT') : '0.00'}">
                                     </td>
                                     <td>
-                                        <span th:if="${payment.applicationStatus != null}" class="badge"
-                                            th:classappend="${payment.applicationStatus.getStatusCode() == 2 ? 'badge-primary' : (payment.applicationStatus.getStatusCode() == 7 ? 'badge-info' : 'badge-secondary')}"
-                                            th:text="${payment.applicationStatus.getStatusCode() + ' - ' + payment.applicationStatus.name()}"></span>
+                                        <span th:if="${payment.applicationStatus != null}" class="badge rounded-pill"
+                                            th:classappend="${payment.applicationStatus.name() == 'AUDITOR_REVIEW' ? 'bg-info text-dark' : (payment.applicationStatus.name() == 'AUDITOR_APPROVED' ? 'bg-success' : (payment.applicationStatus.name() == 'AUDITOR_SENT_BACK' ? 'bg-warning text-dark' : 'bg-secondary'))}"
+                                            th:text="${payment.applicationStatus.name() == 'AUDITOR_REVIEW' ? 'Forwarded to Auditor' : (payment.applicationStatus.name() == 'AUDITOR_APPROVED' ? 'Approved by Auditor' : (payment.applicationStatus.name() == 'AUDITOR_SENT_BACK' ? 'Sent Back' : payment.applicationStatus.name()))}"></span>
                                         <span th:if="${payment.applicationStatus == null}">-</span>
                                     </td>
                                     <td
                                         th:text="${payment.updatedDate != null ? #temporals.format(payment.updatedDate, 'dd-MM-yyyy HH:mm') : '-'}">
                                     </td>
-                                    <td class="text-center">
-                                        <a th:if="${payment.applicationStatus != null and payment.applicationStatus.getStatusCode() == 2}"
-                                            th:href="@{/hr/department/payment/{pId}(pId=${payment.id})}"
-                                            class="btn btn-primary btn-sm">Review</a>
-                                        <a th:if="${payment.applicationStatus != null and payment.applicationStatus.getStatusCode() == 7}"
+                                    <td class="text-center" sec:authorize="hasAuthority('ROLE_AUDITOR')">
+                                        <a th:if="${payment.applicationStatus != null and payment.applicationStatus.name() == 'AUDITOR_REVIEW'}"
                                             th:href="@{/auditor/department/payment/{pId}(pId=${payment.id})}"
                                             class="btn btn-info btn-sm">Review</a>
                                     </td>
@@ -75,10 +83,89 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Pagination -->
+                    <div class="app-pagination-shell mt-4" th:if="${payments.totalPages > 1}"
+                        th:with="baseUrl=${#authorization.expression('hasAuthority(''ROLE_AUDITOR'')') ? '/auditor/department/payment/list' : '/hr/department/payment/list'},
+                                 middleStart=${payments.number - 2 > 1 ? payments.number - 2 : 1},
+                                 middleEnd=${payments.number + 2 < payments.totalPages - 2 ? payments.number + 2 : payments.totalPages - 2},
+                                 showingFrom=${payments.totalElements == 0 ? 0 : payments.number * payments.size + 1},
+                                 showingTo=${payments.totalElements == 0 ? 0 : payments.number * payments.size + payments.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span
+                                    th:text="${showingTo}">10</span> of
+                                <span th:text="${payments.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${payments.number + 1}">1</span> of <span
+                                    th:text="${payments.totalPages}">1</span>
+                            </div>
+                        </div>
+                        <nav aria-label="Payment review list pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${payments.first} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{__${baseUrl}__(page=${payments.number - 1},size=${payments.size})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:classappend="${payments.number == 0} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{__${baseUrl}__(page=0,size=${payments.size})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item"
+                                        th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == payments.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{__${baseUrl}__(page=${pageIndex},size=${payments.size})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < payments.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${payments.totalPages > 1}"
+                                    th:classappend="${payments.number == payments.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{__${baseUrl}__(page=${payments.totalPages - 1},size=${payments.size})}"
+                                        th:text="${payments.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${payments.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{__${baseUrl}__(page=${payments.number + 1},size=${payments.size})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         </section>
     </th:block>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const tableBody = document.querySelector('#paymentReviewTable tbody');
+            
+            if (searchInput && tableBody) {
+                searchInput.addEventListener('keyup', function() {
+                    const filter = this.value.toLowerCase();
+                    const rows = tableBody.querySelectorAll('tr');
+                    
+                    rows.forEach(row => {
+                        // Skip the 'No requests found' row if it exists
+                        if (row.cells.length === 1 && row.textContent.includes('No pending')) return;
+                        
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(filter) ? '' : 'none';
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

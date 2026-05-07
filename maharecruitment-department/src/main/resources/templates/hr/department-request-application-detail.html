@@ -62,7 +62,7 @@
                                 <div class="col-md-6">
                                     <div class="info-label">Current Status</div>
                                     <span class="badge badge-premium text-bg-primary"
-                                          th:text="${applicationReviewDetail.applicationStatus.statusCode + ' - ' + #strings.replace(applicationReviewDetail.applicationStatus.name(), '_', ' ')}">
+                                          th:text="${#strings.replace(applicationReviewDetail.applicationStatus.name(), '_', ' ')}">
                                         SUBMITTED TO HR
                                     </span>
                                 </div>

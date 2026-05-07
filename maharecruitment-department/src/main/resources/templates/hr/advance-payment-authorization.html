@@ -6,30 +6,6 @@
     <title>Advance Payment Authorization | HR Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <style>
-        .auth-container {
-            background: #fff;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-        }
-
-        .auth-table thead th {
-            background-color: #f8fafc;
-            border-bottom: 2px solid #e2e8f0;
-            color: #475569;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.025em;
-            padding: 1rem;
-        }
-
-        .auth-table tbody td {
-            padding: 1rem;
-            vertical-align: middle;
-            color: #1e293b;
-        }
-
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 9999px;
@@ -92,18 +68,6 @@
             transform: translateX(26px);
         }
 
-        .page-hero {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        .page-hero-copy h2 {
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-
         .empty-state {
             padding: 4rem 1rem;
             text-align: center;
@@ -120,78 +84,161 @@
 
 <body class="hr-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Advance Payment Authorization', ~{::section})}">
-        <section class="p-2">
-            <div class="page-hero">
-                <div class="page-hero-copy">
-                    <p class="text-primary mb-1 fw-medium small text-uppercase tracking-wider">Payment Management</p>
-                    <h2 class="text-dark">Advance Payment Authorization</h2>
-                    <p class="text-muted mb-0">Manage which applications are authorized to make partial advance payments.</p>
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Advance Payment Authorization</h2>
+                    <a th:href="@{/hr/dashboard}" class="btn btn-outline-secondary btn-sm shadow-sm px-3">
+                        <i class="fa fa-arrow-left me-2"></i>Back
+                    </a>
                 </div>
-                <a th:href="@{/hr/dashboard}" class="btn btn-outline-secondary btn-sm shadow-sm px-3">
-                    <i class="fa fa-arrow-left me-2"></i>Back
-                </a>
-            </div>
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger border-0 shadow-sm mb-4" th:text="${errorMessage}"></div>
 
-            <div th:if="${successMessage}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${successMessage}"></div>
-            <div th:if="${errorMessage}" class="alert alert-danger border-0 shadow-sm mb-4" th:text="${errorMessage}"></div>
+                    <div class="row g-2 mb-4">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                                <input type="text" class="form-control border-start-0" placeholder="Filter applications..." id="searchInput" />
+                            </div>
+                        </div>
+                    </div>
 
-            <div class="auth-container">
-                <div class="table-responsive">
-                    <table class="table auth-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>Request ID</th>
-                                <th>Project Name</th>
-                                <th>Department</th>
-                                <th>Total Cost</th>
-                                <th class="text-center">Partial Payment</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:if="${#lists.isEmpty(authorizationList)}">
-                                <td colspan="5" class="empty-state">
-                                    <i class="fa-solid fa-file-circle-exclamation"></i>
-                                    <h5>No Applications Found</h5>
-                                    <p>Only applications with approved proforma invoices appear here.</p>
-                                </td>
-                            </tr>
-                            <tr th:each="item : ${authorizationList}">
-                                <td>
-                                    <span class="fw-bold text-primary" th:text="${item.requestId}">REQ-123</span>
-                                </td>
-                                <td>
-                                    <div class="fw-medium" th:text="${item.projectName}">Project Name</div>
-                                </td>
-                                <td>
-                                    <div class="small fw-medium" th:text="${item.departmentName}">Department</div>
-                                    <div class="small text-muted" th:text="${item.subDepartmentName}">Sub Department</div>
-                                </td>
-                                <td>
-                                    <span class="fw-bold" th:text="${'₹ ' + #numbers.formatDecimal(item.totalEstimatedCost, 1, 'COMMA', 2, 'POINT')}">0.00</span>
-                                </td>
-                                <td class="text-center">
-                                    <div class="d-flex flex-column align-items-center gap-2">
-                                        <form th:action="@{/hr/department-requests/advance-payment/authorize}" method="post">
-                                            <input type="hidden" name="applicationId" th:value="${item.departmentProjectApplicationId}">
-                                            <input type="hidden" name="allowed" th:value="${!item.partialPaymentAllowed}">
-                                            <label class="switch">
-                                                <input type="checkbox" th:checked="${item.partialPaymentAllowed}" onchange="this.form.submit()">
-                                                <span class="slider"></span>
-                                            </label>
-                                        </form>
-                                        <span class="status-badge" th:classappend="${item.partialPaymentAllowed ? 'status-enabled' : 'status-disabled'}"
-                                              th:text="${item.partialPaymentAllowed ? 'Authorized' : 'Disabled'}">
-                                            Status
-                                        </span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0 w-100" id="authTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Project Name</th>
+                                    <th>Department</th>
+                                    <th>Total Cost</th>
+                                    <th class="text-center">Partial Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${authorizationList.isEmpty()}">
+                                    <td colspan="5" class="empty-state">
+                                        <i class="fa-solid fa-file-circle-exclamation"></i>
+                                        <h5>No Applications Found</h5>
+                                        <p>Only applications with approved proforma invoices appear here.</p>
+                                    </td>
+                                </tr>
+                                <tr th:each="item, stat : ${authorizationList.content}">
+                                    <td>
+                                        <span class="fw-bold text-primary" th:text="${item.requestId}">REQ-123</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium" th:text="${item.projectName}">Project Name</div>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-medium" th:text="${item.departmentName}">Department</div>
+                                        <div class="small text-muted" th:text="${item.subDepartmentName}">Sub Department</div>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold" th:text="${'₹ ' + #numbers.formatDecimal(item.totalEstimatedCost, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex flex-column align-items-center gap-2">
+                                            <form th:action="@{/hr/department-requests/advance-payment/authorize}" method="post">
+                                                <input type="hidden" name="applicationId" th:value="${item.departmentProjectApplicationId}">
+                                                <input type="hidden" name="allowed" th:value="${!item.partialPaymentAllowed}">
+                                                <label class="switch">
+                                                    <input type="checkbox" th:checked="${item.partialPaymentAllowed}" onchange="this.form.submit()">
+                                                    <span class="slider"></span>
+                                                </label>
+                                            </form>
+                                            <span class="status-badge" th:classappend="${item.partialPaymentAllowed ? 'status-enabled' : 'status-disabled'}"
+                                                  th:text="${item.partialPaymentAllowed ? 'Authorized' : 'Disabled'}">
+                                                Status
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="app-pagination-shell mt-4" th:if="${authorizationList.totalPages > 1}"
+                        th:with="baseUrl='/hr/department-requests/advance-payment/authorization',
+                                 middleStart=${authorizationList.number - 2 > 1 ? authorizationList.number - 2 : 1},
+                                 middleEnd=${authorizationList.number + 2 < authorizationList.totalPages - 2 ? authorizationList.number + 2 : authorizationList.totalPages - 2},
+                                 showingFrom=${authorizationList.totalElements == 0 ? 0 : authorizationList.number * authorizationList.size + 1},
+                                 showingTo=${authorizationList.totalElements == 0 ? 0 : authorizationList.number * authorizationList.size + authorizationList.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span
+                                    th:text="${showingTo}">10</span> of
+                                <span th:text="${authorizationList.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${authorizationList.number + 1}">1</span> of <span
+                                    th:text="${authorizationList.totalPages}">1</span>
+                            </div>
+                        </div>
+                        <nav aria-label="Authorization list pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${authorizationList.first} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{__${baseUrl}__(page=${authorizationList.number - 1},size=${authorizationList.size})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:classappend="${authorizationList.number == 0} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{__${baseUrl}__(page=0,size=${authorizationList.size})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item"
+                                        th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == authorizationList.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{__${baseUrl}__(page=${pageIndex},size=${authorizationList.size})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < authorizationList.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${authorizationList.totalPages > 1}"
+                                    th:classappend="${authorizationList.number == authorizationList.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{__${baseUrl}__(page=${authorizationList.totalPages - 1},size=${authorizationList.size})}"
+                                        th:text="${authorizationList.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${authorizationList.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{__${baseUrl}__(page=${authorizationList.number + 1},size=${authorizationList.size})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         </section>
     </th:block>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const tableBody = document.querySelector('#authTable tbody');
+            
+            if (searchInput && tableBody) {
+                searchInput.addEventListener('input', function() {
+                    const filter = this.value.toLowerCase();
+                    const rows = tableBody.querySelectorAll('tr');
+                    
+                    rows.forEach(row => {
+                        if (row.querySelector('.empty-state')) return;
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(filter) ? '' : 'none';
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

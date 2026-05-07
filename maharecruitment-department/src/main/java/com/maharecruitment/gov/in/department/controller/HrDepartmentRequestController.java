@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -445,13 +447,19 @@ public class HrDepartmentRequestController {
     }
 
     @GetMapping("/advance-payment/authorization")
-    public String advancePaymentAuthorizationList(Model model) {
+    public String advancePaymentAuthorizationList(
+            @RequestParam(defaultValue = "0", required = false) Integer page,
+            @RequestParam(defaultValue = "10", required = false) Integer size,
+            Model model) {
+        if (page == null) page = 0;
+        if (size == null) size = 10;
         try {
-            model.addAttribute("authorizationList", hrDepartmentRequestService.getApplicationsForPaymentAuthorization());
+            Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+            model.addAttribute("authorizationList", hrDepartmentRequestService.getApplicationsForPaymentAuthorization(pageable));
         } catch (Exception ex) {
             log.error("Error loading advance payment authorization list", ex);
             model.addAttribute("errorMessage", "Unable to load authorization list.");
-            model.addAttribute("authorizationList", List.of());
+            model.addAttribute("authorizationList", org.springframework.data.domain.Page.empty());
         }
         return "hr/advance-payment-authorization";
     }

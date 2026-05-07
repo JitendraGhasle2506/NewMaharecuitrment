@@ -127,14 +127,21 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
     public Page<AgencyShortlistedCandidateView> getShortlistedCandidates(
             Long agencyId,
             Long recruitmentNotificationId,
+            String search,
             Pageable pageable) {
         requirePositiveId(agencyId, "Agency id is required.");
         requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
+
+        String searchPattern = null;
+        if (StringUtils.hasText(search)) {
+            searchPattern = "%" + search.trim().toUpperCase() + "%";
+        }
 
         Pageable resolvedPageable = pageable == null ? Pageable.unpaged() : pageable;
         return interviewDetailRepository.findShortlistedCandidatesByAgency(
                         agencyId,
                         recruitmentNotificationId,
+                        searchPattern,
                         resolvedPageable)
                 .map(this::toShortlistedCandidateView);
     }
@@ -173,20 +180,24 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
     }
 
     @Override
-    public List<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId, Long recruitmentNotificationId) {
+    public Page<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId, Long recruitmentNotificationId, String search, Pageable pageable) {
         requirePositiveId(agencyId, "Agency id is required.");
         requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
 
-        List<RecruitmentInterviewDetailEntity> selectedCandidates = interviewDetailRepository
-                .findSelectedCandidatesByAgencyAndNotification(agencyId, recruitmentNotificationId);
-        Map<Long, AgencyCandidatePreOnboardingEntity> preOnboardingByCandidateId = loadPreOnboardingMap(selectedCandidates);
+        String searchPattern = null;
+        if (StringUtils.hasText(search)) {
+            searchPattern = "%" + search.trim().toUpperCase() + "%";
+        }
 
-        return selectedCandidates
-                .stream()
-                .map(candidate -> toSelectedCandidateView(
-                        candidate,
-                        preOnboardingByCandidateId.get(candidate.getRecruitmentInterviewDetailId())))
-                .toList();
+        Pageable resolvedPageable = pageable == null ? Pageable.unpaged() : pageable;
+        Page<RecruitmentInterviewDetailEntity> pagedCandidates = interviewDetailRepository
+                .findSelectedCandidatesByAgencyAndNotification(agencyId, recruitmentNotificationId, searchPattern, resolvedPageable);
+
+        Map<Long, AgencyCandidatePreOnboardingEntity> preOnboardingByCandidateId = loadPreOnboardingMap(pagedCandidates.getContent());
+
+        return pagedCandidates.map(candidate -> toSelectedCandidateView(
+                candidate,
+                preOnboardingByCandidateId.get(candidate.getRecruitmentInterviewDetailId())));
     }
 
     @Override

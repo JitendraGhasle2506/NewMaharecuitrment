@@ -15,6 +15,9 @@ public interface AgencyOnboardingPageService {
 
     void savePreOnboarding(String actorEmail, Long recruitmentInterviewDetailId, AgencyPreOnboardingForm form);
 
+    Page<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail, String search, Pageable pageable);
+
+    Page<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status, String search, Pageable pageable);
     Page<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail, Pageable pageable);
 
     Page<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status, Pageable pageable);

@@ -52,7 +52,7 @@
                             <div class="col-md-2">
                                 <label class="text-muted small d-block">Current Status</label>
                                 <span class="badge text-bg-info" th:if="${projectApp.applicationStatus != null}"
-                                    th:text="${projectApp.applicationStatus.statusCode + ' - ' + #strings.replace(projectApp.applicationStatus.name(), '_', ' ')}"></span>
+                                    th:text="${#strings.replace(projectApp.applicationStatus.name(), '_', ' ')}"></span>
                                 <span th:if="${projectApp.applicationStatus == null}">-</span>
                             </div>
                         </div>
@@ -83,6 +83,17 @@
                                 <label class="text-muted small d-block">Balance Amount</label>
                                 <strong class="text-danger"
                                     th:text="${'₹' + #numbers.formatDecimal(paymentForm.balanceAmount, 1, 'COMMA', 2, 'POINT')}"></strong>
+                            </div>
+
+                            <!-- Highlighted Remarks Section -->
+                            <div class="col-12 mt-2" th:if="${paymentForm.rejectionRemarks != null}">
+                                <div class="alert alert-warning border-warning shadow-sm mb-0 py-2">
+                                    <div class="fw-bold text-dark small">
+                                        <i class="fas fa-comment-dots me-1"></i>
+                                        <span th:text="${paymentForm.applicationStatus == T(com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus).AUDITOR_SENT_BACK ? 'Auditor Remarks' : 'HR Remarks'}">Remarks</span>:
+                                        <span class="fw-normal text-muted ms-1" th:text="${paymentForm.rejectionRemarks}"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

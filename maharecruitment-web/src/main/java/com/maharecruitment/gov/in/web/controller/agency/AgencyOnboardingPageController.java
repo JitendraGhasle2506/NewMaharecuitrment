@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -49,15 +51,18 @@ public class AgencyOnboardingPageController {
     public String onboardingReadyCandidates(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
             Principal principal,
             Model model) {
         String actorEmail = resolveActorEmail(principal);
-        Page<AgencyOnboardedEmployeeView> employeePage = onboardingPageService.getOnboardedEmployees(
-                actorEmail,
-                buildPageable(page, size));
-        model.addAttribute("onboardedEmployees", employeePage.getContent());
+        Pageable pageable = buildPageable(page, size);
+        
+        Page<AgencyOnboardedEmployeeView> employeePage = onboardingPageService.getOnboardedEmployees(actorEmail, search, pageable);
+        
         model.addAttribute("employeePage", employeePage);
-        model.addAttribute("currentStatus", "ALL");
+        model.addAttribute("onboardedEmployees", employeePage.getContent());
+        model.addAttribute("currentStatus", "ACTIVE");
+        model.addAttribute("search", search);
         model.addAttribute("pageSize", employeePage.getSize());
         model.addAttribute("pageTitle", "Onboarded Employees");
         model.addAttribute("pageSubtitle", "Agency-wise current and resigned onboarded employees.");
@@ -68,16 +73,18 @@ public class AgencyOnboardingPageController {
     public String resignedEmployees(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
             Principal principal,
             Model model) {
         String actorEmail = resolveActorEmail(principal);
-        Page<AgencyOnboardedEmployeeView> employeePage = onboardingPageService.getEmployeesByStatus(
-                actorEmail,
-                "RESIGNED",
-                buildPageable(page, size));
-        model.addAttribute("onboardedEmployees", employeePage.getContent());
+        Pageable pageable = buildPageable(page, size);
+        
+        Page<AgencyOnboardedEmployeeView> employeePage = onboardingPageService.getEmployeesByStatus(actorEmail, "RESIGNED", search, pageable);
+        
         model.addAttribute("employeePage", employeePage);
+        model.addAttribute("onboardedEmployees", employeePage.getContent());
         model.addAttribute("currentStatus", "RESIGNED");
+        model.addAttribute("search", search);
         model.addAttribute("pageSize", employeePage.getSize());
         model.addAttribute("pageTitle", "Resigned Employees");
         model.addAttribute("pageSubtitle", "Agency employees who resigned and reopened their vacancy.");

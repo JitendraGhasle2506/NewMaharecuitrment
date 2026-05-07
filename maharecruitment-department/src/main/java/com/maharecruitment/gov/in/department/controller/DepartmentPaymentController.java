@@ -5,6 +5,9 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -104,9 +107,14 @@ public class DepartmentPaymentController {
     }
 
     @GetMapping("/list")
-    public String list(Model model, Principal principal) {
+    public String list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Model model, 
+            Principal principal) {
         String actorEmail = principal.getName();
-        List<DepartmentAdvancePaymentEntity> payments = paymentService.getPaymentSummaries(actorEmail);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        Page<DepartmentAdvancePaymentEntity> payments = paymentService.getPaymentSummaries(actorEmail, pageable);
         List<DepartmentProjectApplicationSummaryView> eligibleProjects = paymentService
                 .getEligibleProjectsForAdvancePayment(actorEmail);
 

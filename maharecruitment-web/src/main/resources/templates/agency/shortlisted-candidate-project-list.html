@@ -106,128 +106,189 @@
                                         <td colspan="5" class="p-0 border-top-0">
                                             <div class="p-3 bg-light-subtle border-top">
                                                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                                                    <div>
-                                                        <h6 class="mb-0">Shortlisted Candidates</h6>
-                                                        <small class="text-muted"
-                                                            th:text="${(item.requestId != null ? item.requestId : '-') + ' | ' + (item.projectName != null ? item.projectName : '-')}">
-                                                            Request | Project
-                                                        </small>
-                                                    </div>
-                                                    <span class="badge text-bg-primary"
-                                                        th:text="${(item.shortlistedCandidatesCount != null ? item.shortlistedCandidatesCount : 0) + ' Candidate(s)'}">
-                                                        0 Candidate(s)
-                                                    </span>
-                                                </div>
+                                                     <div>
+                                                         <h6 class="mb-0">Shortlisted Candidates</h6>
+                                                         <small class="text-muted"
+                                                             th:text="${(item.requestId != null ? item.requestId : '-') + ' | ' + (item.projectName != null ? item.projectName : '-')}">
+                                                             Request | Project
+                                                         </small>
+                                                     </div>
+                                                     <div class="d-flex align-items-center gap-3">
+                                                         <form th:action="@{/agency/shortlisted-candidates}" method="get" class="d-flex gap-1">
+                                                             <input type="hidden" name="open" th:value="${item.recruitmentNotificationId}">
+                                                             <input type="text" name="search" class="form-control form-control-sm" 
+                                                                    placeholder="Search candidates..." 
+                                                                    th:value="${searchTerm}" style="width: 200px;">
+                                                             <button class="btn btn-primary btn-sm" type="submit">Search</button>
+                                                         </form>
+                                                         <span class="badge text-bg-primary"
+                                                             th:text="${candidatePage.totalElements + ' Candidate(s)'}">
+                                                             0 Candidate(s)
+                                                         </span>
+                                                     </div>
+                                                 </div>
 
-                                                <div class="table-responsive">
-                                                    <table class="table table-bordered table-sm align-middle mb-0">
-                                                        <thead class="table-light">
-                                                            <tr>
-                                                                <th>#</th>
-                                                                <th>Candidate</th>
-                                                                <th>Designation</th>
-                                                                <th>Status</th>
-                                                                <th>Shortlisted On</th>
-                                                                <th>Interview</th>
-                                                                <th>Assessment</th>
-                                                                <th>Resume</th>
-                                                                <th>Action</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                                <tr th:if="${#lists.isEmpty(expandedShortlistedCandidates)}">
-                                                                    <td colspan="9" class="text-center text-muted">
-                                                                        No shortlisted candidates found for this request.
-                                                                    </td>
-                                                                </tr>
-                                                                <tr th:each="candidate, candidateStat : ${expandedShortlistedCandidates}">
-                                                                    <td th:text="${candidateStat.count}">1</td>
-                                                                    <td>
-                                                                        <div th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">Candidate</div>
-                                                                        <small class="text-muted"
-                                                                            th:text="${(candidate.candidateEmail != null ? candidate.candidateEmail : '-') + ' | ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '-')}">
-                                                                            email | mobile
-                                                                        </small>
-                                                                        <div class="small text-muted mt-1"
-                                                                            th:if="${candidate.departmentShortlistRemarks != null and !#strings.isEmpty(candidate.departmentShortlistRemarks)}"
-                                                                            th:text="${candidate.departmentShortlistRemarks}">
-                                                                            Shortlist remarks
-                                                                        </div>
-                                                                    </td>
-                                                                    <td th:text="${(candidate.designationName != null ? candidate.designationName : '-') + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">
-                                                                        Designation | Level
-                                                                    </td>
-                                                                    <td>
-                                                                        <span class="badge text-bg-info"
-                                                                            th:classappend="${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' text-bg-primary' : ' text-bg-info'"
-                                                                            th:text="${candidate.candidateStatus != null ? #strings.replace(candidate.candidateStatus.name(), '_', ' ') : '-'}">
-                                                                            SHORTLISTED BY DEPARTMENT
-                                                                        </span>
-                                                                    </td>
-                                                                    <td
-                                                                        th:text="${candidate.departmentShortlistedAt != null ? #temporals.format(candidate.departmentShortlistedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
-                                                                        -
-                                                                    </td>
-                                                                    <td>
-                                                                        <div th:if="${candidate.interviewDateTime != null}">
-                                                                            <div th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
-                                                                                01-Apr-2026 10:30
-                                                                            </div>
-                                                                            <small class="text-muted"
-                                                                                th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : '-'}">
-                                                                                Slot
-                                                                            </small>
-                                                                            <div th:if="${candidate.interviewLink != null and !#strings.isEmpty(candidate.interviewLink)}">
-                                                                                <a th:href="${candidate.interviewLink}" target="_blank">Join Link</a>
-                                                                            </div>
-                                                                        </div>
-                                                                        <span th:if="${candidate.interviewDateTime == null}" class="text-muted">Pending</span>
-                                                                    </td>
-                                                                    <td class="text-center">
-                                                                        <span class="badge bg-success"
-                                                                            th:if="${candidate.assessmentSubmitted != null and candidate.assessmentSubmitted}">
-                                                                            Submitted
-                                                                        </span>
-                                                                        <span class="badge bg-warning text-dark"
-                                                                            th:if="${candidate.assessmentSubmitted == null or !candidate.assessmentSubmitted}">
-                                                                            Pending
-                                                                        </span>
-                                                                    </td>
-                                                                    <td class="text-center">
-                                                                        <button type="button" class="btn btn-outline-secondary btn-sm"
-                                                                            th:if="${candidate.resumeFilePath != null}"
-                                                                            th:attr="data-path=${candidate.resumeFilePath}"
-                                                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
-                                                                            View
-                                                                        </button>
-                                                                        <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>
-                                                                    </td>
-                                                                    <td class="text-center">
-                                                                        <button type="button"
-                                                                            class="btn btn-outline-success btn-sm shortlist-schedule-trigger"
-                                                                            th:if="${candidate.assessmentSubmitted == null or !candidate.assessmentSubmitted}"
-                                                                            data-bs-toggle="modal"
-                                                                            data-bs-target="#scheduleInterviewModal"
-                                                                            th:attr="
-                                                                                data-notification-id=${candidate.recruitmentNotificationId},
-                                                                                data-candidate-id=${candidate.recruitmentInterviewDetailId},
-                                                                                data-candidate-name=${candidate.candidateName},
-                                                                                data-request-id=${candidate.requestId},
-                                                                                data-project-name=${candidate.projectName},
-                                                                                data-interview-date=${candidate.interviewDateTime != null ? #temporals.format(candidate.interviewDateTime, 'yyyy-MM-dd') : ''},
-                                                                                data-interview-time-slot=${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : ''},
-                                                                                data-interview-link=${candidate.interviewLink != null ? candidate.interviewLink : ''},
-                                                                                data-interview-remarks=${candidate.interviewRemarks != null ? candidate.interviewRemarks : ''}">
-                                                                            <span th:text="${candidate.interviewDateTime != null ? 'Reschedule Interview' : 'Schedule Interview'}">
-                                                                                Schedule Interview
-                                                                            </span>
-                                                                        </button>
-                                                                        <span class="text-muted"
-                                                                            th:if="${candidate.assessmentSubmitted != null and candidate.assessmentSubmitted}">
-                                                                            Assessment already submitted
-                                                                        </span>
-                                                                    </td>
-                                                                </tr>
+                                                 <div class="table-responsive">
+                                                     <table class="table table-bordered table-sm align-middle mb-0">
+                                                         <thead class="table-light">
+                                                             <tr>
+                                                                 <th>#</th>
+                                                                 <th>Candidate</th>
+                                                                 <th>Designation</th>
+                                                                 <th>Status</th>
+                                                                 <th>Shortlisted On</th>
+                                                                 <th>Interview</th>
+                                                                 <th>Assessment</th>
+                                                                 <th>Resume</th>
+                                                                 <th>Action</th>
+                                                             </tr>
+                                                         </thead>
+                                                         <tbody>
+                                                                 <tr th:if="${candidatePage.empty}">
+                                                                     <td colspan="9" class="text-center text-muted">
+                                                                         No shortlisted candidates found for this request.
+                                                                     </td>
+                                                                 </tr>
+                                                                 <tr th:each="candidate, candidateStat : ${expandedShortlistedCandidates}">
+                                                                     <td th:text="${candidatePage.number * candidatePage.size + candidateStat.count}">1</td>
+                                                                     <td>
+                                                                         <div th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">Candidate</div>
+                                                                         <small class="text-muted"
+                                                                             th:text="${(candidate.candidateEmail != null ? candidate.candidateEmail : '-') + ' | ' + (candidate.candidateMobile != null ? candidate.candidateMobile : '-')}">
+                                                                             email | mobile
+                                                                         </small>
+                                                                         <div class="small text-muted mt-1"
+                                                                             th:if="${candidate.departmentShortlistRemarks != null and !#strings.isEmpty(candidate.departmentShortlistRemarks)}"
+                                                                             th:text="${candidate.departmentShortlistRemarks}">
+                                                                             Shortlist remarks
+                                                                         </div>
+                                                                     </td>
+                                                                     <td th:text="${(candidate.designationName != null ? candidate.designationName : '-') + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">
+                                                                         Designation | Level
+                                                                     </td>
+                                                                     <td>
+                                                                         <span class="badge text-bg-info"
+                                                                             th:classappend="${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' text-bg-primary' : ' text-bg-info'"
+                                                                             th:text="${candidate.candidateStatus != null ? #strings.replace(candidate.candidateStatus.name(), '_', ' ') : '-'}">
+                                                                             SHORTLISTED BY DEPARTMENT
+                                                                         </span>
+                                                                     </td>
+                                                                     <td
+                                                                         th:text="${candidate.departmentShortlistedAt != null ? #temporals.format(candidate.departmentShortlistedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                                                         -
+                                                                     </td>
+                                                                     <td>
+                                                                         <div th:if="${candidate.interviewDateTime != null}">
+                                                                             <div th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
+                                                                                 01-Apr-2026 10:30
+                                                                             </div>
+                                                                             <small class="text-muted"
+                                                                                 th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : '-'}">
+                                                                                 Slot
+                                                                             </small>
+                                                                             <div th:if="${candidate.interviewLink != null and !#strings.isEmpty(candidate.interviewLink)}">
+                                                                                 <a th:href="${candidate.interviewLink}" target="_blank">Join Link</a>
+                                                                             </div>
+                                                                         </div>
+                                                                         <span th:if="${candidate.interviewDateTime == null}" class="text-muted">Pending</span>
+                                                                     </td>
+                                                                     <td class="text-center">
+                                                                         <span class="badge bg-success"
+                                                                             th:if="${candidate.assessmentSubmitted != null and candidate.assessmentSubmitted}">
+                                                                             Submitted
+                                                                         </span>
+                                                                         <span class="badge bg-warning text-dark"
+                                                                             th:if="${candidate.assessmentSubmitted == null or !candidate.assessmentSubmitted}">
+                                                                             Pending
+                                                                         </span>
+                                                                     </td>
+                                                                     <td class="text-center">
+                                                                         <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                                             th:if="${candidate.resumeFilePath != null}"
+                                                                             th:attr="data-path=${candidate.resumeFilePath}"
+                                                                             onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                                                             View
+                                                                         </button>
+                                                                         <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>
+                                                                     </td>
+                                                                     <td class="text-center">
+                                                                         <button type="button"
+                                                                             class="btn btn-outline-success btn-sm shortlist-schedule-trigger"
+                                                                             th:if="${candidate.assessmentSubmitted == null or !candidate.assessmentSubmitted}"
+                                                                             data-bs-toggle="modal"
+                                                                             data-bs-target="#scheduleInterviewModal"
+                                                                             th:attr="
+                                                                                 data-notification-id=${candidate.recruitmentNotificationId},
+                                                                                 data-candidate-id=${candidate.recruitmentInterviewDetailId},
+                                                                                 data-candidate-name=${candidate.candidateName},
+                                                                                 data-request-id=${candidate.requestId},
+                                                                                 data-project-name=${candidate.projectName},
+                                                                                 data-interview-date=${candidate.interviewDateTime != null ? #temporals.format(candidate.interviewDateTime, 'yyyy-MM-dd') : ''},
+                                                                                 data-interview-time-slot=${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : ''},
+                                                                                 data-interview-link=${candidate.interviewLink != null ? candidate.interviewLink : ''},
+                                                                                 data-interview-remarks=${candidate.interviewRemarks != null ? candidate.interviewRemarks : ''}">
+                                                                             <span th:text="${candidate.interviewDateTime != null ? 'Reschedule Interview' : 'Schedule Interview'}">
+                                                                                 Schedule Interview
+                                                                             </span>
+                                                                         </button>
+                                                                         <span class="text-muted"
+                                                                             th:if="${candidate.assessmentSubmitted != null and candidate.assessmentSubmitted}">
+                                                                             Assessment already submitted
+                                                                         </span>
+                                                                     </td>
+                                                                 </tr>
+                                                         </tbody>
+                                                     </table>
+                                                 </div>
+
+                                                <!-- Pagination for expanded section -->
+                                                <div class="app-pagination-shell mt-3" th:if="${candidatePage.totalPages > 1}"
+                                                    th:with="middleStart=${candidatePage.number - 2 > 1 ? candidatePage.number - 2 : 1},
+                                                             middleEnd=${candidatePage.number + 2 < candidatePage.totalPages - 2 ? candidatePage.number + 2 : candidatePage.totalPages - 2}">
+                                                    <div class="app-pagination-summary">
+                                                        <div class="app-pagination-meta">
+                                                            Page <span th:text="${candidatePage.number + 1}">1</span> of <span
+                                                                th:text="${candidatePage.totalPages}">1</span>
+                                                        </div>
+                                                    </div>
+                                                    <nav aria-label="Expanded shortlist pagination">
+                                                        <ul class="pagination app-pagination mb-0">
+                                                            <li class="page-item" th:classappend="${candidatePage.first} ? ' disabled'">
+                                                                <a class="page-link"
+                                                                    th:href="@{/agency/shortlisted-candidates(open=${item.recruitmentNotificationId}, page=${candidatePage.number - 1}, size=${candidatePage.size}, search=${searchTerm})}">Prev</a>
+                                                            </li>
+                                                            <li class="page-item" th:classappend="${candidatePage.number == 0} ? ' active'">
+                                                                <a class="page-link"
+                                                                    th:href="@{/agency/shortlisted-candidates(open=${item.recruitmentNotificationId}, page=0, size=${candidatePage.size}, search=${searchTerm})}">1</a>
+                                                            </li>
+                                                            <li class="page-item disabled" th:if="${middleStart > 1}">
+                                                                <span class="page-link app-pagination-ellipsis">...</span>
+                                                            </li>
+                                                            <th:block th:if="${middleStart <= middleEnd}">
+                                                                <li class="page-item"
+                                                                    th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                                                    th:classappend="${pageIndex == candidatePage.number} ? ' active'">
+                                                                    <a class="page-link"
+                                                                        th:href="@{/agency/shortlisted-candidates(open=${item.recruitmentNotificationId}, page=${pageIndex}, size=${candidatePage.size}, search=${searchTerm})}"
+                                                                        th:text="${pageIndex + 1}">2</a>
+                                                                </li>
+                                                            </th:block>
+                                                            <li class="page-item disabled" th:if="${middleEnd < candidatePage.totalPages - 2}">
+                                                                <span class="page-link app-pagination-ellipsis">...</span>
+                                                            </li>
+                                                            <li class="page-item" th:if="${candidatePage.totalPages > 1}"
+                                                                th:classappend="${candidatePage.number == candidatePage.totalPages - 1} ? ' active'">
+                                                                <a class="page-link"
+                                                                    th:href="@{/agency/shortlisted-candidates(open=${item.recruitmentNotificationId}, page=${candidatePage.totalPages - 1}, size=${candidatePage.size}, search=${searchTerm})}"
+                                                                    th:text="${candidatePage.totalPages}">2</a>
+                                                            </li>
+                                                            <li class="page-item" th:classappend="${candidatePage.last} ? ' disabled'">
+                                                                <a class="page-link"
+                                                                    th:href="@{/agency/shortlisted-candidates(open=${item.recruitmentNotificationId}, page=${candidatePage.number + 1}, size=${candidatePage.size}, search=${searchTerm})}">Next</a>
+                                                            </li>
+                                                        </ul>
+                                                    </nav>
+                                                </div>
                                                         </tbody>
                                                     </table>
                                                 </div>

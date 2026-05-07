@@ -614,8 +614,8 @@
 											<span>Invalid or Future Date</span>
 										</div>
 										<div class="legend-item">
-											<div class="legend-circle circle-pre-joining">N</div>
-											<span>Pre-Joining Date</span>
+											<div class="legend-circle circle-pre-joining">NA</div>
+											<span>Not Applicable</span>
 										</div>
 									</div>
 								</div>
@@ -767,7 +767,7 @@
 																<option value="HOLIDAY" th:selected="${day.status == 'HOLIDAY'}">H</option>
 															</select>
 															<span th:if="${day.status == 'FUTURE'}" class="future-marker">F</span>
-															<span th:if="${day.status == 'PRE_JOINING'}" class="pre-joining-marker" title="Prior to Joining Date">N</span>
+															<span th:if="${day.status == 'PRE_JOINING'}" class="pre-joining-marker" title="Not Applicable">NA</span>
 														</td>
 													</tr>
 												</tbody>

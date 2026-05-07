@@ -3,6 +3,9 @@ package com.maharecruitment.gov.in.department.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -212,7 +215,7 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
 
         if (ACTION_SEND.equals(normalizedAction)) {
             validateForSubmission(entity);
-            entity.setApplicationStatus(DepartmentApplicationStatus.SUBMITTED_TO_HR);
+            entity.setApplicationStatus(DepartmentApplicationStatus.AUDITOR_REVIEW);
         } else {
             entity.setApplicationStatus(DepartmentApplicationStatus.DRAFT);
         }
@@ -262,6 +265,11 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         form.setReceiptOriginalName(entity.getReceiptOriginalName());
         form.setReceiptFileType(entity.getReceiptFileType());
         
+        if (entity.getApplicationStatus() == DepartmentApplicationStatus.HR_SENT_BACK || 
+            entity.getApplicationStatus() == DepartmentApplicationStatus.AUDITOR_SENT_BACK) {
+            form.setRejectionRemarks(entity.getRemarks());
+        }
+        
         populatePiInfoInForm(form, entity.getApplication());
         form.setPartialPaymentAllowed(Boolean.TRUE.equals(entity.getApplication().getIsPartialPaymentAllowed()));
         
@@ -269,10 +277,10 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     }
 
     @Override
-    public List<DepartmentAdvancePaymentEntity> getPaymentSummaries(String actorEmail) {
+    public Page<DepartmentAdvancePaymentEntity> getPaymentSummaries(String actorEmail, Pageable pageable) {
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
         return paymentRepository
-                .findByDepartmentRegistrationIdOrderByIdDesc(actorContext.getDepartmentRegistrationId());
+                .findByDepartmentRegistrationIdOrderByIdDesc(actorContext.getDepartmentRegistrationId(), pageable);
     }
 
     @Override
@@ -388,10 +396,10 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     }
 
     @Override
-    public List<DepartmentAdvancePaymentEntity> getReviewList(String actorEmail) {
+    public Page<DepartmentAdvancePaymentEntity> getReviewList(String actorEmail, Pageable pageable) {
         User user = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
         if (user == null) {
-            return List.of();
+            return Page.empty(pageable);
         }
 
         Set<String> roles = user.getRoles().stream()
@@ -400,17 +408,20 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
 
         List<DepartmentApplicationStatus> statuses = new ArrayList<>();
         if (roles.contains("ROLE_HR")) {
-            statuses.add(DepartmentApplicationStatus.SUBMITTED_TO_HR);
+            // HR can see payments currently under review or already approved by Auditor to track status
+            statuses.add(DepartmentApplicationStatus.AUDITOR_REVIEW);
+            statuses.add(DepartmentApplicationStatus.AUDITOR_APPROVED);
+            statuses.add(DepartmentApplicationStatus.AUDITOR_SENT_BACK);
         }
         if (roles.contains("ROLE_AUDITOR")) {
             statuses.add(DepartmentApplicationStatus.AUDITOR_REVIEW);
         }
 
         if (statuses.isEmpty()) {
-            return List.of();
+            return Page.empty(pageable);
         }
 
-        return paymentRepository.findByApplicationStatusInOrderByIdDesc(statuses);
+        return paymentRepository.findByApplicationStatusInOrderByIdDesc(statuses, pageable);
     }
 
     @Override

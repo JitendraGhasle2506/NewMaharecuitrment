@@ -5,6 +5,8 @@
 	<meta charset="UTF-8">
 	<title>Department Registration</title>
 	<th:block th:replace="~{header/header :: var-files-header}"></th:block>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
 	<link rel="stylesheet" th:href="@{/css/captcha.css}">
 	<link rel="stylesheet" th:href="@{/css/department-registration.css}">
 
@@ -432,10 +434,44 @@
 
 	<th:block th:replace="~{fragments/footer :: var-footer}"></th:block>
 
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 	<script th:src="@{/js/otp-verification.js}"></script>
 	<script th:src="@{/js/department-registration.js}"></script>
 	<script>
 		$(document).ready(function () {
+			// Initialize Select2 for Department
+			$('#departmentId').select2({
+				theme: 'bootstrap-5',
+				placeholder: 'Select department',
+				width: '100%'
+			});
+
+			// Initialize Select2 for Sub-department
+			$('#subDeptId').select2({
+				theme: 'bootstrap-5',
+				placeholder: 'Select sub-department',
+				width: '100%'
+			});
+
+			// Re-initialize Select2 when department changes (since sub-departments are loaded dynamically)
+			$('#departmentId').on('change', function () {
+				// We need to trigger the native change event for the existing JS logic
+				this.dispatchEvent(new Event('change'));
+			});
+
+			// The department-registration.js handles the loading of sub-departments.
+			// We need to ensure Select2 updates when the sub-department dropdown is populated.
+			const subDeptObserver = new MutationObserver(function (mutations) {
+				$('#subDeptId').select2({
+					theme: 'bootstrap-5',
+					placeholder: 'Select sub-department',
+					width: '100%'
+				});
+			});
+
+			subDeptObserver.observe(document.getElementById('subDeptId'), { childList: true });
+
 			$('#agreeCheckbox').on('change', function () {
 				if ($(this).is(':checked')) {
 					console.log("checked");

@@ -12,6 +12,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -233,26 +235,24 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
     }
 
     @Override
-    public List<DepartmentProjectApplicationSummaryView> getApplicationSummaries(String actorEmail) {
+    public Page<DepartmentProjectApplicationSummaryView> getApplicationSummaries(String actorEmail, Pageable pageable) {
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
 
-        List<DepartmentProjectApplicationEntity> applications = applicationRepository
+        Page<DepartmentProjectApplicationEntity> applications = applicationRepository
                 .findByDepartmentRegistrationIdOrderByDepartmentProjectApplicationIdDesc(
-                        actorContext.getDepartmentRegistrationId());
+                        actorContext.getDepartmentRegistrationId(), pageable);
 
-        return applications.stream()
-                .map(entity -> DepartmentProjectApplicationSummaryView.builder()
-                        .departmentProjectApplicationId(entity.getDepartmentProjectApplicationId())
-                        .requestId(entity.getRequestId())
-                        .projectName(entity.getProjectName())
-                        .projectCode(entity.getProjectCode())
-                        .applicationType(entity.getApplicationType())
-                        .applicationStatus(entity.getApplicationStatus())
-                        .totalEstimatedCost(entity.getTotalEstimatedCost())
-                        .createdDate(entity.getCreatedDate())
-                        .updatedDate(entity.getUpdatedDate())
-                        .build())
-                .toList();
+        return applications.map(entity -> DepartmentProjectApplicationSummaryView.builder()
+                .departmentProjectApplicationId(entity.getDepartmentProjectApplicationId())
+                .requestId(entity.getRequestId())
+                .projectName(entity.getProjectName())
+                .projectCode(entity.getProjectCode())
+                .applicationType(entity.getApplicationType())
+                .applicationStatus(entity.getApplicationStatus())
+                .totalEstimatedCost(entity.getTotalEstimatedCost())
+                .createdDate(entity.getCreatedDate())
+                .updatedDate(entity.getUpdatedDate())
+                .build());
     }
 
     @Override

@@ -110,7 +110,7 @@
                                     </td>
                                     <td>
                                         <span class="badge badge-premium text-bg-primary"
-                                              th:text="${applicationSummary.applicationStatus.statusCode + ' - ' + #strings.replace(applicationSummary.applicationStatus.name(), '_', ' ')}">
+                                              th:text="${#strings.replace(applicationSummary.applicationStatus.name(), '_', ' ')}">
                                             SUBMITTED_TO_HR
                                         </span>
                                     </td>
