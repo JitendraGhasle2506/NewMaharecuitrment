@@ -921,15 +921,6 @@
             line-height: 1;
         }
 
-        .register-meta-note {
-            display: block;
-            margin-top: 6px;
-            color: #64748b;
-            font-size: 11px;
-            font-weight: 600;
-            line-height: 1.4;
-        }
-
         .panel-meta-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -961,15 +952,6 @@
             font-size: 22px;
             font-weight: 800;
             line-height: 1;
-        }
-
-        .panel-meta-note {
-            display: block;
-            margin-top: 6px;
-            color: #64748b;
-            font-size: 11px;
-            font-weight: 600;
-            line-height: 1.4;
         }
 
         .panel-table-wrap {
@@ -1602,22 +1584,18 @@
                                     <div class="register-meta-card">
                                         <span class="register-meta-label">Present Days</span>
                                         <span class="register-meta-value status-present" th:text="${attendance.totalPresent}">0</span>
-                                        <span class="register-meta-note">Confirmed attendance in this month.</span>
                                     </div>
                                     <div class="register-meta-card">
                                         <span class="register-meta-label">Absent Days</span>
                                         <span class="register-meta-value status-absent" th:text="${attendance.totalAbsent}">0</span>
-                                        <span class="register-meta-note">Working dates without attendance.</span>
                                     </div>
                                     <div class="register-meta-card">
                                         <span class="register-meta-label">Leave + Tour</span>
                                         <span class="register-meta-value" style="color:#7c3aed;" th:text="${attendance.totalLeave + ' / ' + (attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[status == 'TOUR']) : 0)}">0 / 0</span>
-                                        <span class="register-meta-note">Approved leave and tour days.</span>
                                     </div>
                                     <div class="register-meta-card">
                                         <span class="register-meta-label">Week Off + Holiday</span>
                                         <span class="register-meta-value" style="color:#475569;" th:text="${attendance.totalWeekOff + ' / ' + attendance.totalHoliday}">0 / 0</span>
-                                        <span class="register-meta-note">Non-working calendar days.</span>
                                     </div>
                                 </div>
 
@@ -1696,22 +1674,18 @@
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Calendar Days</span>
                                         <span class="panel-meta-value text-warning" th:text="${attendance.daysInMonth ?: daysInMonth}">30</span>
-                                        <span class="panel-meta-note">Days available in the selected month.</span>
                                     </div>
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">In Entries</span>
                                         <span class="panel-meta-value text-success" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[inTime != null]) : 0}">0</span>
-                                        <span class="panel-meta-note">Dates where an in-time punch is available.</span>
                                     </div>
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Out Entries</span>
                                         <span class="panel-meta-value text-info" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[outTime != null]) : 0}">0</span>
-                                        <span class="panel-meta-note">Dates where an out-time punch is available.</span>
                                     </div>
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Worked Days</span>
                                         <span class="panel-meta-value" style="color:#1f4f78;" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[stayHours != null]) : 0}">0</span>
-                                        <span class="panel-meta-note">Dates with recorded total working time.</span>
                                     </div>
                                 </div>
 
@@ -1767,17 +1741,14 @@
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Open Requests</span>
                                         <span class="panel-meta-value text-warning" th:text="${pendingRequests != null ? #lists.size(pendingRequests) : 0}">0</span>
-                                        <span class="panel-meta-note">Requests still pending decision.</span>
                                     </div>
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Selected Month</span>
                                         <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
-                                        <span class="panel-meta-note">Current attendance period on screen.</span>
                                     </div>
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Review Stage</span>
                                         <span class="panel-meta-value" style="font-size:18px; color:#1f4f78;">HOD Review</span>
-                                        <span class="panel-meta-note">Pending records will appear here until action.</span>
                                     </div>
                                 </div>
 
@@ -1827,17 +1798,14 @@
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Closed Requests</span>
                                         <span class="panel-meta-value text-success" th:text="${approvedRequests != null ? #lists.size(approvedRequests) : 0}">0</span>
-                                        <span class="panel-meta-note">Approved requests completed for this month.</span>
                                     </div>
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Selected Month</span>
                                         <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
-                                        <span class="panel-meta-note">Current attendance period on screen.</span>
                                     </div>
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Final Status</span>
                                         <span class="panel-meta-value" style="font-size:18px; color:#16a34a;">Approved</span>
-                                        <span class="panel-meta-note">Only accepted manual requests appear here.</span>
                                     </div>
                                 </div>
 
@@ -1890,17 +1858,14 @@
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">History Records</span>
                                         <span class="panel-meta-value text-danger" th:text="${rejectedRequests != null ? #lists.size(rejectedRequests) : 0}">0</span>
-                                        <span class="panel-meta-note">Rejected manual requests captured in history.</span>
                                     </div>
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Selected Month</span>
                                         <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
-                                        <span class="panel-meta-note">Current attendance period on screen.</span>
                                     </div>
                                     <div class="panel-meta-card">
                                         <span class="panel-meta-label">Final Status</span>
                                         <span class="panel-meta-value" style="font-size:18px; color:#dc2626;">Rejected</span>
-                                        <span class="panel-meta-note">Items here include HOD comments and rejection status.</span>
                                     </div>
                                 </div>
 
