@@ -75,7 +75,7 @@ public class SecurityConfig {
                         "/error", "/error/**"
                 ).permitAll()
 
-                .requestMatchers("/common/mahait-profile/**")
+                .requestMatchers("/common/mahait-profile/**", "/common/holidays/**")
                     .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR")
 
                 .requestMatchers("/home", "/common/**").authenticated()

@@ -12,6 +12,16 @@
   <dependencies>
   	<dependency>
   		<groupId>com.maharecruitment.gov.in</groupId>
+  		<artifactId>maharecruitment-common</artifactId>
+  		<version>${project.version}</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>com.maharecruitment.gov.in</groupId>
+  		<artifactId>maharecruitment-audit</artifactId>
+  		<version>${project.version}</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>com.maharecruitment.gov.in</groupId>
   		<artifactId>maharecruitment-auth</artifactId>
   		<version>${project.version}</version>
   	</dependency>

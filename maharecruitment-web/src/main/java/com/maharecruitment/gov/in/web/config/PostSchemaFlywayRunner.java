@@ -52,6 +52,11 @@ import db.postmigration.V30__recruitment_internal_level_two_panel_user_support;
 import db.postmigration.V31__recruitment_internal_level_two_feedback_support;
 import db.postmigration.V32__auth_level_two_panel_menu_backfill;
 import db.postmigration.V33__recruitment_internal_level_two_workflow_status_support;
+import db.postmigration.V48__auth_hr_external_interviews_menu_backfill;
+import db.postmigration.V49__attendance_internal_daily_audit_columns_support;
+import db.postmigration.V50__pre_onboarding_onboarding_date_optional;
+import db.postmigration.V51__auth_submenu_role_mapping_support;
+import db.postmigration.V52__attendance_holiday_soft_delete_support;
 import db.postmigration.V38__auth_mahait_profile_menu_backfill;
 import db.postmigration.V39__mahait_profile_cin_number_support;
 import db.postmigration.V40__department_tax_invoice_support;
@@ -129,7 +134,12 @@ public class PostSchemaFlywayRunner {
                         new V44__auth_agency_shortlisted_candidates_menu_backfill(),
                         new V45__auth_hod_approve_attendance_menu_backfill(),
                         new V46__auth_hod_approve_leave_menu_backfill(),
-                        new V47__auth_employee_attendance_leave_tour_menu_backfill())
+                        new V47__auth_employee_attendance_leave_tour_menu_backfill(),
+                        new V48__auth_hr_external_interviews_menu_backfill(),
+                        new V49__attendance_internal_daily_audit_columns_support(),
+                        new V50__pre_onboarding_onboarding_date_optional(),
+                        new V51__auth_submenu_role_mapping_support(),
+                        new V52__attendance_holiday_soft_delete_support())
                 .load();
 
         if (hasFailedPostSchemaMigration()) {

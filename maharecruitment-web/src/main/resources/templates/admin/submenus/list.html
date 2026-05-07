@@ -24,6 +24,21 @@
                         <a class="btn btn-outline-primary btn-sm" th:href="@{/admin/submenus}">Submenus</a>
                     </div>
 
+                    <form class="row g-2 align-items-center mb-3" method="get" th:action="@{/admin/submenus}">
+                        <input type="hidden" name="size" th:value="${pageSize}">
+                        <div class="col-md-6 col-lg-5">
+                            <input type="search"
+                                class="form-control"
+                                name="search"
+                                th:value="${searchTerm}"
+                                placeholder="Search by parent menu, submenu name, URL, controller, role or status">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                            <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/submenus(size=${pageSize})}">Clear</a>
+                        </div>
+                    </form>
+
                     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
@@ -42,7 +57,8 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${subMenus.isEmpty()}">
-                                    <td colspan="7" class="text-center text-muted">No records found</td>
+                                    <td colspan="7" class="text-center text-muted"
+                                        th:text="${#strings.isEmpty(searchTerm)} ? 'No records found' : 'No submenus matched your search'">No records found</td>
                                 </tr>
                                 <tr th:each="subMenu : ${subMenus.content}">
                                     <td th:text="${subMenu.subMenuId}"></td>
@@ -93,10 +109,10 @@
                         <nav aria-label="Submenu management pagination">
                             <ul class="pagination app-pagination mb-0">
                                 <li class="page-item" th:classappend="${subMenus.first} ? ' disabled'">
-                                    <a class="page-link" th:href="@{/admin/submenus(page=${subMenus.number - 1},size=${subMenus.size})}">Previous</a>
+                                    <a class="page-link" th:href="@{/admin/submenus(page=${subMenus.number - 1},size=${subMenus.size},search=${searchTerm})}">Previous</a>
                                 </li>
                                 <li class="page-item" th:classappend="${subMenus.number == 0} ? ' active'">
-                                    <a class="page-link" th:href="@{/admin/submenus(page=0,size=${subMenus.size})}">1</a>
+                                    <a class="page-link" th:href="@{/admin/submenus(page=0,size=${subMenus.size},search=${searchTerm})}">1</a>
                                 </li>
                                 <li class="page-item disabled" th:if="${middleStart > 1}">
                                     <span class="page-link app-pagination-ellipsis">...</span>
@@ -105,7 +121,7 @@
                                     <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
                                         th:classappend="${pageIndex == subMenus.number} ? ' active'">
                                         <a class="page-link"
-                                            th:href="@{/admin/submenus(page=${pageIndex},size=${subMenus.size})}"
+                                            th:href="@{/admin/submenus(page=${pageIndex},size=${subMenus.size},search=${searchTerm})}"
                                             th:text="${pageIndex + 1}">2</a>
                                     </li>
                                 </th:block>
@@ -115,11 +131,11 @@
                                 <li class="page-item" th:if="${subMenus.totalPages > 1}"
                                     th:classappend="${subMenus.number == subMenus.totalPages - 1} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/admin/submenus(page=${subMenus.totalPages - 1},size=${subMenus.size})}"
+                                        th:href="@{/admin/submenus(page=${subMenus.totalPages - 1},size=${subMenus.size},search=${searchTerm})}"
                                         th:text="${subMenus.totalPages}">2</a>
                                 </li>
                                 <li class="page-item" th:classappend="${subMenus.last} ? ' disabled'">
-                                    <a class="page-link" th:href="@{/admin/submenus(page=${subMenus.number + 1},size=${subMenus.size})}">Next</a>
+                                    <a class="page-link" th:href="@{/admin/submenus(page=${subMenus.number + 1},size=${subMenus.size},search=${searchTerm})}">Next</a>
                                 </li>
                             </ul>
                         </nav>

@@ -258,9 +258,14 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		YearMonth yearMonth = YearMonth.of(year, month);
 		LocalDate startDate = yearMonth.atDay(1);
 		LocalDate endDate = yearMonth.atEndOfMonth();
+		LocalDate today = LocalDate.now();
 
 		List<DailyAttendanceInternalEntity> dailyAttendance = dailyAttendanceInternalRepository
 				.findByAttendanceDateBetween(startDate, endDate);
+		Set<LocalDate> holidayDates = holidayRepository.findByHolidayDateBetween(startDate, endDate)
+				.stream()
+				.map(HolidayMasterEntity::getHolidayDate)
+				.collect(Collectors.toSet());
 
 		List<DepartmentProjectApplicationEntity> projects = departmentProjectApplicationRepository
 				.findByDepartmentRegistrationIdOrderByDepartmentProjectApplicationIdDesc(departmentId);
@@ -321,13 +326,24 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 					dayDTO.setStatus("LEAVE");
 				} else if (onTour) {
 					dayDTO.setStatus("TOUR");
+				} else if (holidayDates.contains(date)) {
+					if (daily != null) {
+						dayDTO.setInTime(daily.getInTime());
+						dayDTO.setOutTime(daily.getOutTime());
+						dayDTO.setStayHours(daily.getTotalHours());
+					}
+					dayDTO.setStatus("HOLIDAY");
 				} else if (daily != null) {
 					dayDTO.setInTime(daily.getInTime());
 					dayDTO.setOutTime(daily.getOutTime());
 					dayDTO.setStayHours(daily.getTotalHours());
 					dayDTO.setStatus(AttendanceStatusResolver.resolveDisplayStatus(daily));
-				} else {
+				} else if (date.isAfter(today)) {
 					dayDTO.setStatus("FUTURE");
+				} else if (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+					dayDTO.setStatus("WEEK_OFF");
+				} else {
+					dayDTO.setStatus("ABSENT");
 				}
 				days.add(dayDTO);
 			}
@@ -461,6 +477,13 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 					dayDTO.setOutTime(daily.getOutTime());
 					dayDTO.setStayHours(daily.getTotalHours());
 				}
+			} else if (holidayDates.contains(date)) {
+				if (daily != null) {
+					dayDTO.setInTime(daily.getInTime());
+					dayDTO.setOutTime(daily.getOutTime());
+					dayDTO.setStayHours(daily.getTotalHours());
+				}
+				dayDTO.setStatus("HOLIDAY");
 			} else if (daily != null) {
 				dayDTO.setInTime(daily.getInTime());
 				dayDTO.setOutTime(daily.getOutTime());
@@ -468,8 +491,6 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				dayDTO.setStatus(AttendanceStatusResolver.resolveDisplayStatus(daily));
 			} else if (pendingDates.contains(date)) {
 				dayDTO.setStatus("PENDING");
-			} else if (holidayDates.contains(date)) {
-				dayDTO.setStatus("HOLIDAY");
 			} else if (!date.isAfter(LocalDate.now())) {
 				if (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
 					dayDTO.setStatus("WEEK_OFF");

@@ -376,14 +376,14 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
         if (isCoveredByTour(approvedTours, date)) {
             return "T";
         }
+        if (holidayDates.contains(date)) {
+            return "H";
+        }
         if (attendance != null) {
             return AttendanceStatusResolver.resolveStatusCode(attendance);
         }
         if (date.isAfter(today)) {
             return "";
-        }
-        if (holidayDates.contains(date)) {
-            return "H";
         }
         if (isWeekend(date)) {
             return "W";

@@ -128,6 +128,9 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Internal Attendance Sync",
                                 "/admin/attendance/internal-sync",
                                 "fa fa-arrows-rotate");
+                upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Holiday Calendar",
+                                "/admin/attendance/holidays",
+                                "fa fa-calendar-day");
                 upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "HR Dashboard", "/hr/dashboard",
                                 "fa fa-users");
                 upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Common Module", "/common",
@@ -158,6 +161,9 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "MahaIT Profile",
                                 "/common/mahait-profile",
                                 "fa fa-building");
+                upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Holiday Master",
+                                "/common/holidays",
+                                "fa fa-calendar-days");
 
                 Long departmentMenuId = upsertMenu(jdbcTemplate, menuTable, menuRoleTable, "Department Module", null,
                                 "fa fa-building", 0,

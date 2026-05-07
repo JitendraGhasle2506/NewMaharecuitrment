@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -53,10 +54,20 @@ public class AdminSubMenuPageController {
     public String list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
             Model model) {
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
-        Page<MstSubMenu> subMenus = subMenuManagementService.getAll(pageable);
+        int resolvedPage = Math.max(page, 0);
+        int resolvedSize = Math.max(size, 1);
+        String normalizedSearch = normalizeSearch(search);
+        Pageable pageable = PageRequest.of(resolvedPage, resolvedSize);
+        Page<MstSubMenu> subMenus = subMenuManagementService.getAll(normalizedSearch, pageable);
+        if (subMenus.getTotalPages() > 0 && resolvedPage >= subMenus.getTotalPages()) {
+            pageable = PageRequest.of(subMenus.getTotalPages() - 1, resolvedSize);
+            subMenus = subMenuManagementService.getAll(normalizedSearch, pageable);
+        }
         model.addAttribute("subMenus", subMenus);
+        model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
+        model.addAttribute("pageSize", subMenus.getSize());
         return "admin/submenus/list";
     }
 
@@ -181,5 +192,9 @@ public class AdminSubMenuPageController {
                 ? List.of()
                 : existing.getRoles().stream().map(role -> role.getId()).toList());
         return form;
+    }
+
+    private String normalizeSearch(String search) {
+        return StringUtils.hasText(search) ? search.trim() : null;
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.dto.MenuUpsertRequest;
 import com.maharecruitment.gov.in.auth.entity.MstMenu;
@@ -44,7 +45,17 @@ public class MenuManagementServiceImpl implements MenuManagementService {
     @Override
     @Transactional(readOnly = true)
     public Page<MstMenu> getAll(Pageable pageable) {
-        return mstMenuRepository.findAllWithRoles(pageable);
+        return getAll(null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MstMenu> getAll(String searchTerm, Pageable pageable) {
+        String normalizedSearch = normalizeOptional(searchTerm);
+        if (!StringUtils.hasText(normalizedSearch)) {
+            return mstMenuRepository.findAllWithRoles(pageable);
+        }
+        return mstMenuRepository.searchAllWithRoles(normalizedSearch, normalizedSearch.toUpperCase(), pageable);
     }
 
     @Override

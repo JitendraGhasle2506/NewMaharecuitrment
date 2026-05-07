@@ -245,6 +245,48 @@ class InternalEmployeeAttendanceReportServiceImplTest {
         assertEquals(3, row.getWeekOffCount());
     }
 
+    @Test
+    void buildReportPrefersConfiguredHolidayOverSyncedAttendance() {
+        EmployeeEntity employee = buildEmployee(101L, "EMP000101", "Aarav Sharma", "ACTIVE");
+        EmployeeReportingMappingEntity mapping = buildMapping(employee.getEmployeeId(), 44L);
+        ProjectMst project = buildProject(44L, "Cloud Mission");
+        LocalDate startDate = YearMonth.of(2026, 5).atDay(1);
+        LocalDate endDate = YearMonth.of(2026, 5).atEndOfMonth();
+
+        when(employeeRepository.findDetailedInternalEmployeesForAttendanceReport(null, null, null, "ACTIVE"))
+                .thenReturn(List.of(employee));
+        when(employeeReportingMappingRepository.findByEmployeeIdIn(List.of(employee.getEmployeeId())))
+                .thenReturn(List.of(mapping));
+        when(projectRepository.findAllById(anyCollection()))
+                .thenReturn(List.of(project));
+        when(dailyAttendanceInternalRepository.findByEmployeeIdInAndAttendanceDateBetween(
+                List.of(employee.getEmployeeId()),
+                startDate,
+                endDate))
+                .thenReturn(List.of(buildAttendance(employee.getEmployeeId(), LocalDate.of(2026, 5, 6), "PRESENT")));
+        when(leaveApplicationRepository.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(
+                List.of(employee.getEmployeeId()),
+                "APPROVED"))
+                .thenReturn(List.of());
+        when(tourApplicationRepository.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(
+                List.of(employee.getEmployeeId()),
+                "APPROVED"))
+                .thenReturn(List.of());
+        when(holidayRepository.findByHolidayDateBetween(startDate, endDate))
+                .thenReturn(List.of(buildHoliday(LocalDate.of(2026, 5, 6), "Foundation Day")));
+
+        InternalAttendanceReportFilter filter = new InternalAttendanceReportFilter();
+        filter.setMonth(5);
+        filter.setYear(2026);
+        filter.setEmployeeStatus("ACTIVE");
+
+        InternalAttendanceReportView report = service.buildReport(filter);
+
+        InternalAttendanceReportRow row = report.getRows().get(0);
+        assertEquals("H", row.getDailyStatus().get(6));
+        assertEquals(1, row.getHolidayCount());
+    }
+
     private EmployeeEntity buildEmployee(Long employeeId, String employeeCode, String fullName, String status) {
         DepartmentRegistrationEntity department = new DepartmentRegistrationEntity();
         department.setDepartmentRegistrationId(10L);

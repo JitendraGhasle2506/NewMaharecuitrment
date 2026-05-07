@@ -48,6 +48,44 @@ public interface MstMenuRepository extends JpaRepository<MstMenu, Long> {
     @Query("select m from MstMenu m")
     Page<MstMenu> findAllWithRoles(Pageable pageable);
 
+    @EntityGraph(attributePaths = "roles")
+    @Query(
+            value = """
+                    select distinct m
+                    from MstMenu m
+                    left join m.roles r
+                    where upper(coalesce(m.menuNameEnglish, '')) like upper(concat('%', :searchTerm, '%'))
+                       or upper(coalesce(m.menuNameMarathi, '')) like upper(concat('%', :searchTerm, '%'))
+                       or upper(coalesce(m.url, '')) like upper(concat('%', :searchTerm, '%'))
+                       or upper(coalesce(r.name, '')) like upper(concat('%', :searchTerm, '%'))
+                       or ((:normalizedSearch = 'PARENT' or :normalizedSearch = 'PARENT MENU')
+                           and coalesce(m.isSubMenu, 0) = 0)
+                       or ((:normalizedSearch = 'DIRECT' or :normalizedSearch = 'DIRECT LINK')
+                           and coalesce(m.isSubMenu, 0) = 1)
+                       or (:normalizedSearch = 'ACTIVE' and upper(coalesce(m.isActive, 'Y')) = 'Y')
+                       or (:normalizedSearch = 'INACTIVE' and upper(coalesce(m.isActive, 'Y')) = 'N')
+                    order by m.menuNameEnglish, m.menuId
+                    """,
+            countQuery = """
+                    select count(distinct m.menuId)
+                    from MstMenu m
+                    left join m.roles r
+                    where upper(coalesce(m.menuNameEnglish, '')) like upper(concat('%', :searchTerm, '%'))
+                       or upper(coalesce(m.menuNameMarathi, '')) like upper(concat('%', :searchTerm, '%'))
+                       or upper(coalesce(m.url, '')) like upper(concat('%', :searchTerm, '%'))
+                       or upper(coalesce(r.name, '')) like upper(concat('%', :searchTerm, '%'))
+                       or ((:normalizedSearch = 'PARENT' or :normalizedSearch = 'PARENT MENU')
+                           and coalesce(m.isSubMenu, 0) = 0)
+                       or ((:normalizedSearch = 'DIRECT' or :normalizedSearch = 'DIRECT LINK')
+                           and coalesce(m.isSubMenu, 0) = 1)
+                       or (:normalizedSearch = 'ACTIVE' and upper(coalesce(m.isActive, 'Y')) = 'Y')
+                       or (:normalizedSearch = 'INACTIVE' and upper(coalesce(m.isActive, 'Y')) = 'N')
+                    """)
+    Page<MstMenu> searchAllWithRoles(
+            @Param("searchTerm") String searchTerm,
+            @Param("normalizedSearch") String normalizedSearch,
+            Pageable pageable);
+
     List<MstMenu> findAllByOrderByMenuNameEnglishAsc();
 
     List<MstMenu> findByIsSubMenuOrderByMenuNameEnglishAsc(Integer isSubMenu);

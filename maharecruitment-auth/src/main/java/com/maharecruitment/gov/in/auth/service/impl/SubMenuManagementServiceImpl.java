@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.dto.SubMenuUpsertRequest;
 import com.maharecruitment.gov.in.auth.entity.MstMenu;
@@ -45,7 +46,20 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
     @Override
     @Transactional(readOnly = true)
     public Page<MstSubMenu> getAll(Pageable pageable) {
-        return mstSubMenuRepository.findAllWithMenuAndRoles(pageable);
+        return getAll(null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MstSubMenu> getAll(String searchTerm, Pageable pageable) {
+        String normalizedSearch = normalizeOptional(searchTerm);
+        if (!StringUtils.hasText(normalizedSearch)) {
+            return mstSubMenuRepository.findAllWithMenuAndRoles(pageable);
+        }
+        return mstSubMenuRepository.searchAllWithMenuAndRoles(
+                normalizedSearch,
+                normalizedSearch.toUpperCase(),
+                pageable);
     }
 
     @Override
