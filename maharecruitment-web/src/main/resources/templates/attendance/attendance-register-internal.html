@@ -930,6 +930,102 @@
             line-height: 1.4;
         }
 
+        .panel-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .panel-meta-card {
+            padding: 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid #dbe7f4;
+            box-shadow: 0 18px 35px -34px rgba(15, 23, 42, 0.44);
+        }
+
+        .panel-meta-label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .panel-meta-value {
+            display: block;
+            margin-top: 6px;
+            color: var(--text-main);
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .panel-meta-note {
+            display: block;
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .panel-table-wrap {
+            border: 1px solid #dbe7f4;
+            border-radius: 18px;
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        }
+
+        .panel-table-wrap .table-responsive {
+            margin: 0;
+        }
+
+        .panel-table-wrap .inout-matrix {
+            border: none;
+            border-radius: 0;
+            min-width: 1100px;
+        }
+
+        .request-table {
+            min-width: 760px;
+            margin-bottom: 0;
+        }
+
+        .request-table thead th {
+            background: #f4f8fc;
+            color: var(--secondary-color);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 12px 14px;
+            border-bottom: 1px solid #dbe7f4;
+            white-space: nowrap;
+        }
+
+        .request-table tbody td {
+            padding: 12px 14px;
+            color: var(--text-main);
+            font-size: 13px;
+            vertical-align: middle;
+            border-color: #e2e8f0;
+        }
+
+        .request-table tbody tr:hover td {
+            background: #f8fbff;
+        }
+
+        .empty-state-cell {
+            padding: 28px 18px !important;
+            color: var(--text-muted) !important;
+            font-weight: 600;
+            text-align: center;
+        }
+
         .register-helper {
             display: flex;
             align-items: flex-start;
@@ -1587,41 +1683,70 @@
 
                     <!-- Attendance In/Out Tab -->
                     <div class="tab-pane fade" id="inout" role="tabpanel">
-                        <div class="card mt-3" style="width:100%;">
-                            <div class="card-header" style="background:linear-gradient(180deg, #1f4f78, #163a59); color:#fff; padding:15px 25px;">
-                                <h4 class="mb-0"><i class="fa fa-right-left me-2"></i>Attendance In / Out Time</h4>
-                            </div>
+                        <div class="card mt-3 register-panel" style="width:100%;">
                             <div class="body">
-                                <div class="table-responsive">
-                                    <table class="inout-matrix">
-                                        <thead>
-                                            <tr>
-                                                <th class="day-head-label">Day</th>
-                                                <th th:each="day : ${attendance.attendanceDays}"
-                                                    th:text="${#temporals.format(day.date, 'dd')}">01</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td class="row-label">In Time</td>
-                                                <td th:each="day : ${attendance.attendanceDays}"
-                                                    th:class="${day.inTime != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
-                                                    th:text="${day.inTime != null ? day.inTime : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="row-label">Out Time</td>
-                                                <td th:each="day : ${attendance.attendanceDays}"
-                                                    th:class="${day.outTime != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
-                                                    th:text="${day.outTime != null ? day.outTime : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="row-label">Total Time</td>
-                                                <td th:each="day : ${attendance.attendanceDays}"
-                                                    th:class="${day.stayHours != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
-                                                    th:text="${day.stayHours != null ? day.stayHours : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <div class="register-panel-header">
+                                    <div>
+                                        <h4 class="register-panel-title">Attendance In/Out</h4>
+                                        <p class="register-panel-subtitle">Daily punch timings for the selected month.</p>
+                                    </div>
+                                </div>
+
+                                <div class="panel-meta-grid">
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Calendar Days</span>
+                                        <span class="panel-meta-value text-warning" th:text="${attendance.daysInMonth ?: daysInMonth}">30</span>
+                                        <span class="panel-meta-note">Days available in the selected month.</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">In Entries</span>
+                                        <span class="panel-meta-value text-success" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[inTime != null]) : 0}">0</span>
+                                        <span class="panel-meta-note">Dates where an in-time punch is available.</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Out Entries</span>
+                                        <span class="panel-meta-value text-info" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[outTime != null]) : 0}">0</span>
+                                        <span class="panel-meta-note">Dates where an out-time punch is available.</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Worked Days</span>
+                                        <span class="panel-meta-value" style="color:#1f4f78;" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[stayHours != null]) : 0}">0</span>
+                                        <span class="panel-meta-note">Dates with recorded total working time.</span>
+                                    </div>
+                                </div>
+
+                                <div class="panel-table-wrap">
+                                    <div class="table-responsive">
+                                        <table class="inout-matrix">
+                                            <thead>
+                                                <tr>
+                                                    <th class="day-head-label">Day</th>
+                                                    <th th:each="day : ${attendance.attendanceDays}"
+                                                        th:text="${#temporals.format(day.date, 'dd')}">01</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="row-label">In Time</td>
+                                                    <td th:each="day : ${attendance.attendanceDays}"
+                                                        th:class="${day.inTime != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
+                                                        th:text="${day.inTime != null ? day.inTime : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="row-label">Out Time</td>
+                                                    <td th:each="day : ${attendance.attendanceDays}"
+                                                        th:class="${day.outTime != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
+                                                        th:text="${day.outTime != null ? day.outTime : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="row-label">Total Time</td>
+                                                    <td th:each="day : ${attendance.attendanceDays}"
+                                                        th:class="${day.stayHours != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
+                                                        th:text="${day.stayHours != null ? day.stayHours : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1629,35 +1754,59 @@
 
                     <!-- Pending Requests Tab -->
                     <div class="tab-pane fade" id="pending" role="tabpanel">
-                        <div class="card mt-3" style="width:100%;">
-                            <div class="card-header" style="background:linear-gradient(180deg, #1f4f78, #163a59); color:#fff; padding:15px 25px;">
-                                <h4 class="mb-0"><i class="fa fa-clock me-2"></i>Pending Manual Attendance Requests</h4>
-                            </div>
+                        <div class="card mt-3 register-panel" style="width:100%;">
                             <div class="body">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-striped">
-                                        <thead>
-                                            <tr class="table-light">
-                                                <th>Request Date</th>
-                                                <th>In Time</th>
-                                                <th>Out Time</th>
-                                                <th>Reason</th>
-                                                <th>HOD Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr th:if="${pendingRequests == null || pendingRequests.isEmpty()}">
-                                                <td colspan="6" class="text-center text-muted p-4">You have no pending manual attendance requests.</td>
-                                            </tr>
-                                            <tr th:each="req : ${pendingRequests}">
-                                                <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
-                                                <td th:text="${req.inTime}"></td>
-                                                <td th:text="${req.outTime}"></td>
-                                                <td th:text="${req.reason}"></td>
-                                                <td><span class="badge bg-warning text-dark" th:text="${req.hodStatus}"></span></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <div class="register-panel-header">
+                                    <div>
+                                        <h4 class="register-panel-title">Pending Requests</h4>
+                                        <p class="register-panel-subtitle">Manual attendance requests waiting for review.</p>
+                                    </div>
+                                </div>
+
+                                <div class="panel-meta-grid">
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Open Requests</span>
+                                        <span class="panel-meta-value text-warning" th:text="${pendingRequests != null ? #lists.size(pendingRequests) : 0}">0</span>
+                                        <span class="panel-meta-note">Requests still pending decision.</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Selected Month</span>
+                                        <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
+                                        <span class="panel-meta-note">Current attendance period on screen.</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Review Stage</span>
+                                        <span class="panel-meta-value" style="font-size:18px; color:#1f4f78;">HOD Review</span>
+                                        <span class="panel-meta-note">Pending records will appear here until action.</span>
+                                    </div>
+                                </div>
+
+                                <div class="panel-table-wrap">
+                                    <div class="table-responsive">
+                                        <table class="table request-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Request Date</th>
+                                                    <th>In Time</th>
+                                                    <th>Out Time</th>
+                                                    <th>Reason</th>
+                                                    <th>HOD Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:if="${pendingRequests == null || pendingRequests.isEmpty()}">
+                                                    <td colspan="5" class="empty-state-cell">You have no pending manual attendance requests.</td>
+                                                </tr>
+                                                <tr th:each="req : ${pendingRequests}">
+                                                    <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
+                                                    <td th:text="${req.inTime}"></td>
+                                                    <td th:text="${req.outTime}"></td>
+                                                    <td th:text="${req.reason}"></td>
+                                                    <td><span class="badge bg-warning text-dark" th:text="${req.hodStatus}"></span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1665,38 +1814,62 @@
 
                     <!-- Approved Requests Tab -->
                     <div class="tab-pane fade" id="approved" role="tabpanel">
-                        <div class="card mt-3" style="width:100%;">
-                            <div class="card-header" style="background:linear-gradient(180deg, #1f4f78, #163a59); color:#fff; padding:15px 25px;">
-                                <h4 class="mb-0"><i class="fa fa-check-circle me-2"></i>Approved Manual Attendance Requests</h4>
-                            </div>
+                        <div class="card mt-3 register-panel" style="width:100%;">
                             <div class="body">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-striped">
-                                        <thead>
-                                            <tr class="table-light">
-                                                <th>Request Date</th>
-                                                <th>In Time</th>
-                                                <th>Out Time</th>
-                                                <th>Reason</th>
-                                                <th>HOD Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr th:if="${approvedRequests == null || approvedRequests.isEmpty()}">
-                                                <td colspan="6" class="text-center text-muted p-4">
-                                                    <i class="fa fa-info-circle me-2"></i>
-                                                    No approved manual attendance requests for this month.
-                                                </td>
-                                            </tr>
-                                            <tr th:each="req : ${approvedRequests}">
-                                                <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
-                                                <td th:text="${req.inTime}"></td>
-                                                <td th:text="${req.outTime}"></td>
-                                                <td th:text="${req.reason}"></td>
-                                                <td><span class="badge bg-success" th:text="${req.hodStatus}"></span></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <div class="register-panel-header">
+                                    <div>
+                                        <h4 class="register-panel-title">Approved Requests</h4>
+                                        <p class="register-panel-subtitle">Manual attendance requests that are already approved.</p>
+                                    </div>
+                                </div>
+
+                                <div class="panel-meta-grid">
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Closed Requests</span>
+                                        <span class="panel-meta-value text-success" th:text="${approvedRequests != null ? #lists.size(approvedRequests) : 0}">0</span>
+                                        <span class="panel-meta-note">Approved requests completed for this month.</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Selected Month</span>
+                                        <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
+                                        <span class="panel-meta-note">Current attendance period on screen.</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Final Status</span>
+                                        <span class="panel-meta-value" style="font-size:18px; color:#16a34a;">Approved</span>
+                                        <span class="panel-meta-note">Only accepted manual requests appear here.</span>
+                                    </div>
+                                </div>
+
+                                <div class="panel-table-wrap">
+                                    <div class="table-responsive">
+                                        <table class="table request-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Request Date</th>
+                                                    <th>In Time</th>
+                                                    <th>Out Time</th>
+                                                    <th>Reason</th>
+                                                    <th>HOD Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:if="${approvedRequests == null || approvedRequests.isEmpty()}">
+                                                    <td colspan="5" class="empty-state-cell">
+                                                        <i class="fa fa-info-circle me-2"></i>
+                                                        No approved manual attendance requests for this month.
+                                                    </td>
+                                                </tr>
+                                                <tr th:each="req : ${approvedRequests}">
+                                                    <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
+                                                    <td th:text="${req.inTime}"></td>
+                                                    <td th:text="${req.outTime}"></td>
+                                                    <td th:text="${req.reason}"></td>
+                                                    <td><span class="badge bg-success" th:text="${req.hodStatus}"></span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1704,37 +1877,61 @@
 
                     <!-- History Tab -->
                     <div class="tab-pane fade" id="history" role="tabpanel">
-                        <div class="card mt-3" style="width:100%;">
-                            <div class="card-header" style="background:linear-gradient(180deg, #1f4f78, #163a59); color:#fff; padding:15px 25px;">
-                                <h4 class="mb-0"><i class="fa fa-history me-2"></i>Manual Attendance Request History (Rejected)</h4>
-                            </div>
+                        <div class="card mt-3 register-panel" style="width:100%;">
                             <div class="body">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-striped">
-                                        <thead>
-                                            <tr class="table-light">
-                                                <th>Request Date</th>
-                                                <th>In Time</th>
-                                                <th>Out Time</th>
-                                                <th>Reason</th>
-                                                <th>HOD Status</th>
-                                                <th>HOD Comments</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr th:if="${rejectedRequests == null || rejectedRequests.isEmpty()}">
-                                                <td colspan="6" class="text-center text-muted p-4">No rejected requests in history.</td>
-                                            </tr>
-                                            <tr th:each="req : ${rejectedRequests}">
-                                                <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
-                                                <td th:text="${req.inTime}"></td>
-                                                <td th:text="${req.outTime}"></td>
-                                                <td th:text="${req.reason}"></td>
-                                                <td><span class="badge bg-danger" th:text="${req.hodStatus}"></span></td>
-                                                <td th:text="${req.hodComments}"></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <div class="register-panel-header">
+                                    <div>
+                                        <h4 class="register-panel-title">Rejected/History</h4>
+                                        <p class="register-panel-subtitle">Manual attendance requests rejected in the selected month.</p>
+                                    </div>
+                                </div>
+
+                                <div class="panel-meta-grid">
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">History Records</span>
+                                        <span class="panel-meta-value text-danger" th:text="${rejectedRequests != null ? #lists.size(rejectedRequests) : 0}">0</span>
+                                        <span class="panel-meta-note">Rejected manual requests captured in history.</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Selected Month</span>
+                                        <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
+                                        <span class="panel-meta-note">Current attendance period on screen.</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Final Status</span>
+                                        <span class="panel-meta-value" style="font-size:18px; color:#dc2626;">Rejected</span>
+                                        <span class="panel-meta-note">Items here include HOD comments and rejection status.</span>
+                                    </div>
+                                </div>
+
+                                <div class="panel-table-wrap">
+                                    <div class="table-responsive">
+                                        <table class="table request-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Request Date</th>
+                                                    <th>In Time</th>
+                                                    <th>Out Time</th>
+                                                    <th>Reason</th>
+                                                    <th>HOD Status</th>
+                                                    <th>HOD Comments</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:if="${rejectedRequests == null || rejectedRequests.isEmpty()}">
+                                                    <td colspan="6" class="empty-state-cell">No rejected requests in history.</td>
+                                                </tr>
+                                                <tr th:each="req : ${rejectedRequests}">
+                                                    <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
+                                                    <td th:text="${req.inTime}"></td>
+                                                    <td th:text="${req.outTime}"></td>
+                                                    <td th:text="${req.reason}"></td>
+                                                    <td><span class="badge bg-danger" th:text="${req.hodStatus}"></span></td>
+                                                    <td th:text="${req.hodComments}"></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
