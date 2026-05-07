@@ -166,6 +166,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setName(emp.getFullName());
 		dto.setDesignation(emp.getDesignation() != null ? emp.getDesignation().getDesignationName() : null);
 		dto.setEmail(emp.getEmail());
+		dto.setAadhaarNumber(emp.getAadhaarNumber());
 		dto.setMobile(emp.getMobile());
 		dto.setOrganization(emp.getAgency() != null ? emp.getAgency().getAgencyName() : null);
 		dto.setUserId(emp.getEmployeeId());
@@ -385,6 +386,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setOfficeLocation(
 				employee.getDepartmentRegistration() != null ? employee.getDepartmentRegistration().getAddress() : "-");
 		dto.setEmail(employee.getEmail());
+		dto.setAadhaarNumber(employee.getAadhaarNumber());
 		dto.setMobile(employee.getMobile());
 		dto.setAddress(employee.getAddress());
 		dto.setEmployeeCode(employee.getEmployeeCode());

@@ -16,6 +16,7 @@ public class AttendanceRegisterDTO {
     private String name;
     private String designation;
     private String email;
+    private String aadhaarNumber;
     private String mobile;
     private String photoPath;
     private String requestId;
