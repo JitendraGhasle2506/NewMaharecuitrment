@@ -18,6 +18,9 @@ public interface AgencyOnboardingPageService {
     Page<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail, String search, Pageable pageable);
 
     Page<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status, String search, Pageable pageable);
+    Page<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail, Pageable pageable);
+
+    Page<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status, Pageable pageable);
 
     void markEmployeeResigned(String actorEmail, Long employeeId, java.time.LocalDate resignationDate);
 

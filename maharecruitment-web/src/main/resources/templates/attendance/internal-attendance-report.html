@@ -195,6 +195,11 @@
             text-align: left !important;
         }
 
+        .project-cell {
+            min-width: 180px;
+            text-align: left !important;
+        }
+
         .agency-cell {
             min-width: 190px;
             text-align: left !important;
@@ -338,7 +343,15 @@
                                     th:text="${entry.value}">2026</option>
                             </select>
                         </div>
-                        <div class="col-lg-3 col-md-6">
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Project</label>
+                            <select class="form-select" th:field="*{projectId}">
+                                <option value="">All Projects</option>
+                                <option th:each="entry : ${projectOptions}" th:value="${entry.key}"
+                                    th:text="${entry.value}">Project</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
                             <label class="form-label">Agency</label>
                             <select class="form-select" th:field="*{agencyId}">
                                 <option value="">All Agencies</option>
@@ -346,10 +359,10 @@
                                     th:text="${entry.value}">Agency</option>
                             </select>
                         </div>
-                        <div class="col-lg-3 col-md-6">
+                        <div class="col-lg-2 col-md-4">
                             <label class="form-label">Search</label>
                             <input type="text" class="form-control" th:field="*{searchText}"
-                                placeholder="Employee name, agency, code, request ID, designation or project">
+                                placeholder="Search employee...">
                         </div>
                         <div class="col-lg-2 col-md-4 d-flex gap-2">
                             <button type="submit" class="btn btn-primary flex-grow-1">Apply</button>
@@ -408,9 +421,13 @@
                                     th:href="@{/hr/internal-attendance-report/download/pdf(month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
                                     <i class="fas fa-file-pdf me-1"></i> Download PDF
                                 </a>
+                                <a class="btn btn-outline-primary btn-sm"
+                                    th:href="@{/hr/internal-attendance-report/download/time-csv(month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
+                                    <i class="fas fa-clock me-1"></i> Download In/Out Time CSV
+                                </a>
                             <button type="button" class="btn btn-outline-success btn-sm"
                                 onclick="exportInternalAttendanceReport()">
-                                <i class="fas fa-file-excel me-1"></i> Export CSV
+                                <i class="fas fa-file-excel me-1"></i> Export Screen CSV
                             </button>
                         </div>
                     </div>
@@ -427,6 +444,7 @@
                                 <tr>
                                     <th class="employee-code-cell">Code</th>
                                     <th class="employee-cell">Employee</th>
+                                    <th class="project-cell">Project</th>
                                     <th class="agency-cell">Agency</th>
                                     <th:block th:each="day : ${report.calendarDays}">
                                         <th th:if="${day.dayOfWeek.name() == 'SATURDAY' or day.dayOfWeek.name() == 'SUNDAY'}"
@@ -462,6 +480,7 @@
                                             Level
                                         </span>
                                     </td>
+                                    <td class="project-cell" th:text="${row.projectName}">Project Name</td>
                                     <td class="agency-cell" th:text="${row.agencyName}">Agency Name</td>
                                     <td th:each="day : ${report.calendarDays}" class="day-column">
                                         <th:block th:with="status=${row.dailyStatus.get(day.dayOfMonth)}">

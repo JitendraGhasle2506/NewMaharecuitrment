@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.maharecruitment.gov.in.attendance.service.InternalAttendanceReportPdfGenerator;
+import com.maharecruitment.gov.in.attendance.service.InternalAttendanceReportTimeCsvGenerator;
 import com.maharecruitment.gov.in.attendance.service.InternalEmployeeAttendanceReportService;
 import com.maharecruitment.gov.in.attendance.service.model.GeneratedAttendanceReportDocument;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportFilter;
@@ -31,6 +32,7 @@ import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceRep
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportView;
 import com.maharecruitment.gov.in.master.entity.AgencyStatus;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
+import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 
 @Controller
 @RequestMapping("/hr/internal-attendance-report")
@@ -41,15 +43,21 @@ public class InternalAttendanceReportController {
 
     private final InternalEmployeeAttendanceReportService internalAttendanceReportService;
     private final InternalAttendanceReportPdfGenerator internalAttendanceReportPdfGenerator;
+    private final InternalAttendanceReportTimeCsvGenerator internalAttendanceReportTimeCsvGenerator;
     private final AgencyMasterRepository agencyMasterRepository;
+    private final ProjectMstRepository projectMasterRepository;
 
     public InternalAttendanceReportController(
             InternalEmployeeAttendanceReportService internalAttendanceReportService,
             InternalAttendanceReportPdfGenerator internalAttendanceReportPdfGenerator,
-            AgencyMasterRepository agencyMasterRepository) {
+            InternalAttendanceReportTimeCsvGenerator internalAttendanceReportTimeCsvGenerator,
+            AgencyMasterRepository agencyMasterRepository,
+            ProjectMstRepository projectMasterRepository) {
         this.internalAttendanceReportService = internalAttendanceReportService;
         this.internalAttendanceReportPdfGenerator = internalAttendanceReportPdfGenerator;
+        this.internalAttendanceReportTimeCsvGenerator = internalAttendanceReportTimeCsvGenerator;
         this.agencyMasterRepository = agencyMasterRepository;
+        this.projectMasterRepository = projectMasterRepository;
     }
 
     @GetMapping
@@ -63,6 +71,7 @@ public class InternalAttendanceReportController {
         model.addAttribute("report", report);
         model.addAttribute("reportPage", reportPage);
         model.addAttribute("agencyOptions", getAgencyOptions());
+        model.addAttribute("projectOptions", getProjectOptions());
         model.addAttribute("monthNames", getMonthNames());
         model.addAttribute("yearOptions", buildYearOptions(report.getFilter().getYear()));
         return "attendance/internal-attendance-report";
@@ -72,12 +81,22 @@ public class InternalAttendanceReportController {
     public ResponseEntity<byte[]> downloadPdfReport(@ModelAttribute InternalAttendanceReportFilter filter) {
         InternalAttendanceReportView report = internalAttendanceReportService.buildReport(filter);
         GeneratedAttendanceReportDocument document = internalAttendanceReportPdfGenerator.generate(report);
+        return buildDownloadResponse(document);
+    }
 
+    @GetMapping("/download/time-csv")
+    public ResponseEntity<byte[]> downloadAttendanceTimeReport(@ModelAttribute InternalAttendanceReportFilter filter) {
+        InternalAttendanceReportView report = internalAttendanceReportService.buildReport(filter);
+        GeneratedAttendanceReportDocument document = internalAttendanceReportTimeCsvGenerator.generate(report);
+        return buildDownloadResponse(document);
+    }
+
+    private ResponseEntity<byte[]> buildDownloadResponse(GeneratedAttendanceReportDocument document) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(ContentDisposition.attachment()
                 .filename(document.originalFileName(), StandardCharsets.UTF_8)
                 .build());
-        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentType(MediaType.parseMediaType(document.contentType()));
         headers.setContentLength(document.size());
 
         return ResponseEntity.ok()
@@ -99,6 +118,19 @@ public class InternalAttendanceReportController {
                 .stream()
                 .collect(LinkedHashMap::new,
                         (map, agency) -> map.put(agency.getAgencyId(), agency.getAgencyName()),
+                        LinkedHashMap::putAll);
+    }
+
+    private Map<Long, String> getProjectOptions() {
+        return projectMasterRepository.findAll()
+                .stream()
+                .sorted((p1, p2) -> {
+                    String name1 = p1.getProjectName() != null ? p1.getProjectName() : "";
+                    String name2 = p2.getProjectName() != null ? p2.getProjectName() : "";
+                    return name1.compareToIgnoreCase(name2);
+                })
+                .collect(LinkedHashMap::new,
+                        (map, project) -> map.put(project.getProjectId(), project.getProjectName()),
                         LinkedHashMap::putAll);
     }
 

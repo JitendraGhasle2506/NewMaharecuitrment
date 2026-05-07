@@ -18,7 +18,6 @@
     const emailInput = form.querySelector("[name='email']");
     const mobileInput = form.querySelector("[name='mobile']");
     const joiningDateInput = document.getElementById("joiningDate");
-    const onboardingDateInput = document.getElementById("onboardingDate");
     const dobInput = document.getElementById("dob");
     const panInput = document.getElementById("pan");
     const aadhaarInput = form.querySelector("[name='aadhaar']");
@@ -578,15 +577,7 @@
     }
 
     function validateJoiningAndOnboardingDates() {
-        if (!joiningDateInput || !onboardingDateInput) return true;
-        
-        setFieldValidity(onboardingDateInput, "");
-        if (!joiningDateInput.value || !onboardingDateInput.value) return true;
-
-        if (onboardingDateInput.value < joiningDateInput.value) {
-            setFieldValidity(onboardingDateInput, "Onboarding date cannot be before joining date.");
-            return false;
-        }
+        if (!joiningDateInput) return true;
 
         setFieldValidity(joiningDateInput, "");
         return true;
@@ -858,7 +849,7 @@
         checkbox.addEventListener("change", checkFormValidity);
     });
 
-    [joiningDateInput, onboardingDateInput, dobInput].forEach(function (el) {
+    [joiningDateInput, dobInput].forEach(function (el) {
         if (el) {
             el.addEventListener("change", checkFormValidity);
         }

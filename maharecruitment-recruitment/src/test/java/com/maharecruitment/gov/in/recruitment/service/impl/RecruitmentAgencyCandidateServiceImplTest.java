@@ -10,16 +10,20 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
+import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingStatus;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacancyEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
@@ -35,6 +39,11 @@ import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepos
 class RecruitmentAgencyCandidateServiceImplTest {
 
     private final AtomicBoolean duplicateSubmittedEmail = new AtomicBoolean(false);
+    private final AtomicInteger saveCandidateCallCount = new AtomicInteger(0);
+    private final AtomicInteger deletePreOnboardingCallCount = new AtomicInteger(0);
+    private final AtomicInteger deleteAssessmentCallCount = new AtomicInteger(0);
+    private RecruitmentInterviewDetailEntity withdrawCandidate;
+    private AgencyCandidatePreOnboardingEntity withdrawPreOnboarding;
     private RecruitmentAgencyCandidateServiceImpl service;
 
     @BeforeEach
@@ -61,6 +70,27 @@ class RecruitmentAgencyCandidateServiceImplTest {
         vacancy.setNumberOfVacancy(5L);
         vacancy.setFillPost(0L);
 
+        withdrawCandidate = new RecruitmentInterviewDetailEntity();
+        withdrawCandidate.setRecruitmentInterviewDetailId(77L);
+        withdrawCandidate.setRecruitmentNotification(notification);
+        withdrawCandidate.setAgency(agency);
+        withdrawCandidate.setDesignationVacancy(vacancy);
+        withdrawCandidate.setCandidateName("Withdraw Candidate");
+        withdrawCandidate.setCandidateEmail("withdraw@example.com");
+        withdrawCandidate.setCandidateMobile("9876543210");
+        withdrawCandidate.setCandidateEducation("B.E.");
+        withdrawCandidate.setTotalExperience(new BigDecimal("4"));
+        withdrawCandidate.setRelevantExperience(new BigDecimal("3"));
+        withdrawCandidate.setJoiningTime("Immediate");
+        withdrawCandidate.setResumeOriginalName("resume.pdf");
+        withdrawCandidate.setResumeFilePath("resume.pdf");
+        withdrawCandidate.setCandidateStatus(RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT);
+        withdrawCandidate.setActive(true);
+
+        withdrawPreOnboarding = new AgencyCandidatePreOnboardingEntity();
+        withdrawPreOnboarding.setPreOnboardingId(88L);
+        withdrawPreOnboarding.setInterviewDetail(withdrawCandidate);
+
         RecruitmentInterviewDetailRepository interviewDetailRepository = proxyWithDefaults(
                 RecruitmentInterviewDetailRepository.class,
                 (proxy, method, args) -> switch (method.getName()) {
@@ -69,6 +99,12 @@ class RecruitmentAgencyCandidateServiceImplTest {
                     case "existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateMobile" ->
                         false;
                     case "saveAll" -> args[0];
+                    case "findByRecruitmentInterviewDetailIdAndRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId" ->
+                        Optional.of(withdrawCandidate);
+                    case "save" -> {
+                        saveCandidateCallCount.incrementAndGet();
+                        yield args[0];
+                    }
                     default -> throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
                 });
 
@@ -95,8 +131,13 @@ class RecruitmentAgencyCandidateServiceImplTest {
 
         AgencyCandidatePreOnboardingRepository preOnboardingRepository = proxyWithDefaults(
                 AgencyCandidatePreOnboardingRepository.class,
-                (proxy, method, args) -> {
-                    throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "findByInterviewDetailRecruitmentInterviewDetailId" -> Optional.ofNullable(withdrawPreOnboarding);
+                    case "delete" -> {
+                        deletePreOnboardingCallCount.incrementAndGet();
+                        yield null;
+                    }
+                    default -> throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
                 });
 
         EmployeeRepository employeeRepository = proxyWithDefaults(
@@ -108,8 +149,13 @@ class RecruitmentAgencyCandidateServiceImplTest {
 
         RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository = proxyWithDefaults(
                 RecruitmentAssessmentFeedbackRepository.class,
-                (proxy, method, args) -> {
-                    throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "findByRecruitmentInterviewDetailRecruitmentInterviewDetailId" -> Optional.empty();
+                    case "delete" -> {
+                        deleteAssessmentCallCount.incrementAndGet();
+                        yield null;
+                    }
+                    default -> throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
                 });
 
         RecruitmentAgencyNotificationActionService actionService = proxyWithDefaults(
@@ -169,6 +215,16 @@ class RecruitmentAgencyCandidateServiceImplTest {
                 () -> service.submitCandidates(11L, 22L, 55L, 44L, List.of(invalidInput)));
 
         assertEquals("Candidate mobile must be 10 digits in row 1.", exception.getMessage());
+    }
+
+    @Test
+    void withdrawCandidateMarksCandidateInactiveWithoutDeletingRelatedRecords() {
+        service.withdrawCandidate(11L, 77L, 22L);
+
+        assertEquals(false, withdrawCandidate.getActive());
+        assertEquals(1, saveCandidateCallCount.get());
+        assertEquals(0, deletePreOnboardingCallCount.get());
+        assertEquals(0, deleteAssessmentCallCount.get());
     }
 
     private AgencyCandidateSubmissionInput validInput() {

@@ -176,6 +176,408 @@
     color: var(--onboard-text);
 }
 
+.personal-details-section {
+    overflow: hidden;
+    border-color: #c8d4df;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.personal-details-section .section-title {
+    margin: -24px -24px 18px;
+    padding: 12px 24px;
+    border-bottom: 1px solid #d9e2ea;
+    background: #eef4fa;
+    color: #2d4558;
+}
+
+.personal-details-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(180px, 220px);
+    gap: 18px;
+    align-items: start;
+}
+
+.personal-details-fields-shell {
+    display: grid;
+    gap: 14px;
+}
+
+.personal-details-grid {
+    display: grid;
+    gap: 14px 16px;
+}
+
+.personal-details-grid-top {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.personal-details-grid-bottom {
+    grid-template-columns: minmax(180px, 0.85fr) minmax(0, 1.65fr);
+}
+
+.personal-field {
+    margin-bottom: 0;
+}
+
+.personal-field .form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #4e6272;
+}
+
+.personal-input {
+    min-height: 40px;
+    border-color: #c9d3dc;
+    border-radius: 6px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.personal-textarea {
+    min-height: 92px;
+    resize: vertical;
+}
+
+.personal-photo-shell {
+    display: grid;
+    align-content: start;
+}
+
+.personal-details-section .passport-photo-panel {
+    width: 100%;
+    max-width: 210px;
+    margin-left: 0;
+    justify-self: end;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.personal-details-section .passport-photo-panel-header {
+    padding-bottom: 2px;
+}
+
+.personal-details-section .passport-photo-heading {
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.personal-details-section .passport-photo-frame {
+    max-width: 118px;
+    border-radius: 10px;
+}
+
+.form-section-classic {
+    overflow: hidden;
+    border-color: #cfd8e0;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.form-section-classic > .section-title {
+    margin: -24px -24px 16px;
+    padding: 11px 24px;
+    border-bottom: 1px solid #dce4eb;
+    background: #f4f7fa;
+    color: #314959;
+}
+
+.job-details-grid {
+    display: grid;
+    gap: 14px 16px;
+}
+
+.job-details-grid + .job-details-grid {
+    margin-top: 14px;
+}
+
+.job-details-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.job-details-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.job-field {
+    margin-bottom: 0;
+}
+
+.job-field .form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #4e6272;
+}
+
+.job-input {
+    min-height: 40px;
+    border-color: #c9d3dc;
+    border-radius: 6px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.employment-details-section .employment-section-header {
+    margin: -24px -24px 16px;
+    padding: 11px 24px;
+    border-bottom: 1px solid #dce4eb;
+    background: #f4f7fa;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.employment-details-section .employment-section-header .section-title {
+    margin: 0;
+    color: #314959;
+}
+
+.employment-level-alert {
+    margin: 0 0 12px;
+    border-color: #d7e4ef;
+    background: #f4f9fd;
+    color: #365166;
+}
+
+.employment-copy {
+    color: #607383;
+}
+
+.employment-details-section .employment-row {
+    border-color: #d5dee6;
+    border-radius: 10px;
+    background: #fbfdff;
+    box-shadow: none;
+}
+
+.employment-details-section .employment-row-header {
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e4ebf0;
+}
+
+.employment-details-section .employment-row-title {
+    color: #304757;
+}
+
+.employment-details-section .form-label {
+    font-size: 0.79rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #4e6272;
+}
+
+.employment-details-section .form-control {
+    min-height: 40px;
+    border-color: #c9d3dc;
+    border-radius: 6px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.employment-details-section .experience-summary {
+    margin-top: 16px;
+    border: 1px solid #d8e3ea;
+    border-left: 4px solid #1f4f78;
+    border-radius: 10px;
+    background: #f5f9fc;
+}
+
+.employment-supporting-doc {
+    margin-top: 8px !important;
+}
+
+.employment-existing-file {
+    margin-top: 8px;
+    text-align: left;
+}
+
+.document-checklist-section .text-muted {
+    color: #647786 !important;
+}
+
+.document-checklist-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.document-checklist-item {
+    min-width: 0;
+}
+
+.document-checklist-section .check-card {
+    align-items: start;
+    gap: 10px;
+    border-color: #d5dee6;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 12px 14px;
+    box-shadow: none;
+}
+
+.document-checklist-section .check-card span {
+    line-height: 1.4;
+    color: #304757;
+}
+
+.document-checklist-section .check-card:hover {
+    border-color: #c3d0db;
+    background: #f9fbfd;
+}
+
+.hr-verification-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+}
+
+.hr-verification-field {
+    margin-bottom: 0;
+}
+
+.hr-verification-field .form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #4e6272;
+}
+
+.hr-verification-input {
+    min-height: 40px;
+    border-color: #c9d3dc;
+    border-radius: 6px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.verification-box {
+    border: 1px solid #d0dae2;
+    border-left: 4px solid var(--onboard-brand);
+    border-radius: 10px;
+    background: #f6f9fc;
+    padding: 14px 16px;
+}
+
+.hr-verification-box {
+    border-left-color: #0d6efd;
+    background: #f2f7ff;
+}
+
+.agency-verification-box {
+    margin-top: 6px;
+    background: #f7fbf8;
+    border-left-color: #198754;
+}
+
+.kyc-section {
+    overflow: hidden;
+    border-color: #c7d0d8;
+    border-radius: 8px;
+    background: #f7f6f1;
+    box-shadow: none;
+}
+
+.kyc-section .section-title {
+    margin: -24px -24px 14px;
+    padding: 12px 24px;
+    border-bottom: 1px solid #d8dfe5;
+    background: #ebe7dc;
+    color: #2f4150;
+}
+
+.kyc-document-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.05fr) minmax(260px, 1.3fr) minmax(180px, 0.85fr);
+    gap: 12px 16px;
+    align-items: start;
+    padding: 2px 0 12px;
+}
+
+.kyc-document-row + .kyc-document-row {
+    margin-top: 0;
+    padding-top: 12px;
+    border-top: 1px solid #dde3e8;
+}
+
+.kyc-field {
+    margin-bottom: 0;
+}
+
+.kyc-field .form-label {
+    display: block;
+    margin-bottom: 6px;
+    line-height: 1.35;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #4a5c6b;
+}
+
+.kyc-input {
+    min-height: 40px;
+    border-color: #c6cfd7;
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.kyc-pan-input {
+    text-transform: uppercase;
+}
+
+.kyc-upload-field .form-control[type="file"] {
+    padding-block: 0.42rem;
+    background: #ffffff;
+}
+
+.kyc-upload-field--wide {
+    grid-column: span 2;
+}
+
+.kyc-helper {
+    display: block;
+    min-height: 0;
+    margin-top: 4px;
+    font-size: 0.74rem;
+    line-height: 1.25;
+    color: #6b7c89;
+}
+
+.kyc-existing-field {
+    padding-top: 1.85rem;
+    text-align: left;
+}
+
+.kyc-existing-file-action {
+    margin-top: 0 !important;
+    width: auto;
+    min-width: 142px;
+    max-width: 100%;
+    padding: 0.32rem 0.65rem;
+    border-color: #bac4cd;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #324656;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
 .readonly-field {
     background-color: #f8fbff;
 }
@@ -357,10 +759,10 @@
     gap: 16px;
     margin-top: 24px;
     padding: 18px 20px;
-    border: 1px solid var(--onboard-line);
-    border-radius: 16px;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-    box-shadow: 0 1px 3px 0 rgba(17, 39, 69, 0.08), 0 1px 2px 0 rgba(17, 39, 69, 0.04);
+    border: 1px solid #d5dfe7;
+    border-radius: 10px;
+    background: #f7f9fb;
+    box-shadow: none;
 }
 
 .pre-onboarding-action-note {
@@ -378,6 +780,13 @@
 .pre-onboarding-action-note span {
     font-size: 0.88rem;
     line-height: 1.5;
+}
+
+.pre-onboarding-action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 #submitBtn:disabled {
@@ -424,6 +833,44 @@
         padding: 14px;
     }
 
+    .personal-details-section .section-title {
+        margin: -14px -14px 14px;
+        padding: 10px 14px;
+    }
+
+    .form-section-classic > .section-title {
+        margin: -14px -14px 14px;
+        padding: 10px 14px;
+    }
+
+    .personal-details-layout {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .personal-details-grid-top,
+    .personal-details-grid-bottom {
+        grid-template-columns: 1fr;
+    }
+
+    .personal-details-section .passport-photo-panel {
+        max-width: 180px;
+        justify-self: start;
+    }
+
+    .job-details-grid-3,
+    .job-details-grid-2,
+    .document-checklist-grid,
+    .hr-verification-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .employment-details-section .employment-section-header {
+        margin: -14px -14px 14px;
+        padding: 10px 14px;
+        grid-template-columns: 1fr;
+    }
+
     .pre-onboarding-hero {
         grid-template-columns: 1fr;
         padding: 16px;
@@ -446,6 +893,24 @@
         max-width: 100%;
     }
 
+    .kyc-section .section-title {
+        margin: -14px -14px 12px;
+        padding: 10px 14px;
+    }
+
+    .kyc-document-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .kyc-existing-field {
+        padding-top: 0;
+    }
+
+    .kyc-upload-field--wide {
+        grid-column: auto;
+    }
+
     .employment-row-header {
         flex-direction: column;
         align-items: stretch;
@@ -459,5 +924,9 @@
 
     .pre-onboarding-action-note {
         max-width: none;
+    }
+
+    .pre-onboarding-action-buttons {
+        justify-content: stretch;
     }
 }

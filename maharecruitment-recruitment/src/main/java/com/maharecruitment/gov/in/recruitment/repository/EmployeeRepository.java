@@ -128,7 +128,11 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "left join preOnboarding.interviewDetail interviewDetail "
             + "left join interviewDetail.recruitmentNotification notification "
             + "left join notification.projectMst project "
-            + "where upper(employee.status) = :status "
+            + "where upper(trim(coalesce(employee.status, ''))) = :status "
+            + "and preOnboarding is not null "
+            + "and preOnboarding.onboardedAt is not null "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
             + "and (:recruitmentType is null or upper(employee.recruitmentType) = :recruitmentType) "
             + "and (:searchPattern is null "
             + "or upper(coalesce(employee.requestId, '')) like :searchPattern "
@@ -140,7 +144,11 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
                     + "left join preOnboarding.interviewDetail interviewDetail "
                     + "left join interviewDetail.recruitmentNotification notification "
                     + "left join notification.projectMst project "
-                    + "where upper(employee.status) = :status "
+                    + "where upper(trim(coalesce(employee.status, ''))) = :status "
+                    + "and preOnboarding is not null "
+                    + "and preOnboarding.onboardedAt is not null "
+                    + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+                    + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
                     + "and (:recruitmentType is null or upper(employee.recruitmentType) = :recruitmentType) "
                     + "and (:searchPattern is null "
                     + "or upper(coalesce(employee.requestId, '')) like :searchPattern "
@@ -154,8 +162,61 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     List<EmployeeEntity> findByAgencyAgencyIdOrderByOnboardingDateDescEmployeeIdDesc(Long agencyId);
 
-    List<EmployeeEntity> findByAgencyAgencyIdAndStatusOrderByOnboardingDateDescEmployeeIdDesc(Long agencyId,
-            String status);
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    @Query(value = "select employee "
+            + "from EmployeeEntity employee "
+            + "join employee.preOnboarding preOnboarding "
+            + "where employee.agency.agencyId = :agencyId "
+            + "and upper(trim(coalesce(employee.status, ''))) in :statuses "
+            + "and preOnboarding.onboardedAt is not null "
+            + "and trim(coalesce(employee.employeeCode, '')) <> '' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "order by employee.onboardingDate desc, employee.employeeId desc",
+            countQuery = "select count(employee) "
+                    + "from EmployeeEntity employee "
+                    + "join employee.preOnboarding preOnboarding "
+                    + "where employee.agency.agencyId = :agencyId "
+                    + "and upper(trim(coalesce(employee.status, ''))) in :statuses "
+                    + "and preOnboarding.onboardedAt is not null "
+                    + "and trim(coalesce(employee.employeeCode, '')) <> '' "
+                    + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+                    + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' ")
+    Page<EmployeeEntity> findPageByAgencyAgencyIdAndStatuses(
+            @Param("agencyId") Long agencyId,
+            @Param("statuses") Collection<String> statuses,
+            Pageable pageable);
+
+    @EntityGraph(attributePaths = {
+            "agency",
+            "departmentRegistration",
+            "subDepartment",
+            "designation",
+            "preOnboarding",
+            "preOnboarding.interviewDetail",
+            "preOnboarding.interviewDetail.recruitmentNotification",
+            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+    @Query("select employee "
+            + "from EmployeeEntity employee "
+            + "join employee.preOnboarding preOnboarding "
+            + "where employee.agency.agencyId = :agencyId "
+            + "and upper(trim(coalesce(employee.status, ''))) = :status "
+            + "and preOnboarding.onboardedAt is not null "
+            + "and trim(coalesce(employee.employeeCode, '')) <> '' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "order by employee.onboardingDate desc, employee.employeeId desc")
+    List<EmployeeEntity> findByAgencyAgencyIdAndStatusOrderByOnboardingDateDescEmployeeIdDesc(
+            @Param("agencyId") Long agencyId,
+            @Param("status") String status);
 
     @Query(value = "select e from EmployeeEntity e "
             + "left join e.preOnboarding pre "
@@ -193,23 +254,55 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     @Query("select case when count(employee) > 0 then true else false end "
             + "from EmployeeEntity employee "
-            + "where trim(coalesce(employee.aadhaarNumber, '')) = :aadhaarNumber")
-    boolean existsByNormalizedAadhaarNumber(@Param("aadhaarNumber") String aadhaarNumber);
+            + "left join employee.preOnboarding preOnboarding "
+            + "where trim(coalesce(employee.aadhaarNumber, '')) = :aadhaarNumber "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "and (preOnboarding is null or preOnboarding.onboardedAt is not null) "
+            + "and (:excludePreOnboardingId is null or preOnboarding is null "
+            + "or preOnboarding.preOnboardingId <> :excludePreOnboardingId)")
+    boolean existsByNormalizedAadhaarNumberExcludingPreOnboardingId(
+            @Param("aadhaarNumber") String aadhaarNumber,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
 
     @Query("select case when count(employee) > 0 then true else false end "
             + "from EmployeeEntity employee "
-            + "where upper(trim(coalesce(employee.panNumber, ''))) = upper(trim(:panNumber))")
-    boolean existsByNormalizedPanNumber(@Param("panNumber") String panNumber);
+            + "left join employee.preOnboarding preOnboarding "
+            + "where upper(trim(coalesce(employee.panNumber, ''))) = upper(trim(:panNumber)) "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "and (preOnboarding is null or preOnboarding.onboardedAt is not null) "
+            + "and (:excludePreOnboardingId is null or preOnboarding is null "
+            + "or preOnboarding.preOnboardingId <> :excludePreOnboardingId)")
+    boolean existsByNormalizedPanNumberExcludingPreOnboardingId(
+            @Param("panNumber") String panNumber,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
 
     @Query("select case when count(employee) > 0 then true else false end "
             + "from EmployeeEntity employee "
-            + "where lower(trim(coalesce(employee.email, ''))) = lower(trim(:email))")
-    boolean existsByNormalizedEmail(@Param("email") String email);
+            + "left join employee.preOnboarding preOnboarding "
+            + "where lower(trim(coalesce(employee.email, ''))) = lower(trim(:email)) "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "and (preOnboarding is null or preOnboarding.onboardedAt is not null) "
+            + "and (:excludePreOnboardingId is null or preOnboarding is null "
+            + "or preOnboarding.preOnboardingId <> :excludePreOnboardingId)")
+    boolean existsByNormalizedEmailExcludingPreOnboardingId(
+            @Param("email") String email,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
 
     @Query("select case when count(employee) > 0 then true else false end "
             + "from EmployeeEntity employee "
-            + "where trim(coalesce(employee.mobile, '')) = :mobile")
-    boolean existsByNormalizedMobile(@Param("mobile") String mobile);
+            + "left join employee.preOnboarding preOnboarding "
+            + "where trim(coalesce(employee.mobile, '')) = :mobile "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "and (preOnboarding is null or preOnboarding.onboardedAt is not null) "
+            + "and (:excludePreOnboardingId is null or preOnboarding is null "
+            + "or preOnboarding.preOnboardingId <> :excludePreOnboardingId)")
+    boolean existsByNormalizedMobileExcludingPreOnboardingId(
+            @Param("mobile") String mobile,
+            @Param("excludePreOnboardingId") Long excludePreOnboardingId);
 
     boolean existsByPreOnboardingInterviewDetailRecruitmentInterviewDetailIdAndStatusIgnoreCase(
             Long recruitmentInterviewDetailId, String status);

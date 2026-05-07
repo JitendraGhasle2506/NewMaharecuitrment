@@ -72,8 +72,8 @@ body.tax-invoice {
 }
 
 .tax-invoice .qr-code-image {
-    width: 140px;
-    height: 140px;
+    width: 170px;
+    height: 170px;
     display: block;
     margin: 0 auto;
     object-fit: contain;
@@ -92,8 +92,155 @@ body.tax-invoice {
 }
 
 @media print {
+    @page {
+        size: A4 portrait;
+        margin: 7mm 6mm;
+    }
+
     body.tax-invoice {
-        font-size: 11pt;
+        margin: 0 !important;
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 8.1pt;
+        line-height: 1.08;
+    }
+
+    .tax-invoice .invoice-container {
+        padding: 0 !important;
+        font-size: 8.1pt;
+        line-height: 1.08;
+    }
+
+    .tax-invoice .table,
+    .tax-invoice .table-invoice {
+        margin-bottom: 4px !important;
+        page-break-inside: avoid;
+    }
+
+    .tax-invoice .table-invoice th,
+    .tax-invoice .table-invoice td {
+        font-size: 7.15pt !important;
+        line-height: 1.02 !important;
+        padding: 2px 3px !important;
+    }
+
+    .tax-invoice h2 {
+        font-size: 10.8pt;
+        margin-bottom: 0.1rem;
+    }
+
+    .tax-invoice h3 {
+        font-size: 9.3pt;
+        line-height: 1.04;
+        margin-bottom: 0;
+    }
+
+    .tax-invoice h4 {
+        font-size: 8.2pt;
+        line-height: 1.04;
+        margin-bottom: 0;
+    }
+
+    .tax-invoice small,
+    .tax-invoice .small {
+        font-size: 6.2pt !important;
+    }
+
+    .tax-invoice .invoice-brand-table td {
+        border: 0 !important;
+        padding: 0 2px 2px !important;
+        vertical-align: middle !important;
+    }
+
+    .tax-invoice .invoice-meta-table {
+        table-layout: fixed;
+    }
+
+    .tax-invoice .invoice-meta-table td {
+        vertical-align: top !important;
+    }
+
+    .tax-invoice .invoice-detail-grid td {
+        padding: 0.5px 0 !important;
+        font-size: 6.5pt !important;
+        line-height: 1.0 !important;
+    }
+
+    .tax-invoice .invoice-detail-grid td:first-child {
+        width: 36%;
+        padding-right: 3px !important;
+        font-weight: 600;
+    }
+
+    .tax-invoice .invoice-billed-to {
+        line-height: 1.08 !important;
+    }
+
+    .tax-invoice .invoice-items-table {
+        table-layout: fixed;
+    }
+
+    .tax-invoice .invoice-items-table th {
+        font-size: 6.9pt !important;
+    }
+
+    .tax-invoice .invoice-items-table td:nth-child(1),
+    .tax-invoice .invoice-items-table td:nth-child(3),
+    .tax-invoice .invoice-items-table td:nth-child(4),
+    .tax-invoice .invoice-items-table td:nth-child(5),
+    .tax-invoice .invoice-items-table td:nth-child(6),
+    .tax-invoice .invoice-items-table td:nth-child(7) {
+        white-space: nowrap;
+    }
+
+    .tax-invoice .invoice-items-table td:nth-child(2) {
+        word-break: break-word;
+    }
+
+    .tax-invoice .invoice-terms-table td,
+    .tax-invoice .invoice-account-table td {
+        vertical-align: top !important;
+    }
+
+    .tax-invoice .invoice-account-table td {
+        font-size: 6.9pt !important;
+        line-height: 1.04 !important;
+    }
+
+    .tax-invoice .terms-list {
+        columns: 2;
+        column-gap: 12px;
+        padding-left: 14px !important;
+        margin: 0 !important;
+    }
+
+    .tax-invoice .terms-list li {
+        break-inside: avoid;
+        margin-bottom: 1px;
+    }
+
+    .tax-invoice .qr-code-image {
+        width: 62px;
+        height: 62px;
+    }
+
+    .tax-invoice .qr-placeholder {
+        width: 52px;
+        height: 52px;
+        font-size: 8px;
+    }
+
+    .tax-invoice .qr-caption {
+        display: none;
+    }
+
+    .tax-invoice .invoice-signature-table td {
+        height: 42px !important;
+    }
+
+    .tax-invoice .invoice-footer {
+        margin-top: 2px;
+        font-size: 6.1pt !important;
+        line-height: 1.0 !important;
     }
 
     .header,

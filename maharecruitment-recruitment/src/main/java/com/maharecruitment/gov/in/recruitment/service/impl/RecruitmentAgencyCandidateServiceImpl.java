@@ -396,13 +396,8 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             throw new RecruitmentNotificationException("Rejected candidate cannot be withdrawn.");
         }
 
-        if (preOnboarding != null) {
-            preOnboardingRepository.delete(preOnboarding);
-        }
-        assessmentFeedbackRepository.findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(
-                recruitmentInterviewDetailId).ifPresent(assessmentFeedbackRepository::delete);
-
-        interviewDetailRepository.delete(candidateEntity);
+        candidateEntity.setActive(false);
+        interviewDetailRepository.save(candidateEntity);
     }
 
     @Override

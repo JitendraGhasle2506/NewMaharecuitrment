@@ -3,6 +3,9 @@ package com.maharecruitment.gov.in.web.controller.agency;
 import java.security.Principal;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +29,7 @@ import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationE
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.service.onboarding.CandidateIdentityValidationService;
 import com.maharecruitment.gov.in.web.service.agency.AgencyOnboardingPageService;
+import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardedEmployeeView;
 
 @Controller
 @RequestMapping("/agency/onboarding")
@@ -51,12 +55,17 @@ public class AgencyOnboardingPageController {
             Principal principal,
             Model model) {
         String actorEmail = resolveActorEmail(principal);
-        Pageable pageable = PageRequest.of(Math.max(0, page), size);
-        model.addAttribute("onboardedEmployees", onboardingPageService.getOnboardedEmployees(actorEmail, search, pageable));
+        Pageable pageable = buildPageable(page, size);
+        
+        Page<AgencyOnboardedEmployeeView> employeePage = onboardingPageService.getOnboardedEmployees(actorEmail, search, pageable);
+        
+        model.addAttribute("employeePage", employeePage);
+        model.addAttribute("onboardedEmployees", employeePage.getContent());
         model.addAttribute("currentStatus", "ACTIVE");
         model.addAttribute("search", search);
+        model.addAttribute("pageSize", employeePage.getSize());
         model.addAttribute("pageTitle", "Onboarded Employees");
-        model.addAttribute("pageSubtitle", "Agency-wise active onboarded employees.");
+        model.addAttribute("pageSubtitle", "Agency-wise current and resigned onboarded employees.");
         return "agency/onboarding-list";
     }
 
@@ -68,10 +77,15 @@ public class AgencyOnboardingPageController {
             Principal principal,
             Model model) {
         String actorEmail = resolveActorEmail(principal);
-        Pageable pageable = PageRequest.of(Math.max(0, page), size);
-        model.addAttribute("onboardedEmployees", onboardingPageService.getEmployeesByStatus(actorEmail, "RESIGNED", search, pageable));
+        Pageable pageable = buildPageable(page, size);
+        
+        Page<AgencyOnboardedEmployeeView> employeePage = onboardingPageService.getEmployeesByStatus(actorEmail, "RESIGNED", search, pageable);
+        
+        model.addAttribute("employeePage", employeePage);
+        model.addAttribute("onboardedEmployees", employeePage.getContent());
         model.addAttribute("currentStatus", "RESIGNED");
         model.addAttribute("search", search);
+        model.addAttribute("pageSize", employeePage.getSize());
         model.addAttribute("pageTitle", "Resigned Employees");
         model.addAttribute("pageSubtitle", "Agency employees who resigned and reopened their vacancy.");
         return "agency/onboarding-list";
@@ -133,7 +147,7 @@ public class AgencyOnboardingPageController {
             redirectAttributes.addFlashAttribute(
                     "successMessage",
                     "Pre-onboarding form submitted. Candidate is now available in onboarding.");
-            return "redirect:/agency/onboarding";
+            return "redirect:/agency/selected-candidates";
         } catch (RecruitmentNotificationException ex) {
             log.warn(
                     "Unable to save pre-onboarding form. candidateId={}, actorEmail={}, reason={}",
@@ -246,6 +260,8 @@ public class AgencyOnboardingPageController {
     public String resignEmployee(
             @PathVariable Long employeeId,
             @RequestParam("resignationDate") java.time.LocalDate resignationDate,
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "size", required = false) Integer size,
             Principal principal,
             RedirectAttributes redirectAttributes) {
         String actorEmail = resolveActorEmail(principal);
@@ -255,7 +271,24 @@ public class AgencyOnboardingPageController {
         } catch (RecruitmentNotificationException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
+        if (page != null) {
+            redirectAttributes.addAttribute("page", Math.max(page, 0));
+        }
+        if (size != null) {
+            redirectAttributes.addAttribute("size", resolvePageSize(size));
+        }
         return "redirect:/agency/onboarding";
+    }
+
+    private Pageable buildPageable(int page, int size) {
+        return PageRequest.of(Math.max(page, 0), resolvePageSize(size));
+    }
+
+    private int resolvePageSize(int size) {
+        if (size <= 0) {
+            return 10;
+        }
+        return Math.min(size, 50);
     }
 
     private void mergeReadonlyFields(AgencyPreOnboardingForm source, AgencyPreOnboardingForm target) {

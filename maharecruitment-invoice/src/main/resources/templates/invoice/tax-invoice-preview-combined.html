@@ -112,18 +112,6 @@
 <body>
     <div class="preview-shell">
         <section class="preview-section">
-            <div class="preview-frame-message" id="oldPreviewFrameMessage" aria-live="polite">
-                <div>
-                    <h3>Session expired</h3>
-                    <p>Please login again and reopen the tax invoice preview.</p>
-                </div>
-            </div>
-            <iframe class="preview-frame" id="oldPreviewFrame" title="Old Tax Invoice Preview" scrolling="no"
-                th:src="@{/invoice/tax-invoices/application/{applicationId}/preview/old(applicationId=${applicationId},embedded=true)}">
-            </iframe>
-        </section>
-
-        <section class="preview-section">
             <div class="preview-frame-message" id="newPreviewFrameMessage" aria-live="polite">
                 <div>
                     <h3>Session expired</h3>
@@ -136,8 +124,8 @@
         </section>
 
         <div class="preview-toolbar no-print">
-            <button id="printBothBtn" class="preview-print-btn" type="button" onclick="printBothPreviews()" disabled>
-                Loading previews...
+            <button id="printPreviewBtn" class="preview-print-btn" type="button" onclick="printPreview()" disabled>
+                Loading preview...
             </button>
         </div>
     </div>
@@ -315,8 +303,8 @@
             }, { once: true });
         }
 
-        function printBothPreviews() {
-            var frames = ['oldPreviewFrame', 'newPreviewFrame']
+        function printPreview() {
+            var frames = ['newPreviewFrame']
                 .map(function (frameId) { return document.getElementById(frameId); })
                 .filter(Boolean);
 
@@ -356,9 +344,8 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            var printButton = document.getElementById('printBothBtn');
+            var printButton = document.getElementById('printPreviewBtn');
             var frameStates = {
-                oldPreviewFrame: 'loading',
                 newPreviewFrame: 'loading'
             };
 
@@ -384,10 +371,10 @@
                     return state === 'ready';
                 });
                 printButton.disabled = !ready;
-                printButton.textContent = ready ? 'Print Both Previews' : 'Loading previews...';
+                printButton.textContent = ready ? 'Print Preview' : 'Loading preview...';
             }
 
-            ['oldPreviewFrame', 'newPreviewFrame'].forEach(function (frameId) {
+            ['newPreviewFrame'].forEach(function (frameId) {
                 var frame = document.getElementById(frameId);
                 if (!frame) {
                     return;
@@ -411,7 +398,7 @@
             });
 
             window.addEventListener('resize', function () {
-                ['oldPreviewFrame', 'newPreviewFrame'].forEach(function (frameId) {
+                ['newPreviewFrame'].forEach(function (frameId) {
                     resizePreviewFrame(document.getElementById(frameId));
                 });
             });

@@ -159,18 +159,6 @@
 
             <div class="invoice-combined-shell">
                 <section class="invoice-combined-section">
-                    <div class="invoice-frame-message" id="oldInvoiceFrameMessage" aria-live="polite">
-                        <div>
-                            <h3>Session expired</h3>
-                            <p>Please login again and reopen the tax invoice page.</p>
-                        </div>
-                    </div>
-                    <iframe class="invoice-frame" id="oldInvoiceFrame" title="Old Tax Invoice" scrolling="no"
-                        th:src="@{/invoice/tax-invoices/application/{applicationId}/old(applicationId=${applicationId},embedded=true)}">
-                    </iframe>
-                </section>
-
-                <section class="invoice-combined-section">
                     <div class="invoice-frame-message" id="newInvoiceFrameMessage" aria-live="polite">
                         <div>
                             <h3>Session expired</h3>
@@ -183,8 +171,8 @@
                 </section>
 
                 <div class="invoice-combined-toolbar no-print">
-                    <button id="printBothBtn" class="invoice-combined-print-btn" type="button"
-                        onclick="printBothInvoices()" disabled>
+                    <button id="printInvoiceBtn" class="invoice-combined-print-btn" type="button"
+                        onclick="printInvoice()" disabled>
                         Loading...
                     </button>
                 </div>
@@ -384,8 +372,8 @@
             }, { once: true });
         }
 
-        function printBothInvoices() {
-            var frames = ['oldInvoiceFrame', 'newInvoiceFrame']
+        function printInvoice() {
+            var frames = ['newInvoiceFrame']
                 .map(function (frameId) { return document.getElementById(frameId); })
                 .filter(Boolean);
 
@@ -425,9 +413,8 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            var printButton = document.getElementById('printBothBtn');
+            var printButton = document.getElementById('printInvoiceBtn');
             var frameStates = {
-                oldInvoiceFrame: 'loading',
                 newInvoiceFrame: 'loading'
             };
 
@@ -456,7 +443,7 @@
                 printButton.textContent = ready ? 'Print' : 'Loading...';
             }
 
-            ['oldInvoiceFrame', 'newInvoiceFrame'].forEach(function (frameId) {
+            ['newInvoiceFrame'].forEach(function (frameId) {
                 var frame = document.getElementById(frameId);
                 if (!frame) {
                     return;
@@ -480,7 +467,7 @@
             });
 
             window.addEventListener('resize', function () {
-                ['oldInvoiceFrame', 'newInvoiceFrame'].forEach(function (frameId) {
+                ['newInvoiceFrame'].forEach(function (frameId) {
                     resizeInvoiceFrame(document.getElementById(frameId));
                 });
             });
