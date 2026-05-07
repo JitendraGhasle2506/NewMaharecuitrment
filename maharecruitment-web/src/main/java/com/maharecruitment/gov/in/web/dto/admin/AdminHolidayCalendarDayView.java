@@ -16,4 +16,6 @@ public class AdminHolidayCalendarDayView {
     private final boolean weekend;
     private final boolean workingDayHoliday;
     private final String holidayName;
+    private final boolean weekOffWorkingDay;
+    private final Long weekOffWorkingDayId;
 }

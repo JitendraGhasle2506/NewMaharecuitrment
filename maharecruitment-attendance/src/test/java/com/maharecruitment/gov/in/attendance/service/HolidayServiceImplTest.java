@@ -23,6 +23,7 @@ import com.maharecruitment.gov.in.audit.dto.AuditRecordRequest;
 import com.maharecruitment.gov.in.audit.service.AuditTrailService;
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
 import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
+import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
 import com.maharecruitment.gov.in.common.service.CurrentActorProvider;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +38,9 @@ class HolidayServiceImplTest {
     @Mock
     private CurrentActorProvider currentActorProvider;
 
+    @Mock
+    private WeekOffWorkingDayRepository weekOffWorkingDayRepository;
+
     @Captor
     private ArgumentCaptor<AuditRecordRequest> auditRequestCaptor;
 
@@ -44,7 +48,11 @@ class HolidayServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new HolidayServiceImpl(holidayRepository, auditTrailService, currentActorProvider);
+        service = new HolidayServiceImpl(
+                holidayRepository,
+                weekOffWorkingDayRepository,
+                auditTrailService,
+                currentActorProvider);
     }
 
     @Test
@@ -54,6 +62,7 @@ class HolidayServiceImplTest {
         holiday.setHolidayName("Foundation Day");
 
         when(holidayRepository.findByHolidayDate(holiday.getHolidayDate())).thenReturn(Optional.empty());
+        when(weekOffWorkingDayRepository.findByWorkingDate(holiday.getHolidayDate())).thenReturn(Optional.empty());
         when(currentActorProvider.getCurrentUserId()).thenReturn(99L);
         when(currentActorProvider.getCurrentActorEmail()).thenReturn("admin@mahait.org");
         when(holidayRepository.save(any(HolidayMasterEntity.class))).thenAnswer(invocation -> {
@@ -84,6 +93,7 @@ class HolidayServiceImplTest {
         duplicate.setHolidayName("Another Holiday");
 
         when(holidayRepository.findByHolidayDate(existing.getHolidayDate())).thenReturn(Optional.of(existing));
+        when(weekOffWorkingDayRepository.findByWorkingDate(existing.getHolidayDate())).thenReturn(Optional.empty());
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -107,6 +117,7 @@ class HolidayServiceImplTest {
         update.setHolidayName("State Foundation Day");
 
         when(holidayRepository.findByHolidayDate(update.getHolidayDate())).thenReturn(Optional.empty());
+        when(weekOffWorkingDayRepository.findByWorkingDate(update.getHolidayDate())).thenReturn(Optional.empty());
         when(holidayRepository.findByIdAndActiveTrue(10L)).thenReturn(Optional.of(existing));
         when(currentActorProvider.getCurrentUserId()).thenReturn(99L);
         when(currentActorProvider.getCurrentActorEmail()).thenReturn("admin@mahait.org");

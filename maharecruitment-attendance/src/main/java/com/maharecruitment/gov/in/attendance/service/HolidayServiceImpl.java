@@ -18,6 +18,7 @@ import com.maharecruitment.gov.in.audit.dto.AuditRecordRequest;
 import com.maharecruitment.gov.in.audit.service.AuditTrailService;
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
 import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
+import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
 import com.maharecruitment.gov.in.common.service.CurrentActorProvider;
 
 @Service
@@ -28,14 +29,17 @@ public class HolidayServiceImpl implements HolidayService {
     private static final String AUDIT_ENTITY_TYPE = "HOLIDAY";
 
     private final HolidayRepository holidayRepository;
+    private final WeekOffWorkingDayRepository weekOffWorkingDayRepository;
     private final AuditTrailService auditTrailService;
     private final CurrentActorProvider currentActorProvider;
 
     public HolidayServiceImpl(
             HolidayRepository holidayRepository,
+            WeekOffWorkingDayRepository weekOffWorkingDayRepository,
             AuditTrailService auditTrailService,
             CurrentActorProvider currentActorProvider) {
         this.holidayRepository = holidayRepository;
+        this.weekOffWorkingDayRepository = weekOffWorkingDayRepository;
         this.auditTrailService = auditTrailService;
         this.currentActorProvider = currentActorProvider;
     }
@@ -140,6 +144,13 @@ public class HolidayServiceImpl implements HolidayService {
                 .ifPresent(existing -> {
                     throw new IllegalArgumentException(
                             "A holiday is already configured for " + holidayDate + ".");
+                });
+
+        weekOffWorkingDayRepository.findByWorkingDate(holidayDate)
+                .ifPresent(existing -> {
+                    throw new IllegalArgumentException(
+                            "The date " + holidayDate
+                                    + " is already marked as a working day for a weekend. Archive that working-day override before creating a holiday.");
                 });
     }
 

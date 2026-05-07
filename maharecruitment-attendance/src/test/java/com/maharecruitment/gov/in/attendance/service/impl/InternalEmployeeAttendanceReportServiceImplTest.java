@@ -27,6 +27,7 @@ import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalR
 import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
 import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
+import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportFilter;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportRow;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportView;
@@ -63,6 +64,9 @@ class InternalEmployeeAttendanceReportServiceImplTest {
     private TourApplicationRepository tourApplicationRepository;
 
     @Mock
+    private WeekOffWorkingDayRepository weekOffWorkingDayRepository;
+
+    @Mock
     private ProjectMstRepository projectRepository;
 
     private InternalEmployeeAttendanceReportServiceImpl service;
@@ -77,6 +81,7 @@ class InternalEmployeeAttendanceReportServiceImplTest {
                 employeeReportingMappingRepository,
                 dailyAttendanceInternalRepository,
                 holidayRepository,
+                weekOffWorkingDayRepository,
                 leaveApplicationRepository,
                 tourApplicationRepository,
                 projectRepository,
@@ -112,6 +117,8 @@ class InternalEmployeeAttendanceReportServiceImplTest {
                 .thenReturn(List.of(buildTour(employee.getEmployeeId(), LocalDate.of(2026, 5, 5), LocalDate.of(2026, 5, 5))));
         when(holidayRepository.findByHolidayDateBetween(startDate, endDate))
                 .thenReturn(List.of(buildHoliday(LocalDate.of(2026, 5, 6), "Foundation Day")));
+        when(weekOffWorkingDayRepository.findByWorkingDateBetween(startDate, endDate))
+                .thenReturn(List.of());
 
         InternalAttendanceReportFilter filter = new InternalAttendanceReportFilter();
         filter.setMonth(5);
@@ -180,6 +187,8 @@ class InternalEmployeeAttendanceReportServiceImplTest {
                 .thenReturn(List.of());
         when(holidayRepository.findByHolidayDateBetween(startDate, endDate))
                 .thenReturn(List.of());
+        when(weekOffWorkingDayRepository.findByWorkingDateBetween(startDate, endDate))
+                .thenReturn(List.of());
 
         InternalAttendanceReportFilter filter = new InternalAttendanceReportFilter();
         filter.setAgencyId(77L);
@@ -230,6 +239,8 @@ class InternalEmployeeAttendanceReportServiceImplTest {
                 .thenReturn(List.of());
         when(holidayRepository.findByHolidayDateBetween(startDate, endDate))
                 .thenReturn(List.of());
+        when(weekOffWorkingDayRepository.findByWorkingDateBetween(startDate, endDate))
+                .thenReturn(List.of());
 
         InternalAttendanceReportFilter filter = new InternalAttendanceReportFilter();
         filter.setMonth(5);
@@ -274,6 +285,8 @@ class InternalEmployeeAttendanceReportServiceImplTest {
                 .thenReturn(List.of());
         when(holidayRepository.findByHolidayDateBetween(startDate, endDate))
                 .thenReturn(List.of(buildHoliday(LocalDate.of(2026, 5, 6), "Foundation Day")));
+        when(weekOffWorkingDayRepository.findByWorkingDateBetween(startDate, endDate))
+                .thenReturn(List.of());
 
         InternalAttendanceReportFilter filter = new InternalAttendanceReportFilter();
         filter.setMonth(5);

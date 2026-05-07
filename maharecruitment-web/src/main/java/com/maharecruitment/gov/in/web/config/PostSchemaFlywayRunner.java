@@ -57,6 +57,7 @@ import db.postmigration.V49__attendance_internal_daily_audit_columns_support;
 import db.postmigration.V50__pre_onboarding_onboarding_date_optional;
 import db.postmigration.V51__auth_submenu_role_mapping_support;
 import db.postmigration.V52__attendance_holiday_soft_delete_support;
+import db.postmigration.V53__attendance_week_off_working_day_support;
 import db.postmigration.V38__auth_mahait_profile_menu_backfill;
 import db.postmigration.V39__mahait_profile_cin_number_support;
 import db.postmigration.V40__department_tax_invoice_support;
@@ -139,7 +140,8 @@ public class PostSchemaFlywayRunner {
                         new V49__attendance_internal_daily_audit_columns_support(),
                         new V50__pre_onboarding_onboarding_date_optional(),
                         new V51__auth_submenu_role_mapping_support(),
-                        new V52__attendance_holiday_soft_delete_support())
+                        new V52__attendance_holiday_soft_delete_support(),
+                        new V53__attendance_week_off_working_day_support())
                 .load();
 
         if (hasFailedPostSchemaMigration()) {

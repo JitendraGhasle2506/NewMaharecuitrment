@@ -15,6 +15,7 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEnt
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.attendance.dto.AttendanceDayDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceRegisterDTO;
@@ -29,6 +30,7 @@ import com.maharecruitment.gov.in.attendance.repository.AttendanceLockRepository
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
+import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
@@ -60,6 +62,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	private HolidayRepository holidayRepository;
 	@Autowired
 	private DailyAttendanceInternalRepository dailyAttendanceInternalRepository;
+
+	@Autowired
+	private WeekOffWorkingDayRepository weekOffWorkingDayRepository;
 
 	@Autowired
 	private DepartmentProjectApplicationRepository departmentProjectApplicationRepository;
@@ -266,6 +271,10 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				.stream()
 				.map(HolidayMasterEntity::getHolidayDate)
 				.collect(Collectors.toSet());
+		Set<LocalDate> workingDayOverrideDates = weekOffWorkingDayRepository.findByWorkingDateBetween(startDate, endDate)
+				.stream()
+				.map(workingDay -> workingDay.getWorkingDate())
+				.collect(Collectors.toSet());
 
 		List<DepartmentProjectApplicationEntity> projects = departmentProjectApplicationRepository
 				.findByDepartmentRegistrationIdOrderByDepartmentProjectApplicationIdDesc(departmentId);
@@ -333,14 +342,19 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 						dayDTO.setStayHours(daily.getTotalHours());
 					}
 					dayDTO.setStatus("HOLIDAY");
-				} else if (daily != null) {
+				} else if (StringUtils.hasText(resolveInternalDailyDisplayStatus(
+						daily,
+						workingDayOverrideDates.contains(date)))) {
+					String resolvedStatus = resolveInternalDailyDisplayStatus(
+							daily,
+							workingDayOverrideDates.contains(date));
 					dayDTO.setInTime(daily.getInTime());
 					dayDTO.setOutTime(daily.getOutTime());
 					dayDTO.setStayHours(daily.getTotalHours());
-					dayDTO.setStatus(AttendanceStatusResolver.resolveDisplayStatus(daily));
+					dayDTO.setStatus(resolvedStatus);
 				} else if (date.isAfter(today)) {
 					dayDTO.setStatus("FUTURE");
-				} else if (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+				} else if (isWeekOff(date, workingDayOverrideDates)) {
 					dayDTO.setStatus("WEEK_OFF");
 				} else {
 					dayDTO.setStatus("ABSENT");
@@ -371,6 +385,10 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		List<HolidayMasterEntity> holidays = holidayRepository.findByHolidayDateBetween(startDate, endDate);
 		Set<LocalDate> holidayDates = holidays.stream()
 				.map(HolidayMasterEntity::getHolidayDate)
+				.collect(Collectors.toSet());
+		Set<LocalDate> workingDayOverrideDates = weekOffWorkingDayRepository.findByWorkingDateBetween(startDate, endDate)
+				.stream()
+				.map(workingDay -> workingDay.getWorkingDate())
 				.collect(Collectors.toSet());
 
 		Long departmentId = employee.getDepartmentRegistration() != null
@@ -484,15 +502,20 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 					dayDTO.setStayHours(daily.getTotalHours());
 				}
 				dayDTO.setStatus("HOLIDAY");
-			} else if (daily != null) {
+			} else if (StringUtils.hasText(resolveInternalDailyDisplayStatus(
+					daily,
+					workingDayOverrideDates.contains(date)))) {
+				String resolvedStatus = resolveInternalDailyDisplayStatus(
+						daily,
+						workingDayOverrideDates.contains(date));
 				dayDTO.setInTime(daily.getInTime());
 				dayDTO.setOutTime(daily.getOutTime());
 				dayDTO.setStayHours(daily.getTotalHours());
-				dayDTO.setStatus(AttendanceStatusResolver.resolveDisplayStatus(daily));
+				dayDTO.setStatus(resolvedStatus);
 			} else if (pendingDates.contains(date)) {
 				dayDTO.setStatus("PENDING");
 			} else if (!date.isAfter(LocalDate.now())) {
-				if (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+				if (isWeekOff(date, workingDayOverrideDates)) {
 					dayDTO.setStatus("WEEK_OFF");
 				} else {
 					dayDTO.setStatus("ABSENT");
@@ -513,6 +536,21 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setTotalWeekOff(days.stream().filter(d -> "WEEK_OFF".equals(d.getStatus())).count());
 
 		return dto;
+	}
+
+	private boolean isWeekOff(LocalDate date, Set<LocalDate> workingDayOverrideDates) {
+		return (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY)
+				&& !workingDayOverrideDates.contains(date);
+	}
+
+	private String resolveInternalDailyDisplayStatus(
+			DailyAttendanceInternalEntity daily,
+			boolean workingDayOverride) {
+		String resolvedStatus = AttendanceStatusResolver.resolveDisplayStatus(daily);
+		if (workingDayOverride && "WEEK_OFF".equals(resolvedStatus)) {
+			return null;
+		}
+		return resolvedStatus;
 	}
 
 	@Override

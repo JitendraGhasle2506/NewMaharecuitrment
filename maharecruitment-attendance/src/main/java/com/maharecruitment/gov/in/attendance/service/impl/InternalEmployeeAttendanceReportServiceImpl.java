@@ -34,6 +34,7 @@ import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalR
 import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
 import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
+import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
 import com.maharecruitment.gov.in.attendance.service.AttendanceStatusResolver;
 import com.maharecruitment.gov.in.attendance.service.InternalEmployeeAttendanceReportService;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportFilter;
@@ -57,6 +58,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
     private final EmployeeReportingMappingRepository employeeReportingMappingRepository;
     private final DailyAttendanceInternalRepository dailyAttendanceInternalRepository;
     private final HolidayRepository holidayRepository;
+    private final WeekOffWorkingDayRepository weekOffWorkingDayRepository;
     private final LeaveApplicationRepository leaveApplicationRepository;
     private final TourApplicationRepository tourApplicationRepository;
     private final ProjectMstRepository projectRepository;
@@ -68,6 +70,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             EmployeeReportingMappingRepository employeeReportingMappingRepository,
             DailyAttendanceInternalRepository dailyAttendanceInternalRepository,
             HolidayRepository holidayRepository,
+            WeekOffWorkingDayRepository weekOffWorkingDayRepository,
             LeaveApplicationRepository leaveApplicationRepository,
             TourApplicationRepository tourApplicationRepository,
             ProjectMstRepository projectRepository) {
@@ -76,6 +79,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
                 employeeReportingMappingRepository,
                 dailyAttendanceInternalRepository,
                 holidayRepository,
+                weekOffWorkingDayRepository,
                 leaveApplicationRepository,
                 tourApplicationRepository,
                 projectRepository,
@@ -87,6 +91,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             EmployeeReportingMappingRepository employeeReportingMappingRepository,
             DailyAttendanceInternalRepository dailyAttendanceInternalRepository,
             HolidayRepository holidayRepository,
+            WeekOffWorkingDayRepository weekOffWorkingDayRepository,
             LeaveApplicationRepository leaveApplicationRepository,
             TourApplicationRepository tourApplicationRepository,
             ProjectMstRepository projectRepository,
@@ -95,6 +100,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
         this.employeeReportingMappingRepository = employeeReportingMappingRepository;
         this.dailyAttendanceInternalRepository = dailyAttendanceInternalRepository;
         this.holidayRepository = holidayRepository;
+        this.weekOffWorkingDayRepository = weekOffWorkingDayRepository;
         this.leaveApplicationRepository = leaveApplicationRepository;
         this.tourApplicationRepository = tourApplicationRepository;
         this.projectRepository = projectRepository;
@@ -111,6 +117,10 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
         Set<LocalDate> holidayDates = holidayRepository.findByHolidayDateBetween(startDate, endDate)
                 .stream()
                 .map(HolidayMasterEntity::getHolidayDate)
+                .collect(Collectors.toSet());
+        Set<LocalDate> workingDayOverrideDates = weekOffWorkingDayRepository.findByWorkingDateBetween(startDate, endDate)
+                .stream()
+                .map(workingDay -> workingDay.getWorkingDate())
                 .collect(Collectors.toSet());
 
         log.debug(
@@ -131,7 +141,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
                 resolveEmployeeStatusFilter(normalizedFilter.getEmployeeStatus()));
 
         if (employees.isEmpty()) {
-            return buildEmptyView(normalizedFilter, startDate, endDate, holidayDates);
+            return buildEmptyView(normalizedFilter, startDate, endDate, holidayDates, workingDayOverrideDates);
         }
 
         List<Long> employeeIds = employees.stream()
@@ -167,7 +177,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
                 .toList();
 
         if (filteredEmployees.isEmpty()) {
-            return buildEmptyView(normalizedFilter, startDate, endDate, holidayDates);
+            return buildEmptyView(normalizedFilter, startDate, endDate, holidayDates, workingDayOverrideDates);
         }
 
         List<Long> filteredEmployeeIds = filteredEmployees.stream()
@@ -205,12 +215,19 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
                         approvedLeavesByEmployee.getOrDefault(employee.getEmployeeId(), List.of()),
                         approvedToursByEmployee.getOrDefault(employee.getEmployeeId(), List.of()),
                         holidayDates,
+                        workingDayOverrideDates,
                         startDate,
                         endDate,
                         today))
                 .toList();
 
-        InternalAttendanceReportSummary summary = buildSummary(rows, startDate, endDate, holidayDates, today);
+        InternalAttendanceReportSummary summary = buildSummary(
+                rows,
+                startDate,
+                endDate,
+                holidayDates,
+                workingDayOverrideDates,
+                today);
 
         InternalAttendanceReportView view = new InternalAttendanceReportView();
         view.setFilter(normalizedFilter);
@@ -229,13 +246,15 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             InternalAttendanceReportFilter filter,
             LocalDate startDate,
             LocalDate endDate,
-            Set<LocalDate> holidayDates) {
+            Set<LocalDate> holidayDates,
+            Set<LocalDate> workingDayOverrideDates) {
         YearMonth yearMonth = YearMonth.from(startDate);
         InternalAttendanceReportSummary summary = buildSummary(
                 List.of(),
                 startDate,
                 endDate,
                 holidayDates,
+                workingDayOverrideDates,
                 LocalDate.now(clock));
 
         InternalAttendanceReportView view = new InternalAttendanceReportView();
@@ -310,6 +329,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             List<LeaveApplicationEntity> approvedLeaves,
             List<TourApplicationEntity> approvedTours,
             Set<LocalDate> holidayDates,
+            Set<LocalDate> workingDayOverrideDates,
             LocalDate startDate,
             LocalDate endDate,
             LocalDate today) {
@@ -347,6 +367,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
                     approvedLeaves,
                     approvedTours,
                     holidayDates,
+                    workingDayOverrideDates,
                     today);
             dailyStatus.put(date.getDayOfMonth(), statusCode);
             applyStatusCount(row, statusCode);
@@ -363,6 +384,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             List<LeaveApplicationEntity> approvedLeaves,
             List<TourApplicationEntity> approvedTours,
             Set<LocalDate> holidayDates,
+            Set<LocalDate> workingDayOverrideDates,
             LocalDate today) {
         if (employee.getJoiningDate() != null && date.isBefore(employee.getJoiningDate())) {
             return "";
@@ -379,16 +401,29 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
         if (holidayDates.contains(date)) {
             return "H";
         }
-        if (attendance != null) {
-            return AttendanceStatusResolver.resolveStatusCode(attendance);
+        String resolvedAttendanceStatus = resolveAttendanceStatusCode(
+                attendance,
+                workingDayOverrideDates.contains(date));
+        if (StringUtils.hasText(resolvedAttendanceStatus)) {
+            return resolvedAttendanceStatus;
         }
         if (date.isAfter(today)) {
             return "";
         }
-        if (isWeekend(date)) {
+        if (isWeekend(date) && !workingDayOverrideDates.contains(date)) {
             return "W";
         }
         return "A";
+    }
+
+    private String resolveAttendanceStatusCode(
+            DailyAttendanceInternalEntity attendance,
+            boolean workingDayOverride) {
+        String resolvedStatus = AttendanceStatusResolver.resolveStatusCode(attendance);
+        if (workingDayOverride && "W".equals(resolvedStatus)) {
+            return null;
+        }
+        return resolvedStatus;
     }
 
     private boolean isCoveredByLeave(List<LeaveApplicationEntity> approvedLeaves, LocalDate date) {
@@ -445,13 +480,14 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             LocalDate startDate,
             LocalDate endDate,
             Set<LocalDate> holidayDates,
+            Set<LocalDate> workingDayOverrideDates,
             LocalDate today) {
         LocalDate summaryEndDate = resolveSummaryEndDate(startDate, endDate, today);
         InternalAttendanceReportSummary summary = new InternalAttendanceReportSummary();
         summary.setTotalDaysInMonth(startDate.datesUntil(endDate.plusDays(1)).count());
-        summary.setOfficeDayCount(countOfficeDays(startDate, summaryEndDate, holidayDates));
+        summary.setOfficeDayCount(countOfficeDays(startDate, summaryEndDate, holidayDates, workingDayOverrideDates));
         summary.setTotalHolidayCount(countHolidayDays(startDate, summaryEndDate, holidayDates));
-        summary.setTotalWeekOffCount(countWeekOffDays(startDate, summaryEndDate, holidayDates));
+        summary.setTotalWeekOffCount(countWeekOffDays(startDate, summaryEndDate, holidayDates, workingDayOverrideDates));
         summary.setEmployeeCount(rows.size());
         summary.setPresentCount(rows.stream().mapToLong(InternalAttendanceReportRow::getPresentCount).sum());
         summary.setAbsentCount(rows.stream().mapToLong(InternalAttendanceReportRow::getAbsentCount).sum());
@@ -469,13 +505,17 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
         return today.isBefore(endDate) ? today : endDate;
     }
 
-    private long countOfficeDays(LocalDate startDate, LocalDate endDate, Set<LocalDate> holidayDates) {
+    private long countOfficeDays(
+            LocalDate startDate,
+            LocalDate endDate,
+            Set<LocalDate> holidayDates,
+            Set<LocalDate> workingDayOverrideDates) {
         if (endDate == null || endDate.isBefore(startDate)) {
             return 0;
         }
         return startDate.datesUntil(endDate.plusDays(1))
                 .filter(date -> !holidayDates.contains(date))
-                .filter(date -> !isWeekend(date))
+                .filter(date -> !isWeekend(date) || workingDayOverrideDates.contains(date))
                 .count();
     }
 
@@ -488,13 +528,18 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
                 .count();
     }
 
-    private long countWeekOffDays(LocalDate startDate, LocalDate endDate, Set<LocalDate> holidayDates) {
+    private long countWeekOffDays(
+            LocalDate startDate,
+            LocalDate endDate,
+            Set<LocalDate> holidayDates,
+            Set<LocalDate> workingDayOverrideDates) {
         if (endDate == null || endDate.isBefore(startDate)) {
             return 0;
         }
         return startDate.datesUntil(endDate.plusDays(1))
                 .filter(date -> !holidayDates.contains(date))
                 .filter(this::isWeekend)
+                .filter(date -> !workingDayOverrideDates.contains(date))
                 .count();
     }
 
