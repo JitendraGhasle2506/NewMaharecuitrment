@@ -93,7 +93,6 @@ class HolidayServiceImplTest {
         duplicate.setHolidayName("Another Holiday");
 
         when(holidayRepository.findByHolidayDate(existing.getHolidayDate())).thenReturn(Optional.of(existing));
-        when(weekOffWorkingDayRepository.findByWorkingDate(existing.getHolidayDate())).thenReturn(Optional.empty());
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -101,6 +100,7 @@ class HolidayServiceImplTest {
 
         assertEquals("A holiday is already configured for 2026-05-06.", exception.getMessage());
         verify(holidayRepository, never()).save(any(HolidayMasterEntity.class));
+        verify(weekOffWorkingDayRepository, never()).findByWorkingDate(any(LocalDate.class));
         verify(auditTrailService, never()).record(any(AuditRecordRequest.class));
     }
 
