@@ -13,7 +13,8 @@ import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplication
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 
 @Repository
-public interface DepartmentAdvancePaymentRepository extends JpaRepository<DepartmentAdvancePaymentEntity, Long> {
+public interface DepartmentAdvancePaymentRepository
+        extends JpaRepository<DepartmentAdvancePaymentEntity, Long>, DepartmentAdvancePaymentReportRepository {
 
     List<DepartmentAdvancePaymentEntity> findByDepartmentRegistrationIdOrderByIdDesc(Long departmentRegistrationId);
 

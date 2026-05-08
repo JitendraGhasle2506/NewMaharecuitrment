@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Approved Payment Reports</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .report-shell {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        .report-banner {
+            border: 1px solid #cbd5e1;
+            border-left: 6px solid #0f3d63;
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, #f8fbff 0%, #eef4f9 100%);
+            padding: 1.25rem;
+        }
+
+        .report-banner h2 {
+            margin: 0;
+            color: #0f3d63;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .report-banner p {
+            margin: 0.5rem 0 0;
+            color: #4b5563;
+        }
+
+        .report-meta-grid,
+        .report-summary-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+
+        .report-meta-card,
+        .report-summary-card {
+            border: 1px solid #dbe3ea;
+            border-radius: 0.75rem;
+            background: #fff;
+            padding: 1rem;
+        }
+
+        .report-meta-label,
+        .report-summary-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        .report-meta-value,
+        .report-summary-value {
+            margin-top: 0.35rem;
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .report-summary-value.is-amount {
+            color: #0b5d36;
+        }
+
+        .report-filter-card {
+            border: 1px solid #d8dee7;
+            border-radius: 0.75rem;
+            background: #fff;
+            padding: 1.25rem;
+        }
+
+        .report-table thead th {
+            background: #e9f0f7;
+            color: #17324d;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .report-table tbody td {
+            vertical-align: middle;
+        }
+
+        .report-table .amount-cell {
+            font-weight: 700;
+            color: #0b5d36;
+        }
+
+        .report-table .meta-text {
+            font-size: 0.82rem;
+            color: #6b7280;
+        }
+
+        @media print {
+            .btn,
+            .app-pagination-shell,
+            .report-filter-card {
+                display: none !important;
+            }
+
+            .card,
+            .card-body {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Admin', 'Approved Payment Reports', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h2 class="mb-0">Approved Payment Reports</h2>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">Print Report</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/roles}">Roles</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/users}">Users</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/role-menu-mappings}">Role Menu Mapping</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/menus}">Menus</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/submenus}">Submenus</a>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/admin/reports/payments}">Payment Reports</a>
+                    </div>
+
+                    <div class="report-shell">
+                        <div class="report-banner">
+                            <h2>Approved Payment Register</h2>
+                            <p>Administrative report showing only auditor-approved department payment records, prepared in a formal register-style layout for admin review.</p>
+                        </div>
+
+                        <form class="report-filter-card" method="get" th:action="@{/admin/reports/payments}" th:object="${reportFilter}">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-lg-3 col-md-6">
+                                    <label class="form-label">Department</label>
+                                    <select class="form-select" th:field="*{departmentRegistrationId}">
+                                        <option value="">All Departments</option>
+                                        <option th:each="department : ${departmentOptions}"
+                                            th:value="${department.departmentRegistrationId}"
+                                            th:text="${department.departmentName}">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-lg-2 col-md-6">
+                                    <label class="form-label">Financial Year</label>
+                                    <select class="form-select" th:field="*{financialYear}">
+                                        <option value="">All Financial Years</option>
+                                        <option th:each="financialYear : ${financialYearOptions}"
+                                            th:value="${financialYear}"
+                                            th:text="${financialYear}">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-lg-2 col-md-6">
+                                    <label class="form-label">Approved From</label>
+                                    <input type="date" class="form-control" th:field="*{fromDate}">
+                                </div>
+                                <div class="col-lg-2 col-md-6">
+                                    <label class="form-label">Approved To</label>
+                                    <input type="date" class="form-control" th:field="*{toDate}">
+                                </div>
+                                <div class="col-lg-3 col-md-12">
+                                    <label class="form-label">Search</label>
+                                    <input type="text" class="form-control" th:field="*{searchTerm}"
+                                        placeholder="Request ID, project, receipt, invoice">
+                                </div>
+                                <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">
+                                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/reports/payments}">Clear</a>
+                                    <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+                                    <button type="submit"
+                                        class="btn btn-outline-primary btn-sm"
+                                        th:attr="formaction=@{/admin/reports/payments/export}">Generate CSV</button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <div class="report-meta-grid">
+                            <div class="report-meta-card">
+                                <div class="report-meta-label">Reporting Department Scope</div>
+                                <div class="report-meta-value" th:text="${selectedDepartmentName}">All Departments</div>
+                            </div>
+                            <div class="report-meta-card">
+                                <div class="report-meta-label">Financial Year</div>
+                                <div class="report-meta-value" th:text="${selectedFinancialYearLabel}">All</div>
+                            </div>
+                            <div class="report-meta-card">
+                                <div class="report-meta-label">Approved Date Range</div>
+                                <div class="report-meta-value" th:text="${approvedDateRangeLabel}">All Dates</div>
+                            </div>
+                            <div class="report-meta-card">
+                                <div class="report-meta-label">Generated On</div>
+                                <div class="report-meta-value" th:text="${#temporals.format(generatedAt, 'dd-MM-yyyy HH:mm')}">08-05-2026 12:00</div>
+                            </div>
+                        </div>
+
+                        <div class="report-summary-grid">
+                            <div class="report-summary-card">
+                                <div class="report-summary-label">Approved Payments</div>
+                                <div class="report-summary-value" th:text="${reportSummary.totalPayments}">0</div>
+                            </div>
+                            <div class="report-summary-card">
+                                <div class="report-summary-label">Approved Amount</div>
+                                <div class="report-summary-value is-amount"
+                                    th:text="'INR ' + ${#numbers.formatDecimal(reportSummary.totalApprovedAmount, 1, 'COMMA', 2, 'POINT')}">
+                                    INR 0.00
+                                </div>
+                            </div>
+                            <div class="report-summary-card">
+                                <div class="report-summary-label">Departments Covered</div>
+                                <div class="report-summary-value" th:text="${reportSummary.totalDepartments}">0</div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover report-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Request / Payment</th>
+                                        <th>Department / Project</th>
+                                        <th>Invoice / Receipt</th>
+                                        <th>Payment Mode</th>
+                                        <th>Approved Amount</th>
+                                        <th>Approved On</th>
+                                        <th>Approved By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${payments.isEmpty()}">
+                                        <td colspan="8" class="text-center text-muted py-4">
+                                            No approved payment records found for the selected filters.
+                                        </td>
+                                    </tr>
+                                    <tr th:each="payment, stat : ${payments.content}">
+                                        <td th:text="${payments.number * payments.size + stat.count}">1</td>
+                                        <td>
+                                            <div class="fw-semibold" th:text="${payment.requestId}">REQ-001</div>
+                                            <div class="meta-text">Payment ID: <span th:text="${payment.paymentId}">101</span></div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold" th:text="${payment.departmentName != null and !payment.departmentName.isBlank() ? payment.departmentName : 'Department #' + payment.departmentRegistrationId}">Department Name</div>
+                                            <div class="meta-text" th:text="${payment.projectName}">Project Name</div>
+                                            <div class="meta-text" th:if="${payment.projectCode != null and !payment.projectCode.isBlank()}">
+                                                Project Code: <span th:text="${payment.projectCode}">PRJ001</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold" th:text="${payment.proformaInvoiceId != null ? payment.proformaInvoiceId : '-'}">TI-001</div>
+                                            <div class="meta-text">Receipt: <span th:text="${payment.receiptNumber != null ? payment.receiptNumber : '-'}">RCPT-001</span></div>
+                                            <div class="meta-text">UTR: <span th:text="${payment.utrNumber != null ? payment.utrNumber : '-'}">UTR-001</span></div>
+                                        </td>
+                                        <td th:text="${payment.paymentMode != null ? payment.paymentMode : '-'}">NEFT</td>
+                                        <td class="amount-cell"
+                                            th:text="${payment.totalAmount != null ? 'INR ' + #numbers.formatDecimal(payment.totalAmount, 1, 'COMMA', 2, 'POINT') : 'INR 0.00'}">
+                                            INR 0.00
+                                        </td>
+                                        <td th:text="${payment.approvedDate != null ? #temporals.format(payment.approvedDate, 'dd-MM-yyyy HH:mm') : '-'}">08-05-2026 11:30</td>
+                                        <td>
+                                            <div class="fw-semibold" th:text="${payment.approvedBy != null ? payment.approvedBy : '-'}">auditor@mahait.org</div>
+                                            <div class="meta-text" th:text="${payment.applicationStatus != null ? payment.applicationStatus.displayName : '-'}">Review and Approved</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="app-pagination-shell"
+                            th:if="${payments.totalPages > 1}"
+                            th:with="middleStart=${payments.number - 2 > 1 ? payments.number - 2 : 1},
+                                     middleEnd=${payments.number + 2 < payments.totalPages - 2 ? payments.number + 2 : payments.totalPages - 2},
+                                     showingFrom=${payments.totalElements == 0 ? 0 : payments.number * payments.size + 1},
+                                     showingTo=${payments.totalElements == 0 ? 0 : payments.number * payments.size + payments.numberOfElements}">
+                            <div class="app-pagination-summary">
+                                <div class="app-pagination-meta">
+                                    Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                    <span th:text="${payments.totalElements}">10</span> entries
+                                </div>
+                                <div class="app-pagination-meta">
+                                    Page <span th:text="${payments.number + 1}">1</span> of <span th:text="${payments.totalPages}">1</span>
+                                </div>
+                            </div>
+                            <nav aria-label="Approved payment report pagination">
+                                <ul class="pagination app-pagination mb-0">
+                                    <li class="page-item" th:classappend="${payments.first} ? ' disabled'">
+                                        <a class="page-link"
+                                            th:href="@{/admin/reports/payments(page=${payments.number - 1},size=${payments.size},departmentRegistrationId=${reportFilter.departmentRegistrationId},financialYear=${reportFilter.financialYear},fromDate=${reportFilter.fromDate},toDate=${reportFilter.toDate},searchTerm=${reportFilter.searchTerm})}">Previous</a>
+                                    </li>
+                                    <li class="page-item" th:classappend="${payments.number == 0} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/admin/reports/payments(page=0,size=${payments.size},departmentRegistrationId=${reportFilter.departmentRegistrationId},financialYear=${reportFilter.financialYear},fromDate=${reportFilter.fromDate},toDate=${reportFilter.toDate},searchTerm=${reportFilter.searchTerm})}">1</a>
+                                    </li>
+                                    <li class="page-item disabled" th:if="${middleStart > 1}">
+                                        <span class="page-link app-pagination-ellipsis">...</span>
+                                    </li>
+                                    <th:block th:if="${middleStart <= middleEnd}">
+                                        <li class="page-item"
+                                            th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                            th:classappend="${pageIndex == payments.number} ? ' active'">
+                                            <a class="page-link"
+                                                th:href="@{/admin/reports/payments(page=${pageIndex},size=${payments.size},departmentRegistrationId=${reportFilter.departmentRegistrationId},financialYear=${reportFilter.financialYear},fromDate=${reportFilter.fromDate},toDate=${reportFilter.toDate},searchTerm=${reportFilter.searchTerm})}"
+                                                th:text="${pageIndex + 1}">2</a>
+                                        </li>
+                                    </th:block>
+                                    <li class="page-item disabled" th:if="${middleEnd < payments.totalPages - 2}">
+                                        <span class="page-link app-pagination-ellipsis">...</span>
+                                    </li>
+                                    <li class="page-item" th:if="${payments.totalPages > 1}"
+                                        th:classappend="${payments.number == payments.totalPages - 1} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/admin/reports/payments(page=${payments.totalPages - 1},size=${payments.size},departmentRegistrationId=${reportFilter.departmentRegistrationId},financialYear=${reportFilter.financialYear},fromDate=${reportFilter.fromDate},toDate=${reportFilter.toDate},searchTerm=${reportFilter.searchTerm})}"
+                                            th:text="${payments.totalPages}">2</a>
+                                    </li>
+                                    <li class="page-item" th:classappend="${payments.last} ? ' disabled'">
+                                        <a class="page-link"
+                                            th:href="@{/admin/reports/payments(page=${payments.number + 1},size=${payments.size},departmentRegistrationId=${reportFilter.departmentRegistrationId},financialYear=${reportFilter.financialYear},fromDate=${reportFilter.fromDate},toDate=${reportFilter.toDate},searchTerm=${reportFilter.searchTerm})}">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

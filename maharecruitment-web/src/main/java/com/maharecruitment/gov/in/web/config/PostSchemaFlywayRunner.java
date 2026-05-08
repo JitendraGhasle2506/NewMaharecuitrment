@@ -59,6 +59,7 @@ import db.postmigration.V51__auth_submenu_role_mapping_support;
 import db.postmigration.V52__attendance_holiday_soft_delete_support;
 import db.postmigration.V53__attendance_week_off_working_day_support;
 import db.postmigration.V54__auth_user_soft_delete_support;
+import db.postmigration.V55__department_approved_payment_report_index_support;
 import db.postmigration.V38__auth_mahait_profile_menu_backfill;
 import db.postmigration.V39__mahait_profile_cin_number_support;
 import db.postmigration.V40__department_tax_invoice_support;
@@ -143,7 +144,8 @@ public class PostSchemaFlywayRunner {
                         new V51__auth_submenu_role_mapping_support(),
                         new V52__attendance_holiday_soft_delete_support(),
                         new V53__attendance_week_off_working_day_support(),
-                        new V54__auth_user_soft_delete_support())
+                        new V54__auth_user_soft_delete_support(),
+                        new V55__department_approved_payment_report_index_support())
                 .load();
 
         if (hasFailedPostSchemaMigration()) {

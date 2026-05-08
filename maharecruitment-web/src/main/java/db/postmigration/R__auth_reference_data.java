@@ -131,6 +131,9 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Holiday Calendar",
                                 "/admin/attendance/holidays",
                                 "fa fa-calendar-day");
+                upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Approved Payment Reports",
+                                "/admin/reports/payments",
+                                "fa fa-file-invoice");
                 upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "HR Dashboard", "/hr/dashboard",
                                 "fa fa-users");
                 upsertSubMenu(jdbcTemplate, subMenuTable, adminMenuId, "Common Module", "/common",
