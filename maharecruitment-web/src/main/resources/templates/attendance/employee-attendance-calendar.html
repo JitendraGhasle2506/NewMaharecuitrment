@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Attendance Calendar</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+    <style>
+        :root {
+            --primary-color: #1f4f78;
+            --primary-soft: rgba(31, 79, 120, 0.12);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --page-bg: #f5f9fc;
+            --border-soft: #dbe7f4;
+            --holiday-red: #b42318;
+            --holiday-red-soft: rgba(225, 29, 72, 0.12);
+            --working-green: #15803d;
+            --working-green-soft: rgba(34, 197, 94, 0.14);
+            --weekoff-gray: #475569;
+            --weekoff-gray-soft: rgba(148, 163, 184, 0.18);
+        }
+
+        .calendar-page {
+            width: 100%;
+            padding: 18px;
+            border-radius: 14px;
+            background:
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 24%),
+                linear-gradient(180deg, #f9fcff 0%, var(--page-bg) 100%);
+        }
+
+        .calendar-toolbar {
+            margin-bottom: 18px;
+            padding: 18px 20px;
+            border: 1px solid var(--border-soft);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 18px 38px -34px rgba(15, 23, 42, 0.28);
+        }
+
+        .month-picker-card {
+            max-width: 340px;
+        }
+
+        .month-picker-card .input-group-text,
+        .month-picker-card .form-control {
+            min-height: 46px;
+            border-color: var(--border-soft);
+            background: #fff;
+        }
+
+        .month-picker-card .form-control {
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .attendance-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border-soft);
+            background: #fff;
+            color: var(--text-main);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .legend-circle {
+            width: 24px;
+            height: 24px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .legend-circle-working {
+            background: #16a34a;
+        }
+
+        .legend-circle-holiday {
+            background: #dc2626;
+        }
+
+        .legend-circle-weekoff {
+            background: #64748b;
+        }
+
+        .legend-circle-today {
+            background: var(--primary-color);
+        }
+
+        .calendar-panel {
+            border: 1px solid var(--border-soft);
+            border-radius: 22px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 24%),
+                linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            box-shadow: 0 24px 48px -40px rgba(15, 23, 42, 0.46);
+        }
+
+        .calendar-panel .body {
+            padding: 20px;
+        }
+
+        .attendance-calendar-grid {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0.5rem;
+            table-layout: fixed;
+        }
+
+        .attendance-calendar-grid th {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding-bottom: 0.2rem;
+        }
+
+        .attendance-calendar-cell {
+            min-height: 132px;
+            padding: 0.9rem;
+            vertical-align: top;
+            border-radius: 18px;
+            border: 1px solid var(--border-soft);
+            background: #f8fbff;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .attendance-calendar-cell:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 30px -30px rgba(15, 23, 42, 0.45);
+        }
+
+        .attendance-calendar-cell.is-outside {
+            background: #f3f6f9;
+            opacity: 0.58;
+        }
+
+        .attendance-calendar-cell.is-holiday {
+            background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+            border-color: rgba(225, 29, 72, 0.24);
+        }
+
+        .attendance-calendar-cell.is-weekoff {
+            background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            border-color: rgba(148, 163, 184, 0.32);
+        }
+
+        .attendance-calendar-cell.is-working-day {
+            background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+            border-color: rgba(34, 197, 94, 0.2);
+        }
+
+        .attendance-calendar-cell.is-today {
+            box-shadow:
+                inset 0 0 0 2px rgba(31, 79, 120, 0.28),
+                0 18px 30px -30px rgba(15, 23, 42, 0.45);
+        }
+
+        .attendance-calendar-day {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 0.8rem;
+        }
+
+        .attendance-calendar-date-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .attendance-calendar-date {
+            color: var(--text-main);
+            font-size: 16px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .attendance-calendar-weekday {
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .attendance-calendar-today {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0.2rem 0.54rem;
+            background: var(--primary-soft);
+            color: var(--primary-color);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .attendance-calendar-tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: fit-content;
+            border-radius: 999px;
+            padding: 0.3rem 0.66rem;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .attendance-calendar-tag.holiday {
+            background: var(--holiday-red-soft);
+            color: var(--holiday-red);
+        }
+
+        .attendance-calendar-tag.weekoff {
+            background: var(--weekoff-gray-soft);
+            color: var(--weekoff-gray);
+        }
+
+        .attendance-calendar-tag.working {
+            background: var(--working-green-soft);
+            color: var(--working-green);
+        }
+
+        .attendance-calendar-remark {
+            margin-top: 0.65rem;
+            color: var(--holiday-red);
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .empty-state {
+            padding: 18px;
+            border-radius: 16px;
+            border: 1px dashed var(--border-soft);
+            background: #fff;
+            color: var(--text-muted);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        @media (max-width: 767.98px) {
+            .calendar-page {
+                padding: 14px;
+            }
+
+            .calendar-toolbar,
+            .calendar-panel .body {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .attendance-calendar-grid {
+                min-width: 720px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Attendance Calendar', 'Employee Corner', ~{::section})}">
+        <section>
+            <div class="calendar-page">
+                <ul class="breadcrumb breadcrumb-style" style="background: none; padding: 0; display: inline-flex;">
+                    <li class="breadcrumb-item"><i class="fa fa-home"></i> Home</li>
+                    <li class="breadcrumb-item">Employee Corner</li>
+                    <li class="breadcrumb-item active">Attendance Calendar</li>
+                </ul>
+
+                <div th:if="${error}" class="alert alert-danger" role="alert" th:text="${error}">
+                    Employee mapping not found in user account.
+                </div>
+
+                <div th:if="${error == null}">
+                    <div class="calendar-toolbar">
+                        <div class="d-flex flex-wrap justify-content-between gap-3 align-items-end">
+                            <form class="month-picker-card" method="get" th:action="@{/employee/attendance-calendar}">
+                                <label for="dateRangePicker" class="form-label fw-bold text-muted text-uppercase" style="font-size:12px; letter-spacing:0.08em;">Month</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                    <input
+                                        id="dateRangePicker"
+                                        type="text"
+                                        name="dateRange"
+                                        class="form-control"
+                                        th:value="${attendance.dateRange}"
+                                        placeholder="MM-YYYY"
+                                        autocomplete="off">
+                                </div>
+                            </form>
+
+                            <div class="attendance-legend">
+                                <div class="legend-item">
+                                    <span class="legend-circle legend-circle-working">W</span>
+                                    <span>Working Day</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-circle legend-circle-holiday">H</span>
+                                    <span>Holiday</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-circle legend-circle-weekoff">WO</span>
+                                    <span>Week Off</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-circle legend-circle-today">T</span>
+                                    <span>Current Date</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="calendar-panel">
+                        <div class="body">
+                            <div class="table-responsive">
+                                <table class="attendance-calendar-grid" th:if="${attendanceCalendarWeeks != null and !attendanceCalendarWeeks.isEmpty()}">
+                                    <thead>
+                                        <tr>
+                                            <th>Mon</th>
+                                            <th>Tue</th>
+                                            <th>Wed</th>
+                                            <th>Thu</th>
+                                            <th>Fri</th>
+                                            <th>Sat</th>
+                                            <th>Sun</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="week : ${attendanceCalendarWeeks}">
+                                            <td
+                                                th:each="day : ${week}"
+                                                class="attendance-calendar-cell"
+                                                th:classappend="${(!day.currentMonth ? ' is-outside' : '') + (day.currentMonth and day.holiday ? ' is-holiday' : '') + (day.currentMonth and day.weekOff ? ' is-weekoff' : '') + (day.currentMonth and day.workingDay ? ' is-working-day' : '') + (day.today ? ' is-today' : '')}">
+                                                <div class="attendance-calendar-day">
+                                                    <div class="attendance-calendar-date-wrap">
+                                                        <span class="attendance-calendar-date" th:text="${day.date.dayOfMonth}">1</span>
+                                                        <span class="attendance-calendar-weekday" th:text="${#temporals.format(day.date, 'EEE')}">Mon</span>
+                                                    </div>
+                                                    <span class="attendance-calendar-today" th:if="${day.today}">Today</span>
+                                                </div>
+
+                                                <span class="attendance-calendar-tag holiday" th:if="${day.currentMonth and day.holiday}">
+                                                    Holiday
+                                                </span>
+                                                <span class="attendance-calendar-tag weekoff" th:if="${day.currentMonth and day.weekOff}">
+                                                    Week Off
+                                                </span>
+                                                <span class="attendance-calendar-tag working" th:if="${day.currentMonth and day.workingDay}">
+                                                    Working Day
+                                                </span>
+
+                                                <div class="attendance-calendar-remark" th:if="${day.currentMonth and day.holiday and day.holidayRemark != null and !#strings.isEmpty(day.holidayRemark)}">
+                                                    <span>Remark: </span>
+                                                    <span th:text="${day.holidayRemark}">Holiday Remark</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <div class="empty-state" th:if="${attendanceCalendarWeeks == null or attendanceCalendarWeeks.isEmpty()}">
+                                    Calendar details are not available for the selected month.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#dateRangePicker').datepicker({
+                format: "mm-yyyy",
+                startView: "months",
+                minViewMode: "months",
+                autoclose: true,
+                orientation: "bottom"
+            }).on('changeDate', function () {
+                $(this).closest('form').submit();
+            });
+        });
+    </script>
+</body>
+
+</html>

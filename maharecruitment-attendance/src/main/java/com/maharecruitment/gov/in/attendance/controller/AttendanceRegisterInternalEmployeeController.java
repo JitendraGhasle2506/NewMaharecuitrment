@@ -1,10 +1,14 @@
 package com.maharecruitment.gov.in.attendance.controller;
 
 import java.text.DateFormatSymbols;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.TextStyle;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -18,10 +22,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.maharecruitment.gov.in.attendance.dto.AttendanceCalendarDayDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceDayDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceRegisterDTO;
 import com.maharecruitment.gov.in.attendance.dto.ManualAttendanceRequestDTO;
 import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
+import com.maharecruitment.gov.in.attendance.service.HolidayService;
+import com.maharecruitment.gov.in.attendance.service.WeekOffWorkingDayService;
 import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
@@ -38,22 +45,21 @@ public class AttendanceRegisterInternalEmployeeController {
     @Autowired
     private EmployeeRepository employeeRepository;
 
+    @Autowired
+    private HolidayService holidayService;
+
+    @Autowired
+    private WeekOffWorkingDayService weekOffWorkingDayService;
+
     @GetMapping("/intAttendance")
     public String myAttendance(Model model, HttpSession session) {
-   
-
-         SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
-
-        EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+        EmployeeEntity employee = resolveCurrentEmployee(session);
 
         Long employeeId = employee.getEmployeeId();
-        
         if (employeeId == null) {
             model.addAttribute("error", "Employee mapping not found in user account.");
             return "attendance/attendance-register-internal";
         }
-
 
         LocalDate today = LocalDate.now();
         int month = today.getMonthValue();
@@ -63,13 +69,29 @@ public class AttendanceRegisterInternalEmployeeController {
         return "attendance/attendance-register-internal";
     }
 
+    @GetMapping("/attendance-calendar")
+    public String attendanceCalendar(
+            @RequestParam(required = false) String dateRange,
+            Model model,
+            HttpSession session) {
+
+        EmployeeEntity employee = resolveCurrentEmployee(session);
+        if (employee.getEmployeeId() == null) {
+            model.addAttribute("error", "Employee mapping not found in user account.");
+            return "attendance/employee-attendance-calendar";
+        }
+
+        LocalDate today = LocalDate.now();
+        YearMonth selectedMonth = resolveSelectedMonth(dateRange, today);
+        populateAttendanceCalendarView(model, employee, selectedMonth, today);
+        return "attendance/employee-attendance-calendar";
+    }
+
     @PostMapping("/fetchMyAttendance")
     public String fetchMyAttendance(@RequestParam(required = false) String dateRange,
             Model model, HttpSession session) {
 
-        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        EmployeeEntity employee = employeeRepository.findByEmail(user.email())
-                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+        EmployeeEntity employee = resolveCurrentEmployee(session);
 
         Long employeeId = employee.getEmployeeId();
         if (employeeId == null) {
@@ -77,22 +99,9 @@ public class AttendanceRegisterInternalEmployeeController {
             return "attendance/attendance-register-internal";
         }
 
-        int month = LocalDate.now().getMonthValue();
-        int year = LocalDate.now().getYear();
-
-        if (dateRange != null && !dateRange.isEmpty()) {
-            try {
-                String[] parts = dateRange.split("-");
-                if (parts.length == 2) {
-                    month = Integer.parseInt(parts[0]);
-                    year = Integer.parseInt(parts[1]);
-                }
-            } catch (Exception e) {
-                // Fallback to current month/year on parse error
-            }
-        }
-
-        populateAttendanceView(model, employee, month, year, LocalDate.now());
+        LocalDate today = LocalDate.now();
+        YearMonth selectedMonth = resolveSelectedMonth(dateRange, today);
+        populateAttendanceView(model, employee, selectedMonth.getMonthValue(), selectedMonth.getYear(), today);
 
         return "attendance/attendance-register-internal";
     }
@@ -133,6 +142,31 @@ public class AttendanceRegisterInternalEmployeeController {
             .collect(Collectors.toList()));
     }
 
+    private void populateAttendanceCalendarView(
+            Model model,
+            EmployeeEntity employee,
+            YearMonth selectedMonth,
+            LocalDate today) {
+        AttendanceRegisterDTO attendance = attendanceService.getInternalAttendanceForEmployee(
+                employee.getEmployeeId(),
+                selectedMonth.getMonthValue(),
+                selectedMonth.getYear());
+        attendance.setDateRange(String.format("%02d-%d", selectedMonth.getMonthValue(), selectedMonth.getYear()));
+
+        model.addAttribute("attendance", attendance);
+        model.addAttribute("selectedMonth", selectedMonth.getMonthValue());
+        model.addAttribute("selectedYear", selectedMonth.getYear());
+        model.addAttribute("monthNames", getMonthNames());
+        model.addAttribute("today", today);
+        model.addAttribute("daysInMonth", selectedMonth.lengthOfMonth());
+        model.addAttribute(
+                "attendanceMonthLabel",
+                selectedMonth.getMonth().getDisplayName(TextStyle.FULL, java.util.Locale.ENGLISH)
+                        + " "
+                        + selectedMonth.getYear());
+        model.addAttribute("attendanceCalendarWeeks", buildCalendarWeeks(selectedMonth, today));
+    }
+
     private List<AttendanceDayDTO> extractAttendanceTimeRows(AttendanceRegisterDTO attendance) {
         if (attendance == null || attendance.getAttendanceDays() == null) {
             return List.of();
@@ -150,6 +184,81 @@ public class AttendanceRegisterInternalEmployeeController {
             monthMap.put(i + 1, months[i]);
         }
         return monthMap;
+    }
+
+    private List<List<AttendanceCalendarDayDTO>> buildCalendarWeeks(YearMonth selectedMonth, LocalDate today) {
+        LocalDate monthStart = selectedMonth.atDay(1);
+        LocalDate monthEnd = selectedMonth.atEndOfMonth();
+        Map<LocalDate, String> holidayRemarksByDate = holidayService.getHolidaysBetween(monthStart, monthEnd).stream()
+                .collect(Collectors.toMap(
+                        holiday -> holiday.getHolidayDate(),
+                        holiday -> holiday.getHolidayName(),
+                        (first, second) -> first));
+        Set<LocalDate> holidayDates = holidayRemarksByDate.keySet();
+        Set<LocalDate> workingDayOverrideDates = weekOffWorkingDayService.getWorkingDayDatesBetween(monthStart, monthEnd);
+
+        List<List<AttendanceCalendarDayDTO>> weeks = new ArrayList<>();
+        LocalDate cursor = monthStart;
+        while (cursor.getDayOfWeek() != DayOfWeek.MONDAY) {
+            cursor = cursor.minusDays(1);
+        }
+
+        LocalDate gridEnd = monthEnd;
+        while (gridEnd.getDayOfWeek() != DayOfWeek.SUNDAY) {
+            gridEnd = gridEnd.plusDays(1);
+        }
+
+        while (!cursor.isAfter(gridEnd)) {
+            List<AttendanceCalendarDayDTO> week = new ArrayList<>();
+            for (int index = 0; index < 7; index++) {
+                boolean holiday = holidayDates.contains(cursor);
+                boolean weekOff = isWeekend(cursor) && !workingDayOverrideDates.contains(cursor) && !holiday;
+                boolean workingDay = !holiday && !weekOff;
+                String holidayRemark = holiday ? holidayRemarksByDate.get(cursor) : null;
+                week.add(new AttendanceCalendarDayDTO(
+                        cursor,
+                        YearMonth.from(cursor).equals(selectedMonth),
+                        cursor.equals(today),
+                        holiday,
+                        weekOff,
+                        workingDay,
+                        holidayRemark));
+                cursor = cursor.plusDays(1);
+            }
+            weeks.add(week);
+        }
+
+        return weeks;
+    }
+
+    private EmployeeEntity resolveCurrentEmployee(HttpSession session) {
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        return employeeRepository.findByEmail(sessionUser.email())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+    }
+
+    private YearMonth resolveSelectedMonth(String dateRange, LocalDate today) {
+        int month = today.getMonthValue();
+        int year = today.getYear();
+
+        if (dateRange != null && !dateRange.isEmpty()) {
+            try {
+                String[] parts = dateRange.split("-");
+                if (parts.length == 2) {
+                    month = Integer.parseInt(parts[0]);
+                    year = Integer.parseInt(parts[1]);
+                }
+            } catch (Exception e) {
+                // Fallback to current month/year on parse error
+            }
+        }
+
+        return YearMonth.of(year, month);
+    }
+
+    private boolean isWeekend(LocalDate date) {
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        return dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
     }
 
     @PostMapping("/manual-attendance/submit-bulk")
