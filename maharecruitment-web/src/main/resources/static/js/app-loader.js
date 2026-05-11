@@ -2,7 +2,8 @@
     const DEFAULT_MESSAGE = "Please wait while we prepare your screen.";
     const DOWNLOAD_MESSAGE = "Please wait while we prepare your report download.";
     const MIN_VISIBLE_MS = 350;
-    const DOWNLOAD_HIDE_MS = 4000;
+    const DOWNLOAD_HIDE_MS = 2500;
+    const DOWNLOAD_GRACE_MS = 900;
 
     let overlay;
     let messageNode;
@@ -10,6 +11,7 @@
     let visibleSince = 0;
     let hideTimerId = null;
     let activeAsyncRequests = 0;
+    let downloadPending = false;
 
     const getContextPath = () => {
         const meta = document.querySelector('meta[name="app-context-path"]');
@@ -84,6 +86,7 @@
             overlay.classList.remove("is-visible");
             overlay.setAttribute("aria-hidden", "true");
             document.body.classList.remove("app-loader-active");
+            downloadPending = false;
         }, Math.max(delayMs, 0));
     };
 
@@ -117,11 +120,26 @@
     };
 
     const showForDownload = (message) => {
+        downloadPending = true;
         show({
             message: message || DOWNLOAD_MESSAGE,
             status: "Preparing download"
         });
         scheduleHide(DOWNLOAD_HIDE_MS);
+    };
+
+    const resolveDownload = (forceImmediate = false) => {
+        if (!downloadPending || activeAsyncRequests > 0) {
+            return;
+        }
+
+        const elapsed = Date.now() - visibleSince;
+        if (!forceImmediate && elapsed < DOWNLOAD_GRACE_MS) {
+            scheduleHide(DOWNLOAD_GRACE_MS - elapsed);
+            return;
+        }
+
+        hide({ immediate: true });
     };
 
     const isInternalUrl = (url) => {
@@ -143,6 +161,29 @@
             || link.target === "_blank";
     };
 
+    const isDownloadLikeUrl = (url) => {
+        try {
+            const parsed = new URL(url, window.location.origin);
+            const pathname = parsed.pathname.toLowerCase();
+
+            if (pathname.endsWith(".pdf")
+                || pathname.endsWith(".csv")
+                || pathname.endsWith(".xls")
+                || pathname.endsWith(".xlsx")
+                || pathname.endsWith(".doc")
+                || pathname.endsWith(".docx")
+                || pathname.endsWith(".zip")) {
+                return true;
+            }
+
+            return pathname.includes("/download")
+                || pathname.includes("/export")
+                || pathname.includes("/documents/view");
+        } catch (error) {
+            return false;
+        }
+    };
+
     const wireNavigationLoader = () => {
         document.addEventListener("click", (event) => {
             const link = event.target.closest("a[href]");
@@ -162,6 +203,11 @@
             if (new URL(href, window.location.origin).pathname === window.location.pathname
                 && new URL(href, window.location.origin).search === window.location.search
                 && !new URL(href, window.location.origin).hash) {
+                return;
+            }
+
+            if (link.dataset.appLoaderBehavior === "download" || isDownloadLikeUrl(href)) {
+                showForDownload(link.dataset.appLoaderMessage || DOWNLOAD_MESSAGE);
                 return;
             }
 
@@ -191,6 +237,22 @@
 
             show({ message, status });
         }, true);
+    };
+
+    const wireDownloadRecovery = () => {
+        window.addEventListener("focus", () => {
+            resolveDownload();
+        });
+
+        window.addEventListener("pageshow", () => {
+            resolveDownload(true);
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) {
+                resolveDownload();
+            }
+        });
     };
 
     const wireFetchLoader = () => {
@@ -234,6 +296,7 @@
         wireNavigationLoader();
         wireFormLoader();
         wireFetchLoader();
+        wireDownloadRecovery();
     });
 
     window.AppLoader = {
