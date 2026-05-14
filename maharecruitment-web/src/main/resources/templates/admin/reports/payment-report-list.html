@@ -181,9 +181,15 @@
                                     <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
                                     <button type="submit"
                                         class="btn btn-outline-primary btn-sm"
+                                        data-app-loader-behavior="download"
+                                        data-app-loader-message="Preparing approved payment CSV report."
+                                        data-app-loader-status="Building CSV export"
                                         th:attr="formaction=@{/admin/reports/payments/export}">Generate CSV</button>
                                     <button type="submit"
                                         class="btn btn-outline-danger btn-sm"
+                                        data-app-loader-behavior="download"
+                                        data-app-loader-message="Preparing approved payment PDF report."
+                                        data-app-loader-status="Building PDF export"
                                         th:attr="formaction=@{/admin/reports/payments/export/pdf}">Download PDF</button>
                                 </div>
                             </div>
@@ -233,7 +239,7 @@
                                         <th>#</th>
                                         <th>Request / Payment</th>
                                         <th>Department / Project</th>
-                                        <th>Invoice / Receipt</th>
+                                        <th>Receipt Number</th>
                                         <th>Payment Mode</th>
                                         <th>Approved Amount</th>
                                         <th>Approved On</th>
@@ -260,9 +266,7 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="fw-semibold" th:text="${payment.proformaInvoiceId != null ? payment.proformaInvoiceId : '-'}">TI-001</div>
-                                            <div class="meta-text">Receipt: <span th:text="${payment.receiptNumber != null ? payment.receiptNumber : '-'}">RCPT-001</span></div>
-                                            <div class="meta-text">UTR: <span th:text="${payment.utrNumber != null ? payment.utrNumber : '-'}">UTR-001</span></div>
+                                            <div class="fw-semibold" th:text="${payment.receiptNumber != null ? payment.receiptNumber : '-'}">RCPT-001</div>
                                         </td>
                                         <td th:text="${payment.paymentMode != null ? payment.paymentMode : '-'}">NEFT</td>
                                         <td class="amount-cell"
