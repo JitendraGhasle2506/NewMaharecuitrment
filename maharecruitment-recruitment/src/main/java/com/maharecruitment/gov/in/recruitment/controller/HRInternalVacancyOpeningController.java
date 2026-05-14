@@ -30,6 +30,7 @@ import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationE
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyCandidateReviewService;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewEmployeeOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateRequestListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
@@ -38,6 +39,8 @@ import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeni
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningResult;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningSummaryView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateRequestSummaryView;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyAssessmentService;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyConsolidatedAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyRequirementCommand;
 
 import jakarta.validation.Valid;
@@ -53,12 +56,15 @@ public class HRInternalVacancyOpeningController {
 
     private final InternalVacancyOpeningService internalVacancyOpeningService;
     private final InternalVacancyCandidateReviewService internalVacancyCandidateReviewService;
+    private final InternalVacancyAssessmentService assessmentService;
 
     public HRInternalVacancyOpeningController(
             InternalVacancyOpeningService internalVacancyOpeningService,
-            InternalVacancyCandidateReviewService internalVacancyCandidateReviewService) {
+            InternalVacancyCandidateReviewService internalVacancyCandidateReviewService,
+            InternalVacancyAssessmentService assessmentService) {
         this.internalVacancyOpeningService = internalVacancyOpeningService;
         this.internalVacancyCandidateReviewService = internalVacancyCandidateReviewService;
+        this.assessmentService = assessmentService;
     }
 
     @GetMapping
@@ -66,24 +72,32 @@ public class HRInternalVacancyOpeningController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(name = "search", required = false) String search,
+            Principal principal,
             Model model) {
         int resolvedPage = Math.max(page, 0);
         int resolvedSize = resolvePageSize(size);
         String normalizedSearch = normalizeSearch(search);
 
-        Page<InternalVacancyOpeningSummaryView> openingPage = loadOpeningPage(
+        Pageable pageable = PageRequest.of(resolvedPage, resolvedSize, Sort.by("createdDateTime").descending());
+
+        Page<InternalVacancyOpeningSummaryView> openingPage = internalVacancyOpeningService.getOpeningPage(
                 normalizedSearch,
-                resolvedPage,
-                resolvedSize);
+                null, // HR sees all
+                List.of(InternalVacancyOpeningStatus.DRAFT), // HR doesn't see drafts
+                pageable);
+
         if (openingPage.getTotalPages() > 0 && resolvedPage >= openingPage.getTotalPages()) {
-            openingPage = loadOpeningPage(
+            openingPage = internalVacancyOpeningService.getOpeningPage(
                     normalizedSearch,
-                    openingPage.getTotalPages() - 1,
-                    resolvedSize);
+                    null,
+                    List.of(InternalVacancyOpeningStatus.DRAFT),
+                    PageRequest.of(openingPage.getTotalPages() - 1, resolvedSize, Sort.by("createdDateTime").descending()));
         }
 
-        InternalVacancyOpeningListMetricsView openingMetrics = internalVacancyOpeningService
-                .getOpeningListMetrics(normalizedSearch);
+        InternalVacancyOpeningListMetricsView openingMetrics = internalVacancyOpeningService.getOpeningListMetrics(
+                normalizedSearch,
+                null,
+                List.of(InternalVacancyOpeningStatus.DRAFT));
 
         model.addAttribute("openings", openingPage.getContent());
         model.addAttribute("openingPage", openingPage);
@@ -144,6 +158,21 @@ public class HRInternalVacancyOpeningController {
         } catch (RecruitmentNotificationException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/hr/internal-vacancies";
+        }
+    }
+
+    @GetMapping("/candidates/{recruitmentInterviewDetailId}/assessment-details")
+    public String getAssessmentDetails(
+            @PathVariable Long recruitmentInterviewDetailId,
+            Model model) {
+        try {
+            InternalVacancyConsolidatedAssessmentView consolidatedAssessment = assessmentService.getConsolidatedAssessment(recruitmentInterviewDetailId);
+            model.addAttribute("consolidatedAssessment", consolidatedAssessment);
+            return "hr/fragments/internal-vacancy-assessment-modal-content :: assessmentContent";
+        } catch (Exception ex) {
+            log.error("Error loading assessment details for interview id: {}", recruitmentInterviewDetailId, ex);
+            model.addAttribute("errorMessage", "Unable to load assessment details.");
+            return "hr/fragments/internal-vacancy-assessment-modal-content :: errorContent";
         }
     }
 
@@ -242,15 +271,20 @@ public class HRInternalVacancyOpeningController {
 
     @GetMapping("/interview-authorities")
     @ResponseBody
-    public List<InternalVacancyInterviewAuthorityUserOptionView> getInterviewAuthorities(
-            @RequestParam(name = "roleIds", required = false) List<Long> roleIds) {
-        return internalVacancyOpeningService.getAvailableInterviewAuthorities(roleIds);
+    public Page<InternalVacancyInterviewAuthorityUserOptionView> getInterviewAuthorities(
+            @RequestParam(name = "roleIds", required = false) List<Long> roleIds,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), resolvePageSize(size));
+        return internalVacancyOpeningService.getAvailableInterviewAuthoritiesPage(roleIds, search, pageable);
     }
 
     private void populateFormModel(Model model, InternalVacancyOpeningForm openingForm, boolean isEdit) {
         model.addAttribute("openingForm", openingForm);
         model.addAttribute("isEdit", isEdit);
-        model.addAttribute("isSubmittedEdit", isEdit && openingForm.getCurrentStatus() == InternalVacancyOpeningStatus.OPEN);
+        model.addAttribute("isSubmittedEdit", isEdit && (openingForm.getCurrentStatus() == InternalVacancyOpeningStatus.OPEN));
+        model.addAttribute("isPendingApproval", isEdit && (openingForm.getCurrentStatus() == InternalVacancyOpeningStatus.PENDING_HR_APPROVAL));
         model.addAttribute("projectOptions", internalVacancyOpeningService.getAvailableInternalProjects());
         model.addAttribute("designationOptions", internalVacancyOpeningService.getAvailableDesignations());
         model.addAttribute("interviewAuthorityRoleOptions", internalVacancyOpeningService.getAvailableInterviewAuthorityRoles());
@@ -260,6 +294,7 @@ public class HRInternalVacancyOpeningController {
                         openingForm.getInterviewAuthorityRoleIds() == null
                                 ? List.of()
                                 : openingForm.getInterviewAuthorityRoleIds()));
+        model.addAttribute("interviewEmployeeOptions", internalVacancyOpeningService.getAvailableInterviewEmployees());
     }
 
     private InternalVacancyOpeningCommand toCommand(
@@ -287,6 +322,10 @@ public class HRInternalVacancyOpeningController {
                         openingForm.getInterviewAuthorityUserIds() == null
                                 ? List.of()
                                 : new ArrayList<>(openingForm.getInterviewAuthorityUserIds()))
+                .interviewAuthorityEmployeeIds(
+                        openingForm.getInterviewAuthorityEmployeeIds() == null
+                                ? List.of()
+                                : new ArrayList<>(openingForm.getInterviewAuthorityEmployeeIds()))
                 .build();
     }
 
@@ -299,10 +338,16 @@ public class HRInternalVacancyOpeningController {
         if ("draft".equals(normalizedAction)) {
             return InternalVacancyOpeningStatus.DRAFT;
         }
-        if ("submit".equals(normalizedAction)) {
+        if ("submit".equals(normalizedAction) || "activate".equals(normalizedAction) || "approve".equals(normalizedAction)) {
             return InternalVacancyOpeningStatus.OPEN;
         }
-        throw new RecruitmentNotificationException("Unsupported vacancy opening action.");
+        if ("save_pending".equals(normalizedAction)) {
+            return InternalVacancyOpeningStatus.PENDING_HR_APPROVAL;
+        }
+        if ("reject".equals(normalizedAction)) {
+            return InternalVacancyOpeningStatus.REJECTED_BY_HR;
+        }
+        throw new RecruitmentNotificationException("Unsupported vacancy opening action: " + action);
     }
 
     private InternalVacancyOpeningStatus resolveStatusAction(String action) {
@@ -311,8 +356,14 @@ public class HRInternalVacancyOpeningController {
         }
 
         String normalizedAction = action.trim().toLowerCase(Locale.ROOT);
-        if ("activate".equals(normalizedAction)) {
+        if ("activate".equals(normalizedAction) || "approve".equals(normalizedAction)) {
             return InternalVacancyOpeningStatus.OPEN;
+        }
+        if ("save_pending".equals(normalizedAction)) {
+            return InternalVacancyOpeningStatus.PENDING_HR_APPROVAL;
+        }
+        if ("reject".equals(normalizedAction)) {
+            return InternalVacancyOpeningStatus.REJECTED_BY_HR;
         }
         if ("deactivate".equals(normalizedAction)) {
             return InternalVacancyOpeningStatus.CLOSED;
@@ -340,6 +391,9 @@ public class HRInternalVacancyOpeningController {
         if (targetStatus == InternalVacancyOpeningStatus.OPEN) {
             return "Internal vacancy opening activated successfully. Request ID: " + requestId;
         }
+        if (targetStatus == InternalVacancyOpeningStatus.REJECTED_BY_HR) {
+            return "Internal vacancy opening request rejected. Request ID: " + requestId;
+        }
         if (targetStatus == InternalVacancyOpeningStatus.CLOSED) {
             return "Internal vacancy opening deactivated successfully. Request ID: " + requestId;
         }
@@ -353,16 +407,6 @@ public class HRInternalVacancyOpeningController {
         return principal.getName();
     }
 
-    private Page<InternalVacancyOpeningSummaryView> loadOpeningPage(
-            String normalizedSearch,
-            int page,
-            int size) {
-        Pageable pageable = PageRequest.of(
-                Math.max(page, 0),
-                resolvePageSize(size),
-                Sort.by(Sort.Direction.DESC, "internalVacancyOpeningId"));
-        return internalVacancyOpeningService.getOpeningPage(normalizedSearch, pageable);
-    }
 
     private Page<InternalVacancyCandidateRequestSummaryView> loadCandidateSummaryPage(
             String normalizedSearch,

@@ -46,7 +46,7 @@ public class RoleBasedNavigationService implements NavigationService {
                         AccessRule.forRoles(Set.of("ROLE_USER"), "/user", "/user/**"),
                         AccessRule.forRoles(Set.of("ROLE_COO", "ROLE_HOD", "ROLE_HOD1", "ROLE_STM", "ROLE_HR",
                                         "ROLE_PM", "ROLE_EMPLOYEE"), "/panel", "/panel/**"),
-                        AccessRule.forRoles(Set.of("ROLE_HOD", "ROLE_PM", "ROLE_STM"),
+                        AccessRule.forRoles(Set.of("ROLE_HOD", "ROLE_PM", "ROLE_STM", "ROLE_EMPLOYEE"),
                                         "/interview-authority", "/interview-authority/**"),
                         AccessRule.forRoles(Set.of("ROLE_STM"), "/stm", "/stm/**"),
                         AccessRule.forRoles(Set.of("ROLE_PM"), "/pm", "/pm/**"),

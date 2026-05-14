@@ -337,11 +337,11 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "join fetch c.recruitmentNotification n "
             + "join fetch n.projectMst p "
             + "join n.internalVacancyOpening opening "
-            + "join opening.interviewAuthorities authority "
             + "join fetch c.agency agency "
             + "join fetch c.designationVacancy vacancy "
             + "left join fetch vacancy.designationMst designation "
-            + "where authority.user.id = :userId "
+            + "where (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId)) "
             + "and n.internalVacancyOpening is not null "
             + "and n.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
             + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
@@ -349,29 +349,31 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "order by upper(n.requestId) asc, "
             + "case when c.interviewDateTime is null then 1 else 0 end asc, "
             + "c.interviewDateTime desc, c.createdDateTime desc")
-    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacanciesByInterviewAuthorityUserId(
-            @Param("userId") Long userId);
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacanciesByInterviewAuthority(
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
 
     @Query("select c "
             + "from RecruitmentInterviewDetailEntity c "
             + "join fetch c.recruitmentNotification n "
             + "join fetch n.projectMst p "
             + "join n.internalVacancyOpening opening "
-            + "join opening.interviewAuthorities authority "
             + "join fetch c.agency agency "
             + "join fetch c.designationVacancy vacancy "
             + "left join fetch vacancy.designationMst designation "
             + "where upper(n.requestId) = upper(:requestId) "
-            + "and authority.user.id = :userId "
+            + "and (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId)) "
             + "and n.internalVacancyOpening is not null "
             + "and n.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
             + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
             + "and c.active = true "
             + "order by case when c.interviewDateTime is null then 1 else 0 end asc, "
             + "c.interviewDateTime desc, c.createdDateTime desc")
-    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacancyByRequestIdAndInterviewAuthorityUserId(
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacancyByRequestIdAndInterviewAuthority(
             @Param("requestId") String requestId,
-            @Param("userId") Long userId);
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
 
     @Query("select c "
             + "from RecruitmentInterviewDetailEntity c "
@@ -506,10 +508,10 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "from RecruitmentInterviewDetailEntity c "
             + "join c.recruitmentNotification n "
             + "join n.internalVacancyOpening opening "
-            + "join opening.interviewAuthorities authority "
             + "where upper(n.requestId) = upper(:requestId) "
             + "and c.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
-            + "and authority.user.id = :userId "
+            + "and (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId)) "
             + "and n.internalVacancyOpening is not null "
             + "and n.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
             + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
@@ -517,7 +519,8 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
     Optional<RecruitmentInterviewDetailEntity> findByIdForInternalVacancyInterviewAuthorityReviewUpdate(
             @Param("requestId") String requestId,
             @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId,
-            @Param("userId") Long userId);
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c "
@@ -526,10 +529,10 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "join fetch c.designationVacancy vacancy "
             + "left join fetch vacancy.designationMst designation "
             + "join n.internalVacancyOpening opening "
-            + "join opening.interviewAuthorities authority "
             + "where upper(n.requestId) = upper(:requestId) "
             + "and c.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
-            + "and authority.user.id = :userId "
+            + "and (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId)) "
             + "and n.internalVacancyOpening is not null "
             + "and n.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
             + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
@@ -537,7 +540,8 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
     Optional<RecruitmentInterviewDetailEntity> findByIdForInternalVacancyInterviewWorkflowUpdate(
             @Param("requestId") String requestId,
             @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId,
-            @Param("userId") Long userId);
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
 
     @Query("select c "
             + "from RecruitmentInterviewDetailEntity c "
@@ -547,10 +551,10 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "left join fetch vacancy.designationMst designation "
             + "join fetch c.agency agency "
             + "join n.internalVacancyOpening opening "
-            + "join opening.interviewAuthorities authority "
             + "where upper(n.requestId) = upper(:requestId) "
             + "and c.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
-            + "and authority.user.id = :userId "
+            + "and (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId)) "
             + "and n.internalVacancyOpening is not null "
             + "and n.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
             + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
@@ -558,7 +562,8 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
     Optional<RecruitmentInterviewDetailEntity> findByIdForInternalVacancyInterviewWorkflowView(
             @Param("requestId") String requestId,
             @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId,
-            @Param("userId") Long userId);
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c "

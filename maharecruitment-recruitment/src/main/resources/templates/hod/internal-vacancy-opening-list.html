@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Internal Resource Requirements</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .2px;
+            border: 1px solid transparent;
+        }
+
+        .status-draft { background: #fff5df; border-color: #f0dfab; color: #946200; }
+        .status-pending { background: #e0f2ff; border-color: #b3d7ff; color: #0056b3; }
+        .status-open { background: #e7f8ee; border-color: #b8e1c7; color: #1f7a3d; }
+        .status-rejected { background: #ffebeb; border-color: #f8c2c2; color: #b02a37; }
+        .status-closed { background: #f3f5f8; border-color: #d8dde6; color: #55657e; }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .overview-card {
+            padding: 18px;
+            border: 1px solid #d8e4f5;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
+        }
+
+        .overview-label { color: #607391; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .overview-value { margin-top: 6px; color: #163868; font-size: 24px; font-weight: 800; line-height: 1; }
+    </style>
+</head>
+
+<body class="department-shell" th:attr="data-context-path=${contextPath}">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HOD', 'Internal Resource Requirements', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Resource Requirement Requests</h2>
+                    <a class="btn btn-primary" th:href="@{/hod1/internal-vacancies/new}">Raise New Requirement</a>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <div class="overview-grid">
+                        <div class="overview-card">
+                            <div class="overview-label">Total</div>
+                            <div class="overview-value" th:text="${openingMetrics.totalOpenings}">0</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Drafts</div>
+                            <div class="overview-value" th:text="${openingMetrics.draftOpenings}">0</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Pending HR</div>
+                            <div class="overview-value" th:text="${openingMetrics.pendingRequests}">0</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Active</div>
+                            <div class="overview-value" th:text="${openingMetrics.activeOpenings}">0</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Rejected</div>
+                            <div class="overview-value" th:text="${openingMetrics.rejectedRequests}">0</div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Request ID</th>
+                                    <th>Project</th>
+                                    <th>Status</th>
+                                    <th>Created At</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(openings)}">
+                                    <td colspan="6" class="text-center py-4 text-muted">No resource requests found.</td>
+                                </tr>
+                                <tr th:each="opening, stat : ${openings}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td th:text="${opening.requestId}">REQ-0000</td>
+                                    <td th:text="${opening.projectName}">Project Name</td>
+                                    <td>
+                                        <span class="status-badge"
+                                            th:classappend="${' status-' + #strings.toLowerCase(opening.status.name().replace('PENDING_HR_APPROVAL', 'pending').replace('REJECTED_BY_HR', 'rejected'))}"
+                                            th:text="${opening.status.name().replace('_', ' ')}">
+                                            DRAFT
+                                        </span>
+                                    </td>
+                                    <td th:text="${#temporals.format(opening.createdDateTime, 'dd-MMM-yyyy HH:mm')}">24-Mar-2026</td>
+                                    <td class="text-center">
+                                        <a th:if="${opening.status.name() == 'DRAFT' or opening.status.name() == 'PENDING_HR_APPROVAL'}"
+                                           class="btn btn-outline-primary btn-sm"
+                                           th:href="@{/hod1/internal-vacancies/{id}/edit(id=${opening.internalVacancyOpeningId})}">
+                                            Edit
+                                        </a>
+                                        <span th:unless="${opening.status.name() == 'DRAFT' or opening.status.name() == 'PENDING_HR_APPROVAL'}" class="text-muted small">
+                                            Locked
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+</html>

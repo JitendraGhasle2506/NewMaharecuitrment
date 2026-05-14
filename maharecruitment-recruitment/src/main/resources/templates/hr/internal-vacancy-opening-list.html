@@ -23,7 +23,7 @@
 
         .overview-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 16px;
             margin-bottom: 0;
         }
@@ -122,10 +122,22 @@
             color: #946200;
         }
 
+        .status-pending {
+            background: #e0f2ff;
+            border-color: #b3d7ff;
+            color: #0056b3;
+        }
+
         .status-open {
             background: #e7f8ee;
             border-color: #b8e1c7;
             color: #1f7a3d;
+        }
+
+        .status-rejected {
+            background: #ffebeb;
+            border-color: #f8c2c2;
+            color: #b02a37;
         }
 
         .status-closed {
@@ -302,7 +314,6 @@
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/internal-vacancies/candidates}">
                             All Candidate Details
                         </a>
-                        <a class="btn btn-primary" th:href="@{/hr/internal-vacancies/new}">Create Opening</a>
                     </div>
                 </div>
 
@@ -320,6 +331,11 @@
                             <div class="overview-label">Draft Openings</div>
                             <div class="overview-value" th:text="${openingMetrics.draftOpenings}">0</div>
                             <div class="overview-note">Still editable and not visible externally</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="overview-label">Pending Approval</div>
+                            <div class="overview-value" th:text="${openingMetrics.pendingRequests}">0</div>
+                            <div class="overview-note">Resource requests raised by HODs</div>
                         </div>
                         <div class="overview-card">
                             <div class="overview-label">Active Openings</div>
@@ -378,9 +394,10 @@
                                         <th>#</th>
                                         <th>Request ID</th>
                                         <th>Project</th>
+                                        <th>Raised By</th>
                                         <th>Status</th>
                                         <th>Created At</th>
-                                        <th class="text-center">Actions</th>
+                                        <th class="text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -404,9 +421,15 @@
                                             </div>
                                         </td>
                                         <td>
+                                            <div class="user-info">
+                                                <div class="fw-bold" th:text="${opening.createdByName != null ? opening.createdByName : 'N/A'}"></div>
+                                                <div class="user-email text-muted small" th:text="${opening.createdByEmail}"></div>
+                                            </div>
+                                        </td>
+                                        <td>
                                             <span class="status-badge"
-                                                th:classappend="${opening.status.name() == 'OPEN' ? ' status-open' : (opening.status.name() == 'CLOSED' ? ' status-closed' : ' status-draft')}"
-                                                th:text="${opening.status.name() == 'OPEN' ? 'ACTIVE' : (opening.status.name() == 'CLOSED' ? 'DEACTIVATED' : 'DRAFT')}">
+                                                th:classappend="${opening.status.name() == 'OPEN' ? ' status-open' : (opening.status.name() == 'PENDING_HR_APPROVAL' ? ' status-pending' : (opening.status.name() == 'REJECTED_BY_HR' ? ' status-rejected' : (opening.status.name() == 'CLOSED' ? ' status-closed' : ' status-draft')))}"
+                                                th:text="${opening.status.name() == 'OPEN' ? 'ACTIVE' : (opening.status.name() == 'PENDING_HR_APPROVAL' ? 'PENDING' : (opening.status.name() == 'REJECTED_BY_HR' ? 'REJECTED' : (opening.status.name() == 'CLOSED' ? 'DEACTIVATED' : 'DRAFT')))}">
                                                 DRAFT
                                             </span>
                                         </td>
@@ -416,7 +439,7 @@
                                                 <div class="action-heading">Actions</div>
                                                 <div class="action-row">
                                                     <a class="btn btn-outline-primary btn-sm"
-                                                        th:if="${opening.status.name() == 'DRAFT' or opening.status.name() == 'OPEN'}"
+                                                        th:if="${opening.status.name() == 'DRAFT' or opening.status.name() == 'OPEN' or opening.status.name() == 'PENDING_HR_APPROVAL'}"
                                                         th:href="@{/hr/internal-vacancies/{id}/edit(id=${opening.internalVacancyOpeningId})}">
                                                         Edit
                                                     </a>
@@ -451,7 +474,7 @@
                                                     </form>
                                                 </div>
                                                 <div class="action-note"
-                                                    th:text="${opening.status.name() == 'OPEN' ? 'Active openings can be edited, reviewed, or deactivated at any time.' : (opening.status.name() == 'CLOSED' ? 'Deactivated openings stay hidden until HR activates them again.' : 'Draft openings stay inside HR until they are submitted.')}">
+                                                    th:text="${opening.status.name() == 'OPEN' ? 'Active openings can be edited, reviewed, or deactivated at any time.' : (opening.status.name() == 'PENDING_HR_APPROVAL' ? 'Review and Approve/Reject HOD resource requests.' : (opening.status.name() == 'CLOSED' ? 'Deactivated openings stay hidden until HR activates them again.' : 'Draft openings stay inside HR until they are submitted.'))}">
                                                     Draft openings stay inside HR until they are submitted.
                                                 </div>
                                             </div>

@@ -159,6 +159,7 @@
                                     <th>Joining Time</th>
                                     <th>Status</th>
                                     <th>Submitted At</th>
+                                    <th>Avg Score</th>
                                     <th>Interview</th>
                                     <th>Final Decision</th>
                                     <th>Resume</th>
@@ -218,6 +219,21 @@
                                     <td
                                         th:text="${candidate.submittedAt != null ? #temporals.format(candidate.submittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
                                         -
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <div class="fw-bold" th:text="${candidate.averagePanelScore != null ? candidate.averagePanelScore : '0.00'}">0.00</div>
+                                                <small class="text-muted" th:text="${(candidate.submittedAssessmentCount != null ? candidate.submittedAssessmentCount : 0) + ' Panels'}">0 Panels</small>
+                                            </div>
+                                            <button type="button" class="btn btn-link btn-sm p-0 ms-2" 
+                                                    th:if="${candidate.submittedAssessmentCount > 0}"
+                                                    th:attr="data-interview-id=${candidate.recruitmentInterviewDetailId}"
+                                                    onclick="viewAssessmentDetails(this)"
+                                                    title="View Detailed Panel Feedback">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                     <td>
                                         <div th:if="${candidate.interviewDateTime != null}">
@@ -283,6 +299,29 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assessment Details Modal -->
+            <div class="modal fade" id="assessmentDetailsModal" tabindex="-1" aria-labelledby="assessmentDetailsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header py-2 px-3 bg-light">
+                            <h5 class="modal-title fs-6 fw-bold" id="assessmentDetailsModalLabel">Consolidated Panel Feedback</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="assessmentModalBody">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <div class="mt-2 text-muted small">Loading feedback details...</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer py-1 px-3">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -384,6 +423,44 @@
                 return;
             }
             status.classList.remove('is-visible', 'is-success', 'is-error');
+        }
+
+        let assessmentModal = null;
+        function viewAssessmentDetails(button) {
+            const interviewId = button.getAttribute('data-interview-id');
+            if (!interviewId) return;
+
+            if (!assessmentModal) {
+                assessmentModal = new bootstrap.Modal(document.getElementById('assessmentDetailsModal'));
+            }
+
+            const modalBody = document.getElementById('assessmentModalBody');
+            modalBody.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2 text-muted small">Loading feedback details...</div>
+                </div>`;
+
+            assessmentModal.show();
+
+            fetch(`${contextPath}hr/internal-vacancies/candidates/${interviewId}/assessment-details`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.text();
+                })
+                .then(html => {
+                    modalBody.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    modalBody.innerHTML = `
+                        <div class="alert alert-danger py-2 mb-0">
+                            <i class="fas fa-exclamation-circle me-1"></i>
+                            Unable to load assessment details. Please try again.
+                        </div>`;
+                });
         }
     </script>
 </body>

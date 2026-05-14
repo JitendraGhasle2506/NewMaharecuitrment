@@ -19,6 +19,8 @@ public class InternalVacancyLevelTwoPanelFeedbackView {
     private Integer relevantExperienceMarks;
     private String interviewerGrade;
     private String recommendationStatus;
+    private boolean isRecommended;
+    private int totalMarks;
     private String assessmentRemarks;
     private String finalRemarks;
     private LocalDateTime submittedAt;

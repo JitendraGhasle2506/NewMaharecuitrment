@@ -45,18 +45,21 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
     private final RecruitmentInternalLevelTwoFeedbackRepository levelTwoFeedbackRepository;
     private final RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository;
     private final UserRepository userRepository;
+    private final com.maharecruitment.gov.in.recruitment.service.InternalVacancyAssessmentService internalVacancyAssessmentService;
 
     public RecruitmentAgencyInternalAssessmentServiceImpl(
             RecruitmentInterviewDetailRepository interviewDetailRepository,
             RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository,
             RecruitmentInternalLevelTwoFeedbackRepository levelTwoFeedbackRepository,
             RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            com.maharecruitment.gov.in.recruitment.service.InternalVacancyAssessmentService internalVacancyAssessmentService) {
         this.interviewDetailRepository = interviewDetailRepository;
         this.assessmentFeedbackRepository = assessmentFeedbackRepository;
         this.levelTwoFeedbackRepository = levelTwoFeedbackRepository;
         this.levelTwoScheduleRepository = levelTwoScheduleRepository;
         this.userRepository = userRepository;
+        this.internalVacancyAssessmentService = internalVacancyAssessmentService;
     }
 
     @Override
@@ -142,9 +145,13 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 ? Map.of()
                 : loadInterviewerNameMap(List.of(assessment));
 
+        com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyConsolidatedAssessmentView consolidatedAssessment =
+                internalVacancyAssessmentService.getConsolidatedAssessment(recruitmentInterviewDetailId);
+
         return toDetailView(
                 candidate,
                 assessment,
+                consolidatedAssessment,
                 levelTwoSchedule,
                 levelTwoFeedbackSubmittedCount,
                 interviewerNameMap);
@@ -297,6 +304,7 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
     private AgencyInternalAssessmentDetailView toDetailView(
             RecruitmentInterviewDetailEntity candidate,
             RecruitmentAssessmentFeedbackEntity assessment,
+            com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyConsolidatedAssessmentView consolidatedAssessment,
         RecruitmentInternalLevelTwoScheduleEntity levelTwoSchedule,
         int levelTwoFeedbackSubmittedCount,
         Map<Long, String> interviewerNameMap) {
@@ -329,6 +337,7 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 .initialInterviewTimeSlot(candidate.getInterviewTimeSlot())
                 .initialInterviewLink(candidate.getInterviewLink())
                 .assessment(toAssessmentView(assessment, interviewerNameMap))
+                .consolidatedAssessment(consolidatedAssessment)
                 .levelTwoInterviewDateTime(levelTwoSchedule != null ? levelTwoSchedule.getInterviewDateTime() : null)
                 .levelTwoInterviewTimeSlot(levelTwoSchedule != null ? levelTwoSchedule.getInterviewTimeSlot() : null)
                 .levelTwoMeetingLink(levelTwoSchedule != null ? levelTwoSchedule.getMeetingLink() : null)

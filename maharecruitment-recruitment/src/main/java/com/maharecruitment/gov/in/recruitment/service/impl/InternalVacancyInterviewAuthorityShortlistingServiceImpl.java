@@ -16,7 +16,9 @@ import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyInterviewAuthorityShortlistingService;
@@ -35,24 +37,27 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
             InternalVacancyInterviewAuthorityShortlistingServiceImpl.class);
 
     private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
     private final RecruitmentNotificationRepository notificationRepository;
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
 
     public InternalVacancyInterviewAuthorityShortlistingServiceImpl(
             UserRepository userRepository,
+            EmployeeRepository employeeRepository,
             RecruitmentNotificationRepository notificationRepository,
             RecruitmentInterviewDetailRepository interviewDetailRepository) {
         this.userRepository = userRepository;
+        this.employeeRepository = employeeRepository;
         this.notificationRepository = notificationRepository;
         this.interviewDetailRepository = interviewDetailRepository;
     }
 
     @Override
     public List<InternalVacancyCandidateRequestSummaryView> getAssignedRequestSummaries(String actorEmail) {
-        User actor = resolveActor(actorEmail);
+        ActorContext actor = resolveActorContext(actorEmail);
 
         List<InternalVacancySubmittedCandidateView> candidates = interviewDetailRepository
-                .findActiveCandidatesForInternalVacanciesByInterviewAuthorityUserId(actor.getId())
+                .findActiveCandidatesForInternalVacanciesByInterviewAuthority(actor.userId(), actor.employeeId())
                 .stream()
                 .map(this::toCandidateView)
                 .toList();
@@ -113,7 +118,7 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
                 .toList();
 
         log.info("Loaded interview-authority internal vacancy request summaries. userId={}, requestCount={}",
-                actor.getId(), summaries.size());
+                actor.userId(), summaries.size());
         return summaries;
     }
 
@@ -122,20 +127,21 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
             String actorEmail,
             String requestId,
             InternalVacancyCandidateFilterType filterType) {
-        User actor = resolveActor(actorEmail);
+        ActorContext actor = resolveActorContext(actorEmail);
         String normalizedRequestId = normalizeRequestId(requestId);
         InternalVacancyCandidateFilterType resolvedFilter =
                 filterType != null ? filterType : InternalVacancyCandidateFilterType.ALL;
 
         RecruitmentNotificationEntity notification = notificationRepository
-                .findInternalVacancyForInterviewAuthorityReview(normalizedRequestId, actor.getId())
+                .findInternalVacancyForInterviewAuthorityReview(normalizedRequestId, actor.userId(), actor.employeeId())
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "This internal vacancy request is not assigned to the logged-in interview authority."));
 
         List<InternalVacancySubmittedCandidateView> candidates = interviewDetailRepository
-                .findActiveCandidatesForInternalVacancyByRequestIdAndInterviewAuthorityUserId(
+                .findActiveCandidatesForInternalVacancyByRequestIdAndInterviewAuthority(
                         normalizedRequestId,
-                        actor.getId())
+                        actor.userId(),
+                        actor.employeeId())
                 .stream()
                 .map(this::toCandidateView)
                 .toList();
@@ -146,7 +152,7 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
 
         log.info(
                 "Loaded interview-authority internal vacancy candidates. userId={}, requestId={}, candidateCount={}, filter={}",
-                actor.getId(),
+                actor.userId(),
                 notification.getRequestId(),
                 filteredCandidates.size(),
                 resolvedFilter.name());
@@ -175,7 +181,7 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
             Long recruitmentInterviewDetailId,
             DepartmentCandidateReviewDecision reviewDecision,
             String reviewRemarks) {
-        User actor = resolveActor(actorEmail);
+        ActorContext actor = resolveActorContext(actorEmail);
         String normalizedRequestId = normalizeRequestId(requestId);
         requirePositiveId(recruitmentInterviewDetailId, "Candidate id is required.");
 
@@ -187,7 +193,8 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
                 .findByIdForInternalVacancyInterviewAuthorityReviewUpdate(
                         normalizedRequestId,
                         recruitmentInterviewDetailId,
-                        actor.getId())
+                        actor.userId(),
+                        actor.employeeId())
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Candidate not found for the assigned internal vacancy interview authority."));
 
@@ -206,7 +213,7 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
 
         candidate.setCandidateStatus(nextStatus);
         candidate.setDepartmentShortlistedAt(LocalDateTime.now());
-        candidate.setDepartmentShortlistedByUserId(actor.getId());
+        candidate.setDepartmentShortlistedByUserId(actor.userId());
         candidate.setDepartmentShortlistRemarks(normalizedRemarks);
 
         interviewDetailRepository.save(candidate);
@@ -216,16 +223,30 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
                 normalizedRequestId,
                 recruitmentInterviewDetailId,
                 reviewDecision,
-                actor.getId());
+                actor.userId());
     }
 
-    private User resolveActor(String actorEmail) {
+    private ActorContext resolveActorContext(String actorEmail) {
         if (!StringUtils.hasText(actorEmail)) {
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
 
-        return userRepository.findByEmailIgnoreCase(actorEmail.trim())
-                .orElseThrow(() -> new RecruitmentNotificationException("Authenticated user not found."));
+        Long userId = userRepository.findByEmailIgnoreCase(actorEmail.trim())
+                .map(User::getId)
+                .orElse(null);
+
+        Long employeeId = employeeRepository.findByEmail(actorEmail.trim())
+                .map(EmployeeEntity::getEmployeeId)
+                .orElse(null);
+
+        if (userId == null && employeeId == null) {
+            throw new RecruitmentNotificationException("Authenticated actor not found.");
+        }
+
+        return new ActorContext(userId, employeeId);
+    }
+
+    private record ActorContext(Long userId, Long employeeId) {
     }
 
     private InternalVacancySubmittedCandidateView toCandidateView(RecruitmentInterviewDetailEntity candidate) {

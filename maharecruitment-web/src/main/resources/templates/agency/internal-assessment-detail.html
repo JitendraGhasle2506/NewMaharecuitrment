@@ -567,9 +567,17 @@
 
                             <div th:if="${detail.assessment != null}">
                                 <div class="assessment-meta mb-3">
-                                    <div class="assessment-tag">
+                                    <div class="assessment-tag" th:if="${detail.consolidatedAssessment == null}">
                                         <strong>Authority</strong>
                                         <span th:text="${detail.assessment.interviewAuthority != null ? detail.assessment.interviewAuthority : '-'}">Authority</span>
+                                    </div>
+                                    <div class="assessment-tag" th:if="${detail.consolidatedAssessment != null}">
+                                        <strong>Average Panel Score</strong>
+                                        <span th:text="${detail.consolidatedAssessment.averageScore != null ? detail.consolidatedAssessment.averageScore + ' / 20.00' : '-'}">0.00</span>
+                                    </div>
+                                    <div class="assessment-tag" th:if="${detail.consolidatedAssessment != null}">
+                                        <strong>Panels Submitted</strong>
+                                        <span th:text="${detail.consolidatedAssessment.submittedAssessments}">0</span>
                                     </div>
                                     <div class="assessment-tag">
                                         <strong>Grade</strong>
@@ -581,7 +589,7 @@
                                     </div>
                                 </div>
 
-                                <div class="mark-grid mb-3">
+                                <div class="mark-grid mb-3" th:if="${detail.consolidatedAssessment == null or #lists.isEmpty(detail.consolidatedAssessment.individualAssessments)}">
                                     <div class="mark-card">
                                         <div class="mark-card-label">Communication</div>
                                         <div class="mark-card-value" th:text="${detail.assessment.communicationSkillMarks != null ? detail.assessment.communicationSkillMarks : 0}">0</div>
@@ -600,7 +608,7 @@
                                     </div>
                                 </div>
 
-                                <div class="remarks-grid mb-4">
+                                <div class="remarks-grid mb-4" th:if="${detail.consolidatedAssessment == null or #lists.isEmpty(detail.consolidatedAssessment.individualAssessments)}">
                                     <div class="remarks-card">
                                         <h6 class="remarks-card-title">Assessment Remarks</h6>
                                         <p class="remarks-card-text"
@@ -615,6 +623,49 @@
                                             Remarks
                                         </p>
                                     </div>
+                                </div>
+                                
+                                <div class="remarks-grid mb-4" th:if="${detail.consolidatedAssessment != null and !#lists.isEmpty(detail.consolidatedAssessment.individualAssessments)}">
+                                    <div class="remarks-card">
+                                        <h6 class="remarks-card-title">Final Recommendation Remarks</h6>
+                                        <p class="remarks-card-text"
+                                            th:text="${detail.assessment.finalRemarks != null ? detail.assessment.finalRemarks : '-'}">
+                                            Remarks
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <h6 class="section-title mb-3" th:if="${detail.consolidatedAssessment != null and !#lists.isEmpty(detail.consolidatedAssessment.individualAssessments)}">Panel Feedback Details</h6>
+                                <div class="table-responsive mb-4" th:if="${detail.consolidatedAssessment != null and !#lists.isEmpty(detail.consolidatedAssessment.individualAssessments)}">
+                                    <table class="table table-bordered table-sm align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Assessor</th>
+                                                <th class="text-center">Technical</th>
+                                                <th class="text-center">Comm.</th>
+                                                <th class="text-center">Leader.</th>
+                                                <th class="text-center">Exp.</th>
+                                                <th class="text-center">Total</th>
+                                                <th>Remarks</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="assessmentItem : ${detail.consolidatedAssessment.individualAssessments}">
+                                                <td>
+                                                    <div class="fw-bold text-dark" th:text="${assessmentItem.assessorName}">Name</div>
+                                                    <small class="text-muted" th:text="${assessmentItem.assessorType}">USER</small>
+                                                </td>
+                                                <td class="text-center" th:text="${assessmentItem.technicalScore}">0</td>
+                                                <td class="text-center" th:text="${assessmentItem.communicationScore}">0</td>
+                                                <td class="text-center" th:text="${assessmentItem.leadershipScore}">0</td>
+                                                <td class="text-center" th:text="${assessmentItem.relevantExperienceScore}">0</td>
+                                                <td class="text-center fw-bold" th:text="${assessmentItem.totalScore}">0</td>
+                                                <td>
+                                                    <small th:text="${assessmentItem.remarks != null ? assessmentItem.remarks : '-'}">Remarks</small>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
 
                                 <h6 class="section-title mb-3">Panel Members</h6>

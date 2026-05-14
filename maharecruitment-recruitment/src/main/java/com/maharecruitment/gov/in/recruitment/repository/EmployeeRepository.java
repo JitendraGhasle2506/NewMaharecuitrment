@@ -358,4 +358,12 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "and trim(coalesce(employee.aadhaarNumber, '')) <> ''")
     long countInternalAttendanceSyncCandidates();
 
+    @Query("select e from EmployeeEntity e "
+            + "where upper(e.status) = 'ACTIVE' "
+            + "and (:search is null or "
+            + "     lower(cast(e.fullName as String)) like :search or "
+            + "     lower(cast(e.email as String)) like :search or "
+            + "     lower(cast(e.mobile as String)) like :search) "
+            + "order by e.fullName asc, e.employeeId asc")
+    Page<EmployeeEntity> findActiveWithSearch(@Param("search") String search, Pageable pageable);
 }

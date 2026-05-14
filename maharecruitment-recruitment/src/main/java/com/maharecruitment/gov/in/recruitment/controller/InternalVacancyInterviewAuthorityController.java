@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.recruitment.controller;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,10 @@ import com.maharecruitment.gov.in.recruitment.service.InternalVacancyInterviewAu
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentPanelMemberInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyAssessmentService;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAssessmentCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateFilterType;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
 
@@ -37,7 +41,7 @@ import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/interview-authority/internal-vacancies")
-@PreAuthorize("hasAnyAuthority('ROLE_HOD', 'ROLE_PM', 'ROLE_STM')")
+@PreAuthorize("hasAnyAuthority('ROLE_HOD', 'ROLE_PM', 'ROLE_STM', 'ROLE_EMPLOYEE')")
 public class InternalVacancyInterviewAuthorityController {
 
     private static final Logger log = LoggerFactory.getLogger(InternalVacancyInterviewAuthorityController.class);
@@ -46,14 +50,17 @@ public class InternalVacancyInterviewAuthorityController {
     private final UserRepository userRepository;
     private final InternalVacancyInterviewAuthorityShortlistingService shortlistingService;
     private final InternalVacancyInterviewAuthorityWorkflowService workflowService;
+    private final InternalVacancyAssessmentService assessmentService;
 
     public InternalVacancyInterviewAuthorityController(
             UserRepository userRepository,
             InternalVacancyInterviewAuthorityShortlistingService shortlistingService,
-            InternalVacancyInterviewAuthorityWorkflowService workflowService) {
+            InternalVacancyInterviewAuthorityWorkflowService workflowService,
+            InternalVacancyAssessmentService assessmentService) {
         this.userRepository = userRepository;
         this.shortlistingService = shortlistingService;
         this.workflowService = workflowService;
+        this.assessmentService = assessmentService;
     }
 
     @GetMapping
@@ -95,6 +102,7 @@ public class InternalVacancyInterviewAuthorityController {
                     requestId,
                     recruitmentInterviewDetailId);
             model.addAttribute("workflowDetail", workflowDetail);
+
             if (!model.containsAttribute("assessmentForm")) {
                 model.addAttribute(
                         "assessmentForm",
@@ -165,11 +173,26 @@ public class InternalVacancyInterviewAuthorityController {
         }
 
         try {
+            // 1. Submit legacy assessment feedback (for backward compatibility/main record)
             workflowService.submitInterviewAssessment(
                     actorEmail,
                     requestId,
                     recruitmentInterviewDetailId,
                     toSubmissionInput(assessmentForm));
+            
+            // 2. Submit individual panel assessment
+            InternalVacancyAssessmentCommand individualCommand = new InternalVacancyAssessmentCommand();
+            individualCommand.setRecruitmentInterviewDetailId(recruitmentInterviewDetailId);
+            individualCommand.setTechnicalScore(BigDecimal.valueOf(assessmentForm.getTechnicalSkillMarks()));
+            individualCommand.setCommunicationScore(BigDecimal.valueOf(assessmentForm.getCommunicationSkillMarks()));
+            individualCommand.setLeadershipScore(BigDecimal.valueOf(assessmentForm.getLeadershipQualityMarks()));
+            individualCommand.setRelevantExperienceScore(BigDecimal.valueOf(assessmentForm.getRelevantExperienceMarks()));
+            individualCommand.setRemarks(assessmentForm.getAssessmentRemarks());
+            individualCommand.setInterviewerGrade(assessmentForm.getInterviewerGrade());
+            individualCommand.setRecommendationStatus(assessmentForm.getRecommendationStatus());
+            
+            assessmentService.submitAssessment(individualCommand, actorEmail);
+
             redirectAttributes.addFlashAttribute("successMessage", "Interview feedback submitted successfully.");
         } catch (RecruitmentNotificationException ex) {
             model.addAttribute("workflowDetail", workflowService.getInterviewWorkflowDetail(
@@ -215,39 +238,56 @@ public class InternalVacancyInterviewAuthorityController {
         form.setPanelMembers(panelMembers);
 
         if (workflowDetail.getAssessment() != null) {
-            form.setInterviewAuthority(workflowDetail.getAssessment().getInterviewAuthority());
-            form.setInterviewDateTime(workflowDetail.getAssessment().getInterviewDateTime());
-            form.setMobile(workflowDetail.getAssessment().getMobile());
-            form.setEmail(workflowDetail.getAssessment().getEmail());
-            form.setAlternateEmail(workflowDetail.getAssessment().getAlternateEmail());
-            form.setQualification(workflowDetail.getAssessment().getQualification());
-            form.setTotalExperience(workflowDetail.getAssessment().getTotalExperience());
-            form.setCommunicationSkillMarks(workflowDetail.getAssessment().getCommunicationSkillMarks());
-            form.setTechnicalSkillMarks(workflowDetail.getAssessment().getTechnicalSkillMarks());
-            form.setLeadershipQualityMarks(workflowDetail.getAssessment().getLeadershipQualityMarks());
-            form.setRelevantExperienceMarks(workflowDetail.getAssessment().getRelevantExperienceMarks());
-            form.setInterviewerGrade(workflowDetail.getAssessment().getInterviewerGrade());
-            form.setRecommendationStatus(workflowDetail.getAssessment().getRecommendationStatus());
-            form.setAssessmentRemarks(workflowDetail.getAssessment().getAssessmentRemarks());
-            form.setFinalRemarks(workflowDetail.getAssessment().getFinalRemarks());
+            DepartmentInterviewAssessmentView assessment = workflowDetail.getAssessment();
+            // Only update the interviewer name if it's available from the panel-specific record
+            if (assessment.getInterviewAuthority() != null) {
+                form.setInterviewAuthority(assessment.getInterviewAuthority());
+            }
+            // Keep candidate details (interviewDateTime, mobile, email, qualification, totalExperience)
+            // from workflowDetail (already set above) — the panel-specific view does not carry these fields.
+            if (assessment.getCommunicationSkillMarks() != null) {
+                form.setCommunicationSkillMarks(assessment.getCommunicationSkillMarks());
+            }
+            if (assessment.getTechnicalSkillMarks() != null) {
+                form.setTechnicalSkillMarks(assessment.getTechnicalSkillMarks());
+            }
+            if (assessment.getLeadershipQualityMarks() != null) {
+                form.setLeadershipQualityMarks(assessment.getLeadershipQualityMarks());
+            }
+            if (assessment.getRelevantExperienceMarks() != null) {
+                form.setRelevantExperienceMarks(assessment.getRelevantExperienceMarks());
+            }
+            if (assessment.getInterviewerGrade() != null) {
+                form.setInterviewerGrade(assessment.getInterviewerGrade());
+            }
+            if (assessment.getRecommendationStatus() != null) {
+                form.setRecommendationStatus(assessment.getRecommendationStatus());
+            }
+            if (assessment.getAssessmentRemarks() != null) {
+                form.setAssessmentRemarks(assessment.getAssessmentRemarks());
+            }
+            if (assessment.getFinalRemarks() != null) {
+                form.setFinalRemarks(assessment.getFinalRemarks());
+            }
 
-            panelMembers = new ArrayList<>();
-            if (workflowDetail.getAssessment().getPanelMembers() != null) {
-                for (var panelMember : workflowDetail.getAssessment().getPanelMembers()) {
+            // Restore panel members if provided
+            if (assessment.getPanelMembers() != null && !assessment.getPanelMembers().isEmpty()) {
+                panelMembers = new ArrayList<>();
+                for (var panelMember : assessment.getPanelMembers()) {
                     InternalInterviewAssessmentPanelMemberForm panelMemberForm =
                             new InternalInterviewAssessmentPanelMemberForm();
                     panelMemberForm.setPanelMemberName(panelMember.getPanelMemberName());
                     panelMemberForm.setPanelMemberDesignation(panelMember.getPanelMemberDesignation());
                     panelMembers.add(panelMemberForm);
                 }
+                while (panelMembers.size() < MAX_PANEL_MEMBER_COUNT) {
+                    panelMembers.add(new InternalInterviewAssessmentPanelMemberForm());
+                }
+                if (panelMembers.size() > MAX_PANEL_MEMBER_COUNT) {
+                    panelMembers = new ArrayList<>(panelMembers.subList(0, MAX_PANEL_MEMBER_COUNT));
+                }
+                form.setPanelMembers(panelMembers);
             }
-            while (panelMembers.size() < MAX_PANEL_MEMBER_COUNT) {
-                panelMembers.add(new InternalInterviewAssessmentPanelMemberForm());
-            }
-            if (panelMembers.size() > MAX_PANEL_MEMBER_COUNT) {
-                panelMembers = new ArrayList<>(panelMembers.subList(0, MAX_PANEL_MEMBER_COUNT));
-            }
-            form.setPanelMembers(panelMembers);
         }
 
         return form;

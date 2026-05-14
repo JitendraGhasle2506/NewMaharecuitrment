@@ -802,17 +802,29 @@
                 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                     <div>
                         <h5 class="section-title">Send Round L2 Result To Agency</h5>
-                        <div class="muted-copy">HR can send the final Round L2 result to agency after reviewing the submitted panel assessments.</div>
+                        <div class="muted-copy">HR can send the final Round L2 result to agency after reviewing the submitted panel assessments. Selection requires at least 2 feedbacks and an average score of 60%.</div>
                     </div>
-                    <span class="status-pill warning" th:if="${detail.panelFeedbackSubmittedCount == 0}">Waiting For Panel</span>
-                    <span class="status-pill success" th:if="${detail.panelFeedbackSubmittedCount > 0}">Ready To Send</span>
+                    <div class="text-end" th:if="${detail.averagePercentage != null}">
+                        <div class="label">Average Score</div>
+                        <div class="h4 mb-0 fw-bold" 
+                            th:classappend="${detail.averagePercentage >= 60 ? 'text-success' : 'text-danger'}"
+                            th:text="${#numbers.formatDecimal(detail.averagePercentage, 1, 2) + '%'}">
+                            0.00%
+                        </div>
+                    </div>
+                    <span class="status-pill warning" th:if="${detail.panelFeedbackSubmittedCount < 2}">Waiting For Panel</span>
+                    <span class="status-pill success" th:if="${detail.panelFeedbackSubmittedCount >= 2}">Ready To Send</span>
                 </div>
 
-                <div class="alert alert-warning mb-0" th:if="${detail.panelFeedbackSubmittedCount == 0}">
-                    At least one panel feedback submission is required before HR can send the Round L2 result to agency.
+                <div class="alert alert-warning mb-0" th:if="${detail.panelFeedbackSubmittedCount < 2}">
+                    At least two panel feedback submissions are required before HR can send the Round L2 result to agency.
                 </div>
 
-                <form method="post" th:if="${detail.panelFeedbackSubmittedCount > 0}" th:object="${finalDecisionForm}"
+                <div class="alert alert-danger mb-0" th:if="${detail.panelFeedbackSubmittedCount >= 2 and detail.averagePercentage < 60}">
+                    The candidate's average score is <strong th:text="${#numbers.formatDecimal(detail.averagePercentage, 1, 2) + '%'}">0.00%</strong>, which is below the 60% requirement for selection. <strong>Only rejection is allowed.</strong>
+                </div>
+
+                <form method="post" th:if="${detail.panelFeedbackSubmittedCount >= 2}" th:object="${finalDecisionForm}"
                     th:action="@{/hr/internal-vacancies/level-two/{recruitmentInterviewDetailId}/final-decision(
                         recruitmentInterviewDetailId=${detail.recruitmentInterviewDetailId})}">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
@@ -821,7 +833,7 @@
                             <label class="form-label">Final Decision</label>
                             <select class="form-select" th:field="*{finalDecision}">
                                 <option value="">Select Final Decision</option>
-                                <option value="SELECT">Selected</option>
+                                <option value="SELECT" th:if="${detail.averagePercentage >= 60}">Selected</option>
                                 <option value="REJECT">Rejected</option>
                             </select>
                             <div class="text-danger small mt-1" th:if="${#fields.hasErrors('finalDecision')}" th:errors="*{finalDecision}">

@@ -19,4 +19,6 @@ public class InternalVacancyOpeningSummaryView {
     private long totalVacancies;
     private InternalVacancyOpeningStatus status;
     private LocalDateTime createdDateTime;
+    private String createdByEmail;
+    private String createdByName;
 }

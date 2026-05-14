@@ -27,5 +27,7 @@ public class InternalVacancyLevelTwoCandidateSummaryView {
     private boolean timeChangeRequested;
     private LocalDateTime timeChangeRequestedAt;
     private String finalDecisionStatus;
+    private boolean isEligibleForSelection;
+    private String recommendationLabel;
     private InternalVacancyLevelTwoWorkflowStatus workflowStatus;
 }

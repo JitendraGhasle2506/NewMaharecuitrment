@@ -1,9 +1,11 @@
 package com.maharecruitment.gov.in.auth.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Collection;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -55,11 +57,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
         List<Long> findDistinctUserIdsByDepartmentRegistrationId(
                         @Param("departmentRegistrationId") Long departmentRegistrationId);
 
-        @Query("select distinct u " +
-                        "from User u " +
-                        "join fetch u.roles r " +
-                        "where r.id in :roleIds")
-        List<User> findDistinctUsersByRoleIds(@Param("roleIds") Collection<Long> roleIds);
+        @Query("select distinct u from User u " +
+                        "join u.roles r " +
+                        "where r.id in :roleIds " +
+                        "and (:search is null or " +
+                        "     lower(cast(u.name as String)) like :search or " +
+                        "     lower(cast(u.email as String)) like :search or " +
+                        "     lower(cast(u.mobileNo as String)) like :search)")
+        Page<User> findByRolesAndSearch(
+                        @Param("roleIds") Collection<Long> roleIds,
+                        @Param("search") String search,
+                        Pageable pageable);
 
         @Query("select distinct u " +
                         "from User u " +

@@ -27,12 +27,11 @@ public class InternalVacancyOpeningForm {
     private String remarks;
 
     @Valid
-    @Size(min = 1, message = "Add at least one designation requirement.")
     private List<InternalVacancyRequirementForm> requirements = new ArrayList<>();
 
-    @NotEmpty(message = "Select at least one interview authority role.")
     private List<Long> interviewAuthorityRoleIds = new ArrayList<>();
 
-    @NotEmpty(message = "Select at least one interview authority.")
     private List<Long> interviewAuthorityUserIds = new ArrayList<>();
+
+    private List<Long> interviewAuthorityEmployeeIds = new ArrayList<>();
 }

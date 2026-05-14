@@ -9,6 +9,7 @@ import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentFeedbackEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentPanelMemberEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
@@ -16,14 +17,17 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacan
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInternalLevelTwoScheduleEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentAssessmentFeedbackRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoScheduleRepository;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyAssessmentService;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyInterviewAuthorityWorkflowService;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentPanelMemberInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
 
 @Service
@@ -35,19 +39,25 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
     private static final int MAX_PANEL_MEMBER_COUNT = 5;
 
     private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository;
     private final RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository;
+    private final InternalVacancyAssessmentService assessmentService;
 
     public InternalVacancyInterviewAuthorityWorkflowServiceImpl(
             UserRepository userRepository,
+            EmployeeRepository employeeRepository,
             RecruitmentInterviewDetailRepository interviewDetailRepository,
             RecruitmentAssessmentFeedbackRepository assessmentFeedbackRepository,
-            RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository) {
+            RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository,
+            InternalVacancyAssessmentService assessmentService) {
         this.userRepository = userRepository;
+        this.employeeRepository = employeeRepository;
         this.interviewDetailRepository = interviewDetailRepository;
         this.assessmentFeedbackRepository = assessmentFeedbackRepository;
         this.levelTwoScheduleRepository = levelTwoScheduleRepository;
+        this.assessmentService = assessmentService;
     }
 
     @Override
@@ -55,7 +65,7 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
             String actorEmail,
             String requestId,
             Long recruitmentInterviewDetailId) {
-        User actor = resolveActor(actorEmail);
+        ActorContext actor = resolveActorContext(actorEmail);
         String normalizedRequestId = normalizeRequestId(requestId);
         requirePositiveId(recruitmentInterviewDetailId, "Candidate id is required.");
 
@@ -63,7 +73,8 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                 .findByIdForInternalVacancyInterviewWorkflowView(
                         normalizedRequestId,
                         recruitmentInterviewDetailId,
-                        actor.getId())
+                        actor.userId(),
+                        actor.employeeId())
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Candidate record not found for the assigned internal interview authority."));
 
@@ -80,9 +91,8 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                     "Interview feedback is available only after interview scheduling.");
         }
 
-        RecruitmentAssessmentFeedbackEntity assessment = assessmentFeedbackRepository
-                .findByCandidateForInternalVacancy(internalVacancyOpeningId, recruitmentInterviewDetailId)
-                .orElse(null);
+        // Load only the current panel's own assessment (data isolation: each panel sees only their own marks)
+        InternalVacancyAssessmentView myAssessment = assessmentService.getMyAssessment(recruitmentInterviewDetailId, actorEmail);
 
         RecruitmentDesignationVacancyEntity vacancy = candidate.getDesignationVacancy();
         long vacancyCount = safePositive(vacancy != null ? vacancy.getNumberOfVacancy() : null);
@@ -128,7 +138,7 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                 .filledVacancyCount(filledCount)
                 .remainingVacancyCount(remainingCount)
                 //.selectionAllowed(false)
-                .assessment(toAssessmentView(assessment))
+                .assessment(toAssessmentViewFromPanelAssessment(myAssessment))
                 .build();
     }
 
@@ -139,7 +149,7 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
             String requestId,
             Long recruitmentInterviewDetailId,
             DepartmentInterviewAssessmentSubmissionInput submissionInput) {
-        User actor = resolveActor(actorEmail);
+        ActorContext actor = resolveActorContext(actorEmail);
         String normalizedRequestId = normalizeRequestId(requestId);
         requirePositiveId(recruitmentInterviewDetailId, "Candidate id is required.");
         validateAssessmentInput(submissionInput);
@@ -148,7 +158,8 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                 .findByIdForInternalVacancyInterviewWorkflowUpdate(
                         normalizedRequestId,
                         recruitmentInterviewDetailId,
-                        actor.getId())
+                        actor.userId(),
+                        actor.employeeId())
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Candidate record not found for the assigned internal interview authority."));
 
@@ -207,14 +218,15 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
         assessment.setRecommendationStatus(normalizeUpper(submissionInput.getRecommendationStatus()));
         assessment.setAssessmentRemarks(normalizeText(submissionInput.getAssessmentRemarks()));
         assessment.setFinalRemarks(normalizeText(submissionInput.getFinalRemarks()));
-        assessment.setInterviewerUserId(actor.getId());
+        assessment.setInterviewerUserId(actor.userId());
+        assessment.setInterviewerEmployeeId(actor.employeeId());
         assessment.replacePanelMembers(toPanelMemberEntities(submissionInput.getPanelMembers()));
 
         assessmentFeedbackRepository.save(assessment);
 
         candidate.setAssessmentSubmitted(true);
         candidate.setAssessmentSubmittedAt(java.time.LocalDateTime.now());
-        candidate.setAssessmentSubmittedByUserId(actor.getId());
+        candidate.setAssessmentSubmittedByUserId(actor.userId());
         interviewDetailRepository.save(candidate);
 
         synchronizeLevelTwoReadyState(
@@ -222,13 +234,54 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                 RECOMMENDED_STATUS.equals(normalizeUpper(assessment.getRecommendationStatus())));
     }
 
-    private User resolveActor(String actorEmail) {
+    private ActorContext resolveActorContext(String actorEmail) {
         if (!StringUtils.hasText(actorEmail)) {
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
 
-        return userRepository.findByEmailIgnoreCase(actorEmail.trim())
-                .orElseThrow(() -> new RecruitmentNotificationException("Authenticated user not found."));
+        Long userId = userRepository.findByEmailIgnoreCase(actorEmail.trim())
+                .map(User::getId)
+                .orElse(null);
+
+        Long employeeId = employeeRepository.findByEmail(actorEmail.trim())
+                .map(EmployeeEntity::getEmployeeId)
+                .orElse(null);
+
+        if (userId == null && employeeId == null) {
+            throw new RecruitmentNotificationException("Authenticated actor not found.");
+        }
+
+        return new ActorContext(userId, employeeId);
+    }
+
+    private record ActorContext(Long userId, Long employeeId) {
+    }
+
+    /**
+     * Builds a DepartmentInterviewAssessmentView from the panel-specific InternalVacancyAssessmentView.
+     * Returns null if the current panel has not yet submitted their assessment.
+     */
+    private DepartmentInterviewAssessmentView toAssessmentViewFromPanelAssessment(InternalVacancyAssessmentView panelView) {
+        if (panelView == null) {
+            return null;
+        }
+        return DepartmentInterviewAssessmentView.builder()
+                .recruitmentAssessmentFeedbackId(panelView.getAssessmentId())
+                .interviewAuthority(panelView.getAssessorName())
+                .communicationSkillMarks(panelView.getCommunicationScore() != null
+                        ? panelView.getCommunicationScore().intValue() : null)
+                .technicalSkillMarks(panelView.getTechnicalScore() != null
+                        ? panelView.getTechnicalScore().intValue() : null)
+                .leadershipQualityMarks(panelView.getLeadershipScore() != null
+                        ? panelView.getLeadershipScore().intValue() : null)
+                .relevantExperienceMarks(panelView.getRelevantExperienceScore() != null
+                        ? panelView.getRelevantExperienceScore().intValue() : null)
+                .assessmentRemarks(panelView.getRemarks())
+                .interviewerGrade(panelView.getInterviewerGrade())
+                .recommendationStatus(panelView.getRecommendationStatus())
+                .submittedAt(panelView.getSubmittedAt())
+                .panelMembers(List.of())
+                .build();
     }
 
     private DepartmentInterviewAssessmentView toAssessmentView(RecruitmentAssessmentFeedbackEntity assessment) {
@@ -274,33 +327,28 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
 
     private List<RecruitmentAssessmentPanelMemberEntity> toPanelMemberEntities(
             List<DepartmentInterviewAssessmentPanelMemberInput> panelMemberInputs) {
-        if (panelMemberInputs == null || panelMemberInputs.isEmpty()) {
-            throw new RecruitmentNotificationException("At least two panel members are required.");
-        }
-
         List<RecruitmentAssessmentPanelMemberEntity> panelMembers = new ArrayList<>();
-        for (DepartmentInterviewAssessmentPanelMemberInput panelMemberInput : panelMemberInputs) {
-            String memberName = normalizeText(panelMemberInput != null ? panelMemberInput.getPanelMemberName() : null);
-            String memberDesignation = normalizeText(
-                    panelMemberInput != null ? panelMemberInput.getPanelMemberDesignation() : null);
+        if (panelMemberInputs != null) {
+            for (DepartmentInterviewAssessmentPanelMemberInput panelMemberInput : panelMemberInputs) {
+                String memberName = normalizeText(panelMemberInput != null ? panelMemberInput.getPanelMemberName() : null);
+                String memberDesignation = normalizeText(
+                        panelMemberInput != null ? panelMemberInput.getPanelMemberDesignation() : null);
 
-            if (!StringUtils.hasText(memberName) && !StringUtils.hasText(memberDesignation)) {
-                continue;
+                if (!StringUtils.hasText(memberName) && !StringUtils.hasText(memberDesignation)) {
+                    continue;
+                }
+
+                if (!StringUtils.hasText(memberName) || !StringUtils.hasText(memberDesignation)) {
+                    throw new RecruitmentNotificationException("Panel member name and designation are mandatory.");
+                }
+
+                RecruitmentAssessmentPanelMemberEntity panelMember = new RecruitmentAssessmentPanelMemberEntity();
+                panelMember.setPanelMemberName(memberName);
+                panelMember.setPanelMemberDesignation(memberDesignation);
+                panelMembers.add(panelMember);
             }
-
-            if (!StringUtils.hasText(memberName) || !StringUtils.hasText(memberDesignation)) {
-                throw new RecruitmentNotificationException("Panel member name and designation are mandatory.");
-            }
-
-            RecruitmentAssessmentPanelMemberEntity panelMember = new RecruitmentAssessmentPanelMemberEntity();
-            panelMember.setPanelMemberName(memberName);
-            panelMember.setPanelMemberDesignation(memberDesignation);
-            panelMembers.add(panelMember);
         }
 
-        if (panelMembers.size() < 2) {
-            throw new RecruitmentNotificationException("Minimum two panel members are required.");
-        }
         if (panelMembers.size() > MAX_PANEL_MEMBER_COUNT) {
             throw new RecruitmentNotificationException("Maximum five panel members are allowed.");
         }
@@ -364,6 +412,11 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                 if (StringUtils.hasText(interviewer.getEmail())) {
                     return interviewer.getEmail().trim();
                 }
+            }
+        } else if (assessment.getInterviewerEmployeeId() != null) {
+            EmployeeEntity interviewer = employeeRepository.findById(assessment.getInterviewerEmployeeId()).orElse(null);
+            if (interviewer != null && StringUtils.hasText(interviewer.getFullName())) {
+                return interviewer.getFullName().trim();
             }
         }
         return normalizeText(assessment.getInterviewAuthority());

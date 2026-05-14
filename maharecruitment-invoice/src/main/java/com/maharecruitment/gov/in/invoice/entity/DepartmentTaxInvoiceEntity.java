@@ -45,10 +45,13 @@ import lombok.Setter;
         })
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class DepartmentTaxInvoiceEntity extends Auditable {
+
+    public DepartmentTaxInvoiceEntity() {
+        super();
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

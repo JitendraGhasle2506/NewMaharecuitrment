@@ -9,6 +9,8 @@ public class InternalVacancyOpeningListMetricsView {
 
     private long totalOpenings;
     private long draftOpenings;
+    private long pendingRequests;
     private long activeOpenings;
+    private long rejectedRequests;
     private long closedOpenings;
 }

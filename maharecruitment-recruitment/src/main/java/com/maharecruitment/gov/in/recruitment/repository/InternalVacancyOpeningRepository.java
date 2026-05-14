@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningEntity;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyOpeningStatusCountProjection;
 
 @Repository
@@ -29,15 +30,21 @@ public interface InternalVacancyOpeningRepository extends JpaRepository<Internal
             + "join opening.projectMst project "
             + "where (:searchPattern is null "
             + "or upper(opening.requestId) like :searchPattern "
-            + "or upper(project.projectName) like :searchPattern)",
+            + "or upper(project.projectName) like :searchPattern) "
+            + "and (:actorEmail is null or opening.createdByEmail = :actorEmail) "
+            + "and (coalesce(:excludedStatuses) is null or opening.status not in :excludedStatuses)",
             countQuery = "select count(opening) "
                     + "from InternalVacancyOpeningEntity opening "
                     + "join opening.projectMst project "
                     + "where (:searchPattern is null "
                     + "or upper(opening.requestId) like :searchPattern "
-                    + "or upper(project.projectName) like :searchPattern)")
-    Page<InternalVacancyOpeningEntity> findPageBySearch(
+                    + "or upper(project.projectName) like :searchPattern) "
+                    + "and (:actorEmail is null or opening.createdByEmail = :actorEmail) "
+                    + "and (coalesce(:excludedStatuses) is null or opening.status not in :excludedStatuses)")
+    Page<InternalVacancyOpeningEntity> findPageBySearchWithFilters(
             @Param("searchPattern") String searchPattern,
+            @Param("actorEmail") String actorEmail,
+            @Param("excludedStatuses") List<InternalVacancyOpeningStatus> excludedStatuses,
             Pageable pageable);
 
     @Query("select opening.status as status, count(opening) as totalCount "
@@ -46,7 +53,11 @@ public interface InternalVacancyOpeningRepository extends JpaRepository<Internal
             + "where (:searchPattern is null "
             + "or upper(opening.requestId) like :searchPattern "
             + "or upper(project.projectName) like :searchPattern) "
+            + "and (:actorEmail is null or opening.createdByEmail = :actorEmail) "
+            + "and (coalesce(:excludedStatuses) is null or opening.status not in :excludedStatuses) "
             + "group by opening.status")
-    List<InternalVacancyOpeningStatusCountProjection> summarizeStatusCounts(
-            @Param("searchPattern") String searchPattern);
+    List<InternalVacancyOpeningStatusCountProjection> summarizeStatusCountsWithFilters(
+            @Param("searchPattern") String searchPattern,
+            @Param("actorEmail") String actorEmail,
+            @Param("excludedStatuses") List<InternalVacancyOpeningStatus> excludedStatuses);
 }

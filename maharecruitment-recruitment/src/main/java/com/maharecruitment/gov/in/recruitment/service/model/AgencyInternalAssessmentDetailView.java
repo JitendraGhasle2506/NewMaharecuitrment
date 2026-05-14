@@ -28,6 +28,7 @@ public class AgencyInternalAssessmentDetailView {
     private String initialInterviewTimeSlot;
     private String initialInterviewLink;
     private DepartmentInterviewAssessmentView assessment;
+    private InternalVacancyConsolidatedAssessmentView consolidatedAssessment;
     private LocalDateTime levelTwoInterviewDateTime;
     private String levelTwoInterviewTimeSlot;
     private String levelTwoMeetingLink;

@@ -12,7 +12,7 @@
         <section>
             <div class="card add-emp-card">
                 <div class="header">
-                    <h2 th:text="${isSubmittedEdit ? 'Update Internal Vacancy Opening' : (isEdit ? 'Edit Internal Vacancy Draft' : 'Create Internal Vacancy Opening')}"></h2>
+                    <h2 th:text="${isPendingApproval ? 'Review HOD Resource Request' : (isSubmittedEdit ? 'Update Internal Vacancy Opening' : (isEdit ? 'Edit Internal Vacancy Draft' : 'Create Internal Vacancy Opening'))}"></h2>
                 </div>
 
                 <div class="card-body">
@@ -53,7 +53,7 @@
                         </div>
 
                         <div class="row g-3 mt-1">
-                            <div class="col-md-6">
+                            <div class="col-md-5">
                                 <label class="form-label d-block">Interview Authority Roles <span class="text-danger">*</span></label>
                                 <div id="interviewAuthorityRoleIds"
                                     class="border rounded p-3 bg-light-subtle"
@@ -67,37 +67,78 @@
                                             th:text="${role.roleLabel + ' (' + role.roleName + ')'}"></label>
                                     </div>
                                 </div>
-                                <div class="form-text">Only HOD, PM, and STM roles are available for interview assignment.</div>
+                                <div class="form-text">Roles include HOD, PM, STM, and Employees.</div>
                                 <div class="text-danger small" th:errors="*{interviewAuthorityRoleIds}"></div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-7">
                                 <label class="form-label d-block">Assign Interview Authorities <span class="text-danger">*</span></label>
-                                <div id="interviewAuthorityUserIds"
-                                    class="border rounded p-3 bg-light-subtle"
-                                    th:classappend="${#fields.hasErrors('interviewAuthorityUserIds') ? ' border-danger' : ''}">
-                                    <div th:if="${#lists.isEmpty(interviewAuthorityUserOptions)}" class="text-muted small">
-                                        Select HOD, PM, or STM roles first. Users with those roles will appear here.
-                                    </div>
-                                    <div class="form-check mb-2" th:each="user : ${interviewAuthorityUserOptions}">
-                                        <input class="form-check-input" type="checkbox"
-                                            th:field="*{interviewAuthorityUserIds}"
-                                            th:value="${user.userId}">
-                                        <label class="form-check-label"
-                                            th:for="${#ids.prev('interviewAuthorityUserIds')}"
-                                            th:text="${user.displayLabel}"></label>
+                                
+                                <div id="interviewAuthoritySearchContainer" class="mb-2 d-none">
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" id="authoritySearchInput" class="form-control" placeholder="Search by name, email or mobile...">
+                                        <button class="btn btn-outline-primary" type="button" id="authoritySearchBtn">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary" type="button" id="authorityClearBtn">
+                                            <i class="fas fa-times"></i>
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="form-text">Choose the users from the selected HOD, PM, or STM roles who will conduct the interview.</div>
+
+                                <div id="interviewAuthorityUserIds"
+                                    class="border rounded p-3 bg-light-subtle overflow-auto"
+                                    style="max-height: 300px;"
+                                    th:classappend="${#fields.hasErrors('interviewAuthorityUserIds') or #fields.hasErrors('interviewAuthorityEmployeeIds') ? ' border-danger' : ''}">
+                                    
+                                    <div th:if="${#lists.isEmpty(interviewAuthorityUserOptions) and #lists.isEmpty(interviewEmployeeOptions)}" class="text-muted small" id="noAuthorityPlaceholder">
+                                        Select roles first. Users or Employees with those roles will appear here.
+                                    </div>
+                                    
+                                    <!-- Results will be populated via JS -->
+                                    <div class="form-check mb-2" th:each="authority : ${interviewAuthorityUserOptions}">
+                                        <input class="form-check-input" type="checkbox"
+                                            th:name="${authority.type == 'EMPLOYEE' ? 'interviewAuthorityEmployeeIds' : 'interviewAuthorityUserIds'}"
+                                            th:value="${authority.userId}"
+                                            th:id="${'authority_' + authority.type + '_' + authority.userId}"
+                                            th:checked="${authority.type == 'EMPLOYEE' ? (openingForm.interviewAuthorityEmployeeIds != null and openingForm.interviewAuthorityEmployeeIds.contains(authority.userId)) : (openingForm.interviewAuthorityUserIds != null and openingForm.interviewAuthorityUserIds.contains(authority.userId))}">
+                                        <label class="form-check-label"
+                                            th:for="${'authority_' + authority.type + '_' + authority.userId}"
+                                            th:text="${authority.displayLabel}"></label>
+                                    </div>
+                                </div>
+
+                                <div id="interviewAuthorityPagination" class="d-none mt-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="small text-muted" id="authorityPageInfo">Page 1 of 1</div>
+                                        <nav aria-label="Authority pagination">
+                                            <ul class="pagination pagination-sm mb-0">
+                                                <li class="page-item" id="authorityPrevPage">
+                                                    <a class="page-link" href="javascript:void(0)" tabindex="-1">Previous</a>
+                                                </li>
+                                                <li class="page-item" id="authorityNextPage">
+                                                    <a class="page-link" href="javascript:void(0)">Next</a>
+                                                </li>
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                </div>
+
+                                <div id="selectedAuthoritiesHiddenContainer">
+                                    <!-- Hidden inputs for selected IDs that are NOT on the current page will be added here via JS -->
+                                </div>
+
+                                <div class="form-text">Choose the users or employees who will conduct the interview.</div>
                                 <div id="interviewAuthorityUserIdsClientError" class="text-danger small mt-2 d-none">
                                     Select at least one interview authority.
                                 </div>
                                 <div class="text-danger small" th:errors="*{interviewAuthorityUserIds}"></div>
+                                <div class="text-danger small" th:errors="*{interviewAuthorityEmployeeIds}"></div>
                             </div>
                         </div>
 
                         <hr class="my-4">
 
-                        <div class="row g-3 align-items-end">
+                        <div class="row g-3 align-items-end" th:if="${!isPendingApproval and !isSubmittedEdit}">
                             <div class="col-md-5">
                                 <label class="form-label">Designation <span class="text-danger">*</span></label>
                                 <select id="designationSelect" class="form-select">
@@ -127,7 +168,7 @@
                                         <th>Designation</th>
                                         <th>Level</th>
                                         <th>Vacancies</th>
-                                        <th>Action</th>
+                                        <th th:if="${!isPendingApproval and !isSubmittedEdit}">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -157,7 +198,7 @@
                                                 th:name="${'requirements[' + stat.index + '].numberOfVacancy'}"
                                                 th:value="${requirement.numberOfVacancy}">
                                         </td>
-                                        <td>
+                                        <td th:if="${!isPendingApproval and !isSubmittedEdit}">
                                             <button type="button" class="btn btn-outline-danger btn-sm removeRequirementButton">Remove</button>
                                         </td>
                                     </tr>
@@ -166,11 +207,22 @@
                         </div>
 
                         <div class="mt-4 d-flex justify-content-center gap-2">
-                            <button type="submit" name="action" value="draft" class="btn btn-outline-primary"
-                                th:if="${!isSubmittedEdit}"
-                                th:text="${isEdit ? 'Update Draft' : 'Save Draft'}"></button>
                             <button type="submit" name="action" value="submit" class="btn btn-primary"
-                                th:text="${isSubmittedEdit ? 'Update Vacancy Opening' : (isEdit ? 'Submit Draft' : 'Submit Vacancy Opening')}"></button>
+                                th:if="${isSubmittedEdit}"
+                                th:text="'Update Vacancy Opening'"></button>
+                            
+                            <!-- HOD Request Specific Actions -->
+                            <button type="submit" name="action" value="approve" class="btn btn-success"
+                                th:if="${isPendingApproval}"
+                                onclick="return confirm('Approve this resource request and open the vacancy? Ensure interview authorities are assigned.');">
+                                Approve & Open Vacancy
+                            </button>
+                            <button type="submit" name="action" value="reject" class="btn btn-outline-danger"
+                                th:if="${isPendingApproval}"
+                                onclick="return confirm('Reject this resource request?');">
+                                Reject Request
+                            </button>
+                            
                             <a class="btn btn-secondary" th:href="@{/hr/internal-vacancies}">Back to List</a>
                         </div>
                     </form>

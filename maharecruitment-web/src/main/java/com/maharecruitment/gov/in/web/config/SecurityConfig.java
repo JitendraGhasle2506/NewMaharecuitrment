@@ -92,7 +92,7 @@ public class SecurityConfig {
                     .hasAnyAuthority("ROLE_COO", "ROLE_HOD", "ROLE_HOD1", "ROLE_STM", "ROLE_HR", "ROLE_PM", "ROLE_EMPLOYEE")
 
                 .requestMatchers("/interview-authority/**")
-                    .hasAnyAuthority("ROLE_HOD", "ROLE_PM", "ROLE_STM")
+                    .hasAnyAuthority("ROLE_HOD", "ROLE_PM", "ROLE_STM", "ROLE_EMPLOYEE")
 
                 .requestMatchers("/stm/**").hasAuthority("ROLE_STM")
                 .requestMatchers("/pm/**").hasAuthority("ROLE_PM")

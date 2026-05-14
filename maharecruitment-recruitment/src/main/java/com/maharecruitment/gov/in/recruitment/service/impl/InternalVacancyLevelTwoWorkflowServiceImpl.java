@@ -176,8 +176,28 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
         if (finalDecision == null) {
             throw new RecruitmentNotificationException("Final decision is required.");
         }
-        if (loadPanelFeedbacks(recruitmentInterviewDetailId).isEmpty()) {
-            throw new RecruitmentNotificationException("At least one Round L2 panel feedback is required before sending to agency.");
+        List<RecruitmentInternalLevelTwoFeedbackEntity> feedbacks = loadPanelFeedbacks(recruitmentInterviewDetailId);
+        if (feedbacks.size() < 2) {
+            throw new RecruitmentNotificationException("At least two Round L2 panel feedbacks are required before applying a final decision.");
+        }
+
+        if (finalDecision == DepartmentCandidateFinalDecision.SELECT) {
+            double totalPercentageSum = 0.0;
+            for (RecruitmentInternalLevelTwoFeedbackEntity feedback : feedbacks) {
+                int totalMarks = feedback.getCommunicationSkillMarks()
+                        + feedback.getTechnicalSkillMarks()
+                        + feedback.getLeadershipQualityMarks()
+                        + feedback.getRelevantExperienceMarks();
+                double maxMarks = 20.0;
+                double percentage = (totalMarks / maxMarks) * 100.0;
+                totalPercentageSum += percentage;
+            }
+            double averagePercentage = totalPercentageSum / feedbacks.size();
+            
+            if (averagePercentage < 60.0) {
+                throw new RecruitmentNotificationException(
+                        String.format("Candidate cannot be selected. Average panel feedback score is %.2f%%, which is less than the required 60%%.", averagePercentage));
+            }
         }
 
         var candidate = schedule.getRecruitmentInterviewDetail();
@@ -249,6 +269,19 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
                         .map(this::toPanelFeedbackView)
                         .toList();
 
+        Double averagePercentage = null;
+        if (panelFeedbacks != null && !panelFeedbacks.isEmpty()) {
+            double totalPercentageSum = 0.0;
+            for (RecruitmentInternalLevelTwoFeedbackEntity feedback : panelFeedbacks) {
+                int totalMarks = feedback.getCommunicationSkillMarks()
+                        + feedback.getTechnicalSkillMarks()
+                        + feedback.getLeadershipQualityMarks()
+                        + feedback.getRelevantExperienceMarks();
+                totalPercentageSum += (totalMarks / 20.0) * 100.0;
+            }
+            averagePercentage = totalPercentageSum / panelFeedbacks.size();
+        }
+
         return InternalVacancyLevelTwoWorkflowDetailView.builder()
                 .recruitmentNotificationId(notification.getRecruitmentNotificationId())
                 .recruitmentInterviewDetailId(candidate.getRecruitmentInterviewDetailId())
@@ -284,6 +317,7 @@ public class InternalVacancyLevelTwoWorkflowServiceImpl implements InternalVacan
                                 .toList())
                 .panelFeedbackSubmittedCount(feedbackViews.size())
                 .panelFeedbacks(feedbackViews)
+                .averagePercentage(averagePercentage)
                 .workflowStatus(InternalVacancyLevelTwoWorkflowStatusResolver.resolveForHr(
                         schedule.getWorkflowStatus(),
                         true,

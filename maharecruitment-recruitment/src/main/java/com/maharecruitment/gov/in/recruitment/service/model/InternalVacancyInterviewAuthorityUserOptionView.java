@@ -12,4 +12,5 @@ public class InternalVacancyInterviewAuthorityUserOptionView {
     private String email;
     private String mobileNo;
     private String displayLabel;
+    private String type; // USER or EMPLOYEE
 }

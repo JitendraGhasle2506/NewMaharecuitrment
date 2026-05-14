@@ -38,5 +38,6 @@ public class InternalVacancyLevelTwoWorkflowDetailView {
     private List<InternalVacancyLevelTwoPanelMemberView> panelMembers;
     private int panelFeedbackSubmittedCount;
     private List<InternalVacancyLevelTwoPanelFeedbackView> panelFeedbacks;
+    private Double averagePercentage;
     private InternalVacancyLevelTwoWorkflowStatus workflowStatus;
 }

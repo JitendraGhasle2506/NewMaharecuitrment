@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.service.impl;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
@@ -19,6 +21,7 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDet
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyCandidateRequestSummaryMetricsProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyCandidateRequestSummaryProjection;
+import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyPanelAssessmentRepository;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyCandidateReviewService;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateRequestListMetricsView;
@@ -33,12 +36,15 @@ public class InternalVacancyCandidateReviewServiceImpl implements InternalVacanc
 
     private final RecruitmentNotificationRepository notificationRepository;
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
-
+    private final InternalVacancyPanelAssessmentRepository assessmentRepository;
+    
     public InternalVacancyCandidateReviewServiceImpl(
             RecruitmentNotificationRepository notificationRepository,
-            RecruitmentInterviewDetailRepository interviewDetailRepository) {
+            RecruitmentInterviewDetailRepository interviewDetailRepository,
+            InternalVacancyPanelAssessmentRepository assessmentRepository) {
         this.notificationRepository = notificationRepository;
         this.interviewDetailRepository = interviewDetailRepository;
+        this.assessmentRepository = assessmentRepository;
     }
 
     @Override
@@ -108,6 +114,10 @@ public class InternalVacancyCandidateReviewServiceImpl implements InternalVacanc
                         ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
                         : "-";
 
+        // Calculate average score and count
+        Double avg = assessmentRepository.calculateAverageScore(candidate.getRecruitmentInterviewDetailId());
+        long count = assessmentRepository.countSubmittedAssessments(candidate.getRecruitmentInterviewDetailId());
+
         return InternalVacancySubmittedCandidateView.builder()
                 .recruitmentNotificationId(candidate.getRecruitmentNotification() != null
                         ? candidate.getRecruitmentNotification().getRecruitmentNotificationId()
@@ -144,6 +154,8 @@ public class InternalVacancyCandidateReviewServiceImpl implements InternalVacanc
                 .interviewChangeRequested(candidate.getDepartmentInterviewChangeRequested())
                 .interviewChangeRequestedAt(candidate.getDepartmentInterviewChangeRequestedAt())
                 .assessmentSubmitted(candidate.getAssessmentSubmitted())
+                .averagePanelScore(avg != null ? BigDecimal.valueOf(avg).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO)
+                .submittedAssessmentCount(count)
                 .finalDecisionStatus(candidate.getFinalDecisionStatus())
                 .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
                 .finalDecisionAt(candidate.getFinalDecisionAt())

@@ -10,6 +10,7 @@ import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyOpeningForm;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityRoleOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewEmployeeOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalProjectOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
@@ -26,9 +27,16 @@ public interface InternalVacancyOpeningService {
             String actorEmail,
             InternalVacancyOpeningStatus targetStatus);
 
-    Page<InternalVacancyOpeningSummaryView> getOpeningPage(String searchText, Pageable pageable);
+    Page<InternalVacancyOpeningSummaryView> getOpeningPage(
+            String searchText,
+            String actorEmail,
+            List<InternalVacancyOpeningStatus> excludedStatuses,
+            Pageable pageable);
 
-    InternalVacancyOpeningListMetricsView getOpeningListMetrics(String searchText);
+    InternalVacancyOpeningListMetricsView getOpeningListMetrics(
+            String searchText,
+            String actorEmail,
+            List<InternalVacancyOpeningStatus> excludedStatuses);
 
     InternalVacancyOpeningForm getOpeningForEdit(Long internalVacancyOpeningId);
 
@@ -41,4 +49,11 @@ public interface InternalVacancyOpeningService {
     List<InternalVacancyInterviewAuthorityRoleOptionView> getAvailableInterviewAuthorityRoles();
 
     List<InternalVacancyInterviewAuthorityUserOptionView> getAvailableInterviewAuthorities(List<Long> roleIds);
+
+    Page<InternalVacancyInterviewAuthorityUserOptionView> getAvailableInterviewAuthoritiesPage(
+            List<Long> roleIds,
+            String search,
+            Pageable pageable);
+
+    List<InternalVacancyInterviewEmployeeOptionView> getAvailableInterviewEmployees();
 }

@@ -272,7 +272,8 @@ public class R__auth_reference_data extends BaseJavaMigration {
                                 "fa fa-user-check",
                                 roleIds.get("ROLE_HOD"),
                                 roleIds.get("ROLE_PM"),
-                                roleIds.get("ROLE_STM"));
+                                roleIds.get("ROLE_STM"),
+                                roleIds.get("ROLE_EMPLOYEE"));
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Onboarded Candidates", "/hr/employees",
                                 "fa fa-users",
                                 roleIds.get("ROLE_HR"));

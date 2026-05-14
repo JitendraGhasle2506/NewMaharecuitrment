@@ -506,38 +506,6 @@
                                         </div>
                                     </div>
 
-                                    <div class="assessment-section-label">Interview Panel Members (Minimum 2, Maximum 5)</div>
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered table-sm mb-0 assessment-panel-table">
-                                            <thead>
-                                                <tr>
-                                                    <th width="70">#</th>
-                                                    <th>Panel Member Name</th>
-                                                    <th>Panel Member Designation</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr th:each="panelMember, memberStat : *{panelMembers}">
-                                                    <td th:text="${memberStat.count}">1</td>
-                                                    <td>
-                                                        <input type="text" class="form-control"
-                                                               th:field="*{panelMembers[__${memberStat.index}__].panelMemberName}"
-                                                               th:required="${memberStat.index < 2}"
-                                                               th:placeholder="${memberStat.index < 2 ? 'Required' : 'Optional'}"
-                                                               maxlength="150">
-                                                    </td>
-                                                    <td>
-                                                        <input type="text" class="form-control"
-                                                               th:field="*{panelMembers[__${memberStat.index}__].panelMemberDesignation}"
-                                                               th:required="${memberStat.index < 2}"
-                                                               th:placeholder="${memberStat.index < 2 ? 'Required' : 'Optional'}"
-                                                               maxlength="150">
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-
                                     <div class="assessment-actions">
                                         <button type="submit" class="btn btn-success btn-sm"
                                                 th:text="${workflowDetail.assessmentSubmitted == true ? 'Update Feedback' : 'Submit Feedback'}">
@@ -553,8 +521,95 @@
                         </div>
                     </div>
 
+                    <div class="section-card" 
+                         sec:authorize="hasAnyAuthority('ROLE_HR', 'ROLE_AGENCY')"
+                         th:if="${consolidatedAssessment != null and consolidatedAssessment.submittedAssessments > 0}">
+                        <div class="section-head">
+                            Consolidated Panel Feedback
+                            <span class="float-end badge bg-primary" th:text="${consolidatedAssessment.submittedAssessments + ' Assessments Submitted'}"></span>
+                        </div>
+                        <div class="section-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="workflow-tile" style="background: #f0f7ff; border-color: #cce3ff;">
+                                        <div class="label">Average Panel Score</div>
+                                        <div class="value text-primary" th:text="${consolidatedAssessment.averageScore}">0.00</div>
+                                        <small class="text-muted">Total possible: 20.00</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="alert alert-info py-2 px-3 mb-0" style="font-size: 13px;">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        <strong>Selection Criteria:</strong> At least 2 assessments are required and EACH assessment must be at least 12.00 (60%) to finalize the candidate selection.
+                                        
+                                        <div class="mt-2" th:if="${consolidatedAssessment.selectionCriteriaMet}">
+                                            <span class="badge bg-success" style="font-size: 14px;">
+                                                <i class="fas fa-check-circle me-1"></i> Eligible for Round 2
+                                            </span>
+                                            <div class="text-success mt-1 small">Criteria Met: Ready for further processing.</div>
+                                        </div>
+                                        
+                                        <div class="mt-2" th:if="${!consolidatedAssessment.selectionCriteriaMet and consolidatedAssessment.submittedAssessments >= 2}">
+                                            <span class="badge bg-danger" style="font-size: 14px;">
+                                                <i class="fas fa-times-circle me-1"></i> Not Eligible for Round 2
+                                            </span>
+                                            <div class="text-danger mt-1 small">Criteria Not Met: One or more panel scores are below 60%.</div>
+                                        </div>
+
+                                        <div class="mt-2" th:if="${consolidatedAssessment.submittedAssessments < 2}">
+                                            <span class="badge bg-warning text-dark" style="font-size: 14px;">
+                                                <i class="fas fa-clock me-1"></i> Assessment in Progress
+                                            </span>
+                                            <div class="text-muted mt-1 small">Awaiting at least 2 panel assessments.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="assessment-section-label">Individual Panel Member Scores</div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Assessor</th>
+                                            <th class="text-center">Technical</th>
+                                            <th class="text-center">Comm.</th>
+                                            <th class="text-center">Leader.</th>
+                                            <th class="text-center">Exp.</th>
+                                            <th class="text-center">Total</th>
+                                            <th class="text-center">Grade</th>
+                                            <th class="text-center">Recommend.</th>
+                                            <th>Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="item : ${consolidatedAssessment.individualAssessments}">
+                                            <td>
+                                                <div class="fw-bold" th:text="${item.assessorName}">-</div>
+                                                <small class="text-muted" th:text="${item.assessorType}"></small>
+                                            </td>
+                                            <td class="text-center" th:text="${item.technicalScore}">0</td>
+                                            <td class="text-center" th:text="${item.communicationScore}">0</td>
+                                            <td class="text-center" th:text="${item.leadershipScore}">0</td>
+                                            <td class="text-center" th:text="${item.relevantExperienceScore}">0</td>
+                                            <td class="text-center fw-bold" th:text="${item.totalScore}">0</td>
+                                            <td class="text-center" th:text="${item.interviewerGrade}">-</td>
+                                            <td class="text-center">
+                                                <span th:if="${item.recommendationStatus != null}" 
+                                                      th:class="${item.recommendationStatus == 'RECOMMENDED' ? 'text-success fw-bold' : 'text-danger fw-bold'}"
+                                                      th:text="${#strings.replace(item.recommendationStatus, '_', ' ')}">-</span>
+                                                <span th:unless="${item.recommendationStatus != null}">-</span>
+                                            </td>
+                                            <td th:text="${item.remarks}">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="section-card" th:if="${workflowDetail.assessment != null}">
-                        <div class="section-head">Submitted Feedback Snapshot</div>
+                        <div class="section-head">Your Submitted Feedback Snapshot</div>
                         <div class="section-body">
                             <table class="table table-bordered table-sm mb-0">
                                 <tr>

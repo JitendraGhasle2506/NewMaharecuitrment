@@ -14,16 +14,42 @@
     const interviewAuthorityRoleContainerElement = document.getElementById("interviewAuthorityRoleIds");
     const interviewAuthorityUserContainerElement = document.getElementById("interviewAuthorityUserIds");
     const interviewAuthorityUserClientErrorElement = document.getElementById("interviewAuthorityUserIdsClientError");
+    
+    // Pagination & Search Elements
+    const authoritySearchContainer = document.getElementById("interviewAuthoritySearchContainer");
+    const authoritySearchInput = document.getElementById("authoritySearchInput");
+    const authoritySearchBtn = document.getElementById("authoritySearchBtn");
+    const authorityClearBtn = document.getElementById("authorityClearBtn");
+    const authorityPagination = document.getElementById("interviewAuthorityPagination");
+    const authorityPageInfo = document.getElementById("authorityPageInfo");
+    const authorityPrevPage = document.getElementById("authorityPrevPage");
+    const authorityNextPage = document.getElementById("authorityNextPage");
+    const hiddenAuthoritiesContainer = document.getElementById("selectedAuthoritiesHiddenContainer");
 
     const requirementRowKeys = new Set();
+    
+    // Selection State
+    let selectedUserIds = new Set();
+    let selectedEmployeeIds = new Set();
+    let currentAuthorityPage = 0;
+    let authorityPageSize = 10;
+    let currentSearchQuery = "";
 
     initializeExistingRows();
+    initializeExistingSelections();
 
     designationSelectElement?.addEventListener("change", onDesignationChange);
     addRequirementButton?.addEventListener("click", onAddRequirementClick);
     requirementTableBody?.addEventListener("click", onRequirementTableClick);
     interviewAuthorityRoleContainerElement?.addEventListener("change", onInterviewAuthorityRolesChange);
-    interviewAuthorityUserContainerElement?.addEventListener("change", clearInterviewAuthorityValidationError);
+    interviewAuthorityUserContainerElement?.addEventListener("change", onAuthorityCheckboxChange);
+    
+    authoritySearchBtn?.addEventListener("click", onAuthoritySearch);
+    authoritySearchInput?.addEventListener("keypress", (e) => e.key === "Enter" && (e.preventDefault(), onAuthoritySearch()));
+    authorityClearBtn?.addEventListener("click", onAuthorityClear);
+    authorityPrevPage?.addEventListener("click", () => changeAuthorityPage(-1));
+    authorityNextPage?.addEventListener("click", () => changeAuthorityPage(1));
+    
     formElement.addEventListener("submit", onFormSubmit);
 
     function initializeExistingRows() {
@@ -35,6 +61,202 @@
             }
         });
         resequenceRequirementRows();
+    }
+
+    function initializeExistingSelections() {
+        // Initial state from pre-rendered HTML
+        const userCheckboxes = document.querySelectorAll('input[name="interviewAuthorityUserIds"]:checked');
+        const employeeCheckboxes = document.querySelectorAll('input[name="interviewAuthorityEmployeeIds"]:checked');
+        
+        userCheckboxes.forEach(cb => selectedUserIds.add(String(cb.value)));
+        employeeCheckboxes.forEach(cb => selectedEmployeeIds.add(String(cb.value)));
+        
+        const selectedRoles = getCheckedValues("interviewAuthorityRoleIds");
+        if (selectedRoles.length > 0) {
+            authoritySearchContainer?.classList.remove("d-none");
+            loadInterviewAuthorities(); // Initial load for current page
+        }
+        
+        updateHiddenAuthorityInputs();
+    }
+
+    function onAuthorityCheckboxChange(event) {
+        const checkbox = event.target;
+        if (!checkbox || checkbox.type !== "checkbox") return;
+        
+        const id = String(checkbox.value);
+        if (checkbox.name === "interviewAuthorityUserIds") {
+            checkbox.checked ? selectedUserIds.add(id) : selectedUserIds.delete(id);
+        } else if (checkbox.name === "interviewAuthorityEmployeeIds") {
+            checkbox.checked ? selectedEmployeeIds.add(id) : selectedEmployeeIds.delete(id);
+        }
+        
+        updateHiddenAuthorityInputs();
+        clearInterviewAuthorityValidationError();
+    }
+
+    function updateHiddenAuthorityInputs() {
+        if (!hiddenAuthoritiesContainer) return;
+        
+        hiddenAuthoritiesContainer.innerHTML = "";
+        
+        // Find IDs that are currently visible as checked checkboxes
+        const visibleUserIds = new Set(
+            Array.from(interviewAuthorityUserContainerElement?.querySelectorAll('input[name="interviewAuthorityUserIds"]:checked') || [])
+                 .map(cb => String(cb.value))
+        );
+        const visibleEmployeeIds = new Set(
+            Array.from(interviewAuthorityUserContainerElement?.querySelectorAll('input[name="interviewAuthorityEmployeeIds"]:checked') || [])
+                 .map(cb => String(cb.value))
+        );
+        
+        // Add hidden inputs for selected IDs that are NOT visible
+        selectedUserIds.forEach(id => {
+            if (!visibleUserIds.has(id)) {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "interviewAuthorityUserIds";
+                input.value = id;
+                hiddenAuthoritiesContainer.appendChild(input);
+            }
+        });
+        
+        selectedEmployeeIds.forEach(id => {
+            if (!visibleEmployeeIds.has(id)) {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "interviewAuthorityEmployeeIds";
+                input.value = id;
+                hiddenAuthoritiesContainer.appendChild(input);
+            }
+        });
+    }
+
+    function onAuthoritySearch() {
+        currentSearchQuery = authoritySearchInput?.value?.trim() || "";
+        currentAuthorityPage = 0;
+        loadInterviewAuthorities();
+    }
+
+    function onAuthorityClear() {
+        if (authoritySearchInput) authoritySearchInput.value = "";
+        currentSearchQuery = "";
+        currentAuthorityPage = 0;
+        loadInterviewAuthorities();
+    }
+
+    function changeAuthorityPage(delta) {
+        currentAuthorityPage += delta;
+        loadInterviewAuthorities();
+    }
+
+    function onInterviewAuthorityRolesChange() {
+        currentAuthorityPage = 0;
+        currentSearchQuery = "";
+        if (authoritySearchInput) authoritySearchInput.value = "";
+        
+        const selectedRoleIds = getCheckedValues("interviewAuthorityRoleIds");
+        if (selectedRoleIds.length === 0) {
+            authoritySearchContainer?.classList.add("d-none");
+            authorityPagination?.classList.add("d-none");
+            resetInterviewAuthorityUsers();
+            return;
+        }
+        
+        authoritySearchContainer?.classList.remove("d-none");
+        loadInterviewAuthorities();
+    }
+
+    function loadInterviewAuthorities() {
+        const selectedRoleIds = getCheckedValues("interviewAuthorityRoleIds");
+        if (selectedRoleIds.length === 0) return;
+
+        const params = new URLSearchParams();
+        selectedRoleIds.forEach(id => params.append("roleIds", id));
+        if (currentSearchQuery) params.append("search", currentSearchQuery);
+        params.append("page", currentAuthorityPage);
+        params.append("size", authorityPageSize);
+
+        if (interviewAuthorityUserContainerElement) {
+            interviewAuthorityUserContainerElement.innerHTML = `
+                <div class="text-center p-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <span class="ms-2 small text-muted">Loading...</span>
+                </div>
+            `;
+        }
+
+        fetch(`${contextPath}/hr/internal-vacancies/interview-authorities?${params.toString()}`)
+            .then(res => {
+                if (!res.ok) throw new Error("Fetch failed");
+                return res.json();
+            })
+            .then(pageData => {
+                renderAuthoritiesPage(pageData);
+            })
+            .catch(err => {
+                console.error(err);
+                if (interviewAuthorityUserContainerElement) {
+                    interviewAuthorityUserContainerElement.innerHTML = `<div class="text-danger small p-2">Error loading authorities.</div>`;
+                }
+            });
+    }
+
+    function renderAuthoritiesPage(pageData) {
+        if (!interviewAuthorityUserContainerElement) return;
+        
+        const authorities = pageData.content || [];
+        interviewAuthorityUserContainerElement.innerHTML = "";
+        
+        if (authorities.length === 0) {
+            interviewAuthorityUserContainerElement.innerHTML = `<div class="text-muted small p-2">No results found.</div>`;
+            authorityPagination?.classList.add("d-none");
+            return;
+        }
+
+        authorities.forEach(user => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "form-check mb-2";
+            
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.className = "form-check-input";
+            input.name = user.type === "EMPLOYEE" ? "interviewAuthorityEmployeeIds" : "interviewAuthorityUserIds";
+            input.value = user.userId;
+            input.id = `auth_${user.type}_${user.userId}`;
+            
+            const isSelected = user.type === "EMPLOYEE" 
+                ? selectedEmployeeIds.has(String(user.userId))
+                : selectedUserIds.has(String(user.userId));
+            
+            if (isSelected) input.checked = true;
+            
+            const label = document.createElement("label");
+            label.className = "form-check-label";
+            label.htmlFor = input.id;
+            label.textContent = user.displayLabel;
+            
+            wrapper.appendChild(input);
+            wrapper.appendChild(label);
+            interviewAuthorityUserContainerElement.appendChild(wrapper);
+        });
+
+        // Update Pagination Info
+        const totalPages = pageData.totalPages || 0;
+        const totalElements = pageData.totalElements || 0;
+        
+        if (totalPages > 1) {
+            authorityPagination?.classList.remove("d-none");
+            if (authorityPageInfo) authorityPageInfo.textContent = `Page ${pageData.number + 1} of ${totalPages} (${totalElements} total)`;
+            
+            authorityPrevPage?.classList.toggle("disabled", pageData.first);
+            authorityNextPage?.classList.toggle("disabled", pageData.last);
+        } else {
+            authorityPagination?.classList.add("d-none");
+        }
+        
+        // Sync hidden inputs after rendering new page
+        updateHiddenAuthorityInputs();
     }
 
     function onDesignationChange() {
@@ -141,36 +363,6 @@
         resequenceRequirementRows();
     }
 
-    function onInterviewAuthorityRolesChange() {
-        const selectedRoleIds = getCheckedValues("interviewAuthorityRoleIds");
-        const retainedAuthorityIds = new Set(getCheckedValues("interviewAuthorityUserIds"));
-        clearInterviewAuthorityValidationError(true);
-
-        if (selectedRoleIds.length === 0) {
-            resetInterviewAuthorityUsers();
-            return;
-        }
-
-        const queryString = selectedRoleIds
-            .map((roleId) => `roleIds=${encodeURIComponent(roleId)}`)
-            .join("&");
-
-        fetch(`${contextPath}/hr/internal-vacancies/interview-authorities?${queryString}`)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Interview authority lookup failed.");
-                }
-                return response.json();
-            })
-            .then((users) => {
-                populateInterviewAuthorityUsers(users, retainedAuthorityIds);
-            })
-            .catch((error) => {
-                console.error("Unable to load interview authorities.", error);
-                alert("Unable to load interview authorities for the selected roles.");
-            });
-    }
-
     function onFormSubmit(event) {
         if (hasSelectedInterviewAuthority()) {
             clearInterviewAuthorityValidationError();
@@ -214,56 +406,11 @@
             return;
         }
         interviewAuthorityUserContainerElement.innerHTML = `
-            <div class="text-muted small">
-                Select HOD, PM, or STM roles first. Users with those roles will appear here.
+            <div class="text-muted small" id="noAuthorityPlaceholder">
+                Select roles first. Users or Employees with those roles will appear here.
             </div>
         `;
         clearInterviewAuthorityValidationError(true);
-    }
-
-    function populateInterviewAuthorityUsers(users, retainedAuthorityIds) {
-        if (!interviewAuthorityUserContainerElement) {
-            return;
-        }
-
-        interviewAuthorityUserContainerElement.innerHTML = "";
-        if (!Array.isArray(users) || users.length === 0) {
-            interviewAuthorityUserContainerElement.innerHTML = `
-                <div class="text-muted small">
-                    No users are available for the selected HOD, PM, or STM roles.
-                </div>
-            `;
-            clearInterviewAuthorityValidationError(true);
-            return;
-        }
-
-        users.forEach((user) => {
-            const wrapperElement = document.createElement("div");
-            wrapperElement.className = "form-check mb-2";
-
-            const inputElement = document.createElement("input");
-            inputElement.type = "checkbox";
-            inputElement.className = "form-check-input";
-            inputElement.name = "interviewAuthorityUserIds";
-            inputElement.id = `interviewAuthorityUserIds_${user.userId}`;
-            inputElement.value = user.userId;
-            if (retainedAuthorityIds.has(String(user.userId))) {
-                inputElement.checked = true;
-            }
-
-            const labelElement = document.createElement("label");
-            labelElement.className = "form-check-label";
-            labelElement.htmlFor = inputElement.id;
-            labelElement.textContent = user.displayLabel;
-
-            wrapperElement.appendChild(inputElement);
-            wrapperElement.appendChild(labelElement);
-            interviewAuthorityUserContainerElement.appendChild(wrapperElement);
-        });
-
-        if (hasSelectedInterviewAuthority()) {
-            clearInterviewAuthorityValidationError(true);
-        }
     }
 
     function getCheckedValues(fieldName) {
@@ -273,7 +420,7 @@
     }
 
     function hasSelectedInterviewAuthority() {
-        return getCheckedValues("interviewAuthorityUserIds").length > 0;
+        return selectedUserIds.size > 0 || selectedEmployeeIds.size > 0;
     }
 
     function showInterviewAuthorityValidationError() {

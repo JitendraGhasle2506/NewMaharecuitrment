@@ -124,8 +124,11 @@ public class RecruitmentAssessmentFeedbackEntity extends RecruitmentAuditable {
     @Column(name = "final_remarks", length = 1000)
     private String finalRemarks;
 
-    @Column(name = "interviewer_user_id", nullable = false)
+    @Column(name = "interviewer_user_id")
     private Long interviewerUserId;
+
+    @Column(name = "interviewer_employee_id")
+    private Long interviewerEmployeeId;
 
     @OneToMany(mappedBy = "assessmentFeedback", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RecruitmentAssessmentPanelMemberEntity> panelMembers = new ArrayList<>();
