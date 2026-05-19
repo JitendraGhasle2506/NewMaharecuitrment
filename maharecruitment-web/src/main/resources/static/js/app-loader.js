@@ -77,15 +77,35 @@
         }
     };
 
+    const applyHiddenState = () => {
+        if (!overlay) {
+            return;
+        }
+
+        overlay.classList.remove("is-visible");
+        overlay.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("app-loader-active");
+    };
+
+    const reset = () => {
+        clearHideTimer();
+        applyHiddenState();
+        visibleSince = 0;
+        activeAsyncRequests = 0;
+        downloadPending = false;
+
+        if (messageNode) {
+            messageNode.textContent = DEFAULT_MESSAGE;
+        }
+        if (statusNode) {
+            statusNode.textContent = "Securing session";
+        }
+    };
+
     const scheduleHide = (delayMs) => {
         clearHideTimer();
         hideTimerId = window.setTimeout(() => {
-            if (!overlay) {
-                return;
-            }
-            overlay.classList.remove("is-visible");
-            overlay.setAttribute("aria-hidden", "true");
-            document.body.classList.remove("app-loader-active");
+            applyHiddenState();
             downloadPending = false;
         }, Math.max(delayMs, 0));
     };
@@ -244,7 +264,14 @@
             resolveDownload();
         });
 
-        window.addEventListener("pageshow", () => {
+        window.addEventListener("pageshow", (event) => {
+            if (event.persisted) {
+                // Browser back/forward cache restores the previous DOM state, including
+                // any visible loader overlay from the page we left. Reset it explicitly.
+                reset();
+                return;
+            }
+
             resolveDownload(true);
         });
 
@@ -302,6 +329,7 @@
     window.AppLoader = {
         show,
         hide,
-        showForDownload
+        showForDownload,
+        reset
     };
 })();
