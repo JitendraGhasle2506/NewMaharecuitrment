@@ -23,6 +23,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClient;
+import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClientUnavailableException;
 import com.maharecruitment.gov.in.attendance.client.model.InternalAttendanceDayRecord;
 import com.maharecruitment.gov.in.attendance.config.InternalAttendanceSyncProperties;
 import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
@@ -99,11 +100,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
             }
         }
 
-        int attemptedEmployees = 0;
-        int syncedEmployees = 0;
-        int failedEmployees = 0;
-        int upsertedRows = 0;
-
+        List<EmployeeSyncTarget> syncTargets = new ArrayList<>();
         for (Map.Entry<String, List<EmployeeEntity>> entry : employeesByUniqueCode.entrySet()) {
             List<EmployeeEntity> employees = entry.getValue();
             if (employees.size() > 1) {
@@ -115,17 +112,43 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                 continue;
             }
 
-            EmployeeEntity employee = employees.get(0);
+            syncTargets.add(new EmployeeSyncTarget(entry.getKey(), employees.get(0)));
+        }
+
+        int attemptedEmployees = 0;
+        int syncedEmployees = 0;
+        int failedEmployees = 0;
+        int upsertedRows = 0;
+
+        for (int index = 0; index < syncTargets.size(); index++) {
+            EmployeeSyncTarget syncTarget = syncTargets.get(index);
+            EmployeeEntity employee = syncTarget.employee();
             attemptedEmployees++;
             try {
-                int savedRows = syncEmployeeAttendance(employee, entry.getKey(), startDate, endDate);
+                int savedRows = syncEmployeeAttendance(employee, syncTarget.uniqueCode(), startDate, endDate);
                 syncedEmployees++;
                 upsertedRows += savedRows;
+            } catch (InternalAttendanceReportClientUnavailableException ex) {
+                failedEmployees++;
+                log.error("Attendance sync failed for employeeId={}, uniqueCode={}",
+                        employee.getEmployeeId(),
+                        syncTarget.uniqueCode(),
+                        ex);
+                if (properties.isStopOnUpstreamUnavailable()) {
+                    int remainingEmployees = syncTargets.size() - index - 1;
+                    skippedEmployees += remainingEmployees;
+                    log.warn(
+                            "Stopping internal attendance sync early because the upstream API is unavailable. skippedRemainingEmployees={}, startDate={}, endDate={}",
+                            remainingEmployees,
+                            startDate,
+                            endDate);
+                    break;
+                }
             } catch (Exception ex) {
                 failedEmployees++;
                 log.error("Attendance sync failed for employeeId={}, uniqueCode={}",
                         employee.getEmployeeId(),
-                        entry.getKey(),
+                        syncTarget.uniqueCode(),
                         ex);
             }
         }
@@ -412,5 +435,8 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
 
     private String normalizeText(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private record EmployeeSyncTarget(String uniqueCode, EmployeeEntity employee) {
     }
 }

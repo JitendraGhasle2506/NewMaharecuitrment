@@ -20,11 +20,13 @@ import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClient;
+import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClientUnavailableException;
 import com.maharecruitment.gov.in.attendance.client.model.InternalAttendanceDayRecord;
 import com.maharecruitment.gov.in.attendance.config.InternalAttendanceSyncProperties;
 import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.attendance.repository.ManualAttendanceRequestRepository;
+import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceSyncResult;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 
@@ -35,6 +37,8 @@ class InternalAttendanceSyncServiceImplTest {
 
     private List<InternalAttendanceDayRecord> apiResponse = Collections.emptyList();
     private List<DailyAttendanceInternalEntity> existingRows = Collections.emptyList();
+    private List<EmployeeEntity> candidateEmployees = Collections.emptyList();
+    private RuntimeException fetchFailure;
 
     @BeforeEach
     void setUp() {
@@ -42,8 +46,12 @@ class InternalAttendanceSyncServiceImplTest {
         properties.setEnabled(true);
         properties.setUniqueCodePrefix("MahaIT");
         properties.setSchedulerZone("Asia/Kolkata");
+        properties.setStopOnUpstreamUnavailable(true);
 
         EmployeeRepository employeeRepository = proxyWithDefaults(EmployeeRepository.class, (proxy, method, args) -> {
+            if ("findInternalAttendanceSyncCandidates".equals(method.getName())) {
+                return candidateEmployees;
+            }
             throw new UnsupportedOperationException("Unexpected EmployeeRepository call: " + method.getName());
         });
 
@@ -75,7 +83,12 @@ class InternalAttendanceSyncServiceImplTest {
                             "Unexpected ManualAttendanceRequestRepository call: " + method.getName());
                 });
 
-        InternalAttendanceReportClient attendanceReportClient = (uniqueCode, startDate, endDate) -> apiResponse;
+        InternalAttendanceReportClient attendanceReportClient = (uniqueCode, startDate, endDate) -> {
+            if (fetchFailure != null) {
+                throw fetchFailure;
+            }
+            return apiResponse;
+        };
 
         TransactionTemplate transactionTemplate = new TransactionTemplate() {
             @Override
@@ -154,11 +167,31 @@ class InternalAttendanceSyncServiceImplTest {
         assertTrue(savedEntity.getUpdatedDate().isAfter(previousUpdatedDate));
     }
 
+    @Test
+    void syncAttendanceStopsAfterFirstUpstreamUnavailability() {
+        LocalDate attendanceDate = LocalDate.of(2026, 5, 4);
+        candidateEmployees = List.of(buildEmployee(301L, "123412341234"), buildEmployee(302L, "567856785678"));
+        fetchFailure = new InternalAttendanceReportClientUnavailableException(
+                "Upstream attendance API is unreachable.",
+                new RuntimeException("Connection refused"));
+
+        InternalAttendanceSyncResult result = service.syncAttendance(attendanceDate, attendanceDate);
+
+        assertEquals(1, result.getEmployeesAttempted());
+        assertEquals(0, result.getEmployeesSynced());
+        assertEquals(1, result.getEmployeesFailed());
+        assertEquals(1, result.getEmployeesSkipped());
+    }
+
     private EmployeeEntity buildEmployee(Long employeeId) {
+        return buildEmployee(employeeId, "123412341234");
+    }
+
+    private EmployeeEntity buildEmployee(Long employeeId, String aadhaarNumber) {
         EmployeeEntity employee = new EmployeeEntity();
         employee.setEmployeeId(employeeId);
         employee.setJoiningDate(LocalDate.of(2026, 1, 1));
-        employee.setAadhaarNumber("123412341234");
+        employee.setAadhaarNumber(aadhaarNumber);
         return employee;
     }
 

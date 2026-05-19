@@ -25,6 +25,12 @@ public class InternalAttendanceSyncProperties {
 
     private LocalDate overrideEndDate;
 
+    private int connectTimeoutSeconds = 5;
+
+    private int readTimeoutSeconds = 15;
+
+    private boolean stopOnUpstreamUnavailable = true;
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -87,5 +93,29 @@ public class InternalAttendanceSyncProperties {
 
     public void setOverrideEndDate(LocalDate overrideEndDate) {
         this.overrideEndDate = overrideEndDate;
+    }
+
+    public int getConnectTimeoutSeconds() {
+        return connectTimeoutSeconds;
+    }
+
+    public void setConnectTimeoutSeconds(int connectTimeoutSeconds) {
+        this.connectTimeoutSeconds = connectTimeoutSeconds;
+    }
+
+    public int getReadTimeoutSeconds() {
+        return readTimeoutSeconds;
+    }
+
+    public void setReadTimeoutSeconds(int readTimeoutSeconds) {
+        this.readTimeoutSeconds = readTimeoutSeconds;
+    }
+
+    public boolean isStopOnUpstreamUnavailable() {
+        return stopOnUpstreamUnavailable;
+    }
+
+    public void setStopOnUpstreamUnavailable(boolean stopOnUpstreamUnavailable) {
+        this.stopOnUpstreamUnavailable = stopOnUpstreamUnavailable;
     }
 }

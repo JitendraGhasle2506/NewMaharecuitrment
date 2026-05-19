@@ -10,14 +10,18 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClient;
 import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClientException;
+import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClientUnavailableException;
 import com.maharecruitment.gov.in.attendance.client.dto.InternalAttendanceReportApiResponse;
 import com.maharecruitment.gov.in.attendance.client.dto.InternalAttendanceReportApiRow;
 import com.maharecruitment.gov.in.attendance.client.model.InternalAttendanceDayRecord;
@@ -34,10 +38,9 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
     private final InternalAttendanceSyncProperties properties;
 
     public MahaitInternalAttendanceReportClient(
-            RestClient restClient,
             InternalAttendanceSyncProperties properties) {
-        this.restClient = restClient;
         this.properties = properties;
+        this.restClient = createRestClient(properties);
     }
 
     @Override
@@ -80,11 +83,38 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
                     .toList();
         } catch (InternalAttendanceReportClientException ex) {
             throw ex;
+        } catch (ResourceAccessException ex) {
+            throw new InternalAttendanceReportClientUnavailableException(
+                    "Internal attendance API is unreachable for unique code "
+                            + uniqueCode
+                            + " at "
+                            + properties.getApiUrl()
+                            + ". "
+                            + resolveRootCauseMessage(ex),
+                    ex);
+        } catch (RestClientResponseException ex) {
+            throw new InternalAttendanceReportClientException(
+                    "Attendance API returned HTTP "
+                            + ex.getStatusCode().value()
+                            + " for unique code "
+                            + uniqueCode
+                            + ". "
+                            + safeMessage(ex.getStatusText()),
+                    ex);
         } catch (Exception ex) {
             throw new InternalAttendanceReportClientException(
                     "Failed to fetch internal attendance from API for unique code " + uniqueCode + ".",
                     ex);
         }
+    }
+
+    private RestClient createRestClient(InternalAttendanceSyncProperties syncProperties) {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Math.max(syncProperties.getConnectTimeoutSeconds(), 1) * 1000);
+        requestFactory.setReadTimeout(Math.max(syncProperties.getReadTimeoutSeconds(), 1) * 1000);
+        return RestClient.builder()
+                .requestFactory(requestFactory)
+                .build();
     }
 
     private MultiValueMap<String, String> buildPayload(String uniqueCode, LocalDate startDate, LocalDate endDate) {
@@ -135,5 +165,20 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
 
     private String safeMessage(String value) {
         return StringUtils.hasText(value) ? value.trim() : "Unknown upstream error.";
+    }
+
+    private String resolveRootCauseMessage(Throwable throwable) {
+        Throwable current = throwable;
+        Throwable deepest = throwable;
+        while (current != null) {
+            deepest = current;
+            current = current.getCause();
+        }
+
+        String message = deepest != null ? deepest.getMessage() : null;
+        if (StringUtils.hasText(message)) {
+            return message.trim();
+        }
+        return deepest != null ? deepest.getClass().getSimpleName() + "." : "Unknown connectivity failure.";
     }
 }
