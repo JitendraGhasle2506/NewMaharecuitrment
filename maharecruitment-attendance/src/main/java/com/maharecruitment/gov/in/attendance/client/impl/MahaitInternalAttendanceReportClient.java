@@ -119,7 +119,7 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
 
     private MultiValueMap<String, String> buildPayload(String uniqueCode, LocalDate startDate, LocalDate endDate) {
         MultiValueMap<String, String> payload = new LinkedMultiValueMap<>();
-        payload.add("unique_code", uniqueCode);
+        payload.add("employee_code", uniqueCode);
         payload.add("start_date", REQUEST_DATE_FORMAT.format(startDate));
         payload.add("end_date", REQUEST_DATE_FORMAT.format(endDate));
         return payload;
