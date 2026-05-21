@@ -16,7 +16,7 @@ public class OtpVerifyRequest {
     private String reference;
 
     @NotBlank(message = "OTP is required")
-    @Pattern(regexp = "^[0-9]{6}$", message = "OTP must be 6 digits")
+    @Pattern(regexp = "^[0-9]{6}$", message = "Invalid/Incorrect OTP")
     private String otp;
 
     public String getPurpose() {

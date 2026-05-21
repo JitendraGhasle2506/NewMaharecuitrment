@@ -49,7 +49,27 @@ public class AgencyPreOnboardingForm {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate dob;
 
+    @NotBlank(message = "Gender is required")
+    private String gender;
+
+    @NotBlank(message = "Blood group is required")
+    private String bloodGroup;
+
     private String address;
+
+    @NotBlank(message = "Emergency contact name is required")
+    @Pattern(regexp = "^[a-zA-Z\\s]*$", message = "Emergency contact name should not have special characters")
+    private String emergencyContactName;
+
+    @NotBlank(message = "Emergency contact relation is required")
+    private String emergencyContactRelation;
+
+    @NotBlank(message = "Emergency contact mobile is required")
+    @Pattern(regexp = "^[0-9]{10}$", message = "Emergency contact mobile number must be exactly 10 digits")
+    private String emergencyContactMobile;
+
+    @Pattern(regexp = "^$|^[0-9]{10}$", message = "Emergency contact alternate mobile number must be exactly 10 digits")
+    private String emergencyContactAltMobile;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate joiningDate;

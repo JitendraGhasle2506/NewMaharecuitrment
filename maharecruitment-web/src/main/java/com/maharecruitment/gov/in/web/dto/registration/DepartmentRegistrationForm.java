@@ -24,15 +24,17 @@ public class DepartmentRegistrationForm {
     private String newSubDeptName;
 
     @NotBlank(message = "Office address is required")
-    @Size(max = 500, message = "Office address must not exceed 500 characters")
+    @Size(min = 10, max = 250, message = "Office address must be between 10 and 250 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9][a-zA-Z0-9\\s,\\.\\-\\/]*$", message = "Office address cannot start with a space or contain invalid special characters")
     private String address;
 
     @NotBlank(message = "Primary contact name is required")
-    @Size(max = 150, message = "Primary contact name must not exceed 150 characters")
+    @Size(max = 100, message = "Primary contact name must not exceed 100 characters")
+    @Pattern(regexp = "^[a-zA-Z][a-zA-Z\\s]*$", message = "Primary contact name must start with a letter and contain only alphabets and spaces")
     private String primaryContactName;
 
     @NotBlank(message = "Primary designation is required")
-    @Size(max = 150, message = "Primary designation must not exceed 150 characters")
+    @Size(max = 100, message = "Primary designation must not exceed 100 characters")
     private String primaryDesignation;
 
     @NotBlank(message = "Primary mobile number is required")
@@ -45,11 +47,12 @@ public class DepartmentRegistrationForm {
     private String primaryEmail;
 
     @NotBlank(message = "Secondary contact name is required")
-    @Size(max = 150, message = "Secondary contact name must not exceed 150 characters")
+    @Size(max = 100, message = "Secondary contact name must not exceed 100 characters")
+    @Pattern(regexp = "^[a-zA-Z][a-zA-Z\\s]*$", message = "Secondary contact name must start with a letter and contain only alphabets and spaces")
     private String secondaryContactName;
 
     @NotBlank(message = "Secondary designation is required")
-    @Size(max = 150, message = "Secondary designation must not exceed 150 characters")
+    @Size(max = 100, message = "Secondary designation must not exceed 100 characters")
     private String secondaryDesignation;
 
     @NotBlank(message = "Secondary mobile number is required")

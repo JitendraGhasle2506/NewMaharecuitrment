@@ -17,7 +17,7 @@
     </div>
 
     <nav class="navbar navbar-expand-lg portal-nav">
-        <div class="container">
+        <div class="container justify-content-center">
             <a class="navbar-brand fw-semibold" th:href="@{/index}">MahaIT Recruitment</a>
         </div>
     </nav>
@@ -86,28 +86,29 @@
 
                         <div class="login-mode-switch" role="radiogroup" aria-label="Login method">
                             <label class="login-mode-option">
-                                <input type="radio" name="loginMode" value="otp" checked>
+                                <input type="radio" name="loginMode" value="otp" th:checked="${param.loginMode == null or param.loginMode[0] != 'password'}">
                                 <span>OTP Login</span>
                             </label>
                             <label class="login-mode-option">
-                                <input type="radio" name="loginMode" value="password">
+                                <input type="radio" name="loginMode" value="password" th:checked="${param.loginMode != null and param.loginMode[0] == 'password'}">
                                 <span>Username & Password</span>
                             </label>
                         </div>
 
                         <form id="otpLoginForm" method="post" th:action="@{/login/otp}" class="form-horizontal login-mode-panel otp-login-form"
-                            th:attr="data-otp-send-url=@{/login/otp/send},data-csrf-token=${_csrf.token},data-login-mode=otp,data-otp-expiry-seconds=${otpExpirySeconds},data-otp-resend-cooldown-seconds=${otpResendCooldownSeconds}">
+                            th:attr="data-otp-send-url=@{/login/otp/send},data-csrf-token=${_csrf.token},data-login-mode=otp,data-otp-expiry-seconds=${otpExpirySeconds},data-otp-resend-cooldown-seconds=${otpResendCooldownSeconds},data-otp-sent=${otpErrorMessage != null}">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                             <div class="form-group mb-3">
                                 <label for="otpIdentifier" class="control-label">Username / Email / Mobile</label>
                                 <input type="text" id="otpIdentifier" name="identifier" class="form-control"
                                     placeholder="Enter registered username, email, or mobile number"
-                                    th:value="${otpIdentifier}" required />
+                                    th:value="${otpIdentifier}" minlength="3" maxlength="100" oninput="this.value=this.value.replace(/\s/g, '');" required />
                             </div>
                             <div class="form-group mb-3">
                                 <label for="otpChannel" class="control-label">Receive OTP via</label>
                                 <select id="otpChannel" name="channel" class="form-select channel-select" required>
-                                    <option value="EMAIL" th:selected="${otpChannel == null or otpChannel == 'EMAIL'}">Email OTP</option>
+                                    <option value="" th:selected="${otpChannel == null}" disabled hidden>Select</option>
+                                    <option value="EMAIL" th:selected="${otpChannel == 'EMAIL'}">Email OTP</option>
                                     <option value="MOBILE" th:selected="${otpChannel == 'MOBILE'}">Mobile OTP</option>
                                 </select>
                             </div>
@@ -121,7 +122,8 @@
                             <div id="loginOtpSection" class="form-group mb-3 otp-entry-section">
                                 <label for="loginOtp" class="control-label">OTP</label>
                                 <input type="text" id="loginOtp" name="otp" class="form-control"
-                                    placeholder="Enter 6 digit OTP" inputmode="numeric" maxlength="6" required />
+                                    placeholder="Enter 6 digit OTP" inputmode="numeric" minlength="6" maxlength="6" 
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '');" required disabled />
                             </div>
                             <div class="form-group mb-0 d-grid">
                                 <button type="submit" class="btn btn-primary btn-login">Login with OTP</button>
@@ -138,12 +140,22 @@
                             <div class="form-group mb-3">
                                 <label for="username" class="control-label">Username / Email / Mobile</label>
                                 <input type="text" id="username" name="username" class="form-control"
-                                    placeholder="Enter registered username, email, or mobile number" required />
+                                    placeholder="Enter registered username, email, or mobile number" 
+                                    minlength="3" maxlength="100" oninput="this.value=this.value.replace(/\s/g, '');" required />
                             </div>
                             <div class="form-group mb-3">
                                 <label for="password" class="control-label">Password</label>
-                                <input type="password" id="password" name="password" class="form-control"
-                                    placeholder="Enter password" required />
+                                <div class="input-group">
+                                    <input type="password" id="password" name="password" class="form-control"
+                                        placeholder="Enter password" 
+                                        minlength="8" maxlength="20" 
+                                        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,20}" 
+                                        title="Password must be between 8 to 20 characters and contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
+                                        oninput="this.value = this.value.replace(/^\s+/, '');" required />
+                                    <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center" type="button" id="togglePassword" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-left: 0;">
+                                        <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- <div class="form-group mb-3">

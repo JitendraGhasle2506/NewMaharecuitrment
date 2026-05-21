@@ -211,8 +211,16 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.personal-details-grid-middle {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .personal-details-grid-bottom {
-    grid-template-columns: minmax(180px, 0.85fr) minmax(0, 1.65fr);
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.personal-details-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .personal-field {
@@ -849,7 +857,8 @@
     }
 
     .personal-details-grid-top,
-    .personal-details-grid-bottom {
+    .personal-details-grid-bottom,
+    .personal-details-grid-4 {
         grid-template-columns: 1fr;
     }
 

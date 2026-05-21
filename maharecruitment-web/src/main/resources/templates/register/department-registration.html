@@ -148,7 +148,10 @@
 										<label class="form-label" for="address">Office Address</label> <span
 											class="required-asterisk">*</span>
 										<textarea class="form-control" id="address" th:field="*{address}" rows="3"
-											placeholder="Enter office address"></textarea>
+											placeholder="Enter office address"
+											minlength="10" maxlength="250"
+											oninput="this.value = this.value.replace(/^\s+/, '').replace(/[^a-zA-Z0-9\s,\.\-\/]/g, '');"
+											required></textarea>
 										<div class="text-danger small" th:if="${#fields.hasErrors('address')}"
 											th:errors="*{address}"></div>
 									</div>
@@ -166,7 +169,8 @@
 										<label class="form-label" for="primaryContactName">Contact Name</label> <span
 											class="required-asterisk">*</span>
 										<input type="text" class="form-control" id="primaryContactName"
-											th:field="*{primaryContactName}" placeholder="Enter full name">
+											th:field="*{primaryContactName}" placeholder="Enter full name"
+											oninput="this.value = this.value.replace(/^\s+/, '').replace(/[^a-zA-Z\s]/g, '');">
 										<div class="text-danger small"
 											th:if="${#fields.hasErrors('primaryContactName')}"
 											th:errors="*{primaryContactName}"></div>
@@ -192,7 +196,7 @@
 										</div>
 										<div class="verification-row" id="mobileOtpSection">
 											<input type="text" class="form-control" id="mobileOtpInput" maxlength="6"
-												placeholder="Enter mobile OTP">
+												placeholder="Enter mobile OTP" disabled>
 											<button type="button" class="btn btn-primary btn-verify"
 												id="verifyMobileOtpBtn">Verify OTP</button>
 										</div>
@@ -211,7 +215,7 @@
 										</div>
 										<div class="verification-row" id="emailOtpSection">
 											<input type="text" class="form-control" id="emailOtpInput" maxlength="6"
-												placeholder="Enter email OTP">
+												placeholder="Enter email OTP" disabled>
 											<button type="button" class="btn btn-primary btn-verify"
 												id="verifyEmailOtpBtn">Verify OTP</button>
 										</div>
@@ -252,7 +256,8 @@
 										<label class="form-label" for="secondaryContactName">Contact Name</label> <span
 											class="required-asterisk">*</span>
 										<input type="text" class="form-control" id="secondaryContactName"
-											th:field="*{secondaryContactName}" placeholder="Enter full name">
+											th:field="*{secondaryContactName}" placeholder="Enter full name"
+											oninput="this.value = this.value.replace(/^\s+/, '').replace(/[^a-zA-Z\s]/g, '');">
 										<div class="text-danger small"
 											th:if="${#fields.hasErrors('secondaryContactName')}"
 											th:errors="*{secondaryContactName}"></div>
@@ -271,7 +276,9 @@
 											class="required-asterisk">*</span>
 										<input type="text" class="form-control" id="secondaryMobile"
 											th:field="*{secondaryMobile}" maxlength="10"
+											inputmode="numeric"
 											placeholder="10 digit mobile number">
+										<div class="text-danger small" id="secondaryMobileError"></div>
 										<div class="text-danger small" th:if="${#fields.hasErrors('secondaryMobile')}"
 											th:errors="*{secondaryMobile}"></div>
 									</div>

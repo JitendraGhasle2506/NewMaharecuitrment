@@ -131,7 +131,13 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         form.setEmail(entity.getCandidateEmail());
         form.setMobile(entity.getCandidateMobile());
         form.setDob(entity.getDateOfBirth());
+        form.setGender(entity.getGender());
+        form.setBloodGroup(entity.getBloodGroup());
         form.setAddress(entity.getAddress());
+        form.setEmergencyContactName(entity.getEmergencyContactName());
+        form.setEmergencyContactRelation(entity.getEmergencyContactRelation());
+        form.setEmergencyContactMobile(entity.getEmergencyContactMobile());
+        form.setEmergencyContactAltMobile(entity.getEmergencyContactAltMobile());
         form.setJoiningDate(entity.getJoiningDate());
         form.setOnboardingDate(entity.getOnboardingDate());
         form.setAadhaar(entity.getAadhaarNumber());
@@ -270,7 +276,13 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             employee.setEmail(entity.getCandidateEmail());
             employee.setMobile(entity.getCandidateMobile());
             employee.setAddress(entity.getAddress());
+            employee.setEmergencyContactName(entity.getEmergencyContactName());
+            employee.setEmergencyContactRelation(entity.getEmergencyContactRelation());
+            employee.setEmergencyContactMobile(entity.getEmergencyContactMobile());
+            employee.setEmergencyContactAltMobile(entity.getEmergencyContactAltMobile());
             employee.setDateOfBirth(entity.getDateOfBirth());
+            employee.setGender(entity.getGender());
+            employee.setBloodGroup(entity.getBloodGroup());
             employee.setJoiningDate(entity.getJoiningDate());
             employee.setOnboardingDate(entity.getHrOnboardingDate());
             employee.setPanNumber(entity.getPanNumber());

@@ -105,6 +105,7 @@
             state.verified = false;
             if (config.otpInput) {
                 config.otpInput.value = "";
+                config.otpInput.disabled = true;
             }
             if (config.otpSection) {
                 config.otpSection.style.display = "none";
@@ -132,6 +133,9 @@
                 });
                 if (config.otpSection) {
                     config.otpSection.style.display = "flex";
+                }
+                if (config.otpInput) {
+                    config.otpInput.disabled = false;
                 }
                 setStatus(data.message, "is-pending");
                 if (config.otpInput) {
@@ -185,6 +189,9 @@
 
         if (config.otpSection) {
             config.otpSection.style.display = "none";
+        }
+        if (config.otpInput) {
+            config.otpInput.disabled = true;
         }
 
         if (state.verified) {

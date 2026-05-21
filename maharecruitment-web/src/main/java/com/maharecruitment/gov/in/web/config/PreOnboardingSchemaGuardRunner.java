@@ -46,6 +46,33 @@ public class PreOnboardingSchemaGuardRunner {
                         "alter table " + TABLE_NAME + " add column if not exists hr_user_id bigint");
                 statement.execute(
                         "alter table " + TABLE_NAME + " add column if not exists onboarded_at timestamp");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists gender varchar(20)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists blood_group varchar(20)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists emergency_contact_name varchar(100)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists emergency_contact_relation varchar(50)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists emergency_contact_mobile varchar(15)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists emergency_contact_alt_mobile varchar(15)");
+
+                if (tableExists(connection, "employee_master")) {
+                    statement.execute(
+                            "alter table employee_master add column if not exists gender varchar(20)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists blood_group varchar(20)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists emergency_contact_name varchar(100)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists emergency_contact_relation varchar(50)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists emergency_contact_mobile varchar(15)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists emergency_contact_alt_mobile varchar(15)");
+                }
 
                 if (columnExists(connection, TABLE_NAME, "submitted_at")) {
                     statement.execute(

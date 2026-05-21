@@ -43,7 +43,14 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     public User loadDomainUserByIdentifier(String identifier) {
         return findUserByIdentifier(identifier)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found for identifier: " + identifier));
+                .orElseThrow(() -> {
+                    if (identifier != null && identifier.contains("@")) {
+                        return new UsernameNotFoundException("Incorrect Email ID, please enter registered mail id");
+                    } else if (identifier != null && identifier.matches("^[0-9]+$")) {
+                        return new UsernameNotFoundException("Incorrect Mobile Number, please enter registered mobile number");
+                    }
+                    return new UsernameNotFoundException("Incorrect Username, please enter registered username");
+                });
     }
 
     private java.util.Optional<User> findUserByIdentifier(String identifier) {

@@ -313,6 +313,22 @@ document.addEventListener("DOMContentLoaded", () => {
     mobileVerification.onChange(toggleSubmitState);
     emailVerification.onChange(toggleSubmitState);
 
+    const secondaryMobileInput = document.getElementById("secondaryMobile");
+    const secondaryMobileError = document.getElementById("secondaryMobileError");
+
+    if (secondaryMobileInput && secondaryMobileError) {
+        secondaryMobileInput.addEventListener("input", () => {
+            const val = secondaryMobileInput.value.replace(/[^0-9]/g, '');
+            secondaryMobileInput.value = val;
+            
+            if (val.length > 0 && val.length < 10) {
+                secondaryMobileError.textContent = "Secondary mobile number must be 10 digits";
+            } else {
+                secondaryMobileError.textContent = "";
+            }
+        });
+    }
+
     enableDeclarationAcceptance();
     toggleSubmitState();
     updateDepartmentState(true);
