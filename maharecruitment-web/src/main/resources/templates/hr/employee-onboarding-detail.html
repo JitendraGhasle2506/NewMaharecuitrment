@@ -394,9 +394,44 @@
                                 <input type="text" class="form-control readonly-field detail-value"
                                     th:value="${detail.dob != null ? #temporals.format(detail.dob, 'dd-MMM-yyyy') : '-'}" readonly>
                             </div>
-                            <div class="col-md-8 form-group">
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Gender</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.gender != null ? detail.gender : '-'}" readonly>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Blood Group</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.bloodGroup != null ? detail.bloodGroup : '-'}" readonly>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 form-group">
                                 <label class="form-label">Address</label>
-                                <textarea class="form-control readonly-field detail-value" rows="3" readonly th:text="${detail.address}"></textarea>
+                                <textarea class="form-control readonly-field detail-value" rows="2" readonly th:text="${detail.address}"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Emergency Contact Details Section -->
+                    <div class="section-block">
+                        <div class="section-heading">
+                            <h5 class="section-title">Emergency Contact Details</h5>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Contact Name</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactName != null ? detail.emergencyContactName : '-'}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Relation</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactRelation != null ? detail.emergencyContactRelation : '-'}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Mobile Number</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactMobile != null ? detail.emergencyContactMobile : '-'}" readonly>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="form-label">Alternate Mobile Number</label>
+                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactAltMobile != null && detail.emergencyContactAltMobile != '' ? detail.emergencyContactAltMobile : '-'}" readonly>
                             </div>
                         </div>
                     </div>

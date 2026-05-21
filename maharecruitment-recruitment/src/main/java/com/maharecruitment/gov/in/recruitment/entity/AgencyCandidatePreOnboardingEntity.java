@@ -70,8 +70,26 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
     @Column(name = "date_of_birth", nullable = false)
     private LocalDate dateOfBirth;
 
+    @Column(name = "gender", nullable = false, length = 20)
+    private String gender;
+
+    @Column(name = "blood_group", nullable = false, length = 20)
+    private String bloodGroup;
+
     @Column(name = "address", nullable = false, length = 1000)
     private String address;
+
+    @Column(name = "emergency_contact_name", nullable = false, length = 100)
+    private String emergencyContactName;
+
+    @Column(name = "emergency_contact_relation", nullable = false, length = 50)
+    private String emergencyContactRelation;
+
+    @Column(name = "emergency_contact_mobile", nullable = false, length = 15)
+    private String emergencyContactMobile;
+
+    @Column(name = "emergency_contact_alt_mobile", length = 15)
+    private String emergencyContactAltMobile;
 
     @Column(name = "joining_date", nullable = false)
     private LocalDate joiningDate;
@@ -220,7 +238,13 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
         candidateName = normalizeText(candidateName);
         candidateEmail = normalizeEmail(candidateEmail);
         candidateMobile = normalizeText(candidateMobile);
+        gender = normalizeText(gender);
+        bloodGroup = normalizeText(bloodGroup);
         address = normalizeText(address);
+        emergencyContactName = normalizeText(emergencyContactName);
+        emergencyContactRelation = normalizeText(emergencyContactRelation);
+        emergencyContactMobile = normalizeText(emergencyContactMobile);
+        emergencyContactAltMobile = normalizeText(emergencyContactAltMobile);
         aadhaarNumber = normalizeDigits(aadhaarNumber);
         aadhaarOriginalName = normalizeText(aadhaarOriginalName);
         aadhaarFilePath = normalizeText(aadhaarFilePath);

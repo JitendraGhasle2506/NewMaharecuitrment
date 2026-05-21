@@ -102,11 +102,11 @@
             setTiming(parts.join(" | "));
         };
 
-        var startOtpTimers = function () {
+        var startOtpTimers = function (shouldCooldown) {
             clearTimers();
 
             var expiryRemaining = otpExpirySeconds;
-            var resendRemaining = otpResendCooldownSeconds;
+            var resendRemaining = shouldCooldown ? otpResendCooldownSeconds : 0;
             sendButton.disabled = resendRemaining > 0;
             updateTimingMessage(expiryRemaining, resendRemaining);
 
@@ -122,18 +122,22 @@
                 updateTimingMessage(expiryRemaining, resendRemaining);
             }, 1000);
 
-            resendTimerId = window.setInterval(function () {
-                resendRemaining -= 1;
-                if (resendRemaining <= 0) {
-                    resendRemaining = 0;
-                    sendButton.disabled = false;
-                    if (resendTimerId) {
-                        window.clearInterval(resendTimerId);
-                        resendTimerId = null;
+            if (shouldCooldown) {
+                resendTimerId = window.setInterval(function () {
+                    resendRemaining -= 1;
+                    if (resendRemaining <= 0) {
+                        resendRemaining = 0;
+                        sendButton.disabled = false;
+                        if (resendTimerId) {
+                            window.clearInterval(resendTimerId);
+                            resendTimerId = null;
+                        }
                     }
-                }
-                updateTimingMessage(expiryRemaining, resendRemaining);
-            }, 1000);
+                    updateTimingMessage(expiryRemaining, resendRemaining);
+                }, 1000);
+            } else {
+                sendButton.disabled = false;
+            }
         };
 
         var setOtpSectionVisible = function (visible) {
@@ -202,11 +206,12 @@
                     throw new Error(data.message || "Unable to send OTP.");
                 }
 
+                var isResend = hasSentOtpOnce;
                 hasSentOtpOnce = true;
                 updateSendButtonLabel();
                 setStatus(data.message || "OTP sent successfully.", "is-success");
                 setOtpSectionVisible(true);
-                startOtpTimers();
+                startOtpTimers(isResend);
                 otpInput.focus();
             } catch (error) {
                 setOtpSectionVisible(false);
@@ -219,8 +224,34 @@
             }
         });
 
-        setOtpSectionVisible(false);
+        var isOtpSentOnLoad = form.dataset.otpSent === "true";
+        if (isOtpSentOnLoad) {
+            hasSentOtpOnce = true;
+            setOtpSectionVisible(true);
+        } else {
+            setOtpSectionVisible(false);
+        }
         setTiming("");
         updateSendButtonLabel();
+
+        // Toggle password visibility
+        var togglePasswordButton = document.getElementById("togglePassword");
+        var passwordInput = document.getElementById("password");
+        var togglePasswordIcon = document.getElementById("togglePasswordIcon");
+
+        if (togglePasswordButton && passwordInput && togglePasswordIcon) {
+            togglePasswordButton.addEventListener("click", function () {
+                var type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+                passwordInput.setAttribute("type", type);
+                
+                if (type === "password") {
+                    togglePasswordIcon.classList.remove("fa-eye-slash");
+                    togglePasswordIcon.classList.add("fa-eye");
+                } else {
+                    togglePasswordIcon.classList.remove("fa-eye");
+                    togglePasswordIcon.classList.add("fa-eye-slash");
+                }
+            });
+        }
     });
 })();

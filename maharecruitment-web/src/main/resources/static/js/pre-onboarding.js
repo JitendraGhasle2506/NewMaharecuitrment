@@ -891,6 +891,25 @@
         }
     });
 
+    const emergencyContactNameInput = document.getElementById("emergencyContactName");
+    const emergencyContactMobileInput = document.getElementById("emergencyContactMobile");
+    const emergencyContactRelationInput = document.getElementById("emergencyContactRelation");
+    const emergencyContactAltMobileInput = document.getElementById("emergencyContactAltMobile");
+
+    [emergencyContactNameInput, emergencyContactMobileInput, emergencyContactRelationInput, emergencyContactAltMobileInput].forEach(function (el) {
+        if (el) {
+            el.addEventListener("input", function () {
+                if (el === emergencyContactNameInput) {
+                    this.value = this.value.replace(/[^a-zA-Z\s]/g, "");
+                }
+                if (el === emergencyContactMobileInput || el === emergencyContactAltMobileInput) {
+                    this.value = this.value.replace(/[^0-9]/g, "").substring(0, 10);
+                }
+                checkFormValidity();
+            });
+        }
+    });
+
     if (hrFlow) {
         const hrLoc = document.getElementById("hrOnboardingLocation");
         const hrDate = document.getElementById("hrOnboardingDate");

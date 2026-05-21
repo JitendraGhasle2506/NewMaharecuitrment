@@ -226,7 +226,13 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             entity.setCandidateEmail(normalizedEmail);
             entity.setCandidateMobile(normalizedMobile);
             entity.setDateOfBirth(form.getDob());
+            entity.setGender(form.getGender() != null ? form.getGender().trim() : null);
+            entity.setBloodGroup(form.getBloodGroup() != null ? form.getBloodGroup().trim() : null);
             entity.setAddress(form.getAddress().trim());
+            entity.setEmergencyContactName(form.getEmergencyContactName() != null ? form.getEmergencyContactName().trim() : null);
+            entity.setEmergencyContactRelation(form.getEmergencyContactRelation() != null ? form.getEmergencyContactRelation().trim() : null);
+            entity.setEmergencyContactMobile(form.getEmergencyContactMobile() != null ? form.getEmergencyContactMobile().trim() : null);
+            entity.setEmergencyContactAltMobile(form.getEmergencyContactAltMobile() != null ? form.getEmergencyContactAltMobile().trim() : null);
             entity.setJoiningDate(form.getJoiningDate());
             entity.setOnboardingDate(null);
             entity.setAadhaarNumber(normalizedAadhaar);
@@ -400,7 +406,13 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         form.setEmail(existing.getCandidateEmail());
         form.setMobile(existing.getCandidateMobile());
         form.setDob(existing.getDateOfBirth());
+        form.setGender(existing.getGender());
+        form.setBloodGroup(existing.getBloodGroup());
         form.setAddress(existing.getAddress());
+        form.setEmergencyContactName(existing.getEmergencyContactName());
+        form.setEmergencyContactRelation(existing.getEmergencyContactRelation());
+        form.setEmergencyContactMobile(existing.getEmergencyContactMobile());
+        form.setEmergencyContactAltMobile(existing.getEmergencyContactAltMobile());
         form.setJoiningDate(existing.getJoiningDate());
         form.setAadhaar(existing.getAadhaarNumber());
         form.setPan(existing.getPanNumber());
@@ -550,8 +562,32 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         if (form.getDob() == null) {
             throw new RecruitmentNotificationException("Date of birth is required.");
         }
+        if (!StringUtils.hasText(form.getGender())) {
+            throw new RecruitmentNotificationException("Gender is required.");
+        }
+        if (!StringUtils.hasText(form.getBloodGroup())) {
+            throw new RecruitmentNotificationException("Blood group is required.");
+        }
         if (!StringUtils.hasText(form.getAddress())) {
             throw new RecruitmentNotificationException("Address is required.");
+        }
+        if (!StringUtils.hasText(form.getEmergencyContactName())) {
+            throw new RecruitmentNotificationException("Emergency contact name is required.");
+        }
+        if (!form.getEmergencyContactName().trim().matches("^[a-zA-Z\\s]*$")) {
+            throw new RecruitmentNotificationException("Emergency contact name should not have special characters.");
+        }
+        if (!StringUtils.hasText(form.getEmergencyContactRelation())) {
+            throw new RecruitmentNotificationException("Emergency contact relation is required.");
+        }
+        if (!StringUtils.hasText(form.getEmergencyContactMobile())) {
+            throw new RecruitmentNotificationException("Emergency contact mobile is required.");
+        }
+        if (!form.getEmergencyContactMobile().trim().matches("^[0-9]{10}$")) {
+            throw new RecruitmentNotificationException("Emergency contact mobile number must be exactly 10 digits.");
+        }
+        if (StringUtils.hasText(form.getEmergencyContactAltMobile()) && !form.getEmergencyContactAltMobile().trim().matches("^[0-9]{10}$")) {
+            throw new RecruitmentNotificationException("Emergency contact alternate mobile number must be exactly 10 digits.");
         }
         if (form.getJoiningDate() == null) {
             throw new RecruitmentNotificationException("Joining date is required.");
