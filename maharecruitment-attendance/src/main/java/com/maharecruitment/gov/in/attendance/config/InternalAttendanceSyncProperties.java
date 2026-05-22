@@ -11,7 +11,7 @@ public class InternalAttendanceSyncProperties {
 
     private boolean enabled = true;
 
-    private String apiUrl = "https://mahait.fitechit.in/api/attendance-report-employee?end_date=10-05-2026&start_date=01-05-2026&employee_code=MahaIT3181";
+    private String apiUrl = "https://mahait.fitechit.in/api/attendance-report-employee";
 
     private String uniqueCodePrefix = "MahaIT";
 
