@@ -28,39 +28,77 @@
                     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
+                    <form class="row g-2 mb-3 align-items-end" method="get" th:action="@{/master/projects}">
+                        <div class="col-md-4">
+                            <label class="form-label" for="cellId">Filter by Cell</label>
+                            <select class="form-select form-select-sm" id="cellId" name="cellId">
+                                <option value="">All Cells</option>
+                                <option th:each="cell : ${availableCells}"
+                                    th:value="${cell.cellId}"
+                                    th:selected="${cellId != null and cellId == cell.cellId}"
+                                    th:text="${cell.cellName}"></option>
+                            </select>
+                        </div>
+                        <div class="col-auto form-check mb-1">
+                            <input class="form-check-input" type="checkbox" id="includeInactive" name="includeInactive"
+                                value="true" th:checked="${includeInactive}">
+                            <label class="form-check-label" for="includeInactive">Include inactive</label>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-secondary btn-sm" type="submit">Apply</button>
+                            <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/projects}">Clear</a>
+                        </div>
+                    </form>
+
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover align-middle">
                             <thead class="table-light">
                                 <tr>
                                     <th>ID</th>
                                     <th>Project Name</th>
-                                    <th>Project Description</th>
+                                    <!-- <th>Project Description</th> -->
+                                    <th>Cell</th>
                                     <th>Project Type</th>
-                                    <th>Project Scope</th>
-                                    <th>Department Registration ID</th>
-                                    <th>Application ID</th>
+                                    <th>Status</th>
+                                    <!-- <th>Project Scope</th> -->
+                                    <!-- <th>Department Registration ID</th>
+                                    <th>Application ID</th> -->
                                     <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:if="${projects.isEmpty()}">
-                                    <td colspan="8" class="text-center text-muted">No records found</td>
+                                    <td colspan="5" class="text-center text-muted">No records found</td>
                                 </tr>
                                 <tr th:each="item : ${projects.content}">
                                     <td th:text="${item.projectId}"></td>
                                     <td th:text="${item.projectName}"></td>
-                                    <td th:text="${item.projectDesc != null ? item.projectDesc : '-'}"></td>
-                                    <td th:text="${#strings.replace(item.projectType.name(), '_', ' ')}"></td>
+                                    <!-- <td th:text="${item.projectDesc != null ? item.projectDesc : '-'}"></td> -->
+                                    <td th:text="${item.cellName != null ? item.cellName : '-'}"></td>
+                                    <!-- <td th:text="${#strings.replace(item.projectType.name(), '_', ' ')}"></td> -->
                                     <td th:text="${#strings.capitalize(#strings.toLowerCase(item.projectScopeType.name()))}"></td>
-                                    <td th:text="${item.departmentRegistrationId != null ? item.departmentRegistrationId : '-'}"></td>
-                                    <td th:text="${item.applicationId != null ? item.applicationId : '-'}"></td>
+                                    <td>
+                                        <span class="badge"
+                                            th:classappend="${item.activeFlag == 'Y'} ? ' text-bg-success' : ' text-bg-secondary'"
+                                            th:text="${item.activeFlag == 'Y'} ? 'Active' : 'Inactive'"></span>
+                                    </td>
+                                    <!-- <td th:text="${item.departmentRegistrationId != null ? item.departmentRegistrationId : '-'}"></td>
+                                    <td th:text="${item.applicationId != null ? item.applicationId : '-'}"></td> -->
                                     <td class="text-center">
                                         <a class="btn btn-outline-primary btn-sm"
                                             th:href="@{/master/projects/{id}/edit(id=${item.projectId})}">Edit</a>
-                                        <form class="d-inline"
-                                            th:action="@{/master/projects/{id}/delete(id=${item.projectId})}" method="post">
+                                        <form th:if="${item.activeFlag == 'Y'}" class="d-inline"
+                                            th:action="@{/master/projects/{id}/deactivate(id=${item.projectId},cellId=${cellId},includeInactive=${includeInactive},page=${projects.number},size=${projects.size})}"
+                                            method="post"
+                                            onsubmit="return confirm('Are you sure you want to deactivate this project?');">
                                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                                            <button class="btn btn-outline-danger btn-sm" type="submit">Deactivate</button>
+                                        </form>
+                                        <form th:if="${item.activeFlag != 'Y'}" class="d-inline"
+                                            th:action="@{/master/projects/{id}/restore(id=${item.projectId},cellId=${cellId},includeInactive=${includeInactive},page=${projects.number},size=${projects.size})}"
+                                            method="post">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button class="btn btn-outline-success btn-sm" type="submit">Restore</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -86,10 +124,10 @@
                         <nav aria-label="Project master pagination">
                             <ul class="pagination app-pagination mb-0">
                                 <li class="page-item" th:classappend="${projects.first} ? ' disabled'">
-                                    <a class="page-link" th:href="@{/master/projects(page=${projects.number - 1},size=${projects.size})}">Previous</a>
+                                    <a class="page-link" th:href="@{/master/projects(page=${projects.number - 1},size=${projects.size},cellId=${cellId},includeInactive=${includeInactive})}">Previous</a>
                                 </li>
                                 <li class="page-item" th:classappend="${projects.number == 0} ? ' active'">
-                                    <a class="page-link" th:href="@{/master/projects(page=0,size=${projects.size})}">1</a>
+                                    <a class="page-link" th:href="@{/master/projects(page=0,size=${projects.size},cellId=${cellId},includeInactive=${includeInactive})}">1</a>
                                 </li>
                                 <li class="page-item disabled" th:if="${middleStart > 1}">
                                     <span class="page-link app-pagination-ellipsis">...</span>
@@ -98,7 +136,7 @@
                                     <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
                                         th:classappend="${pageIndex == projects.number} ? ' active'">
                                         <a class="page-link"
-                                            th:href="@{/master/projects(page=${pageIndex},size=${projects.size})}"
+                                            th:href="@{/master/projects(page=${pageIndex},size=${projects.size},cellId=${cellId},includeInactive=${includeInactive})}"
                                             th:text="${pageIndex + 1}">2</a>
                                     </li>
                                 </th:block>
@@ -108,11 +146,11 @@
                                 <li class="page-item" th:if="${projects.totalPages > 1}"
                                     th:classappend="${projects.number == projects.totalPages - 1} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/master/projects(page=${projects.totalPages - 1},size=${projects.size})}"
+                                        th:href="@{/master/projects(page=${projects.totalPages - 1},size=${projects.size},cellId=${cellId},includeInactive=${includeInactive})}"
                                         th:text="${projects.totalPages}">2</a>
                                 </li>
                                 <li class="page-item" th:classappend="${projects.last} ? ' disabled'">
-                                    <a class="page-link" th:href="@{/master/projects(page=${projects.number + 1},size=${projects.size})}">Next</a>
+                                    <a class="page-link" th:href="@{/master/projects(page=${projects.number + 1},size=${projects.size},cellId=${cellId},includeInactive=${includeInactive})}">Next</a>
                                 </li>
                             </ul>
                         </nav>

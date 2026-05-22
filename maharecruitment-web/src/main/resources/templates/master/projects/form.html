@@ -49,6 +49,17 @@
                             <div class="text-danger small" th:if="${#fields.hasErrors('projectScopeType')}" th:errors="*{projectScopeType}"></div>
                         </div>
 
+                        <div class="col-md-6">
+                            <label class="form-label">Cell <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{cellId}">
+                                <option value="">Select Cell</option>
+                                <option th:each="cell : ${availableCells}"
+                                    th:value="${cell.cellId}"
+                                    th:text="${cell.cellName}"></option>
+                            </select>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('cellId')}" th:errors="*{cellId}"></div>
+                        </div>
+
                         <div class="col-md-12">
                             <label class="form-label">Project Description</label>
                             <textarea th:field="*{projectDesc}" class="form-control" maxlength="100" rows="3"></textarea>

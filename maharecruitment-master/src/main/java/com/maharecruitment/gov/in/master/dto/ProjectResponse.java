@@ -19,6 +19,9 @@ public class ProjectResponse {
     private ProjectScopeType projectScopeType;
     private Long departmentRegistrationId;
     private Long applicationId;
+    private Long cellId;
+    private String cellName;
+    private String activeFlag;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

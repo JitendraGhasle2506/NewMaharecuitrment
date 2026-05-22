@@ -7,6 +7,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -18,7 +22,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "project_mst")
+@Table(name = "project_mst", indexes = {
+        @Index(name = "idx_project_mst_cell_id", columnList = "cell_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -53,6 +59,13 @@ public class ProjectMst extends Auditable {
     @Column(name = "application_id")
     private Long applicationId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cell_id")
+    private CellMaster cell;
+
+    @Column(name = "active_flag", nullable = false, length = 1)
+    private String activeFlag = "Y";
+
     @PrePersist
     @PreUpdate
     void normalizeFields() {
@@ -62,5 +75,6 @@ public class ProjectMst extends Auditable {
         if (projectDesc != null) {
             projectDesc = projectDesc.trim();
         }
+        activeFlag = "N".equalsIgnoreCase(activeFlag) ? "N" : "Y";
     }
 }

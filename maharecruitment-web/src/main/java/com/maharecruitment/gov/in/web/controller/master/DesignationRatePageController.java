@@ -150,13 +150,23 @@ public class DesignationRatePageController {
     }
 
     @PostMapping("/{rateId}/delete")
-    public String delete(@PathVariable Long rateId, RedirectAttributes redirectAttributes) {
+    public String delete(
+            @PathVariable Long rateId,
+            @RequestParam(required = false) Long designationId,
+            @RequestParam(defaultValue = "false") boolean includeInactive,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            RedirectAttributes redirectAttributes) {
         try {
             rateService.softDelete(rateId);
-            redirectAttributes.addFlashAttribute("successMessage", "Designation rate deleted successfully");
+            redirectAttributes.addFlashAttribute("successMessage", "Designation rate deactivated successfully");
         } catch (RuntimeException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
+        redirectAttributes.addAttribute("designationId", designationId);
+        redirectAttributes.addAttribute("includeInactive", includeInactive);
+        redirectAttributes.addAttribute("page", page);
+        redirectAttributes.addAttribute("size", size);
         return "redirect:/master/designation-rates";
     }
 

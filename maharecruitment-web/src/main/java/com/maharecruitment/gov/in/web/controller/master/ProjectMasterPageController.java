@@ -18,6 +18,7 @@ import com.maharecruitment.gov.in.master.dto.ProjectRequest;
 import com.maharecruitment.gov.in.master.dto.ProjectResponse;
 import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 import com.maharecruitment.gov.in.master.entity.ProjectType;
+import com.maharecruitment.gov.in.master.service.CellMasterService;
 import com.maharecruitment.gov.in.master.service.ProjectMstService;
 
 import jakarta.validation.Valid;
@@ -27,20 +28,27 @@ import jakarta.validation.Valid;
 public class ProjectMasterPageController {
 
     private final ProjectMstService projectService;
+    private final CellMasterService cellMasterService;
 
-    public ProjectMasterPageController(ProjectMstService projectService) {
+    public ProjectMasterPageController(ProjectMstService projectService, CellMasterService cellMasterService) {
         this.projectService = projectService;
+        this.cellMasterService = cellMasterService;
     }
 
     @GetMapping
     public String list(
+            @RequestParam(required = false) Long cellId,
+            @RequestParam(defaultValue = "false") boolean includeInactive,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Model model) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
-        Page<ProjectResponse> projects = projectService.getAll(pageable);
+        Page<ProjectResponse> projects = projectService.getAll(cellId, includeInactive, pageable);
 
         model.addAttribute("projects", projects);
+        model.addAttribute("cellId", cellId);
+        model.addAttribute("includeInactive", includeInactive);
+        model.addAttribute("availableCells", cellMasterService.getAll(false));
         return "master/projects/list";
     }
 
@@ -62,6 +70,7 @@ public class ProjectMasterPageController {
             form.setProjectDesc(existing.getProjectDesc());
             form.setProjectType(existing.getProjectType());
             form.setProjectScopeType(existing.getProjectScopeType());
+            form.setCellId(existing.getCellId());
 
             populateForm(model, form, projectId);
             return "master/projects/form";
@@ -116,15 +125,52 @@ public class ProjectMasterPageController {
         }
     }
 
-    @PostMapping("/{projectId}/delete")
-    public String delete(@PathVariable Long projectId, RedirectAttributes redirectAttributes) {
+    @PostMapping("/{projectId}/deactivate")
+    public String deactivate(
+            @PathVariable Long projectId,
+            @RequestParam(required = false) Long cellId,
+            @RequestParam(defaultValue = "false") boolean includeInactive,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            RedirectAttributes redirectAttributes) {
         try {
-            projectService.delete(projectId);
-            redirectAttributes.addFlashAttribute("successMessage", "Project deleted successfully");
+            projectService.softDelete(projectId);
+            redirectAttributes.addFlashAttribute("successMessage", "Project deactivated successfully");
         } catch (RuntimeException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
+        addListRedirectAttributes(redirectAttributes, cellId, includeInactive, page, size);
         return "redirect:/master/projects";
+    }
+
+    @PostMapping("/{projectId}/restore")
+    public String restore(
+            @PathVariable Long projectId,
+            @RequestParam(required = false) Long cellId,
+            @RequestParam(defaultValue = "true") boolean includeInactive,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            RedirectAttributes redirectAttributes) {
+        try {
+            projectService.restore(projectId);
+            redirectAttributes.addFlashAttribute("successMessage", "Project restored successfully");
+        } catch (RuntimeException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        addListRedirectAttributes(redirectAttributes, cellId, includeInactive, page, size);
+        return "redirect:/master/projects";
+    }
+
+    private void addListRedirectAttributes(
+            RedirectAttributes redirectAttributes,
+            Long cellId,
+            boolean includeInactive,
+            int page,
+            int size) {
+        redirectAttributes.addAttribute("cellId", cellId);
+        redirectAttributes.addAttribute("includeInactive", includeInactive);
+        redirectAttributes.addAttribute("page", page);
+        redirectAttributes.addAttribute("size", size);
     }
 
     private void populateForm(Model model, ProjectRequest form, Long projectId) {
@@ -133,5 +179,6 @@ public class ProjectMasterPageController {
         model.addAttribute("isEdit", projectId != null);
         model.addAttribute("projectTypes", ProjectType.values());
         model.addAttribute("projectScopeTypes", ProjectScopeType.values());
+        model.addAttribute("availableCells", cellMasterService.getAll(false));
     }
 }
