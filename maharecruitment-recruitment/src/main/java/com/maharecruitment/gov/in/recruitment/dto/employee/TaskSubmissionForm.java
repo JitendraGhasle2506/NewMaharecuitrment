@@ -6,8 +6,11 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 public class TaskSubmissionForm {
+    private LocalDate globalTaskDate;
     private List<EmployeeTaskLogDto> taskList = new ArrayList<>();
 }
