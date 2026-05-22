@@ -102,6 +102,6 @@ public class EmployeeTaskServiceImpl implements EmployeeTaskService {
 
     @Override
     public String fetchInTime(String loginEmail, String dateString) {
-        return "09:30 AM";
+        return "09:30";
     }
 }
