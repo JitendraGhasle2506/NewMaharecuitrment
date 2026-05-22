@@ -97,26 +97,18 @@ public class EmployeeTaskController {
         String loginEmail = principal != null ? principal.getName() : null;
         try {
             if (month != null && year != null && taskForm.getTaskList() != null) {
-                java.util.regex.Pattern timePattern = java.util.regex.Pattern.compile(
-                        "^(0?[1-9]|1[0-2]):[0-5][0-9]\\s?(AM|PM)$",
-                        java.util.regex.Pattern.CASE_INSENSITIVE);
+                if (taskForm.getGlobalTaskDate() == null) {
+                    throw new IllegalArgumentException("Global task date is required.");
+                }
+                if (taskForm.getGlobalTaskDate().getMonthValue() != month || taskForm.getGlobalTaskDate().getYear() != year) {
+                    throw new IllegalArgumentException("Global Date must be within selected month and year.");
+                }
+
                 boolean anySelected = false;
                 for (EmployeeTaskLogDto task : taskForm.getTaskList()) {
                     if (task.isSelected()) {
                         anySelected = true;
-                        if (task.getTaskDate() != null) {
-                            if (task.getTaskDate().getMonthValue() != month || task.getTaskDate().getYear() != year) {
-                                throw new IllegalArgumentException("Date must be within selected month and year.");
-                            }
-                        } else {
-                            throw new IllegalArgumentException("Task date is required for selected row.");
-                        }
-                        if (task.getInTime() != null && !task.getInTime().trim().isEmpty()) {
-                            if (!timePattern.matcher(task.getInTime().trim()).matches()) {
-                                throw new IllegalArgumentException(
-                                        "In Time must follow HH:MM AM/PM format. Entered: " + task.getInTime());
-                            }
-                        }
+                        task.setTaskDate(taskForm.getGlobalTaskDate());
                     }
                 }
                 if (!anySelected) {
@@ -156,6 +148,7 @@ public class EmployeeTaskController {
             taskDto.setSelected(true);
 
             TaskSubmissionForm form = new TaskSubmissionForm();
+            form.setGlobalTaskDate(taskDto.getTaskDate());
             form.getTaskList().add(taskDto);
 
             int targetMonth = taskDto.getTaskDate().getMonthValue();
