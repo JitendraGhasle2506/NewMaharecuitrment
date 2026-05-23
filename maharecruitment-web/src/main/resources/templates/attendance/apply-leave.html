@@ -303,6 +303,8 @@
                 }
             });
 
+            $('#compOffWorkDate').datepicker('setEndDate', new Date());
+
             function parseDisplayDate(value) {
                 if (!value) return null;
                 var parts = value.split('-');

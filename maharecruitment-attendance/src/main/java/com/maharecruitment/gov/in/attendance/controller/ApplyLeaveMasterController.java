@@ -162,4 +162,24 @@ public class ApplyLeaveMasterController {
         redirectAttributes.addFlashAttribute("success", "Leave application submitted successfully.");
         return "redirect:/employee/applyLeave";
     }
+
+    @PostMapping("/cancelLeave")
+    public String cancelLeaveApplication(@RequestParam("leaveId") Long leaveId,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser == null) {
+            redirectAttributes.addFlashAttribute("error", "Session expired or invalid user.");
+            return "redirect:/login";
+        }
+
+        EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+        try {
+            leaveApplicationService.cancelLeaveApplication(leaveId, employee.getEmployeeId());
+            redirectAttributes.addFlashAttribute("success", "Leave application cancelled successfully.");
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/employee/viewLeave";
+    }
 }
