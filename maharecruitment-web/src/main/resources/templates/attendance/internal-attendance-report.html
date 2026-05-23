@@ -403,7 +403,7 @@
                             <div class="summary-value" th:text="${report.summary.totalHolidayCount}">0</div>
                         </div>
                         <div class="summary-card">
-                            <div class="summary-label">Total Payable Days</div>
+                            <div class="summary-label">Total Payable Days Till Date</div>
                             <div class="summary-value" th:text="${report.summary.payableDays}">0</div>
                         </div>
                     </div>
@@ -474,14 +474,14 @@
                                             <small th:text="${#temporals.format(day, 'E')}">Mon</small>
                                         </th>
                                     </th:block>
-                                    <th class="totals-heading">Present Total</th>
+                                    <th class="totals-heading">P</th>
                                     <th class="totals-heading">Total Absent (A+L)</th>
-                                    <th class="totals-heading">Approved Leave Total</th>
-                                    <th class="totals-heading">Comp Off Total</th>
-                                    <th class="totals-heading">Tour Total</th>
-                                    <th class="totals-heading">Holiday Total</th>
-                                    <th class="totals-heading">Week Off Total</th>
-                                    <th class="totals-heading">Payable Days</th>
+                                    <th class="totals-heading">Approved Leave</th>
+                                    <th class="totals-heading">CO </th>
+                                    <th class="totals-heading">T</th>
+                                    <th class="totals-heading">H</th>
+                                    <th class="totals-heading">WO</th>
+                                    <th class="totals-heading">Payable Days Till Date</th>
                                 </tr>
                             </thead>
                             <tbody>

@@ -160,7 +160,7 @@ public class InternalAttendanceReportPdfGenerator {
         appendText(page, "Office Days Till Date: " + safeSummary.getOfficeDayCount(), 330F, y, 9, PdfFont.REGULAR);
         appendText(page, "Week Off Till Date: " + safeSummary.getTotalWeekOffCount(), 560F, y, 9, PdfFont.REGULAR);
         appendText(page, "Holidays Till Date: " + safeSummary.getTotalHolidayCount(), 800F, y, 9, PdfFont.REGULAR);
-        appendText(page, "Payable Days: " + safeSummary.getPayableDays(), 990F, y, 9, PdfFont.REGULAR);
+        appendText(page, "Payable Days Till Date: " + safeSummary.getPayableDays(), 990F, y, 9, PdfFont.REGULAR);
         return y - 10F;
     }
 

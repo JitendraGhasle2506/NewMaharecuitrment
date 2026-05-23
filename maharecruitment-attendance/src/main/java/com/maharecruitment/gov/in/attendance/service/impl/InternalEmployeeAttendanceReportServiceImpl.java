@@ -373,7 +373,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             applyStatusCount(row, statusCode);
         }
 
-        row.setPayableDays(Math.max(0, startDate.datesUntil(endDate.plusDays(1)).count() - row.getAbsentTotalCount()));
+        row.setPayableDays(calculatePayableDays(row));
         row.setDailyStatus(dailyStatus);
         return row;
     }
@@ -393,6 +393,9 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
         if (employee.getResignationDate() != null && date.isAfter(employee.getResignationDate())) {
             return "";
         }
+        if (date.isAfter(today)) {
+            return "";
+        }
         if (isCoveredByCompOff(approvedLeaves, date)) {
             return "CO";
         }
@@ -410,9 +413,6 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
                 workingDayOverrideDates.contains(date));
         if (StringUtils.hasText(resolvedAttendanceStatus)) {
             return resolvedAttendanceStatus;
-        }
-        if (date.isAfter(today)) {
-            return "";
         }
         if (isWeekend(date) && !workingDayOverrideDates.contains(date)) {
             return "W";
@@ -506,6 +506,14 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             default:
                 break;
         }
+    }
+
+    private long calculatePayableDays(InternalAttendanceReportRow row) {
+        return row.getPresentCount()
+                + row.getCompOffCount()
+                + row.getTourCount()
+                + row.getHolidayCount()
+                + row.getWeekOffCount();
     }
 
     private InternalAttendanceReportSummary buildSummary(

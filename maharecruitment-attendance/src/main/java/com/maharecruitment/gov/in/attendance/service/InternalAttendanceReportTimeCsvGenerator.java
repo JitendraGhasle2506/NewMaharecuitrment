@@ -48,7 +48,7 @@ public class InternalAttendanceReportTimeCsvGenerator {
                 "Employee Code",
                 "Employee Name",
                 "Agency Name",
-                "Payable Days In Month",
+                "Payable Days Till Date",
                 "Date",
                 "Day",
                 "Status",
