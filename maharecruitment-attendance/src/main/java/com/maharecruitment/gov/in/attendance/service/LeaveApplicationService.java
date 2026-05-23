@@ -18,4 +18,6 @@ public interface LeaveApplicationService {
     void updateLeaveStatus(Long leaveId, String status, String remarks);
 
     boolean isValidCompOffWorkedDate(Long employeeId, LocalDate workedDate);
+
+    void cancelLeaveApplication(Long leaveId, Long employeeId);
 }

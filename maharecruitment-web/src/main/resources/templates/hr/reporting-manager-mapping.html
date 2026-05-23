@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -6,7 +6,7 @@
     <title>Reporting Manager Mapping</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <!-- Include DataTables API for grid if needed -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" th:href="@{/assets/vendor/datatables/dataTables.bootstrap5.min.css}">
     <style>
         .mapping-card {
             border: 1px solid #e0e0e0;
@@ -181,9 +181,9 @@
         </section>
     </th:block>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}"></script>
+    <script th:src="@{/assets/vendor/datatables/jquery.dataTables.min.js}"></script>
+    <script th:src="@{/assets/vendor/datatables/dataTables.bootstrap5.min.js}"></script>
     
     <script th:inline="javascript">
         $(document).ready(function() {
@@ -468,3 +468,4 @@
 </body>
 
 </html>
+

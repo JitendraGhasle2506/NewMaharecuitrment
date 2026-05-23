@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -806,7 +806,7 @@
 				</div>
 			</div>
 
-			<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+			<script th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}"></script>
 			<script th:inline="javascript">
 				const fetchAttendanceUrl = /*[[@{/department/fetchExternalAttendance}]]*/ '/department/fetchExternalAttendance';
 				const saveAttendanceUrl = /*[[@{/department/saveExternalAttendance}]]*/ '/department/saveExternalAttendance';
@@ -967,3 +967,4 @@
 </body>
 
 </html>
+

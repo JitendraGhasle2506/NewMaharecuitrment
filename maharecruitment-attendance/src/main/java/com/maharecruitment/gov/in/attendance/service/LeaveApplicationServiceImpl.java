@@ -269,4 +269,19 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             leaveApplicationRepository.save(leave);
         }
     }
+
+    @Override
+    public void cancelLeaveApplication(Long leaveId, Long employeeId) {
+        LeaveApplicationEntity leave = leaveApplicationRepository.findById(leaveId)
+                .orElseThrow(() -> new IllegalArgumentException("Leave application not found."));
+        if (!employeeId.equals(leave.getEmployeeId())) {
+            throw new IllegalArgumentException("You are not allowed to cancel this leave application.");
+        }
+        if (!"PENDING".equalsIgnoreCase(trim(leave.getStatus()))) {
+            throw new IllegalArgumentException("Only pending leave applications can be cancelled.");
+        }
+        leave.setStatus("CANCELLED");
+        leave.setManagerRemarks("Cancelled by employee before approval.");
+        leaveApplicationRepository.save(leave);
+    }
 }

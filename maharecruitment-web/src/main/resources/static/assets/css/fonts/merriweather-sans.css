@@ -1,0 +1,16 @@
+﻿@font-face {
+  font-family: 'Merriweather Sans';
+  src: url('../../fonts/merriweather-sans/merriweather-sans-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Merriweather Sans';
+  src: url('../../fonts/merriweather-sans/merriweather-sans-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+

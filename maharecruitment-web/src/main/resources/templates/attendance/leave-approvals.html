@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -448,8 +448,8 @@
         </section>
     </th:block>
 
-    <script th:src="@{https://code.jquery.com/jquery-3.6.0.min.js}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}"></script>
+    <script th:src="@{/assets/vendor/sweetalert2/sweetalert2.all.min.js}"></script>
     <script>
         $(document).ready(function() {
             // Tab change listener to sync state
@@ -521,3 +521,4 @@
     </script>
 </body>
 </html>
+
