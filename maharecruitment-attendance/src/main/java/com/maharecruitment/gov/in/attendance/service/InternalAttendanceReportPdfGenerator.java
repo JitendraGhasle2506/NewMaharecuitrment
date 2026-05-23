@@ -160,6 +160,7 @@ public class InternalAttendanceReportPdfGenerator {
         appendText(page, "Office Days Till Date: " + safeSummary.getOfficeDayCount(), 330F, y, 9, PdfFont.REGULAR);
         appendText(page, "Week Off Till Date: " + safeSummary.getTotalWeekOffCount(), 560F, y, 9, PdfFont.REGULAR);
         appendText(page, "Holidays Till Date: " + safeSummary.getTotalHolidayCount(), 800F, y, 9, PdfFont.REGULAR);
+        appendText(page, "Payable Days: " + safeSummary.getPayableDays(), 990F, y, 9, PdfFont.REGULAR);
         return y - 10F;
     }
 
@@ -193,13 +194,14 @@ public class InternalAttendanceReportPdfGenerator {
         for (int day = 1; day <= 31; day++) {
             cells.add(String.format(Locale.ROOT, "%02d", day));
         }
-        cells.add("P");
-        cells.add("A");
-        cells.add("L");
+        cells.add("P Total");
+        cells.add("Abs A+L");
+        cells.add("Leave");
         cells.add("CO");
-        cells.add("T");
-        cells.add("H");
-        cells.add("W");
+        cells.add("Tour");
+        cells.add("Hol");
+        cells.add("W-Off");
+        cells.add("Pay");
         page.rows.add(new PdfTableRow(cells, true, y));
     }
 
@@ -227,12 +229,13 @@ public class InternalAttendanceReportPdfGenerator {
         }
 
         cells.add(Long.toString(row.getPresentCount()));
-        cells.add(Long.toString(row.getAbsentCount()));
+        cells.add(Long.toString(row.getAbsentTotalCount()));
         cells.add(Long.toString(row.getLeaveCount()));
         cells.add(Long.toString(row.getCompOffCount()));
         cells.add(Long.toString(row.getTourCount()));
         cells.add(Long.toString(row.getHolidayCount()));
         cells.add(Long.toString(row.getWeekOffCount()));
+        cells.add(Long.toString(row.getPayableDays()));
         page.rows.add(new PdfTableRow(cells, false, y));
     }
 
@@ -346,7 +349,7 @@ public class InternalAttendanceReportPdfGenerator {
     }
 
     private static float[] buildColumnWidths() {
-        float[] widths = new float[41];
+        float[] widths = new float[42];
         widths[0] = 60F;
         widths[1] = 180F;
         widths[2] = 120F;
@@ -354,7 +357,7 @@ public class InternalAttendanceReportPdfGenerator {
             widths[index] = 18F;
         }
         for (int index = 34; index < widths.length; index++) {
-            widths[index] = 26F;
+            widths[index] = 24F;
         }
         return widths;
     }
@@ -371,7 +374,8 @@ public class InternalAttendanceReportPdfGenerator {
 
     private String buildFileName(InternalAttendanceReportView report) {
         String month = defaultText(report.getMonthName(), "month").replaceAll("\\s+", "-");
-        return ("internal-attendance-report-" + month + "-" + resolveYear(report)).toLowerCase(Locale.ENGLISH) + ".pdf";
+        return ("maha-recruitment-internal-attendance-report-" + month + "-" + resolveYear(report))
+                .toLowerCase(Locale.ENGLISH) + ".pdf";
     }
 
     private int resolveYear(InternalAttendanceReportView report) {

@@ -17,4 +17,9 @@ public class InternalAttendanceReportSummary {
     private long holidayCount;
     private long weekOffCount;
     private long tourCount;
+    private long payableDays;
+
+    public long getAbsentTotalCount() {
+        return absentCount + leaveCount;
+    }
 }

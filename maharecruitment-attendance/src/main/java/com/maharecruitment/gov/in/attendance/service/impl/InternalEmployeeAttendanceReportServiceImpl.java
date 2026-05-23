@@ -373,6 +373,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             applyStatusCount(row, statusCode);
         }
 
+        row.setPayableDays(Math.max(0, startDate.datesUntil(endDate.plusDays(1)).count() - row.getAbsentTotalCount()));
         row.setDailyStatus(dailyStatus);
         return row;
     }
@@ -528,6 +529,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
         summary.setHolidayCount(rows.stream().mapToLong(InternalAttendanceReportRow::getHolidayCount).sum());
         summary.setWeekOffCount(rows.stream().mapToLong(InternalAttendanceReportRow::getWeekOffCount).sum());
         summary.setTourCount(rows.stream().mapToLong(InternalAttendanceReportRow::getTourCount).sum());
+        summary.setPayableDays(rows.stream().mapToLong(InternalAttendanceReportRow::getPayableDays).sum());
         return summary;
     }
 

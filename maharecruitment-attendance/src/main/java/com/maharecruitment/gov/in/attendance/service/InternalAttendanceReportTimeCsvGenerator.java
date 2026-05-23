@@ -48,6 +48,7 @@ public class InternalAttendanceReportTimeCsvGenerator {
                 "Employee Code",
                 "Employee Name",
                 "Agency Name",
+                "Payable Days In Month",
                 "Date",
                 "Day",
                 "Status",
@@ -75,6 +76,7 @@ public class InternalAttendanceReportTimeCsvGenerator {
                         row.getEmployeeCode(),
                         row.getEmployeeName(),
                         row.getAgencyName(),
+                        Long.toString(row.getPayableDays()),
                         DATE_FORMAT.format(calendarDay),
                         calendarDay.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH),
                         status,
@@ -170,7 +172,7 @@ public class InternalAttendanceReportTimeCsvGenerator {
         String year = report != null && report.getFilter() != null && report.getFilter().getYear() != null
                 ? report.getFilter().getYear().toString()
                 : "data";
-        return "internal-attendance-in-out-report-" + monthName + "-" + year + ".csv";
+        return "maha-recruitment-internal-attendance-in-out-time-report-" + monthName + "-" + year + ".csv";
     }
 
     private void appendRow(StringBuilder csv, String... values) {

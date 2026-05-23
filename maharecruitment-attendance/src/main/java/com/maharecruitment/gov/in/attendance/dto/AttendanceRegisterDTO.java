@@ -53,6 +53,12 @@ public class AttendanceRegisterDTO {
     private long totalPresent;
     private long totalAbsent;
     private long totalLeave;
+    private long totalCompOff;
     private long totalHoliday;
     private long totalWeekOff;
+    private long payableDays;
+
+    public long getTotalAbsentWithApprovedLeave() {
+        return totalAbsent + totalLeave;
+    }
 }

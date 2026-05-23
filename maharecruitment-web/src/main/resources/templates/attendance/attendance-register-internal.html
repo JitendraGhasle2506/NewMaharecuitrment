@@ -1478,8 +1478,8 @@
                     <div class="col-lg-2 col-md-4 col-6 summary-col">
                         <div class="card h-100 border-0 shadow-sm summary-card" style="background: #fef2f2; border-left: 5px solid #ef4444 !important;">
                             <div class="card-body">
-                                <h3 class="summary-value text-danger" th:text="${attendance.totalAbsent}">0</h3>
-                                <div class="summary-label">Total Absent</div>
+                                <h3 class="summary-value text-danger" th:text="${attendance.totalAbsentWithApprovedLeave}">0</h3>
+                                <div class="summary-label">Total Absent (A+L)</div>
                             </div>
                         </div>
                     </div>
@@ -1487,7 +1487,7 @@
                         <div class="card h-100 border-0 shadow-sm summary-card" style="background: #f5f3ff; border-left: 5px solid #8b5cf6 !important;">
                             <div class="card-body">
                                 <h3 class="summary-value" style="color: #8b5cf6;" th:text="${attendance.totalLeave}">0</h3>
-                                <div class="summary-label">Total Leave</div>
+                                <div class="summary-label">Approved Leave Total</div>
                             </div>
                         </div>
                     </div>
@@ -1512,6 +1512,14 @@
                             <div class="card-body">
                                 <h3 class="summary-value text-warning" th:text="${attendance.daysInMonth ?: daysInMonth}">30</h3>
                                 <div class="summary-label">Days In Month</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-6 summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #eefdf8; border-left: 5px solid #0f766e !important;">
+                            <div class="card-body">
+                                <h3 class="summary-value" style="color: #0f766e;" th:text="${attendance.payableDays}">0</h3>
+                                <div class="summary-label">Payable Days</div>
                             </div>
                         </div>
                     </div>
@@ -1593,16 +1601,20 @@
                                         <span class="register-meta-value status-present" th:text="${attendance.totalPresent}">0</span>
                                     </div>
                                     <div class="register-meta-card">
-                                        <span class="register-meta-label">Absent Days</span>
-                                        <span class="register-meta-value status-absent" th:text="${attendance.totalAbsent}">0</span>
+                                        <span class="register-meta-label">Total Absent (A+L)</span>
+                                        <span class="register-meta-value status-absent" th:text="${attendance.totalAbsentWithApprovedLeave}">0</span>
                                     </div>
                                     <div class="register-meta-card">
-                                        <span class="register-meta-label">Leave + Tour</span>
-                                        <span class="register-meta-value" style="color:#7c3aed;" th:text="${attendance.totalLeave + ' / ' + (attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[status == 'TOUR']) : 0)}">0 / 0</span>
+                                        <span class="register-meta-label">Leave / CO / Tour</span>
+                                        <span class="register-meta-value" style="color:#7c3aed;" th:text="${attendance.totalLeave + ' / ' + attendance.totalCompOff + ' / ' + (attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[status == 'TOUR']) : 0)}">0 / 0 / 0</span>
                                     </div>
                                     <div class="register-meta-card">
                                         <span class="register-meta-label">Week Off + Holiday</span>
                                         <span class="register-meta-value" style="color:#475569;" th:text="${attendance.totalWeekOff + ' / ' + attendance.totalHoliday}">0 / 0</span>
+                                    </div>
+                                    <div class="register-meta-card">
+                                        <span class="register-meta-label">Payable Days</span>
+                                        <span class="register-meta-value" style="color:#0f766e;" th:text="${attendance.payableDays}">0</span>
                                     </div>
                                 </div>
 

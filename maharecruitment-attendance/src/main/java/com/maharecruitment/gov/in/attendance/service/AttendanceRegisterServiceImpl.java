@@ -536,9 +536,11 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		// Calculate Summary Counts
 		dto.setTotalPresent(days.stream().filter(d -> "PRESENT".equals(d.getStatus())).count());
 		dto.setTotalAbsent(days.stream().filter(d -> "ABSENT".equals(d.getStatus())).count());
-		dto.setTotalLeave(days.stream().filter(d -> "LEAVE".equals(d.getStatus()) || "COMP_OFF".equals(d.getStatus())).count());
+		dto.setTotalLeave(days.stream().filter(d -> "LEAVE".equals(d.getStatus())).count());
+		dto.setTotalCompOff(days.stream().filter(d -> "COMP_OFF".equals(d.getStatus())).count());
 		dto.setTotalHoliday(days.stream().filter(d -> "HOLIDAY".equals(d.getStatus())).count());
 		dto.setTotalWeekOff(days.stream().filter(d -> "WEEK_OFF".equals(d.getStatus())).count());
+		dto.setPayableDays(Math.max(0, days.size() - dto.getTotalAbsentWithApprovedLeave()));
 
 		return dto;
 	}
@@ -841,15 +843,17 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 
 				final LocalDate finalDDate = dDate;
-				boolean onLeave = finalDDate != null && empLeaves.stream()
-						.anyMatch(l -> !finalDDate.isBefore(l.getStartDate()) && !finalDDate.isAfter(l.getEndDate()));
+				LeaveApplicationEntity approvedLeave = finalDDate == null ? null : empLeaves.stream()
+						.filter(l -> isDateCoveredByLeave(l, finalDDate))
+						.findFirst()
+						.orElse(null);
 				boolean onTour = finalDDate != null && empTours.stream()
 						.anyMatch(t -> !finalDDate.isBefore(t.getStartDate()) && !finalDDate.isAfter(t.getEndDate()));
 
 				String status = getProjectionDayStatus(p, day);
 
-				if (onLeave) {
-					dailyStatus.put(day, "L");
+				if (approvedLeave != null) {
+					dailyStatus.put(day, isCompOffLeave(approvedLeave) ? "CO" : "L");
 				} else if (onTour) {
 					dailyStatus.put(day, "T");
 				} else if (status != null && !status.isEmpty()) {
@@ -861,6 +865,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 			}
 			dto.setDailyStatus(dailyStatus);
+			applyAttendanceReportCounts(dto, dailyStatus);
+			dto.setPayableDays(Math.max(0, endDate.getDayOfMonth() - dto.getAbsentTotalCount()));
 			return dto;
 		}).collect(Collectors.toList());
 	}
@@ -938,6 +944,25 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		return AttendanceStatusResolver.resolveStatusCode(status);
 	}
 
+	private void applyAttendanceReportCounts(AttendanceReportDTO dto, Map<Integer, String> dailyStatus) {
+		if (dto == null || dailyStatus == null || dailyStatus.isEmpty()) {
+			return;
+		}
+		dto.setPresentCount(countStatus(dailyStatus, "P"));
+		dto.setAbsentCount(countStatus(dailyStatus, "A"));
+		dto.setLeaveCount(countStatus(dailyStatus, "L"));
+		dto.setCompOffCount(countStatus(dailyStatus, "CO"));
+		dto.setTourCount(countStatus(dailyStatus, "T"));
+		dto.setHolidayCount(countStatus(dailyStatus, "H"));
+		dto.setWeekOffCount(countStatus(dailyStatus, "W"));
+	}
+
+	private long countStatus(Map<Integer, String> dailyStatus, String statusCode) {
+		return dailyStatus.values().stream()
+				.filter(status -> statusCode.equalsIgnoreCase(status))
+				.count();
+	}
+
 	@Override
 	public List<AttendanceReportDTO> getExternalAttendanceReportData(Long regId, Long agencyId, Integer month,
 			Integer year,
@@ -991,14 +1016,16 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 
 				final LocalDate finalDDate = dDate;
-				boolean onLeave = finalDDate != null && empLeaves.stream()
-						.anyMatch(l -> !finalDDate.isBefore(l.getStartDate()) && !finalDDate.isAfter(l.getEndDate()));
+				LeaveApplicationEntity approvedLeave = finalDDate == null ? null : empLeaves.stream()
+						.filter(l -> isDateCoveredByLeave(l, finalDDate))
+						.findFirst()
+						.orElse(null);
 				boolean onTour = finalDDate != null && empTours.stream()
 						.anyMatch(t -> !finalDDate.isBefore(t.getStartDate()) && !finalDDate.isAfter(t.getEndDate()));
 
 				String status = getExternalProjectionDayStatus(p, day);
-				if (onLeave) {
-					dailyStatus.put(day, "L");
+				if (approvedLeave != null) {
+					dailyStatus.put(day, isCompOffLeave(approvedLeave) ? "CO" : "L");
 				} else if (onTour) {
 					dailyStatus.put(day, "T");
 				} else if (status != null && !status.isEmpty()) {
@@ -1010,6 +1037,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 			}
 			dto.setDailyStatus(dailyStatus);
+			applyAttendanceReportCounts(dto, dailyStatus);
+			dto.setPayableDays(Math.max(0, endDate.getDayOfMonth() - dto.getAbsentTotalCount()));
 			return dto;
 		}).collect(Collectors.toList());
 	}

@@ -402,6 +402,10 @@
                             <div class="summary-label">Total Holidays Till Date</div>
                             <div class="summary-value" th:text="${report.summary.totalHolidayCount}">0</div>
                         </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Total Payable Days</div>
+                            <div class="summary-value" th:text="${report.summary.payableDays}">0</div>
+                        </div>
                     </div>
 
                     <div class="legend-list">
@@ -470,13 +474,14 @@
                                             <small th:text="${#temporals.format(day, 'E')}">Mon</small>
                                         </th>
                                     </th:block>
-                                    <th class="totals-heading">P</th>
-                                    <th class="totals-heading">A</th>
-                                    <th class="totals-heading">L</th>
-                                    <th class="totals-heading">CO</th>
-                                    <th class="totals-heading">T</th>
-                                    <th class="totals-heading">H</th>
-                                    <th class="totals-heading">W</th>
+                                    <th class="totals-heading">Present Total</th>
+                                    <th class="totals-heading">Total Absent (A+L)</th>
+                                    <th class="totals-heading">Approved Leave Total</th>
+                                    <th class="totals-heading">Comp Off Total</th>
+                                    <th class="totals-heading">Tour Total</th>
+                                    <th class="totals-heading">Holiday Total</th>
+                                    <th class="totals-heading">Week Off Total</th>
+                                    <th class="totals-heading">Payable Days</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -498,7 +503,7 @@
                                     <td th:each="day : ${report.calendarDays}" class="day-column">
                                         <th:block th:with="status=${row.dailyStatus.get(day.dayOfMonth)}">
                                             <span th:if="${#strings.isEmpty(status)}"
-                                                class="status-badge status-empty">-</span>
+                                                class="status-badge status-empty"></span>
                                             <span th:unless="${#strings.isEmpty(status)}"
                                                 th:class="|status-badge status-${status}|" th:text="${status}">
                                                 P
@@ -506,12 +511,13 @@
                                         </th:block>
                                     </td>
                                     <td class="totals-cell" th:text="${row.presentCount}">0</td>
-                                    <td class="totals-cell" th:text="${row.absentCount}">0</td>
+                                    <td class="totals-cell" th:text="${row.absentTotalCount}">0</td>
                                     <td class="totals-cell" th:text="${row.leaveCount}">0</td>
                                     <td class="totals-cell" th:text="${row.compOffCount}">0</td>
                                     <td class="totals-cell" th:text="${row.tourCount}">0</td>
                                     <td class="totals-cell" th:text="${row.holidayCount}">0</td>
                                     <td class="totals-cell" th:text="${row.weekOffCount}">0</td>
+                                    <td class="totals-cell" th:text="${row.payableDays}">0</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -593,7 +599,10 @@
                     const link = document.createElement('a');
                     const url = URL.createObjectURL(blob);
                     link.href = url;
-                    link.download = 'internal-attendance-report.csv';
+                    const reportMonth = /*[[${report.monthName}]]*/ 'month';
+                    const reportYear = /*[[${report.filter.year}]]*/ 'year';
+                    const safeMonth = String(reportMonth).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                    link.download = `maha-recruitment-internal-attendance-report-${safeMonth}-${reportYear}.csv`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
