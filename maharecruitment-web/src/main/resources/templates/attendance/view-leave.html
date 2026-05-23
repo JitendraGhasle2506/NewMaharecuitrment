@@ -155,13 +155,14 @@
                                         <th>Leave Category</th>
                                         <th>Leave Type</th>
                                         <th class="text-center">Dates (From - To)</th>
+                                        <th>Comp-Off Worked Date</th>
                                         <th>Description</th>
                                         <th class="pe-4 text-center">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr th:if="${leaveHistory == null || leaveHistory.isEmpty()}">
-                                        <td colspan="6" class="text-center text-muted p-5">
+                                        <td colspan="7" class="text-center text-muted p-5">
                                             <div class="py-4">
                                                 <i class="fa fa-folder-open fa-3x mb-3 d-block text-light-grey" style="color: #dee2e6;"></i>
                                                 <p class="mb-0 fw-medium">No leave applications found in your history.</p>
@@ -182,6 +183,10 @@
                                                 <i class="fa fa-long-arrow-alt-right mx-2 text-muted"></i>
                                                 <span th:text="${#temporals.format(leave.endDate, 'dd-MM-yyyy')}"></span>
                                             </div>
+                                        </td>
+                                        <td>
+                                            <span th:if="${leave.compOffWorkDate != null}" th:text="${#temporals.format(leave.compOffWorkDate, 'dd-MM-yyyy')}"></span>
+                                            <span th:if="${leave.compOffWorkDate == null}" class="text-muted">-</span>
                                         </td>
                                         <td>
                                             <div class="description-text" th:title="${leave.description}" th:text="${leave.description ?: '-'}"></div>

@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.attendance.repository;
 
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,4 +19,9 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
     List<LeaveApplicationEntity> findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(List<Long> employeeIds, List<String> statuses);
 
     List<LeaveApplicationEntity> findByEmployeeIdAndStatus(Long employeeId, String status);
+
+    boolean existsByEmployeeIdAndCompOffWorkDateAndStatusIn(
+            Long employeeId,
+            LocalDate compOffWorkDate,
+            Collection<String> statuses);
 }
