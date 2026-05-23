@@ -196,6 +196,7 @@ public class InternalAttendanceReportPdfGenerator {
         cells.add("P");
         cells.add("A");
         cells.add("L");
+        cells.add("CO");
         cells.add("T");
         cells.add("H");
         cells.add("W");
@@ -228,6 +229,7 @@ public class InternalAttendanceReportPdfGenerator {
         cells.add(Long.toString(row.getPresentCount()));
         cells.add(Long.toString(row.getAbsentCount()));
         cells.add(Long.toString(row.getLeaveCount()));
+        cells.add(Long.toString(row.getCompOffCount()));
         cells.add(Long.toString(row.getTourCount()));
         cells.add(Long.toString(row.getHolidayCount()));
         cells.add(Long.toString(row.getWeekOffCount()));
@@ -344,7 +346,7 @@ public class InternalAttendanceReportPdfGenerator {
     }
 
     private static float[] buildColumnWidths() {
-        float[] widths = new float[40];
+        float[] widths = new float[41];
         widths[0] = 60F;
         widths[1] = 180F;
         widths[2] = 120F;
@@ -352,7 +354,7 @@ public class InternalAttendanceReportPdfGenerator {
             widths[index] = 18F;
         }
         for (int index = 34; index < widths.length; index++) {
-            widths[index] = 28F;
+            widths[index] = 26F;
         }
         return widths;
     }

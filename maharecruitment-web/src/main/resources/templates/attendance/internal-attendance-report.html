@@ -107,6 +107,10 @@
             background: #7a5af8;
         }
 
+        .legend-comp-off {
+            background: #0f766e;
+        }
+
         .legend-tour {
             background: #0ea5e9;
         }
@@ -259,6 +263,13 @@
             color: #5b3fd5;
         }
 
+        .status-CO {
+            width: 34px;
+            border-radius: 999px;
+            background: rgba(15, 118, 110, 0.14);
+            color: #0f766e;
+        }
+
         .status-T {
             background: rgba(14, 165, 233, 0.14);
             color: #0369a1;
@@ -399,6 +410,7 @@
                         <div class="legend-pill"><span class="legend-code legend-absent">A</span><span>Absent</span>
                         </div>
                         <div class="legend-pill"><span class="legend-code legend-leave">L</span><span>Leave</span></div>
+                        <div class="legend-pill"><span class="legend-code legend-comp-off">CO</span><span>Comp Off</span></div>
                         <div class="legend-pill"><span class="legend-code legend-tour">T</span><span>Tour</span></div>
                         <div class="legend-pill"><span class="legend-code legend-holiday">H</span><span>Holiday</span>
                         </div>
@@ -461,6 +473,7 @@
                                     <th class="totals-heading">P</th>
                                     <th class="totals-heading">A</th>
                                     <th class="totals-heading">L</th>
+                                    <th class="totals-heading">CO</th>
                                     <th class="totals-heading">T</th>
                                     <th class="totals-heading">H</th>
                                     <th class="totals-heading">W</th>
@@ -495,6 +508,7 @@
                                     <td class="totals-cell" th:text="${row.presentCount}">0</td>
                                     <td class="totals-cell" th:text="${row.absentCount}">0</td>
                                     <td class="totals-cell" th:text="${row.leaveCount}">0</td>
+                                    <td class="totals-cell" th:text="${row.compOffCount}">0</td>
                                     <td class="totals-cell" th:text="${row.tourCount}">0</td>
                                     <td class="totals-cell" th:text="${row.holidayCount}">0</td>
                                     <td class="totals-cell" th:text="${row.weekOffCount}">0</td>

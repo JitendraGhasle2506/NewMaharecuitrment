@@ -13,6 +13,7 @@ public class InternalAttendanceReportSummary {
     private long presentCount;
     private long absentCount;
     private long leaveCount;
+    private long compOffCount;
     private long holidayCount;
     private long weekOffCount;
     private long tourCount;
