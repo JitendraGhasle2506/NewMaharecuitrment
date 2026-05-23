@@ -1,8 +1,8 @@
 package com.maharecruitment.gov.in.attendance.service;
 
 import java.util.List;
+import java.time.LocalDate;
 
-import java.util.List;
 import com.maharecruitment.gov.in.attendance.dto.LeaveApplicationHODDTO;
 import com.maharecruitment.gov.in.attendance.entity.LeaveApplicationEntity;
 
@@ -16,4 +16,6 @@ public interface LeaveApplicationService {
     List<LeaveApplicationHODDTO> getProcessedLeavesForHOD(Long hodUserId, String search);
 
     void updateLeaveStatus(Long leaveId, String status, String remarks);
+
+    boolean isValidCompOffWorkedDate(Long employeeId, LocalDate workedDate);
 }

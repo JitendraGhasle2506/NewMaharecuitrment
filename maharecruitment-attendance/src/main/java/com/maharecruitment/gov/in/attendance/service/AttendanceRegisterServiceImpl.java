@@ -6,6 +6,7 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -470,19 +471,23 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
 			AttendanceDayDTO dayDTO = new AttendanceDayDTO();
 			dayDTO.setDate(date);
+			DailyAttendanceInternalEntity daily = empAttendance.get(date);
 
 			// Check for Approved Leaves
 			final LocalDate fDate = date;
-			boolean onLeave = approvedLeaves.stream()
-					.anyMatch(l -> !fDate.isBefore(l.getStartDate()) && !fDate.isAfter(l.getEndDate()));
+			Optional<LeaveApplicationEntity> matchingLeave = !hasCompletePunchTime(daily)
+					? approvedLeaves.stream()
+							.filter(l -> isDateCoveredByLeave(l, fDate))
+							.findFirst()
+					: Optional.empty();
+			boolean onLeave = matchingLeave.isPresent();
 
 			// Check for Approved Tours
 			boolean onTour = approvedTours.stream()
 					.anyMatch(t -> !fDate.isBefore(t.getStartDate()) && !fDate.isAfter(t.getEndDate()));
 
-			DailyAttendanceInternalEntity daily = empAttendance.get(date);
 			if (onLeave) {
-				dayDTO.setStatus("LEAVE");
+				dayDTO.setStatus(isCompOffLeave(matchingLeave.get()) ? "COMP_OFF" : "LEAVE");
 				if (daily != null) {
 					dayDTO.setInTime(daily.getInTime());
 					dayDTO.setOutTime(daily.getOutTime());
@@ -531,11 +536,42 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		// Calculate Summary Counts
 		dto.setTotalPresent(days.stream().filter(d -> "PRESENT".equals(d.getStatus())).count());
 		dto.setTotalAbsent(days.stream().filter(d -> "ABSENT".equals(d.getStatus())).count());
-		dto.setTotalLeave(days.stream().filter(d -> "LEAVE".equals(d.getStatus())).count());
+		dto.setTotalLeave(days.stream().filter(d -> "LEAVE".equals(d.getStatus()) || "COMP_OFF".equals(d.getStatus())).count());
 		dto.setTotalHoliday(days.stream().filter(d -> "HOLIDAY".equals(d.getStatus())).count());
 		dto.setTotalWeekOff(days.stream().filter(d -> "WEEK_OFF".equals(d.getStatus())).count());
 
 		return dto;
+	}
+
+	private boolean hasCompletePunchTime(DailyAttendanceInternalEntity daily) {
+		return daily != null
+				&& StringUtils.hasText(daily.getInTime())
+				&& StringUtils.hasText(daily.getOutTime());
+	}
+
+	private boolean isDateCoveredByLeave(LeaveApplicationEntity leave, LocalDate date) {
+		return leave != null
+				&& leave.getStartDate() != null
+				&& leave.getEndDate() != null
+				&& !date.isBefore(leave.getStartDate())
+				&& !date.isAfter(leave.getEndDate());
+	}
+
+	private boolean isCompOffLeave(LeaveApplicationEntity leave) {
+		return leave != null
+				&& (leave.getCompOffWorkDate() != null || isCompOffLeaveType(leave.getLeaveType()));
+	}
+
+	private boolean isCompOffLeaveType(String leaveType) {
+		if (!StringUtils.hasText(leaveType)) {
+			return false;
+		}
+		String normalized = leaveType.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
+		return normalized.equals("CO")
+				|| normalized.equals("COMPOFF")
+				|| normalized.equals("COMPOFFLEAVE")
+				|| normalized.equals("COMPENSATORYOFF")
+				|| normalized.equals("COMPENSATORYLEAVE");
 	}
 
 	private boolean isWeekOff(LocalDate date, Set<LocalDate> workingDayOverrideDates) {

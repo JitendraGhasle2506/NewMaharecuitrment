@@ -198,6 +198,7 @@
                                         </select>
                                     </div>
                                     <div class="info-tip">Select the type of leave (CL, EL, etc.)</div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('leaveType')}" th:errors="*{leaveType}"></div>
                                 </div>
 
                                 <!-- Leave Category -->
@@ -213,6 +214,7 @@
                                         </select>
                                     </div>
                                     <div class="info-tip">Full day or half day application</div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('leaveCategory')}" th:errors="*{leaveCategory}"></div>
                                 </div>
 
                                 <!-- Start Date -->
@@ -221,8 +223,9 @@
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
                                         <input type="text" class="form-control datepicker" th:field="*{startDate}" id="startDate" 
-                                               placeholder="YYYY-MM-DD" required autocomplete="off">
+                                               placeholder="DD-MM-YYYY" required autocomplete="off">
                                     </div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}"></div>
                                 </div>
 
                                 <!-- End Date -->
@@ -231,8 +234,21 @@
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-calendar-check"></i></span>
                                         <input type="text" class="form-control datepicker" th:field="*{endDate}" id="endDate" 
-                                               placeholder="YYYY-MM-DD" required autocomplete="off">
+                                               placeholder="DD-MM-YYYY" required autocomplete="off">
                                     </div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}"></div>
+                                </div>
+
+                                <!-- Comp-Off Worked Date -->
+                                <div class="col-md-6" id="compOffWorkDateBlock" style="display:none;">
+                                    <label for="compOffWorkDate" class="form-label">Worked Date for Comp-Off <span class="required-star">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa fa-business-time"></i></span>
+                                        <input type="text" class="form-control datepicker" th:field="*{compOffWorkDate}" id="compOffWorkDate"
+                                               placeholder="DD-MM-YYYY" autocomplete="off">
+                                    </div>
+                                    <div class="info-tip">Select the earlier date on which you worked extra.</div>
+                                    <div id="compOffWorkDateFeedback" class="small mt-1"></div>
                                 </div>
 
                                 <!-- Description -->
@@ -243,6 +259,7 @@
                                         <textarea class="form-control" th:field="*{description}" id="description" 
                                                   rows="4" placeholder="Briefly describe the reason for your leave..."></textarea>
                                     </div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
                                 </div>
 
                                 <div class="col-12 mt-5 text-center">
@@ -276,7 +293,7 @@
     <script>
         $(document).ready(function(){
             $('.datepicker').datepicker({
-                format: "yyyy-mm-dd",
+                format: "dd-mm-yyyy",
                 autoclose: true,
                 todayHighlight: true,
                 clearBtn: true,
@@ -285,12 +302,71 @@
                     rightArrow: '<i class="fa fa-angle-right"></i>'
                 }
             });
+
+            function parseDisplayDate(value) {
+                if (!value) return null;
+                var parts = value.split('-');
+                if (parts.length !== 3) return null;
+                return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+            }
             
-            // Validate End Date >= Start Date
+            function isCompOffLeave() {
+                var selected = $('#leaveType option:selected');
+                var value = ($('#leaveType').val() || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                var text = (selected.text() || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                return ['CO', 'COMPOFF', 'COMPOFFLEAVE', 'COMPENSATORYOFF', 'COMPENSATORYLEAVE'].includes(value)
+                    || text.indexOf('COMPOFF') >= 0
+                    || text.indexOf('COMPENSATORY') >= 0;
+            }
+
+            function toggleCompOffDate() {
+                if (isCompOffLeave()) {
+                    $('#compOffWorkDateBlock').show();
+                    $('#compOffWorkDate').prop('required', true);
+                } else {
+                    $('#compOffWorkDateBlock').hide();
+                    $('#compOffWorkDate').prop('required', false).val('');
+                }
+            }
+
+            $('#leaveType').on('change', toggleCompOffDate);
+            toggleCompOffDate();
+
+            function showCompOffFeedback(valid, message) {
+                $('#compOffWorkDateFeedback')
+                    .toggleClass('text-success', valid)
+                    .toggleClass('text-danger', !valid)
+                    .text(message || '');
+            }
+
+            function validateCompOffWorkedDate() {
+                var compOffWorkDate = $('#compOffWorkDate').val();
+                if (!isCompOffLeave() || !compOffWorkDate) {
+                    showCompOffFeedback(true, '');
+                    return;
+                }
+
+                $.ajax({
+                    url: '[[@{/employee/validateCompOffWorkedDate}]]',
+                    method: 'GET',
+                    data: { workedDate: compOffWorkDate },
+                    success: function(response) {
+                        showCompOffFeedback(response.valid, response.message);
+                    },
+                    error: function() {
+                        showCompOffFeedback(false, 'Unable to verify comp-off worked date. Please try again.');
+                    }
+                });
+            }
+
+            $('#compOffWorkDate').on('change changeDate', validateCompOffWorkedDate);
+
             $('form').on('submit', function(e) {
                 var start = $('#startDate').val();
                 var end = $('#endDate').val();
-                if (start && end && start > end) {
+                var startDate = parseDisplayDate(start);
+                var endDate = parseDisplayDate(end);
+                if (startDate && endDate && startDate > endDate) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Oops...',
@@ -298,6 +374,43 @@
                         confirmButtonColor: '#764ba2'
                     });
                     e.preventDefault();
+                    return;
+                }
+
+                if (isCompOffLeave()) {
+                    var compOffWorkDate = $('#compOffWorkDate').val();
+                    var workedDate = parseDisplayDate(compOffWorkDate);
+                    var today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (!compOffWorkDate) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Comp-Off Date Required',
+                            text: 'Please select the date on which you worked extra.',
+                            confirmButtonColor: '#1f4f78'
+                        });
+                        e.preventDefault();
+                        return;
+                    }
+                    if (workedDate && workedDate > today) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Invalid Worked Date',
+                            text: 'Comp-off worked date cannot be a future date.',
+                            confirmButtonColor: '#1f4f78'
+                        });
+                        e.preventDefault();
+                        return;
+                    }
+                    if (startDate && workedDate && workedDate >= startDate) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Invalid Worked Date',
+                            text: 'Comp-off worked date must be before the leave start date.',
+                            confirmButtonColor: '#1f4f78'
+                        });
+                        e.preventDefault();
+                    }
                 }
             });
         });

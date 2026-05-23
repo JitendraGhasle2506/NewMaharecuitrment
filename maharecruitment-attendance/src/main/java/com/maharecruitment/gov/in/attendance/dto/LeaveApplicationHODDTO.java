@@ -16,6 +16,7 @@ public class LeaveApplicationHODDTO {
     private String leaveCategory;
     private LocalDate startDate;
     private LocalDate endDate;
+    private LocalDate compOffWorkDate;
     private String description;
     private LocalDateTime applicationDate;
     private String status;

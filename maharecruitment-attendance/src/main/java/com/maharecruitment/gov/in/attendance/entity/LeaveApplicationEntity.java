@@ -11,6 +11,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -25,20 +28,29 @@ public class LeaveApplicationEntity {
     @Column(name = "employee_id", nullable = false)
     private Long employeeId;
 
+    @NotBlank(message = "Leave type is required")
     @Column(name = "leave_type")
     private String leaveType;
 
+    @NotBlank(message = "Leave category is required")
     @Column(name = "leave_category")
     private String leaveCategory;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @NotNull(message = "Start date is required")
+    @DateTimeFormat(pattern = "dd-MM-yyyy")
     @Column(name = "start_date")
     private LocalDate startDate;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @NotNull(message = "End date is required")
+    @DateTimeFormat(pattern = "dd-MM-yyyy")
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @DateTimeFormat(pattern = "dd-MM-yyyy")
+    @Column(name = "comp_off_work_date")
+    private LocalDate compOffWorkDate;
+
+    @Size(max = 500, message = "Description cannot exceed 500 characters")
     @Column(name = "description", length = 500)
     private String description;
 
