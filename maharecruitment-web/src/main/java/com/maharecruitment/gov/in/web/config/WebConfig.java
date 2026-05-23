@@ -27,7 +27,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")
                 .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send")
                 .excludePathPatterns("/register/**", "/registration**")
-                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
+                .excludePathPatterns("/css/**", "/js/**", "/assets/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/error/**")
                 .excludePathPatterns("/api/**", "/rest/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html");
 
@@ -35,12 +35,13 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")
                 .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send")
                 .excludePathPatterns("/register/**", "/registration**")
-                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
+                .excludePathPatterns("/css/**", "/js/**", "/assets/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/error/**")
                 .excludePathPatterns("/api/**", "/rest/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html");
 
         registry.addInterceptor(breadcrumbInterceptor)
                 .addPathPatterns("/**")
+                .excludePathPatterns("/css/**", "/js/**", "/assets/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/api/**", "/rest/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html");
     }
 }

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -319,7 +319,7 @@
     <script th:inline="javascript">
         document.addEventListener("DOMContentLoaded", function() {
 
-            // ── Shared constants ────────────────────────────────────────────
+            // â”€â”€ Shared constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             let rowCount = document.querySelectorAll('#taskTableBody .task-row').length;
             let nextIndex = rowCount;
 
@@ -341,7 +341,7 @@
                 projectOptionsHtml += `<option value="${pName}">${pName}</option>`;
             });
 
-            // ── Helpers ─────────────────────────────────────────────────────
+            // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             function updateDayLabel(row, dateValue) {
                 const label = row.querySelector('.day-label');
                 if (!label) return;
@@ -404,7 +404,7 @@
 
 
 
-            // ── Add Row ──────────────────────────────────────────────────────
+            // â”€â”€ Add Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             document.getElementById('addRowBtn').addEventListener('click', function() {
                 const tr = document.createElement('tr');
                 tr.className = 'task-row';
@@ -414,7 +414,7 @@
                 updateRowRequiredStates();
             });
 
-            // ── Remove Row ───────────────────────────────────────────────────
+            // â”€â”€ Remove Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             document.getElementById('taskTableBody').addEventListener('click', function(e) {
                 const btn = e.target.closest('.remove-row');
                 if (btn && !btn.hasAttribute('disabled')) {
@@ -423,7 +423,7 @@
                 }
             });
 
-            // ── Single unified change handler for the table ──────────────────
+            // â”€â”€ Single unified change handler for the table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             document.getElementById('taskTableBody').addEventListener('change', function(e) {
                 const tgt = e.target;
                 const row = tgt.closest('tr');
@@ -439,13 +439,13 @@
                 }
             });
 
-            // ── Select All ───────────────────────────────────────────────────
+            // â”€â”€ Select All â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             document.getElementById('selectAllTasks').addEventListener('change', function(e) {
                 document.querySelectorAll('.select-row-cb').forEach(cb => cb.checked = e.target.checked);
                 updateRowRequiredStates();
             });
 
-            // ── Form submit validation ────────────────────────────────────────
+            // â”€â”€ Form submit validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             document.getElementById('taskForm').addEventListener('submit', function(e) {
                 let valid = true;
                 document.querySelectorAll('#taskTableBody .task-row').forEach(row => {
@@ -459,7 +459,7 @@
                 }
             });
 
-            // ── Init ─────────────────────────────────────────────────────────
+            // â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             
             // Calculate hours automatically
             document.getElementById('taskTableBody').addEventListener('change', function(e) {
@@ -491,3 +491,4 @@
     </script>
 </body>
 </html>
+

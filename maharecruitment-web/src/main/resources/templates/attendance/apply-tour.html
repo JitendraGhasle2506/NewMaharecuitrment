@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apply for Tour | Attendance System</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link th:href="@{/assets/css/fonts/inter.css}" rel="stylesheet">
+    <script th:src="@{/assets/vendor/sweetalert2/sweetalert2.all.min.js}"></script>
     <style>
         :root {
             --primary-dark: linear-gradient(180deg, #1f4f78, #163a59);
@@ -217,7 +217,7 @@
         </section>
     </th:block>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}"></script>
     <script th:inline="javascript">
         $(document).ready(function() {
             function updateFormState() {
@@ -319,3 +319,4 @@
 </body>
 
 </html>
+
