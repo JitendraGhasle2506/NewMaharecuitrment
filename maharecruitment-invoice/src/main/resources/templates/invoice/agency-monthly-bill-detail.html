@@ -3,67 +3,442 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Agency Monthly Bill</title>
+    <title th:text="${'Agency Monthly Bill - ' + bill.billNumber}">Agency Monthly Bill</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <style>
-        .bill-detail-shell { display: grid; gap: 1rem; }
-        .bill-panel {
-            border: 0;
-            border-radius: 1rem;
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-            overflow: hidden;
-        }
-        .bill-summary-grid {
+        .bill-detail-shell {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 1px;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            background: #e2e8f0;
+            gap: 1rem;
         }
-        .bill-summary-cell {
+        .screen-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .screen-toolbar-title {
+            color: #0f172a;
+            font-weight: 800;
+            margin: 0;
+        }
+        .official-document {
             background: #fff;
-            padding: 0.8rem 0.95rem;
+            border: 1px solid #b8c4d3;
+            border-radius: 0.35rem;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+            color: #111827;
+            overflow: hidden;
+        }
+        .document-top-rule {
+            height: 5px;
+            background: #1f4f78;
+        }
+        .official-header {
+            border-bottom: 2px solid #1f2937;
+            padding: 0.9rem 1rem 0.75rem;
+            display: grid;
+            grid-template-columns: 120px 1fr 170px;
+            gap: 0.85rem;
+            align-items: center;
+        }
+        .document-logo-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .document-logo {
+            width: 88px;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+        .office-heading {
+            text-align: center;
+        }
+        .office-kicker,
+        .document-kicker {
+            color: #334155;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .office-title {
+            color: #0f172a;
+            font-size: 1.25rem;
+            font-weight: 900;
+            margin: 0.12rem 0;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .office-subtitle {
+            color: #334155;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+        .document-title-box {
+            border: 1px solid #94a3b8;
+            padding: 0.5rem;
+            text-align: center;
+            background: #f8fafc;
+        }
+        .document-title {
+            color: #0f172a;
+            font-size: 0.92rem;
+            font-weight: 900;
+            margin: 0;
+            text-transform: uppercase;
+        }
+        .document-number {
+            color: #1f4f78;
+            font-size: 0.86rem;
+            font-weight: 900;
+            word-break: break-word;
+        }
+        .official-body {
+            padding: 0.9rem 1rem 1rem;
+            display: grid;
+            gap: 0.85rem;
+        }
+        .document-control-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border: 1px solid #94a3b8;
+            border-bottom: 0;
+        }
+        .document-control-item {
+            border-right: 1px solid #94a3b8;
+            border-bottom: 1px solid #94a3b8;
+            min-height: 54px;
+            padding: 0.45rem 0.55rem;
+        }
+        .document-control-item:nth-child(4n) {
+            border-right: 0;
+        }
+        .control-label {
+            color: #475569;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .control-value {
+            color: #0f172a;
+            font-size: 0.88rem;
+            font-weight: 800;
+            margin-top: 0.18rem;
+        }
+        .section-caption {
+            color: #0f172a;
+            font-size: 0.86rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin: 0 0 0.25rem;
+            letter-spacing: 0.03em;
+        }
+        .table-report {
+            border-color: #94a3b8;
+            margin-bottom: 0;
+        }
+        .table-report th {
+            background: #eef2f7;
+            color: #0f172a;
+            font-size: 0.73rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        .table-report td {
+            color: #111827;
+            font-size: 0.82rem;
+            vertical-align: middle;
+        }
+        .particulars-table th {
+            width: 15%;
+        }
+        .particulars-table td {
+            width: 35%;
+            font-weight: 650;
+        }
+        .group-header th {
+            background: #dbeafe;
+            text-align: center;
+        }
+        .number-cell {
+            text-align: right;
+            white-space: nowrap;
+        }
+        .employee-cell {
+            display: grid;
+            gap: 0.1rem;
+            min-width: 190px;
+        }
+        .employee-name {
+            color: #0f172a;
+            font-weight: 800;
+        }
+        .employee-code {
+            color: #475569;
+            font-size: 0.75rem;
+        }
+        .amount-summary tfoot th,
+        .employee-lines tfoot th {
+            background: #e2e8f0;
+            color: #0f172a;
+            font-weight: 900;
+        }
+        .certificate-box {
+            border: 1px solid #94a3b8;
+            padding: 0.65rem 0.75rem;
+            background: #fbfdff;
+        }
+        .certificate-text {
+            color: #111827;
+            font-size: 0.82rem;
+            line-height: 1.45;
+            margin: 0;
+        }
+        .verification-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.65rem;
+        }
+        .signature-box {
+            border: 1px solid #94a3b8;
+            min-height: 96px;
+            padding: 0.65rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: #fff;
+        }
+        .signature-label {
+            color: #475569;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .signature-line {
+            border-top: 1px solid #1f2937;
+            padding-top: 0.32rem;
+            color: #0f172a;
+            font-size: 0.78rem;
+            font-weight: 900;
+            text-align: center;
+        }
+        .report-footer {
+            border-top: 1px solid #94a3b8;
+            padding-top: 0.45rem;
             display: flex;
             justify-content: space-between;
             gap: 1rem;
-            align-items: center;
+            color: #475569;
+            font-size: 0.72rem;
+            flex-wrap: wrap;
         }
-        .bill-summary-label {
-            color: #64748b;
-            font-size: 0.76rem;
-            text-transform: uppercase;
-            font-weight: 700;
+        @media (max-width: 1199.98px) {
+            .official-header {
+                grid-template-columns: 90px 1fr;
+            }
+            .document-title-box {
+                grid-column: 1 / -1;
+            }
+            .document-control-grid,
+            .verification-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .document-control-item:nth-child(4n) {
+                border-right: 1px solid #94a3b8;
+            }
+            .document-control-item:nth-child(2n) {
+                border-right: 0;
+            }
         }
-        .bill-summary-value { font-weight: 800; color: #0f172a; }
-        .table-bill-lines thead th {
-            background: #f8fafc;
-            color: #334155;
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            white-space: nowrap;
+        @media (max-width: 767.98px) {
+            .official-header,
+            .document-control-grid,
+            .verification-grid {
+                grid-template-columns: 1fr;
+            }
+            .document-control-item,
+            .document-control-item:nth-child(2n),
+            .document-control-item:nth-child(4n) {
+                border-right: 0;
+            }
+            .document-logo {
+                width: 76px;
+            }
+            .office-title {
+                font-size: 1rem;
+            }
         }
-        .table-bill-lines td { vertical-align: middle; }
-        .employee-meta { display: grid; gap: 0.15rem; }
-        .employee-name { font-weight: 700; color: #0f172a; }
-        .employee-code { color: #64748b; font-size: 0.8rem; }
         @media print {
-            .no-print { display: none !important; }
-            .bill-panel { box-shadow: none; border: 1px solid #e5e7eb; }
+            @page {
+                size: A4 landscape;
+                margin: 9mm;
+            }
+            html,
+            body {
+                background: #fff !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .no-print,
+            #sidebar,
+            .sidebar,
+            .app-topbar,
+            .breadcrumb-style,
+            footer,
+            .footer {
+                display: none !important;
+            }
+            .wrapper,
+            .app-shell,
+            #content,
+            .app-content,
+            .page-main-content,
+            .page-contents,
+            main {
+                display: block !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                min-height: auto !important;
+                background: #fff !important;
+            }
+            .bill-detail-shell {
+                display: block !important;
+            }
+            .official-document {
+                border: 0;
+                box-shadow: none;
+                border-radius: 0;
+                overflow: visible;
+            }
+            .document-top-rule {
+                height: 3px;
+            }
+            .official-header {
+                grid-template-columns: 74px 1fr 150px;
+                padding: 5px 0 6px;
+                gap: 6px;
+            }
+            .document-logo {
+                width: 58px;
+            }
+            .office-kicker,
+            .document-kicker {
+                font-size: 7px;
+            }
+            .office-title {
+                font-size: 13px;
+                margin: 1px 0;
+            }
+            .office-subtitle,
+            .document-title,
+            .document-number {
+                font-size: 8.5px;
+            }
+            .document-title-box {
+                padding: 4px;
+            }
+            .official-body {
+                padding: 6px 0 0;
+                gap: 6px;
+            }
+            .document-control-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .document-control-item {
+                min-height: 34px;
+                padding: 3px 5px;
+                border-right: 1px solid #555 !important;
+                border-bottom: 1px solid #555 !important;
+            }
+            .document-control-item:nth-child(4n) {
+                border-right: 0 !important;
+            }
+            .control-label {
+                font-size: 6.8px;
+            }
+            .control-value {
+                font-size: 8px;
+                margin-top: 1px;
+            }
+            .section-caption {
+                font-size: 8.2px;
+                margin-bottom: 2px;
+            }
+            .table-responsive {
+                overflow: visible !important;
+            }
+            .table-report {
+                page-break-inside: auto;
+            }
+            .table-report thead {
+                display: table-header-group;
+            }
+            .table-report tfoot {
+                display: table-row-group;
+            }
+            .table-report tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            .table-report th,
+            .table-report td {
+                border-color: #555 !important;
+                padding: 2.5px 4px !important;
+                font-size: 7.8px !important;
+                line-height: 1.18;
+            }
+            .employee-cell {
+                min-width: 112px;
+            }
+            .employee-code {
+                font-size: 6.8px !important;
+            }
+            .certificate-box {
+                padding: 4px 5px;
+            }
+            .certificate-text {
+                font-size: 7.8px;
+                line-height: 1.3;
+            }
+            .verification-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 5px;
+            }
+            .signature-box {
+                min-height: 52px;
+                padding: 4px;
+            }
+            .signature-label {
+                font-size: 6.8px;
+            }
+            .signature-line,
+            .report-footer {
+                font-size: 7px;
+            }
         }
     </style>
 </head>
 
 <body>
     <th:block th:replace="~{header/header :: var-sidebar-header('Auditor', 'Agency Monthly Bill', ~{::section})}">
-        <section class="bill-detail-shell">
-            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap no-print">
+        <section class="bill-detail-shell"
+            th:with="employeeTypeLabel=${bill.employeeType == 'INTERNAL' ? 'Internal Employees' : (bill.employeeType == 'EXTERNAL' ? 'External Employees' : 'All Employees')}">
+            <div class="screen-toolbar no-print">
                 <div>
-                    <h2 class="fw-bold text-dark mb-1">Agency Monthly Bill</h2>
+                    <h2 class="screen-toolbar-title">Agency Monthly Bill</h2>
                     <p class="text-muted mb-0" th:text="${bill.billNumber}">25MAY2026-0001</p>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-wrap">
                     <button type="button" class="btn btn-outline-primary rounded-pill px-4" onclick="window.print()">Print</button>
                     <form class="d-inline"
                         th:action="@{/auditor/agency-monthly-bills/{id}/delete(id=${bill.agencyMonthlyBillId})}"
@@ -76,98 +451,259 @@
                 </div>
             </div>
 
-            <div class="card bill-panel">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between gap-3 flex-wrap mb-4">
-                        <div>
-                            <div class="text-muted text-uppercase small fw-bold">Bill ID</div>
-                            <h3 class="fw-bold mb-1" th:text="${bill.billNumber}">25MAY2026-0001</h3>
-                            <div class="text-muted" th:text="${bill.agencyName}">Agency</div>
-                        </div>
-                        <div class="text-md-end">
-                            <div class="text-muted text-uppercase small fw-bold">Billing Month</div>
-                            <div class="fw-bold" th:text="${#numbers.formatInteger(bill.billMonth, 2) + '-' + bill.billYear}">05-2026</div>
-                            <div class="text-muted"
-                                th:text="${#temporals.format(bill.periodFrom, 'dd-MM-yyyy') + ' to ' + #temporals.format(bill.periodTo, 'dd-MM-yyyy')}">-</div>
-                        </div>
+            <article class="official-document">
+                <div class="document-top-rule"></div>
+                <header class="official-header">
+                    <div class="document-logo-box">
+                        <img class="document-logo" th:src="@{/img/mahait_logo.png}" alt="MahaIT Logo">
                     </div>
+                    <div class="office-heading">
+                        <div class="office-kicker">Government of Maharashtra</div>
+                        <h1 class="office-title">MahaIT Recruitment</h1>
+                        <div class="office-subtitle">Agency Monthly Bill Statement for Audit Verification</div>
+                    </div>
+                    <div class="document-title-box">
+                        <div class="document-kicker">Form AMB-01</div>
+                        <h2 class="document-title">Bill Statement</h2>
+                        <div class="document-number" th:text="${bill.billNumber}">25MAY2026-0001</div>
+                    </div>
+                </header>
 
-                    <div class="bill-summary-grid mb-4">
-                        <div class="bill-summary-cell">
-                            <span class="bill-summary-label">Employees</span>
-                            <span class="bill-summary-value" th:text="${bill.employeeCount}">0</span>
+                <div class="official-body">
+                    <section class="document-control-grid" aria-label="Document Control">
+                        <div class="document-control-item">
+                            <div class="control-label">Bill Number</div>
+                            <div class="control-value" th:text="${bill.billNumber}">25MAY2026-0001</div>
                         </div>
-                        <div class="bill-summary-cell">
-                            <span class="bill-summary-label">Employee Type</span>
-                            <span class="bill-summary-value" th:text="${bill.employeeType}">ALL</span>
+                        <div class="document-control-item">
+                            <div class="control-label">Generated Date</div>
+                            <div class="control-value" th:text="${bill.generatedDate != null ? #temporals.format(bill.generatedDate, 'dd-MM-yyyy') : '-'}">-</div>
                         </div>
-                        <div class="bill-summary-cell">
-                            <span class="bill-summary-label">Agency Margin</span>
-                            <span class="bill-summary-value" th:text="${#numbers.formatDecimal(bill.agencyMarginRate, 1, 'COMMA', 2, 'POINT') + '%'}">0%</span>
+                        <div class="document-control-item">
+                            <div class="control-label">Bill Period</div>
+                            <div class="control-value" th:text="${#temporals.format(bill.periodFrom, 'dd-MM-yyyy') + ' to ' + #temporals.format(bill.periodTo, 'dd-MM-yyyy')}">-</div>
                         </div>
-                        <div class="bill-summary-cell">
-                            <span class="bill-summary-label">Attendance Amount</span>
-                            <span class="bill-summary-value" th:text="${#numbers.formatDecimal(bill.attendanceAmount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                        <div class="document-control-item">
+                            <div class="control-label">Employee Type</div>
+                            <div class="control-value" th:text="${employeeTypeLabel}">All Employees</div>
                         </div>
-                        <div class="bill-summary-cell">
-                            <span class="bill-summary-label">Margin Amount</span>
-                            <span class="bill-summary-value" th:text="${#numbers.formatDecimal(bill.agencyMarginAmount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                        <div class="document-control-item">
+                            <div class="control-label">Agency</div>
+                            <div class="control-value" th:text="${bill.agencyName}">Agency</div>
                         </div>
-                        <div class="bill-summary-cell">
-                            <span class="bill-summary-label">Bill Total</span>
-                            <span class="bill-summary-value" th:text="${#numbers.formatDecimal(bill.totalAmount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                        <div class="document-control-item">
+                            <div class="control-label">Month / Year</div>
+                            <div class="control-value" th:text="${#numbers.formatInteger(bill.billMonth, 2) + ' / ' + bill.billYear}">05 / 2026</div>
                         </div>
-                    </div>
+                        <div class="document-control-item">
+                            <div class="control-label">Employees Covered</div>
+                            <div class="control-value" th:text="${bill.employeeCount}">0</div>
+                        </div>
+                        <div class="document-control-item">
+                            <div class="control-label">Prepared By</div>
+                            <div class="control-value" th:text="${bill.createdBy != null ? bill.createdBy : '-'}">-</div>
+                        </div>
+                    </section>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover table-bill-lines align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Sr.No</th>
-                                    <th>Employee</th>
-                                    <th>Type</th>
-                                    <th>Designation</th>
-                                    <th class="text-end">Monthly Rate</th>
-                                    <th class="text-end">Payable Days</th>
-                                    <th class="text-end">Attendance Amount</th>
-                                    <th class="text-end">Agency Margin</th>
-                                    <th class="text-end">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="line : ${bill.lineItems}">
-                                    <td th:text="${line.lineNumber}">1</td>
-                                    <td>
-                                        <div class="employee-meta">
-                                            <span class="employee-name" th:text="${line.employeeName}">Employee</span>
-                                            <span class="employee-code"
-                                                th:text="${(line.employeeCode != null ? line.employeeCode : '-') + ' | ' + (line.requestId != null ? line.requestId : '-')}">-</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="badge text-bg-light border" th:text="${line.employeeType}">EXTERNAL</span>
-                                    </td>
-                                    <td>
-                                        <div th:text="${line.designationName}">Designation</div>
-                                        <small class="text-muted" th:text="${line.levelCode != null ? line.levelCode : '-'}">Level</small>
-                                    </td>
-                                    <td class="text-end" th:text="${#numbers.formatDecimal(line.monthlyRate, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-                                    <td class="text-end">
-                                        <span th:text="${line.payableDays}">0</span>
-                                        <small class="text-muted" th:text="${' / ' + line.daysInMonth}">/ 31</small>
-                                    </td>
-                                    <td class="text-end" th:text="${#numbers.formatDecimal(line.attendanceAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-                                    <td class="text-end">
-                                        <div th:text="${#numbers.formatDecimal(line.agencyMarginAmount, 1, 'COMMA', 2, 'POINT')}">0.00</div>
-                                        <small class="text-muted" th:text="${#numbers.formatDecimal(line.agencyMarginRate, 1, 'COMMA', 2, 'POINT') + '%'}">0%</small>
-                                    </td>
-                                    <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(line.lineTotal, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <section>
+                        <h3 class="section-caption">1. Bill Particulars</h3>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-report particulars-table">
+                                <tbody>
+                                    <tr>
+                                        <th>Agency Name</th>
+                                        <td colspan="3" th:text="${bill.agencyName}">Agency</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Bill Number</th>
+                                        <td th:text="${bill.billNumber}">25MAY2026-0001</td>
+                                        <th>Generated Date</th>
+                                        <td th:text="${bill.generatedDate != null ? #temporals.format(bill.generatedDate, 'dd-MM-yyyy') : '-'}">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Bill Period</th>
+                                        <td th:text="${#temporals.format(bill.periodFrom, 'dd-MM-yyyy') + ' to ' + #temporals.format(bill.periodTo, 'dd-MM-yyyy')}">-</td>
+                                        <th>Days In Month</th>
+                                        <td th:text="${bill.daysInMonth}">31</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Employee Type</th>
+                                        <td th:text="${employeeTypeLabel}">All Employees</td>
+                                        <th>Total Employees</th>
+                                        <td th:text="${bill.employeeCount}">0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="section-caption">2. Amount Summary</h3>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-report amount-summary">
+                                <thead>
+                                    <tr>
+                                        <th>Particular</th>
+                                        <th class="number-cell">Rate / Value</th>
+                                        <th class="number-cell">Amount (INR)</th>
+                                        <th>Calculation Basis</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Attendance Amount</td>
+                                        <td class="number-cell">Monthly rate x payable days</td>
+                                        <td class="number-cell" th:text="${#numbers.formatDecimal(bill.attendanceAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                        <td>Monthly rate divided by days in month, multiplied by payable days.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Agency Margin</td>
+                                        <td class="number-cell" th:text="${#numbers.formatDecimal(bill.agencyMarginRate, 1, 'COMMA', 2, 'POINT') + '%'}">0%</td>
+                                        <td class="number-cell" th:text="${#numbers.formatDecimal(bill.agencyMarginAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                        <td>Agency margin calculated on attendance amount as per active commission master.</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2" class="text-end">Total Bill Amount</th>
+                                        <th class="number-cell" th:text="${#numbers.formatDecimal(bill.totalAmount, 1, 'COMMA', 2, 'POINT')}">0.00</th>
+                                        <th>Amount payable subject to audit and competent authority approval.</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="section-caption">3. Attendance Code Legend</h3>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-report">
+                                <thead>
+                                    <tr>
+                                        <th>Payable Codes</th>
+                                        <th>Meaning</th>
+                                        <th>Non-Payable Codes</th>
+                                        <th>Meaning</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>P / CO / T / H / W</td>
+                                        <td>Present / Comp Off / Approved Tour / Holiday / Week Off</td>
+                                        <td>A / L</td>
+                                        <td>Absent / Approved Leave</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="section-caption">4. Annexure I - Employee-Wise Bill Calculation</h3>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-report employee-lines">
+                                <thead>
+                                    <tr class="group-header">
+                                        <th rowspan="2">Sr.No</th>
+                                        <th rowspan="2">Employee Details</th>
+                                        <th rowspan="2">Type</th>
+                                        <th rowspan="2">Designation / Level</th>
+                                        <th colspan="2">Rate And Days</th>
+                                        <th colspan="2">Attendance Counts</th>
+                                        <th colspan="3">Amount (INR)</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="number-cell">Monthly Rate</th>
+                                        <th class="number-cell">Payable Days</th>
+                                        <th class="number-cell">P / CO / T / H / W</th>
+                                        <th class="number-cell">A / L</th>
+                                        <th class="number-cell">Attendance</th>
+                                        <th class="number-cell">Margin</th>
+                                        <th class="number-cell">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="line : ${bill.lineItems}">
+                                        <td th:text="${line.lineNumber}">1</td>
+                                        <td>
+                                            <div class="employee-cell">
+                                                <span class="employee-name" th:text="${line.employeeName}">Employee</span>
+                                                <span class="employee-code"
+                                                    th:text="${(line.employeeCode != null ? line.employeeCode : '-') + ' | ' + (line.requestId != null ? line.requestId : '-')}">-</span>
+                                            </div>
+                                        </td>
+                                        <td th:text="${line.employeeType}">EXTERNAL</td>
+                                        <td>
+                                            <div th:text="${line.designationName}">Designation</div>
+                                            <small class="text-muted" th:text="${line.levelCode != null ? line.levelCode : '-'}">Level</small>
+                                        </td>
+                                        <td class="number-cell" th:text="${#numbers.formatDecimal(line.monthlyRate, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                        <td class="number-cell">
+                                            <span th:text="${line.payableDays}">0</span>
+                                            <small class="text-muted" th:text="${' / ' + line.daysInMonth}">/ 31</small>
+                                        </td>
+                                        <td class="number-cell"
+                                            th:text="${line.presentDays + ' / ' + line.compOffDays + ' / ' + line.tourDays + ' / ' + line.holidayDays + ' / ' + line.weekOffDays}">0 / 0 / 0 / 0 / 0</td>
+                                        <td class="number-cell" th:text="${line.absentDays + ' / ' + line.leaveDays}">0 / 0</td>
+                                        <td class="number-cell" th:text="${#numbers.formatDecimal(line.attendanceAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                        <td class="number-cell">
+                                            <div th:text="${#numbers.formatDecimal(line.agencyMarginAmount, 1, 'COMMA', 2, 'POINT')}">0.00</div>
+                                            <small class="text-muted" th:text="${#numbers.formatDecimal(line.agencyMarginRate, 1, 'COMMA', 2, 'POINT') + '%'}">0%</small>
+                                        </td>
+                                        <td class="number-cell fw-bold" th:text="${#numbers.formatDecimal(line.lineTotal, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="8" class="text-end">Grand Total</th>
+                                        <th class="number-cell" th:text="${#numbers.formatDecimal(bill.attendanceAmount, 1, 'COMMA', 2, 'POINT')}">0.00</th>
+                                        <th class="number-cell" th:text="${#numbers.formatDecimal(bill.agencyMarginAmount, 1, 'COMMA', 2, 'POINT')}">0.00</th>
+                                        <th class="number-cell" th:text="${#numbers.formatDecimal(bill.totalAmount, 1, 'COMMA', 2, 'POINT')}">0.00</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="section-caption">5. Verification Certificate</h3>
+                        <div class="certificate-box">
+                            <p class="certificate-text">
+                                Certified that the above statement has been generated from the system records for attendance,
+                                approved tour/comp-off/holiday/week-off entries, designation monthly rate, and applicable agency margin.
+                                The bill is subject to verification of supporting records and approval by the competent authority.
+                            </p>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="section-caption">6. Signature And Approval</h3>
+                        <div class="verification-grid">
+                            <div class="signature-box">
+                                <div class="signature-label">Prepared By</div>
+                                <div class="signature-line">Name / Signature / Date</div>
+                            </div>
+                            <div class="signature-box">
+                                <div class="signature-label">Checked By</div>
+                                <div class="signature-line">Auditor Verification</div>
+                            </div>
+                            <div class="signature-box">
+                                <div class="signature-label">Agency Confirmation</div>
+                                <div class="signature-line">Authorized Signatory</div>
+                            </div>
+                            <div class="signature-box">
+                                <div class="signature-label">Approved By</div>
+                                <div class="signature-line">Competent Authority</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <footer class="report-footer">
+                        <span th:text="${'System generated on ' + (bill.createdDate != null ? #temporals.format(bill.createdDate, 'dd-MM-yyyy HH:mm') : '-')}">System generated</span>
+                        <span>This computer generated statement requires signature only after official verification.</span>
+                    </footer>
                 </div>
-            </div>
+            </article>
         </section>
     </th:block>
 </body>

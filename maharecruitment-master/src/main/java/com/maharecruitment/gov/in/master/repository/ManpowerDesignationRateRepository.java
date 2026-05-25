@@ -22,6 +22,8 @@ public interface ManpowerDesignationRateRepository extends JpaRepository<Manpowe
 
     Page<ManpowerDesignationRate> findByDesignationId(Long designationId, Pageable pageable);
 
+    java.util.List<ManpowerDesignationRate> findByDesignationIdOrderByEffectiveFromDesc(Long designationId);
+
     Optional<ManpowerDesignationRate> findByRateIdAndActiveFlagIgnoreCase(Long rateId, String activeFlag);
 
     @Query("""
@@ -41,8 +43,8 @@ public interface ManpowerDesignationRateRepository extends JpaRepository<Manpowe
     @Query("""
             SELECT r FROM ManpowerDesignationRate r
             WHERE r.designationId = :designationId
-              AND LOWER(r.levelCode) = LOWER(:levelCode)
-              AND r.activeFlag = 'Y'
+              AND LOWER(TRIM(r.levelCode)) = LOWER(:levelCode)
+              AND UPPER(TRIM(r.activeFlag)) = 'Y'
               AND r.effectiveFrom <= :date
               AND (r.effectiveTo IS NULL OR r.effectiveTo >= :date)
             ORDER BY r.effectiveFrom DESC
@@ -51,4 +53,29 @@ public interface ManpowerDesignationRateRepository extends JpaRepository<Manpowe
             @Param("designationId") Long designationId,
             @Param("levelCode") String levelCode,
             @Param("date") LocalDate date);
+
+    @Query("""
+            SELECT r FROM ManpowerDesignationRate r
+            WHERE r.designationId = :designationId
+              AND LOWER(TRIM(r.levelCode)) = LOWER(:levelCode)
+              AND UPPER(TRIM(r.activeFlag)) = 'Y'
+              AND r.effectiveFrom <= :periodTo
+              AND (r.effectiveTo IS NULL OR r.effectiveTo >= :periodFrom)
+            ORDER BY r.effectiveFrom DESC
+            """)
+    java.util.List<ManpowerDesignationRate> findActiveRatesForPeriod(
+            @Param("designationId") Long designationId,
+            @Param("levelCode") String levelCode,
+            @Param("periodFrom") LocalDate periodFrom,
+            @Param("periodTo") LocalDate periodTo);
+
+    @Query("""
+            SELECT r FROM ManpowerDesignationRate r
+            WHERE r.designationId = :designationId
+              AND LOWER(TRIM(r.levelCode)) = LOWER(:levelCode)
+            ORDER BY r.activeFlag DESC, r.effectiveFrom DESC
+            """)
+    java.util.List<ManpowerDesignationRate> findRatesByDesignationAndLevel(
+            @Param("designationId") Long designationId,
+            @Param("levelCode") String levelCode);
 }

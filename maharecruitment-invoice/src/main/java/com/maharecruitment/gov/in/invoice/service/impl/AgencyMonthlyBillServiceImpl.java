@@ -7,14 +7,16 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +29,6 @@ import com.maharecruitment.gov.in.attendance.dto.AttendanceReportDTO;
 import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
 import com.maharecruitment.gov.in.attendance.service.InternalEmployeeAttendanceReportService;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportFilter;
-import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportRow;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportView;
 import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillGenerateRequest;
 import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillListItemView;
@@ -115,7 +116,7 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
 
     @Override
     public AgencyMonthlyBillView preview(AgencyMonthlyBillGenerateRequest request) {
-        AgencyMonthlyBillEntity preview = buildBill(request, "PREVIEW", DEFAULT_ACTOR, false);
+        AgencyMonthlyBillEntity preview = buildBill(request, "PREVIEW", DEFAULT_ACTOR, false, null);
         return viewMapper.toView(preview);
     }
 
@@ -123,64 +124,24 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
     @Transactional
     public AgencyMonthlyBillView generate(AgencyMonthlyBillGenerateRequest request, String actorEmail) {
         validateRequest(request);
-        AgencyMonthlyBillEmployeeType employeeType = resolveEmployeeType(request);
         LocalDate generatedDate = LocalDate.now();
-        AgencyMonthlyBillEntity existing = billRepository
-                .findByAgencyIdAndBillYearAndBillMonthAndEmployeeType(
-                        request.getAgencyId(),
-                        request.getYear(),
-                        request.getMonth(),
-                        employeeType.name())
-                .orElse(null);
-        if (existing != null) {
-            String billNumber = billNumberGenerator.isCurrentFormat(existing.getBillNumber())
-                    ? existing.getBillNumber()
-                    : billNumberGenerator.generate(
-                            request.getAgencyId(),
-                            request.getYear(),
-                            request.getMonth(),
-                            generatedDate);
-            AgencyMonthlyBillEntity recalculated = buildBill(request, billNumber, actorEmail, false);
-            copyRecalculatedValues(existing, recalculated, actorEmail);
-            AgencyMonthlyBillEntity saved = billRepository.save(existing);
-            log.info(
-                    "Agency monthly bill recalculated. billId={}, billNumber={}, agencyId={}, month={}, year={}, total={}",
-                    saved.getAgencyMonthlyBillId(),
-                    saved.getBillNumber(),
-                    saved.getAgencyId(),
-                    saved.getBillMonth(),
-                    saved.getBillYear(),
-                    saved.getTotalAmount());
-            return getBill(saved.getAgencyMonthlyBillId());
-        }
-
         String billNumber = billNumberGenerator.generate(
                 request.getAgencyId(),
                 request.getYear(),
                 request.getMonth(),
                 generatedDate);
-        AgencyMonthlyBillEntity bill = buildBill(request, billNumber, actorEmail, true);
+        AgencyMonthlyBillEntity bill = buildBill(request, billNumber, actorEmail, true, null);
 
-        try {
-            AgencyMonthlyBillEntity saved = billRepository.save(bill);
-            log.info(
-                    "Agency monthly bill generated. billId={}, billNumber={}, agencyId={}, month={}, year={}, total={}",
-                    saved.getAgencyMonthlyBillId(),
-                    saved.getBillNumber(),
-                    saved.getAgencyId(),
-                    saved.getBillMonth(),
-                    saved.getBillYear(),
-                    saved.getTotalAmount());
-            return getBill(saved.getAgencyMonthlyBillId());
-        } catch (DataIntegrityViolationException ex) {
-            return billRepository.findByAgencyIdAndBillYearAndBillMonthAndEmployeeTypeAndActiveTrue(
-                    request.getAgencyId(),
-                    request.getYear(),
-                    request.getMonth(),
-                    employeeType.name())
-                    .map(saved -> getBill(saved.getAgencyMonthlyBillId()))
-                    .orElseThrow(() -> new TaxInvoiceException("Unable to persist agency monthly bill.", ex));
-        }
+        AgencyMonthlyBillEntity saved = billRepository.save(bill);
+        log.info(
+                "Agency monthly bill generated. billId={}, billNumber={}, agencyId={}, month={}, year={}, total={}",
+                saved.getAgencyMonthlyBillId(),
+                saved.getBillNumber(),
+                saved.getAgencyId(),
+                saved.getBillMonth(),
+                saved.getBillYear(),
+                saved.getTotalAmount());
+        return getBill(saved.getAgencyMonthlyBillId());
     }
 
     @Override
@@ -210,7 +171,8 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
             AgencyMonthlyBillGenerateRequest request,
             String billNumber,
             String actorEmail,
-            boolean persistable) {
+            boolean persistable,
+            Long excludedBillId) {
         validateRequest(request);
         YearMonth billPeriod = YearMonth.of(request.getYear(), request.getMonth());
         LocalDate periodFrom = billPeriod.atDay(1);
@@ -226,12 +188,21 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
         if (attendanceRows == null || attendanceRows.isEmpty()) {
             throw new TaxInvoiceException("No attendance records found for selected agency, employee type and month.");
         }
-
-        Map<Long, EmployeeEntity> employeesById = loadEmployees(attendanceRows);
-        List<AgencyMonthlyBillLineItemEntity> lineItems = buildLineItems(
+        List<BillAttendanceRow> billableAttendanceRows = excludeAlreadyBilledEmployees(
+                request,
                 attendanceRows,
+                excludedBillId);
+        if (billableAttendanceRows.isEmpty()) {
+            throw new TaxInvoiceException(
+                    "All eligible employees for the selected agency and month are already included in an active bill.");
+        }
+
+        Map<Long, EmployeeEntity> employeesById = loadEmployees(billableAttendanceRows);
+        List<AgencyMonthlyBillLineItemEntity> lineItems = buildLineItems(
+                billableAttendanceRows,
                 employeesById,
                 daysInMonth,
+                periodFrom,
                 periodTo,
                 agencyMarginRate);
         if (lineItems.isEmpty()) {
@@ -272,6 +243,37 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
             applyAuditMetadata(bill, actorEmail);
         }
         return bill;
+    }
+
+    private List<BillAttendanceRow> excludeAlreadyBilledEmployees(
+            AgencyMonthlyBillGenerateRequest request,
+            List<BillAttendanceRow> attendanceRows,
+            Long excludedBillId) {
+        Set<Long> billedEmployeeIds = findAlreadyBilledEmployeeIds(request, excludedBillId);
+        if (billedEmployeeIds.isEmpty()) {
+            return attendanceRows;
+        }
+        return attendanceRows.stream()
+                .filter(row -> row != null
+                        && row.employeeId() != null
+                        && !billedEmployeeIds.contains(row.employeeId()))
+                .toList();
+    }
+
+    private Set<Long> findAlreadyBilledEmployeeIds(
+            AgencyMonthlyBillGenerateRequest request,
+            Long excludedBillId) {
+        List<Long> employeeIds = billRepository.findBilledEmployeeIdsForPeriod(
+                request.getAgencyId(),
+                request.getYear(),
+                request.getMonth(),
+                excludedBillId);
+        if (employeeIds == null || employeeIds.isEmpty()) {
+            return Set.of();
+        }
+        return employeeIds.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private List<BillAttendanceRow> loadAttendanceRows(
@@ -350,9 +352,12 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
             List<BillAttendanceRow> attendanceRows,
             Map<Long, EmployeeEntity> employeesById,
             int daysInMonth,
-            LocalDate rateDate,
+            LocalDate periodFrom,
+            LocalDate periodTo,
             BigDecimal agencyMarginRate) {
         List<AgencyMonthlyBillLineItemEntity> lineItems = new ArrayList<>();
+        Map<RateLookupKey, BigDecimal> monthlyRateCache = new LinkedHashMap<>();
+        Map<Long, List<ManpowerDesignationRate>> designationRatesCache = new LinkedHashMap<>();
         int lineNumber = 1;
         for (BillAttendanceRow row : attendanceRows) {
             if (row == null || row.employeeId() == null) {
@@ -375,8 +380,11 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
             BigDecimal monthlyRate = resolveMonthlyRate(
                     designation.getDesignationId(),
                     levelCode,
-                    rateDate,
-                    employee.getFullName());
+                    periodFrom,
+                    periodTo,
+                    employee.getFullName(),
+                    monthlyRateCache,
+                    designationRatesCache);
             long presentDays = resolveStatusCount(row.dailyStatus(), "P", row.presentCount());
             long absentDays = resolveStatusCount(row.dailyStatus(), "A", row.absentCount());
             long leaveDays = resolveStatusCount(row.dailyStatus(), "L", row.leaveCount());
@@ -451,15 +459,196 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
                         LinkedHashMap::new));
     }
 
-    private BigDecimal resolveMonthlyRate(Long designationId, String levelCode, LocalDate rateDate, String employeeName) {
-        return designationRateRepository.findActiveRates(designationId, levelCode, rateDate)
+    private BigDecimal resolveMonthlyRate(
+            Long designationId,
+            String levelCode,
+            LocalDate periodFrom,
+            LocalDate periodTo,
+            String employeeName,
+            Map<RateLookupKey, BigDecimal> monthlyRateCache,
+            Map<Long, List<ManpowerDesignationRate>> designationRatesCache) {
+        String normalizedLevelCode = normalizeLevelCode(levelCode);
+        String levelLookupKey = normalizeLevelLookupKey(normalizedLevelCode);
+        RateLookupKey key = new RateLookupKey(designationId, levelLookupKey, periodFrom, periodTo);
+        BigDecimal cachedRate = monthlyRateCache.get(key);
+        if (cachedRate != null) {
+            return cachedRate;
+        }
+
+        ManpowerDesignationRate matchingRate = designationRateRepository
+                .findActiveRatesForPeriod(designationId, normalizedLevelCode, periodFrom, periodTo)
                 .stream()
                 .findFirst()
-                .map(ManpowerDesignationRate::getGrossMonthlyCtc)
-                .map(this::normalizeCurrency)
-                .orElseThrow(() -> new TaxInvoiceException(
-                        "Designation monthly rate is not configured for employee " + employeeName
-                                + " (designationId=" + designationId + ", levelCode=" + levelCode + ")."));
+                .orElseGet(() -> resolveBestMatchingRate(
+                        designationId,
+                        normalizedLevelCode,
+                        periodFrom,
+                        periodTo,
+                        designationRatesCache));
+        if (matchingRate == null) {
+            throw new TaxInvoiceException(buildMonthlyRateNotFoundMessage(
+                    designationId,
+                    normalizedLevelCode,
+                    periodFrom,
+                    periodTo,
+                    employeeName,
+                    designationRatesCache));
+        }
+
+        BigDecimal monthlyRate = normalizeCurrency(matchingRate.getGrossMonthlyCtc());
+        monthlyRateCache.put(key, monthlyRate);
+        return monthlyRate;
+    }
+
+    private ManpowerDesignationRate resolveBestMatchingRate(
+            Long designationId,
+            String levelCode,
+            LocalDate periodFrom,
+            LocalDate periodTo,
+            Map<Long, List<ManpowerDesignationRate>> designationRatesCache) {
+        List<ManpowerDesignationRate> matchingRates = findRatesByNormalizedLevel(
+                designationId,
+                levelCode,
+                designationRatesCache);
+        return matchingRates.stream()
+                .filter(this::isActiveRate)
+                .filter(rate -> overlapsBillPeriod(rate, periodFrom, periodTo))
+                .findFirst()
+                .orElseGet(() -> matchingRates.stream()
+                        .filter(this::isActiveRate)
+                        .findFirst()
+                        .orElse(null));
+    }
+
+    private String buildMonthlyRateNotFoundMessage(
+            Long designationId,
+            String levelCode,
+            LocalDate periodFrom,
+            LocalDate periodTo,
+            String employeeName,
+            Map<Long, List<ManpowerDesignationRate>> designationRatesCache) {
+        List<ManpowerDesignationRate> matchingRates = findRatesByNormalizedLevel(
+                designationId,
+                levelCode,
+                designationRatesCache);
+        String baseMessage = "Designation monthly rate is not configured for employee " + employeeName
+                + " during bill period " + periodFrom + " to " + periodTo
+                + " (designationId=" + designationId + ", levelCode=" + levelCode + ").";
+        if (matchingRates.isEmpty()) {
+            String availableLevels = loadRatesByDesignation(designationId, designationRatesCache)
+                    .stream()
+                    .map(ManpowerDesignationRate::getLevelCode)
+                    .map(this::trimToNull)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .limit(10)
+                    .collect(Collectors.joining(", "));
+            return StringUtils.hasText(availableLevels)
+                    ? baseMessage + " Available level codes for this designation: " + availableLevels + "."
+                    : baseMessage;
+        }
+
+        boolean activeRateExists = matchingRates.stream()
+                .anyMatch(rate -> "Y".equalsIgnoreCase(trimToNull(rate.getActiveFlag())));
+        if (!activeRateExists) {
+            return baseMessage + " Matching rate exists but is inactive.";
+        }
+
+        String availableRanges = matchingRates.stream()
+                .filter(this::isActiveRate)
+                .limit(5)
+                .map(this::formatRateRange)
+                .collect(Collectors.joining(", "));
+        return baseMessage + " Available active ranges: " + availableRanges + ".";
+    }
+
+    private List<ManpowerDesignationRate> findRatesByNormalizedLevel(
+            Long designationId,
+            String levelCode,
+            Map<Long, List<ManpowerDesignationRate>> designationRatesCache) {
+        String targetLevelKey = normalizeLevelLookupKey(levelCode);
+        if (designationId == null || !StringUtils.hasText(targetLevelKey)) {
+            return List.of();
+        }
+        return loadRatesByDesignation(designationId, designationRatesCache)
+                .stream()
+                .filter(rate -> targetLevelKey.equals(normalizeLevelLookupKey(rate.getLevelCode())))
+                .toList();
+    }
+
+    private List<ManpowerDesignationRate> loadRatesByDesignation(
+            Long designationId,
+            Map<Long, List<ManpowerDesignationRate>> designationRatesCache) {
+        if (designationId == null) {
+            return List.of();
+        }
+        return designationRatesCache.computeIfAbsent(
+                designationId,
+                designationRateRepository::findByDesignationIdOrderByEffectiveFromDesc);
+    }
+
+    private boolean isActiveRate(ManpowerDesignationRate rate) {
+        return rate != null && "Y".equalsIgnoreCase(trimToNull(rate.getActiveFlag()));
+    }
+
+    private boolean overlapsBillPeriod(ManpowerDesignationRate rate, LocalDate periodFrom, LocalDate periodTo) {
+        if (rate == null || rate.getEffectiveFrom() == null || periodFrom == null || periodTo == null) {
+            return false;
+        }
+        return !rate.getEffectiveFrom().isAfter(periodTo)
+                && (rate.getEffectiveTo() == null || !rate.getEffectiveTo().isBefore(periodFrom));
+    }
+
+    private String formatRateRange(ManpowerDesignationRate rate) {
+        String activeStatus = "Y".equalsIgnoreCase(trimToNull(rate.getActiveFlag())) ? "active" : "inactive";
+        String effectiveTo = rate.getEffectiveTo() == null ? "open" : rate.getEffectiveTo().toString();
+        return "[" + rate.getEffectiveFrom() + " to " + effectiveTo + ", " + activeStatus + "]";
+    }
+
+    private String normalizeLevelCode(String levelCode) {
+        return requireText(levelCode, "Level code").toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeLevelLookupKey(String levelCode) {
+        String normalized = trimToNull(levelCode);
+        if (normalized == null) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder(normalized.length());
+        for (int i = 0; i < normalized.length(); i++) {
+            char character = Character.toUpperCase(normalized.charAt(i));
+            if (Character.isLetterOrDigit(character)) {
+                builder.append(character);
+            }
+        }
+        String lookupKey = builder.toString();
+        if (lookupKey.startsWith("LEVEL") && lookupKey.length() > 5) {
+            lookupKey = "L" + lookupKey.substring(5);
+        }
+        if (lookupKey.length() > 2 && lookupKey.charAt(0) == 'L' && isDigits(lookupKey.substring(1))) {
+            return "L" + stripLeadingZeroes(lookupKey.substring(1));
+        }
+        return lookupKey;
+    }
+
+    private boolean isDigits(String value) {
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            if (!Character.isDigit(value.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String stripLeadingZeroes(String value) {
+        int index = 0;
+        while (index < value.length() - 1 && value.charAt(index) == '0') {
+            index++;
+        }
+        return value.substring(index);
     }
 
     private BigDecimal resolveAgencyMarginRate(LocalDate effectiveDate) {
@@ -659,5 +848,12 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
             long tourCount,
             long holidayCount,
             long weekOffCount) {
+    }
+
+    private record RateLookupKey(
+            Long designationId,
+            String levelCode,
+            LocalDate periodFrom,
+            LocalDate periodTo) {
     }
 }

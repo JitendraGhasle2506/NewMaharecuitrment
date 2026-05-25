@@ -32,9 +32,7 @@ import lombok.Setter;
 @Table(
         name = "agency_monthly_bill",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_agency_monthly_bill_number", columnNames = "bill_number"),
-                @UniqueConstraint(name = "uk_agency_monthly_bill_period", columnNames = {
-                        "agency_id", "bill_year", "bill_month", "employee_type" })
+                @UniqueConstraint(name = "uk_agency_monthly_bill_number", columnNames = "bill_number")
         },
         indexes = {
                 @Index(name = "idx_agency_monthly_bill_agency", columnList = "agency_id"),
