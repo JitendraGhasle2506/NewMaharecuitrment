@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Generate Agency Monthly Bill</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .bill-review-shell {
+            display: grid;
+            gap: 1rem;
+        }
+        .gov-header,
+        .gov-card,
+        .preview-document {
+            background: #fff;
+            border: 1px solid #d8e0ea;
+            border-radius: 0.45rem;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        }
+        .gov-header {
+            border-top: 4px solid #1f4f78;
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .gov-heading-block {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+        }
+        .gov-mark {
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #1f4f78;
+            background: #f8fafc;
+        }
+        .gov-kicker {
+            color: #475569;
+            font-size: 0.76rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .gov-title {
+            color: #0f172a;
+            font-size: 1.35rem;
+            font-weight: 800;
+            margin: 0;
+        }
+        .gov-card-header {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.8rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .gov-section-title {
+            color: #1e293b;
+            font-size: 0.98rem;
+            font-weight: 800;
+            margin: 0;
+        }
+        .form-label {
+            color: #334155;
+            font-size: 0.86rem;
+        }
+        .preview-document {
+            overflow: hidden;
+        }
+        .preview-titlebar {
+            border-top: 4px solid #1f4f78;
+            border-bottom: 1px solid #d8e0ea;
+            padding: 1rem 1.15rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .preview-title {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .preview-subtitle {
+            color: #64748b;
+            font-size: 0.84rem;
+            margin-top: 0.15rem;
+        }
+        .preview-badge {
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            color: #1d4ed8;
+            background: #eff6ff;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .preview-body {
+            padding: 1rem;
+            display: grid;
+            gap: 1rem;
+        }
+        .table-governed {
+            border-color: #cbd5e1;
+            margin-bottom: 0;
+        }
+        .table-governed th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        .table-governed td {
+            color: #0f172a;
+            font-size: 0.88rem;
+            vertical-align: middle;
+        }
+        .particulars-table th {
+            width: 15%;
+        }
+        .particulars-table td {
+            width: 35%;
+            font-weight: 650;
+        }
+        .amount-table td,
+        .amount-table th,
+        .bill-preview-table td,
+        .bill-preview-table th {
+            vertical-align: middle;
+        }
+        .amount-table tfoot th,
+        .bill-preview-table tfoot th {
+            background: #eef6ff;
+            color: #0f172a;
+            font-weight: 800;
+        }
+        .legend-table td,
+        .legend-table th {
+            font-size: 0.82rem;
+        }
+        .employee-cell {
+            display: grid;
+            gap: 0.1rem;
+            min-width: 190px;
+        }
+        .employee-name {
+            color: #0f172a;
+            font-weight: 700;
+        }
+        .employee-meta {
+            color: #64748b;
+            font-size: 0.78rem;
+        }
+        .group-header th {
+            background: #eaf2fb;
+            border-color: #cbd5e1;
+            text-align: center;
+        }
+        .number-cell {
+            text-align: right;
+            white-space: nowrap;
+        }
+        .action-bar {
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+            padding: 0.9rem 1rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        @media (max-width: 767.98px) {
+            .particulars-table th,
+            .particulars-table td {
+                width: auto;
+            }
+            .gov-heading-block {
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Auditor', 'Generate Agency Bill', ~{::section})}">
+        <section class="bill-review-shell">
+            <div class="gov-header">
+                <div class="gov-heading-block">
+                    <div class="gov-mark"><i class="fa-solid fa-file-invoice"></i></div>
+                    <div>
+                        <div class="gov-kicker">Auditor Office</div>
+                        <h2 class="gov-title">Agency Monthly Bill Verification</h2>
+                    </div>
+                </div>
+                <a class="btn btn-outline-secondary rounded-pill px-4" th:href="@{/auditor/agency-monthly-bills}">Back</a>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-danger border-0 shadow-sm" th:text="${errorMessage}"></div>
+
+            <div class="gov-card">
+                <div class="gov-card-header">
+                    <h3 class="gov-section-title">Bill Selection Criteria</h3>
+                </div>
+                <div class="p-3 p-lg-4">
+                    <form th:object="${billRequest}" th:action="@{/auditor/agency-monthly-bills/preview}" method="post" class="row g-3 align-items-end">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                        <div class="col-lg-4">
+                            <label class="form-label fw-semibold">Agency</label>
+                            <select class="form-select" th:field="*{agencyId}">
+                                <option value="">Select agency</option>
+                                <option th:each="agency : ${agencies}" th:value="${agency.agencyId}" th:text="${agency.agencyName}"></option>
+                            </select>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('agencyId')}" th:errors="*{agencyId}"></div>
+                        </div>
+
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label fw-semibold">Month</label>
+                            <select class="form-select" th:field="*{month}">
+                                <option value="">Select month</option>
+                                <option th:each="monthValue : ${months}" th:value="${monthValue}"
+                                    th:text="${#numbers.formatInteger(monthValue, 2)}"></option>
+                            </select>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('month')}" th:errors="*{month}"></div>
+                        </div>
+
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label fw-semibold">Year</label>
+                            <select class="form-select" th:field="*{year}">
+                                <option value="">Select year</option>
+                                <option th:each="yearValue : ${years}" th:value="${yearValue}" th:text="${yearValue}"></option>
+                            </select>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('year')}" th:errors="*{year}"></div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-2">
+                            <label class="form-label fw-semibold">Employee Type</label>
+                            <select class="form-select" th:field="*{employeeType}">
+                                <option th:each="type : ${employeeTypes}" th:value="${type.name()}"
+                                    th:text="${type.displayName}"></option>
+                            </select>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('employeeType')}" th:errors="*{employeeType}"></div>
+                        </div>
+
+                        <div class="col-lg-2 d-grid">
+                            <button class="btn btn-primary rounded-pill px-4" type="submit">Preview Bill</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="preview-document" th:if="${previewReady == true and billPreview != null}"
+                th:with="employeeTypeLabel=${billPreview.employeeType == 'INTERNAL' ? 'Internal Employees' : (billPreview.employeeType == 'EXTERNAL' ? 'External Employees' : 'All Employees')}">
+                <div class="preview-titlebar">
+                    <div>
+                        <div class="gov-kicker">Draft Bill Statement</div>
+                        <h3 class="preview-title">Agency Monthly Bill Preview</h3>
+                        <div class="preview-subtitle">Verify the particulars and employee-wise calculation before bill generation.</div>
+                    </div>
+                    <span class="preview-badge">Draft - Not Generated</span>
+                </div>
+
+                <div class="preview-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-governed particulars-table">
+                            <tbody>
+                                <tr>
+                                    <th>Agency Name</th>
+                                    <td colspan="3" th:text="${billPreview.agencyName}">Agency</td>
+                                </tr>
+                                <tr>
+                                    <th>Bill Period</th>
+                                    <td th:text="${#temporals.format(billPreview.periodFrom, 'dd-MM-yyyy') + ' to ' + #temporals.format(billPreview.periodTo, 'dd-MM-yyyy')}">-</td>
+                                    <th>Employee Type</th>
+                                    <td th:text="${employeeTypeLabel}">All Employees</td>
+                                </tr>
+                                <tr>
+                                    <th>Month / Year</th>
+                                    <td th:text="${#numbers.formatInteger(billPreview.billMonth, 2) + ' / ' + billPreview.billYear}">05 / 2026</td>
+                                    <th>Days In Month</th>
+                                    <td th:text="${billPreview.daysInMonth}">31</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Employees</th>
+                                    <td th:text="${billPreview.employeeCount}">0</td>
+                                    <th>Agency Margin Rate</th>
+                                    <td th:text="${#numbers.formatDecimal(billPreview.agencyMarginRate, 1, 'COMMA', 2, 'POINT') + '%'}">0%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-governed amount-table">
+                            <thead>
+                                <tr>
+                                    <th>Amount Particular</th>
+                                    <th class="number-cell">Amount</th>
+                                    <th>Calculation Basis</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Attendance Amount</td>
+                                    <td class="number-cell" th:text="${#numbers.formatDecimal(billPreview.attendanceAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                    <td>Monthly rate divided by days in month, multiplied by payable days.</td>
+                                </tr>
+                                <tr>
+                                    <td>Agency Margin</td>
+                                    <td class="number-cell" th:text="${#numbers.formatDecimal(billPreview.agencyMarginAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                    <td th:text="${'Agency margin @ ' + #numbers.formatDecimal(billPreview.agencyMarginRate, 1, 'COMMA', 2, 'POINT') + '%'}">Agency margin</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th>Total Bill Amount</th>
+                                    <th class="number-cell" th:text="${#numbers.formatDecimal(billPreview.totalAmount, 1, 'COMMA', 2, 'POINT')}">0.00</th>
+                                    <th>Draft total subject to auditor verification.</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-governed legend-table">
+                            <thead>
+                                <tr>
+                                    <th>Payable Codes</th>
+                                    <th>Meaning</th>
+                                    <th>Non-Payable Codes</th>
+                                    <th>Meaning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>P / CO / T / H / W</td>
+                                    <td>Present / Comp Off / Approved Tour / Holiday / Week Off</td>
+                                    <td>A / L</td>
+                                    <td>Absent / Approved Leave</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover table-governed bill-preview-table">
+                            <thead>
+                                <tr class="group-header">
+                                    <th rowspan="2">Sr.No</th>
+                                    <th rowspan="2">Employee Details</th>
+                                    <th rowspan="2">Type</th>
+                                    <th rowspan="2">Designation / Level</th>
+                                    <th colspan="2">Rate And Days</th>
+                                    <th colspan="2">Attendance Counts</th>
+                                    <th colspan="3">Amount</th>
+                                </tr>
+                                <tr>
+                                    <th class="number-cell">Monthly Rate</th>
+                                    <th class="number-cell">Payable Days</th>
+                                    <th class="number-cell">P / CO / T / H / W</th>
+                                    <th class="number-cell">A / L</th>
+                                    <th class="number-cell">Attendance</th>
+                                    <th class="number-cell">Margin</th>
+                                    <th class="number-cell">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="line : ${billPreview.lineItems}">
+                                    <td th:text="${line.lineNumber}">1</td>
+                                    <td>
+                                        <div class="employee-cell">
+                                            <span class="employee-name" th:text="${line.employeeName}">Employee</span>
+                                            <span class="employee-meta"
+                                                th:text="${(line.employeeCode != null ? line.employeeCode : '-') + ' | ' + (line.requestId != null ? line.requestId : '-')}">-</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge text-bg-light border" th:text="${line.employeeType}">EXTERNAL</span>
+                                    </td>
+                                    <td>
+                                        <div th:text="${line.designationName}">Designation</div>
+                                        <small class="text-muted" th:text="${line.levelCode != null ? line.levelCode : '-'}">Level</small>
+                                    </td>
+                                    <td class="number-cell" th:text="${#numbers.formatDecimal(line.monthlyRate, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                    <td class="number-cell">
+                                        <span class="fw-bold" th:text="${line.payableDays}">0</span>
+                                        <small class="text-muted" th:text="${' / ' + line.daysInMonth}">/ 31</small>
+                                    </td>
+                                    <td class="number-cell"
+                                        th:text="${line.presentDays + ' / ' + line.compOffDays + ' / ' + line.tourDays + ' / ' + line.holidayDays + ' / ' + line.weekOffDays}">0 / 0 / 0 / 0 / 0</td>
+                                    <td class="number-cell" th:text="${line.absentDays + ' / ' + line.leaveDays}">0 / 0</td>
+                                    <td class="number-cell" th:text="${#numbers.formatDecimal(line.attendanceAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                    <td class="number-cell">
+                                        <div th:text="${#numbers.formatDecimal(line.agencyMarginAmount, 1, 'COMMA', 2, 'POINT')}">0.00</div>
+                                        <small class="text-muted" th:text="${#numbers.formatDecimal(line.agencyMarginRate, 1, 'COMMA', 2, 'POINT') + '%'}">0%</small>
+                                    </td>
+                                    <td class="number-cell fw-bold" th:text="${#numbers.formatDecimal(line.lineTotal, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="8" class="text-end">Grand Total</th>
+                                    <th class="number-cell" th:text="${#numbers.formatDecimal(billPreview.attendanceAmount, 1, 'COMMA', 2, 'POINT')}">0.00</th>
+                                    <th class="number-cell" th:text="${#numbers.formatDecimal(billPreview.agencyMarginAmount, 1, 'COMMA', 2, 'POINT')}">0.00</th>
+                                    <th class="number-cell" th:text="${#numbers.formatDecimal(billPreview.totalAmount, 1, 'COMMA', 2, 'POINT')}">0.00</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <a class="btn btn-outline-secondary rounded-pill px-4" th:href="@{/auditor/agency-monthly-bills}">Cancel</a>
+                    <form th:object="${billRequest}" th:action="@{/auditor/agency-monthly-bills/generate}" method="post"
+                        onsubmit="return confirm('Generate this agency monthly bill after verification?');">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input type="hidden" th:field="*{agencyId}">
+                        <input type="hidden" th:field="*{month}">
+                        <input type="hidden" th:field="*{year}">
+                        <input type="hidden" th:field="*{employeeType}">
+                        <button class="btn btn-success rounded-pill px-4" type="submit">Generate Bill</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
