@@ -14,10 +14,12 @@ import lombok.Setter;
 public class EmployeeTaskLogDto {
     private Long taskId;
     private String projectName;
+    private String otherProjectReason;
     private String moduleName;
     private String taskDescription;
     private LocalDate taskDate;
     private Double hours;
+    private String payableStatus;
     private String inTime;
     private String startTime;
     private String endTime;

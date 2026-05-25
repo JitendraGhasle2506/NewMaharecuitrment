@@ -14,19 +14,26 @@ import com.maharecruitment.gov.in.recruitment.dto.employee.TaskSubmissionForm;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeTaskLogEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
+import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeTaskLogRepository;
 import com.maharecruitment.gov.in.web.service.employee.EmployeeTaskService;
+import java.time.LocalDate;
+import java.util.Optional;
 
 @Service
 public class EmployeeTaskServiceImpl implements EmployeeTaskService {
 
     private final EmployeeTaskLogRepository employeeTaskLogRepository;
     private final EmployeeRepository employeeRepository;
+    private final DailyAttendanceInternalRepository dailyAttendanceInternalRepository;
 
     public EmployeeTaskServiceImpl(EmployeeTaskLogRepository employeeTaskLogRepository,
-                                   EmployeeRepository employeeRepository) {
+                                   EmployeeRepository employeeRepository,
+                                   DailyAttendanceInternalRepository dailyAttendanceInternalRepository) {
         this.employeeTaskLogRepository = employeeTaskLogRepository;
         this.employeeRepository = employeeRepository;
+        this.dailyAttendanceInternalRepository = dailyAttendanceInternalRepository;
     }
 
     @Override
@@ -54,12 +61,14 @@ public class EmployeeTaskServiceImpl implements EmployeeTaskService {
                     }
                     entity.setStatus("PENDING_APPROVAL");
                     entity.setProjectName(dto.getProjectName());
+                    entity.setOtherProjectReason(dto.getOtherProjectReason());
                     entity.setModuleName(dto.getModuleName());
                     entity.setTaskDescription(dto.getTaskDescription());
                     entity.setTaskDate(dto.getTaskDate());
                     entity.setStartTime(dto.getStartTime());
                     entity.setEndTime(dto.getEndTime());
                     entity.setHoursSpent(dto.getHours());
+                    entity.setPayableStatus(dto.getPayableStatus());
                     entity.setInTime(dto.getInTime());
                     employeeTaskLogRepository.save(entity);
                 }
@@ -85,12 +94,14 @@ public class EmployeeTaskServiceImpl implements EmployeeTaskService {
             EmployeeTaskLogDto dto = new EmployeeTaskLogDto();
             dto.setTaskId(entity.getId());
             dto.setProjectName(entity.getProjectName());
+            dto.setOtherProjectReason(entity.getOtherProjectReason());
             dto.setModuleName(entity.getModuleName());
             dto.setTaskDescription(entity.getTaskDescription());
             dto.setTaskDate(entity.getTaskDate());
             dto.setStartTime(entity.getStartTime());
             dto.setEndTime(entity.getEndTime());
             dto.setHours(entity.getHoursSpent());
+            dto.setPayableStatus(entity.getPayableStatus());
             dto.setInTime(entity.getInTime());
             dto.setStatus(entity.getStatus());
             dto.setManagerRemarks(entity.getManagerRemarks());
@@ -102,6 +113,20 @@ public class EmployeeTaskServiceImpl implements EmployeeTaskService {
 
     @Override
     public String fetchInTime(String loginEmail, String dateString) {
-        return "09:30";
+        EmployeeEntity employee = employeeRepository.findByEmail(loginEmail)
+                .orElse(null);
+        if (employee != null && dateString != null && !dateString.isEmpty()) {
+            try {
+                LocalDate date = LocalDate.parse(dateString);
+                Optional<DailyAttendanceInternalEntity> attendanceOpt = dailyAttendanceInternalRepository
+                        .findByEmployeeIdAndAttendanceDate(employee.getEmployeeId(), date);
+                if (attendanceOpt.isPresent() && attendanceOpt.get().getInTime() != null) {
+                    return attendanceOpt.get().getInTime();
+                }
+            } catch (Exception e) {
+                // Return null if parsing fails or error occurs
+            }
+        }
+        return null;
     }
 }

@@ -36,6 +36,9 @@ public class EmployeeTaskLogEntity extends RecruitmentAuditable {
     @Column(name = "project_name", length = 200)
     private String projectName;
 
+    @Column(name = "other_project_reason", length = 500)
+    private String otherProjectReason;
+
     @Column(name = "module_name", length = 200)
     private String moduleName;
 
@@ -47,6 +50,9 @@ public class EmployeeTaskLogEntity extends RecruitmentAuditable {
 
     @Column(name = "hours_spent", nullable = false)
     private Double hoursSpent;
+
+    @Column(name = "payable_status", length = 20)
+    private String payableStatus;
 
     @Column(name = "in_time", length = 20)
     private String inTime;

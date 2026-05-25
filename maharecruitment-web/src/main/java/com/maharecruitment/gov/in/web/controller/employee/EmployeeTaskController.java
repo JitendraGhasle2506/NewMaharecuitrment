@@ -97,28 +97,15 @@ public class EmployeeTaskController {
         String loginEmail = principal != null ? principal.getName() : null;
         try {
             if (month != null && year != null && taskForm.getTaskList() != null) {
-                if ("DAILY".equals(taskForm.getEntryMode())) {
-                    if (taskForm.getGlobalTaskDate() == null) {
-                        throw new IllegalArgumentException("Global task date is required for Daily mode.");
-                    }
-                    if (taskForm.getGlobalTaskDate().getMonthValue() != month || taskForm.getGlobalTaskDate().getYear() != year) {
-                        throw new IllegalArgumentException("Global Date must be within selected month and year.");
-                    }
-                }
-
                 boolean anySelected = false;
                 for (EmployeeTaskLogDto task : taskForm.getTaskList()) {
                     if (task.isSelected()) {
                         anySelected = true;
-                        if ("DAILY".equals(taskForm.getEntryMode())) {
-                            task.setTaskDate(taskForm.getGlobalTaskDate());
-                        } else {
-                            if (task.getTaskDate() == null) {
-                                throw new IllegalArgumentException("Task date is required for each selected row in this mode.");
-                            }
-                            if (task.getTaskDate().getMonthValue() != month || task.getTaskDate().getYear() != year) {
-                                throw new IllegalArgumentException("Row Date must be within selected month and year.");
-                            }
+                        if (task.getTaskDate() == null) {
+                            throw new IllegalArgumentException("Task date is required for each selected row.");
+                        }
+                        if (task.getTaskDate().getMonthValue() != month || task.getTaskDate().getYear() != year) {
+                            throw new IllegalArgumentException("Row Date must be within selected month and year.");
                         }
                     }
                 }
@@ -159,7 +146,6 @@ public class EmployeeTaskController {
             taskDto.setSelected(true);
 
             TaskSubmissionForm form = new TaskSubmissionForm();
-            form.setGlobalTaskDate(taskDto.getTaskDate());
             form.getTaskList().add(taskDto);
 
             int targetMonth = taskDto.getTaskDate().getMonthValue();
