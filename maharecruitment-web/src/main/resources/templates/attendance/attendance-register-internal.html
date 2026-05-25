@@ -412,7 +412,14 @@
         }
 
         .summary-strip {
-            margin-bottom: 18px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+            gap: 1px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #e2e8f0;
         }
 
         .summary-col {
@@ -421,35 +428,38 @@
 
         .summary-card {
             width: 100%;
-            border-radius: 14px !important;
-            box-shadow: 0 18px 34px -32px rgba(15, 23, 42, 0.4) !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border-left-width: 0 !important;
         }
 
         .summary-card .card-body {
-            min-height: 86px;
-            padding: 14px;
+            min-height: 42px;
+            padding: 7px 9px;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
             text-align: left;
-            gap: 4px;
+            gap: 10px;
         }
 
         .summary-value {
             margin: 0;
-            font-size: 24px;
+            font-size: 18px;
             font-weight: 800;
             line-height: 1;
+            flex: 0 0 auto;
         }
 
         .summary-label {
             color: var(--text-muted);
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 800;
-            letter-spacing: 0.06em;
+            letter-spacing: 0;
             text-transform: uppercase;
-            line-height: 1.3;
+            line-height: 1.15;
+            text-align: right;
         }
 
         @media (max-width: 1199.98px) {
@@ -892,66 +902,88 @@
 
         .register-meta-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 12px;
-            margin-bottom: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #e2e8f0;
         }
 
         .register-meta-card {
-            padding: 14px;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.94);
-            border: 1px solid #dbe7f4;
-            box-shadow: 0 18px 35px -34px rgba(15, 23, 42, 0.44);
+            min-height: 42px;
+            padding: 7px 9px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
         }
 
         .register-meta-label {
             display: block;
             color: var(--text-muted);
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 800;
-            letter-spacing: 0.08em;
+            letter-spacing: 0;
+            line-height: 1.15;
             text-transform: uppercase;
         }
 
         .register-meta-value {
             display: block;
-            margin-top: 6px;
+            flex: 0 0 auto;
+            margin-top: 0;
             color: var(--text-main);
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 800;
             line-height: 1;
         }
 
         .panel-meta-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-            margin-bottom: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+            gap: 1px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #e2e8f0;
         }
 
         .panel-meta-card {
-            padding: 14px;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.94);
-            border: 1px solid #dbe7f4;
-            box-shadow: 0 18px 35px -34px rgba(15, 23, 42, 0.44);
+            min-height: 42px;
+            padding: 7px 9px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
         }
 
         .panel-meta-label {
             display: block;
             color: var(--text-muted);
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 800;
-            letter-spacing: 0.08em;
+            letter-spacing: 0;
+            line-height: 1.15;
             text-transform: uppercase;
         }
 
         .panel-meta-value {
             display: block;
-            margin-top: 6px;
+            flex: 0 0 auto;
+            margin-top: 0;
             color: var(--text-main);
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 800;
             line-height: 1;
         }
@@ -1268,12 +1300,6 @@
             color: #94a3b8;
         }
 
-        @media (max-width: 1199.98px) {
-            .register-meta-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-
         @media (max-width: 991.98px) {
             .attendance-tabs .nav-item {
                 flex: 1 1 calc(50% - 10px);
@@ -1286,7 +1312,7 @@
 
         @media (max-width: 767.98px) {
             .register-meta-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
             .attendance-tabs .nav-item {
@@ -1466,60 +1492,60 @@
                 </div>
                 
                 <!-- Attendance Summary Cards -->
-                <div class="row g-2 summary-strip">
-                    <div class="col-lg-2 col-md-4 col-6 summary-col">
-                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #ecfdf5; border-left: 5px solid #10b981 !important;">
+                <div class="summary-strip">
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #ecfdf5;">
                             <div class="card-body">
                                 <h3 class="summary-value text-success" th:text="${attendance.totalPresent}">0</h3>
-                                <div class="summary-label">Total Present</div>
+                                <div class="summary-label">Present</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-2 col-md-4 col-6 summary-col">
-                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #fef2f2; border-left: 5px solid #ef4444 !important;">
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #fef2f2;">
                             <div class="card-body">
                                 <h3 class="summary-value text-danger" th:text="${attendance.totalAbsentWithApprovedLeave}">0</h3>
-                                <div class="summary-label">Total Absent (A+L)</div>
+                                <div class="summary-label">Absent A+L</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-2 col-md-4 col-6 summary-col">
-                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #f5f3ff; border-left: 5px solid #8b5cf6 !important;">
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #f5f3ff;">
                             <div class="card-body">
                                 <h3 class="summary-value" style="color: #8b5cf6;" th:text="${attendance.totalLeave}">0</h3>
-                                <div class="summary-label">Approved Leave Total</div>
+                                <div class="summary-label">Leave</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-2 col-md-4 col-6 summary-col">
-                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #f0f9ff; border-left: 5px solid #0ea5e9 !important;">
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #f0f9ff;">
                             <div class="card-body">
                                 <h3 class="summary-value text-info" th:text="${attendance.totalHoliday}">0</h3>
                                 <div class="summary-label">Holidays</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-2 col-md-4 col-6 summary-col">
-                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #f1f5f9; border-left: 5px solid #94a3b8 !important;">
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #f1f5f9;">
                             <div class="card-body">
                                 <h3 class="summary-value" style="color: #94a3b8;" th:text="${attendance.totalWeekOff}">0</h3>
                                 <div class="summary-label">Week Off</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-2 col-md-4 col-6 summary-col">
-                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #fffbeb; border-left: 5px solid #f59e0b !important;">
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #fffbeb;">
                             <div class="card-body">
                                 <h3 class="summary-value text-warning" th:text="${attendance.daysInMonth ?: daysInMonth}">30</h3>
-                                <div class="summary-label">Days In Month</div>
+                                <div class="summary-label">Month Days</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-2 col-md-4 col-6 summary-col">
-                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #eefdf8; border-left: 5px solid #0f766e !important;">
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #eefdf8;">
                             <div class="card-body">
                                 <h3 class="summary-value" style="color: #0f766e;" th:text="${attendance.payableDays}">0</h3>
-                                <div class="summary-label">Payable Days Till Date</div>
+                                <div class="summary-label">Payable</div>
                             </div>
                         </div>
                     </div>
@@ -1597,11 +1623,11 @@
 
                                 <div class="register-meta-grid">
                                     <div class="register-meta-card">
-                                        <span class="register-meta-label">Present Days</span>
+                                        <span class="register-meta-label">Present</span>
                                         <span class="register-meta-value status-present" th:text="${attendance.totalPresent}">0</span>
                                     </div>
                                     <div class="register-meta-card">
-                                        <span class="register-meta-label">Total Absent (A+L)</span>
+                                        <span class="register-meta-label">Absent A+L</span>
                                         <span class="register-meta-value status-absent" th:text="${attendance.totalAbsentWithApprovedLeave}">0</span>
                                     </div>
                                     <div class="register-meta-card">
@@ -1609,11 +1635,11 @@
                                         <span class="register-meta-value" style="color:#7c3aed;" th:text="${attendance.totalLeave + ' / ' + attendance.totalCompOff + ' / ' + (attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[status == 'TOUR']) : 0)}">0 / 0 / 0</span>
                                     </div>
                                     <div class="register-meta-card">
-                                        <span class="register-meta-label">Week Off + Holiday</span>
+                                        <span class="register-meta-label">W-Off / Holiday</span>
                                         <span class="register-meta-value" style="color:#475569;" th:text="${attendance.totalWeekOff + ' / ' + attendance.totalHoliday}">0 / 0</span>
                                     </div>
                                     <div class="register-meta-card">
-                                        <span class="register-meta-label">Payable Days Till Date</span>
+                                        <span class="register-meta-label">Payable</span>
                                         <span class="register-meta-value" style="color:#0f766e;" th:text="${attendance.payableDays}">0</span>
                                     </div>
                                 </div>
@@ -1693,19 +1719,19 @@
 
                                 <div class="panel-meta-grid">
                                     <div class="panel-meta-card">
-                                        <span class="panel-meta-label">Calendar Days</span>
+                                        <span class="panel-meta-label">Calendar</span>
                                         <span class="panel-meta-value text-warning" th:text="${attendance.daysInMonth ?: daysInMonth}">30</span>
                                     </div>
                                     <div class="panel-meta-card">
-                                        <span class="panel-meta-label">In Entries</span>
+                                        <span class="panel-meta-label">In</span>
                                         <span class="panel-meta-value text-success" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[inTime != null]) : 0}">0</span>
                                     </div>
                                     <div class="panel-meta-card">
-                                        <span class="panel-meta-label">Out Entries</span>
+                                        <span class="panel-meta-label">Out</span>
                                         <span class="panel-meta-value text-info" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[outTime != null]) : 0}">0</span>
                                     </div>
                                     <div class="panel-meta-card">
-                                        <span class="panel-meta-label">Worked Days</span>
+                                        <span class="panel-meta-label">Worked</span>
                                         <span class="panel-meta-value" style="color:#1f4f78;" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[stayHours != null]) : 0}">0</span>
                                     </div>
                                 </div>
