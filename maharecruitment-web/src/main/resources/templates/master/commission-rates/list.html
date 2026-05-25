@@ -1,27 +1,27 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
-    <title>Designation Rates</title>
+    <title>Commission Rates</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
 </head>
 
 <body>
-    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Designation Rates', ~{::section})}">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Commission Rates', ~{::section})}">
         <section>
             <div class="card add-emp-card">
                 <div class="header d-flex justify-content-between align-items-center">
-                    <h2>Manpower Designation Rate Master</h2>
-                    <a class="btn btn-primary btn-sm" th:href="@{/master/designation-rates/new}">Add Designation Rate</a>
+                    <h2>Commission Rate Master</h2>
+                    <a class="btn btn-primary btn-sm" th:href="@{/master/commission-rates/new}">Add Commission Rate</a>
                 </div>
 
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/resource-levels}">Resource Levels</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
-                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/commission-rates}">Commission Rates</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/commission-rates}">Commission Rates</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/projects}">Projects</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/cell}">Cell Master</a>
                     </div>
@@ -29,13 +29,13 @@
                     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-                    <form class="row g-2 mb-3" method="get" th:action="@{/master/designation-rates}">
-                        <div class="col-md-5">
-                            <select name="designationId" class="form-select form-select-sm">
-                                <option value="">All Designations</option>
-                                <option th:each="d : ${availableDesignations}" th:value="${d.designationId}"
-                                    th:selected="${designationId != null and designationId == d.designationId}"
-                                    th:text="${d.category + ' - ' + d.designationName}"></option>
+                    <form class="row g-2 mb-3" method="get" th:action="@{/master/commission-rates}">
+                        <div class="col-md-4">
+                            <select name="commissionCode" class="form-select form-select-sm">
+                                <option value="">All Commission Codes</option>
+                                <option th:each="code : ${commissionCodes}" th:value="${code.name()}"
+                                    th:selected="${commissionCode != null and commissionCode == code}"
+                                    th:text="${code.name() == 'AGENCY' ? 'Agency' : 'MahaIT'}"></option>
                             </select>
                         </div>
                         <div class="col-auto form-check mt-2">
@@ -53,26 +53,22 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>ID</th>
-                                    <th>Designation</th>
-                                    <th>Level Code</th>
-                                    <th>Gross Monthly CTC</th>
-                                    <th>Effective From</th>
-                                    <th>Effective To</th>
+                                    <th>Commission Code</th>
+                                    <th>Commission %</th>
+                                    <th>Effective Date</th>
                                     <th>Status</th>
                                     <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:if="${rates.isEmpty()}">
-                                    <td colspan="8" class="text-center text-muted">No records found</td>
+                                    <td colspan="6" class="text-center text-muted">No records found</td>
                                 </tr>
                                 <tr th:each="item : ${rates.content}">
-                                    <td th:text="${item.rateId}"></td>
-                                    <td th:text="${designationLabelMap[item.designationId] != null ? designationLabelMap[item.designationId] : item.designationId}"></td>
-                                    <td th:text="${item.levelCode}"></td>
-                                    <td th:text="${item.grossMonthlyCtc}"></td>
-                                    <td th:text="${item.effectiveFrom}"></td>
-                                    <td th:text="${item.effectiveTo}"></td>
+                                    <td th:text="${item.commissionRateId}"></td>
+                                    <td th:text="${item.commissionCode != null and item.commissionCode.name() == 'AGENCY' ? 'Agency' : 'MahaIT'}"></td>
+                                    <td th:text="${item.commissionPercentage}"></td>
+                                    <td th:text="${item.effectiveDate}"></td>
                                     <td>
                                         <span class="badge"
                                             th:classappend="${item.activeFlag == 'Y'} ? ' text-bg-success' : ' text-bg-secondary'"
@@ -80,15 +76,18 @@
                                     </td>
                                     <td class="text-center">
                                         <a class="btn btn-outline-primary btn-sm"
-                                            th:href="@{/master/designation-rates/{id}/edit(id=${item.rateId})}">Edit</a>
+                                            th:href="@{/master/commission-rates/{id}/edit(id=${item.commissionRateId})}">Edit</a>
+                                        <a class="btn btn-outline-secondary btn-sm"
+                                            th:href="@{/master/commission-rates/{id}/logs(id=${item.commissionRateId})}">Logs</a>
                                         <form th:if="${item.activeFlag == 'Y'}" class="d-inline"
-                                            th:action="@{/master/designation-rates/{id}/delete(id=${item.rateId},designationId=${designationId},includeInactive=${includeInactive},page=${rates.number},size=${rates.size})}" method="post"
-                                            onsubmit="return confirm('Are you sure you want to deactivate this designation rate?');">
+                                            th:action="@{/master/commission-rates/{id}/delete(id=${item.commissionRateId},commissionCode=${commissionCode},includeInactive=${includeInactive},page=${rates.number},size=${rates.size})}"
+                                            method="post"
+                                            onsubmit="return confirm('Are you sure you want to deactivate this commission rate?');">
                                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                             <button class="btn btn-outline-danger btn-sm" type="submit">Deactivate</button>
                                         </form>
                                         <form th:if="${item.activeFlag != 'Y'}" class="d-inline"
-                                            th:action="@{/master/designation-rates/{id}/restore(id=${item.rateId})}" method="post">
+                                            th:action="@{/master/commission-rates/{id}/restore(id=${item.commissionRateId})}" method="post">
                                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                             <button class="btn btn-outline-success btn-sm" type="submit">Restore</button>
                                         </form>
@@ -98,8 +97,7 @@
                         </table>
                     </div>
 
-                    <div class="app-pagination-shell"
-                        th:if="${rates.totalPages > 1}"
+                    <div class="app-pagination-shell" th:if="${rates.totalPages > 1}"
                         th:with="middleStart=${rates.number - 2 > 1 ? rates.number - 2 : 1},
                                  middleEnd=${rates.number + 2 < rates.totalPages - 2 ? rates.number + 2 : rates.totalPages - 2},
                                  showingFrom=${rates.totalElements == 0 ? 0 : rates.number * rates.size + 1},
@@ -113,15 +111,15 @@
                                 Page <span th:text="${rates.number + 1}">1</span> of <span th:text="${rates.totalPages}">1</span>
                             </div>
                         </div>
-                        <nav aria-label="Designation rates pagination">
+                        <nav aria-label="Commission rates pagination">
                             <ul class="pagination app-pagination mb-0">
                                 <li class="page-item" th:classappend="${rates.first} ? ' disabled'">
                                     <a class="page-link"
-                                        th:href="@{/master/designation-rates(page=${rates.number - 1},size=${rates.size},includeInactive=${includeInactive},designationId=${designationId})}">Previous</a>
+                                        th:href="@{/master/commission-rates(page=${rates.number - 1},size=${rates.size},includeInactive=${includeInactive},commissionCode=${commissionCode})}">Previous</a>
                                 </li>
                                 <li class="page-item" th:classappend="${rates.number == 0} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/master/designation-rates(page=0,size=${rates.size},includeInactive=${includeInactive},designationId=${designationId})}">1</a>
+                                        th:href="@{/master/commission-rates(page=0,size=${rates.size},includeInactive=${includeInactive},commissionCode=${commissionCode})}">1</a>
                                 </li>
                                 <li class="page-item disabled" th:if="${middleStart > 1}">
                                     <span class="page-link app-pagination-ellipsis">...</span>
@@ -130,7 +128,7 @@
                                     <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
                                         th:classappend="${pageIndex == rates.number} ? ' active'">
                                         <a class="page-link"
-                                            th:href="@{/master/designation-rates(page=${pageIndex},size=${rates.size},includeInactive=${includeInactive},designationId=${designationId})}"
+                                            th:href="@{/master/commission-rates(page=${pageIndex},size=${rates.size},includeInactive=${includeInactive},commissionCode=${commissionCode})}"
                                             th:text="${pageIndex + 1}">2</a>
                                     </li>
                                 </th:block>
@@ -140,12 +138,12 @@
                                 <li class="page-item" th:if="${rates.totalPages > 1}"
                                     th:classappend="${rates.number == rates.totalPages - 1} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/master/designation-rates(page=${rates.totalPages - 1},size=${rates.size},includeInactive=${includeInactive},designationId=${designationId})}"
+                                        th:href="@{/master/commission-rates(page=${rates.totalPages - 1},size=${rates.size},includeInactive=${includeInactive},commissionCode=${commissionCode})}"
                                         th:text="${rates.totalPages}">2</a>
                                 </li>
                                 <li class="page-item" th:classappend="${rates.last} ? ' disabled'">
                                     <a class="page-link"
-                                        th:href="@{/master/designation-rates(page=${rates.number + 1},size=${rates.size},includeInactive=${includeInactive},designationId=${designationId})}">Next</a>
+                                        th:href="@{/master/commission-rates(page=${rates.number + 1},size=${rates.size},includeInactive=${includeInactive},commissionCode=${commissionCode})}">Next</a>
                                 </li>
                             </ul>
                         </nav>
@@ -157,4 +155,3 @@
 </body>
 
 </html>
-

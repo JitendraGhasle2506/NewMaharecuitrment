@@ -159,6 +159,9 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Designation Rates",
                                 "/master/designation-rates",
                                 "fa fa-coins");
+                upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Commission Rates",
+                                "/master/commission-rates",
+                                "fa fa-percent");
                 upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Project Master", "/master/projects",
                                 "fa fa-folder-tree");
                 upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Cell Master", "/master/cell",
