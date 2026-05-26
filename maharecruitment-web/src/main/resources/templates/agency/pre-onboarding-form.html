@@ -504,6 +504,36 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="company-payroll-proof mt-3">
+                                <label class="check-card company-payroll-check mb-0">
+                                    <input type="checkbox" id="companyPayrollMoreThanThreeMonths"
+                                        th:field="*{companyPayrollMoreThanThreeMonths}" th:disabled="*{hrFlow}" />
+                                    <span>Employee is on the company payroll for more than 3 months</span>
+                                </label>
+                                <input type="hidden" th:if="*{hrFlow}" th:field="*{companyPayrollMoreThanThreeMonths}" />
+
+                                <div class="company-payroll-upload mt-3" id="companyPayrollProofBlock"
+                                    th:attr="data-existing-path=${preOnboardingForm.existingCompanyPayrollProofFilePath}">
+                                    <label class="form-label">Upload Company Payroll Proof <span class="text-danger"
+                                            th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.companyPayrollMoreThanThreeMonths && preOnboardingForm.existingCompanyPayrollProofFilePath == null}">*</span></label>
+                                    <input type="file" class="form-control" id="companyPayrollProof"
+                                        th:field="*{companyPayrollProof}" accept=".pdf,.jpg,.jpeg,.png"
+                                        th:disabled="*{hrFlow}" />
+                                    <small class="text-muted" th:if="${!preOnboardingForm.hrFlow}">Required only when
+                                        the checkbox is selected. Upload PDF, JPG, or PNG up to 10MB.</small>
+                                    <div class="invalid-feedback">Company payroll proof document is required when the
+                                        employee is on company payroll for more than 3 months.</div>
+                                    <div class="employment-existing-file"
+                                        th:if="${preOnboardingForm.existingCompanyPayrollProofFilePath}">
+                                        <button type="button"
+                                            class="btn btn-outline-secondary btn-sm kyc-existing-file-action"
+                                            th:attr="data-path=${preOnboardingForm.existingCompanyPayrollProofFilePath}"
+                                            onclick="openManagedDocument(this.getAttribute('data-path'))">Open Payroll
+                                            Proof</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="section-block form-section-classic document-checklist-section">

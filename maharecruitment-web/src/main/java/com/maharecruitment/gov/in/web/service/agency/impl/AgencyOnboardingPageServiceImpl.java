@@ -14,8 +14,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -175,6 +173,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 .findByInterviewDetailIdAndAgencyIdForForm(recruitmentInterviewDetailId, context.agencyId())
                 .orElse(null);
         assertPreOnboardingEditable(existing);
+        applyExistingCompanyPayrollProofReference(form, existing);
 
         List<NormalizedEmployment> employmentRows = normalizeEmploymentRows(form.getPreviousEmployments());
         BigDecimal minExperienceYears = resolveMinExperienceYears(
@@ -208,6 +207,12 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                     form.getExperienceDoc(),
                     "recruitment/agency-pre-onboarding/experience",
                     newlyUploadedPaths);
+            UploadedDocument companyPayrollProof = form.isCompanyPayrollMoreThanThreeMonths()
+                    ? storeOptionalDocument(
+                            form.getCompanyPayrollProof(),
+                            "recruitment/agency-pre-onboarding/company-payroll",
+                            newlyUploadedPaths)
+                    : null;
             UploadedDocument photoDocument = storeOptionalDocument(
                     form.getUploadImage(),
                     "recruitment/agency-pre-onboarding/photo",
@@ -250,6 +255,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             entity.setDocPassportPhoto(form.isDocPassportPhoto());
             entity.setDocAadhaar(form.isDocAadhaar());
             entity.setDocPan(form.isDocPan());
+            entity.setCompanyPayrollMoreThanThreeMonths(form.isCompanyPayrollMoreThanThreeMonths());
             entity.setAgencyVerified(form.isAgencyFlag());
             entity.setSubmittedAt(LocalDateTime.now());
             entity.replacePreviousEmployments(toEmploymentEntities(employmentRows));
@@ -278,6 +284,24 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                     entity::setExperienceDocFilePath,
                     entity::setExperienceDocFileType,
                     entity::setExperienceDocFileSize);
+            if (form.isCompanyPayrollMoreThanThreeMonths()) {
+                applyUploadedDocument(
+                        companyPayrollProof,
+                        entity.getCompanyPayrollProofFilePath(),
+                        replacedPaths,
+                        entity::setCompanyPayrollProofOriginalName,
+                        entity::setCompanyPayrollProofFilePath,
+                        entity::setCompanyPayrollProofFileType,
+                        entity::setCompanyPayrollProofFileSize);
+            } else {
+                clearDocument(
+                        entity.getCompanyPayrollProofFilePath(),
+                        replacedPaths,
+                        entity::setCompanyPayrollProofOriginalName,
+                        entity::setCompanyPayrollProofFilePath,
+                        entity::setCompanyPayrollProofFileType,
+                        entity::setCompanyPayrollProofFileSize);
+            }
             applyUploadedDocument(
                     photoDocument,
                     entity.getPhotoFilePath(),
@@ -429,6 +453,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         form.setDocPassportPhoto(Boolean.TRUE.equals(existing.getDocPassportPhoto()));
         form.setDocAadhaar(Boolean.TRUE.equals(existing.getDocAadhaar()));
         form.setDocPan(Boolean.TRUE.equals(existing.getDocPan()));
+        form.setCompanyPayrollMoreThanThreeMonths(Boolean.TRUE.equals(existing.getCompanyPayrollMoreThanThreeMonths()));
         form.setAgencyFlag(Boolean.TRUE.equals(existing.getAgencyVerified()));
         form.setExistingAadhaarFileName(existing.getAadhaarOriginalName());
         form.setExistingAadhaarFilePath(existing.getAadhaarFilePath());
@@ -436,6 +461,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         form.setExistingPanFilePath(existing.getPanFilePath());
         form.setExistingExperienceDocFileName(existing.getExperienceDocOriginalName());
         form.setExistingExperienceDocFilePath(existing.getExperienceDocFilePath());
+        form.setExistingCompanyPayrollProofFileName(existing.getCompanyPayrollProofOriginalName());
+        form.setExistingCompanyPayrollProofFilePath(existing.getCompanyPayrollProofFilePath());
         form.setExistingPhotoFileName(existing.getPhotoOriginalName());
         form.setExistingPhotoFilePath(existing.getPhotoFilePath());
 
@@ -452,6 +479,21 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 })
                 .toList();
         form.setPreviousEmployments(new ArrayList<>(employmentForms));
+    }
+
+    private void applyExistingCompanyPayrollProofReference(
+            AgencyPreOnboardingForm form,
+            AgencyCandidatePreOnboardingEntity existing) {
+        if (form == null || existing == null) {
+            return;
+        }
+
+        if (!StringUtils.hasText(form.getExistingCompanyPayrollProofFileName())) {
+            form.setExistingCompanyPayrollProofFileName(existing.getCompanyPayrollProofOriginalName());
+        }
+        if (!StringUtils.hasText(form.getExistingCompanyPayrollProofFilePath())) {
+            form.setExistingCompanyPayrollProofFilePath(existing.getCompanyPayrollProofFilePath());
+        }
     }
 
     private RecruitmentInterviewDetailEntity loadSelectedCandidate(Long recruitmentInterviewDetailId, Long agencyId) {
@@ -628,6 +670,13 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         if (!form.isDocPan()) {
             throw new RecruitmentNotificationException("PAN document must be verified.");
         }
+        if (form.isCompanyPayrollMoreThanThreeMonths()
+                && isMissingUploadAndExistingFile(
+                        form.getCompanyPayrollProof(),
+                        form.getExistingCompanyPayrollProofFilePath())) {
+            throw new RecruitmentNotificationException(
+                    "Company payroll proof document is required when the employee is on company payroll for more than 3 months.");
+        }
         if (!form.isAgencyFlag()) {
             throw new RecruitmentNotificationException("Agency verification is required before submission.");
         }
@@ -697,6 +746,27 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         pathConsumer.accept(document.filePath());
         typeConsumer.accept(document.fileType());
         sizeConsumer.accept(document.fileSize());
+    }
+
+    private void clearDocument(
+            String existingFilePath,
+            List<String> replacedPaths,
+            Consumer<String> nameConsumer,
+            Consumer<String> pathConsumer,
+            Consumer<String> typeConsumer,
+            Consumer<Long> sizeConsumer) {
+        if (StringUtils.hasText(existingFilePath)) {
+            replacedPaths.add(existingFilePath);
+        }
+
+        nameConsumer.accept(null);
+        pathConsumer.accept(null);
+        typeConsumer.accept(null);
+        sizeConsumer.accept(null);
+    }
+
+    private boolean isMissingUploadAndExistingFile(MultipartFile upload, String existingFilePath) {
+        return (upload == null || upload.isEmpty()) && !StringUtils.hasText(existingFilePath);
     }
 
     private List<AgencyCandidatePreOnboardingEmploymentEntity> toEmploymentEntities(

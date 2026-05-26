@@ -410,6 +410,22 @@
     text-align: left;
 }
 
+.company-payroll-proof {
+    border: 1px solid #d8e3ea;
+    border-radius: 10px;
+    background: #fbfdff;
+    padding: 14px;
+}
+
+.company-payroll-check {
+    height: auto;
+    background: #ffffff;
+}
+
+.company-payroll-upload {
+    max-width: 640px;
+}
+
 .document-checklist-section .text-muted {
     color: #647786 !important;
 }

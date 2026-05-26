@@ -58,6 +58,16 @@ public class PreOnboardingSchemaGuardRunner {
                         "alter table " + TABLE_NAME + " add column if not exists emergency_contact_mobile varchar(15)");
                 statement.execute(
                         "alter table " + TABLE_NAME + " add column if not exists emergency_contact_alt_mobile varchar(15)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists company_payroll_more_than_three_months boolean not null default false");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists company_payroll_proof_original_name varchar(255)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists company_payroll_proof_file_path varchar(700)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists company_payroll_proof_file_type varchar(120)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists company_payroll_proof_file_size bigint");
 
                 if (tableExists(connection, "employee_master")) {
                     statement.execute(

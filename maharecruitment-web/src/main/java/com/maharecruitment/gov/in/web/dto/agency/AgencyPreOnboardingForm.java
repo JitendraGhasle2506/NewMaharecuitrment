@@ -111,11 +111,15 @@ public class AgencyPreOnboardingForm {
 
     private boolean agencyFlag;
 
+    private boolean companyPayrollMoreThanThreeMonths;
+
     private MultipartFile aadhaarFile;
 
     private MultipartFile panFile;
 
     private MultipartFile experienceDoc;
+
+    private MultipartFile companyPayrollProof;
 
     private MultipartFile uploadImage;
 
@@ -130,6 +134,10 @@ public class AgencyPreOnboardingForm {
     private String existingExperienceDocFileName;
 
     private String existingExperienceDocFilePath;
+
+    private String existingCompanyPayrollProofFileName;
+
+    private String existingCompanyPayrollProofFilePath;
 
     private String existingPhotoFileName;
 
