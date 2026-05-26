@@ -9,6 +9,8 @@
         .bill-detail-shell {
             display: grid;
             gap: 1rem;
+            width: 100%;
+            margin: 0;
         }
         .screen-toolbar {
             display: flex;
@@ -28,7 +30,14 @@
             border-radius: 0.35rem;
             box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
             color: #111827;
-            overflow: hidden;
+            width: 100%;
+            overflow: visible;
+        }
+        .screen-toolbar-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
         .document-top-rule {
             height: 5px;
@@ -104,7 +113,7 @@
         }
         .document-control-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             border: 1px solid #94a3b8;
             border-bottom: 0;
         }
@@ -113,6 +122,7 @@
             border-bottom: 1px solid #94a3b8;
             min-height: 54px;
             padding: 0.45rem 0.55rem;
+            min-width: 0;
         }
         .document-control-item:nth-child(4n) {
             border-right: 0;
@@ -129,6 +139,8 @@
             font-size: 0.88rem;
             font-weight: 800;
             margin-top: 0.18rem;
+            overflow-wrap: anywhere;
+            word-break: normal;
         }
         .section-caption {
             color: #0f172a;
@@ -229,6 +241,54 @@
             font-weight: 900;
             text-align: center;
         }
+        .bill-qr-section {
+            border: 1px solid #94a3b8;
+            padding: 0.65rem;
+            display: grid;
+            grid-template-columns: 152px 1fr;
+            gap: 0.9rem;
+            align-items: center;
+            background: #fbfdff;
+        }
+        .bill-qr-image {
+            width: 136px;
+            height: 136px;
+            object-fit: contain;
+            display: block;
+        }
+        .bill-qr-placeholder {
+            width: 136px;
+            height: 136px;
+            border: 1px dashed #64748b;
+            display: grid;
+            place-items: center;
+            color: #475569;
+            font-weight: 900;
+        }
+        .bill-qr-title {
+            color: #0f172a;
+            font-size: 0.82rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+        .bill-qr-details {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.35rem 0.65rem;
+        }
+        .bill-qr-detail-label {
+            color: #475569;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .bill-qr-detail-value {
+            color: #0f172a;
+            font-size: 0.78rem;
+            font-weight: 800;
+            overflow-wrap: anywhere;
+        }
         .report-footer {
             border-top: 1px solid #94a3b8;
             padding-top: 0.45rem;
@@ -284,6 +344,11 @@
             body {
                 background: #fff !important;
                 color: #000 !important;
+                font-family: Arial, Helvetica, sans-serif !important;
+                font-size: 7.2pt !important;
+                line-height: 1.15 !important;
+                height: auto !important;
+                overflow: visible !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -308,17 +373,30 @@
                 max-width: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                height: auto !important;
                 min-height: auto !important;
+                overflow: visible !important;
                 background: #fff !important;
             }
             .bill-detail-shell {
                 display: block !important;
+                height: auto !important;
+                overflow: visible !important;
             }
             .official-document {
                 border: 0;
                 box-shadow: none;
                 border-radius: 0;
+                height: auto !important;
                 overflow: visible;
+            }
+            .official-body {
+                display: block !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            .official-body > section {
+                margin-bottom: 6px;
             }
             .document-top-rule {
                 height: 3px;
@@ -329,34 +407,37 @@
                 gap: 6px;
             }
             .document-logo {
-                width: 58px;
+                width: 48px;
             }
             .office-kicker,
             .document-kicker {
-                font-size: 7px;
+                font-size: 5.8pt;
+                line-height: 1.05;
             }
             .office-title {
-                font-size: 13px;
+                font-size: 9.5pt;
+                line-height: 1.08;
                 margin: 1px 0;
             }
             .office-subtitle,
             .document-title,
             .document-number {
-                font-size: 8.5px;
+                font-size: 6.6pt;
+                line-height: 1.08;
             }
             .document-title-box {
-                padding: 4px;
+                padding: 3px 4px;
             }
             .official-body {
-                padding: 6px 0 0;
-                gap: 6px;
+                padding: 4px 0 0;
+                gap: 0;
             }
             .document-control-grid {
                 grid-template-columns: repeat(4, 1fr);
             }
             .document-control-item {
-                min-height: 34px;
-                padding: 3px 5px;
+                min-height: 26px;
+                padding: 2px 4px;
                 border-right: 1px solid #555 !important;
                 border-bottom: 1px solid #555 !important;
             }
@@ -364,21 +445,28 @@
                 border-right: 0 !important;
             }
             .control-label {
-                font-size: 6.8px;
+                font-size: 5.4pt;
+                line-height: 1.05;
             }
             .control-value {
-                font-size: 8px;
+                font-size: 6.2pt;
+                line-height: 1.08;
                 margin-top: 1px;
             }
             .section-caption {
-                font-size: 8.2px;
-                margin-bottom: 2px;
+                font-size: 6.6pt;
+                line-height: 1.1;
+                margin: 4px 0 2px;
             }
             .table-responsive {
                 overflow: visible !important;
             }
             .table-report {
                 page-break-inside: auto;
+                break-inside: auto;
+                width: 100% !important;
+                table-layout: fixed;
+                border-collapse: collapse !important;
             }
             .table-report thead {
                 display: table-header-group;
@@ -388,42 +476,145 @@
             }
             .table-report tr {
                 page-break-inside: avoid;
+                break-inside: avoid;
                 page-break-after: auto;
+            }
+            .employee-section,
+            .employee-section .table-responsive,
+            .employee-section .employee-lines {
+                page-break-inside: auto !important;
+                break-inside: auto !important;
+            }
+            .employee-section .employee-lines tbody {
+                display: table-row-group;
+            }
+            .print-tail-section {
+                display: block !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
+                page-break-before: auto;
+                break-before: auto;
+                overflow: visible !important;
             }
             .table-report th,
             .table-report td {
                 border-color: #555 !important;
-                padding: 2.5px 4px !important;
-                font-size: 7.8px !important;
-                line-height: 1.18;
+                padding: 1.6px 2.4px !important;
+                font-size: 6.1pt !important;
+                line-height: 1.08;
+                vertical-align: middle !important;
+            }
+            .particulars-table th {
+                width: 14% !important;
+            }
+            .particulars-table td {
+                width: 36% !important;
+            }
+            .amount-summary th:nth-child(1),
+            .amount-summary td:nth-child(1) {
+                width: 17% !important;
+            }
+            .amount-summary th:nth-child(2),
+            .amount-summary td:nth-child(2),
+            .amount-summary th:nth-child(3),
+            .amount-summary td:nth-child(3) {
+                width: 14% !important;
+            }
+            .amount-summary th:nth-child(4),
+            .amount-summary td:nth-child(4) {
+                width: 55% !important;
+            }
+            .employee-lines {
+                table-layout: fixed !important;
+            }
+            .employee-lines th:nth-child(1),
+            .employee-lines td:nth-child(1) {
+                width: 3.5% !important;
+                text-align: center;
+            }
+            .employee-lines th:nth-child(2),
+            .employee-lines td:nth-child(2) {
+                width: 18% !important;
+            }
+            .employee-lines th:nth-child(3),
+            .employee-lines td:nth-child(3) {
+                width: 7% !important;
+            }
+            .employee-lines th:nth-child(4),
+            .employee-lines td:nth-child(4) {
+                width: 13% !important;
+            }
+            .employee-lines th:nth-child(n+5),
+            .employee-lines td:nth-child(n+5) {
+                width: 7.3% !important;
+            }
+            .number-cell {
+                white-space: nowrap !important;
             }
             .employee-cell {
-                min-width: 112px;
+                min-width: 0;
+                gap: 0;
+            }
+            .employee-name {
+                line-height: 1.08;
             }
             .employee-code {
-                font-size: 6.8px !important;
+                display: block;
+                font-size: 5.3pt !important;
+                line-height: 1.05;
             }
             .certificate-box {
-                padding: 4px 5px;
+                padding: 3px 5px;
             }
             .certificate-text {
-                font-size: 7.8px;
-                line-height: 1.3;
+                font-size: 6.2pt;
+                line-height: 1.18;
             }
             .verification-grid {
                 grid-template-columns: repeat(4, 1fr);
-                gap: 5px;
+                gap: 4px;
             }
             .signature-box {
-                min-height: 52px;
-                padding: 4px;
+                min-height: 38px;
+                padding: 3px 4px;
             }
             .signature-label {
-                font-size: 6.8px;
+                font-size: 5.5pt;
+                line-height: 1.05;
             }
             .signature-line,
             .report-footer {
-                font-size: 7px;
+                font-size: 5.8pt;
+                line-height: 1.08;
+            }
+            .bill-qr-section {
+                grid-template-columns: 108px 1fr;
+                gap: 7px;
+                padding: 5px;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .bill-qr-image,
+            .bill-qr-placeholder {
+                width: 96px;
+                height: 96px;
+            }
+            .bill-qr-title {
+                font-size: 6.2pt;
+                line-height: 1.05;
+                margin-bottom: 2px;
+            }
+            .bill-qr-details {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 2px 5px;
+            }
+            .bill-qr-detail-label {
+                font-size: 5pt;
+                line-height: 1.05;
+            }
+            .bill-qr-detail-value {
+                font-size: 5.6pt;
+                line-height: 1.08;
             }
         }
     </style>
@@ -438,7 +629,7 @@
                     <h2 class="screen-toolbar-title">Agency Monthly Bill</h2>
                     <p class="text-muted mb-0" th:text="${bill.billNumber}">25MAY2026-0001</p>
                 </div>
-                <div class="d-flex gap-2 flex-wrap">
+                <div class="screen-toolbar-actions">
                     <button type="button" class="btn btn-outline-primary rounded-pill px-4" onclick="window.print()">Print</button>
                     <form class="d-inline"
                         th:action="@{/auditor/agency-monthly-bills/{id}/delete(id=${bill.agencyMonthlyBillId})}"
@@ -458,8 +649,7 @@
                         <img class="document-logo" th:src="@{/img/mahait_logo.png}" alt="MahaIT Logo">
                     </div>
                     <div class="office-heading">
-                        <div class="office-kicker">Government of Maharashtra</div>
-                        <h1 class="office-title">MahaIT Recruitment</h1>
+                        <h1 class="office-title">Maharashtra Information Technology Corporation Ltd.</h1>
                         <div class="office-subtitle">Agency Monthly Bill Statement for Audit Verification</div>
                     </div>
                     <div class="document-title-box">
@@ -501,7 +691,7 @@
                         </div>
                         <div class="document-control-item">
                             <div class="control-label">Prepared By</div>
-                            <div class="control-value" th:text="${bill.createdBy != null ? bill.createdBy : '-'}">-</div>
+                            <div class="control-value" th:text="${preparedByName != null ? preparedByName : '-'}">-</div>
                         </div>
                     </section>
 
@@ -598,10 +788,23 @@
                         </div>
                     </section>
 
-                    <section>
+                    <section class="employee-section">
                         <h3 class="section-caption">4. Annexure I - Employee-Wise Bill Calculation</h3>
                         <div class="table-responsive">
                             <table class="table table-bordered table-report employee-lines">
+                                <colgroup>
+                                    <col style="width: 3.5%;">
+                                    <col style="width: 18%;">
+                                    <col style="width: 7%;">
+                                    <col style="width: 13%;">
+                                    <col style="width: 9%;">
+                                    <col style="width: 7%;">
+                                    <col style="width: 12%;">
+                                    <col style="width: 6%;">
+                                    <col style="width: 8%;">
+                                    <col style="width: 8%;">
+                                    <col style="width: 8.5%;">
+                                </colgroup>
                                 <thead>
                                     <tr class="group-header">
                                         <th rowspan="2">Sr.No</th>
@@ -629,7 +832,7 @@
                                             <div class="employee-cell">
                                                 <span class="employee-name" th:text="${line.employeeName}">Employee</span>
                                                 <span class="employee-code"
-                                                    th:text="${(line.employeeCode != null ? line.employeeCode : '-') + ' | ' + (line.requestId != null ? line.requestId : '-')}">-</span>
+                                                    th:text="${(line.employeeCode != null ? line.employeeCode : '-') }">-</span>
                                             </div>
                                         </td>
                                         <td th:text="${line.employeeType}">EXTERNAL</td>
@@ -665,7 +868,7 @@
                         </div>
                     </section>
 
-                    <section>
+                    <section class="print-tail-section">
                         <h3 class="section-caption">5. Verification Certificate</h3>
                         <div class="certificate-box">
                             <p class="certificate-text">
@@ -676,7 +879,7 @@
                         </div>
                     </section>
 
-                    <section>
+                    <section class="print-tail-section">
                         <h3 class="section-caption">6. Signature And Approval</h3>
                         <div class="verification-grid">
                             <div class="signature-box">
@@ -694,6 +897,47 @@
                             <div class="signature-box">
                                 <div class="signature-label">Approved By</div>
                                 <div class="signature-line">Competent Authority</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="print-tail-section">
+                        <h3 class="section-caption">7. QR Verification</h3>
+                        <div class="bill-qr-section">
+                            <div>
+                                <img th:if="${!#strings.isEmpty(agencyBillQrCodeDataUrl)}"
+                                    th:src="${agencyBillQrCodeDataUrl}" class="bill-qr-image"
+                                    alt="Agency Monthly Bill QR Code">
+                                <div th:if="${#strings.isEmpty(agencyBillQrCodeDataUrl)}" class="bill-qr-placeholder">QR</div>
+                            </div>
+                            <div>
+                                <div class="bill-qr-title">Scan to verify bill details</div>
+                                <div class="bill-qr-details">
+                                    <div>
+                                        <div class="bill-qr-detail-label">Bill ID</div>
+                                        <div class="bill-qr-detail-value" th:text="${bill.agencyMonthlyBillId}">5</div>
+                                    </div>
+                                    <div>
+                                        <div class="bill-qr-detail-label">Bill Number</div>
+                                        <div class="bill-qr-detail-value" th:text="${bill.billNumber}">25MAY2026-0001</div>
+                                    </div>
+                                    <div>
+                                        <div class="bill-qr-detail-label">Generated Date</div>
+                                        <div class="bill-qr-detail-value" th:text="${bill.generatedDate != null ? #temporals.format(bill.generatedDate, 'dd-MM-yyyy') : '-'}">-</div>
+                                    </div>
+                                    <div>
+                                        <div class="bill-qr-detail-label">Total Amount</div>
+                                        <div class="bill-qr-detail-value" th:text="${#numbers.formatDecimal(bill.totalAmount, 1, 'COMMA', 2, 'POINT')}">0.00</div>
+                                    </div>
+                                    <div>
+                                        <div class="bill-qr-detail-label">Authority</div>
+                                        <div class="bill-qr-detail-value" th:text="${agencyBillAuthorityName}">Maharashtra Information Technology Corporation Ltd.</div>
+                                    </div>
+                                    <div>
+                                        <div class="bill-qr-detail-label">Prepared By</div>
+                                        <div class="bill-qr-detail-value" th:text="${preparedByName != null ? preparedByName : '-'}">-</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </section>

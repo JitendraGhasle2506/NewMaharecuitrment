@@ -20,10 +20,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.util.StringUtils;
 
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillGenerateRequest;
 import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillListItemView;
+import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillView;
 import com.maharecruitment.gov.in.invoice.entity.AgencyMonthlyBillEmployeeType;
+import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillQrCodeGenerator;
 import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillService;
 import com.maharecruitment.gov.in.master.entity.AgencyStatus;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
@@ -35,12 +39,18 @@ import jakarta.validation.Valid;
 public class AuditorAgencyMonthlyBillController {
 
     private final AgencyMonthlyBillService billService;
+    private final AgencyMonthlyBillQrCodeGenerator qrCodeGenerator;
+    private final UserRepository userRepository;
     private final AgencyMasterRepository agencyMasterRepository;
 
     public AuditorAgencyMonthlyBillController(
             AgencyMonthlyBillService billService,
+            AgencyMonthlyBillQrCodeGenerator qrCodeGenerator,
+            UserRepository userRepository,
             AgencyMasterRepository agencyMasterRepository) {
         this.billService = billService;
+        this.qrCodeGenerator = qrCodeGenerator;
+        this.userRepository = userRepository;
         this.agencyMasterRepository = agencyMasterRepository;
     }
 
@@ -112,7 +122,12 @@ public class AuditorAgencyMonthlyBillController {
 
     @GetMapping("/{billId}")
     public String view(@PathVariable Long billId, Model model) {
-        model.addAttribute("bill", billService.getBill(billId));
+        AgencyMonthlyBillView bill = billService.getBill(billId);
+        String preparedByName = resolvePreparedByName(bill.getCreatedBy());
+        model.addAttribute("bill", bill);
+        model.addAttribute("agencyBillQrCodeDataUrl", qrCodeGenerator.generateDataUrl(bill, preparedByName));
+        model.addAttribute("agencyBillAuthorityName", "Maharashtra Information Technology Corporation Ltd.");
+        model.addAttribute("preparedByName", preparedByName);
         return "invoice/agency-monthly-bill-detail";
     }
 
@@ -152,5 +167,15 @@ public class AuditorAgencyMonthlyBillController {
             return "SYSTEM";
         }
         return authentication.getName();
+    }
+
+    private String resolvePreparedByName(String actorEmail) {
+        if (!StringUtils.hasText(actorEmail)) {
+            return "-";
+        }
+
+        return userRepository.findByEmailIgnoreCase(actorEmail.trim())
+                .map(user -> StringUtils.hasText(user.getName()) ? user.getName().trim() : actorEmail.trim())
+                .orElse(actorEmail.trim());
     }
 }
