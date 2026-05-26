@@ -10,17 +10,17 @@
 
 .pre-onboarding-card .section-block {
     border: 1px solid var(--onboard-line);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 24px;
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 16px;
     background: var(--onboard-surface);
-    box-shadow: 0 1px 3px 0 rgba(17, 39, 69, 0.1), 0 1px 2px 0 rgba(17, 39, 69, 0.06);
+    box-shadow: none;
 }
 
 .pre-onboarding-card > .header {
-    padding: 24px 24px 20px;
+    padding: 18px 20px 16px;
     border-bottom: 1px solid var(--onboard-line);
-    background: linear-gradient(135deg, rgba(31, 79, 120, 0.08) 0%, rgba(255, 255, 255, 0.96) 55%, rgba(31, 79, 120, 0.03) 100%);
+    background: #f8fafc;
 }
 
 .pre-onboarding-card > .header h2 {
@@ -44,27 +44,27 @@
 .pre-onboarding-hero {
     display: grid;
     grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
-    gap: 20px;
+    gap: 14px;
     border: 1px solid var(--onboard-line);
-    border-radius: 18px;
-    padding: 20px;
-    margin-bottom: 24px;
-    background: linear-gradient(135deg, rgba(31, 79, 120, 0.08) 0%, #ffffff 52%, rgba(25, 135, 84, 0.04) 100%);
-    box-shadow: 0 1px 3px 0 rgba(17, 39, 69, 0.08), 0 1px 2px 0 rgba(17, 39, 69, 0.04);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: #ffffff;
+    box-shadow: none;
 }
 
 .pre-onboarding-hero.hero-hr {
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.10) 0%, #ffffff 56%, rgba(13, 110, 253, 0.03) 100%);
+    background: #ffffff;
 }
 
 .pre-onboarding-hero.hero-agency {
-    background: linear-gradient(135deg, rgba(25, 135, 84, 0.09) 0%, #ffffff 56%, rgba(25, 135, 84, 0.03) 100%);
+    background: #ffffff;
 }
 
 .pre-onboarding-hero-copy {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 .pre-onboarding-eyebrow {
@@ -72,8 +72,8 @@
     align-items: center;
     gap: 8px;
     width: fit-content;
-    border-radius: 999px;
-    padding: 6px 12px;
+    border-radius: 4px;
+    padding: 4px 8px;
     background: rgba(31, 79, 120, 0.10);
     color: var(--onboard-brand-strong);
     font-size: 0.82rem;
@@ -112,11 +112,11 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border-radius: 999px;
+    border-radius: 4px;
     border: 1px solid rgba(31, 79, 120, 0.16);
     background: rgba(255, 255, 255, 0.88);
     color: var(--onboard-text);
-    padding: 7px 12px;
+    padding: 5px 9px;
     font-size: 0.84rem;
     font-weight: 600;
     box-shadow: 0 1px 2px rgba(17, 39, 69, 0.05);
@@ -131,10 +131,10 @@
 
 .summary-card {
     border: 1px solid rgba(31, 79, 120, 0.12);
-    border-radius: 14px;
+    border-radius: 6px;
     background: rgba(255, 255, 255, 0.96);
-    padding: 12px 14px;
-    min-height: 92px;
+    padding: 10px 12px;
+    min-height: 74px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -167,7 +167,7 @@
 .pre-onboarding-card .section-title {
     font-size: var(--heading-size-sub);
     font-weight: 700;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     color: var(--onboard-brand-strong);
 }
 
@@ -183,8 +183,8 @@
 }
 
 .personal-details-section .section-title {
-    margin: -24px -24px 18px;
-    padding: 12px 24px;
+    margin: -18px -18px 14px;
+    padding: 10px 18px;
     border-bottom: 1px solid #d9e2ea;
     background: #eef4fa;
     color: #2d4558;
@@ -288,8 +288,8 @@
 }
 
 .form-section-classic > .section-title {
-    margin: -24px -24px 16px;
-    padding: 11px 24px;
+    margin: -18px -18px 12px;
+    padding: 10px 18px;
     border-bottom: 1px solid #dce4eb;
     background: #f4f7fa;
     color: #314959;
@@ -335,8 +335,8 @@
 }
 
 .employment-details-section .employment-section-header {
-    margin: -24px -24px 16px;
-    padding: 11px 24px;
+    margin: -18px -18px 12px;
+    padding: 10px 18px;
     border-bottom: 1px solid #dce4eb;
     background: #f4f7fa;
     display: grid;
@@ -359,6 +359,7 @@
 
 .employment-copy {
     color: #607383;
+    margin-bottom: 10px !important;
 }
 
 .employment-details-section .employment-row {
@@ -394,15 +395,26 @@
 }
 
 .employment-details-section .experience-summary {
-    margin-top: 16px;
+    margin-top: 12px;
     border: 1px solid #d8e3ea;
     border-left: 4px solid #1f4f78;
     border-radius: 10px;
     background: #f5f9fc;
 }
 
-.employment-supporting-doc {
-    margin-top: 8px !important;
+.employment-document-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.95fr);
+    gap: 12px;
+    margin-top: 12px;
+    align-items: start;
+}
+
+.employment-document-panel {
+    border: 1px solid #d8e3ea;
+    border-radius: 8px;
+    background: #fbfdff;
+    padding: 12px;
 }
 
 .employment-existing-file {
@@ -411,19 +423,22 @@
 }
 
 .company-payroll-proof {
-    border: 1px solid #d8e3ea;
-    border-radius: 10px;
-    background: #fbfdff;
-    padding: 14px;
+    display: grid;
+    gap: 10px;
 }
 
 .company-payroll-check {
-    height: auto;
-    background: #ffffff;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 0;
+    color: #304757;
+    font-weight: 600;
+    line-height: 1.35;
 }
 
 .company-payroll-upload {
-    max-width: 640px;
+    max-width: none;
 }
 
 .document-checklist-section .text-muted {
@@ -433,7 +448,7 @@
 .document-checklist-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+    gap: 10px;
 }
 
 .document-checklist-item {
@@ -444,9 +459,9 @@
     align-items: start;
     gap: 10px;
     border-color: #d5dee6;
-    border-radius: 10px;
+    border-radius: 6px;
     background: #ffffff;
-    padding: 12px 14px;
+    padding: 10px 12px;
     box-shadow: none;
 }
 
@@ -491,9 +506,9 @@
 .verification-box {
     border: 1px solid #d0dae2;
     border-left: 4px solid var(--onboard-brand);
-    border-radius: 10px;
+    border-radius: 8px;
     background: #f6f9fc;
-    padding: 14px 16px;
+    padding: 12px 14px;
 }
 
 .hr-verification-box {
@@ -516,8 +531,8 @@
 }
 
 .kyc-section .section-title {
-    margin: -24px -24px 14px;
-    padding: 12px 24px;
+    margin: -18px -18px 12px;
+    padding: 10px 18px;
     border-bottom: 1px solid #d8dfe5;
     background: #ebe7dc;
     color: #2f4150;
@@ -649,9 +664,9 @@
     align-items: center;
     height: 100%;
     border: 1px solid var(--onboard-line);
-    border-radius: 12px;
+    border-radius: 8px;
     background: #f8fbff;
-    padding: 14px 16px;
+    padding: 10px 12px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -677,9 +692,9 @@
 .verification-box {
     border: 1px solid #bfd4e8;
     border-left: 4px solid var(--onboard-brand);
-    border-radius: 12px;
+    border-radius: 8px;
     background: #f2f8ff;
-    padding: 14px;
+    padding: 12px;
 }
 
 .verification-card {
@@ -781,8 +796,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-top: 24px;
-    padding: 18px 20px;
+    margin-top: 16px;
+    padding: 14px 16px;
     border: 1px solid #d5dfe7;
     border-radius: 10px;
     background: #f7f9fb;
@@ -885,6 +900,7 @@
 
     .job-details-grid-3,
     .job-details-grid-2,
+    .employment-document-grid,
     .document-checklist-grid,
     .hr-verification-grid {
         grid-template-columns: 1fr;
