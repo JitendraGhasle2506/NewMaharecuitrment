@@ -393,7 +393,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
 
         if (employee.getJoiningDate() != null && resignationDate.isBefore(employee.getJoiningDate())) {
             throw new RecruitmentNotificationException("Resignation date cannot be before joining date (" +
-                    employee.getJoiningDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy"))
+                    employee.getJoiningDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy"))
                     + ").");
         }
 

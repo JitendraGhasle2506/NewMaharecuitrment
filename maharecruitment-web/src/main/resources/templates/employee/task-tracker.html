@@ -152,7 +152,7 @@
                             </div>
                             <span class="text-muted small ms-2">
                                 Dates in the entry form will be restricted to
-                                <strong th:text="${minDate} + ' to ' + ${maxDate}"></strong>
+                                <strong th:text="${displayMinDate + ' to ' + displayMaxDate}"></strong>
                             </span>
                         </form>
                     </div>
@@ -357,7 +357,8 @@
                                     <tr th:each="recent, iterStat : ${recentTasks}">
                                         <td class="text-center fw-semibold text-muted"
                                             th:text="${currentPage * 10 + iterStat.count}"></td>
-                                        <td class="text-center" th:text="${recent.taskDate}"></td>
+                                        <td class="text-center"
+                                            th:text="${recent.taskDate != null ? #temporals.format(recent.taskDate, 'dd-MM-yyyy') : '-'}"></td>
                                         <td>
                                             <span th:text="${recent.projectName}"></span>
                                             <div th:if="${recent.projectName == 'Other' and recent.otherProjectReason != null}" 
@@ -579,6 +580,14 @@
                 }
             }
 
+            function formatDisplayDate(dateStr) {
+                if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                    return dateStr || '-';
+                }
+                const parts = dateStr.split('-');
+                return parts[2] + '-' + parts[1] + '-' + parts[0];
+            }
+
             function updateRowRequiredStates() {
                 document.querySelectorAll('#taskTableBody .task-row').forEach(row => {
                     const cb = row.querySelector('.select-row-cb');
@@ -688,7 +697,7 @@
                         const minAllowed = tgt.getAttribute('min') || minDateStr;
                         const maxAllowed = tgt.getAttribute('max') || maxDateStrClamped;
                         if (selDate < minAllowed || selDate > maxAllowed) {
-                            alert('Please select a date between ' + minAllowed + ' and ' + maxAllowed + '. Future dates or dates outside the allowed range are not allowed.');
+                            alert('Please select a date between ' + formatDisplayDate(minAllowed) + ' and ' + formatDisplayDate(maxAllowed) + '. Future dates or dates outside the allowed range are not allowed.');
                             tgt.value = '';
                             updateDayLabel(row, '');
                             const startTimeInput = row.querySelector('.start-time-input');

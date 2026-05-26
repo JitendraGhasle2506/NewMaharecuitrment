@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -804,9 +804,9 @@
                                 <div class="summary-card">
                                     <span class="summary-card-label">Joining And HR Onboarding</span>
                                     <strong class="summary-card-value"
-                                        th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd MMM yyyy') : '-'}">01 Apr 2026</strong>
+                                        th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd-MM-yyyy') : '-'}">01 Apr 2026</strong>
                                     <span class="summary-card-subvalue"
-                                        th:text="${detail.hrOnboardingDate != null ? 'HR confirmed on ' + #temporals.format(detail.hrOnboardingDate, 'dd MMM yyyy') : 'HR onboarding date unavailable'}">
+                                        th:text="${detail.hrOnboardingDate != null ? 'HR confirmed on ' + #temporals.format(detail.hrOnboardingDate, 'dd-MM-yyyy') : 'HR onboarding date unavailable'}">
                                         HR confirmed
                                     </span>
                                 </div>
@@ -888,7 +888,7 @@
                                                 <th scope="row">Full Name</th>
                                                 <td th:text="${detail.name != null ? detail.name : '-'}">Name</td>
                                                 <th scope="row">Date Of Birth</th>
-                                                <td th:text="${detail.dob != null ? #temporals.format(detail.dob, 'dd MMM yyyy') : '-'}">DOB</td>
+                                                <td th:text="${detail.dob != null ? #temporals.format(detail.dob, 'dd-MM-yyyy') : '-'}">DOB</td>
                                             </tr>
                                             <tr>
                                                 <th scope="row">Email</th>
@@ -941,15 +941,15 @@
                                             </tr>
                                             <tr>
                                                 <th scope="row">Joining Date</th>
-                                                <td th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd MMM yyyy') : '-'}">Joining Date</td>
+                                                <td th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd-MM-yyyy') : '-'}">Joining Date</td>
                                                 <th scope="row">Onboarding Date</th>
-                                                <td th:text="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd MMM yyyy') : '-'}">Onboarding Date</td>
+                                                <td th:text="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd-MM-yyyy') : '-'}">Onboarding Date</td>
                                             </tr>
                                             <tr>
                                                 <th scope="row">HR Onboarding Date</th>
-                                                <td th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd MMM yyyy') : '-'}">HR Date</td>
+                                                <td th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MM-yyyy') : '-'}">HR Date</td>
                                                 <th scope="row">Resignation Date</th>
-                                                <td th:text="${employeeDetail.resignationDate != null ? #temporals.format(employeeDetail.resignationDate, 'dd MMM yyyy') : '-'}">-</td>
+                                                <td th:text="${employeeDetail.resignationDate != null ? #temporals.format(employeeDetail.resignationDate, 'dd-MM-yyyy') : '-'}">-</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -1095,8 +1095,8 @@
                                                 <td th:text="${stat.index + 1}">1</td>
                                                 <td th:text="${employment.companyName != null ? employment.companyName : '-'}">Company Name</td>
                                                 <td th:text="${employment.designation != null ? employment.designation : '-'}">Designation</td>
-                                                <td th:text="${employment.startDate != null ? #temporals.format(employment.startDate, 'dd MMM yyyy') : '-'}">01 Jan 2020</td>
-                                                <td th:text="${employment.endDate != null ? #temporals.format(employment.endDate, 'dd MMM yyyy') : '-'}">31 Dec 2022</td>
+                                                <td th:text="${employment.startDate != null ? #temporals.format(employment.startDate, 'dd-MM-yyyy') : '-'}">01 Jan 2020</td>
+                                                <td th:text="${employment.endDate != null ? #temporals.format(employment.endDate, 'dd-MM-yyyy') : '-'}">31 Dec 2022</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -1153,15 +1153,15 @@
                                         <tbody>
                                             <tr>
                                                 <th scope="row">Joining Date</th>
-                                                <td th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd MMM yyyy') : '-'}">Date</td>
+                                                <td th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd-MM-yyyy') : '-'}">Date</td>
                                             </tr>
                                             <tr>
                                                 <th scope="row">Portal Onboarding Date</th>
-                                                <td th:text="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd MMM yyyy') : '-'}">Date</td>
+                                                <td th:text="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd-MM-yyyy') : '-'}">Date</td>
                                             </tr>
                                             <tr>
                                                 <th scope="row">HR Confirmation Date</th>
-                                                <td th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd MMM yyyy') : '-'}">Date</td>
+                                                <td th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MM-yyyy') : '-'}">Date</td>
                                             </tr>
                                             <tr>
                                                 <th scope="row">HR Onboarding Location</th>

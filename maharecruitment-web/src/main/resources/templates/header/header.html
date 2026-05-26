@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -89,7 +89,7 @@
                             <li class="nav-item d-none d-lg-flex" th:if="${sessionUser != null}">
 
                                 <span class="user-session-meta"
-                                    th:text="${sessionLoginTime != null ? 'Login: ' + #temporals.format(sessionLoginTime, 'dd MMM yyyy, hh:mm a') : 'Login unavailable'}">
+                                    th:text="${sessionLoginTime != null ? 'Login: ' + #temporals.format(sessionLoginTime, 'dd-MM-yyyy, hh:mm a') : 'Login unavailable'}">
                                     Login: 26 Mar 2026, 12:15 PM
                                 </span>
 
@@ -162,11 +162,11 @@
                                                 <span th:text="${primaryRoleLabel}">Role</span>
                                             </div>
                                             <div class="small text-muted"
-                                                th:text="${sessionLoginTime != null ? 'Login time: ' + #temporals.format(sessionLoginTime, 'dd MMM yyyy, hh:mm a') : 'Login time unavailable'}">
+                                                th:text="${sessionLoginTime != null ? 'Login time: ' + #temporals.format(sessionLoginTime, 'dd-MM-yyyy, hh:mm a') : 'Login time unavailable'}">
                                                 Login time: 26 Mar 2026, 12:15 PM
                                             </div>
                                             <div class="small text-muted"
-                                                th:text="${sessionUser.lastLoginTime != null ? 'Last login: ' + #temporals.format(sessionUser.lastLoginTime, 'dd MMM yyyy, hh:mm a') : 'Last login: First login'}">
+                                                th:text="${sessionUser.lastLoginTime != null ? 'Last login: ' + #temporals.format(sessionUser.lastLoginTime, 'dd-MM-yyyy, hh:mm a') : 'Last login: First login'}">
                                                 Last login: First login
                                             </div>
                                         </div>

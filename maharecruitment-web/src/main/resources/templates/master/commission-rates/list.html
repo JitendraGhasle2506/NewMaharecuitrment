@@ -68,7 +68,7 @@
                                     <td th:text="${item.commissionRateId}"></td>
                                     <td th:text="${item.commissionCode != null and item.commissionCode.name() == 'AGENCY' ? 'Agency' : 'MahaIT'}"></td>
                                     <td th:text="${item.commissionPercentage}"></td>
-                                    <td th:text="${item.effectiveDate}"></td>
+                                    <td th:text="${item.effectiveDate != null ? #temporals.format(item.effectiveDate, 'dd-MM-yyyy') : '-'}"></td>
                                     <td>
                                         <span class="badge"
                                             th:classappend="${item.activeFlag == 'Y'} ? ' text-bg-success' : ' text-bg-secondary'"

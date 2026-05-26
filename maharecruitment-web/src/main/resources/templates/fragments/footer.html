@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
     <th:block th:fragment="var-footer">
@@ -11,7 +11,7 @@
                     </span>
                     <span class="site-footer-meta"
                         th:if="${sessionUser != null and sessionUser.lastLoginTime != null}"
-                        th:text="${'Last login: ' + #temporals.format(sessionUser.lastLoginTime, 'dd MMM yyyy, hh:mm a')}">
+                        th:text="${'Last login: ' + #temporals.format(sessionUser.lastLoginTime, 'dd-MM-yyyy, hh:mm a')}">
                         Last login unavailable
                     </span>
                 </div>

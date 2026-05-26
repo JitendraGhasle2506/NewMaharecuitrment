@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -66,7 +66,7 @@
                                         <div th:if="${candidate.interviewDateTime != null}">
                                             <div class="text-primary fw-bold">
                                                 <i class="far fa-calendar-alt me-1"></i>
-                                                <span th:text="${#temporals.format(candidate.interviewDateTime, 'dd MMM yyyy')}"></span>
+                                                <span th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MM-yyyy')}"></span>
                                             </div>
                                             <div class="text-dark small mt-1">
                                                 <i class="far fa-clock me-1"></i>

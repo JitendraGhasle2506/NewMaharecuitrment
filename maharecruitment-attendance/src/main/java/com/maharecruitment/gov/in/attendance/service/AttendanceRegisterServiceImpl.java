@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.attendance.service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +50,8 @@ import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterActivi
 @Service
 @Transactional
 public class AttendanceRegisterServiceImpl implements AttendanceRegisterService {
+
+	private static final DateTimeFormatter DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
 	@Autowired
 	private EmployeeRepository employeeRepository;
@@ -431,7 +434,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setMobile(employee.getMobile());
 		dto.setAddress(employee.getAddress());
 		dto.setEmployeeCode(employee.getEmployeeCode());
-		dto.setJoiningDate(employee.getJoiningDate() != null ? employee.getJoiningDate().toString() : "-");
+		dto.setJoiningDate(employee.getJoiningDate() != null ? employee.getJoiningDate().format(DISPLAY_DATE_FORMATTER) : "-");
 		dto.setPhotoPath(employee.getPreOnboarding() != null ? employee.getPreOnboarding().getPhotoFilePath() : null);
 
 		// Populate Reporting HOD and Manager

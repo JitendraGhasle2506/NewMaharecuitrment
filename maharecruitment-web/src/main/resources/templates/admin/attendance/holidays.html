@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -431,7 +431,7 @@
                                             </tr>
                                             <tr th:each="holiday : ${monthHolidays}">
                                                 <td class="holiday-entry-highlight"
-                                                    th:text="${#temporals.format(holiday.holidayDate, 'dd MMM yyyy')}">07 May 2026</td>
+                                                    th:text="${#temporals.format(holiday.holidayDate, 'dd-MM-yyyy')}">07 May 2026</td>
                                                 <td class="holiday-entry-highlight"
                                                     th:text="${#temporals.format(holiday.holidayDate, 'EEEE')}">Thursday</td>
                                                 <td class="holiday-entry-highlight" th:text="${holiday.holidayName}">Holiday Name</td>
@@ -483,7 +483,7 @@
                                             </tr>
                                             <tr th:each="workingDay : ${monthWorkingDays}">
                                                 <td class="working-day-entry-highlight"
-                                                    th:text="${#temporals.format(workingDay.workingDate, 'dd MMM yyyy')}">09 May 2026</td>
+                                                    th:text="${#temporals.format(workingDay.workingDate, 'dd-MM-yyyy')}">09 May 2026</td>
                                                 <td class="working-day-entry-highlight"
                                                     th:text="${#temporals.format(workingDay.workingDate, 'EEEE')}">Saturday</td>
                                                 <td>
@@ -537,7 +537,7 @@
                                                 <td colspan="4" class="text-center text-muted">No audit entries found for this holiday.</td>
                                             </tr>
                                             <tr th:each="event : ${activityTimeline}">
-                                                <td th:text="${#temporals.format(event.occurredAt, 'dd MMM yyyy hh:mm a')}">07 May 2026 03:15 PM</td>
+                                                <td th:text="${#temporals.format(event.occurredAt, 'dd-MM-yyyy hh:mm a')}">07 May 2026 03:15 PM</td>
                                                 <td>
                                                     <span class="badge text-bg-light border" th:text="${event.actionType}">UPDATE</span>
                                                 </td>
@@ -580,7 +580,7 @@
                                                 <td colspan="4" class="text-center text-muted">No audit entries found for this working-day override.</td>
                                             </tr>
                                             <tr th:each="event : ${workingDayActivityTimeline}">
-                                                <td th:text="${#temporals.format(event.occurredAt, 'dd MMM yyyy hh:mm a')}">07 May 2026 03:15 PM</td>
+                                                <td th:text="${#temporals.format(event.occurredAt, 'dd-MM-yyyy hh:mm a')}">07 May 2026 03:15 PM</td>
                                                 <td>
                                                     <span class="badge text-bg-light border" th:text="${event.actionType}">UPDATE</span>
                                                 </td>
