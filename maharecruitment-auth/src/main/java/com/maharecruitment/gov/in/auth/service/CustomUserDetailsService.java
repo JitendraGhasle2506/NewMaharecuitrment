@@ -60,9 +60,9 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         String normalized = identifier.trim();
         if (normalized.matches("^[0-9]{10,15}$")) {
-            return userRepository.findByMobileNo(normalized);
+            return userRepository.findByMobileNoAndActiveTrue(normalized);
         }
 
-        return userRepository.findByEmailIgnoreCase(UserValidationUtil.normalizeEmail(normalized));
+        return userRepository.findByEmailIgnoreCaseAndActiveTrue(UserValidationUtil.normalizeEmail(normalized));
     }
 }

@@ -27,5 +27,9 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
 
     Optional<DailyAttendanceInternalEntity> findByEmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);
 
+    Optional<DailyAttendanceInternalEntity> findFirstByEmployeeIdAndAttendanceDateOrderByIdDesc(
+            Long employeeId,
+            LocalDate date);
+
     List<DailyAttendanceInternalEntity> findByEmployeeIdAndMonthAndYear(Long employeeId, Integer month, Integer year);
 }

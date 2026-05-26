@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.dto.UserUpsertRequest;
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
@@ -55,13 +56,22 @@ public class UserManagementServiceImpl implements UserManagementService {
     @Override
     @Transactional(readOnly = true)
     public Page<User> getAll(Pageable pageable) {
-        return userRepository.findAll(pageable);
+        return userRepository.findByActiveTrue(pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<User> getAll(String searchTerm, Pageable pageable) {
+        if (!StringUtils.hasText(searchTerm)) {
+            return getAll(pageable);
+        }
+        return userRepository.searchUsers("%" + searchTerm.trim().toLowerCase() + "%", pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public User getById(Long id) {
-        return userRepository.findById(id)
+        return userRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found for id: " + id));
     }
 
@@ -70,6 +80,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         validateForCreate(request);
 
         User user = new User();
+        user.setActive(true);
         applyCommonFields(user, request);
         user.setPassword(passwordEncoder.encode(UserValidationUtil.validatePassword(request.getPassword())));
 
@@ -102,8 +113,9 @@ public class UserManagementServiceImpl implements UserManagementService {
     @Override
     public void delete(Long id) {
         User existing = getById(id);
-        userRepository.delete(existing);
-        log.info("User deleted: id={}, email={}", existing.getId(), existing.getEmail());
+        existing.setActive(false);
+        userRepository.save(existing);
+        log.info("User soft deleted: id={}, email={}", existing.getId(), existing.getEmail());
     }
 
     private void applyCommonFields(User user, UserUpsertRequest request) {
