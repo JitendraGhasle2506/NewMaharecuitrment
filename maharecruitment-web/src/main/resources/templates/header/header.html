@@ -9,6 +9,7 @@
         <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
         <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
 
+        <link rel="icon" type="image/png" th:href="@{/img/mahait_logo.png}">
         <link rel="stylesheet" th:href="@{/assets/vendor/bootstrap/bootstrap.min.css}">
         <link rel="stylesheet" th:href="@{/assets/vendor/fontawesome/6.5.2/css/all.min.css}">
         <link rel="stylesheet" th:href="@{/css/theme-base.css}">
@@ -79,7 +80,10 @@
                             <i class="fas fa-align-left"></i>
                         </button>
 
-                        <h3 class="logo-text">MahaIT Recruitment</h3>
+                        <h3 class="logo-text">
+                            <img th:src="@{/img/mahait_logo.png}" alt="" class="topbar-logo">
+                            <span>MahaIT Recruitment</span>
+                        </h3>
 
                         <ul class="nav navbar-nav ms-auto align-items-center gap-2">
                             <li class="nav-item d-none d-lg-flex" th:if="${sessionUser != null}">

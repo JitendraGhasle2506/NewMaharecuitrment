@@ -43,6 +43,16 @@ body.landing-shell {
     font-size: 1.12rem;
     font-weight: 700;
     letter-spacing: 0.01em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.brand-logo {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    flex: 0 0 auto;
 }
 
 .brand-link:hover {

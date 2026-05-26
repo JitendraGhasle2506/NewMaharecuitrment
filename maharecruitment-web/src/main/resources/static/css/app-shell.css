@@ -287,6 +287,17 @@ video {
     margin: 0 0 0 0.8rem;
     letter-spacing: 0.01em;
     font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.topbar-logo {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    flex: 0 0 auto;
 }
 
 .app-nav-toggle,

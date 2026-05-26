@@ -48,6 +48,16 @@ body.portal-shell {
     letter-spacing: 0.02em;
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
     font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.portal-nav .brand-logo {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    flex: 0 0 auto;
 }
 
 .portal-nav .btn {
