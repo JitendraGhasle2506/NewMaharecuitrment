@@ -205,101 +205,103 @@
                                         </div>
                                     </div>
                                 </div>
-                        </div>
-
-                        <!-- Emergency Contact Details Section -->
-                        <div class="section-block form-section-classic emergency-details-section">
-                            <h5 class="section-title">Emergency Contact Details</h5>
-                            <div class="personal-details-grid personal-details-grid-4">
-                                <div class="form-group personal-field">
-                                    <label class="form-label">Contact Name <span class="text-danger"
-                                            th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="text" class="form-control personal-input" th:field="*{emergencyContactName}"
-                                        id="emergencyContactName"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        pattern="^[a-zA-Z\s]*$"
-                                        placeholder="Enter emergency contact name" required />
-                                    <div class="invalid-feedback">Contact name is required and should not have special characters.</div>
-                                </div>
-                                <div class="form-group personal-field">
-                                    <label class="form-label">Relation <span class="text-danger"
-                                            th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="text" class="form-control personal-input" th:field="*{emergencyContactRelation}"
-                                        id="emergencyContactRelation"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        placeholder="e.g. Father, Mother, Spouse" required />
-                                    <div class="invalid-feedback">Relation is required.</div>
-                                </div>
-                                <div class="form-group personal-field">
-                                    <label class="form-label">Mobile Number <span class="text-danger"
-                                            th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="tel" class="form-control personal-input" th:field="*{emergencyContactMobile}"
-                                        id="emergencyContactMobile"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        pattern="^[0-9]{10}$"
-                                        placeholder="Enter 10-digit mobile number" required />
-                                    <div class="invalid-feedback">Mobile number must be exactly 10 digits.</div>
-                                </div>
-                                <div class="form-group personal-field">
-                                    <label class="form-label">Alternate Mobile Number</label>
-                                    <input type="tel" class="form-control personal-input" th:field="*{emergencyContactAltMobile}"
-                                        id="emergencyContactAltMobile"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        pattern="^[0-9]{10}$"
-                                        placeholder="Enter alternate 10-digit mobile" />
-                                    <div class="invalid-feedback">Alternate mobile number must be exactly 10 digits.</div>
-                                </div>
                             </div>
                         </div>
 
-                        <div class="section-block form-section-classic job-details-section">
-                            <h5 class="section-title">Job Details</h5>
-                            <div class="job-details-grid job-details-grid-3">
-                                <div class="form-group job-field">
-                                    <label class="form-label">Request ID</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{requestId}"
-                                        readonly />
-                                </div>
-                                <div class="form-group job-field">
-                                    <label class="form-label">Project</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{projectName}"
-                                        readonly />
-                                </div>
-                                <div class="form-group job-field">
-                                    <label class="form-label">Agency Name</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{agencyName}"
-                                        readonly />
+                        <div class="pre-onboarding-two-column">
+                            <div class="section-block form-section-classic emergency-details-section">
+                                <h5 class="section-title">Emergency Contact Details</h5>
+                                <div class="personal-details-grid personal-details-grid-4">
+                                    <div class="form-group personal-field">
+                                        <label class="form-label">Contact Name <span class="text-danger"
+                                                th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                        <input type="text" class="form-control personal-input" th:field="*{emergencyContactName}"
+                                            id="emergencyContactName"
+                                            th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                            pattern="^[a-zA-Z\s]*$"
+                                            placeholder="Enter emergency contact name" required />
+                                        <div class="invalid-feedback">Contact name is required and should not have special characters.</div>
+                                    </div>
+                                    <div class="form-group personal-field">
+                                        <label class="form-label">Relation <span class="text-danger"
+                                                th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                        <input type="text" class="form-control personal-input" th:field="*{emergencyContactRelation}"
+                                            id="emergencyContactRelation"
+                                            th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                            placeholder="e.g. Father, Mother, Spouse" required />
+                                        <div class="invalid-feedback">Relation is required.</div>
+                                    </div>
+                                    <div class="form-group personal-field">
+                                        <label class="form-label">Mobile Number <span class="text-danger"
+                                                th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                        <input type="tel" class="form-control personal-input" th:field="*{emergencyContactMobile}"
+                                            id="emergencyContactMobile"
+                                            th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                            pattern="^[0-9]{10}$"
+                                            placeholder="Enter 10-digit mobile number" required />
+                                        <div class="invalid-feedback">Mobile number must be exactly 10 digits.</div>
+                                    </div>
+                                    <div class="form-group personal-field">
+                                        <label class="form-label">Alternate Mobile Number</label>
+                                        <input type="tel" class="form-control personal-input" th:field="*{emergencyContactAltMobile}"
+                                            id="emergencyContactAltMobile"
+                                            th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                            pattern="^[0-9]{10}$"
+                                            placeholder="Enter alternate 10-digit mobile" />
+                                        <div class="invalid-feedback">Alternate mobile number must be exactly 10 digits.</div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="job-details-grid job-details-grid-3">
-                                <div class="form-group job-field">
-                                    <label class="form-label">Department</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{department}"
-                                        readonly />
+
+                            <div class="section-block form-section-classic job-details-section">
+                                <h5 class="section-title">Job Details</h5>
+                                <div class="job-details-grid job-details-grid-3">
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Request ID</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{requestId}"
+                                            readonly />
+                                    </div>
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Project</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{projectName}"
+                                            readonly />
+                                    </div>
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Agency Name</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{agencyName}"
+                                            readonly />
+                                    </div>
                                 </div>
-                                <div class="form-group job-field">
-                                    <label class="form-label">Sub Department</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{subDeptName}"
-                                        readonly />
+                                <div class="job-details-grid job-details-grid-3">
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Department</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{department}"
+                                            readonly />
+                                    </div>
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Sub Department</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{subDeptName}"
+                                            readonly />
+                                    </div>
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Designation</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{designation}"
+                                            readonly />
+                                    </div>
                                 </div>
-                                <div class="form-group job-field">
-                                    <label class="form-label">Designation</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{designation}"
-                                        readonly />
-                                </div>
-                            </div>
-                            <div class="job-details-grid job-details-grid-2">
-                                <div class="form-group job-field">
-                                    <label class="form-label">Level Code</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{levelCode}"
-                                        readonly />
-                                </div>
-                                <div class="form-group job-field">
-                                    <label class="form-label">Joining Date <span class="text-danger"
-                                            th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="date" class="form-control job-input" th:field="*{joiningDate}" id="joiningDate"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        required />
+                                <div class="job-details-grid job-details-grid-2">
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Level Code</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{levelCode}"
+                                            readonly />
+                                    </div>
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Joining Date <span class="text-danger"
+                                                th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                        <input type="date" class="form-control job-input" th:field="*{joiningDate}" id="joiningDate"
+                                            th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                            required />
+                                    </div>
                                 </div>
                             </div>
                         </div>
