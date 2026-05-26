@@ -122,8 +122,6 @@
                                             <div class="invalid-feedback" id="mobileValidationMessage">Mobile number
                                                 must be exactly 10 digits.</div>
                                         </div>
-                                    </div>
-                                    <div class="personal-details-grid personal-details-grid-middle">
                                         <div class="form-group personal-field">
                                             <label class="form-label">Date of Birth <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
@@ -161,8 +159,6 @@
                                             </select>
                                             <input type="hidden" th:if="*{hrFlow}" th:field="*{bloodGroup}" />
                                         </div>
-                                    </div>
-                                    <div class="personal-details-grid personal-details-grid-bottom">
                                         <div class="form-group personal-field personal-field-address">
                                             <label class="form-label">Address <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
@@ -176,15 +172,15 @@
                                     <div class="passport-photo-panel">
                                         <div class="passport-photo-panel-header">
                                             <span class="passport-photo-heading">Candidate Photo</span>
-                                            <small class="text-muted">Passport-size preview</small>
+                                            <small class="text-muted">Passport size photo</small>
                                         </div>
                                         <div class="passport-photo-frame">
                                             <img id="candidatePhotoPreview" class="passport-photo-image d-none"
                                                 th:attr="data-managed-path=${preOnboardingForm.existingPhotoFilePath}, data-managed-name=${preOnboardingForm.existingPhotoFileName}"
                                                 alt="Candidate Photo" />
                                             <div id="candidatePhotoEmpty" class="passport-photo-empty">
-                                                <i class="fa-regular fa-image"></i>
-                                                <span>No photo uploaded</span>
+                                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                                <span>Upload photo</span>
                                             </div>
                                         </div>
 
@@ -193,9 +189,11 @@
 
                                         <div class="passport-photo-actions">
                                             <label class="btn btn-outline-primary btn-sm passport-photo-action-btn"
-                                                for="uploadImage"
-                                                th:text="${preOnboardingForm.existingPhotoFilePath != null ? 'Replace Photo' : 'Choose Photo'}">
-                                                Choose Photo
+                                                for="uploadImage">
+                                                <i class="fa-solid fa-upload"></i>
+                                                <span
+                                                    th:text="${preOnboardingForm.existingPhotoFilePath != null ? 'Replace Photo' : 'Upload Photo'}">Upload
+                                                    Photo</span>
                                             </label>
                                             <span id="candidatePhotoFileName"
                                                 class="passport-photo-file-name text-muted text-truncate"
