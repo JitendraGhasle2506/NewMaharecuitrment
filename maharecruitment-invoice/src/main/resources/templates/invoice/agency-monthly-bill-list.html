@@ -122,42 +122,53 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            <div class="app-pagination-shell" th:if="${bills.totalPages > 1}"
-                th:with="middleStart=${bills.number - 2 > 1 ? bills.number - 2 : 1},
-                         middleEnd=${bills.number + 2 < bills.totalPages - 2 ? bills.number + 2 : bills.totalPages - 2}">
-                <nav aria-label="Agency monthly bills pagination">
-                    <ul class="pagination app-pagination mb-0">
-                        <li class="page-item" th:classappend="${bills.first} ? ' disabled'">
-                            <a class="page-link" th:href="@{/auditor/agency-monthly-bills(page=${bills.number - 1},size=${bills.size})}">Previous</a>
-                        </li>
-                        <li class="page-item" th:classappend="${bills.number == 0} ? ' active'">
-                            <a class="page-link" th:href="@{/auditor/agency-monthly-bills(page=0,size=${bills.size})}">1</a>
-                        </li>
-                        <li class="page-item disabled" th:if="${middleStart > 1}">
-                            <span class="page-link app-pagination-ellipsis">...</span>
-                        </li>
-                        <th:block th:if="${middleStart <= middleEnd}">
-                            <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
-                                th:classappend="${pageIndex == bills.number} ? ' active'">
-                                <a class="page-link" th:href="@{/auditor/agency-monthly-bills(page=${pageIndex},size=${bills.size})}"
-                                    th:text="${pageIndex + 1}">2</a>
+                <div class="app-pagination-shell" th:if="${bills.totalPages > 1}"
+                    th:with="middleStart=${bills.number - 2 > 1 ? bills.number - 2 : 1},
+                             middleEnd=${bills.number + 2 < bills.totalPages - 2 ? bills.number + 2 : bills.totalPages - 2},
+                             showingFrom=${bills.totalElements == 0 ? 0 : bills.number * bills.size + 1},
+                             showingTo=${bills.totalElements == 0 ? 0 : bills.number * bills.size + bills.numberOfElements}">
+                    <div class="app-pagination-summary">
+                        <div class="app-pagination-meta">
+                            Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                            <span th:text="${bills.totalElements}">10</span> entries
+                        </div>
+                        <div class="app-pagination-meta">
+                            Page <span th:text="${bills.number + 1}">1</span> of <span th:text="${bills.totalPages}">1</span>
+                        </div>
+                    </div>
+                    <nav aria-label="Agency monthly bills pagination">
+                        <ul class="pagination app-pagination mb-0">
+                            <li class="page-item" th:classappend="${bills.first} ? ' disabled'">
+                                <a class="page-link" th:href="@{/auditor/agency-monthly-bills(page=${bills.number - 1},size=${bills.size})}">Previous</a>
                             </li>
-                        </th:block>
-                        <li class="page-item disabled" th:if="${middleEnd < bills.totalPages - 2}">
-                            <span class="page-link app-pagination-ellipsis">...</span>
-                        </li>
-                        <li class="page-item" th:if="${bills.totalPages > 1}"
-                            th:classappend="${bills.number == bills.totalPages - 1} ? ' active'">
-                            <a class="page-link" th:href="@{/auditor/agency-monthly-bills(page=${bills.totalPages - 1},size=${bills.size})}"
-                                th:text="${bills.totalPages}">2</a>
-                        </li>
-                        <li class="page-item" th:classappend="${bills.last} ? ' disabled'">
-                            <a class="page-link" th:href="@{/auditor/agency-monthly-bills(page=${bills.number + 1},size=${bills.size})}">Next</a>
-                        </li>
-                    </ul>
-                </nav>
+                            <li class="page-item" th:classappend="${bills.number == 0} ? ' active'">
+                                <a class="page-link" th:href="@{/auditor/agency-monthly-bills(page=0,size=${bills.size})}">1</a>
+                            </li>
+                            <li class="page-item disabled" th:if="${middleStart > 1}">
+                                <span class="page-link app-pagination-ellipsis">...</span>
+                            </li>
+                            <th:block th:if="${middleStart <= middleEnd}">
+                                <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                    th:classappend="${pageIndex == bills.number} ? ' active'">
+                                    <a class="page-link" th:href="@{/auditor/agency-monthly-bills(page=${pageIndex},size=${bills.size})}"
+                                        th:text="${pageIndex + 1}">2</a>
+                                </li>
+                            </th:block>
+                            <li class="page-item disabled" th:if="${middleEnd < bills.totalPages - 2}">
+                                <span class="page-link app-pagination-ellipsis">...</span>
+                            </li>
+                            <li class="page-item" th:if="${bills.totalPages > 1}"
+                                th:classappend="${bills.number == bills.totalPages - 1} ? ' active'">
+                                <a class="page-link" th:href="@{/auditor/agency-monthly-bills(page=${bills.totalPages - 1},size=${bills.size})}"
+                                    th:text="${bills.totalPages}">2</a>
+                            </li>
+                            <li class="page-item" th:classappend="${bills.last} ? ' disabled'">
+                                <a class="page-link" th:href="@{/auditor/agency-monthly-bills(page=${bills.number + 1},size=${bills.size})}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </section>
     </th:block>
