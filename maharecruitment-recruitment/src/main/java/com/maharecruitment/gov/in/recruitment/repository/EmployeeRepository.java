@@ -20,10 +20,12 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     Optional<EmployeeEntity> findByEmail(String email);
 
+    List<EmployeeEntity> findByRecruitmentType(String recruitmentType);
     Page<EmployeeEntity> findByRecruitmentType(String recruitmentType, Pageable pageable);
 
     Page<EmployeeEntity> findByStatus(String status, Pageable pageable);
 
+    List<EmployeeEntity> findByRecruitmentTypeAndStatus(String recruitmentType, String status);
     Page<EmployeeEntity> findByRecruitmentTypeAndStatus(String recruitmentType, String status, Pageable pageable);
 
     @EntityGraph(attributePaths = {
