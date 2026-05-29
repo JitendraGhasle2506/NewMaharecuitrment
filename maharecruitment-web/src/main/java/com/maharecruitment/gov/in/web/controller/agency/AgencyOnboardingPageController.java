@@ -9,8 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -309,6 +307,8 @@ public class AgencyOnboardingPageController {
         target.setExistingPanFilePath(source.getExistingPanFilePath());
         target.setExistingExperienceDocFileName(source.getExistingExperienceDocFileName());
         target.setExistingExperienceDocFilePath(source.getExistingExperienceDocFilePath());
+        target.setExistingCompanyPayrollProofFileName(source.getExistingCompanyPayrollProofFileName());
+        target.setExistingCompanyPayrollProofFilePath(source.getExistingCompanyPayrollProofFilePath());
         target.setExistingPhotoFileName(source.getExistingPhotoFileName());
         target.setExistingPhotoFilePath(source.getExistingPhotoFilePath());
     }

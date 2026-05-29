@@ -331,7 +331,7 @@
                             <div class="summary-card">
                                 <span class="summary-card-label">HR Onboarding</span>
                                 <strong class="summary-card-value"
-                                    th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MMM-yyyy') : '-'}">
+                                    th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MM-yyyy') : '-'}">
                                     01-Apr-2026
                                 </strong>
                                 <span class="summary-card-subvalue"
@@ -392,7 +392,7 @@
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Date of Birth</label>
                                 <input type="text" class="form-control readonly-field detail-value"
-                                    th:value="${detail.dob != null ? #temporals.format(detail.dob, 'dd-MMM-yyyy') : '-'}" readonly>
+                                    th:value="${detail.dob != null ? #temporals.format(detail.dob, 'dd-MM-yyyy') : '-'}" readonly>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Gender</label>
@@ -456,7 +456,7 @@
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Resignation Date</label>
                                 <input type="text" class="form-control readonly-field detail-value"
-                                    th:value="${employeeDetail.resignationDate != null ? #temporals.format(employeeDetail.resignationDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                                    th:value="${employeeDetail.resignationDate != null ? #temporals.format(employeeDetail.resignationDate, 'dd-MM-yyyy') : '-'}" readonly>
                             </div>
                         </div>
                         <div class="row">
@@ -495,17 +495,17 @@
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Joining Date</label>
                                 <input type="text" class="form-control readonly-field detail-value"
-                                    th:value="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                                    th:value="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd-MM-yyyy') : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Onboarding Date</label>
                                 <input type="text" class="form-control readonly-field detail-value"
-                                    th:value="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                                    th:value="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd-MM-yyyy') : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">HR Onboarding Date</label>
                                 <input type="text" class="form-control readonly-field detail-value"
-                                    th:value="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                                    th:value="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MM-yyyy') : '-'}" readonly>
                             </div>
                         </div>
                         <div class="row">
@@ -551,15 +551,15 @@
                                         <td>
                                             <div class="fw-semibold" th:text="${workOrder.workOrderNumber}">WO/2026-27/00001</div>
                                             <div class="small text-muted"
-                                                th:text="${workOrder.workOrderDate != null ? #temporals.format(workOrder.workOrderDate, 'dd-MMM-yyyy') : '-'}">
+                                                th:text="${workOrder.workOrderDate != null ? #temporals.format(workOrder.workOrderDate, 'dd-MM-yyyy') : '-'}">
                                                 01-Apr-2026
                                             </div>
                                         </td>
                                         <td th:text="${workOrder.workOrderType}">NEW</td>
                                         <td>
-                                            <div th:text="${workOrder.effectiveFrom != null ? #temporals.format(workOrder.effectiveFrom, 'dd-MMM-yyyy') : '-'}">01-Apr-2026</div>
+                                            <div th:text="${workOrder.effectiveFrom != null ? #temporals.format(workOrder.effectiveFrom, 'dd-MM-yyyy') : '-'}">01-Apr-2026</div>
                                             <div class="small text-muted"
-                                                th:text="${workOrder.effectiveTo != null ? #temporals.format(workOrder.effectiveTo, 'dd-MMM-yyyy') : '-'}">
+                                                th:text="${workOrder.effectiveTo != null ? #temporals.format(workOrder.effectiveTo, 'dd-MM-yyyy') : '-'}">
                                                 31-Mar-2027
                                             </div>
                                         </td>
@@ -655,12 +655,12 @@
                                     <div class="col-md-2 form-group">
                                         <label class="form-label">Start Date</label>
                                         <input type="text" class="form-control readonly-field detail-value"
-                                            th:value="${employment.startDate != null ? #temporals.format(employment.startDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                                            th:value="${employment.startDate != null ? #temporals.format(employment.startDate, 'dd-MM-yyyy') : '-'}" readonly>
                                     </div>
                                     <div class="col-md-3 form-group">
                                         <label class="form-label">End Date</label>
                                         <input type="text" class="form-control readonly-field detail-value"
-                                            th:value="${employment.endDate != null ? #temporals.format(employment.endDate, 'dd-MMM-yyyy') : '-'}" readonly>
+                                            th:value="${employment.endDate != null ? #temporals.format(employment.endDate, 'dd-MM-yyyy') : '-'}" readonly>
                                     </div>
                                 </div>
                             </div>
@@ -739,3 +739,4 @@
 </body>
 
 </html>
+

@@ -5,6 +5,26 @@
     <meta charset="UTF-8">
     <title>Employee Task Tracker</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <!-- Flatpickr 24-hour time picker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <style>
+        .flatpickr-input {
+            background-color: #fff !important;
+            cursor: pointer;
+        }
+
+        .flatpickr-time input {
+            font-size: 1rem;
+        }
+        .flatpickr-calendar.hasTime.noCalendar {
+            max-width: 140px;
+        }
+        .time-input-small {
+            width: 75px !important;
+            text-align: center;
+        }
+    </style>
     <style>
         .employee-home-card {
             overflow: hidden;
@@ -13,26 +33,31 @@
             box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
             border: 1px solid rgba(15, 58, 86, 0.1);
         }
-        .employee-home-card > .header {
+
+        .employee-home-card>.header {
             padding: 28px 30px 24px;
             border-bottom: 1px solid rgba(11, 47, 73, 0.08);
             background:
                 radial-gradient(circle at top right, rgba(28, 126, 214, 0.18), transparent 32%),
                 linear-gradient(135deg, rgba(17, 139, 122, 0.08), rgba(255, 255, 255, 0.96) 52%, rgba(28, 126, 214, 0.06));
         }
-        .employee-home-card > .header h2 {
+
+        .employee-home-card>.header h2 {
             color: #12344f;
             font-weight: 700;
         }
-        .employee-home-card > .header small {
+
+        .employee-home-card>.header small {
             display: block;
             max-width: 70ch;
             line-height: 1.6;
         }
+
         .employee-home-body {
             padding: 28px;
             background: linear-gradient(180deg, #f5fbff 0%, #eef6f7 100%);
         }
+
         .task-panel {
             background: rgba(255, 255, 255, 0.96);
             border-radius: 22px;
@@ -41,6 +66,7 @@
             box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
             border: 1px solid rgba(15, 58, 86, 0.08);
         }
+
         .task-panel-title {
             color: #102a43;
             font-size: 1.25rem;
@@ -49,6 +75,7 @@
             border-bottom: 2px solid #eef6f7;
             padding-bottom: 10px;
         }
+
         .bg-purple {
             background-color: #6f42c1 !important;
             color: #fff !important;
@@ -62,7 +89,8 @@
             <div class="card add-emp-card pre-onboarding-card employee-home-card">
                 <div class="header">
                     <h2 class="mb-0" th:text="${pageHeading != null ? pageHeading : 'My Tasks'}">My Tasks</h2>
-                    <small class="text-muted" th:text="${pageSubtitle != null ? pageSubtitle : 'Manage your daily/weekly tasks here.'}">
+                    <small class="text-muted"
+                        th:text="${pageSubtitle != null ? pageSubtitle : 'Manage your daily/weekly tasks here.'}">
                         Manage your daily/weekly tasks here.
                     </small>
                 </div>
@@ -80,20 +108,23 @@
 
                     <!-- Month/Year Selector Panel -->
                     <div class="task-panel">
-                        <h4 class="task-panel-title"><i class="fas fa-calendar-alt text-primary me-2"></i> Select Month &amp; Year</h4>
-                        <form th:action="@{/employee/tasks}" method="get" class="d-flex align-items-center gap-3 flex-wrap" id="monthYearForm">
+                        <h4 class="task-panel-title"><i class="fas fa-calendar-alt text-primary me-2"></i> Select Month
+                            &amp; Year</h4>
+                        <form th:action="@{/employee/tasks}" method="get"
+                            class="d-flex align-items-center gap-3 flex-wrap" id="monthYearForm">
                             <div class="d-flex align-items-center gap-2">
                                 <label class="fw-semibold text-muted mb-0">Month:</label>
-                                <select name="month" id="monthSelect" class="form-select form-select-sm" style="width:160px;">
-                                    <option value="1"  th:selected="${selectedMonth == 1}">January</option>
-                                    <option value="2"  th:selected="${selectedMonth == 2}">February</option>
-                                    <option value="3"  th:selected="${selectedMonth == 3}">March</option>
-                                    <option value="4"  th:selected="${selectedMonth == 4}">April</option>
-                                    <option value="5"  th:selected="${selectedMonth == 5}">May</option>
-                                    <option value="6"  th:selected="${selectedMonth == 6}">June</option>
-                                    <option value="7"  th:selected="${selectedMonth == 7}">July</option>
-                                    <option value="8"  th:selected="${selectedMonth == 8}">August</option>
-                                    <option value="9"  th:selected="${selectedMonth == 9}">September</option>
+                                <select name="month" id="monthSelect" class="form-select form-select-sm"
+                                    style="width:160px;">
+                                    <option value="1" th:selected="${selectedMonth == 1}">January</option>
+                                    <option value="2" th:selected="${selectedMonth == 2}">February</option>
+                                    <option value="3" th:selected="${selectedMonth == 3}">March</option>
+                                    <option value="4" th:selected="${selectedMonth == 4}">April</option>
+                                    <option value="5" th:selected="${selectedMonth == 5}">May</option>
+                                    <option value="6" th:selected="${selectedMonth == 6}">June</option>
+                                    <option value="7" th:selected="${selectedMonth == 7}">July</option>
+                                    <option value="8" th:selected="${selectedMonth == 8}">August</option>
+                                    <option value="9" th:selected="${selectedMonth == 9}">September</option>
                                     <option value="10" th:selected="${selectedMonth == 10}">October</option>
                                     <option value="11" th:selected="${selectedMonth == 11}">November</option>
                                     <option value="12" th:selected="${selectedMonth == 12}">December</option>
@@ -101,7 +132,8 @@
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <label class="fw-semibold text-muted mb-0">Year:</label>
-                                <select name="year" id="yearSelect" class="form-select form-select-sm" style="width:110px;">
+                                <select name="year" id="yearSelect" class="form-select form-select-sm"
+                                    style="width:110px;">
                                     <option value="2024" th:selected="${selectedYear == 2024}">2024</option>
                                     <option value="2025" th:selected="${selectedYear == 2025}">2025</option>
                                     <option value="2026" th:selected="${selectedYear == 2026}">2026</option>
@@ -110,87 +142,155 @@
                             <button type="submit" class="btn btn-primary btn-sm px-3">
                                 <i class="fas fa-filter me-1"></i> Apply
                             </button>
-                            <div class="d-flex align-items-center gap-2 border-start ps-3 border-secondary" th:if="${isEditMode == null or !isEditMode}">
-                                <label class="fw-semibold text-muted mb-0"><i class="fas fa-calendar-week text-success me-1"></i> Quick Prefill:</label>
+                            <div class="d-flex align-items-center gap-2 border-start ps-3 border-secondary"
+                                th:if="${isEditMode == null or !isEditMode}">
+                                <label class="fw-semibold text-muted mb-0"><i
+                                        class="fas fa-calendar-week text-success me-1"></i> Quick Prefill:</label>
                                 <a th:href="@{/employee/tasks}" class="btn btn-outline-danger btn-sm px-3 ms-2">
                                     <i class="fas fa-times me-1"></i> Cancel
                                 </a>
                             </div>
                             <span class="text-muted small ms-2">
-                                Dates in the entry form will be restricted to 
-                                <strong th:text="${minDate} + ' to ' + ${maxDate}"></strong>
+                                Dates in the entry form will be restricted to
+                                <strong th:text="${displayMinDate + ' to ' + displayMaxDate}"></strong>
                             </span>
                         </form>
                     </div>
 
                     <!-- Task Entry Form -->
                     <div class="task-panel">
-                        <h4 class="task-panel-title"><i class="fas fa-clipboard-list text-primary me-2"></i> Enter Tasks</h4>
+                        <h4 class="task-panel-title"><i class="fas fa-clipboard-list text-primary me-2"></i> Enter Tasks
+                        </h4>
+                        <!-- Hidden project select for JS row generation -->
+                        <select id="hiddenProjectSelect" style="display:none;">
+                            <option value="">-- Select Project --</option>
+                            <option th:each="proj : ${projectList}" th:value="${proj.projectName}"
+                                th:text="${proj.projectName}"></option>
+                        </select>
                         <form th:action="@{/employee/tasks/save}" th:object="${taskForm}" method="post" id="taskForm">
                             <!-- Preserve selected month/year on redirect after save -->
-                            <input type="hidden" name="month" th:value="${selectedMonth}"/>
-                            <input type="hidden" name="year"  th:value="${selectedYear}"/>
+                            <input type="hidden" name="month" th:value="${selectedMonth}" />
+                            <input type="hidden" name="year" th:value="${selectedYear}" />
 
-                            <div class="row mb-3 align-items-end">
+
+                            <div class="row mb-3 align-items-end g-3">
                                 <div class="col-md-3">
-                                    <label class="form-label fw-bold text-secondary">Task Date <span class="text-danger">*</span></label>
-                                    <input type="date" th:field="*{globalTaskDate}" th:attr="min=${minDate},max=${maxDate}" class="form-control form-control-sm" id="globalTaskDate" required/>
+                                    <label class="form-label fw-bold text-secondary">Task From Date <span
+                                            class="text-danger">*</span></label>
+                                    <input type="date" id="rangeFromDate" th:attr="min=${minDate},max=${maxDate}"
+                                        class="form-control form-control-sm" required />
                                 </div>
-                                <div class="col-md-9 text-muted small pb-1">
-                                    <i class="fas fa-info-circle"></i> Start Time will automatically be pre-filled based on your attendance for the selected date.
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-secondary">Task To Date <span
+                                            class="text-danger">*</span></label>
+                                    <input type="date" id="rangeToDate" th:attr="min=${minDate},max=${maxDate}"
+                                        class="form-control form-control-sm" required />
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-success btn-sm" id="generateRangeBtn">
+                                        <i class="fas fa-list me-1"></i> Generate Rows
+                                    </button>
+                                </div>
+                                <div class="col-md-3 text-muted small pb-1">
+                                    <i class="fas fa-info-circle"></i> Set same From and To date for a single day entry.
                                 </div>
                             </div>
-                            
+
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover align-middle" id="taskTable">
                                     <thead class="table-light text-center">
-                                         <tr>
-                                             <th style="width: 50px;"><input type="checkbox" id="selectAllTasks" class="form-check-input" checked/></th>
-                                             <th style="width: 55px;">#</th>
-                                             <th>Project Name</th>
-                                             <th>Task</th>
-                                             <th>Description</th>
-                                             <th>Start Time</th>
-                                             <th>End Time</th>
-                                             <th>Hours</th>
-                                             <th>Action</th>
-                                         </tr>
-                                     </thead>
-                                     <tbody id="taskTableBody">
-                                         <!-- Thymeleaf loops through existing items in form -->
-                                         <tr th:each="task, stat : *{taskList}" class="task-row">
-                                             <td class="text-center">
-                                                 <input type="hidden" th:field="*{taskList[__${stat.index}__].taskId}" />
-                                                 <input type="checkbox" th:field="*{taskList[__${stat.index}__].selected}" class="form-check-input select-row-cb" />
-                                             </td>
-                                             <td class="text-center fw-semibold text-muted" th:text="${stat.count}"></td>
-                                             <td>
-                                                 <select th:field="*{taskList[__${stat.index}__].projectName}" class="form-select form-select-sm" required>
-                                                     <option value="">-- Select Project --</option>
-                                                     <option th:each="proj : ${projectList}" th:value="${proj.projectName}" th:text="${proj.projectName}"></option>
-                                                 </select>
-                                             </td>
-                                             <td><textarea th:field="*{taskList[__${stat.index}__].moduleName}" class="form-control form-control-sm" rows="2" style="min-width: 150px; resize: vertical;" required></textarea></td>
-                                             <td><textarea th:field="*{taskList[__${stat.index}__].taskDescription}" class="form-control form-control-sm" rows="2" style="min-width: 250px; resize: vertical;" required></textarea></td>
-                                             <td><input type="time" th:field="*{taskList[__${stat.index}__].startTime}" class="form-control form-control-sm start-time-input" required/></td>
-                                             <td><input type="time" th:field="*{taskList[__${stat.index}__].endTime}" class="form-control form-control-sm end-time-input" required/></td>
-                                             <td><input type="number" step="0.01" th:field="*{taskList[__${stat.index}__].hours}" class="form-control form-control-sm hours-input bg-light" readonly tabindex="-1" required/></td>
-                                             <td class="text-center">
-                                                 <button type="button" class="btn btn-outline-danger btn-sm remove-row" th:disabled="${stat.index == 0}">
-                                                     <i class="fas fa-trash-alt"></i>
-                                                 </button>
-                                             </td>
-                                         </tr>
-                                     </tbody>
+                                        <tr>
+                                            <th style="width: 50px;"><input type="checkbox" id="selectAllTasks"
+                                                    class="form-check-input" checked /></th>
+                                            <th style="width: 55px;">#</th>
+                                            <th>Project Name</th>
+                                            <th>Task</th>
+                                            <th>Description</th>
+                                            <th class="date-col">Date</th>
+                                            <th>Start Time</th>
+                                            <th>End Time</th>
+                                            <th>Hours</th>
+                                            <th>Payable Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="taskTableBody">
+                                        <!-- Thymeleaf loops through existing items in form -->
+                                        <tr th:each="task, stat : *{taskList}" class="task-row">
+                                            <td class="text-center">
+                                                <input type="hidden" th:field="*{taskList[__${stat.index}__].taskId}" />
+                                                <input type="checkbox"
+                                                    th:field="*{taskList[__${stat.index}__].selected}"
+                                                    class="form-check-input select-row-cb" />
+                                            </td>
+                                            <td class="text-center fw-semibold text-muted" th:text="${stat.count}"></td>
+                                            <td>
+                                                <input type="hidden"
+                                                    th:field="*{taskList[__${stat.index}__].projectName}"
+                                                    class="project-hidden" />
+                                                <select class="form-select form-select-sm project-select"
+                                                    onchange="syncProject(this)" required>
+                                                    <option value="">-- Select Project --</option>
+                                                    <option th:each="proj : ${projectList}"
+                                                        th:value="${proj.projectName}" th:text="${proj.projectName}">
+                                                    </option>
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                                <input type="text"
+                                                    th:field="*{taskList[__${stat.index}__].otherProjectReason}"
+                                                    class="form-control form-control-sm mt-1 other-project-input"
+                                                    placeholder="Enter Other Project" style="display:none;" />
+                                            </td>
+                                            <td><textarea th:field="*{taskList[__${stat.index}__].moduleName}"
+                                                    class="form-control form-control-sm" rows="2"
+                                                    style="min-width: 150px; resize: vertical;" required></textarea>
+                                            </td>
+                                            <td><textarea th:field="*{taskList[__${stat.index}__].taskDescription}"
+                                                    class="form-control form-control-sm" rows="2"
+                                                    style="min-width: 250px; resize: vertical;" required></textarea>
+                                            </td>
+                                            <td class="date-col">
+                                                <input type="date" th:field="*{taskList[__${stat.index}__].taskDate}"
+                                                    th:attr="min=${minDate},max=${maxDate}"
+                                                    class="form-control form-control-sm date-input mb-1" />
+                                                <div class="text-center"><span
+                                                        class="badge day-label bg-secondary">-</span></div>
+                                            </td>
+                                            <td><input type="text" th:field="*{taskList[__${stat.index}__].startTime}"
+                                                    class="form-control form-control-sm start-time-input time-input-small"
+                                                    placeholder="HH:MM" required /></td>
+                                            <td><input type="text" th:field="*{taskList[__${stat.index}__].endTime}"
+                                                    class="form-control form-control-sm end-time-input time-input-small"
+                                                    placeholder="HH:MM" required /></td>
+                                            <td><input type="number" step="0.01"
+                                                    th:field="*{taskList[__${stat.index}__].hours}"
+                                                    class="form-control form-control-sm hours-input bg-light" readonly
+                                                    tabindex="-1" required /></td>
+                                            <td>
+                                                <select th:field="*{taskList[__${stat.index}__].payableStatus}" class="form-select form-select-sm" required>
+                                                    <option value="">-Select-</option>
+                                                    <option value="Payable">Payable</option>
+                                                    <option value="Non-Payable">Non-Payable</option>
+                                                </select>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-outline-danger btn-sm remove-row">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
-                            
+
                             <div class="d-flex justify-content-between mt-3">
                                 <div>
-                                    <button type="button" class="btn btn-outline-success btn-sm" id="addRowBtn" th:if="${isEditMode == null or !isEditMode}">
+                                    <button type="button" class="btn btn-outline-success btn-sm" id="addRowBtn"
+                                        th:if="${isEditMode == null or !isEditMode}">
                                         <i class="fas fa-plus"></i> Add Row
                                     </button>
-                                    <a th:href="@{/employee/tasks}" class="btn btn-outline-secondary btn-sm ms-2" th:if="${isEditMode != null and isEditMode}">
+                                    <a th:href="@{/employee/tasks}" class="btn btn-outline-secondary btn-sm ms-2"
+                                        th:if="${isEditMode != null and isEditMode}">
                                         <i class="fas fa-times"></i> Cancel Edit
                                     </a>
                                 </div>
@@ -203,9 +303,11 @@
 
                     <!-- Recent Tasks Table -->
                     <div class="task-panel">
-                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 border-light">
-                            <h4 class="task-panel-title border-0 mb-0 pb-0"><i class="fas fa-history text-secondary me-2"></i> Recent Tasks</h4>
-                            
+                        <div
+                            class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 border-light">
+                            <h4 class="task-panel-title border-0 mb-0 pb-0"><i
+                                    class="fas fa-history text-secondary me-2"></i> Recent Tasks</h4>
+
                             <form th:action="@{/employee/tasks}" method="get" class="d-flex align-items-center gap-2">
                                 <select name="month" class="form-select form-select-sm" style="width: auto;">
                                     <option value="" th:selected="${selectedMonth == null}">Select Month</option>
@@ -229,7 +331,9 @@
                                     <option value="2026" th:selected="${selectedYear == 2026}">2026</option>
                                 </select>
                                 <button type="submit" class="btn btn-sm btn-outline-secondary">Filter</button>
-                                <a th:href="@{/employee/tasks}" class="btn btn-sm btn-outline-danger" th:if="${selectedMonth != null or selectedYear != null}"><i class="fas fa-times"></i></a>
+                                <a th:href="@{/employee/tasks}" class="btn btn-sm btn-outline-danger"
+                                    th:if="${selectedMonth != null or selectedYear != null}"><i
+                                        class="fas fa-times"></i></a>
                             </form>
                         </div>
                         <div class="table-responsive">
@@ -244,32 +348,50 @@
                                         <th>Start Time</th>
                                         <th>End Time</th>
                                         <th>Hours</th>
-                                        <th>In Time</th>
+                                        <th>Payable</th>
                                         <th>Status</th>
                                         <th>Remarks</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr th:each="recent, iterStat : ${recentTasks}">
-                                        <td class="text-center fw-semibold text-muted" th:text="${currentPage * 10 + iterStat.count}"></td>
-                                        <td class="text-center" th:text="${recent.taskDate}"></td>
-                                        <td th:text="${recent.projectName}"></td>
+                                        <td class="text-center fw-semibold text-muted"
+                                            th:text="${currentPage * 10 + iterStat.count}"></td>
+                                        <td class="text-center"
+                                            th:text="${recent.taskDate != null ? #temporals.format(recent.taskDate, 'dd-MM-yyyy') : '-'}"></td>
+                                        <td>
+                                            <span th:text="${recent.projectName}"></span>
+                                            <div th:if="${recent.projectName == 'Other' and recent.otherProjectReason != null}" 
+                                                 class="text-muted small mt-1" th:text="${recent.otherProjectReason}"></div>
+                                        </td>
                                         <td th:text="${recent.moduleName}"></td>
                                         <td th:text="${recent.taskDescription}"></td>
                                         <td class="text-center" th:text="${recent.startTime}"></td>
                                         <td class="text-center" th:text="${recent.endTime}"></td>
                                         <td class="text-center" th:text="${recent.hours}"></td>
-                                        <td class="text-center" th:text="${recent.inTime}"></td>
                                         <td class="text-center">
-                                            <span th:if="${recent.status == 'PENDING_APPROVAL'}" class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pending</span>
-                                            <span th:if="${recent.status == 'APPROVED'}" class="badge bg-success"><i class="fas fa-check-circle"></i> Approved</span>
-                                            <span th:if="${recent.status == 'REJECTED'}" class="badge bg-danger"><i class="fas fa-times-circle"></i> Rejected</span>
-                                            <span th:if="${recent.status != 'PENDING_APPROVAL' and recent.status != 'APPROVED' and recent.status != 'REJECTED'}" class="badge bg-secondary" th:text="${recent.status}"></span>
+                                            <span th:if="${recent.payableStatus == 'Payable'}" class="badge bg-success">Payable</span>
+                                            <span th:if="${recent.payableStatus == 'Non-Payable'}" class="badge bg-secondary">Non-Payable</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span th:if="${recent.status == 'PENDING_APPROVAL'}"
+                                                class="badge bg-warning text-dark"><i class="fas fa-clock"></i>
+                                                Pending</span>
+                                            <span th:if="${recent.status == 'APPROVED'}" class="badge bg-success"><i
+                                                    class="fas fa-check-circle"></i> Approved</span>
+                                            <span th:if="${recent.status == 'REJECTED'}" class="badge bg-danger"><i
+                                                    class="fas fa-times-circle"></i> Rejected</span>
+                                            <span
+                                                th:if="${recent.status != 'PENDING_APPROVAL' and recent.status != 'APPROVED' and recent.status != 'REJECTED'}"
+                                                class="badge bg-secondary" th:text="${recent.status}"></span>
                                         </td>
                                         <td>
-                                            <small class="text-muted" th:text="${recent.managerRemarks != null ? recent.managerRemarks : '-'}"></small>
+                                            <small class="text-muted"
+                                                th:text="${recent.managerRemarks != null ? recent.managerRemarks : '-'}"></small>
                                             <div class="mt-1" th:if="${recent.status != 'APPROVED'}">
-                                                <a th:href="@{/employee/tasks/edit/{taskId}(taskId=${recent.taskId})}" class="btn btn-sm btn-outline-primary" style="padding: 2px 5px; font-size: 11px;">
+                                                <a th:href="@{/employee/tasks/edit/{taskId}(taskId=${recent.taskId})}"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    style="padding: 2px 5px; font-size: 11px;">
                                                     <i class="fas fa-edit"></i> Edit
                                                 </a>
                                             </div>
@@ -288,21 +410,21 @@
                                 <!-- Previous -->
                                 <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
                                     <a class="page-link"
-                                       th:href="@{/employee/tasks(page=${currentPage - 1}, month=${selectedMonth}, year=${selectedYear})}"
-                                       aria-label="Previous">&laquo;</a>
+                                        th:href="@{/employee/tasks(page=${currentPage - 1}, month=${selectedMonth}, year=${selectedYear})}"
+                                        aria-label="Previous">&laquo;</a>
                                 </li>
                                 <!-- Page numbers -->
                                 <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
                                     th:classappend="${i == currentPage} ? 'active'">
                                     <a class="page-link"
-                                       th:href="@{/employee/tasks(page=${i}, month=${selectedMonth}, year=${selectedYear})}"
-                                       th:text="${i + 1}">1</a>
+                                        th:href="@{/employee/tasks(page=${i}, month=${selectedMonth}, year=${selectedYear})}"
+                                        th:text="${i + 1}">1</a>
                                 </li>
                                 <!-- Next -->
                                 <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
                                     <a class="page-link"
-                                       th:href="@{/employee/tasks(page=${currentPage + 1}, month=${selectedMonth}, year=${selectedYear})}"
-                                       aria-label="Next">&raquo;</a>
+                                        th:href="@{/employee/tasks(page=${currentPage + 1}, month=${selectedMonth}, year=${selectedYear})}"
+                                        aria-label="Next">&raquo;</a>
                                 </li>
                             </ul>
                             <p class="text-center text-muted small mt-1">
@@ -317,30 +439,133 @@
     </th:block>
 
     <script th:inline="javascript">
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
 
-            // ── Shared constants ────────────────────────────────────────────
+            const getInTimeUrl = /*[[@{/employee/tasks/get-in-time}]]*/ '/employee/tasks/get-in-time';
+
+            // â”€â”€ Shared constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             let rowCount = document.querySelectorAll('#taskTableBody .task-row').length;
             let nextIndex = rowCount;
 
-            const selectedMonthVal = [[${selectedMonth}]];
-            const selectedYearVal  = [[${selectedYear}]];
-            const minDateStr       = [[${minDate}]];
-            const maxDateStr       = [[${maxDate}]];
-            const timeRegex        = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
-            const DAY_NAMES        = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-            const DAY_COLORS       = ['bg-danger','bg-primary','bg-success','bg-warning text-dark','bg-info text-dark','bg-purple','bg-secondary'];
+            const selectedMonthVal = /*[[${selectedMonth}]]*/ 1;
+            const selectedYearVal = /*[[${selectedYear}]]*/ 2026;
+            const minDateStr = /*[[${minDate}]]*/ '';
+            const maxDateStr = /*[[${maxDate}]]*/ '';
+            const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
+            const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const DAY_COLORS = ['bg-danger', 'bg-primary', 'bg-success', 'bg-warning text-dark', 'bg-info text-dark', 'bg-purple', 'bg-secondary'];
 
-            const projectNames = [];
-            /*[# th:each="proj : ${projectList}"]*/
-            projectNames.push(/*[[${proj.projectName}]]*/ '');
-            /*[/]*/
-            
-            let projectOptionsHtml = '<option value="">-- Select Project --</option>';
-            projectNames.forEach(pName => {
-                projectOptionsHtml += `<option value="${pName}">${pName}</option>`;
+            const hiddenSelect = document.getElementById('hiddenProjectSelect');
+            let projectOptionsHtml = hiddenSelect ? hiddenSelect.innerHTML : '<option value="">-- Select Project --</option>';
+
+            window.syncProject = function (elem) {
+                const td = elem.closest('td');
+                const select = td.querySelector('.project-select');
+                const otherInput = td.querySelector('.other-project-input');
+                const hidden = td.querySelector('.project-hidden');
+
+                if (select.value === 'Other') {
+                    otherInput.style.display = 'block';
+                    otherInput.setAttribute('required', 'required');
+                    if (hidden) hidden.value = 'Other';
+                } else {
+                    otherInput.style.display = 'none';
+                    otherInput.removeAttribute('required');
+                    if (hidden) hidden.value = select.value;
+                }
+            };
+
+            function initProjects() {
+                document.querySelectorAll('.project-hidden').forEach(hidden => {
+                    const td = hidden.closest('td');
+                    const select = td.querySelector('.project-select');
+                    const otherInput = td.querySelector('.other-project-input');
+                    const val = hidden.value;
+                    if (val) {
+                        let exists = false;
+                        Array.from(select.options).forEach(o => { if (o.value === val) exists = true; });
+                        if (exists) {
+                            select.value = val;
+                            if (val === 'Other') {
+                                otherInput.style.display = 'block';
+                                otherInput.setAttribute('required', 'required');
+                            }
+                        }
+                    }
+                });
+            }
+
+            // ── Helpers ─────────────────────────────────────────────────────
+
+            const today = new Date();
+            const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+            let maxDateStrClamped = maxDateStr;
+            if (!maxDateStrClamped || maxDateStrClamped > todayStr) {
+                maxDateStrClamped = todayStr;
+            }
+
+            // Apply clamp to existing date inputs
+            document.querySelectorAll('input[type="date"]').forEach(inp => {
+                inp.setAttribute('max', maxDateStrClamped);
             });
 
+            function buildRowHtml(idx, dateStr, customMin, customMax) {
+                const ds = dateStr || '';
+                const minD = customMin || minDateStr;
+                let maxD = customMax || maxDateStrClamped;
+
+                if (maxDateStrClamped && maxD > maxDateStrClamped) {
+                    maxD = maxDateStrClamped;
+                }
+
+                return '' +
+                    '<td class="text-center">' +
+                    '<input type="hidden" id="taskList' + idx + '.taskId" name="taskList[' + idx + '].taskId" value="" />' +
+                    '<input type="checkbox" id="taskList' + idx + '.selected" name="taskList[' + idx + '].selected" class="form-check-input select-row-cb" checked />' +
+                    '</td>' +
+                    '<td class="text-center fw-semibold text-muted">' + (idx + 1) + '</td>' +
+                    '<td>' +
+                    '<input type="hidden" id="taskList' + idx + '.projectName" name="taskList[' + idx + '].projectName" class="project-hidden" />' +
+                    '<select class="form-select form-select-sm project-select" onchange="syncProject(this)" required>' +
+                    projectOptionsHtml +
+                    '<option value="Other">Other</option>' +
+                    '</select>' +
+                    '<input type="text" id="taskList' + idx + '.otherProjectReason" name="taskList[' + idx + '].otherProjectReason" class="form-control form-control-sm mt-1 other-project-input" placeholder="Enter Other Project" style="display:none;" />' +
+                    '</td>' +
+                    '<td><textarea id="taskList' + idx + '.moduleName" name="taskList[' + idx + '].moduleName" class="form-control form-control-sm" rows="2" style="min-width: 150px; resize: vertical;" required></textarea></td>' +
+                    '<td><textarea id="taskList' + idx + '.taskDescription" name="taskList[' + idx + '].taskDescription" class="form-control form-control-sm" rows="2" style="min-width: 250px; resize: vertical;" required></textarea></td>' +
+                    '<td class="date-col">' +
+                    '<input type="date" id="taskList' + idx + '.taskDate" name="taskList[' + idx + '].taskDate" value="' + ds + '" min="' + minD + '" max="' + maxD + '" class="form-control form-control-sm date-input mb-1" required />' +
+                    '<div class="text-center"><span class="badge day-label bg-secondary">-</span></div>' +
+                    '</td>' +
+                    '<td><input type="text" id="taskList' + idx + '.startTime" name="taskList[' + idx + '].startTime" class="form-control form-control-sm start-time-input time-input-small" placeholder="HH:MM" required/></td>' +
+                    '<td><input type="text" id="taskList' + idx + '.endTime" name="taskList[' + idx + '].endTime" class="form-control form-control-sm end-time-input time-input-small" placeholder="HH:MM" required/></td>' +
+                    '<td><input type="number" step="0.01" id="taskList' + idx + '.hours" name="taskList[' + idx + '].hours" class="form-control form-control-sm hours-input bg-light" readonly tabindex="-1" required/></td>' +
+                    '<td>' +
+                    '<select id="taskList' + idx + '.payableStatus" name="taskList[' + idx + '].payableStatus" class="form-select form-select-sm" required>' +
+                    '<option value="">-Select-</option>' +
+                    '<option value="Payable">Payable</option>' +
+                    '<option value="Non-Payable">Non-Payable</option>' +
+                    '</select>' +
+                    '</td>' +
+                    '<td class="text-center">' +
+                    '<button type="button" class="btn btn-outline-danger btn-sm remove-row">' +
+                    '<i class="fas fa-trash-alt"></i>' +
+                    '</button>' +
+                    '</td>';
+            }
+
+            function initTimePickers(context) {
+                const root = context || document;
+                if (typeof flatpickr !== 'undefined') {
+                    flatpickr(root.querySelectorAll('.start-time-input, .end-time-input'), {
+                        enableTime: true,
+                        noCalendar: true,
+                        dateFormat: "H:i",
+                        time_24hr: true
+                    });
+                }
+            }
             // ── Helpers ─────────────────────────────────────────────────────
             function updateDayLabel(row, dateValue) {
                 const label = row.querySelector('.day-label');
@@ -348,74 +573,109 @@
                 if (dateValue) {
                     const dow = new Date(dateValue + 'T00:00:00').getDay();
                     label.textContent = DAY_NAMES[dow];
-                    label.className   = 'badge day-label ' + DAY_COLORS[dow];
+                    label.className = 'badge day-label ' + DAY_COLORS[dow];
                 } else {
                     label.textContent = '-';
-                    label.className   = 'badge day-label bg-secondary';
+                    label.className = 'badge day-label bg-secondary';
                 }
             }
 
-            function fetchInTimeForGlobalDate() {
-                const dateValue = document.getElementById('globalTaskDate').value;
-                if (!dateValue) return;
-
-                fetch('/employee/tasks/get-in-time?date=' + dateValue)
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.inTime && data.inTime !== 'N/A' && data.inTime.trim() !== '') {
-                            // Populate Start Time for all rows if it's empty
-                            document.querySelectorAll('.start-time-input').forEach(startInput => {
-                                if (!startInput.value) {
-                                    startInput.value = data.inTime;
-                                }
-                            });
-                        }
-                    })
-                    .catch(err => console.error("Failed to fetch in-time", err));
+            function formatDisplayDate(dateStr) {
+                if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                    return dateStr || '-';
+                }
+                const parts = dateStr.split('-');
+                return parts[2] + '-' + parts[1] + '-' + parts[0];
             }
-
-            document.getElementById('globalTaskDate').addEventListener('change', fetchInTimeForGlobalDate);
 
             function updateRowRequiredStates() {
                 document.querySelectorAll('#taskTableBody .task-row').forEach(row => {
                     const cb = row.querySelector('.select-row-cb');
                     const checked = cb ? cb.checked : false;
                     row.querySelectorAll('input:not(.select-row-cb), select, textarea').forEach(inp => {
-                        if (checked) { inp.setAttribute('required','required'); }
-                        else         { inp.removeAttribute('required'); inp.classList.remove('is-invalid'); }
+                        if (inp.type === 'hidden') return; // Do not require hidden fields (like taskId)
+                        if (inp.classList.contains('other-project-input') && inp.style.display === 'none') return; // Do not require hidden 'other' project field
+                        
+                        if (checked) { 
+                            inp.setAttribute('required', 'required'); 
+                        } else { 
+                            inp.removeAttribute('required'); 
+                            inp.classList.remove('is-invalid'); 
+                        }
                     });
                 });
             }
 
-            function buildRowHtml(idx) {
-                const rowNum = document.querySelectorAll('#taskTableBody .task-row').length + 1;
-                return `
-                    <td class="text-center"><input type="hidden" name="taskList[${idx}].taskId" /><input type="checkbox" name="taskList[${idx}].selected" id="taskList${idx}.selected" class="form-check-input select-row-cb" value="true" checked/></td>
-                    <td class="text-center fw-semibold text-muted">${rowNum}</td>
-                    <td><select name="taskList[${idx}].projectName" id="taskList${idx}.projectName" class="form-select form-select-sm" required>${projectOptionsHtml}</select></td>
-                    <td><textarea name="taskList[${idx}].moduleName"     id="taskList${idx}.moduleName"     class="form-control form-control-sm" rows="2" style="min-width: 150px; resize: vertical;" required></textarea></td>
-                    <td><textarea name="taskList[${idx}].taskDescription" id="taskList${idx}.taskDescription" class="form-control form-control-sm" rows="2" style="min-width: 250px; resize: vertical;" required></textarea></td>
-                    <td><input type="time"   name="taskList[${idx}].startTime"      id="taskList${idx}.startTime"      class="form-control form-control-sm start-time-input" required/></td>
-                    <td><input type="time"   name="taskList[${idx}].endTime"        id="taskList${idx}.endTime"        class="form-control form-control-sm end-time-input" required/></td>
-                    <td><input type="number" name="taskList[${idx}].hours"          id="taskList${idx}.hours"          step="0.01" class="form-control form-control-sm hours-input bg-light" readonly tabindex="-1" required/></td>
-                    <td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm remove-row"><i class="fas fa-trash-alt"></i></button></td>
-                `;
+            function generateRowsForDateRange(startDateStr, endDateStr) {
+                const body = document.getElementById('taskTableBody');
+                body.innerHTML = '';
+                nextIndex = 0;
+                let currentDate = new Date(startDateStr + 'T00:00:00');
+                const endDate = new Date(endDateStr + 'T00:00:00');
+                while (currentDate <= endDate) {
+                    const dow = currentDate.getDay();
+                    if (dow !== 0 && dow !== 6) { // skip weekends
+                        const yyyy = currentDate.getFullYear();
+                        const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
+                        const dd = String(currentDate.getDate()).padStart(2, '0');
+                        const dStr = yyyy + '-' + mm + '-' + dd;
+                        const tr = document.createElement('tr');
+                        tr.className = 'task-row';
+                        tr.innerHTML = buildRowHtml(nextIndex, dStr, startDateStr, endDateStr);
+                        body.appendChild(tr);
+                        updateDayLabel(tr, dStr);
+                        const dInput = tr.querySelector('.date-input');
+                        if (dInput) {
+                            setTimeout(() => dInput.dispatchEvent(new Event('change', { bubbles: true })), 50 * nextIndex);
+                        }
+                        nextIndex++;
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                updateRowRequiredStates();
+                initTimePickers();
             }
 
+            document.getElementById('generateRangeBtn').addEventListener('click', function () {
+                const startStr = document.getElementById('rangeFromDate').value;
+                const endStr = document.getElementById('rangeToDate').value;
+                if (!startStr || !endStr) { alert('Please select both Task From Date and Task To Date.'); return; }
+                if (startStr > endStr) { alert('From Date cannot be after To Date.'); return; }
+                if (startStr > todayStr || endStr > todayStr) { alert('Task dates cannot be in the future.'); return; }
+
+                const startDate = new Date(startStr);
+                const endDate = new Date(endStr);
+                const diffTime = Math.abs(endDate - startDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays > 6) {
+                    alert('You can select a maximum of 7 days at a time.');
+                    return;
+                }
+
+                const body = document.getElementById('taskTableBody');
+                if (body.querySelectorAll('.task-row').length > 0) {
+                    if (!confirm('Generating will clear current rows. Proceed?')) return;
+                }
+                generateRowsForDateRange(startStr, endStr);
+            });
 
 
-            // ── Add Row ──────────────────────────────────────────────────────
-            document.getElementById('addRowBtn').addEventListener('click', function() {
+
+            // â”€â”€ Add Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            document.getElementById('addRowBtn').addEventListener('click', function () {
+                const startStr = document.getElementById('rangeFromDate').value;
+                const endStr = document.getElementById('rangeToDate').value;
                 const tr = document.createElement('tr');
                 tr.className = 'task-row';
-                tr.innerHTML = buildRowHtml(nextIndex);
+                tr.innerHTML = buildRowHtml(nextIndex, '', startStr, endStr);
                 document.getElementById('taskTableBody').appendChild(tr);
+                initTimePickers(tr);
                 nextIndex++;
                 updateRowRequiredStates();
             });
 
-            // ── Remove Row ───────────────────────────────────────────────────
-            document.getElementById('taskTableBody').addEventListener('click', function(e) {
+            // â”€â”€ Remove Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            document.getElementById('taskTableBody').addEventListener('click', function (e) {
                 const btn = e.target.closest('.remove-row');
                 if (btn && !btn.hasAttribute('disabled')) {
                     btn.closest('tr').remove();
@@ -423,61 +683,113 @@
                 }
             });
 
-            // ── Single unified change handler for the table ──────────────────
-            document.getElementById('taskTableBody').addEventListener('change', function(e) {
+            // â”€â”€ Single unified change handler for the table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            document.getElementById('taskTableBody').addEventListener('change', function (e) {
                 const tgt = e.target;
                 const row = tgt.closest('tr');
 
 
 
+                // Date changed
+                if (tgt.classList.contains('date-input')) {
+                    const selDate = tgt.value;
+                    if (selDate) {
+                        const minAllowed = tgt.getAttribute('min') || minDateStr;
+                        const maxAllowed = tgt.getAttribute('max') || maxDateStrClamped;
+                        if (selDate < minAllowed || selDate > maxAllowed) {
+                            alert('Please select a date between ' + formatDisplayDate(minAllowed) + ' and ' + formatDisplayDate(maxAllowed) + '. Future dates or dates outside the allowed range are not allowed.');
+                            tgt.value = '';
+                            updateDayLabel(row, '');
+                            const startTimeInput = row.querySelector('.start-time-input');
+                            if (startTimeInput) {
+                                startTimeInput.value = '';
+                                if (startTimeInput._flatpickr) startTimeInput._flatpickr.clear();
+                            }
+                            return;
+                        }
+                    }
+
+                    updateDayLabel(row, tgt.value);
+                    const startTimeInput = row.querySelector('.start-time-input');
+                    if(tgt.value && startTimeInput) {
+                        fetch(getInTimeUrl + '?date=' + tgt.value)
+                            .then(response => response.json())
+                            .then(data => {
+                                if(data && data.inTime) {
+                                    startTimeInput.value = data.inTime;
+                                    if(startTimeInput._flatpickr) {
+                                        startTimeInput._flatpickr.setDate(data.inTime);
+                                        startTimeInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                    }
+                                }
+                            })
+                            .catch(err => console.error('Error fetching in-time:', err));
+                    }
+                }
+
                 // Checkbox changed
                 if (tgt.classList.contains('select-row-cb')) {
                     updateRowRequiredStates();
-                    const all  = document.querySelectorAll('.select-row-cb');
+                    const all = document.querySelectorAll('.select-row-cb');
                     const chkd = document.querySelectorAll('.select-row-cb:checked');
                     document.getElementById('selectAllTasks').checked = (all.length === chkd.length);
                 }
             });
 
-            // ── Select All ───────────────────────────────────────────────────
-            document.getElementById('selectAllTasks').addEventListener('change', function(e) {
+            // â”€â”€ Select All â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            document.getElementById('selectAllTasks').addEventListener('change', function (e) {
                 document.querySelectorAll('.select-row-cb').forEach(cb => cb.checked = e.target.checked);
                 updateRowRequiredStates();
             });
 
-            // ── Form submit validation ────────────────────────────────────────
-            document.getElementById('taskForm').addEventListener('submit', function(e) {
+            // â”€â”€ Form submit validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            document.getElementById('taskForm').addEventListener('submit', function (e) {
                 let valid = true;
+                let dateError = false;
                 document.querySelectorAll('#taskTableBody .task-row').forEach(row => {
                     const cb = row.querySelector('.select-row-cb');
                     if (!cb || !cb.checked) { row.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid')); return; }
 
+                    const dateInput = row.querySelector('.date-input');
+                    if (dateInput && dateInput.value) {
+                        const minAllowed = dateInput.getAttribute('min') || minDateStr;
+                        const maxAllowed = dateInput.getAttribute('max') || maxDateStrClamped;
+                        if (dateInput.value < minAllowed || dateInput.value > maxAllowed) {
+                            valid = false;
+                            dateError = true;
+                            dateInput.classList.add('is-invalid');
+                        }
+                    }
                 });
                 if (!valid) {
                     e.preventDefault();
-                    alert('Please correct highlighted fields.');
+                    if (dateError) {
+                        alert('One or more selected rows contain an invalid date. Dates must fall within the allowed range for that row.');
+                    } else {
+                        alert('Please correct highlighted fields.');
+                    }
                 }
             });
 
-            // ── Init ─────────────────────────────────────────────────────────
-            
+            // â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
             // Calculate hours automatically
-            document.getElementById('taskTableBody').addEventListener('change', function(e) {
-                if(e.target && (e.target.classList.contains('start-time-input') || e.target.classList.contains('end-time-input'))) {
+            document.getElementById('taskTableBody').addEventListener('change', function (e) {
+                if (e.target && (e.target.classList.contains('start-time-input') || e.target.classList.contains('end-time-input'))) {
                     const row = e.target.closest('tr');
                     const startInput = row.querySelector('.start-time-input');
                     const endInput = row.querySelector('.end-time-input');
                     const hoursInput = row.querySelector('.hours-input');
-                    
-                    if(startInput.value && endInput.value) {
+
+                    if (startInput.value && endInput.value) {
                         const start = new Date("1970-01-01T" + startInput.value + ":00");
                         const end = new Date("1970-01-01T" + endInput.value + ":00");
-                        
+
                         let diffMs = end - start;
-                        if(diffMs < 0) {
+                        if (diffMs < 0) {
                             diffMs += 24 * 60 * 60 * 1000;
                         }
-                        
+
                         let hours = diffMs / (1000 * 60 * 60);
                         hoursInput.value = hours.toFixed(2);
                     } else {
@@ -486,8 +798,15 @@
                 }
             });
 
+            initProjects();
             updateRowRequiredStates();
+            initTimePickers();
+            document.querySelectorAll('#taskTableBody .task-row').forEach(row => {
+                const dInput = row.querySelector('.date-input');
+                if (dInput) updateDayLabel(row, dInput.value);
+            });
         });
     </script>
 </body>
+
 </html>

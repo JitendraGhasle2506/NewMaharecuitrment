@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -21,6 +21,7 @@
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/resource-levels}">Resource Levels</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
                         <a class="btn btn-outline-primary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/commission-rates}">Commission Rates</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/projects}">Projects</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/cell}">Cell Master</a>
                     </div>
@@ -81,9 +82,10 @@
                                         <a class="btn btn-outline-primary btn-sm"
                                             th:href="@{/master/designation-rates/{id}/edit(id=${item.rateId})}">Edit</a>
                                         <form th:if="${item.activeFlag == 'Y'}" class="d-inline"
-                                            th:action="@{/master/designation-rates/{id}/delete(id=${item.rateId})}" method="post">
+                                            th:action="@{/master/designation-rates/{id}/delete(id=${item.rateId},designationId=${designationId},includeInactive=${includeInactive},page=${rates.number},size=${rates.size})}" method="post"
+                                            onsubmit="return confirm('Are you sure you want to deactivate this designation rate?');">
                                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                                            <button class="btn btn-outline-danger btn-sm" type="submit">Deactivate</button>
                                         </form>
                                         <form th:if="${item.activeFlag != 'Y'}" class="d-inline"
                                             th:action="@{/master/designation-rates/{id}/restore(id=${item.rateId})}" method="post">
@@ -155,3 +157,4 @@
 </body>
 
 </html>
+

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Leave Applications | Attendance System</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link th:href="@{/assets/css/fonts/inter.css}" rel="stylesheet">
     <style>
         :root {
             --primary-dark: linear-gradient(180deg, #1f4f78, #163a59);
@@ -111,6 +111,12 @@
             border: 1px solid #ffc9c9;
         }
 
+        .badge-cancelled {
+            background-color: #f1f3f5;
+            color: #6c757d;
+            border: 1px solid #dee2e6;
+        }
+
         .sl-no-circle {
             width: 28px;
             height: 28px;
@@ -147,6 +153,14 @@
                     </div>
                     
                     <div class="card-body p-0">
+                        <div th:if="${success}" class="alert alert-success alert-dismissible fade show m-4 mb-0 border-0 shadow-sm" role="alert">
+                            <i class="fa fa-check-circle me-2"></i><span th:text="${success}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show m-4 mb-0 border-0 shadow-sm" role="alert">
+                            <i class="fa fa-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
                                 <thead>
@@ -155,13 +169,15 @@
                                         <th>Leave Category</th>
                                         <th>Leave Type</th>
                                         <th class="text-center">Dates (From - To)</th>
+                                        <th>Comp-Off Worked Date</th>
                                         <th>Description</th>
                                         <th class="pe-4 text-center">Status</th>
+                                        <th class="pe-4 text-center">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr th:if="${leaveHistory == null || leaveHistory.isEmpty()}">
-                                        <td colspan="6" class="text-center text-muted p-5">
+                                        <td colspan="8" class="text-center text-muted p-5">
                                             <div class="py-4">
                                                 <i class="fa fa-folder-open fa-3x mb-3 d-block text-light-grey" style="color: #dee2e6;"></i>
                                                 <p class="mb-0 fw-medium">No leave applications found in your history.</p>
@@ -184,6 +200,10 @@
                                             </div>
                                         </td>
                                         <td>
+                                            <span th:if="${leave.compOffWorkDate != null}" th:text="${#temporals.format(leave.compOffWorkDate, 'dd-MM-yyyy')}"></span>
+                                            <span th:if="${leave.compOffWorkDate == null}" class="text-muted">-</span>
+                                        </td>
+                                        <td>
                                             <div class="description-text" th:title="${leave.description}" th:text="${leave.description ?: '-'}"></div>
                                         </td>
                                         <td class="pe-4 text-center">
@@ -196,6 +216,21 @@
                                             <span class="status-badge badge-rejected" th:if="${leave.status == 'REJECTED'}">
                                                 <i class="fa fa-times-circle me-1"></i> Rejected
                                             </span>
+                                            <span class="status-badge badge-cancelled" th:if="${leave.status == 'CANCELLED'}">
+                                                <i class="fa fa-ban me-1"></i> Cancelled
+                                            </span>
+                                        </td>
+                                        <td class="pe-4 text-center">
+                                            <form th:if="${leave.status == 'PENDING'}"
+                                                  th:action="@{/employee/cancelLeave}" method="post"
+                                                  onsubmit="return confirm('Are you sure you want to cancel this leave request?');">
+                                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                <input type="hidden" name="leaveId" th:value="${leave.leaveId}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    <i class="fa fa-times me-1"></i>Cancel
+                                                </button>
+                                            </form>
+                                            <span th:if="${leave.status != 'PENDING'}" class="text-muted">-</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -208,3 +243,4 @@
     </th:block>
 </body>
 </html>
+

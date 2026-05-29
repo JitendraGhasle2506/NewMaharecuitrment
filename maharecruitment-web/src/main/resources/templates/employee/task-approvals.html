@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -92,7 +92,8 @@
                                 <tbody>
                                     <tr th:each="task : ${pendingTasks}">
                                         <td class="fw-bold" th:text="${task.employeeName}"></td>
-                                        <td class="text-center" th:text="${task.taskDate}"></td>
+                                        <td class="text-center"
+                                            th:text="${task.taskDate != null ? #temporals.format(task.taskDate, 'dd-MM-yyyy') : '-'}"></td>
                                         <td>
                                             <span class="d-block" th:text="${task.projectName}"></span>
                                             <small class="text-muted" th:text="${task.moduleName}"></small>
@@ -172,3 +173,4 @@
     </script>
 </body>
 </html>
+

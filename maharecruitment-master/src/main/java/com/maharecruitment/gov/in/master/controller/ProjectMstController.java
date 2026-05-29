@@ -7,11 +7,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.maharecruitment.gov.in.master.dto.ApiResponse;
@@ -44,8 +46,12 @@ public class ProjectMstController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ProjectResponse>>> getAll(
+            @RequestParam(required = false) Long cellId,
+            @RequestParam(defaultValue = "false") boolean includeInactive,
             @PageableDefault(size = 20, sort = "projectId") Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.of("Projects fetched successfully", service.getAll(pageable)));
+        return ResponseEntity.ok(ApiResponse.of(
+                "Projects fetched successfully",
+                service.getAll(cellId, includeInactive, pageable)));
     }
 
     @PutMapping("/{projectId}")
@@ -56,8 +62,14 @@ public class ProjectMstController {
     }
 
     @DeleteMapping("/{projectId}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long projectId) {
-        service.delete(projectId);
-        return ResponseEntity.ok(ApiResponse.of("Project deleted successfully", null));
+    public ResponseEntity<ApiResponse<Void>> softDelete(@PathVariable Long projectId) {
+        service.softDelete(projectId);
+        return ResponseEntity.ok(ApiResponse.of("Project deactivated successfully", null));
+    }
+
+    @PatchMapping("/{projectId}/restore")
+    public ResponseEntity<ApiResponse<Void>> restore(@PathVariable Long projectId) {
+        service.restore(projectId);
+        return ResponseEntity.ok(ApiResponse.of("Project restored successfully", null));
     }
 }

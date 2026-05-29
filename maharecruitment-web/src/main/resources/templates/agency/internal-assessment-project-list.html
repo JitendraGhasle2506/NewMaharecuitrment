@@ -644,7 +644,7 @@
                                     <td class="workspace-metric" th:text="${item.assessmentSubmittedCandidatesCount != null ? item.assessmentSubmittedCandidatesCount : 0}">0</td>
                                     <td class="workspace-metric" th:text="${item.recommendedCandidatesCount != null ? item.recommendedCandidatesCount : 0}">0</td>
                                     <td class="workspace-metric"
-                                        th:text="${item.latestAssessmentSubmittedAt != null ? #temporals.format(item.latestAssessmentSubmittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        th:text="${item.latestAssessmentSubmittedAt != null ? #temporals.format(item.latestAssessmentSubmittedAt, 'dd-MM-yyyy HH:mm') : '-'}">
                                         -
                                     </td>
                                 </tr>
@@ -672,7 +672,7 @@
                                                     </div>
                                                 </div>
                                                 <span class="workspace-count small"
-                                                    th:text="${item.latestAssessmentSubmittedAt != null ? 'Latest: ' + #temporals.format(item.latestAssessmentSubmittedAt, 'dd-MMM-yyyy HH:mm') : 'Latest: -'}">
+                                                    th:text="${item.latestAssessmentSubmittedAt != null ? 'Latest: ' + #temporals.format(item.latestAssessmentSubmittedAt, 'dd-MM-yyyy HH:mm') : 'Latest: -'}">
                                                     Latest: -
                                                 </span>
                                             </div>
@@ -713,7 +713,7 @@
                                                             </td>
                                                             <td>
                                                                 <div class="fw-semibold"
-                                                                    th:text="${candidate.assessmentSubmittedAt != null ? #temporals.format(candidate.assessmentSubmittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                                                    th:text="${candidate.assessmentSubmittedAt != null ? #temporals.format(candidate.assessmentSubmittedAt, 'dd-MM-yyyy HH:mm') : '-'}">
                                                                     01-Apr-2026 10:30
                                                                 </div>
                                                                 <small class="assessment-helper"
@@ -743,7 +743,7 @@
                                                                 <div class="status-helper"
                                                                     th:if="${candidate.workflowStatus != null and candidate.levelTwoInterviewDateTime != null
                                                                         and candidate.workflowStatus.name() != 'L2_RESCHEDULE_REQUESTED'}"
-                                                                    th:text="${#temporals.format(candidate.levelTwoInterviewDateTime, 'dd-MMM-yyyy')} + ' | ' + (candidate.levelTwoInterviewTimeSlot != null ? candidate.levelTwoInterviewTimeSlot : '-')">
+                                                                    th:text="${#temporals.format(candidate.levelTwoInterviewDateTime, 'dd-MM-yyyy')} + ' | ' + (candidate.levelTwoInterviewTimeSlot != null ? candidate.levelTwoInterviewTimeSlot : '-')">
                                                                     01-Apr-2026 | 10:00 AM - 10:30 AM
                                                                 </div>
                                                                 <div class="status-helper"
@@ -792,3 +792,4 @@
 </body>
 
 </html>
+

@@ -10,6 +10,8 @@ public interface UserManagementService {
 
     Page<User> getAll(Pageable pageable);
 
+    Page<User> getAll(String searchTerm, Pageable pageable);
+
     User getById(Long id);
 
     User create(UserUpsertRequest request);

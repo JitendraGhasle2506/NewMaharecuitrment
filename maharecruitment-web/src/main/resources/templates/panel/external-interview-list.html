@@ -72,7 +72,7 @@
                                         <div th:if="${candidate.interviewDateTime != null}">
                                             <div class="text-primary fw-bold">
                                                 <i class="far fa-calendar-alt me-1"></i>
-                                                <span th:text="${#temporals.format(candidate.interviewDateTime, 'dd MMM yyyy')}"></span>
+                                                <span th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MM-yyyy')}"></span>
                                             </div>
                                             <div class="text-dark small mt-1">
                                                 <i class="far fa-clock me-1"></i>
@@ -86,7 +86,7 @@
                                     <td>
                                         <div th:if="${candidate.feedbackSubmitted}">
                                             <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Submitted</span>
-                                            <div class="small text-muted mt-1" th:text="${#temporals.format(candidate.feedbackSubmittedAt, 'dd MMM yy')}"></div>
+                                            <div class="small text-muted mt-1" th:text="${#temporals.format(candidate.feedbackSubmittedAt, 'dd-MM-yyyy')}"></div>
                                         </div>
                                         <div th:if="${!candidate.feedbackSubmitted}">
                                             <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i> Pending</span>
@@ -164,3 +164,4 @@
 </body>
 
 </html>
+

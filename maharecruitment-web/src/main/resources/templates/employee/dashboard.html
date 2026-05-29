@@ -595,6 +595,55 @@
             margin: 0;
         }
 
+        .employee-home .detail-table-wrap {
+            overflow-x: auto;
+            border: 1px solid rgba(15, 58, 86, 0.08);
+            border-radius: 16px;
+            background: #ffffff;
+        }
+
+        .employee-home .detail-table {
+            width: 100%;
+            min-width: 680px;
+            margin: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .employee-home .detail-table th,
+        .employee-home .detail-table td {
+            padding: 13px 16px;
+            vertical-align: top;
+            border-bottom: 1px solid rgba(15, 58, 86, 0.08);
+        }
+
+        .employee-home .detail-table tr:last-child th,
+        .employee-home .detail-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .employee-home .detail-table th {
+            width: 20%;
+            color: #607385;
+            background: #f7fbff;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .employee-home .detail-table td {
+            width: 30%;
+            color: #0f2b44;
+            font-weight: 700;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .employee-home .detail-table td.detail-address {
+            white-space: pre-line;
+        }
+
         @media (max-width: 1199.98px) {
             .employee-home .employee-hero {
                 grid-template-columns: minmax(0, 1fr) minmax(280px, 0.95fr);
@@ -647,6 +696,15 @@
 
             .employee-home .hero-title {
                 font-size: 1.7rem;
+            }
+
+            .employee-home .detail-table {
+                min-width: 560px;
+            }
+
+            .employee-home .detail-table th,
+            .employee-home .detail-table td {
+                padding: 11px 12px;
             }
         }
     </style>
@@ -746,9 +804,9 @@
                                 <div class="summary-card">
                                     <span class="summary-card-label">Joining And HR Onboarding</span>
                                     <strong class="summary-card-value"
-                                        th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd MMM yyyy') : '-'}">01 Apr 2026</strong>
+                                        th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd-MM-yyyy') : '-'}">01 Apr 2026</strong>
                                     <span class="summary-card-subvalue"
-                                        th:text="${detail.hrOnboardingDate != null ? 'HR confirmed on ' + #temporals.format(detail.hrOnboardingDate, 'dd MMM yyyy') : 'HR onboarding date unavailable'}">
+                                        th:text="${detail.hrOnboardingDate != null ? 'HR confirmed on ' + #temporals.format(detail.hrOnboardingDate, 'dd-MM-yyyy') : 'HR onboarding date unavailable'}">
                                         HR confirmed
                                     </span>
                                 </div>
@@ -823,28 +881,27 @@
                                         <p class="panel-copy">Your primary profile and contact information as recorded during onboarding.</p>
                                     </div>
                                 </div>
-                                <div class="info-grid">
-                                    <div class="info-card">
-                                        <span class="info-label">Full Name</span>
-                                        <div class="info-value" th:text="${detail.name != null ? detail.name : '-'}">Name</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Email</span>
-                                        <div class="info-value" th:text="${detail.email != null ? detail.email : '-'}">Email</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Mobile</span>
-                                        <div class="info-value" th:text="${detail.mobile != null ? detail.mobile : '-'}">Mobile</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Date Of Birth</span>
-                                        <div class="info-value"
-                                            th:text="${detail.dob != null ? #temporals.format(detail.dob, 'dd MMM yyyy') : '-'}">DOB</div>
-                                    </div>
-                                    <div class="info-card wide">
-                                        <span class="info-label">Address</span>
-                                        <div class="info-value" th:text="${detail.address != null ? detail.address : '-'}">Address</div>
-                                    </div>
+                                <div class="detail-table-wrap">
+                                    <table class="detail-table" aria-label="Personal details">
+                                        <tbody>
+                                            <tr>
+                                                <th scope="row">Full Name</th>
+                                                <td th:text="${detail.name != null ? detail.name : '-'}">Name</td>
+                                                <th scope="row">Date Of Birth</th>
+                                                <td th:text="${detail.dob != null ? #temporals.format(detail.dob, 'dd-MM-yyyy') : '-'}">DOB</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Email</th>
+                                                <td th:text="${detail.email != null ? detail.email : '-'}">Email</td>
+                                                <th scope="row">Mobile</th>
+                                                <td th:text="${detail.mobile != null ? detail.mobile : '-'}">Mobile</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Address</th>
+                                                <td colspan="3" class="detail-address" th:text="${detail.address != null ? detail.address : '-'}">Address</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
 
@@ -855,59 +912,47 @@
                                         <p class="panel-copy">Project, department, role, and onboarding milestones linked to your employee record.</p>
                                     </div>
                                 </div>
-                                <div class="info-grid">
-                                    <div class="info-card">
-                                        <span class="info-label">Employee Code</span>
-                                        <div class="info-value" th:text="${employeeDetail.employeeCode != null ? employeeDetail.employeeCode : '-'}">EMP001</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Recruitment Type</span>
-                                        <div class="info-value" th:text="${employeeDetail.recruitmentType != null ? employeeDetail.recruitmentType : '-'}">INTERNAL</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Request ID</span>
-                                        <div class="info-value" th:text="${detail.requestId != null ? detail.requestId : '-'}">REQ-0001</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Project</span>
-                                        <div class="info-value" th:text="${detail.projectName != null ? detail.projectName : '-'}">Project</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Department</span>
-                                        <div class="info-value" th:text="${detail.department != null ? detail.department : '-'}">Department</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Sub Department</span>
-                                        <div class="info-value" th:text="${detail.subDeptName != null ? detail.subDeptName : '-'}">Sub Department</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Designation</span>
-                                        <div class="info-value" th:text="${detail.designation != null ? detail.designation : '-'}">Designation</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Level Code</span>
-                                        <div class="info-value" th:text="${detail.levelCode != null ? detail.levelCode : '-'}">Level</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Joining Date</span>
-                                        <div class="info-value"
-                                            th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd MMM yyyy') : '-'}">Joining Date</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Onboarding Date</span>
-                                        <div class="info-value"
-                                            th:text="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd MMM yyyy') : '-'}">Onboarding Date</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">HR Onboarding Date</span>
-                                        <div class="info-value"
-                                            th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd MMM yyyy') : '-'}">HR Date</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">Resignation Date</span>
-                                        <div class="info-value"
-                                            th:text="${employeeDetail.resignationDate != null ? #temporals.format(employeeDetail.resignationDate, 'dd MMM yyyy') : '-'}">-</div>
-                                    </div>
+                                <div class="detail-table-wrap">
+                                    <table class="detail-table" aria-label="Employment assignment">
+                                        <tbody>
+                                            <tr>
+                                                <th scope="row">Employee Code</th>
+                                                <td th:text="${employeeDetail.employeeCode != null ? employeeDetail.employeeCode : '-'}">EMP001</td>
+                                                <th scope="row">Recruitment Type</th>
+                                                <td th:text="${employeeDetail.recruitmentType != null ? employeeDetail.recruitmentType : '-'}">INTERNAL</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Request ID</th>
+                                                <td th:text="${detail.requestId != null ? detail.requestId : '-'}">REQ-0001</td>
+                                                <th scope="row">Project</th>
+                                                <td th:text="${detail.projectName != null ? detail.projectName : '-'}">Project</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Department</th>
+                                                <td th:text="${detail.department != null ? detail.department : '-'}">Department</td>
+                                                <th scope="row">Sub Department</th>
+                                                <td th:text="${detail.subDeptName != null ? detail.subDeptName : '-'}">Sub Department</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Designation</th>
+                                                <td th:text="${detail.designation != null ? detail.designation : '-'}">Designation</td>
+                                                <th scope="row">Level Code</th>
+                                                <td th:text="${detail.levelCode != null ? detail.levelCode : '-'}">Level</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Joining Date</th>
+                                                <td th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd-MM-yyyy') : '-'}">Joining Date</td>
+                                                <th scope="row">MahaIT Onboarding Date</th>
+                                                <td th:text="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd-MM-yyyy') : '-'}">Onboarding Date</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">HR Onboarding Date</th>
+                                                <td th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MM-yyyy') : '-'}">HR Date</td>
+                                                <th scope="row">Resignation Date</th>
+                                                <td th:text="${employeeDetail.resignationDate != null ? #temporals.format(employeeDetail.resignationDate, 'dd-MM-yyyy') : '-'}">-</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
 
@@ -918,81 +963,107 @@
                                         <p class="panel-copy">Identity details and the uploaded files attached to your onboarding profile.</p>
                                     </div>
                                 </div>
-                                <div class="info-grid">
-                                    <div class="info-card">
-                                        <span class="info-label">Aadhaar Number</span>
-                                        <div class="info-value" th:text="${detail.aadhaar != null ? detail.aadhaar : '-'}">Aadhaar</div>
-                                    </div>
-                                    <div class="info-card">
-                                        <span class="info-label">PAN Number</span>
-                                        <div class="info-value" th:text="${detail.pan != null ? detail.pan : '-'}">PAN</div>
-                                    </div>
+                                <div class="detail-table-wrap">
+                                    <table class="detail-table" aria-label="KYC details">
+                                        <tbody>
+                                            <tr>
+                                                <th scope="row">Aadhaar Number</th>
+                                                <td th:text="${detail.aadhaar != null ? detail.aadhaar : '-'}">Aadhaar</td>
+                                                <th scope="row">PAN Number</th>
+                                                <td th:text="${detail.pan != null ? detail.pan : '-'}">PAN</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <div class="doc-action-grid mt-3">
-                                    <div class="document-card">
-                                        <div class="document-card-header">
-                                            <h5 class="document-card-title">Photo</h5>
-                                            <span class="document-status" th:classappend="${detail.existingPhotoFilePath != null} ? ' available' : ' missing'">
-                                                <i class="fa-solid" th:classappend="${detail.existingPhotoFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
-                                                <span th:text="${detail.existingPhotoFilePath != null ? 'Available' : 'Missing'}">Available</span>
-                                            </span>
-                                        </div>
-                                        <div class="document-meta" th:text="${detail.existingPhotoFileName != null ? detail.existingPhotoFileName : 'No photo uploaded yet.'}">Photo file</div>
-                                        <button type="button" class="btn btn-outline-primary btn-sm"
-                                            th:if="${detail.existingPhotoFilePath != null}"
-                                            th:attr="data-path=${detail.existingPhotoFilePath}"
-                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
-                                            View Photo
-                                        </button>
-                                    </div>
-                                    <div class="document-card">
-                                        <div class="document-card-header">
-                                            <h5 class="document-card-title">Aadhaar Copy</h5>
-                                            <span class="document-status" th:classappend="${detail.existingAadhaarFilePath != null} ? ' available' : ' missing'">
-                                                <i class="fa-solid" th:classappend="${detail.existingAadhaarFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
-                                                <span th:text="${detail.existingAadhaarFilePath != null ? 'Available' : 'Missing'}">Available</span>
-                                            </span>
-                                        </div>
-                                        <div class="document-meta" th:text="${detail.existingAadhaarFileName != null ? detail.existingAadhaarFileName : 'No Aadhaar file uploaded yet.'}">Aadhaar file</div>
-                                        <button type="button" class="btn btn-outline-primary btn-sm"
-                                            th:if="${detail.existingAadhaarFilePath != null}"
-                                            th:attr="data-path=${detail.existingAadhaarFilePath}"
-                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
-                                            View Aadhaar
-                                        </button>
-                                    </div>
-                                    <div class="document-card">
-                                        <div class="document-card-header">
-                                            <h5 class="document-card-title">PAN Copy</h5>
-                                            <span class="document-status" th:classappend="${detail.existingPanFilePath != null} ? ' available' : ' missing'">
-                                                <i class="fa-solid" th:classappend="${detail.existingPanFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
-                                                <span th:text="${detail.existingPanFilePath != null ? 'Available' : 'Missing'}">Available</span>
-                                            </span>
-                                        </div>
-                                        <div class="document-meta" th:text="${detail.existingPanFileName != null ? detail.existingPanFileName : 'No PAN file uploaded yet.'}">PAN file</div>
-                                        <button type="button" class="btn btn-outline-primary btn-sm"
-                                            th:if="${detail.existingPanFilePath != null}"
-                                            th:attr="data-path=${detail.existingPanFilePath}"
-                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
-                                            View PAN
-                                        </button>
-                                    </div>
-                                    <div class="document-card">
-                                        <div class="document-card-header">
-                                            <h5 class="document-card-title">Experience Document</h5>
-                                            <span class="document-status" th:classappend="${detail.existingExperienceDocFilePath != null} ? ' available' : ' missing'">
-                                                <i class="fa-solid" th:classappend="${detail.existingExperienceDocFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
-                                                <span th:text="${detail.existingExperienceDocFilePath != null ? 'Available' : 'Missing'}">Available</span>
-                                            </span>
-                                        </div>
-                                        <div class="document-meta" th:text="${detail.existingExperienceDocFileName != null ? detail.existingExperienceDocFileName : 'No experience document uploaded yet.'}">Experience file</div>
-                                        <button type="button" class="btn btn-outline-primary btn-sm"
-                                            th:if="${detail.existingExperienceDocFilePath != null}"
-                                            th:attr="data-path=${detail.existingExperienceDocFilePath}"
-                                            onclick="openManagedDocument(this.getAttribute('data-path'))">
-                                            View Experience Doc
-                                        </button>
-                                    </div>
+                                <div class="detail-table-wrap mt-3">
+                                    <table class="detail-table" aria-label="Uploaded documents">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Document</th>
+                                                <th scope="col">Status</th>
+                                                <th scope="col">File Name</th>
+                                                <th scope="col">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Photo</td>
+                                                <td>
+                                                    <span class="document-status" th:classappend="${detail.existingPhotoFilePath != null} ? ' available' : ' missing'">
+                                                        <i class="fa-solid" th:classappend="${detail.existingPhotoFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
+                                                        <span th:text="${detail.existingPhotoFilePath != null ? 'Available' : 'Missing'}">Available</span>
+                                                    </span>
+                                                </td>
+                                                <td th:text="${detail.existingPhotoFileName != null ? detail.existingPhotoFileName : 'No photo uploaded yet.'}">Photo file</td>
+                                                <td>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                                        th:if="${detail.existingPhotoFilePath != null}"
+                                                        th:attr="data-path=${detail.existingPhotoFilePath}"
+                                                        onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                                        View
+                                                    </button>
+                                                    <span class="text-muted" th:if="${detail.existingPhotoFilePath == null}">-</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Aadhaar Copy</td>
+                                                <td>
+                                                    <span class="document-status" th:classappend="${detail.existingAadhaarFilePath != null} ? ' available' : ' missing'">
+                                                        <i class="fa-solid" th:classappend="${detail.existingAadhaarFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
+                                                        <span th:text="${detail.existingAadhaarFilePath != null ? 'Available' : 'Missing'}">Available</span>
+                                                    </span>
+                                                </td>
+                                                <td th:text="${detail.existingAadhaarFileName != null ? detail.existingAadhaarFileName : 'No Aadhaar file uploaded yet.'}">Aadhaar file</td>
+                                                <td>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                                        th:if="${detail.existingAadhaarFilePath != null}"
+                                                        th:attr="data-path=${detail.existingAadhaarFilePath}"
+                                                        onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                                        View
+                                                    </button>
+                                                    <span class="text-muted" th:if="${detail.existingAadhaarFilePath == null}">-</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>PAN Copy</td>
+                                                <td>
+                                                    <span class="document-status" th:classappend="${detail.existingPanFilePath != null} ? ' available' : ' missing'">
+                                                        <i class="fa-solid" th:classappend="${detail.existingPanFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
+                                                        <span th:text="${detail.existingPanFilePath != null ? 'Available' : 'Missing'}">Available</span>
+                                                    </span>
+                                                </td>
+                                                <td th:text="${detail.existingPanFileName != null ? detail.existingPanFileName : 'No PAN file uploaded yet.'}">PAN file</td>
+                                                <td>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                                        th:if="${detail.existingPanFilePath != null}"
+                                                        th:attr="data-path=${detail.existingPanFilePath}"
+                                                        onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                                        View
+                                                    </button>
+                                                    <span class="text-muted" th:if="${detail.existingPanFilePath == null}">-</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Experience Document</td>
+                                                <td>
+                                                    <span class="document-status" th:classappend="${detail.existingExperienceDocFilePath != null} ? ' available' : ' missing'">
+                                                        <i class="fa-solid" th:classappend="${detail.existingExperienceDocFilePath != null} ? ' fa-circle-check' : ' fa-circle-minus'"></i>
+                                                        <span th:text="${detail.existingExperienceDocFilePath != null ? 'Available' : 'Missing'}">Available</span>
+                                                    </span>
+                                                </td>
+                                                <td th:text="${detail.existingExperienceDocFileName != null ? detail.existingExperienceDocFileName : 'No experience document uploaded yet.'}">Experience file</td>
+                                                <td>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                                        th:if="${detail.existingExperienceDocFilePath != null}"
+                                                        th:attr="data-path=${detail.existingExperienceDocFilePath}"
+                                                        onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                                        View
+                                                    </button>
+                                                    <span class="text-muted" th:if="${detail.existingExperienceDocFilePath == null}">-</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
 
@@ -1008,25 +1079,27 @@
                                     No previous employment records were captured during onboarding.
                                 </p>
 
-                                <div class="employment-grid" th:if="${!#lists.isEmpty(detail.previousEmployments)}">
-                                    <div class="employment-card" th:each="employment, stat : ${detail.previousEmployments}">
-                                        <span class="employment-kicker">
-                                            <i class="fa-solid fa-building"></i>
-                                            <span th:text="${'Employment #' + (stat.index + 1)}">Employment #1</span>
-                                        </span>
-                                        <div class="employment-company" th:text="${employment.companyName != null ? employment.companyName : '-'}">Company Name</div>
-                                        <div class="employment-designation" th:text="${employment.designation != null ? employment.designation : 'Designation unavailable'}">Designation</div>
-                                        <div class="employment-dates">
-                                            <div>
-                                                <strong>Start:</strong>
-                                                <span th:text="${employment.startDate != null ? #temporals.format(employment.startDate, 'dd MMM yyyy') : '-'}">01 Jan 2020</span>
-                                            </div>
-                                            <div>
-                                                <strong>End:</strong>
-                                                <span th:text="${employment.endDate != null ? #temporals.format(employment.endDate, 'dd MMM yyyy') : '-'}">31 Dec 2022</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div class="detail-table-wrap" th:if="${!#lists.isEmpty(detail.previousEmployments)}">
+                                    <table class="detail-table" aria-label="Previous employment details">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Sr.No</th>
+                                                <th scope="col">Company</th>
+                                                <th scope="col">Designation</th>
+                                                <th scope="col">Start Date</th>
+                                                <th scope="col">End Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="employment, stat : ${detail.previousEmployments}">
+                                                <td th:text="${stat.index + 1}">1</td>
+                                                <td th:text="${employment.companyName != null ? employment.companyName : '-'}">Company Name</td>
+                                                <td th:text="${employment.designation != null ? employment.designation : '-'}">Designation</td>
+                                                <td th:text="${employment.startDate != null ? #temporals.format(employment.startDate, 'dd-MM-yyyy') : '-'}">01 Jan 2020</td>
+                                                <td th:text="${employment.endDate != null ? #temporals.format(employment.endDate, 'dd-MM-yyyy') : '-'}">31 Dec 2022</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -1075,23 +1148,27 @@
                                         <p class="panel-copy">Key dates from your onboarding journey.</p>
                                     </div>
                                 </div>
-                                <div class="timeline-list">
-                                    <div class="timeline-card">
-                                        <span class="timeline-label">Joining Date</span>
-                                        <div class="timeline-value" th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd MMM yyyy') : '-'}">Date</div>
-                                    </div>
-                                    <div class="timeline-card">
-                                        <span class="timeline-label">Portal Onboarding Date</span>
-                                        <div class="timeline-value" th:text="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd MMM yyyy') : '-'}">Date</div>
-                                    </div>
-                                    <div class="timeline-card">
-                                        <span class="timeline-label">HR Confirmation Date</span>
-                                        <div class="timeline-value" th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd MMM yyyy') : '-'}">Date</div>
-                                    </div>
-                                    <div class="timeline-card">
-                                        <span class="timeline-label">HR Onboarding Location</span>
-                                        <div class="timeline-value" th:text="${detail.hrOnboardingLocation != null ? detail.hrOnboardingLocation : '-'}">Location</div>
-                                    </div>
+                                <div class="detail-table-wrap">
+                                    <table class="detail-table" aria-label="Verification timeline">
+                                        <tbody>
+                                            <tr>
+                                                <th scope="row">Joining Date</th>
+                                                <td th:text="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd-MM-yyyy') : '-'}">Date</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">MahaIT Onboarding Date</th>
+                                                <td th:text="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd-MM-yyyy') : '-'}">Date</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">HR Confirmation Date</th>
+                                                <td th:text="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MM-yyyy') : '-'}">Date</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">HR Onboarding Location</th>
+                                                <td th:text="${detail.hrOnboardingLocation != null ? detail.hrOnboardingLocation : '-'}">Location</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
 
@@ -1102,62 +1179,73 @@
                                         <p class="panel-copy">Checklist items marked during your onboarding verification.</p>
                                     </div>
                                 </div>
-                                <div class="checklist-grid">
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">Educational Certificates</span>
-                                        <span class="checklist-state" th:classappend="${detail.docEducationalCert} ? ' done' : ' pending'"
-                                            th:text="${detail.docEducationalCert ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">Experience Letter</span>
-                                        <span class="checklist-state" th:classappend="${detail.docExperienceLetter} ? ' done' : ' pending'"
-                                            th:text="${detail.docExperienceLetter ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">Relieving Letter</span>
-                                        <span class="checklist-state" th:classappend="${detail.docRelievingLetter} ? ' done' : ' pending'"
-                                            th:text="${detail.docRelievingLetter ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">Salary Payslips</span>
-                                        <span class="checklist-state" th:classappend="${detail.docPayslips} ? ' done' : ' pending'"
-                                            th:text="${detail.docPayslips ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">Declaration Form</span>
-                                        <span class="checklist-state" th:classappend="${detail.docDeclarationForm} ? ' done' : ' pending'"
-                                            th:text="${detail.docDeclarationForm ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">NDA Document</span>
-                                        <span class="checklist-state" th:classappend="${detail.docNda} ? ' done' : ' pending'"
-                                            th:text="${detail.docNda ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">Medical Fitness Certificate</span>
-                                        <span class="checklist-state" th:classappend="${detail.docMedicalFitness} ? ' done' : ' pending'"
-                                            th:text="${detail.docMedicalFitness ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">Address Proof</span>
-                                        <span class="checklist-state" th:classappend="${detail.docAddressProof} ? ' done' : ' pending'"
-                                            th:text="${detail.docAddressProof ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">Passport Photo</span>
-                                        <span class="checklist-state" th:classappend="${detail.docPassportPhoto} ? ' done' : ' pending'"
-                                            th:text="${detail.docPassportPhoto ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">Aadhaar Copy</span>
-                                        <span class="checklist-state" th:classappend="${detail.docAadhaar} ? ' done' : ' pending'"
-                                            th:text="${detail.docAadhaar ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
-                                    <div class="checklist-item">
-                                        <span class="checklist-name">PAN Copy</span>
-                                        <span class="checklist-state" th:classappend="${detail.docPan} ? ' done' : ' pending'"
-                                            th:text="${detail.docPan ? 'Submitted' : 'Pending'}">Submitted</span>
-                                    </div>
+                                <div class="detail-table-wrap">
+                                    <table class="detail-table" aria-label="Document checklist">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Sr.No</th>
+                                                <th scope="col">Document</th>
+                                                <th scope="col">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>1</td>
+                                                <td>Educational Certificates</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docEducationalCert} ? ' done' : ' pending'" th:text="${detail.docEducationalCert ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>2</td>
+                                                <td>Experience Letter</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docExperienceLetter} ? ' done' : ' pending'" th:text="${detail.docExperienceLetter ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>3</td>
+                                                <td>Relieving Letter</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docRelievingLetter} ? ' done' : ' pending'" th:text="${detail.docRelievingLetter ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>4</td>
+                                                <td>Salary Payslips</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docPayslips} ? ' done' : ' pending'" th:text="${detail.docPayslips ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>5</td>
+                                                <td>Declaration Form</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docDeclarationForm} ? ' done' : ' pending'" th:text="${detail.docDeclarationForm ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>6</td>
+                                                <td>NDA Document</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docNda} ? ' done' : ' pending'" th:text="${detail.docNda ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>7</td>
+                                                <td>Medical Fitness Certificate</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docMedicalFitness} ? ' done' : ' pending'" th:text="${detail.docMedicalFitness ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>8</td>
+                                                <td>Address Proof</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docAddressProof} ? ' done' : ' pending'" th:text="${detail.docAddressProof ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>9</td>
+                                                <td>Passport Photo</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docPassportPhoto} ? ' done' : ' pending'" th:text="${detail.docPassportPhoto ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>10</td>
+                                                <td>Aadhaar Copy</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docAadhaar} ? ' done' : ' pending'" th:text="${detail.docAadhaar ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>11</td>
+                                                <td>PAN Copy</td>
+                                                <td><span class="checklist-state" th:classappend="${detail.docPan} ? ' done' : ' pending'" th:text="${detail.docPan ? 'Submitted' : 'Pending'}">Submitted</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -1217,3 +1305,4 @@
 </body>
 
 </html>
+

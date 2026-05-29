@@ -3,9 +3,11 @@ package com.maharecruitment.gov.in.attendance.service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -48,6 +50,8 @@ import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterActivi
 @Service
 @Transactional
 public class AttendanceRegisterServiceImpl implements AttendanceRegisterService {
+
+	private static final DateTimeFormatter DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
 	@Autowired
 	private EmployeeRepository employeeRepository;
@@ -285,7 +289,10 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 		Map<Long, Map<LocalDate, DailyAttendanceInternalEntity>> attendanceMap = dailyAttendance.stream()
 				.collect(Collectors.groupingBy(DailyAttendanceInternalEntity::getEmployeeId,
-						Collectors.toMap(DailyAttendanceInternalEntity::getAttendanceDate, a -> a)));
+						Collectors.toMap(
+								DailyAttendanceInternalEntity::getAttendanceDate,
+								a -> a,
+								this::pickPreferredInternalAttendanceRow)));
 
 		List<Long> employeeIds = employees.stream().map(EmployeeEntity::getEmployeeId).collect(Collectors.toList());
 		List<LeaveApplicationEntity> allApprovedLeaves = leaveApplicationRepository
@@ -380,7 +387,10 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				.findByEmployeeIdAndMonthAndYear(employeeId, month, year);
 
 		Map<LocalDate, DailyAttendanceInternalEntity> empAttendance = dailyAttendance.stream()
-				.collect(Collectors.toMap(DailyAttendanceInternalEntity::getAttendanceDate, a -> a));
+				.collect(Collectors.toMap(
+						DailyAttendanceInternalEntity::getAttendanceDate,
+						a -> a,
+						this::pickPreferredInternalAttendanceRow));
 
 		List<HolidayMasterEntity> holidays = holidayRepository.findByHolidayDateBetween(startDate, endDate);
 		Set<LocalDate> holidayDates = holidays.stream()
@@ -424,7 +434,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setMobile(employee.getMobile());
 		dto.setAddress(employee.getAddress());
 		dto.setEmployeeCode(employee.getEmployeeCode());
-		dto.setJoiningDate(employee.getJoiningDate() != null ? employee.getJoiningDate().toString() : "-");
+		dto.setJoiningDate(employee.getJoiningDate() != null ? employee.getJoiningDate().format(DISPLAY_DATE_FORMATTER) : "-");
 		dto.setPhotoPath(employee.getPreOnboarding() != null ? employee.getPreOnboarding().getPhotoFilePath() : null);
 
 		// Populate Reporting HOD and Manager
@@ -470,19 +480,28 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
 			AttendanceDayDTO dayDTO = new AttendanceDayDTO();
 			dayDTO.setDate(date);
+			DailyAttendanceInternalEntity daily = empAttendance.get(date);
+			if (date.isAfter(today)) {
+				dayDTO.setStatus("");
+				days.add(dayDTO);
+				continue;
+			}
 
 			// Check for Approved Leaves
 			final LocalDate fDate = date;
-			boolean onLeave = approvedLeaves.stream()
-					.anyMatch(l -> !fDate.isBefore(l.getStartDate()) && !fDate.isAfter(l.getEndDate()));
+			Optional<LeaveApplicationEntity> matchingLeave = !hasCompletePunchTime(daily)
+					? approvedLeaves.stream()
+							.filter(l -> isDateCoveredByLeave(l, fDate))
+							.findFirst()
+					: Optional.empty();
+			boolean onLeave = matchingLeave.isPresent();
 
 			// Check for Approved Tours
 			boolean onTour = approvedTours.stream()
 					.anyMatch(t -> !fDate.isBefore(t.getStartDate()) && !fDate.isAfter(t.getEndDate()));
 
-			DailyAttendanceInternalEntity daily = empAttendance.get(date);
 			if (onLeave) {
-				dayDTO.setStatus("LEAVE");
+				dayDTO.setStatus(isCompOffLeave(matchingLeave.get()) ? "COMP_OFF" : "LEAVE");
 				if (daily != null) {
 					dayDTO.setInTime(daily.getInTime());
 					dayDTO.setOutTime(daily.getOutTime());
@@ -532,10 +551,112 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setTotalPresent(days.stream().filter(d -> "PRESENT".equals(d.getStatus())).count());
 		dto.setTotalAbsent(days.stream().filter(d -> "ABSENT".equals(d.getStatus())).count());
 		dto.setTotalLeave(days.stream().filter(d -> "LEAVE".equals(d.getStatus())).count());
+		dto.setTotalCompOff(days.stream().filter(d -> "COMP_OFF".equals(d.getStatus())).count());
 		dto.setTotalHoliday(days.stream().filter(d -> "HOLIDAY".equals(d.getStatus())).count());
 		dto.setTotalWeekOff(days.stream().filter(d -> "WEEK_OFF".equals(d.getStatus())).count());
+		dto.setPayableDays(calculateRegisterPayableDays(dto));
 
 		return dto;
+	}
+
+	private DailyAttendanceInternalEntity pickPreferredInternalAttendanceRow(
+			DailyAttendanceInternalEntity left,
+			DailyAttendanceInternalEntity right) {
+		if (left == null) {
+			return right;
+		}
+		if (right == null) {
+			return left;
+		}
+
+		int leftScore = scoreInternalAttendanceRow(left);
+		int rightScore = scoreInternalAttendanceRow(right);
+		if (leftScore != rightScore) {
+			return rightScore > leftScore ? right : left;
+		}
+
+		Long leftId = left.getId();
+		Long rightId = right.getId();
+		if (leftId == null) {
+			return right;
+		}
+		if (rightId == null) {
+			return left;
+		}
+		return rightId >= leftId ? right : left;
+	}
+
+	private int scoreInternalAttendanceRow(DailyAttendanceInternalEntity daily) {
+		if (daily == null) {
+			return 0;
+		}
+
+		int score = 0;
+		if (StringUtils.hasText(daily.getInTime())) {
+			score += 2;
+		}
+		if (StringUtils.hasText(daily.getOutTime())) {
+			score += 2;
+		}
+		if (StringUtils.hasText(daily.getTotalHours())) {
+			score += 1;
+		}
+
+		String displayStatus = AttendanceStatusResolver.resolveDisplayStatus(daily);
+		if ("PRESENT".equals(displayStatus)) {
+			score += 4;
+		} else if (StringUtils.hasText(displayStatus) && !"ABSENT".equals(displayStatus)) {
+			score += 2;
+		}
+		return score;
+	}
+
+	private boolean hasCompletePunchTime(DailyAttendanceInternalEntity daily) {
+		return daily != null
+				&& StringUtils.hasText(daily.getInTime())
+				&& StringUtils.hasText(daily.getOutTime());
+	}
+
+	private long calculateRegisterPayableDays(AttendanceRegisterDTO dto) {
+		return dto.getTotalPresent()
+				+ dto.getTotalCompOff()
+				+ dto.getTotalHoliday()
+				+ dto.getTotalWeekOff()
+				+ countRegisterStatus(dto, "TOUR");
+	}
+
+	private long countRegisterStatus(AttendanceRegisterDTO dto, String status) {
+		if (dto == null || dto.getAttendanceDays() == null) {
+			return 0;
+		}
+		return dto.getAttendanceDays().stream()
+				.filter(day -> status.equals(day.getStatus()))
+				.count();
+	}
+
+	private boolean isDateCoveredByLeave(LeaveApplicationEntity leave, LocalDate date) {
+		return leave != null
+				&& leave.getStartDate() != null
+				&& leave.getEndDate() != null
+				&& !date.isBefore(leave.getStartDate())
+				&& !date.isAfter(leave.getEndDate());
+	}
+
+	private boolean isCompOffLeave(LeaveApplicationEntity leave) {
+		return leave != null
+				&& (leave.getCompOffWorkDate() != null || isCompOffLeaveType(leave.getLeaveType()));
+	}
+
+	private boolean isCompOffLeaveType(String leaveType) {
+		if (!StringUtils.hasText(leaveType)) {
+			return false;
+		}
+		String normalized = leaveType.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
+		return normalized.equals("CO")
+				|| normalized.equals("COMPOFF")
+				|| normalized.equals("COMPOFFLEAVE")
+				|| normalized.equals("COMPENSATORYOFF")
+				|| normalized.equals("COMPENSATORYLEAVE");
 	}
 
 	private boolean isWeekOff(LocalDate date, Set<LocalDate> workingDayOverrideDates) {
@@ -763,6 +884,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 		LocalDate startDate = LocalDate.of(year, month, 1);
 		LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+		LocalDate effectiveEndDate = resolveEffectiveAttendanceEndDate(startDate, endDate, LocalDate.now());
 		List<HolidayMasterEntity> holidays = holidayRepository.findByHolidayDateBetween(startDate, endDate);
 		Set<Integer> holidayDays = holidays.stream()
 				.map(h -> h.getHolidayDate().getDayOfMonth())
@@ -797,7 +919,6 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 			Map<Integer, String> dailyStatus = new HashMap<>();
 			for (int day = 1; day <= 31; day++) {
-				final int fDay = day;
 				LocalDate dDate = null;
 				try {
 					dDate = LocalDate.of(year, month, day);
@@ -805,15 +926,21 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 
 				final LocalDate finalDDate = dDate;
-				boolean onLeave = finalDDate != null && empLeaves.stream()
-						.anyMatch(l -> !finalDDate.isBefore(l.getStartDate()) && !finalDDate.isAfter(l.getEndDate()));
+				if (finalDDate == null || effectiveEndDate == null || finalDDate.isAfter(effectiveEndDate)) {
+					dailyStatus.put(day, "");
+					continue;
+				}
+				LeaveApplicationEntity approvedLeave = finalDDate == null ? null : empLeaves.stream()
+						.filter(l -> isDateCoveredByLeave(l, finalDDate))
+						.findFirst()
+						.orElse(null);
 				boolean onTour = finalDDate != null && empTours.stream()
 						.anyMatch(t -> !finalDDate.isBefore(t.getStartDate()) && !finalDDate.isAfter(t.getEndDate()));
 
 				String status = getProjectionDayStatus(p, day);
 
-				if (onLeave) {
-					dailyStatus.put(day, "L");
+				if (approvedLeave != null) {
+					dailyStatus.put(day, isCompOffLeave(approvedLeave) ? "CO" : "L");
 				} else if (onTour) {
 					dailyStatus.put(day, "T");
 				} else if (status != null && !status.isEmpty()) {
@@ -825,6 +952,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 			}
 			dto.setDailyStatus(dailyStatus);
+			applyAttendanceReportCounts(dto, dailyStatus);
+			dto.setPayableDays(calculateReportPayableDays(dto));
 			return dto;
 		}).collect(Collectors.toList());
 	}
@@ -902,6 +1031,40 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		return AttendanceStatusResolver.resolveStatusCode(status);
 	}
 
+	private void applyAttendanceReportCounts(AttendanceReportDTO dto, Map<Integer, String> dailyStatus) {
+		if (dto == null || dailyStatus == null || dailyStatus.isEmpty()) {
+			return;
+		}
+		dto.setPresentCount(countStatus(dailyStatus, "P"));
+		dto.setAbsentCount(countStatus(dailyStatus, "A"));
+		dto.setLeaveCount(countStatus(dailyStatus, "L"));
+		dto.setCompOffCount(countStatus(dailyStatus, "CO"));
+		dto.setTourCount(countStatus(dailyStatus, "T"));
+		dto.setHolidayCount(countStatus(dailyStatus, "H"));
+		dto.setWeekOffCount(countStatus(dailyStatus, "W"));
+	}
+
+	private long calculateReportPayableDays(AttendanceReportDTO dto) {
+		return dto.getPresentCount()
+				+ dto.getCompOffCount()
+				+ dto.getTourCount()
+				+ dto.getHolidayCount()
+				+ dto.getWeekOffCount();
+	}
+
+	private LocalDate resolveEffectiveAttendanceEndDate(LocalDate startDate, LocalDate endDate, LocalDate today) {
+		if (today.isBefore(startDate)) {
+			return null;
+		}
+		return today.isBefore(endDate) ? today : endDate;
+	}
+
+	private long countStatus(Map<Integer, String> dailyStatus, String statusCode) {
+		return dailyStatus.values().stream()
+				.filter(status -> statusCode.equalsIgnoreCase(status))
+				.count();
+	}
+
 	@Override
 	public List<AttendanceReportDTO> getExternalAttendanceReportData(Long regId, Long agencyId, Integer month,
 			Integer year,
@@ -909,6 +1072,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 		LocalDate startDate = LocalDate.of(year, month, 1);
 		LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+		LocalDate effectiveEndDate = resolveEffectiveAttendanceEndDate(startDate, endDate, LocalDate.now());
 		List<HolidayMasterEntity> holidays = holidayRepository.findByHolidayDateBetween(startDate, endDate);
 		Set<Integer> holidayDays = holidays.stream()
 				.map(h -> h.getHolidayDate().getDayOfMonth())
@@ -947,7 +1111,6 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 			Map<Integer, String> dailyStatus = new HashMap<>();
 			for (int day = 1; day <= 31; day++) {
-				final int fDay = day;
 				LocalDate dDate = null;
 				try {
 					dDate = LocalDate.of(year, month, day);
@@ -955,14 +1118,20 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 
 				final LocalDate finalDDate = dDate;
-				boolean onLeave = finalDDate != null && empLeaves.stream()
-						.anyMatch(l -> !finalDDate.isBefore(l.getStartDate()) && !finalDDate.isAfter(l.getEndDate()));
+				if (finalDDate == null || effectiveEndDate == null || finalDDate.isAfter(effectiveEndDate)) {
+					dailyStatus.put(day, "");
+					continue;
+				}
+				LeaveApplicationEntity approvedLeave = finalDDate == null ? null : empLeaves.stream()
+						.filter(l -> isDateCoveredByLeave(l, finalDDate))
+						.findFirst()
+						.orElse(null);
 				boolean onTour = finalDDate != null && empTours.stream()
 						.anyMatch(t -> !finalDDate.isBefore(t.getStartDate()) && !finalDDate.isAfter(t.getEndDate()));
 
 				String status = getExternalProjectionDayStatus(p, day);
-				if (onLeave) {
-					dailyStatus.put(day, "L");
+				if (approvedLeave != null) {
+					dailyStatus.put(day, isCompOffLeave(approvedLeave) ? "CO" : "L");
 				} else if (onTour) {
 					dailyStatus.put(day, "T");
 				} else if (status != null && !status.isEmpty()) {
@@ -974,6 +1143,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 			}
 			dto.setDailyStatus(dailyStatus);
+			applyAttendanceReportCounts(dto, dailyStatus);
+			dto.setPayableDays(calculateReportPayableDays(dto));
 			return dto;
 		}).collect(Collectors.toList());
 	}
@@ -1367,7 +1538,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				attendanceRegisterRepo.save(entity);
 
 				DailyAttendanceInternalEntity daily = dailyAttendanceInternalRepository
-						.findByEmployeeIdAndAttendanceDate(request.getUserId(), request.getAttendanceDate())
+						.findFirstByEmployeeIdAndAttendanceDateOrderByIdDesc(
+								request.getUserId(),
+								request.getAttendanceDate())
 						.orElse(new DailyAttendanceInternalEntity());
 				daily.setEmployeeId(request.getUserId());
 				daily.setAttendanceDate(request.getAttendanceDate());

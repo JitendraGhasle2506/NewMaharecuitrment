@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.master.dto.ProjectRequest;
 import com.maharecruitment.gov.in.master.dto.ProjectResponse;
+import com.maharecruitment.gov.in.master.entity.CellMaster;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 import com.maharecruitment.gov.in.master.entity.ProjectType;
@@ -14,6 +15,7 @@ import com.maharecruitment.gov.in.master.exception.BusinessValidationException;
 import com.maharecruitment.gov.in.master.exception.DuplicateResourceException;
 import com.maharecruitment.gov.in.master.exception.ResourceNotFoundException;
 import com.maharecruitment.gov.in.master.mapper.ProjectMapper;
+import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.master.service.ProjectMstService;
 
@@ -21,11 +23,19 @@ import com.maharecruitment.gov.in.master.service.ProjectMstService;
 @Transactional(readOnly = true)
 public class ProjectMstServiceImpl implements ProjectMstService {
 
+    private static final String ACTIVE = "Y";
+    private static final String INACTIVE = "N";
+
     private final ProjectMstRepository projectRepository;
+    private final CellMasterRepository cellMasterRepository;
     private final ProjectMapper projectMapper;
 
-    public ProjectMstServiceImpl(ProjectMstRepository projectRepository, ProjectMapper projectMapper) {
+    public ProjectMstServiceImpl(
+            ProjectMstRepository projectRepository,
+            CellMasterRepository cellMasterRepository,
+            ProjectMapper projectMapper) {
         this.projectRepository = projectRepository;
+        this.cellMasterRepository = cellMasterRepository;
         this.projectMapper = projectMapper;
     }
 
@@ -62,16 +72,40 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     }
 
     @Override
-    public Page<ProjectResponse> getAll(Pageable pageable) {
-        return projectRepository.findAll(pageable).map(projectMapper::toResponse);
+    public Page<ProjectResponse> getAll(boolean includeInactive, Pageable pageable) {
+        Page<ProjectMst> projects = includeInactive
+                ? projectRepository.findAll(pageable)
+                : projectRepository.findByActiveFlagIgnoreCase(ACTIVE, pageable);
+        return projects.map(projectMapper::toResponse);
+    }
+
+    @Override
+    public Page<ProjectResponse> getAll(Long cellId, boolean includeInactive, Pageable pageable) {
+        if (cellId == null) {
+            return getAll(includeInactive, pageable);
+        }
+        Page<ProjectMst> projects = includeInactive
+                ? projectRepository.findByCell_CellId(cellId, pageable)
+                : projectRepository.findByCell_CellIdAndActiveFlagIgnoreCase(cellId, ACTIVE, pageable);
+        return projects.map(projectMapper::toResponse);
     }
 
     @Override
     @Transactional
-    public void delete(Long projectId) {
+    public void softDelete(Long projectId) {
         ProjectMst entity = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found for id: " + projectId));
-        projectRepository.delete(entity);
+        entity.setActiveFlag(INACTIVE);
+        projectRepository.save(entity);
+    }
+
+    @Override
+    @Transactional
+    public void restore(Long projectId) {
+        ProjectMst entity = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found for id: " + projectId));
+        entity.setActiveFlag(ACTIVE);
+        projectRepository.save(entity);
     }
 
     @Override
@@ -108,6 +142,7 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         entity.setProjectScopeType(ProjectScopeType.EXTERNAL);
         entity.setDepartmentRegistrationId(departmentRegistrationId);
         entity.setApplicationId(applicationId);
+        entity.setActiveFlag(ACTIVE);
 
         return projectMapper.toResponse(projectRepository.save(entity));
     }
@@ -117,6 +152,19 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         entity.setProjectDesc(normalizeDescription(request.getProjectDesc()));
         entity.setProjectType(request.getProjectType());
         entity.setProjectScopeType(resolveProjectScopeType(request.getProjectScopeType(), entity.getApplicationId()));
+        entity.setCell(resolveActiveCell(request.getCellId()));
+    }
+
+    private CellMaster resolveActiveCell(Long cellId) {
+        if (cellId == null) {
+            throw new BusinessValidationException("Cell is required.");
+        }
+        CellMaster cell = cellMasterRepository.findByCellId(cellId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cell not found with id: " + cellId));
+        if (!"Y".equalsIgnoreCase(cell.getActiveFlag())) {
+            throw new BusinessValidationException("Selected cell is inactive.");
+        }
+        return cell;
     }
 
     private ProjectScopeType resolveProjectScopeType(ProjectScopeType projectScopeType, Long applicationId) {

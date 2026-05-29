@@ -84,7 +84,7 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @Column(name = "joining_date", nullable = false)
     private LocalDate joiningDate;
 
-    @Column(name = "onboarding_date", nullable = false)
+    @Column(name = "mahait_onboarding_date", nullable = false)
     private LocalDate onboardingDate;
 
     @Column(name = "resignation_date")

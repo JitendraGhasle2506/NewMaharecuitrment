@@ -98,7 +98,7 @@
                                             0
                                         </td>
                                         <td
-                                            th:text="${item.latestShortlistedAt != null ? #temporals.format(item.latestShortlistedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                            th:text="${item.latestShortlistedAt != null ? #temporals.format(item.latestShortlistedAt, 'dd-MM-yyyy HH:mm') : '-'}">
                                             -
                                         </td>
                                     </tr>
@@ -174,12 +174,12 @@
                                                                          </span>
                                                                      </td>
                                                                      <td
-                                                                         th:text="${candidate.departmentShortlistedAt != null ? #temporals.format(candidate.departmentShortlistedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                                                         th:text="${candidate.departmentShortlistedAt != null ? #temporals.format(candidate.departmentShortlistedAt, 'dd-MM-yyyy HH:mm') : '-'}">
                                                                          -
                                                                      </td>
                                                                      <td>
                                                                          <div th:if="${candidate.interviewDateTime != null}">
-                                                                             <div th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
+                                                                             <div th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MM-yyyy HH:mm')}">
                                                                                  01-Apr-2026 10:30
                                                                              </div>
                                                                              <small class="text-muted"
@@ -412,3 +412,4 @@
 </body>
 
 </html>
+

@@ -19,11 +19,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
         Optional<User> findByEmailIgnoreCase(String email);
 
+        Optional<User> findByEmailIgnoreCaseAndActiveTrue(String email);
+
         Optional<User> findByMobileNo(String mobileNo);
+
+        Optional<User> findByMobileNoAndActiveTrue(String mobileNo);
 
         boolean existsByEmailIgnoreCase(String email);
 
         boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id);
+
+        Optional<User> findByIdAndActiveTrue(Long id);
+
+        Page<User> findByActiveTrue(Pageable pageable);
 
         @Query("select distinct u.id " +
                         "from User u " +
@@ -68,6 +76,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
                         @Param("roleIds") Collection<Long> roleIds,
                         @Param("search") String search,
                         Pageable pageable);
+
+        @Query("""
+                        select distinct u
+                        from User u
+                        left join u.roles r
+                        left join u.departmentRegistrationId d
+                        where u.active = true
+                          and (
+                               lower(cast(u.name as String)) like :search
+                            or lower(cast(u.email as String)) like :search
+                            or lower(cast(u.mobileNo as String)) like :search
+                            or lower(cast(r.name as String)) like :search
+                            or lower(cast(d.departmentName as String)) like :search
+                          )
+                        """)
+        Page<User> searchUsers(@Param("search") String search, Pageable pageable);
 
         @Query("select distinct u " +
                         "from User u " +

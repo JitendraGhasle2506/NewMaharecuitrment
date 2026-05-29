@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -214,8 +214,8 @@
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td th:text="${syncResult.startDate}">2026-05-01</td>
-                                            <td th:text="${syncResult.endDate}">2026-05-04</td>
+                                            <td th:text="${syncResult.startDate != null ? #temporals.format(syncResult.startDate, 'dd-MM-yyyy') : '-'}">01-05-2026</td>
+                                            <td th:text="${syncResult.endDate != null ? #temporals.format(syncResult.endDate, 'dd-MM-yyyy') : '-'}">04-05-2026</td>
                                             <td th:text="${syncResult.employeesAttempted}">0</td>
                                             <td th:text="${syncResult.employeesSynced}">0</td>
                                             <td th:text="${syncResult.employeesSkipped}">0</td>
@@ -234,3 +234,4 @@
 </body>
 
 </html>
+

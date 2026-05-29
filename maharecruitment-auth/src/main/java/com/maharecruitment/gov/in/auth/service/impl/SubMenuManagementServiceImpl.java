@@ -213,21 +213,15 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
             throw new IllegalArgumentException("One or more selected roles are invalid.");
         }
 
-        Set<Long> parentRoleIds = parentMenu.getRoles() == null
-                ? Set.of()
-                : parentMenu.getRoles().stream()
-                        .map(Role::getId)
-                        .filter(Objects::nonNull)
-                        .collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
-
-        List<String> invalidRoleNames = roles.stream()
-                .filter(role -> !parentRoleIds.contains(role.getId()))
-                .map(Role::getName)
-                .sorted()
-                .toList();
-        if (!invalidRoleNames.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Selected roles must already be mapped to the parent menu: " + String.join(", ", invalidRoleNames));
+        if (parentMenu.getRoles() == null) {
+            parentMenu.setRoles(new LinkedHashSet<>());
+        }
+        boolean parentMenuUpdated = parentMenu.getRoles().addAll(roles);
+        if (parentMenuUpdated) {
+            mstMenuRepository.save(parentMenu);
+            log.info("Parent menu roles updated while saving submenu: menuId={}, roles={}",
+                    parentMenu.getMenuId(),
+                    roles.stream().map(Role::getName).sorted().toList());
         }
 
         return new LinkedHashSet<>(roles);

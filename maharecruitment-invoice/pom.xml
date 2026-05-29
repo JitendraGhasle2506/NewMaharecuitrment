@@ -27,6 +27,21 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.maharecruitment.gov.in</groupId>
+      <artifactId>maharecruitment-attendance</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.maharecruitment.gov.in</groupId>
+      <artifactId>maharecruitment-master</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.maharecruitment.gov.in</groupId>
+      <artifactId>maharecruitment-recruitment</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.zxing</groupId>
       <artifactId>core</artifactId>
       <version>3.5.4</version>

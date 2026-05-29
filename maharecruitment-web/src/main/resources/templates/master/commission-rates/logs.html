@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Commission Rate Logs</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Commission Rate Logs', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2>Commission Rate Logs</h2>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/commission-rates}">Back</a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light border">
+                        <strong th:text="${rate.commissionCode}">AGENCY</strong>
+                        <span> - </span>
+                        <span th:text="${rate.commissionPercentage + '%'}">0%</span>
+                        <span> effective </span>
+                        <span th:text="${rate.effectiveDate != null ? #temporals.format(rate.effectiveDate, 'dd-MM-yyyy') : '-'}">01-01-2026</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Actor</th>
+                                    <th>Date Time</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${logs.isEmpty()}">
+                                    <td colspan="4" class="text-center text-muted">No logs found</td>
+                                </tr>
+                                <tr th:each="log : ${logs.content}">
+                                    <td th:text="${log.actionType}"></td>
+                                    <td th:text="${log.actorUsername != null ? log.actorUsername : 'SYSTEM'}"></td>
+                                    <td th:text="${#temporals.format(log.actionTimestamp, 'dd-MM-yyyy HH:mm')}"></td>
+                                    <td th:text="${log.details}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="app-pagination-shell" th:if="${logs.totalPages > 1}">
+                        <nav aria-label="Commission rate logs pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${logs.first} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/master/commission-rates/{id}/logs(id=${rate.commissionRateId},page=${logs.number - 1},size=${logs.size})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:each="pageIndex : ${#numbers.sequence(0, logs.totalPages - 1)}"
+                                    th:classappend="${pageIndex == logs.number} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/master/commission-rates/{id}/logs(id=${rate.commissionRateId},page=${pageIndex},size=${logs.size})}"
+                                        th:text="${pageIndex + 1}">1</a>
+                                </li>
+                                <li class="page-item" th:classappend="${logs.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/master/commission-rates/{id}/logs(id=${rate.commissionRateId},page=${logs.number + 1},size=${logs.size})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

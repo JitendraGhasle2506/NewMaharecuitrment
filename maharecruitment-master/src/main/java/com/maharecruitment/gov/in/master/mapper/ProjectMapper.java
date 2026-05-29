@@ -17,6 +17,9 @@ public class ProjectMapper {
                 .projectScopeType(entity.getProjectScopeType())
                 .departmentRegistrationId(entity.getDepartmentRegistrationId())
                 .applicationId(entity.getApplicationId())
+                .cellId(entity.getCell() != null ? entity.getCell().getCellId() : null)
+                .cellName(entity.getCell() != null ? entity.getCell().getCellName() : null)
+                .activeFlag(entity.getActiveFlag())
                 .createdAt(entity.getCreatedDateTime())
                 .updatedAt(entity.getUpdatedDateTime())
                 .build();

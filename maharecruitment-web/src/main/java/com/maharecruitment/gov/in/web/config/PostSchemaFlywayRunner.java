@@ -60,6 +60,13 @@ import db.postmigration.V52__attendance_holiday_soft_delete_support;
 import db.postmigration.V53__attendance_week_off_working_day_support;
 import db.postmigration.V54__auth_user_soft_delete_support;
 import db.postmigration.V55__department_approved_payment_report_index_support;
+import db.postmigration.V56__master_cell_master_support;
+import db.postmigration.V57__project_cell_mapping_support;
+import db.postmigration.V58__project_soft_delete_support;
+import db.postmigration.V59__attendance_leave_compoff_support;
+import db.postmigration.V66__attendance_internal_daily_unique_employee_date;
+import db.postmigration.V67__pre_onboarding_company_payroll_proof;
+import db.postmigration.V68__employee_master_mahait_onboarding_date;
 import db.postmigration.V38__auth_mahait_profile_menu_backfill;
 import db.postmigration.V39__mahait_profile_cin_number_support;
 import db.postmigration.V40__department_tax_invoice_support;
@@ -145,7 +152,14 @@ public class PostSchemaFlywayRunner {
                         new V52__attendance_holiday_soft_delete_support(),
                         new V53__attendance_week_off_working_day_support(),
                         new V54__auth_user_soft_delete_support(),
-                        new V55__department_approved_payment_report_index_support())
+                        new V55__department_approved_payment_report_index_support(),
+                        new V56__master_cell_master_support(),
+                        new V57__project_cell_mapping_support(),
+                        new V58__project_soft_delete_support(),
+                        new V59__attendance_leave_compoff_support(),
+                        new V66__attendance_internal_daily_unique_employee_date(),
+                        new V67__pre_onboarding_company_payroll_proof(),
+                        new V68__employee_master_mahait_onboarding_date())
                 .load();
 
         if (hasFailedPostSchemaMigration()) {

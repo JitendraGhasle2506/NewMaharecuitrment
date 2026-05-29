@@ -116,7 +116,7 @@ function toggleEmployeeList() {
 					<div class="snapshot-info d-flex align-items-center">
 						<i class="fa-regular fa-calendar-alt me-2 text-muted"></i> <span
 							class="text-muted small">Snapshot:</span> <strong class="ms-1"
-							th:text="${#temporals.format(dashboard.snapshotDate, 'dd-MMM-yyyy')}">--</strong>
+							th:text="${#temporals.format(dashboard.snapshotDate, 'dd-MM-yyyy')}">--</strong>
 					</div>
 				</div>
 				<div class="card-body p-0 mt-3">
@@ -144,7 +144,7 @@ function toggleEmployeeList() {
 									</td>
 									<td><span class="text-muted"><i
 											class="fa-regular fa-calendar me-2"></i><span
-											th:text="${#temporals.format(project.startDate, 'dd-MMM-yyyy')}">01-Jan-2026</span></span>
+											th:text="${#temporals.format(project.startDate, 'dd-MM-yyyy')}">01-Jan-2026</span></span>
 									</td>
 									<td><span
 										class="badge bg-light text-dark border px-2 py-1 rounded-pill fw-semibold">
@@ -298,3 +298,4 @@ function toggleEmployeeList() {
 </body>
 
 </html>
+

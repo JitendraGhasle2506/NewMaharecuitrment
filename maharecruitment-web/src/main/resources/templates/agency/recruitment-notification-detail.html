@@ -45,7 +45,7 @@
                             <td th:text="${detail.projectName != null ? detail.projectName : '-'}">Project</td>
                             <th>Notified At</th>
                             <td
-                                th:text="${detail.notifiedAt != null ? #temporals.format(detail.notifiedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                th:text="${detail.notifiedAt != null ? #temporals.format(detail.notifiedAt, 'dd-MM-yyyy HH:mm') : '-'}">
                                 -
                             </td>
                         </tr>
@@ -60,7 +60,7 @@
                                 </span>
                             </td>
                             <!-- <th>Notified At</th>
-                            <td th:text="${detail.notifiedAt != null ? #temporals.format(detail.notifiedAt, 'dd-MMM-yyyy HH:mm') : '-'}">-</td> -->
+                            <td th:text="${detail.notifiedAt != null ? #temporals.format(detail.notifiedAt, 'dd-MM-yyyy HH:mm') : '-'}">-</td> -->
                         </tr>
                     </table>
 
@@ -318,7 +318,7 @@
                                     <td>
                                         <div th:if="${candidate.interviewDateTime != null}">
                                             <div
-                                                th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
+                                                th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MM-yyyy HH:mm')}">
                                                 01-Apr-2026 10:30
                                             </div>
                                             <small class="text-muted"
@@ -423,3 +423,4 @@
 </body>
 
 </html>
+

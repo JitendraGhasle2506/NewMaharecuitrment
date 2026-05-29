@@ -30,6 +30,12 @@
     const candidatePhotoPreview = document.getElementById("candidatePhotoPreview");
     const candidatePhotoEmpty = document.getElementById("candidatePhotoEmpty");
     const candidatePhotoFileName = document.getElementById("candidatePhotoFileName");
+    const companyPayrollCheckbox = document.getElementById("companyPayrollMoreThanThreeMonths");
+    const companyPayrollProofInput = document.getElementById("companyPayrollProof");
+    const companyPayrollProofBlock = document.getElementById("companyPayrollProofBlock");
+    const existingCompanyPayrollProofPath = companyPayrollProofBlock
+        ? (companyPayrollProofBlock.getAttribute("data-existing-path") || "")
+        : "";
     const hrFlowInput = form.querySelector("[name='hrFlow']");
     const hrFlow = hrFlowInput && hrFlowInput.value === "true";
     const existingPhotoPath = candidatePhotoPreview
@@ -719,6 +725,36 @@
         return true;
     }
 
+    function validateCompanyPayrollProof() {
+        if (!companyPayrollCheckbox || !companyPayrollProofInput || hrFlow) {
+            return true;
+        }
+
+        const isChecked = companyPayrollCheckbox.checked;
+        if (companyPayrollProofBlock) {
+            companyPayrollProofBlock.classList.toggle("d-none", !isChecked);
+        }
+        companyPayrollProofInput.required = isChecked && !existingCompanyPayrollProofPath;
+
+        if (!isChecked) {
+            setFieldValidity(companyPayrollProofInput, "");
+            companyPayrollProofInput.value = "";
+            return true;
+        }
+
+        const hasUploadedFile = companyPayrollProofInput.files && companyPayrollProofInput.files.length > 0;
+        if (!hasUploadedFile && !existingCompanyPayrollProofPath) {
+            setFieldValidity(
+                companyPayrollProofInput,
+                "Company payroll proof document is required when the employee is on company payroll for more than 3 months."
+            );
+            return false;
+        }
+
+        setFieldValidity(companyPayrollProofInput, "");
+        return true;
+    }
+
     function getManagedDocumentUrl(path) {
         if (!path) {
             return "";
@@ -815,10 +851,11 @@
         const dobValid = validateDOB();
         const panValid = validatePAN();
         const aadhaarValid = validateAadhaar();
+        const payrollProofValid = validateCompanyPayrollProof();
         
         const isBasicValid = form.checkValidity();
 
-        submitBtn.disabled = !requiredDocsComplete || !employmentValid || !datesValid || !emailValid || !mobileValid || !dobValid || !panValid || !aadhaarValid || !isBasicValid;
+        submitBtn.disabled = !requiredDocsComplete || !employmentValid || !datesValid || !emailValid || !mobileValid || !dobValid || !panValid || !aadhaarValid || !payrollProofValid || !isBasicValid;
     }
 
     function openManagedDocument(path) {
@@ -848,6 +885,14 @@
     form.querySelectorAll(requiredCheckboxSelector).forEach(function (checkbox) {
         checkbox.addEventListener("change", checkFormValidity);
     });
+
+    if (companyPayrollCheckbox) {
+        companyPayrollCheckbox.addEventListener("change", checkFormValidity);
+    }
+
+    if (companyPayrollProofInput) {
+        companyPayrollProofInput.addEventListener("change", checkFormValidity);
+    }
 
     [joiningDateInput, dobInput].forEach(function (el) {
         if (el) {
@@ -943,6 +988,7 @@
     });
 
     calculateTotalExperience();
+    validateCompanyPayrollProof();
     if (existingPhotoPath) {
         showManagedPhoto(existingPhotoPath);
     } else {

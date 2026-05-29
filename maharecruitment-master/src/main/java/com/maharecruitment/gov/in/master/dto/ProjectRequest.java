@@ -25,4 +25,7 @@ public class ProjectRequest {
 
     @NotNull(message = "Project scope is required")
     private ProjectScopeType projectScopeType;
+
+    @NotNull(message = "Cell is required")
+    private Long cellId;
 }

@@ -373,6 +373,7 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             applyStatusCount(row, statusCode);
         }
 
+        row.setPayableDays(calculatePayableDays(row));
         row.setDailyStatus(dailyStatus);
         return row;
     }
@@ -392,6 +393,12 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
         if (employee.getResignationDate() != null && date.isAfter(employee.getResignationDate())) {
             return "";
         }
+        if (date.isAfter(today)) {
+            return "";
+        }
+        if (isCoveredByCompOff(approvedLeaves, date)) {
+            return "CO";
+        }
         if (isCoveredByLeave(approvedLeaves, date)) {
             return "L";
         }
@@ -406,9 +413,6 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
                 workingDayOverrideDates.contains(date));
         if (StringUtils.hasText(resolvedAttendanceStatus)) {
             return resolvedAttendanceStatus;
-        }
-        if (date.isAfter(today)) {
-            return "";
         }
         if (isWeekend(date) && !workingDayOverrideDates.contains(date)) {
             return "W";
@@ -432,6 +436,32 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
                         && leave.getEndDate() != null
                         && !date.isBefore(leave.getStartDate())
                         && !date.isAfter(leave.getEndDate()));
+    }
+
+    private boolean isCoveredByCompOff(List<LeaveApplicationEntity> approvedLeaves, LocalDate date) {
+        return approvedLeaves.stream()
+                .anyMatch(leave -> isCompOffLeave(leave)
+                        && leave.getStartDate() != null
+                        && leave.getEndDate() != null
+                        && !date.isBefore(leave.getStartDate())
+                        && !date.isAfter(leave.getEndDate()));
+    }
+
+    private boolean isCompOffLeave(LeaveApplicationEntity leave) {
+        return leave != null
+                && (leave.getCompOffWorkDate() != null || isCompOffLeaveType(leave.getLeaveType()));
+    }
+
+    private boolean isCompOffLeaveType(String leaveType) {
+        if (!StringUtils.hasText(leaveType)) {
+            return false;
+        }
+        String normalized = leaveType.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
+        return normalized.equals("CO")
+                || normalized.equals("COMPOFF")
+                || normalized.equals("COMPOFFLEAVE")
+                || normalized.equals("COMPENSATORYOFF")
+                || normalized.equals("COMPENSATORYLEAVE");
     }
 
     private boolean isCoveredByTour(List<TourApplicationEntity> approvedTours, LocalDate date) {
@@ -461,6 +491,9 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             case "L":
                 row.setLeaveCount(row.getLeaveCount() + 1);
                 break;
+            case "CO":
+                row.setCompOffCount(row.getCompOffCount() + 1);
+                break;
             case "H":
                 row.setHolidayCount(row.getHolidayCount() + 1);
                 break;
@@ -473,6 +506,14 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             default:
                 break;
         }
+    }
+
+    private long calculatePayableDays(InternalAttendanceReportRow row) {
+        return row.getPresentCount()
+                + row.getCompOffCount()
+                + row.getTourCount()
+                + row.getHolidayCount()
+                + row.getWeekOffCount();
     }
 
     private InternalAttendanceReportSummary buildSummary(
@@ -492,9 +533,11 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
         summary.setPresentCount(rows.stream().mapToLong(InternalAttendanceReportRow::getPresentCount).sum());
         summary.setAbsentCount(rows.stream().mapToLong(InternalAttendanceReportRow::getAbsentCount).sum());
         summary.setLeaveCount(rows.stream().mapToLong(InternalAttendanceReportRow::getLeaveCount).sum());
+        summary.setCompOffCount(rows.stream().mapToLong(InternalAttendanceReportRow::getCompOffCount).sum());
         summary.setHolidayCount(rows.stream().mapToLong(InternalAttendanceReportRow::getHolidayCount).sum());
         summary.setWeekOffCount(rows.stream().mapToLong(InternalAttendanceReportRow::getWeekOffCount).sum());
         summary.setTourCount(rows.stream().mapToLong(InternalAttendanceReportRow::getTourCount).sum());
+        summary.setPayableDays(rows.stream().mapToLong(InternalAttendanceReportRow::getPayableDays).sum());
         return summary;
     }
 

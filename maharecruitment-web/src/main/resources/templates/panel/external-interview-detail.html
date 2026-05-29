@@ -177,7 +177,7 @@
                 <div class="mini-card fade-in">
                     <span class="label">Interview Schedule</span>
                     <div class="value"
-                        th:text="${detail.interviewDateTime != null ? #temporals.format(detail.interviewDateTime, 'dd MMM yyyy') : 'TBD'}">
+                        th:text="${detail.interviewDateTime != null ? #temporals.format(detail.interviewDateTime, 'dd-MM-yyyy') : 'TBD'}">
                         Date</div>
                     <div class="muted-copy mt-1"
                         th:text="${detail.interviewTimeSlot != null ? detail.interviewTimeSlot : 'No time slot'}">Time
@@ -203,7 +203,7 @@
                     </div>
                     <div class="muted-copy mt-1" th:if="${detail.feedbackSubmitted}">
                         <span
-                            th:text="${#temporals.format(detail.feedbackSubmittedAt, 'dd MMM yyyy HH:mm')}">Date</span>
+                            th:text="${#temporals.format(detail.feedbackSubmittedAt, 'dd-MM-yyyy HH:mm')}">Date</span>
                     </div>
                     <div class="muted-copy mt-1" th:if="${!detail.feedbackSubmitted}">Required</div>
                 </div>

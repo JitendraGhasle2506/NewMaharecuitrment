@@ -503,7 +503,7 @@
                         <div class="overview-card" th:if="${detail.assessment != null}">
                             <div class="overview-label">Assessment Submitted</div>
                             <div class="overview-value"
-                                th:text="${detail.assessment.submittedAt != null ? #temporals.format(detail.assessment.submittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                th:text="${detail.assessment.submittedAt != null ? #temporals.format(detail.assessment.submittedAt, 'dd-MM-yyyy HH:mm') : '-'}">
                                 01-Apr-2026 10:30
                             </div>
                             <div class="overview-support"
@@ -524,7 +524,7 @@
                             <table class="table table-bordered table-sm snapshot-table">
                                 <tr>
                                     <th>Interview Date</th>
-                                    <td th:text="${detail.initialInterviewDateTime != null ? #temporals.format(detail.initialInterviewDateTime, 'dd-MMM-yyyy') : '-'}">
+                                    <td th:text="${detail.initialInterviewDateTime != null ? #temporals.format(detail.initialInterviewDateTime, 'dd-MM-yyyy') : '-'}">
                                         -
                                     </td>
                                 </tr>
@@ -585,7 +585,7 @@
                                     </div>
                                     <div class="assessment-tag">
                                         <strong>Submitted</strong>
-                                        <span th:text="${detail.assessment.submittedAt != null ? #temporals.format(detail.assessment.submittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">01-Apr-2026 10:30</span>
+                                        <span th:text="${detail.assessment.submittedAt != null ? #temporals.format(detail.assessment.submittedAt, 'dd-MM-yyyy HH:mm') : '-'}">01-Apr-2026 10:30</span>
                                     </div>
                                 </div>
 
@@ -709,7 +709,7 @@
                                     Not eligible for Level 2
                                 </div>
                                 <div class="overview-support mt-2"
-                                    th:text="${detail.levelTwoTimeChangeRequested && detail.levelTwoTimeChangeRequestedAt != null ? 'HR requested change on ' + #temporals.format(detail.levelTwoTimeChangeRequestedAt, 'dd-MMM-yyyy HH:mm') : (detail.levelTwoScheduledAt != null ? 'Updated on ' + #temporals.format(detail.levelTwoScheduledAt, 'dd-MMM-yyyy HH:mm') : 'Awaiting agency action')}">
+                                    th:text="${detail.levelTwoTimeChangeRequested && detail.levelTwoTimeChangeRequestedAt != null ? 'HR requested change on ' + #temporals.format(detail.levelTwoTimeChangeRequestedAt, 'dd-MM-yyyy HH:mm') : (detail.levelTwoScheduledAt != null ? 'Updated on ' + #temporals.format(detail.levelTwoScheduledAt, 'dd-MM-yyyy HH:mm') : 'Awaiting agency action')}">
                                     Awaiting agency action
                                 </div>
                             </div>
@@ -720,7 +720,7 @@
                                     <div class="overview-card">
                                         <div class="overview-label">Interview Date</div>
                                         <div class="overview-value"
-                                            th:text="${detail.levelTwoInterviewDateTime != null ? #temporals.format(detail.levelTwoInterviewDateTime, 'dd-MMM-yyyy') : '-'}">
+                                            th:text="${detail.levelTwoInterviewDateTime != null ? #temporals.format(detail.levelTwoInterviewDateTime, 'dd-MM-yyyy') : '-'}">
                                             -
                                         </div>
                                     </div>
@@ -838,3 +838,4 @@
 </body>
 
 </html>
+

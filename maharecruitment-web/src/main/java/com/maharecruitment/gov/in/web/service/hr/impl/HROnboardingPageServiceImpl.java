@@ -157,6 +157,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         form.setDocPassportPhoto(entity.getDocPassportPhoto());
         form.setDocAadhaar(entity.getDocAadhaar());
         form.setDocPan(entity.getDocPan());
+        form.setCompanyPayrollMoreThanThreeMonths(Boolean.TRUE.equals(entity.getCompanyPayrollMoreThanThreeMonths()));
         form.setAgencyFlag(entity.getAgencyVerified());
 
         // Existing files
@@ -166,6 +167,8 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         form.setExistingPanFilePath(entity.getPanFilePath());
         form.setExistingExperienceDocFileName(entity.getExperienceDocOriginalName());
         form.setExistingExperienceDocFilePath(entity.getExperienceDocFilePath());
+        form.setExistingCompanyPayrollProofFileName(entity.getCompanyPayrollProofOriginalName());
+        form.setExistingCompanyPayrollProofFilePath(entity.getCompanyPayrollProofFilePath());
         form.setExistingPhotoFileName(entity.getPhotoOriginalName());
         form.setExistingPhotoFilePath(entity.getPhotoFilePath());
 
@@ -587,6 +590,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 designationName,
                 deptName,
                 entity.getJoiningDate(),
+                entity.getOnboardingDate(),
                 entity.getRecruitmentType(),
                 entity.getAgency() != null ? entity.getAgency().getAgencyName() : "-",
                 entity.getStatus());

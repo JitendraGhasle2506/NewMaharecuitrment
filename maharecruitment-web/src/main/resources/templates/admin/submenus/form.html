@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+﻿ <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -84,7 +84,7 @@
                             <select class="form-select" multiple th:field="*{roleIds}">
                                 <option th:each="role : ${availableRoles}" th:value="${role.id}" th:text="${role.name}"></option>
                             </select>
-                            <small class="text-muted">Hold Ctrl to select multiple roles. Choose roles already mapped to the selected parent menu.</small>
+                            <small class="text-muted">Hold Ctrl to select multiple roles. Selected roles will also be mapped to the parent menu when required.</small>
                             <div class="text-danger small" th:if="${#fields.hasErrors('roleIds')}" th:errors="*{roleIds}"></div>
                         </div>
 
@@ -101,3 +101,4 @@
 </body>
 
 </html>
+

@@ -55,7 +55,7 @@
                                     <th>Employee</th>
                                     <th>Designation</th>
                                     <th>Joining Date</th>
-                                    <th>Onboarding Date</th>
+                                    <th>MahaIT Onboarding Date</th>
                                     <th th:if="${currentStatus == 'RESIGNED' or currentStatus == 'ALL'}">Resignation
                                         Date</th>
                                     <th>Status</th>
@@ -100,15 +100,15 @@
                                         Designation | Level
                                     </td>
                                     <td
-                                        th:text="${employee.joiningDate() != null ? #temporals.format(employee.joiningDate(), 'dd-MMM-yyyy') : '-'}">
+                                        th:text="${employee.joiningDate() != null ? #temporals.format(employee.joiningDate(), 'dd-MM-yyyy') : '-'}">
                                         01-Apr-2026
                                     </td>
                                     <td
-                                        th:text="${employee.onboardingDate() != null ? #temporals.format(employee.onboardingDate(), 'dd-MMM-yyyy') : '-'}">
+                                        th:text="${employee.onboardingDate() != null ? #temporals.format(employee.onboardingDate(), 'dd-MM-yyyy') : '-'}">
                                         05-Apr-2026
                                     </td>
                                     <td th:if="${currentStatus == 'RESIGNED' or currentStatus == 'ALL'}"
-                                        th:text="${employee.resignationDate() != null ? #temporals.format(employee.resignationDate(), 'dd-MMM-yyyy') : '-'}">
+                                        th:text="${employee.resignationDate() != null ? #temporals.format(employee.resignationDate(), 'dd-MM-yyyy') : '-'}">
                                         16-Mar-2026
                                     </td>
                                     <td>

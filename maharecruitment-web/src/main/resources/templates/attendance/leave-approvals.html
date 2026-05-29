@@ -161,6 +161,7 @@
                                             <th>Employee Name</th>
                                             <th>Leave Details</th>
                                             <th>Dates</th>
+                                            <th>Comp-Off Against</th>
                                             <th>Reason</th>
                                             <th>Applied On</th>
                                             <th>Remarks</th>
@@ -180,10 +181,18 @@
                                             </td>
                                             <td>
                                                 <div class="small">
-                                                    <span th:text="${#temporals.format(leave.startDate, 'dd MMM yyyy')}"></span><br>
+                                                    <span th:text="${#temporals.format(leave.startDate, 'dd-MM-yyyy')}"></span><br>
                                                     <span class="text-muted">to</span><br>
-                                                    <span th:text="${#temporals.format(leave.endDate, 'dd MMM yyyy')}"></span>
+                                                    <span th:text="${#temporals.format(leave.endDate, 'dd-MM-yyyy')}"></span>
                                                 </div>
+                                            </td>
+                                            <td>
+                                                <div th:if="${leave.compOffWorkDate != null}">
+                                                    <span class="badge bg-info text-dark">Worked Date</span>
+                                                    <small class="text-primary fw-semibold d-block mt-1"
+                                                           th:text="${#temporals.format(leave.compOffWorkDate, 'dd-MM-yyyy')}"></small>
+                                                </div>
+                                                <span th:if="${leave.compOffWorkDate == null}" class="text-muted">-</span>
                                             </td>
                                             <td>
                                                 <p class="mb-0 small text-truncate" style="max-width: 200px;" th:text="${leave.description}" th:title="${leave.description}"></p>
@@ -207,7 +216,7 @@
                                             </td>
                                         </tr>
                                         <tr th:if="${#lists.isEmpty(pendingLeaves)}">
-                                            <td colspan="7" class="text-center py-5 text-muted">
+                                            <td colspan="8" class="text-center py-5 text-muted">
                                                 <i class="fa fa-inbox fa-3x mb-3 d-block opacity-25"></i>
                                                 <span th:text="${not #strings.isEmpty(searchQuery) ? 'No results for ' + searchQuery : 'No pending leave requests found.'}"></span>
                                             </td>
@@ -245,12 +254,12 @@
                                             </td>
                                             <td>
                                                 <div class="small" th:if="${tour.tourCategory == 'Full Day'}">
-                                                    <span th:text="${#temporals.format(tour.startDate, 'dd MMM yyyy')}"></span><br>
+                                                    <span th:text="${#temporals.format(tour.startDate, 'dd-MM-yyyy')}"></span><br>
                                                     <span class="text-muted">to</span><br>
-                                                    <span th:text="${#temporals.format(tour.endDate, 'dd MMM yyyy')}"></span>
+                                                    <span th:text="${#temporals.format(tour.endDate, 'dd-MM-yyyy')}"></span>
                                                 </div>
                                                 <div class="small" th:if="${tour.tourCategory == 'Half Day'}">
-                                                    <span th:text="${#temporals.format(tour.startDate, 'dd MMM yyyy')}"></span>
+                                                    <span th:text="${#temporals.format(tour.startDate, 'dd-MM-yyyy')}"></span>
                                                 </div>
                                             </td>
                                             <td>
@@ -302,6 +311,7 @@
                                                             <th>Employee</th>
                                                             <th>Leave Details</th>
                                                             <th>Period</th>
+                                                            <th>Comp-Off Against</th>
                                                             <th>Applied On</th>
                                                             <th>Status</th>
                                                             <th>HOD Remarks</th>
@@ -319,10 +329,18 @@
                                                             </td>
                                                             <td>
                                                                 <div class="small">
-                                                                    <span th:text="${#temporals.format(leave.startDate, 'dd MMM yyyy')}"></span>
+                                                                    <span th:text="${#temporals.format(leave.startDate, 'dd-MM-yyyy')}"></span>
                                                                     <span class="text-muted mx-1">-</span>
-                                                                    <span th:text="${#temporals.format(leave.endDate, 'dd MMM yyyy')}"></span>
+                                                                    <span th:text="${#temporals.format(leave.endDate, 'dd-MM-yyyy')}"></span>
                                                                 </div>
+                                                            </td>
+                                                            <td>
+                                                                <div th:if="${leave.compOffWorkDate != null}">
+                                                                    <span class="badge bg-info text-dark">Worked Date</span>
+                                                                    <small class="text-primary fw-semibold d-block mt-1"
+                                                                           th:text="${#temporals.format(leave.compOffWorkDate, 'dd-MM-yyyy')}"></small>
+                                                                </div>
+                                                                <span th:if="${leave.compOffWorkDate == null}" class="text-muted">-</span>
                                                             </td>
                                                             <td>
                                                                 <small class="text-muted d-block" th:text="${#temporals.format(leave.applicationDate, 'dd-MM-yyyy HH:mm')}"></small>
@@ -335,7 +353,7 @@
                                                             </td>
                                                         </tr>
                                                         <tr th:if="${#lists.isEmpty(processedLeaves)}">
-                                                            <td colspan="6" class="text-center py-4 text-muted small">No processed leave requests found.</td>
+                                                            <td colspan="7" class="text-center py-4 text-muted small">No processed leave requests found.</td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -375,9 +393,9 @@
                                                             </td>
                                                             <td>
                                                                 <div class="small">
-                                                                    <span th:text="${#temporals.format(tour.startDate, 'dd MMM yyyy')}"></span>
+                                                                    <span th:text="${#temporals.format(tour.startDate, 'dd-MM-yyyy')}"></span>
                                                                     <span th:if="${tour.tourCategory == 'Full Day'}" class="text-muted mx-1">-</span>
-                                                                    <span th:if="${tour.tourCategory == 'Full Day'}" th:text="${#temporals.format(tour.endDate, 'dd MMM yyyy')}"></span>
+                                                                    <span th:if="${tour.tourCategory == 'Full Day'}" th:text="${#temporals.format(tour.endDate, 'dd-MM-yyyy')}"></span>
                                                                 </div>
                                                             </td>
                                                             <td>
@@ -430,8 +448,8 @@
         </section>
     </th:block>
 
-    <script th:src="@{https://code.jquery.com/jquery-3.6.0.min.js}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}"></script>
+    <script th:src="@{/assets/vendor/sweetalert2/sweetalert2.all.min.js}"></script>
     <script>
         $(document).ready(function() {
             // Tab change listener to sync state
@@ -503,3 +521,4 @@
     </script>
 </body>
 </html>
+

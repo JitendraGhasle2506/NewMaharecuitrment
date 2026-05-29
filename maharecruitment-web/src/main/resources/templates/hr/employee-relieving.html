@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Relieving</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .relieving-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            margin-bottom: 2rem;
+            background: #fff;
+        }
+        .relieving-header {
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid #edf2f7;
+            border-radius: 12px 12px 0 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #eef2ff 100%);
+        }
+        .relieving-body { padding: 2rem; }
+        .section-divider {
+            border: none;
+            border-top: 2px dashed #e2e8f0;
+            margin: 1.5rem 0;
+        }
+        .form-label { font-weight: 600; color: #4a5568; font-size: 0.875rem; }
+        .required-star { color: #e53e3e; }
+        .status-badge {
+            padding: 0.3em 0.75em;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+        }
+        .record-table thead th {
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #718096;
+            background: #f7fafc;
+        }
+        .record-table tbody tr:hover { background: #f8f9fa; }
+    </style>
+</head>
+<body class="hr-shell">
+
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Employee Relieving', ~{::section})}">
+        <section>
+
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show d-flex align-items-center shadow-sm mb-3" role="alert">
+                <i class="fas fa-check-circle me-2 fs-5"></i>
+                <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center shadow-sm mb-3" role="alert">
+                <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+                <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- ─── Form Card ─────────────────────────────────────────────── -->
+            <div class="card relieving-card">
+                <div class="relieving-header d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                        <i class="fas fa-user-minus text-primary fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-0 fw-bold">Initiate Employee Relieving</h5>
+                        <p class="text-muted mb-0 small">Fill in the details below to process an internal employee's exit.</p>
+                    </div>
+                </div>
+
+                <div class="relieving-body">
+                    <form th:action="@{/hr/relieving/save}" th:object="${relievingDto}" method="post" id="relievingForm" novalidate>
+
+                        <!-- Row 1: Employee + Reason -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="employeeId" class="form-label">
+                                    Select Employee <span class="required-star">*</span>
+                                </label>
+                                <select id="employeeId" th:field="*{employeeId}" class="form-select" required>
+                                    <option value="">-- Select Internal Employee --</option>
+                                    <option th:each="emp : ${employees}"
+                                            th:value="${emp.employeeId}"
+                                            th:text="${emp.fullName + (emp.employeeCode != null ? ' (' + emp.employeeCode + ')' : '')}">
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">Please select an employee.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="reasonOfRelieving" class="form-label">
+                                    Reason of Relieving <span class="required-star">*</span>
+                                </label>
+                                <select id="reasonOfRelieving" th:field="*{reasonOfRelieving}" class="form-select" required>
+                                    <option value="">-- Select Reason --</option>
+                                    <option value="Released">Released</option>
+                                    <option value="PIP">PIP (Performance Improvement Plan)</option>
+                                    <option value="Return of Service">Return of Service</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a reason.</div>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Exit Date + Handover To -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="exitDate" class="form-label">
+                                    Exit Date <span class="required-star">*</span>
+                                </label>
+                                <input type="date" id="exitDate" th:field="*{exitDate}" class="form-control" required />
+                                <div class="invalid-feedback">Please provide the exit date.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="handoverGivenToId" class="form-label">Handover Given To</label>
+                                <select id="handoverGivenToId" th:field="*{handoverGivenToId}" class="form-select">
+                                    <option value="">-- Optional: Select Employee --</option>
+                                    <option th:each="emp : ${employees}"
+                                            th:value="${emp.employeeId}"
+                                            th:text="${emp.fullName + (emp.employeeCode != null ? ' (' + emp.employeeCode + ')' : '')}">
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Remarks -->
+                        <div class="mb-4">
+                            <label for="remarks" class="form-label">Additional Remarks</label>
+                            <textarea id="remarks" th:field="*{remarks}" class="form-control" rows="3"
+                                      placeholder="Any extra notes for the record..."></textarea>
+                        </div>
+
+                        <hr class="section-divider">
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a th:href="@{/hr/relieving}" class="btn btn-outline-secondary px-4">
+                                <i class="fas fa-times me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm" id="submitRelieving">
+                                <i class="fas fa-save me-2"></i>Process Relieving
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ─── Records Table ─────────────────────────────────────────── -->
+            <div class="card relieving-card">
+                <div class="relieving-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-history text-secondary fs-5"></i>
+                        <h6 class="mb-0 fw-bold text-secondary">Relieving Records</h6>
+                    </div>
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis"
+                          th:text="${#lists.size(allRecords) + ' records'}">0 records</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 record-table">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">#</th>
+                                    <th>Employee Name</th>
+                                    <th>Reason</th>
+                                    <th>Exit Date</th>
+                                    <th>Handover To</th>
+                                    <th>Remarks</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="record, stat : ${allRecords}">
+                                    <td class="ps-4 text-muted" th:text="${stat.count}"></td>
+                                    <td>
+                                        <span class="fw-semibold" th:text="${record.employeeName}"></span>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge"
+                                              th:classappend="${record.reasonOfRelieving == 'PIP'} ? 'bg-danger-subtle text-danger-emphasis' :
+                                                              (${record.reasonOfRelieving == 'Released'} ? 'bg-info-subtle text-info-emphasis' : 'bg-warning-subtle text-warning-emphasis')"
+                                              th:text="${record.reasonOfRelieving}">
+                                        </span>
+                                    </td>
+                                    <td th:text="${record.exitDate != null ? #temporals.format(record.exitDate, 'dd-MM-yyyy') : '-'}"></td>
+                                    <td th:text="${record.handoverGivenToName != null ? record.handoverGivenToName : 'N/A'}"></td>
+                                    <td>
+                                        <small class="text-muted" th:text="${record.remarks != null ? record.remarks : '-'}"></small>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge"
+                                              th:classappend="${record.status == 'COMPLETED'} ? 'bg-success-subtle text-success-emphasis' : 'bg-warning-subtle text-warning-emphasis'"
+                                              th:text="${record.status}">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(allRecords)}">
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <i class="fas fa-inbox me-2 fs-4 d-block mb-2"></i>
+                                        No relieving records found.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </th:block>
+
+    <script>
+        // Bootstrap validation
+        (() => {
+            const form = document.getElementById('relievingForm');
+            if (!form) return;
+            form.addEventListener('submit', function (e) {
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            });
+
+            // Exclude the selected "employee being relieved" from the handover dropdown
+            const empSelect = document.getElementById('employeeId');
+            const handoverSelect = document.getElementById('handoverGivenToId');
+            if (empSelect && handoverSelect) {
+                empSelect.addEventListener('change', function () {
+                    const selectedId = this.value;
+                    Array.from(handoverSelect.options).forEach(opt => {
+                        opt.disabled = opt.value !== '' && opt.value === selectedId;
+                        if (opt.disabled && handoverSelect.value === selectedId) {
+                            handoverSelect.value = '';
+                        }
+                    });
+                });
+            }
+        })();
+    </script>
+
+</body>
+</html>

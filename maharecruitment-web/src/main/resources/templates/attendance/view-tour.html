@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Tour History | Attendance System</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link th:href="@{/assets/css/fonts/inter.css}" rel="stylesheet">
     <style>
         :root {
             --primary-dark: linear-gradient(180deg, #1f4f78, #163a59);
@@ -191,3 +191,4 @@
     </th:block>
 </body>
 </html>
+
