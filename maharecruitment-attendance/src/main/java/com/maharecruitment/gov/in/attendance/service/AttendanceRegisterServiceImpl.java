@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.attendance.service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +50,8 @@ import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterActivi
 @Service
 @Transactional
 public class AttendanceRegisterServiceImpl implements AttendanceRegisterService {
+
+	private static final DateTimeFormatter DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
 	@Autowired
 	private EmployeeRepository employeeRepository;
@@ -286,7 +289,10 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 		Map<Long, Map<LocalDate, DailyAttendanceInternalEntity>> attendanceMap = dailyAttendance.stream()
 				.collect(Collectors.groupingBy(DailyAttendanceInternalEntity::getEmployeeId,
-						Collectors.toMap(DailyAttendanceInternalEntity::getAttendanceDate, a -> a)));
+						Collectors.toMap(
+								DailyAttendanceInternalEntity::getAttendanceDate,
+								a -> a,
+								this::pickPreferredInternalAttendanceRow)));
 
 		List<Long> employeeIds = employees.stream().map(EmployeeEntity::getEmployeeId).collect(Collectors.toList());
 		List<LeaveApplicationEntity> allApprovedLeaves = leaveApplicationRepository
@@ -381,7 +387,10 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				.findByEmployeeIdAndMonthAndYear(employeeId, month, year);
 
 		Map<LocalDate, DailyAttendanceInternalEntity> empAttendance = dailyAttendance.stream()
-				.collect(Collectors.toMap(DailyAttendanceInternalEntity::getAttendanceDate, a -> a));
+				.collect(Collectors.toMap(
+						DailyAttendanceInternalEntity::getAttendanceDate,
+						a -> a,
+						this::pickPreferredInternalAttendanceRow));
 
 		List<HolidayMasterEntity> holidays = holidayRepository.findByHolidayDateBetween(startDate, endDate);
 		Set<LocalDate> holidayDates = holidays.stream()
@@ -425,7 +434,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setMobile(employee.getMobile());
 		dto.setAddress(employee.getAddress());
 		dto.setEmployeeCode(employee.getEmployeeCode());
-		dto.setJoiningDate(employee.getJoiningDate() != null ? employee.getJoiningDate().toString() : "-");
+		dto.setJoiningDate(employee.getJoiningDate() != null ? employee.getJoiningDate().format(DISPLAY_DATE_FORMATTER) : "-");
 		dto.setPhotoPath(employee.getPreOnboarding() != null ? employee.getPreOnboarding().getPhotoFilePath() : null);
 
 		// Populate Reporting HOD and Manager
@@ -548,6 +557,58 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setPayableDays(calculateRegisterPayableDays(dto));
 
 		return dto;
+	}
+
+	private DailyAttendanceInternalEntity pickPreferredInternalAttendanceRow(
+			DailyAttendanceInternalEntity left,
+			DailyAttendanceInternalEntity right) {
+		if (left == null) {
+			return right;
+		}
+		if (right == null) {
+			return left;
+		}
+
+		int leftScore = scoreInternalAttendanceRow(left);
+		int rightScore = scoreInternalAttendanceRow(right);
+		if (leftScore != rightScore) {
+			return rightScore > leftScore ? right : left;
+		}
+
+		Long leftId = left.getId();
+		Long rightId = right.getId();
+		if (leftId == null) {
+			return right;
+		}
+		if (rightId == null) {
+			return left;
+		}
+		return rightId >= leftId ? right : left;
+	}
+
+	private int scoreInternalAttendanceRow(DailyAttendanceInternalEntity daily) {
+		if (daily == null) {
+			return 0;
+		}
+
+		int score = 0;
+		if (StringUtils.hasText(daily.getInTime())) {
+			score += 2;
+		}
+		if (StringUtils.hasText(daily.getOutTime())) {
+			score += 2;
+		}
+		if (StringUtils.hasText(daily.getTotalHours())) {
+			score += 1;
+		}
+
+		String displayStatus = AttendanceStatusResolver.resolveDisplayStatus(daily);
+		if ("PRESENT".equals(displayStatus)) {
+			score += 4;
+		} else if (StringUtils.hasText(displayStatus) && !"ABSENT".equals(displayStatus)) {
+			score += 2;
+		}
+		return score;
 	}
 
 	private boolean hasCompletePunchTime(DailyAttendanceInternalEntity daily) {
@@ -1477,7 +1538,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				attendanceRegisterRepo.save(entity);
 
 				DailyAttendanceInternalEntity daily = dailyAttendanceInternalRepository
-						.findByEmployeeIdAndAttendanceDate(request.getUserId(), request.getAttendanceDate())
+						.findFirstByEmployeeIdAndAttendanceDateOrderByIdDesc(
+								request.getUserId(),
+								request.getAttendanceDate())
 						.orElse(new DailyAttendanceInternalEntity());
 				daily.setEmployeeId(request.getUserId());
 				daily.setAttendanceDate(request.getAttendanceDate());

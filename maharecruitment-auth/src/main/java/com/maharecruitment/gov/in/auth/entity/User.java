@@ -52,6 +52,9 @@ public class User implements Serializable {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "is_active", nullable = false)
+    private Boolean active = true;
+
     // ✅ FIXED
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -84,7 +84,7 @@
                                     <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
                                     <td>
                                         <div th:if="${candidate.interviewDateTime != null}">
-                                            <div th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">
+                                            <div th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MM-yyyy HH:mm')}">
                                                 01-Apr-2026 10:30
                                             </div>
                                             <small class="text-muted"
@@ -98,7 +98,7 @@
                                         <span th:if="${candidate.interviewDateTime == null}" class="text-muted">-</span>
                                     </td>
                                     <td
-                                        th:text="${candidate.finalDecisionAt != null ? #temporals.format(candidate.finalDecisionAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        th:text="${candidate.finalDecisionAt != null ? #temporals.format(candidate.finalDecisionAt, 'dd-MM-yyyy HH:mm') : '-'}">
                                         -
                                     </td>
                                     <td class="text-center">
@@ -116,7 +116,7 @@
                                         </span>
                                         <div th:if="${candidate.preOnboardingCompleted and candidate.preOnboardingSubmittedAt != null}"
                                             class="small text-muted mt-1"
-                                            th:text="${#temporals.format(candidate.preOnboardingSubmittedAt, 'dd-MMM-yyyy HH:mm')}">
+                                            th:text="${#temporals.format(candidate.preOnboardingSubmittedAt, 'dd-MM-yyyy HH:mm')}">
                                             01-Apr-2026 10:30
                                         </div>
                                         <span class="badge bg-warning text-dark"

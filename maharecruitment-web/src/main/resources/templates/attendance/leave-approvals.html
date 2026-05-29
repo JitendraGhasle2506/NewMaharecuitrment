@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -181,16 +181,16 @@
                                             </td>
                                             <td>
                                                 <div class="small">
-                                                    <span th:text="${#temporals.format(leave.startDate, 'dd MMM yyyy')}"></span><br>
+                                                    <span th:text="${#temporals.format(leave.startDate, 'dd-MM-yyyy')}"></span><br>
                                                     <span class="text-muted">to</span><br>
-                                                    <span th:text="${#temporals.format(leave.endDate, 'dd MMM yyyy')}"></span>
+                                                    <span th:text="${#temporals.format(leave.endDate, 'dd-MM-yyyy')}"></span>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div th:if="${leave.compOffWorkDate != null}">
                                                     <span class="badge bg-info text-dark">Worked Date</span>
                                                     <small class="text-primary fw-semibold d-block mt-1"
-                                                           th:text="${#temporals.format(leave.compOffWorkDate, 'dd MMM yyyy')}"></small>
+                                                           th:text="${#temporals.format(leave.compOffWorkDate, 'dd-MM-yyyy')}"></small>
                                                 </div>
                                                 <span th:if="${leave.compOffWorkDate == null}" class="text-muted">-</span>
                                             </td>
@@ -254,12 +254,12 @@
                                             </td>
                                             <td>
                                                 <div class="small" th:if="${tour.tourCategory == 'Full Day'}">
-                                                    <span th:text="${#temporals.format(tour.startDate, 'dd MMM yyyy')}"></span><br>
+                                                    <span th:text="${#temporals.format(tour.startDate, 'dd-MM-yyyy')}"></span><br>
                                                     <span class="text-muted">to</span><br>
-                                                    <span th:text="${#temporals.format(tour.endDate, 'dd MMM yyyy')}"></span>
+                                                    <span th:text="${#temporals.format(tour.endDate, 'dd-MM-yyyy')}"></span>
                                                 </div>
                                                 <div class="small" th:if="${tour.tourCategory == 'Half Day'}">
-                                                    <span th:text="${#temporals.format(tour.startDate, 'dd MMM yyyy')}"></span>
+                                                    <span th:text="${#temporals.format(tour.startDate, 'dd-MM-yyyy')}"></span>
                                                 </div>
                                             </td>
                                             <td>
@@ -329,16 +329,16 @@
                                                             </td>
                                                             <td>
                                                                 <div class="small">
-                                                                    <span th:text="${#temporals.format(leave.startDate, 'dd MMM yyyy')}"></span>
+                                                                    <span th:text="${#temporals.format(leave.startDate, 'dd-MM-yyyy')}"></span>
                                                                     <span class="text-muted mx-1">-</span>
-                                                                    <span th:text="${#temporals.format(leave.endDate, 'dd MMM yyyy')}"></span>
+                                                                    <span th:text="${#temporals.format(leave.endDate, 'dd-MM-yyyy')}"></span>
                                                                 </div>
                                                             </td>
                                                             <td>
                                                                 <div th:if="${leave.compOffWorkDate != null}">
                                                                     <span class="badge bg-info text-dark">Worked Date</span>
                                                                     <small class="text-primary fw-semibold d-block mt-1"
-                                                                           th:text="${#temporals.format(leave.compOffWorkDate, 'dd MMM yyyy')}"></small>
+                                                                           th:text="${#temporals.format(leave.compOffWorkDate, 'dd-MM-yyyy')}"></small>
                                                                 </div>
                                                                 <span th:if="${leave.compOffWorkDate == null}" class="text-muted">-</span>
                                                             </td>
@@ -393,9 +393,9 @@
                                                             </td>
                                                             <td>
                                                                 <div class="small">
-                                                                    <span th:text="${#temporals.format(tour.startDate, 'dd MMM yyyy')}"></span>
+                                                                    <span th:text="${#temporals.format(tour.startDate, 'dd-MM-yyyy')}"></span>
                                                                     <span th:if="${tour.tourCategory == 'Full Day'}" class="text-muted mx-1">-</span>
-                                                                    <span th:if="${tour.tourCategory == 'Full Day'}" th:text="${#temporals.format(tour.endDate, 'dd MMM yyyy')}"></span>
+                                                                    <span th:if="${tour.tourCategory == 'Full Day'}" th:text="${#temporals.format(tour.endDate, 'dd-MM-yyyy')}"></span>
                                                                 </div>
                                                             </td>
                                                             <td>

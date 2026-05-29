@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.web.controller.employee;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import com.maharecruitment.gov.in.web.service.employee.EmployeeTaskService;
 public class EmployeeTaskController {
 
     private static final int PAGE_SIZE = 10;
+    private static final DateTimeFormatter DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     private final EmployeeTaskService employeeTaskService;
     private final ProjectMstRepository projectMstRepository;
@@ -82,6 +84,8 @@ public class EmployeeTaskController {
         model.addAttribute("selectedYear",  targetYear);
         model.addAttribute("minDate",       minDate.toString());
         model.addAttribute("maxDate",       maxDate.toString());
+        model.addAttribute("displayMinDate", formatDisplayDate(minDate));
+        model.addAttribute("displayMaxDate", formatDisplayDate(maxDate));
         model.addAttribute("pageHeading",   "My Tasks");
         model.addAttribute("pageSubtitle",  "Manage your daily/weekly tasks here.");
 
@@ -170,6 +174,8 @@ public class EmployeeTaskController {
             model.addAttribute("selectedYear",  targetYear);
             model.addAttribute("minDate",       minDate.toString());
             model.addAttribute("maxDate",       maxDate.toString());
+            model.addAttribute("displayMinDate", formatDisplayDate(minDate));
+            model.addAttribute("displayMaxDate", formatDisplayDate(maxDate));
             model.addAttribute("pageHeading",   "Edit Task");
             model.addAttribute("pageSubtitle",  "Update your submitted task details.");
             model.addAttribute("isEditMode",    true);
@@ -189,5 +195,9 @@ public class EmployeeTaskController {
         Map<String, String> response = new HashMap<>();
         response.put("inTime", inTime);
         return ResponseEntity.ok(response);
+    }
+
+    private String formatDisplayDate(LocalDate date) {
+        return date == null ? "-" : DISPLAY_DATE_FORMATTER.format(date);
     }
 }

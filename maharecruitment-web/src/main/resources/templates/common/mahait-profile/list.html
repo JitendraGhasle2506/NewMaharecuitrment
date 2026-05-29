@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -63,7 +63,7 @@
                                     <td>
                                         <div class="small fw-semibold" th:text="${item.updatedBy != null ? item.updatedBy : '-'}"></div>
                                         <div class="small text-muted"
-                                            th:text="${item.updatedDate != null ? #temporals.format(item.updatedDate, 'dd MMM yyyy, hh:mm a') : '-'}"></div>
+                                            th:text="${item.updatedDate != null ? #temporals.format(item.updatedDate, 'dd-MM-yyyy, hh:mm a') : '-'}"></div>
                                     </td>
                                     <td class="text-center">
                                         <a class="btn btn-outline-primary btn-sm"

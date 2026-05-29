@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -303,7 +303,7 @@
             <div class="overview-grid">
                 <div class="mini-card fade-in">
                     <span class="label">Interview Details</span>
-                    <div class="value" th:text="${detail.interviewDateTime != null ? #temporals.format(detail.interviewDateTime, 'dd MMM yyyy') : 'TBD'}">Date</div>
+                    <div class="value" th:text="${detail.interviewDateTime != null ? #temporals.format(detail.interviewDateTime, 'dd-MM-yyyy') : 'TBD'}">Date</div>
                     <div class="muted-copy mt-1" th:text="${detail.interviewTimeSlot != null ? detail.interviewTimeSlot : 'No time slot'}">Time</div>
                 </div>
                 <div class="mini-card fade-in" style="animation-delay: 0.1s">
@@ -341,7 +341,7 @@
                 </div>
 
                 <div class="muted-copy mb-3" th:if="${detail.panelAssignedAt != null}"
-                    th:text="${'Assigned on ' + #temporals.format(detail.panelAssignedAt, 'dd MMM yyyy HH:mm')}">
+                    th:text="${'Assigned on ' + #temporals.format(detail.panelAssignedAt, 'dd-MM-yyyy HH:mm')}">
                     Assigned on
                 </div>
 
@@ -468,14 +468,14 @@
                         
                         <div class="mt-3 pt-2 border-top text-end">
                             <small class="text-muted">
-                                <i class="far fa-clock me-1"></i> <span th:text="${#temporals.format(feedback.submittedAt, 'dd MMM yyyy HH:mm')}">Date</span>
+                                <i class="far fa-clock me-1"></i> <span th:text="${#temporals.format(feedback.submittedAt, 'dd-MM-yyyy HH:mm')}">Date</span>
                             </small>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- HR Final Decision Section â€” shown when >= 2 assessments exist -->
+            <!-- HR Final Decision Section — shown when >= 2 assessments exist -->
             <div class="section-card fade-in" th:if="${detail.panelFeedbackSubmittedCount >= 2}">
                 <h5 class="section-title"><i class="fas fa-gavel me-2 text-danger"></i> HR Final Decision</h5>
 

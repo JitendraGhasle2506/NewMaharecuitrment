@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -134,7 +134,7 @@
                                         <div class="small text-muted mt-2">
                                             <span class="holiday-highlight-label" th:text="${nextHoliday.holidayName}">Holiday</span>
                                             on
-                                            <span th:text="${#temporals.format(nextHoliday.holidayDate, 'dd MMM yyyy')}">07 May 2026</span>
+                                            <span th:text="${#temporals.format(nextHoliday.holidayDate, 'dd-MM-yyyy')}">07 May 2026</span>
                                         </div>
                                     </div>
                                 </div>
@@ -164,7 +164,7 @@
                                             <tr th:each="holiday : ${holidays}"
                                                 th:classappend="${selectedHoliday != null and selectedHoliday.id == holiday.id ? ' table-info' : ''}">
                                                 <td>
-                                                    <div class="fw-semibold" th:text="${#temporals.format(holiday.holidayDate, 'dd MMM yyyy')}">07 May 2026</div>
+                                                    <div class="fw-semibold" th:text="${#temporals.format(holiday.holidayDate, 'dd-MM-yyyy')}">07 May 2026</div>
                                                     <div class="small text-muted">ID <span th:text="${holiday.id}">1</span></div>
                                                 </td>
                                                 <td th:text="${#temporals.format(holiday.holidayDate, 'EEEE')}">Thursday</td>
@@ -215,7 +215,7 @@
                                             </tr>
                                             <tr th:each="event : ${activityTimeline}">
                                                 <td>
-                                                    <div th:text="${#temporals.format(event.occurredAt, 'dd MMM yyyy hh:mm a')}">07 May 2026 03:15 PM</div>
+                                                    <div th:text="${#temporals.format(event.occurredAt, 'dd-MM-yyyy hh:mm a')}">07 May 2026 03:15 PM</div>
                                                     <div class="small text-muted" th:if="${event.activityDetails}" th:text="${event.activityDetails}"></div>
                                                 </td>
                                                 <td>

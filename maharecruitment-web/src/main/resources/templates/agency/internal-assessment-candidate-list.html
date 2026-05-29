@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -63,7 +63,7 @@
                                     </td>
                                     <td>
                                         <div class="fw-semibold"
-                                            th:text="${candidate.assessmentSubmittedAt != null ? #temporals.format(candidate.assessmentSubmittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                            th:text="${candidate.assessmentSubmittedAt != null ? #temporals.format(candidate.assessmentSubmittedAt, 'dd-MM-yyyy HH:mm') : '-'}">
                                             01-Apr-2026 10:30
                                         </div>
                                         <small class="text-muted"
@@ -88,7 +88,7 @@
                                         <div class="small text-muted mt-1"
                                             th:if="${candidate.workflowStatus != null and candidate.levelTwoInterviewDateTime != null
                                                 and candidate.workflowStatus.name() != 'L2_RESCHEDULE_REQUESTED'}"
-                                            th:text="${#temporals.format(candidate.levelTwoInterviewDateTime, 'dd-MMM-yyyy')}">
+                                            th:text="${#temporals.format(candidate.levelTwoInterviewDateTime, 'dd-MM-yyyy')}">
                                             01-Apr-2026
                                         </div>
                                         <div class="small text-muted"

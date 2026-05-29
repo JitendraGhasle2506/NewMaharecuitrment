@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -333,7 +333,7 @@
                         <div class="report-meta text-end">
                             <div th:text="${report.monthName + ' ' + report.filter.year}">May 2026</div>
                             <div
-                                th:text="${'Generated on ' + #temporals.format(report.generatedAt, 'dd MMM yyyy hh:mm a')}">
+                                th:text="${'Generated on ' + #temporals.format(report.generatedAt, 'dd-MM-yyyy hh:mm a')}">
                                 Generated on 05 May 2026</div>
                         </div>
                     </div>

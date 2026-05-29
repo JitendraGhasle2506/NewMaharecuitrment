@@ -4,6 +4,15 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Logs and runtime dumps ###
+logs/
+*.log
+*.log.*
+hs_err_pid*
+replay_pid*
+*.hprof
+*.pid
+
 ### STS ###
 .apt_generated
 .classpath

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -62,10 +63,18 @@ public class AdminUserPageController {
     public String list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
             Model model) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
-        Page<User> users = userManagementService.getAll(pageable);
+        String normalizedSearch = normalizeSearch(search);
+        Page<User> users = userManagementService.getAll(normalizedSearch, pageable);
+        if (users.getTotalPages() > 0 && page >= users.getTotalPages()) {
+            pageable = PageRequest.of(users.getTotalPages() - 1, Math.max(size, 1));
+            users = userManagementService.getAll(normalizedSearch, pageable);
+        }
         model.addAttribute("users", users);
+        model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
+        model.addAttribute("pageSize", users.getSize());
         return "admin/users/list";
     }
 
@@ -151,12 +160,22 @@ public class AdminUserPageController {
     }
 
     @PostMapping("/{userId}/delete")
-    public String delete(@PathVariable Long userId, RedirectAttributes redirectAttributes) {
+    public String delete(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
+            RedirectAttributes redirectAttributes) {
         try {
             userManagementService.delete(userId);
-            redirectAttributes.addFlashAttribute("successMessage", "User deleted successfully");
+            redirectAttributes.addFlashAttribute("successMessage", "User deactivated successfully");
         } catch (RuntimeException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        redirectAttributes.addAttribute("page", Math.max(page, 0));
+        redirectAttributes.addAttribute("size", Math.max(size, 1));
+        if (StringUtils.hasText(search)) {
+            redirectAttributes.addAttribute("search", search.trim());
         }
         return "redirect:/admin/users";
     }
@@ -241,5 +260,9 @@ public class AdminUserPageController {
 
     private void clearSensitiveFields(UserForm form) {
         form.setPassword(null);
+    }
+
+    private String normalizeSearch(String search) {
+        return StringUtils.hasText(search) ? search.trim() : null;
     }
 }

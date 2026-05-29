@@ -21,7 +21,7 @@
                         <span> - </span>
                         <span th:text="${rate.commissionPercentage + '%'}">0%</span>
                         <span> effective </span>
-                        <span th:text="${rate.effectiveDate}">2026-01-01</span>
+                        <span th:text="${rate.effectiveDate != null ? #temporals.format(rate.effectiveDate, 'dd-MM-yyyy') : '-'}">01-01-2026</span>
                     </div>
 
                     <div class="table-responsive">

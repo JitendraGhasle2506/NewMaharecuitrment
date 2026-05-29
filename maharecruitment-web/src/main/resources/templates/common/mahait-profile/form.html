@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -44,7 +44,7 @@
                                 <div class="small text-muted">Created By</div>
                                 <div class="fw-semibold" th:text="${profile.createdBy != null ? profile.createdBy : '-'}"></div>
                                 <div class="small text-muted mt-2"
-                                    th:text="${profile.createdDate != null ? #temporals.format(profile.createdDate, 'dd MMM yyyy, hh:mm a') : '-'}"></div>
+                                    th:text="${profile.createdDate != null ? #temporals.format(profile.createdDate, 'dd-MM-yyyy, hh:mm a') : '-'}"></div>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -52,7 +52,7 @@
                                 <div class="small text-muted">Last Updated By</div>
                                 <div class="fw-semibold" th:text="${profile.updatedBy != null ? profile.updatedBy : '-'}"></div>
                                 <div class="small text-muted mt-2"
-                                    th:text="${profile.updatedDate != null ? #temporals.format(profile.updatedDate, 'dd MMM yyyy, hh:mm a') : '-'}"></div>
+                                    th:text="${profile.updatedDate != null ? #temporals.format(profile.updatedDate, 'dd-MM-yyyy, hh:mm a') : '-'}"></div>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -200,7 +200,7 @@
                                         <div class="fw-semibold" th:text="${log.actorUsername}"></div>
                                         <div class="small text-muted" th:text="${log.actorUserId != null ? 'User ID: ' + log.actorUserId : 'User ID: -'}"></div>
                                     </td>
-                                    <td th:text="${log.actionTimestamp != null ? #temporals.format(log.actionTimestamp, 'dd MMM yyyy, hh:mm a') : '-'}"></td>
+                                    <td th:text="${log.actionTimestamp != null ? #temporals.format(log.actionTimestamp, 'dd-MM-yyyy, hh:mm a') : '-'}"></td>
                                     <td style="white-space: pre-wrap;" th:text="${log.details}"></td>
                                 </tr>
                             </tbody>

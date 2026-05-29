@@ -122,8 +122,6 @@
                                             <div class="invalid-feedback" id="mobileValidationMessage">Mobile number
                                                 must be exactly 10 digits.</div>
                                         </div>
-                                    </div>
-                                    <div class="personal-details-grid personal-details-grid-middle">
                                         <div class="form-group personal-field">
                                             <label class="form-label">Date of Birth <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
@@ -161,8 +159,6 @@
                                             </select>
                                             <input type="hidden" th:if="*{hrFlow}" th:field="*{bloodGroup}" />
                                         </div>
-                                    </div>
-                                    <div class="personal-details-grid personal-details-grid-bottom">
                                         <div class="form-group personal-field personal-field-address">
                                             <label class="form-label">Address <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
@@ -176,15 +172,15 @@
                                     <div class="passport-photo-panel">
                                         <div class="passport-photo-panel-header">
                                             <span class="passport-photo-heading">Candidate Photo</span>
-                                            <small class="text-muted">Passport-size preview</small>
+                                            <small class="text-muted">Passport size photo</small>
                                         </div>
                                         <div class="passport-photo-frame">
                                             <img id="candidatePhotoPreview" class="passport-photo-image d-none"
                                                 th:attr="data-managed-path=${preOnboardingForm.existingPhotoFilePath}, data-managed-name=${preOnboardingForm.existingPhotoFileName}"
                                                 alt="Candidate Photo" />
                                             <div id="candidatePhotoEmpty" class="passport-photo-empty">
-                                                <i class="fa-regular fa-image"></i>
-                                                <span>No photo uploaded</span>
+                                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                                <span>Upload photo</span>
                                             </div>
                                         </div>
 
@@ -193,9 +189,11 @@
 
                                         <div class="passport-photo-actions">
                                             <label class="btn btn-outline-primary btn-sm passport-photo-action-btn"
-                                                for="uploadImage"
-                                                th:text="${preOnboardingForm.existingPhotoFilePath != null ? 'Replace Photo' : 'Choose Photo'}">
-                                                Choose Photo
+                                                for="uploadImage">
+                                                <i class="fa-solid fa-upload"></i>
+                                                <span
+                                                    th:text="${preOnboardingForm.existingPhotoFilePath != null ? 'Replace Photo' : 'Upload Photo'}">Upload
+                                                    Photo</span>
                                             </label>
                                             <span id="candidatePhotoFileName"
                                                 class="passport-photo-file-name text-muted text-truncate"
@@ -205,101 +203,103 @@
                                         </div>
                                     </div>
                                 </div>
-                        </div>
-
-                        <!-- Emergency Contact Details Section -->
-                        <div class="section-block form-section-classic emergency-details-section">
-                            <h5 class="section-title">Emergency Contact Details</h5>
-                            <div class="personal-details-grid personal-details-grid-4">
-                                <div class="form-group personal-field">
-                                    <label class="form-label">Contact Name <span class="text-danger"
-                                            th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="text" class="form-control personal-input" th:field="*{emergencyContactName}"
-                                        id="emergencyContactName"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        pattern="^[a-zA-Z\s]*$"
-                                        placeholder="Enter emergency contact name" required />
-                                    <div class="invalid-feedback">Contact name is required and should not have special characters.</div>
-                                </div>
-                                <div class="form-group personal-field">
-                                    <label class="form-label">Relation <span class="text-danger"
-                                            th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="text" class="form-control personal-input" th:field="*{emergencyContactRelation}"
-                                        id="emergencyContactRelation"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        placeholder="e.g. Father, Mother, Spouse" required />
-                                    <div class="invalid-feedback">Relation is required.</div>
-                                </div>
-                                <div class="form-group personal-field">
-                                    <label class="form-label">Mobile Number <span class="text-danger"
-                                            th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="tel" class="form-control personal-input" th:field="*{emergencyContactMobile}"
-                                        id="emergencyContactMobile"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        pattern="^[0-9]{10}$"
-                                        placeholder="Enter 10-digit mobile number" required />
-                                    <div class="invalid-feedback">Mobile number must be exactly 10 digits.</div>
-                                </div>
-                                <div class="form-group personal-field">
-                                    <label class="form-label">Alternate Mobile Number</label>
-                                    <input type="tel" class="form-control personal-input" th:field="*{emergencyContactAltMobile}"
-                                        id="emergencyContactAltMobile"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        pattern="^[0-9]{10}$"
-                                        placeholder="Enter alternate 10-digit mobile" />
-                                    <div class="invalid-feedback">Alternate mobile number must be exactly 10 digits.</div>
-                                </div>
                             </div>
                         </div>
 
-                        <div class="section-block form-section-classic job-details-section">
-                            <h5 class="section-title">Job Details</h5>
-                            <div class="job-details-grid job-details-grid-3">
-                                <div class="form-group job-field">
-                                    <label class="form-label">Request ID</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{requestId}"
-                                        readonly />
-                                </div>
-                                <div class="form-group job-field">
-                                    <label class="form-label">Project</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{projectName}"
-                                        readonly />
-                                </div>
-                                <div class="form-group job-field">
-                                    <label class="form-label">Agency Name</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{agencyName}"
-                                        readonly />
+                        <div class="pre-onboarding-two-column">
+                            <div class="section-block form-section-classic emergency-details-section">
+                                <h5 class="section-title">Emergency Contact Details</h5>
+                                <div class="personal-details-grid personal-details-grid-4">
+                                    <div class="form-group personal-field">
+                                        <label class="form-label">Contact Name <span class="text-danger"
+                                                th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                        <input type="text" class="form-control personal-input" th:field="*{emergencyContactName}"
+                                            id="emergencyContactName"
+                                            th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                            pattern="^[a-zA-Z\s]*$"
+                                            placeholder="Enter emergency contact name" required />
+                                        <div class="invalid-feedback">Contact name is required and should not have special characters.</div>
+                                    </div>
+                                    <div class="form-group personal-field">
+                                        <label class="form-label">Relation <span class="text-danger"
+                                                th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                        <input type="text" class="form-control personal-input" th:field="*{emergencyContactRelation}"
+                                            id="emergencyContactRelation"
+                                            th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                            placeholder="e.g. Father, Mother, Spouse" required />
+                                        <div class="invalid-feedback">Relation is required.</div>
+                                    </div>
+                                    <div class="form-group personal-field">
+                                        <label class="form-label">Mobile Number <span class="text-danger"
+                                                th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                        <input type="tel" class="form-control personal-input" th:field="*{emergencyContactMobile}"
+                                            id="emergencyContactMobile"
+                                            th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                            pattern="^[0-9]{10}$"
+                                            placeholder="Enter 10-digit mobile number" required />
+                                        <div class="invalid-feedback">Mobile number must be exactly 10 digits.</div>
+                                    </div>
+                                    <div class="form-group personal-field">
+                                        <label class="form-label">Alternate Mobile Number</label>
+                                        <input type="tel" class="form-control personal-input" th:field="*{emergencyContactAltMobile}"
+                                            id="emergencyContactAltMobile"
+                                            th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                            pattern="^[0-9]{10}$"
+                                            placeholder="Enter alternate 10-digit mobile" />
+                                        <div class="invalid-feedback">Alternate mobile number must be exactly 10 digits.</div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="job-details-grid job-details-grid-3">
-                                <div class="form-group job-field">
-                                    <label class="form-label">Department</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{department}"
-                                        readonly />
+
+                            <div class="section-block form-section-classic job-details-section">
+                                <h5 class="section-title">Job Details</h5>
+                                <div class="job-details-grid job-details-grid-3">
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Request ID</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{requestId}"
+                                            readonly />
+                                    </div>
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Project</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{projectName}"
+                                            readonly />
+                                    </div>
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Agency Name</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{agencyName}"
+                                            readonly />
+                                    </div>
                                 </div>
-                                <div class="form-group job-field">
-                                    <label class="form-label">Sub Department</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{subDeptName}"
-                                        readonly />
+                                <div class="job-details-grid job-details-grid-3">
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Department</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{department}"
+                                            readonly />
+                                    </div>
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Sub Department</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{subDeptName}"
+                                            readonly />
+                                    </div>
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Designation</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{designation}"
+                                            readonly />
+                                    </div>
                                 </div>
-                                <div class="form-group job-field">
-                                    <label class="form-label">Designation</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{designation}"
-                                        readonly />
-                                </div>
-                            </div>
-                            <div class="job-details-grid job-details-grid-2">
-                                <div class="form-group job-field">
-                                    <label class="form-label">Level Code</label>
-                                    <input type="text" class="form-control job-input readonly-field" th:field="*{levelCode}"
-                                        readonly />
-                                </div>
-                                <div class="form-group job-field">
-                                    <label class="form-label">Joining Date <span class="text-danger"
-                                            th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="date" class="form-control job-input" th:field="*{joiningDate}" id="joiningDate"
-                                        th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                        required />
+                                <div class="job-details-grid job-details-grid-2">
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Level Code</label>
+                                        <input type="text" class="form-control job-input readonly-field" th:field="*{levelCode}"
+                                            readonly />
+                                    </div>
+                                    <div class="form-group job-field">
+                                        <label class="form-label">Joining Date <span class="text-danger"
+                                                th:if="${!preOnboardingForm.hrFlow}">*</span></label>
+                                        <input type="date" class="form-control job-input" th:field="*{joiningDate}" id="joiningDate"
+                                            th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
+                                            required />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -485,22 +485,53 @@
                                 </div>
                             </div>
 
-                            <div class="row mt-3 employment-supporting-doc">
-                                <div class="col-md-12 form-group">
-                                    <label class="form-label">Upload Experience / Relieving Documents <span
-                                            class="text-danger"
-                                            th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.existingExperienceDocFilePath == null}">*</span></label>
-                                    <input type="file" class="form-control" th:field="*{experienceDoc}"
-                                        accept=".pdf,.jpg,.jpeg,.png" th:disabled="*{hrFlow}" />
-                                    <small class="text-muted" th:if="${!preOnboardingForm.hrFlow}">Upload a single
-                                        combined PDF or image set document up to
-                                        10MB.</small>
-                                    <div class="employment-existing-file"
-                                        th:if="${preOnboardingForm.existingExperienceDocFilePath}">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm kyc-existing-file-action"
-                                            th:attr="data-path=${preOnboardingForm.existingExperienceDocFilePath}"
-                                            onclick="openManagedDocument(this.getAttribute('data-path'))">Open Experience
-                                            Document</button>
+                            <div class="employment-document-grid">
+                                <div class="employment-document-panel">
+                                    <div class="form-group mb-0">
+                                        <label class="form-label">Experience / Relieving Documents <span
+                                                class="text-danger"
+                                                th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.existingExperienceDocFilePath == null}">*</span></label>
+                                        <input type="file" class="form-control" th:field="*{experienceDoc}"
+                                            accept=".pdf,.jpg,.jpeg,.png" th:disabled="*{hrFlow}" />
+                                        <small class="text-muted" th:if="${!preOnboardingForm.hrFlow}">PDF, JPG, or PNG up
+                                            to 10MB.</small>
+                                        <div class="employment-existing-file"
+                                            th:if="${preOnboardingForm.existingExperienceDocFilePath}">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm kyc-existing-file-action"
+                                                th:attr="data-path=${preOnboardingForm.existingExperienceDocFilePath}"
+                                                onclick="openManagedDocument(this.getAttribute('data-path'))">Open Experience
+                                                Document</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="employment-document-panel company-payroll-proof">
+                                    <label class="company-payroll-check">
+                                        <input type="checkbox" id="companyPayrollMoreThanThreeMonths"
+                                            th:field="*{companyPayrollMoreThanThreeMonths}" th:disabled="*{hrFlow}" />
+                                        <span>On company payroll for more than 3 months</span>
+                                    </label>
+                                    <input type="hidden" th:if="*{hrFlow}" th:field="*{companyPayrollMoreThanThreeMonths}" />
+
+                                    <div class="company-payroll-upload" id="companyPayrollProofBlock"
+                                        th:attr="data-existing-path=${preOnboardingForm.existingCompanyPayrollProofFilePath}">
+                                        <label class="form-label">Company Payroll Proof <span class="text-danger"
+                                                th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.companyPayrollMoreThanThreeMonths && preOnboardingForm.existingCompanyPayrollProofFilePath == null}">*</span></label>
+                                        <input type="file" class="form-control" id="companyPayrollProof"
+                                            th:field="*{companyPayrollProof}" accept=".pdf,.jpg,.jpeg,.png"
+                                            th:disabled="*{hrFlow}" />
+                                        <small class="text-muted" th:if="${!preOnboardingForm.hrFlow}">Required when
+                                            selected. PDF, JPG, or PNG up to 10MB.</small>
+                                        <div class="invalid-feedback">Company payroll proof document is required when the
+                                            employee is on company payroll for more than 3 months.</div>
+                                        <div class="employment-existing-file"
+                                            th:if="${preOnboardingForm.existingCompanyPayrollProofFilePath}">
+                                            <button type="button"
+                                                class="btn btn-outline-secondary btn-sm kyc-existing-file-action"
+                                                th:attr="data-path=${preOnboardingForm.existingCompanyPayrollProofFilePath}"
+                                                onclick="openManagedDocument(this.getAttribute('data-path'))">Open Payroll
+                                                Proof</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -508,9 +539,9 @@
 
                         <div class="section-block form-section-classic document-checklist-section">
                             <h5 class="section-title">Document Checklist</h5>
-                            <p class="text-muted mb-4" th:if="${!preOnboardingForm.hrFlow}">Please verify that the
+                            <p class="text-muted mb-2" th:if="${!preOnboardingForm.hrFlow}">Please verify that the
                                 candidate has provided the following documents.</p>
-                            <p class="text-muted mb-4" th:if="${preOnboardingForm.hrFlow}">Documents verified by the
+                            <p class="text-muted mb-2" th:if="${preOnboardingForm.hrFlow}">Documents verified by the
                                 agency:</p>
                             <div class="document-checklist-grid">
                                 <div class="document-checklist-item">

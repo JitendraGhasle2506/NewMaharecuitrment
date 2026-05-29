@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -44,7 +44,7 @@
                                     <td th:text="${item.projectName != null ? item.projectName : '-'}">Project</td>
                                     <td class="text-end" th:text="${item.selectedCandidatesCount != null ? item.selectedCandidatesCount : 0}">0</td>
                                     <td
-                                        th:text="${item.latestDecisionAt != null ? #temporals.format(item.latestDecisionAt, 'dd-MMM-yyyy HH:mm') : '-'}">
+                                        th:text="${item.latestDecisionAt != null ? #temporals.format(item.latestDecisionAt, 'dd-MM-yyyy HH:mm') : '-'}">
                                         -
                                     </td>
                                     <td class="text-center">

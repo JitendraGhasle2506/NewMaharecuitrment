@@ -190,6 +190,21 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
     @Column(name = "doc_pan", nullable = false)
     private Boolean docPan = false;
 
+    @Column(name = "company_payroll_more_than_three_months", nullable = false)
+    private Boolean companyPayrollMoreThanThreeMonths = false;
+
+    @Column(name = "company_payroll_proof_original_name", length = 255)
+    private String companyPayrollProofOriginalName;
+
+    @Column(name = "company_payroll_proof_file_path", length = 700)
+    private String companyPayrollProofFilePath;
+
+    @Column(name = "company_payroll_proof_file_type", length = 120)
+    private String companyPayrollProofFileType;
+
+    @Column(name = "company_payroll_proof_file_size")
+    private Long companyPayrollProofFileSize;
+
     @Column(name = "agency_verified", nullable = false)
     private Boolean agencyVerified = false;
 
@@ -259,6 +274,9 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
         photoOriginalName = normalizeText(photoOriginalName);
         photoFilePath = normalizeText(photoFilePath);
         photoFileType = normalizeText(photoFileType);
+        companyPayrollProofOriginalName = normalizeText(companyPayrollProofOriginalName);
+        companyPayrollProofFilePath = normalizeText(companyPayrollProofFilePath);
+        companyPayrollProofFileType = normalizeText(companyPayrollProofFileType);
 
         totalExperienceYears = totalExperienceYears == null || totalExperienceYears < 0 ? 0 : totalExperienceYears;
         totalExperienceMonths = totalExperienceMonths == null || totalExperienceMonths < 0 ? 0 : totalExperienceMonths;
@@ -273,6 +291,7 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
         docPassportPhoto = Boolean.TRUE.equals(docPassportPhoto);
         docAadhaar = Boolean.TRUE.equals(docAadhaar);
         docPan = Boolean.TRUE.equals(docPan);
+        companyPayrollMoreThanThreeMonths = Boolean.TRUE.equals(companyPayrollMoreThanThreeMonths);
         agencyVerified = Boolean.TRUE.equals(agencyVerified);
         hrVerified = Boolean.TRUE.equals(hrVerified);
         hrOnboardingLocation = normalizeText(hrOnboardingLocation);

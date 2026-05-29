@@ -154,7 +154,7 @@
                                     <th>Agency</th>
                                     <th>Department</th>
                                     <th>Designation</th>
-                                    <th>Joining Date</th>
+                                    <th>Mahait Joining Date</th>
                                     <th>Type</th>
                                     <th>Status</th>
                                 </tr>
@@ -187,7 +187,7 @@
                                     <td th:text="${emp.agencyName}">Agency</td>
                                     <td th:text="${emp.department}">Department</td>
                                     <td th:text="${emp.designation}">Designation</td>
-                                    <td th:text="${#temporals.format(emp.joiningDate, 'dd-MM-yyyy')}">01-01-2024</td>
+                                    <td th:text="${emp.mahaitJoiningDate != null ? #temporals.format(emp.mahaitJoiningDate, 'dd-MM-yyyy') : '-'}">01-01-2024</td>
                                     <td>
                                         <span th:if="${emp.recruitmentType == 'INTERNAL'}" class="badge bg-info">Internal</span>
                                         <span th:if="${emp.recruitmentType == 'EXTERNAL'}" class="badge bg-secondary">External</span>
