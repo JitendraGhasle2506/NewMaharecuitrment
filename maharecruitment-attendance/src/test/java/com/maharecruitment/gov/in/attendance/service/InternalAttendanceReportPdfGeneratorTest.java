@@ -65,7 +65,7 @@ class InternalAttendanceReportPdfGeneratorTest {
 
         GeneratedAttendanceReportDocument document = generator.generate(report);
 
-        assertEquals("internal-attendance-report-may-2026.pdf", document.originalFileName());
+        assertEquals("maha-recruitment-internal-attendance-report-may-2026.pdf", document.originalFileName());
         assertEquals("application/pdf", document.contentType());
         assertTrue(document.size() > 0);
         assertTrue(document.bytes().length > 0);

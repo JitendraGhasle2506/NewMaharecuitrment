@@ -81,14 +81,14 @@ class InternalAttendanceReportTimeCsvGeneratorTest {
 
         GeneratedAttendanceReportDocument document = generator.generate(report);
 
-        assertEquals("internal-attendance-in-out-report-may-2026.csv", document.originalFileName());
+        assertEquals("maha-recruitment-internal-attendance-in-out-time-report-may-2026.csv", document.originalFileName());
         assertEquals("text/csv", document.contentType());
         assertTrue(document.size() > 0);
 
         String csv = new String(document.bytes(), StandardCharsets.UTF_8);
-        assertTrue(csv.contains("\"Employee Code\",\"Employee Name\",\"Agency Name\",\"Date\",\"Day\",\"Status\",\"In Time\",\"Out Time\",\"Total Hours\""));
-        assertTrue(csv.contains("\"EMP000101\",\"Aarav Sharma\",\"Talent Hive\",\"01-05-2026\",\"Fri\",\"P\",\"09:02\",\"18:10\",\"09:08\""));
-        assertTrue(csv.contains("\"EMP000101\",\"Aarav Sharma\",\"Talent Hive\",\"02-05-2026\",\"Sat\",\"A\",\"\",\"\",\"\""));
+        assertTrue(csv.contains("\"Employee Code\",\"Employee Name\",\"Agency Name\",\"Payable Days Till Date\",\"Date\",\"Day\",\"Status\",\"In Time\",\"Out Time\",\"Total Hours\""));
+        assertTrue(csv.contains("\"EMP000101\",\"Aarav Sharma\",\"Talent Hive\",\"0\",\"01-05-2026\",\"Fri\",\"P\",\"09:02\",\"18:10\",\"09:08\""));
+        assertTrue(csv.contains("\"EMP000101\",\"Aarav Sharma\",\"Talent Hive\",\"0\",\"02-05-2026\",\"Sat\",\"A\",\"\",\"\",\"\""));
         assertFalse(csv.contains("\"03-05-2026\""));
     }
 }
