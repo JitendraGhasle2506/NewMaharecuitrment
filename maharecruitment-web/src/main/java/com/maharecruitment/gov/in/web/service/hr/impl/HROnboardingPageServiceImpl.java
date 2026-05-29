@@ -590,6 +590,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 designationName,
                 deptName,
                 entity.getJoiningDate(),
+                entity.getOnboardingDate(),
                 entity.getRecruitmentType(),
                 entity.getAgency() != null ? entity.getAgency().getAgencyName() : "-",
                 entity.getStatus());
