@@ -28,6 +28,7 @@ public class RoleManagementServiceImpl implements RoleManagementService {
             "ROLE_STM",
             "ROLE_HOD",
             "ROLE_COO",
+            "ROLE_MD",
             "ROLE_PM",
             "ROLE_AUDITOR",
             "ROLE_EMPLOYEE");

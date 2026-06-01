@@ -132,4 +132,51 @@ public interface AttendanceRegisterRepo extends JpaRepository<AttendanceRegister
 			"INNER JOIN users u ON u.id = ad.user_id " +
 			"WHERE u.department_registration_id = :regId AND ad.month = :month AND ad.year = :year", nativeQuery = true)
 	boolean existsByDeptRegIdAndMonthAndYear(@Param("regId") Long regId, @Param("month") Integer month, @Param("year") Integer year);
+
+	@Query(value = """
+			select count(*)
+			from attendance_daily ad
+			join employee_master em on em.employee_id = ad.user_id
+			where upper(trim(coalesce(em.recruitment_type, ''))) = 'EXTERNAL'
+			  and ad.month = :month
+			  and ad.year = :year
+			  and upper(trim(coalesce(
+				case :day
+					when 1 then ad.d1
+					when 2 then ad.d2
+					when 3 then ad.d3
+					when 4 then ad.d4
+					when 5 then ad.d5
+					when 6 then ad.d6
+					when 7 then ad.d7
+					when 8 then ad.d8
+					when 9 then ad.d9
+					when 10 then ad.d10
+					when 11 then ad.d11
+					when 12 then ad.d12
+					when 13 then ad.d13
+					when 14 then ad.d14
+					when 15 then ad.d15
+					when 16 then ad.d16
+					when 17 then ad.d17
+					when 18 then ad.d18
+					when 19 then ad.d19
+					when 20 then ad.d20
+					when 21 then ad.d21
+					when 22 then ad.d22
+					when 23 then ad.d23
+					when 24 then ad.d24
+					when 25 then ad.d25
+					when 26 then ad.d26
+					when 27 then ad.d27
+					when 28 then ad.d28
+					when 29 then ad.d29
+					when 30 then ad.d30
+					when 31 then ad.d31
+				end, ''))) in ('P', 'PRESENT')
+			""", nativeQuery = true)
+	long countExternalPresentByMonthYearDay(
+			@Param("month") Integer month,
+			@Param("year") Integer year,
+			@Param("day") Integer day);
 }

@@ -19,6 +19,10 @@ public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
 
     @Override
     @EntityGraph(attributePaths = "cell")
+    List<ProjectMst> findAll();
+
+    @Override
+    @EntityGraph(attributePaths = "cell")
     Page<ProjectMst> findAll(Pageable pageable);
 
     @EntityGraph(attributePaths = "cell")
@@ -41,6 +45,8 @@ public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
     List<ProjectMst> findByProjectScopeTypeAndActiveFlagIgnoreCaseOrderByProjectNameAsc(
             ProjectScopeType projectScopeType,
             String activeFlag);
+
+    long countByProjectScopeType(ProjectScopeType projectScopeType);
 
     Optional<ProjectMst> findByProjectIdAndProjectScopeType(Long projectId, ProjectScopeType projectScopeType);
 

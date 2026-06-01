@@ -2,7 +2,7 @@ package com.maharecruitment.gov.in.web.service.dashboard.model;
 
 import java.util.List;
 
-public record HRDashboardView(
+public record MDDashboardView(
         int totalProjects,
         int internalProjects,
         int externalProjects,
@@ -15,10 +15,8 @@ public record HRDashboardView(
         int presentPercent,
         int pendingApprovals,
         int openPositions,
-        String attritionRate,
         int internalPercent,
         int externalPercent,
-        List<DepartmentOnboardingView> departmentOnboarding,
-        List<ProjectWorkforceView> projects
+        List<CellProjectWorkforceView> cellProjects
 ) {
 }

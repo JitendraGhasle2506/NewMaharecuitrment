@@ -101,6 +101,8 @@ public class SecurityConfig {
                 .requestMatchers("/coo/**")
                     .hasAnyAuthority("ROLE_COO", "ROLE_AUDITOR")
 
+                .requestMatchers("/md/**").hasAuthority("ROLE_MD")
+
                 .requestMatchers("/employee/**").hasAuthority("ROLE_EMPLOYEE")
 
                 .requestMatchers("/department/payment/*/receipt")

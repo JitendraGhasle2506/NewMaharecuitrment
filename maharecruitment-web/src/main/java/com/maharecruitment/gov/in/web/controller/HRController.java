@@ -21,10 +21,15 @@ public class HRController {
         HRDashboardView dashboard = hrDashboardService.getDashboard();
 
         model.addAttribute("totalProjects", dashboard.totalProjects());
+        model.addAttribute("internalProjects", dashboard.internalProjects());
+        model.addAttribute("externalProjects", dashboard.externalProjects());
         model.addAttribute("onboardingThisMonth", dashboard.onboardingThisMonth());
         model.addAttribute("internalEmployees", dashboard.internalEmployees());
         model.addAttribute("externalEmployees", dashboard.externalEmployees());
         model.addAttribute("totalEmployees", dashboard.totalEmployees());
+        model.addAttribute("presentEmployees", dashboard.presentEmployees());
+        model.addAttribute("absentEmployees", dashboard.absentEmployees());
+        model.addAttribute("presentPercent", dashboard.presentPercent());
         model.addAttribute("pendingApprovals", dashboard.pendingApprovals());
         model.addAttribute("openPositions", dashboard.openPositions());
         model.addAttribute("attritionRate", dashboard.attritionRate());

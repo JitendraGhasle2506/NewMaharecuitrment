@@ -23,6 +23,7 @@ public class RoleBasedNavigationService implements NavigationService {
                         "ROLE_ADMIN",
                         "ROLE_HR",
                         "ROLE_AUDITOR",
+                        "ROLE_MD",
                         "ROLE_COO",
                         "ROLE_DEPARTMENT",
                         "ROLE_EMPLOYEE",
@@ -52,6 +53,7 @@ public class RoleBasedNavigationService implements NavigationService {
                         AccessRule.forRoles(Set.of("ROLE_PM"), "/pm", "/pm/**"),
                         AccessRule.forRoles(Set.of("ROLE_HOD"), "/hod1", "/hod1/**", "/hod2", "/hod2/**"),
                         AccessRule.forRoles(Set.of("ROLE_COO", "ROLE_AUDITOR"), "/coo", "/coo/**"),
+                        AccessRule.forRoles(Set.of("ROLE_MD"), "/md", "/md/**"),
                         AccessRule.forRoles(Set.of("ROLE_EMPLOYEE"), "/employee", "/employee/**"),
                         AccessRule.forRoles(Set.of("ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AUDITOR"),
                                         "/department/payment/*/receipt"),
@@ -136,6 +138,7 @@ public class RoleBasedNavigationService implements NavigationService {
                 return switch (role) {
                         case "HOD" -> "HOD";
                         case "COO" -> "COO";
+                        case "MD" -> "MD";
                         default -> role.replace('_', ' ');
                 };
         }

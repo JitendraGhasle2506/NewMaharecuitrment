@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>MD Dashboard</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/md-dashboard.css}">
+</head>
+
+<body class="md-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('MD', 'Executive Dashboard', ~{::section})}">
+        <section class="md-dashboard">
+            <div class="md-hero">
+                <div>
+                    <span class="md-eyebrow">Managing Director View</span>
+                    <h1>Executive Workforce Dashboard</h1>
+                    <p>One-page view of employees, project distribution, attendance, openings, and pending approvals.</p>
+                </div>
+                <div class="md-attendance-ring"
+                    th:style="'--present:' + ${dashboard.presentPercent} + '%'"
+                    aria-label="Present employee percentage">
+                    <span th:text="${dashboard.presentPercent} + '%'">0%</span>
+                    <small>Present Today</small>
+                </div>
+            </div>
+
+            <section class="md-kpi-grid" aria-label="Executive summary">
+                <article class="md-kpi-card md-focus-trigger" data-focus-panel="employees" tabindex="0">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Total Employees</span>
+                    <strong th:text="${dashboard.totalEmployees}">0</strong>
+                </article>
+                <article class="md-kpi-card md-focus-trigger" data-focus-panel="employees" tabindex="0">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span>Internal Employees</span>
+                    <strong th:text="${dashboard.internalEmployees}">0</strong>
+                </article>
+                <article class="md-kpi-card md-focus-trigger" data-focus-panel="employees" tabindex="0">
+                    <i class="fa-solid fa-id-card-clip"></i>
+                    <span>External Employees</span>
+                    <strong th:text="${dashboard.externalEmployees}">0</strong>
+                </article>
+                <article class="md-kpi-card md-focus-trigger" data-focus-panel="attendance" tabindex="0">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    <span>Present Today</span>
+                    <strong th:text="${dashboard.presentEmployees}">0</strong>
+                </article>
+                <article class="md-kpi-card md-focus-trigger" data-focus-panel="projects" tabindex="0">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    <span>Total Projects</span>
+                    <strong th:text="${dashboard.totalProjects}">0</strong>
+                </article>
+                <article class="md-kpi-card md-focus-trigger" data-focus-panel="projects" tabindex="0">
+                    <i class="fa-solid fa-folder-tree"></i>
+                    <span>Internal Projects</span>
+                    <strong th:text="${dashboard.internalProjects}">0</strong>
+                </article>
+                <article class="md-kpi-card md-focus-trigger" data-focus-panel="projects" tabindex="0">
+                    <i class="fa-solid fa-building-user"></i>
+                    <span>External Projects</span>
+                    <strong th:text="${dashboard.externalProjects}">0</strong>
+                </article>
+                <article class="md-kpi-card md-focus-trigger" data-focus-panel="workload" tabindex="0">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                    <span>Pending Approvals</span>
+                    <strong th:text="${dashboard.pendingApprovals}">0</strong>
+                </article>
+            </section>
+
+            <section class="md-panel md-explorer" id="mdExplorer"
+                th:attr="data-total-employees=${dashboard.totalEmployees},
+                    data-internal-employees=${dashboard.internalEmployees},
+                    data-external-employees=${dashboard.externalEmployees},
+                    data-present-employees=${dashboard.presentEmployees},
+                    data-absent-employees=${dashboard.absentEmployees},
+                    data-total-projects=${dashboard.totalProjects},
+                    data-internal-projects=${dashboard.internalProjects},
+                    data-external-projects=${dashboard.externalProjects},
+                    data-open-positions=${dashboard.openPositions},
+                    data-onboarding=${dashboard.onboardingThisMonth},
+                    data-pending-approvals=${dashboard.pendingApprovals}">
+                <div class="md-panel-header">
+                    <h2>Executive Visual Explorer</h2>
+                    <div class="md-tab-list" role="tablist" aria-label="Dashboard charts">
+                        <button type="button" class="md-tab active" data-panel="employees">
+                            <i class="fa-solid fa-users"></i><span>Employees</span>
+                        </button>
+                        <button type="button" class="md-tab" data-panel="projects">
+                            <i class="fa-solid fa-diagram-project"></i><span>Projects</span>
+                        </button>
+                        <button type="button" class="md-tab" data-panel="attendance">
+                            <i class="fa-solid fa-calendar-check"></i><span>Attendance</span>
+                        </button>
+                        <button type="button" class="md-tab" data-panel="workload">
+                            <i class="fa-solid fa-list-check"></i><span>Workload</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="md-explorer-grid">
+                    <div class="md-chart-stage">
+                        <canvas id="mdChartCanvas" width="520" height="300" aria-label="Dashboard chart"></canvas>
+                        <div class="md-chart-center" id="mdChartCenter">
+                            <strong th:text="${dashboard.totalEmployees}">0</strong>
+                            <span>Total Employees</span>
+                        </div>
+                    </div>
+                    <div class="md-insight-stack" id="mdInsightStack"></div>
+                </div>
+            </section>
+
+            <div class="md-content-grid">
+                <section class="md-panel">
+                    <div class="md-panel-header">
+                        <h2>Employee Split</h2>
+                        <span th:text="${dashboard.totalEmployees} + ' employees'">0 employees</span>
+                    </div>
+                    <div class="md-donut-wrap">
+                        <div class="md-donut"
+                            th:style="'--internal:' + ${dashboard.internalPercent} + '%'"
+                            aria-label="Internal external employee ratio">
+                            <span th:text="${dashboard.internalPercent} + '%'">0%</span>
+                            <small>Internal</small>
+                        </div>
+                        <div class="md-legend">
+                            <div class="md-mini-stat">
+                                <span class="md-dot md-dot-internal"></span>
+                                Internal
+                                <strong th:text="${dashboard.internalEmployees}">0</strong>
+                            </div>
+                            <div class="md-mini-stat">
+                                <span class="md-dot md-dot-external"></span>
+                                External
+                                <strong th:text="${dashboard.externalEmployees}">0</strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="md-panel">
+                    <div class="md-panel-header">
+                        <h2>Project Split</h2>
+                        <span th:text="${dashboard.totalProjects} + ' projects'">0 projects</span>
+                    </div>
+                    <div class="md-bars">
+                        <div class="md-bar-row">
+                            <div>
+                                <strong>Internal Projects</strong>
+                                <span th:text="${dashboard.internalProjects}">0</span>
+                            </div>
+                            <div class="md-bar-track">
+                                <span class="md-bar-fill md-bar-primary"
+                                    th:style="'width:' + ${dashboard.totalProjects > 0 ? (dashboard.internalProjects * 100) / dashboard.totalProjects : 0} + '%'"></span>
+                            </div>
+                        </div>
+                        <div class="md-bar-row">
+                            <div>
+                                <strong>External Projects</strong>
+                                <span th:text="${dashboard.externalProjects}">0</span>
+                            </div>
+                            <div class="md-bar-track">
+                                <span class="md-bar-fill md-bar-accent"
+                                    th:style="'width:' + ${dashboard.totalProjects > 0 ? (dashboard.externalProjects * 100) / dashboard.totalProjects : 0} + '%'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="md-panel">
+                    <div class="md-panel-header">
+                        <h2>Attendance Today</h2>
+                        <span th:text="${dashboard.presentPercent} + '% present'">0% present</span>
+                    </div>
+                    <div class="md-attendance-bars">
+                        <div>
+                            <strong th:text="${dashboard.presentEmployees}">0</strong>
+                            <span>Present</span>
+                        </div>
+                        <div>
+                            <strong th:text="${dashboard.absentEmployees}">0</strong>
+                            <span>Not Marked / Absent</span>
+                        </div>
+                    </div>
+                    <div class="md-bar-track md-attendance-track">
+                        <span class="md-bar-fill md-bar-success"
+                            th:style="'width:' + ${dashboard.presentPercent} + '%'"></span>
+                    </div>
+                </section>
+
+                <section class="md-panel">
+                    <div class="md-panel-header">
+                        <h2>Open Work</h2>
+                        <span>Recruitment and approvals</span>
+                    </div>
+                    <div class="md-open-grid">
+                        <div>
+                            <span>Open Positions</span>
+                            <strong th:text="${dashboard.openPositions}">0</strong>
+                        </div>
+                        <div>
+                            <span>Onboarding This Month</span>
+                            <strong th:text="${dashboard.onboardingThisMonth}">0</strong>
+                        </div>
+                        <div>
+                            <span>Pending Approvals</span>
+                            <strong th:text="${dashboard.pendingApprovals}">0</strong>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <section class="md-panel md-table-panel">
+                <div class="md-panel-header">
+                    <h2>Cell Wise Project Workforce Snapshot</h2>
+                    <div class="md-table-tools">
+                        <div class="md-select">
+                            <i class="fa-solid fa-layer-group"></i>
+                            <select id="mdCellFilter" aria-label="Filter by cell">
+                                <option value="all">All Cells</option>
+                            </select>
+                        </div>
+                        <div class="md-search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="search" id="mdProjectSearch" placeholder="Search cell">
+                        </div>
+                        <div class="md-segment" aria-label="Cell project filter">
+                            <button type="button" class="active" data-filter="all">All</button>
+                            <button type="button" data-filter="internal">Internal</button>
+                            <button type="button" data-filter="external">External</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Cell</th>
+                                <th class="text-center">Total Projects</th>
+                                <th class="text-center">Internal Projects</th>
+                                <th class="text-center">External Projects</th>
+                                <th class="text-center">Internal Employees</th>
+                                <th class="text-center">External Employees</th>
+                                <th class="text-center">Total Workforce</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="md-cell-row" th:each="cell : ${dashboard.cellProjects}"
+                                th:attr="data-cell=${cell.cellName},data-total-projects=${cell.totalProjects},data-internal-projects=${cell.internalProjects},data-external-projects=${cell.externalProjects},data-internal=${cell.internalEmployees},data-external=${cell.externalEmployees}">
+                                <td>
+                                    <span class="md-cell-name" th:text="${cell.cellName}">Cell</span>
+                                </td>
+                                <td class="text-center"><strong th:text="${cell.totalProjects}">0</strong></td>
+                                <td class="text-center" th:text="${cell.internalProjects}">0</td>
+                                <td class="text-center" th:text="${cell.externalProjects}">0</td>
+                                <td class="text-center" th:text="${cell.internalEmployees}">0</td>
+                                <td class="text-center" th:text="${cell.externalEmployees}">0</td>
+                                <td class="text-center"><span class="md-status" th:text="${cell.internalEmployees + cell.externalEmployees}">0</span></td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(dashboard.cellProjects)}">
+                                <td colspan="7" class="text-center text-muted py-4">No cell-wise project data available.</td>
+                            </tr>
+                            <tr id="mdProjectNoResults" class="d-none">
+                                <td colspan="7" class="text-center text-muted py-4">No matching cell found.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+    </th:block>
+    <script>
+        (function () {
+            const explorer = document.getElementById('mdExplorer');
+            const canvas = document.getElementById('mdChartCanvas');
+            const center = document.getElementById('mdChartCenter');
+            const insightStack = document.getElementById('mdInsightStack');
+            if (!explorer || !canvas || !center || !insightStack) {
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            const value = (key) => Number(explorer.dataset[key] || 0);
+            const panels = {
+                employees: {
+                    title: 'Total Employees',
+                    total: value('totalEmployees'),
+                    type: 'donut',
+                    items: [
+                        { label: 'Internal', value: value('internalEmployees'), color: '#1f4f78' },
+                        { label: 'External', value: value('externalEmployees'), color: '#0f8b8d' }
+                    ]
+                },
+                projects: {
+                    title: 'Total Projects',
+                    total: value('totalProjects'),
+                    type: 'bars',
+                    items: [
+                        { label: 'Internal Projects', value: value('internalProjects'), color: '#1f4f78' },
+                        { label: 'External Projects', value: value('externalProjects'), color: '#0f8b8d' }
+                    ]
+                },
+                attendance: {
+                    title: 'Attendance Today',
+                    total: value('totalEmployees'),
+                    type: 'donut',
+                    items: [
+                        { label: 'Present', value: value('presentEmployees'), color: '#2d8a57' },
+                        { label: 'Not Marked / Absent', value: value('absentEmployees'), color: '#b7791f' }
+                    ]
+                },
+                workload: {
+                    title: 'Open Work',
+                    total: value('openPositions') + value('onboarding') + value('pendingApprovals'),
+                    type: 'bars',
+                    items: [
+                        { label: 'Open Positions', value: value('openPositions'), color: '#1f4f78' },
+                        { label: 'Onboarding This Month', value: value('onboarding'), color: '#0f8b8d' },
+                        { label: 'Pending Approvals', value: value('pendingApprovals'), color: '#b7791f' }
+                    ]
+                }
+            };
+
+            let activePanel = 'employees';
+            let hoveredItem = null;
+
+            function fitCanvas() {
+                const rect = canvas.getBoundingClientRect();
+                const scale = window.devicePixelRatio || 1;
+                canvas.width = Math.max(320, Math.floor(rect.width * scale));
+                canvas.height = Math.max(240, Math.floor(rect.height * scale));
+                ctx.setTransform(scale, 0, 0, scale, 0, 0);
+            }
+
+            function roundedRect(context, x, y, width, height, radius) {
+                context.beginPath();
+                context.moveTo(x + radius, y);
+                context.arcTo(x + width, y, x + width, y + height, radius);
+                context.arcTo(x + width, y + height, x, y + height, radius);
+                context.arcTo(x, y + height, x, y, radius);
+                context.arcTo(x, y, x + width, y, radius);
+                context.closePath();
+            }
+
+            function drawDonut(panel) {
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+                const cx = width / 2;
+                const cy = height / 2;
+                const radius = Math.min(width, height) * 0.35;
+                const lineWidth = Math.max(22, radius * 0.24);
+                const total = Math.max(panel.items.reduce((sum, item) => sum + item.value, 0), 1);
+                let start = -Math.PI / 2;
+
+                ctx.clearRect(0, 0, width, height);
+                ctx.lineWidth = lineWidth;
+                ctx.lineCap = 'round';
+                panel.items.forEach((item, index) => {
+                    const angle = (item.value / total) * Math.PI * 2;
+                    ctx.beginPath();
+                    ctx.strokeStyle = item.color;
+                    ctx.globalAlpha = hoveredItem === null || hoveredItem === index ? 1 : 0.28;
+                    ctx.arc(cx, cy, radius, start, start + angle - 0.035);
+                    ctx.stroke();
+                    start += angle;
+                });
+                ctx.globalAlpha = 1;
+            }
+
+            function drawBars(panel) {
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+                const max = Math.max(...panel.items.map((item) => item.value), 1);
+                const padX = 36;
+                const rowHeight = Math.min(58, (height - 48) / panel.items.length);
+
+                ctx.clearRect(0, 0, width, height);
+                panel.items.forEach((item, index) => {
+                    const y = 42 + index * rowHeight;
+                    const barWidth = (width - padX * 2) * (item.value / max);
+                    ctx.globalAlpha = hoveredItem === null || hoveredItem === index ? 1 : 0.32;
+                    ctx.fillStyle = '#e8eef5';
+                    roundedRect(ctx, padX, y, width - padX * 2, 18, 9);
+                    ctx.fill();
+                    ctx.fillStyle = item.color;
+                    roundedRect(ctx, padX, y, Math.max(barWidth, 4), 18, 9);
+                    ctx.fill();
+                    ctx.fillStyle = '#172635';
+                    ctx.font = '700 13px Public Sans, Arial, sans-serif';
+                    ctx.fillText(item.label, padX, y - 8);
+                    ctx.textAlign = 'right';
+                    ctx.fillText(String(item.value), width - padX, y - 8);
+                    ctx.textAlign = 'left';
+                });
+                ctx.globalAlpha = 1;
+            }
+
+            function renderInsights(panel) {
+                const total = Math.max(panel.total, 0);
+                insightStack.innerHTML = panel.items.map((item, index) => {
+                    const percent = total > 0 ? Math.round((item.value * 100) / total) : 0;
+                    return '<button type="button" class="md-insight" data-index="' + index + '">' +
+                        '<span style="--item-color:' + item.color + '">' + item.label + '</span>' +
+                        '<strong>' + item.value + '</strong>' +
+                        '<em>' + percent + '%</em>' +
+                        '</button>';
+                }).join('');
+                insightStack.querySelectorAll('.md-insight').forEach((button) => {
+                    button.addEventListener('mouseenter', () => {
+                        hoveredItem = Number(button.dataset.index);
+                        renderPanel(activePanel, false);
+                    });
+                    button.addEventListener('mouseleave', () => {
+                        hoveredItem = null;
+                        renderPanel(activePanel, false);
+                    });
+                });
+            }
+
+            function renderPanel(name, refreshInsights) {
+                const panel = panels[name];
+                fitCanvas();
+                if (panel.type === 'donut') {
+                    drawDonut(panel);
+                } else {
+                    drawBars(panel);
+                }
+                center.querySelector('strong').textContent = panel.total;
+                center.querySelector('span').textContent = panel.title;
+                if (refreshInsights !== false) {
+                    renderInsights(panel);
+                }
+            }
+
+            function activatePanel(name) {
+                activePanel = name;
+                hoveredItem = null;
+                document.querySelectorAll('.md-tab').forEach((tab) => {
+                    tab.classList.toggle('active', tab.dataset.panel === name);
+                });
+                renderPanel(name, true);
+            }
+
+            document.querySelectorAll('.md-tab').forEach((tab) => {
+                tab.addEventListener('click', () => activatePanel(tab.dataset.panel));
+            });
+            document.querySelectorAll('.md-focus-trigger').forEach((card) => {
+                const open = () => {
+                    activatePanel(card.dataset.focusPanel);
+                    explorer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                };
+                card.addEventListener('click', open);
+                card.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        open();
+                    }
+                });
+            });
+
+            const projectSearch = document.getElementById('mdProjectSearch');
+            const cellFilter = document.getElementById('mdCellFilter');
+            const projectRows = Array.from(document.querySelectorAll('.md-cell-row'));
+            const noResultsRow = document.getElementById('mdProjectNoResults');
+            let projectFilter = 'all';
+
+            if (cellFilter) {
+                const cells = Array.from(new Set(projectRows
+                    .map((row) => row.dataset.cell || 'Unassigned Cell')
+                    .filter(Boolean)))
+                    .sort((first, second) => first.localeCompare(second));
+                cells.forEach((cell) => {
+                    const option = document.createElement('option');
+                    option.value = cell;
+                    option.textContent = cell;
+                    cellFilter.appendChild(option);
+                });
+            }
+
+            function filterProjects() {
+                const search = (projectSearch ? projectSearch.value : '').trim().toLowerCase();
+                const selectedCell = cellFilter ? cellFilter.value : 'all';
+                let visible = 0;
+                projectRows.forEach((row) => {
+                    const rowCell = row.dataset.cell || 'Unassigned Cell';
+                    const text = rowCell.toLowerCase();
+                    const internalProjects = Number(row.dataset.internalProjects || 0);
+                    const externalProjects = Number(row.dataset.externalProjects || 0);
+                    const matchesSearch = !search || text.includes(search);
+                    const matchesCell = selectedCell === 'all' || rowCell === selectedCell;
+                    const matchesType = projectFilter === 'all'
+                        || (projectFilter === 'internal' && internalProjects > 0)
+                        || (projectFilter === 'external' && externalProjects > 0);
+                    const show = matchesSearch && matchesCell && matchesType;
+                    row.classList.toggle('d-none', !show);
+                    if (show) {
+                        visible += 1;
+                    }
+                });
+                if (noResultsRow) {
+                    noResultsRow.classList.toggle('d-none', visible !== 0 || projectRows.length === 0);
+                }
+            }
+
+            if (projectSearch) {
+                projectSearch.addEventListener('input', filterProjects);
+            }
+            if (cellFilter) {
+                cellFilter.addEventListener('change', filterProjects);
+            }
+            document.querySelectorAll('.md-segment button').forEach((button) => {
+                button.addEventListener('click', () => {
+                    projectFilter = button.dataset.filter;
+                    document.querySelectorAll('.md-segment button').forEach((item) => {
+                        item.classList.toggle('active', item === button);
+                    });
+                    filterProjects();
+                });
+            });
+
+            window.addEventListener('resize', () => renderPanel(activePanel, true));
+            renderPanel(activePanel, true);
+            filterProjects();
+        })();
+    </script>
+</body>
+
+</html>

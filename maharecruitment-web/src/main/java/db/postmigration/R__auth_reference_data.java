@@ -33,7 +33,7 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 List<String> roles = List.of(
                                 "ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AGENCY", "ROLE_ADMIN",
                                 "ROLE_USER", "ROLE_STM", "ROLE_HOD", "ROLE_COO",
-                                "ROLE_PM", "ROLE_AUDITOR", "ROLE_EMPLOYEE");
+                                "ROLE_MD", "ROLE_PM", "ROLE_AUDITOR", "ROLE_EMPLOYEE");
 
                 for (String role : roles) {
                         Integer count = jdbcTemplate.queryForObject(
@@ -49,6 +49,7 @@ public class R__auth_reference_data extends BaseJavaMigration {
         private void seedUsers(JdbcTemplate jdbcTemplate) {
                 upsertUser(jdbcTemplate, "admin", "System Admin", "ROLE_ADMIN");
                 upsertUser(jdbcTemplate, "hr@mahait.org", "HR Manager", "ROLE_HR");
+                upsertUser(jdbcTemplate, "md@mahait.org", "Managing Director", "ROLE_MD");
                 upsertUser(jdbcTemplate, "auditor@mahait.org", "Auditor User", "ROLE_AUDITOR");
         }
 
@@ -342,6 +343,9 @@ public class R__auth_reference_data extends BaseJavaMigration {
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "COO Dashboard", "/coo/dashboard",
                                 "fa fa-chart-line",
                                 roleIds.get("ROLE_COO"));
+                upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "MD Dashboard", "/md/dashboard",
+                                "fa fa-chart-pie",
+                                roleIds.get("ROLE_MD"));
                 upsertDirectMenu(jdbcTemplate, menuTable, menuRoleTable, "Employee Dashboard",
                                 "/employee/dashboard",
                                 "fa fa-id-badge",

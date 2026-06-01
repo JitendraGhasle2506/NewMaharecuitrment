@@ -5,7 +5,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import com.maharecruitment.gov.in.web.service.dashboard.AgencyDashboardService;
+import com.maharecruitment.gov.in.web.service.dashboard.MDDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.RoleLandingService;
+import com.maharecruitment.gov.in.web.service.dashboard.model.MDDashboardView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.RoleDashboardView;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,10 +17,15 @@ public class RoleLandingController {
 
     private final RoleLandingService roleLandingService;
     private final AgencyDashboardService agencyDashboardService;
+    private final MDDashboardService mdDashboardService;
 
-    public RoleLandingController(RoleLandingService roleLandingService, AgencyDashboardService agencyDashboardService) {
+    public RoleLandingController(
+            RoleLandingService roleLandingService,
+            AgencyDashboardService agencyDashboardService,
+            MDDashboardService mdDashboardService) {
         this.roleLandingService = roleLandingService;
         this.agencyDashboardService = agencyDashboardService;
+        this.mdDashboardService = mdDashboardService;
     }
 
     @GetMapping({
@@ -30,6 +37,7 @@ public class RoleLandingController {
             "/hod1/dashboard",
             "/hod2/dashboard",
             "/coo/dashboard",
+            "/md/dashboard",
             "/pension",
             "/hrms",
             "/payroll"
@@ -51,6 +59,12 @@ public class RoleLandingController {
             model.addAttribute("status", agencyDashboard.status());
             model.addAttribute("recentNotifications", agencyDashboard.recentNotifications());
             return "agency/agency_dashboard";
+        }
+
+        if ("/md/dashboard".equals(path)) {
+            MDDashboardView dashboard = mdDashboardService.getDashboard();
+            model.addAttribute("dashboard", dashboard);
+            return "md/md_dashboard";
         }
 
         RoleDashboardView dashboard = roleLandingService.getDashboardByPath(path);

@@ -32,4 +32,6 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
             LocalDate date);
 
     List<DailyAttendanceInternalEntity> findByEmployeeIdAndMonthAndYear(Long employeeId, Integer month, Integer year);
+
+    long countByAttendanceDateAndStatusIgnoreCase(LocalDate attendanceDate, String status);
 }
