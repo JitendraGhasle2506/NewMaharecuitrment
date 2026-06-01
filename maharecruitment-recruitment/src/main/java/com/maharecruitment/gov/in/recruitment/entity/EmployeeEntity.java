@@ -96,6 +96,9 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @Column(name = "aadhaar_number", nullable = false, length = 12)
     private String aadhaarNumber;
 
+    @Column(name = "company_payroll_more_than_three_months", nullable = false)
+    private Boolean companyPayrollMoreThanThreeMonths = false;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pre_onboarding_id")
     private AgencyCandidatePreOnboardingEntity preOnboarding;

@@ -290,6 +290,8 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             employee.setOnboardingDate(entity.getHrOnboardingDate());
             employee.setPanNumber(entity.getPanNumber());
             employee.setAadhaarNumber(entity.getAadhaarNumber());
+            employee.setCompanyPayrollMoreThanThreeMonths(
+                    Boolean.TRUE.equals(entity.getCompanyPayrollMoreThanThreeMonths()));
 
             employee.setAgency(interview.getAgency());
             employee.setDesignation(interview.getDesignationVacancy().getDesignationMst());

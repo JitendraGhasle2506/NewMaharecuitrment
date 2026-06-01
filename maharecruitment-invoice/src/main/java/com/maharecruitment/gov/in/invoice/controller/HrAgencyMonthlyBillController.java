@@ -35,15 +35,15 @@ import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import jakarta.validation.Valid;
 
 @Controller
-@RequestMapping("/auditor/agency-monthly-bills")
-public class AuditorAgencyMonthlyBillController {
+@RequestMapping("/hr/agency-monthly-bills")
+public class HrAgencyMonthlyBillController {
 
     private final AgencyMonthlyBillService billService;
     private final AgencyMonthlyBillQrCodeGenerator qrCodeGenerator;
     private final UserRepository userRepository;
     private final AgencyMasterRepository agencyMasterRepository;
 
-    public AuditorAgencyMonthlyBillController(
+    public HrAgencyMonthlyBillController(
             AgencyMonthlyBillService billService,
             AgencyMonthlyBillQrCodeGenerator qrCodeGenerator,
             UserRepository userRepository,
@@ -112,7 +112,7 @@ public class AuditorAgencyMonthlyBillController {
         try {
             var bill = billService.generate(request, resolveActorEmail());
             redirectAttributes.addFlashAttribute("successMessage", "Agency monthly bill generated successfully");
-            return "redirect:/auditor/agency-monthly-bills/" + bill.getAgencyMonthlyBillId();
+            return "redirect:/hr/agency-monthly-bills/" + bill.getAgencyMonthlyBillId();
         } catch (RuntimeException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             populateForm(model, request);
@@ -145,7 +145,7 @@ public class AuditorAgencyMonthlyBillController {
         }
         redirectAttributes.addAttribute("page", Math.max(page, 0));
         redirectAttributes.addAttribute("size", Math.min(Math.max(size, 1), 100));
-        return "redirect:/auditor/agency-monthly-bills";
+        return "redirect:/hr/agency-monthly-bills";
     }
 
     private void populateForm(Model model, AgencyMonthlyBillGenerateRequest request) {
