@@ -200,17 +200,17 @@
 </head>
 
 <body>
-    <th:block th:replace="~{header/header :: var-sidebar-header('Auditor', 'Generate Agency Bill', ~{::section})}">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Generate Agency Bill', ~{::section})}">
         <section class="bill-review-shell">
             <div class="gov-header">
                 <div class="gov-heading-block">
                     <div class="gov-mark"><i class="fa-solid fa-file-invoice"></i></div>
                     <div>
-                        <div class="gov-kicker">Auditor Office</div>
+                        <div class="gov-kicker">HR Office</div>
                         <h2 class="gov-title">Agency Monthly Bill Verification</h2>
                     </div>
                 </div>
-                <a class="btn btn-outline-secondary rounded-pill px-4" th:href="@{/auditor/agency-monthly-bills}">Back</a>
+                <a class="btn btn-outline-secondary rounded-pill px-4" th:href="@{/hr/agency-monthly-bills}">Back</a>
             </div>
 
             <div th:if="${errorMessage}" class="alert alert-danger border-0 shadow-sm" th:text="${errorMessage}"></div>
@@ -220,7 +220,7 @@
                     <h3 class="gov-section-title">Bill Selection Criteria</h3>
                 </div>
                 <div class="p-3 p-lg-4">
-                    <form th:object="${billRequest}" th:action="@{/auditor/agency-monthly-bills/preview}" method="post" class="row g-3 align-items-end">
+                    <form th:object="${billRequest}" th:action="@{/hr/agency-monthly-bills/preview}" method="post" class="row g-3 align-items-end">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                         <div class="col-lg-4">
@@ -333,7 +333,7 @@
                                 <tr>
                                     <th>Total Bill Amount</th>
                                     <th class="number-cell" th:text="${#numbers.formatDecimal(billPreview.totalAmount, 1, 'COMMA', 2, 'POINT')}">0.00</th>
-                                    <th>Draft total subject to auditor verification.</th>
+                                    <th>Draft total subject to HR verification.</th>
                                 </tr>
                             </tfoot>
                         </table>
@@ -428,8 +428,8 @@
                 </div>
 
                 <div class="action-bar">
-                    <a class="btn btn-outline-secondary rounded-pill px-4" th:href="@{/auditor/agency-monthly-bills}">Cancel</a>
-                    <form th:object="${billRequest}" th:action="@{/auditor/agency-monthly-bills/generate}" method="post"
+                    <a class="btn btn-outline-secondary rounded-pill px-4" th:href="@{/hr/agency-monthly-bills}">Cancel</a>
+                    <form th:object="${billRequest}" th:action="@{/hr/agency-monthly-bills/generate}" method="post"
                         onsubmit="return confirm('Generate this agency monthly bill after verification?');">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <input type="hidden" th:field="*{agencyId}">
