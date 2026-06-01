@@ -67,6 +67,7 @@ import db.postmigration.V59__attendance_leave_compoff_support;
 import db.postmigration.V66__attendance_internal_daily_unique_employee_date;
 import db.postmigration.V67__pre_onboarding_company_payroll_proof;
 import db.postmigration.V68__employee_master_mahait_onboarding_date;
+import db.postmigration.V69__employee_master_company_payroll_more_than_three_months;
 import db.postmigration.V38__auth_mahait_profile_menu_backfill;
 import db.postmigration.V39__mahait_profile_cin_number_support;
 import db.postmigration.V40__department_tax_invoice_support;
@@ -159,7 +160,8 @@ public class PostSchemaFlywayRunner {
                         new V59__attendance_leave_compoff_support(),
                         new V66__attendance_internal_daily_unique_employee_date(),
                         new V67__pre_onboarding_company_payroll_proof(),
-                        new V68__employee_master_mahait_onboarding_date())
+                        new V68__employee_master_mahait_onboarding_date(),
+                        new V69__employee_master_company_payroll_more_than_three_months())
                 .load();
 
         if (hasFailedPostSchemaMigration()) {
