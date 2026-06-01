@@ -12,10 +12,24 @@
     <th:block th:replace="~{header/header :: var-sidebar-header('MD', 'Executive Dashboard', ~{::section})}">
         <section class="md-dashboard">
             <div class="md-hero">
-                <div>
+                <div class="md-hero-copy">
                     <span class="md-eyebrow">Managing Director View</span>
                     <h1>Executive Workforce Dashboard</h1>
                     <p>One-page view of employees, project distribution, attendance, openings, and pending approvals.</p>
+                    <div class="md-hero-strip" aria-label="Key executive totals">
+                        <div>
+                            <span>Workforce</span>
+                            <strong th:text="${dashboard.totalEmployees}">0</strong>
+                        </div>
+                        <div>
+                            <span>Projects</span>
+                            <strong th:text="${dashboard.totalProjects}">0</strong>
+                        </div>
+                        <div>
+                            <span>Open Positions</span>
+                            <strong th:text="${dashboard.openPositions}">0</strong>
+                        </div>
+                    </div>
                 </div>
                 <div class="md-attendance-ring"
                     th:style="'--present:' + ${dashboard.presentPercent} + '%'"
@@ -26,42 +40,42 @@
             </div>
 
             <section class="md-kpi-grid" aria-label="Executive summary">
-                <article class="md-kpi-card md-focus-trigger" data-focus-panel="employees" tabindex="0">
+                <article class="md-kpi-card md-kpi-brand md-focus-trigger" data-focus-panel="employees" tabindex="0">
                     <i class="fa-solid fa-users"></i>
                     <span>Total Employees</span>
                     <strong th:text="${dashboard.totalEmployees}">0</strong>
                 </article>
-                <article class="md-kpi-card md-focus-trigger" data-focus-panel="employees" tabindex="0">
+                <article class="md-kpi-card md-kpi-brand md-focus-trigger" data-focus-panel="employees" tabindex="0">
                     <i class="fa-solid fa-user-tie"></i>
                     <span>Internal Employees</span>
                     <strong th:text="${dashboard.internalEmployees}">0</strong>
                 </article>
-                <article class="md-kpi-card md-focus-trigger" data-focus-panel="employees" tabindex="0">
+                <article class="md-kpi-card md-kpi-accent md-focus-trigger" data-focus-panel="employees" tabindex="0">
                     <i class="fa-solid fa-id-card-clip"></i>
                     <span>External Employees</span>
                     <strong th:text="${dashboard.externalEmployees}">0</strong>
                 </article>
-                <article class="md-kpi-card md-focus-trigger" data-focus-panel="attendance" tabindex="0">
+                <article class="md-kpi-card md-kpi-success md-focus-trigger" data-focus-panel="attendance" tabindex="0">
                     <i class="fa-solid fa-clipboard-check"></i>
                     <span>Present Today</span>
                     <strong th:text="${dashboard.presentEmployees}">0</strong>
                 </article>
-                <article class="md-kpi-card md-focus-trigger" data-focus-panel="projects" tabindex="0">
+                <article class="md-kpi-card md-kpi-brand md-focus-trigger" data-focus-panel="projects" tabindex="0">
                     <i class="fa-solid fa-diagram-project"></i>
                     <span>Total Projects</span>
                     <strong th:text="${dashboard.totalProjects}">0</strong>
                 </article>
-                <article class="md-kpi-card md-focus-trigger" data-focus-panel="projects" tabindex="0">
+                <article class="md-kpi-card md-kpi-brand md-focus-trigger" data-focus-panel="projects" tabindex="0">
                     <i class="fa-solid fa-folder-tree"></i>
                     <span>Internal Projects</span>
                     <strong th:text="${dashboard.internalProjects}">0</strong>
                 </article>
-                <article class="md-kpi-card md-focus-trigger" data-focus-panel="projects" tabindex="0">
+                <article class="md-kpi-card md-kpi-accent md-focus-trigger" data-focus-panel="projects" tabindex="0">
                     <i class="fa-solid fa-building-user"></i>
                     <span>External Projects</span>
                     <strong th:text="${dashboard.externalProjects}">0</strong>
                 </article>
-                <article class="md-kpi-card md-focus-trigger" data-focus-panel="workload" tabindex="0">
+                <article class="md-kpi-card md-kpi-warn md-focus-trigger" data-focus-panel="workload" tabindex="0">
                     <i class="fa-solid fa-hourglass-half"></i>
                     <span>Pending Approvals</span>
                     <strong th:text="${dashboard.pendingApprovals}">0</strong>
@@ -100,6 +114,7 @@
                 <div class="md-explorer-grid">
                     <div class="md-chart-stage">
                         <canvas id="mdChartCanvas" width="520" height="300" aria-label="Dashboard chart"></canvas>
+                        <div class="md-chart-tooltip" id="mdChartTooltip" role="status" aria-live="polite"></div>
                         <div class="md-chart-center" id="mdChartCenter">
                             <strong th:text="${dashboard.totalEmployees}">0</strong>
                             <span>Total Employees</span>
@@ -245,16 +260,55 @@
                         </thead>
                         <tbody>
                             <tr class="md-cell-row" th:each="cell : ${dashboard.cellProjects}"
+                                th:with="totalWorkforce=${cell.internalEmployees + cell.externalEmployees},
+                                    internalProjectPercent=${cell.totalProjects > 0 ? (cell.internalProjects * 100) / cell.totalProjects : 0},
+                                    externalProjectPercent=${cell.totalProjects > 0 ? (cell.externalProjects * 100) / cell.totalProjects : 0},
+                                    internalEmployeePercent=${totalWorkforce > 0 ? (cell.internalEmployees * 100) / totalWorkforce : 0},
+                                    externalEmployeePercent=${totalWorkforce > 0 ? (cell.externalEmployees * 100) / totalWorkforce : 0}"
                                 th:attr="data-cell=${cell.cellName},data-total-projects=${cell.totalProjects},data-internal-projects=${cell.internalProjects},data-external-projects=${cell.externalProjects},data-internal=${cell.internalEmployees},data-external=${cell.externalEmployees}">
                                 <td>
                                     <span class="md-cell-name" th:text="${cell.cellName}">Cell</span>
                                 </td>
-                                <td class="text-center"><strong th:text="${cell.totalProjects}">0</strong></td>
-                                <td class="text-center" th:text="${cell.internalProjects}">0</td>
-                                <td class="text-center" th:text="${cell.externalProjects}">0</td>
-                                <td class="text-center" th:text="${cell.internalEmployees}">0</td>
-                                <td class="text-center" th:text="${cell.externalEmployees}">0</td>
-                                <td class="text-center"><span class="md-status" th:text="${cell.internalEmployees + cell.externalEmployees}">0</span></td>
+                                <td class="text-center">
+                                    <span class="md-count-pill" th:text="${cell.totalProjects}">0</span>
+                                </td>
+                                <td>
+                                    <div class="md-cell-meter">
+                                        <strong th:text="${cell.internalProjects}">0</strong>
+                                        <span class="md-bar-track">
+                                            <span class="md-bar-fill md-bar-primary"
+                                                th:style="'width:' + ${internalProjectPercent} + '%'"></span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="md-cell-meter">
+                                        <strong th:text="${cell.externalProjects}">0</strong>
+                                        <span class="md-bar-track">
+                                            <span class="md-bar-fill md-bar-accent"
+                                                th:style="'width:' + ${externalProjectPercent} + '%'"></span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="md-cell-meter">
+                                        <strong th:text="${cell.internalEmployees}">0</strong>
+                                        <span class="md-bar-track">
+                                            <span class="md-bar-fill md-bar-primary"
+                                                th:style="'width:' + ${internalEmployeePercent} + '%'"></span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="md-cell-meter">
+                                        <strong th:text="${cell.externalEmployees}">0</strong>
+                                        <span class="md-bar-track">
+                                            <span class="md-bar-fill md-bar-accent"
+                                                th:style="'width:' + ${externalEmployeePercent} + '%'"></span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="text-center"><span class="md-status" th:text="${totalWorkforce}">0</span></td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(dashboard.cellProjects)}">
                                 <td colspan="7" class="text-center text-muted py-4">No cell-wise project data available.</td>
@@ -322,6 +376,9 @@
 
             let activePanel = 'employees';
             let hoveredItem = null;
+            let chartRegions = [];
+            let resizeFrame = null;
+            const tooltip = document.getElementById('mdChartTooltip');
 
             function fitCanvas() {
                 const rect = canvas.getBoundingClientRect();
@@ -341,6 +398,19 @@
                 context.closePath();
             }
 
+            function drawChartGrid(width, height) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(31, 79, 120, 0.08)';
+                ctx.lineWidth = 1;
+                for (let x = 36; x < width; x += 56) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 22);
+                    ctx.lineTo(x, height - 20);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
             function drawDonut(panel) {
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
@@ -350,17 +420,33 @@
                 const lineWidth = Math.max(22, radius * 0.24);
                 const total = Math.max(panel.items.reduce((sum, item) => sum + item.value, 0), 1);
                 let start = -Math.PI / 2;
+                chartRegions = [];
 
                 ctx.clearRect(0, 0, width, height);
+                drawChartGrid(width, height);
                 ctx.lineWidth = lineWidth;
                 ctx.lineCap = 'round';
                 panel.items.forEach((item, index) => {
                     const angle = (item.value / total) * Math.PI * 2;
+                    const end = start + angle - 0.035;
                     ctx.beginPath();
                     ctx.strokeStyle = item.color;
                     ctx.globalAlpha = hoveredItem === null || hoveredItem === index ? 1 : 0.28;
-                    ctx.arc(cx, cy, radius, start, start + angle - 0.035);
+                    ctx.arc(cx, cy, hoveredItem === index ? radius + 4 : radius, start, end);
                     ctx.stroke();
+                    chartRegions.push({
+                        type: 'arc',
+                        index,
+                        label: item.label,
+                        value: item.value,
+                        percent: Math.round((item.value * 100) / total),
+                        cx,
+                        cy,
+                        radius,
+                        lineWidth,
+                        start,
+                        end: start + angle
+                    });
                     start += angle;
                 });
                 ctx.globalAlpha = 1;
@@ -372,8 +458,10 @@
                 const max = Math.max(...panel.items.map((item) => item.value), 1);
                 const padX = 36;
                 const rowHeight = Math.min(58, (height - 48) / panel.items.length);
+                chartRegions = [];
 
                 ctx.clearRect(0, 0, width, height);
+                drawChartGrid(width, height);
                 panel.items.forEach((item, index) => {
                     const y = 42 + index * rowHeight;
                     const barWidth = (width - padX * 2) * (item.value / max);
@@ -384,14 +472,37 @@
                     ctx.fillStyle = item.color;
                     roundedRect(ctx, padX, y, Math.max(barWidth, 4), 18, 9);
                     ctx.fill();
+                    if (hoveredItem === index) {
+                        ctx.strokeStyle = 'rgba(23, 38, 53, 0.24)';
+                        ctx.lineWidth = 2;
+                        roundedRect(ctx, padX - 3, y - 3, Math.max(barWidth, 4) + 6, 24, 12);
+                        ctx.stroke();
+                    }
                     ctx.fillStyle = '#172635';
                     ctx.font = '700 13px Public Sans, Arial, sans-serif';
                     ctx.fillText(item.label, padX, y - 8);
                     ctx.textAlign = 'right';
                     ctx.fillText(String(item.value), width - padX, y - 8);
                     ctx.textAlign = 'left';
+                    chartRegions.push({
+                        type: 'bar',
+                        index,
+                        label: item.label,
+                        value: item.value,
+                        percent: Math.round((item.value * 100) / Math.max(panel.total, 1)),
+                        x: padX,
+                        y,
+                        width: Math.max(barWidth, 4),
+                        height: 18
+                    });
                 });
                 ctx.globalAlpha = 1;
+            }
+
+            function setActiveInsight(index) {
+                insightStack.querySelectorAll('.md-insight').forEach((button) => {
+                    button.classList.toggle('active', Number(button.dataset.index) === index);
+                });
             }
 
             function renderInsights(panel) {
@@ -405,14 +516,20 @@
                         '</button>';
                 }).join('');
                 insightStack.querySelectorAll('.md-insight').forEach((button) => {
-                    button.addEventListener('mouseenter', () => {
+                    const highlight = () => {
                         hoveredItem = Number(button.dataset.index);
+                        setActiveInsight(hoveredItem);
                         renderPanel(activePanel, false);
-                    });
-                    button.addEventListener('mouseleave', () => {
+                    };
+                    const clear = () => {
                         hoveredItem = null;
+                        setActiveInsight(-1);
                         renderPanel(activePanel, false);
-                    });
+                    };
+                    button.addEventListener('mouseenter', highlight);
+                    button.addEventListener('focus', highlight);
+                    button.addEventListener('mouseleave', clear);
+                    button.addEventListener('blur', clear);
                 });
             }
 
@@ -428,6 +545,8 @@
                 center.querySelector('span').textContent = panel.title;
                 if (refreshInsights !== false) {
                     renderInsights(panel);
+                } else {
+                    setActiveInsight(hoveredItem);
                 }
             }
 
@@ -440,8 +559,67 @@
                 renderPanel(name, true);
             }
 
+            function pointInArc(region, x, y) {
+                const dx = x - region.cx;
+                const dy = y - region.cy;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                let angle = Math.atan2(dy, dx);
+                if (angle < -Math.PI / 2) {
+                    angle += Math.PI * 2;
+                }
+                const inner = region.radius - region.lineWidth / 2 - 8;
+                const outer = region.radius + region.lineWidth / 2 + 8;
+                return distance >= inner && distance <= outer && angle >= region.start && angle <= region.end;
+            }
+
+            function pointInBar(region, x, y) {
+                return x >= region.x && x <= region.x + region.width && y >= region.y - 8 && y <= region.y + region.height + 8;
+            }
+
+            function findRegion(event) {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                return chartRegions.find((region) => region.type === 'arc'
+                    ? pointInArc(region, x, y)
+                    : pointInBar(region, x, y));
+            }
+
+            function moveTooltip(event, region) {
+                if (!tooltip) {
+                    return;
+                }
+                if (!region) {
+                    tooltip.classList.remove('show');
+                    return;
+                }
+                const stageRect = canvas.parentElement.getBoundingClientRect();
+                tooltip.innerHTML = '<strong>' + region.label + '</strong><span>' + region.value + ' (' + region.percent + '%)</span>';
+                tooltip.style.left = (event.clientX - stageRect.left + 12) + 'px';
+                tooltip.style.top = (event.clientY - stageRect.top + 12) + 'px';
+                tooltip.classList.add('show');
+            }
+
+            function handleChartPointer(event) {
+                const region = findRegion(event);
+                const nextIndex = region ? region.index : null;
+                if (hoveredItem !== nextIndex) {
+                    hoveredItem = nextIndex;
+                    setActiveInsight(nextIndex === null ? -1 : nextIndex);
+                    renderPanel(activePanel, false);
+                }
+                moveTooltip(event, region);
+            }
+
             document.querySelectorAll('.md-tab').forEach((tab) => {
                 tab.addEventListener('click', () => activatePanel(tab.dataset.panel));
+            });
+            canvas.addEventListener('mousemove', handleChartPointer);
+            canvas.addEventListener('mouseleave', () => {
+                hoveredItem = null;
+                setActiveInsight(-1);
+                moveTooltip(null, null);
+                renderPanel(activePanel, false);
             });
             document.querySelectorAll('.md-focus-trigger').forEach((card) => {
                 const open = () => {
@@ -517,7 +695,10 @@
                 });
             });
 
-            window.addEventListener('resize', () => renderPanel(activePanel, true));
+            window.addEventListener('resize', () => {
+                window.cancelAnimationFrame(resizeFrame);
+                resizeFrame = window.requestAnimationFrame(() => renderPanel(activePanel, true));
+            });
             renderPanel(activePanel, true);
             filterProjects();
         })();

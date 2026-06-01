@@ -23,15 +23,35 @@ body.md-shell {
 }
 
 .md-hero {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1.25rem;
+    padding: 1.35rem;
     border-radius: 8px;
     color: #ffffff;
-    background: linear-gradient(130deg, var(--md-brand), var(--md-brand-strong));
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(130deg, var(--md-brand), var(--md-brand-strong));
+    background-size: 42px 42px, 42px 42px, auto;
     box-shadow: 0 14px 28px rgba(8, 49, 92, 0.22);
+    overflow: hidden;
+}
+
+.md-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--md-accent), var(--md-success), var(--md-warn));
+}
+
+.md-hero-copy {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
 }
 
 .md-eyebrow {
@@ -57,6 +77,39 @@ body.md-shell {
     color: rgba(255, 255, 255, 0.9);
 }
 
+.md-hero-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 0.9rem;
+}
+
+.md-hero-strip > div {
+    min-width: 128px;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.md-hero-strip span {
+    display: block;
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.md-hero-strip strong {
+    display: block;
+    margin-top: 0.16rem;
+    color: #ffffff;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
 .md-attendance-ring,
 .md-donut {
     --present: 0%;
@@ -71,6 +124,12 @@ body.md-shell {
         radial-gradient(circle at center, #ffffff 0 56%, transparent 57%),
         conic-gradient(var(--md-success) var(--present), rgba(255, 255, 255, 0.25) 0);
     color: var(--md-ink);
+}
+
+.md-attendance-ring {
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 14px 24px rgba(10, 31, 52, 0.22);
 }
 
 .md-donut {
@@ -119,15 +178,42 @@ body.md-shell {
     transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
+.md-kpi-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.52)),
+        linear-gradient(135deg, var(--card-accent, var(--md-brand)), transparent 62%);
+    opacity: 0.12;
+    pointer-events: none;
+}
+
 .md-kpi-card::after {
     content: "";
     position: absolute;
     inset: auto 0 0;
     height: 3px;
-    background: linear-gradient(90deg, var(--md-brand), var(--md-accent));
+    background: linear-gradient(90deg, var(--card-accent, var(--md-brand)), var(--md-accent));
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 180ms ease;
+}
+
+.md-kpi-brand {
+    --card-accent: var(--md-brand);
+}
+
+.md-kpi-accent {
+    --card-accent: var(--md-accent);
+}
+
+.md-kpi-success {
+    --card-accent: var(--md-success);
+}
+
+.md-kpi-warn {
+    --card-accent: var(--md-warn);
 }
 
 .md-focus-trigger {
@@ -148,11 +234,21 @@ body.md-shell {
 }
 
 .md-kpi-card i {
-    color: var(--md-brand);
+    position: relative;
+    z-index: 1;
+    display: inline-grid;
+    place-items: center;
+    width: 34px;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    color: var(--card-accent, var(--md-brand));
+    background: rgba(31, 79, 120, 0.08);
     font-size: 1.15rem;
 }
 
 .md-kpi-card span {
+    position: relative;
+    z-index: 1;
     color: var(--md-muted);
     font-weight: 800;
     font-size: 0.78rem;
@@ -161,6 +257,8 @@ body.md-shell {
 }
 
 .md-kpi-card strong {
+    position: relative;
+    z-index: 1;
     font-size: 1.65rem;
     line-height: 1;
     color: var(--md-ink);
@@ -178,6 +276,9 @@ body.md-shell {
 
 .md-explorer {
     padding: 1rem;
+    background:
+        linear-gradient(180deg, rgba(31, 79, 120, 0.04), rgba(255, 255, 255, 0) 36%),
+        var(--md-panel);
 }
 
 .md-tab-list {
@@ -229,7 +330,7 @@ body.md-shell {
     background:
         linear-gradient(90deg, rgba(31, 79, 120, 0.05) 1px, transparent 1px),
         linear-gradient(rgba(31, 79, 120, 0.05) 1px, transparent 1px),
-        #fbfdff;
+        linear-gradient(135deg, #fbfdff, #f3f8fb);
     background-size: 34px 34px;
     overflow: hidden;
 }
@@ -238,6 +339,45 @@ body.md-shell {
     display: block;
     width: 100%;
     height: 300px;
+    cursor: crosshair;
+}
+
+.md-chart-tooltip {
+    position: absolute;
+    z-index: 3;
+    min-width: 128px;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid rgba(214, 224, 234, 0.95);
+    border-radius: 8px;
+    color: var(--md-ink);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 12px 24px rgba(18, 39, 67, 0.16);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(4px);
+    transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.md-chart-tooltip.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.md-chart-tooltip strong,
+.md-chart-tooltip span {
+    display: block;
+}
+
+.md-chart-tooltip strong {
+    font-size: 0.82rem;
+    font-weight: 900;
+}
+
+.md-chart-tooltip span {
+    margin-top: 0.1rem;
+    color: var(--md-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
 }
 
 .md-chart-center {
@@ -285,13 +425,16 @@ body.md-shell {
     border: 1px solid #e1e9f1;
     border-radius: 8px;
     padding: 0.72rem;
-    background: #ffffff;
+    background:
+        linear-gradient(90deg, rgba(31, 79, 120, 0.04), rgba(255, 255, 255, 0)),
+        #ffffff;
     text-align: left;
     transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .md-insight:hover,
-.md-insight:focus-visible {
+.md-insight:focus-visible,
+.md-insight.active {
     transform: translateX(3px);
     border-color: rgba(31, 79, 120, 0.35);
     box-shadow: 0 10px 20px rgba(18, 39, 67, 0.1);
@@ -546,6 +689,8 @@ body.md-shell {
 
 .md-table-panel table {
     margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0 0.35rem;
 }
 
 .md-table-panel th {
@@ -556,7 +701,19 @@ body.md-shell {
 }
 
 .md-table-panel td {
-    border-color: #e5edf5;
+    border-color: transparent;
+    background: #ffffff;
+    box-shadow: 0 1px 0 #e8eef5, 0 -1px 0 #e8eef5;
+}
+
+.md-table-panel tbody tr td:first-child {
+    border-radius: 8px 0 0 8px;
+    box-shadow: -1px 0 0 #e8eef5, 0 1px 0 #e8eef5, 0 -1px 0 #e8eef5;
+}
+
+.md-table-panel tbody tr td:last-child {
+    border-radius: 0 8px 8px 0;
+    box-shadow: 1px 0 0 #e8eef5, 0 1px 0 #e8eef5, 0 -1px 0 #e8eef5;
 }
 
 .md-table-panel td strong,
@@ -580,6 +737,40 @@ body.md-shell {
     font-size: 0.76rem;
 }
 
+.md-count-pill {
+    display: inline-flex;
+    min-width: 42px;
+    justify-content: center;
+    padding: 0.34rem 0.55rem;
+    border-radius: 8px;
+    color: var(--md-brand-strong);
+    background: #edf5fb;
+    border: 1px solid #d7e6f1;
+    font-weight: 900;
+}
+
+.md-cell-meter {
+    display: grid;
+    grid-template-columns: 34px minmax(76px, 1fr);
+    gap: 0.55rem;
+    align-items: center;
+    min-width: 126px;
+}
+
+.md-cell-meter strong {
+    color: var(--md-ink);
+    font-size: 0.94rem;
+    text-align: right;
+}
+
+.md-cell-meter .md-bar-track {
+    height: 8px;
+}
+
+.md-cell-meter .md-bar-fill {
+    animation: none;
+}
+
 .md-cell-name {
     display: inline-flex;
     width: fit-content;
@@ -600,8 +791,12 @@ body.md-shell {
 
 .md-project-row:hover,
 .md-cell-row:hover {
-    background: #f7fbff;
+    background: transparent;
     transform: translateX(2px);
+}
+
+.md-cell-row:hover td {
+    background: #f7fbff;
 }
 
 @keyframes mdBarIn {
@@ -652,6 +847,14 @@ body.md-shell {
     .md-attendance-ring,
     .md-donut {
         width: 118px;
+    }
+
+    .md-hero-strip {
+        width: 100%;
+    }
+
+    .md-hero-strip > div {
+        flex: 1;
     }
 }
 
