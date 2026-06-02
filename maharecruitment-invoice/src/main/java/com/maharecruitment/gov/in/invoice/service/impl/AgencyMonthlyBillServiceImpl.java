@@ -61,6 +61,7 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     private static final BigDecimal ZERO_AMOUNT = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     private static final String DEFAULT_ACTOR = "SYSTEM";
+    private static final String ACTIVE_STATUS = "ACTIVE";
 
     private final AgencyMonthlyBillRepository billRepository;
     private final AgencyMonthlyBillNumberGenerator billNumberGenerator;
@@ -368,6 +369,9 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
             if (employee == null) {
                 throw new TaxInvoiceException("Employee profile not found for id: " + row.employeeId());
             }
+            if (!isActiveEmployee(employee)) {
+                continue;
+            }
             if (!matchesEmployeeType(employee, row.employeeType())) {
                 continue;
             }
@@ -430,6 +434,10 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
             return true;
         }
         return sourceType.name().equalsIgnoreCase(employee.getRecruitmentType().trim());
+    }
+
+    private boolean isActiveEmployee(EmployeeEntity employee) {
+        return employee != null && ACTIVE_STATUS.equalsIgnoreCase(trimToNull(employee.getStatus()));
     }
 
     private long resolveStatusCount(Map<Integer, String> dailyStatus, String statusCode, long fallbackCount) {
