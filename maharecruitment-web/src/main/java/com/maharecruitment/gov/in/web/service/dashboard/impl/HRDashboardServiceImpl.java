@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.web.service.dashboard.impl;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,6 +32,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class HRDashboardServiceImpl implements HRDashboardService {
 
+    private static final String INTERNAL = "INTERNAL";
+    private static final String EXTERNAL = "EXTERNAL";
+    private static final String PRESENT = "PRESENT";
+    private static final String UNASSIGNED_CELL = "Unassigned Cell";
+    private static final int PROJECT_WORKFORCE_SNAPSHOT_LIMIT = 10;
+
     private final ProjectMstRepository projectMstRepository;
     private final EmployeeRepository employeeRepository;
     private final RecruitmentDesignationVacancyRepository recruitmentDesignationVacancyRepository;
@@ -40,41 +47,29 @@ public class HRDashboardServiceImpl implements HRDashboardService {
 
     @Override
     public HRDashboardView getDashboard() {
-        // Basic Counts
         long totalProjects = projectMstRepository.count();
         long internalProjects = projectMstRepository.countByProjectScopeType(ProjectScopeType.INTERNAL);
         long externalProjects = projectMstRepository.countByProjectScopeType(ProjectScopeType.EXTERNAL);
-        long internalEmployees = employeeRepository.countByRecruitmentType("INTERNAL");
-        long externalEmployees = employeeRepository.countByRecruitmentType("EXTERNAL");
+        long internalEmployees = employeeRepository.countByRecruitmentType(INTERNAL);
+        long externalEmployees = employeeRepository.countByRecruitmentType(EXTERNAL);
         long totalEmployees = employeeRepository.count();
 
         LocalDate today = LocalDate.now();
-        long presentEmployees = dailyAttendanceInternalRepository.countByAttendanceDateAndStatusIgnoreCase(today, "PRESENT")
-                + attendanceRegisterRepo.countExternalPresentByMonthYearDay(
-                        today.getMonthValue(),
-                        today.getYear(),
-                        today.getDayOfMonth());
+        long presentEmployees = countPresentEmployees(today);
         long absentEmployees = Math.max(totalEmployees - presentEmployees, 0);
 
-        // Monthly Onboarding
-        LocalDate firstDayOfMonth = LocalDate.now().withDayOfMonth(1);
-        LocalDate lastDayOfMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+        LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+        LocalDate lastDayOfMonth = today.withDayOfMonth(today.lengthOfMonth());
         long onboardingThisMonth = employeeRepository.countByOnboardingDateBetween(firstDayOfMonth, lastDayOfMonth);
 
-        // Pending Approvals (Applications in SUBMITTED status)
-        long pendingApprovals = departmentProjectApplicationRepository.findAll().stream()
-                .filter(app -> app.getApplicationStatus() == DepartmentApplicationStatus.SUBMITTED_TO_HR)
-                .count();
-
-        // Open Positions
+        long pendingApprovals = departmentProjectApplicationRepository.countByApplicationStatus(
+                DepartmentApplicationStatus.SUBMITTED_TO_HR);
         long openPositions = recruitmentDesignationVacancyRepository.countTotalOpenPositions();
 
-        // Percentages
         int internalPercent = totalEmployees > 0 ? (int) ((internalEmployees * 100) / totalEmployees) : 0;
         int externalPercent = totalEmployees > 0 ? (int) ((externalEmployees * 100) / totalEmployees) : 0;
         int presentPercent = totalEmployees > 0 ? (int) ((presentEmployees * 100) / totalEmployees) : 0;
 
-        // Department Onboarding
         List<EmployeeEntity> allEmployees = employeeRepository.findAll();
         Map<String, Long> deptCounts = allEmployees.stream()
                 .filter(e -> e.getDepartmentRegistration() != null)
@@ -89,7 +84,6 @@ public class HRDashboardServiceImpl implements HRDashboardService {
             departmentOnboarding = List.of(new DepartmentOnboardingView("No Data", 0, 0));
         }
 
-        // Project Workforce Snapshot
         List<DepartmentProjectApplicationEntity> applications = departmentProjectApplicationRepository.findAll();
         Map<Long, ProjectMst> projectsByApplicationId = projectMstRepository.findAll().stream()
                 .filter(project -> project.getApplicationId() != null)
@@ -97,29 +91,26 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                         ProjectMst::getApplicationId,
                         project -> project,
                         (first, second) -> first));
+        Map<String, WorkforceCount> workforceByRequestId = buildWorkforceByRequestId(allEmployees);
         List<ProjectWorkforceView> projects = applications.stream()
                 .map(app -> {
-                    long internal = allEmployees.stream()
-                            .filter(e -> app.getRequestId().equals(e.getRequestId()) && "INTERNAL".equals(e.getRecruitmentType()))
-                            .count();
-                    long external = allEmployees.stream()
-                            .filter(e -> app.getRequestId().equals(e.getRequestId()) && "EXTERNAL".equals(e.getRecruitmentType()))
-                            .count();
+                    WorkforceCount workforce = workforceByRequestId.getOrDefault(app.getRequestId(), WorkforceCount.empty());
                     ProjectMst projectMst = projectsByApplicationId.get(app.getDepartmentProjectApplicationId());
                     String cellName = projectMst != null && projectMst.getCell() != null
                             ? projectMst.getCell().getCellName()
-                            : "Unassigned Cell";
+                            : UNASSIGNED_CELL;
                     return new ProjectWorkforceView(
                             app.getProjectCode(),
                             app.getProjectName(),
                             cellName,
-                            (int) internal,
-                            (int) external,
+                            workforce.internal(),
+                            workforce.external(),
                             app.getApplicationStatus().toString());
                 })
                 .sorted(Comparator.comparing(ProjectWorkforceView::cellName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
                         .thenComparing(ProjectWorkforceView::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
                         .thenComparing(ProjectWorkforceView::code, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .limit(PROJECT_WORKFORCE_SNAPSHOT_LIMIT)
                 .collect(Collectors.toList());
 
         if (projects.isEmpty()) {
@@ -145,5 +136,52 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 departmentOnboarding,
                 projects
         );
+    }
+
+    private long countPresentEmployees(LocalDate today) {
+        return dailyAttendanceInternalRepository.countByAttendanceDateAndStatusIgnoreCase(today, PRESENT)
+                + attendanceRegisterRepo.countExternalPresentByMonthYearDay(
+                        today.getMonthValue(),
+                        today.getYear(),
+                        today.getDayOfMonth());
+    }
+
+    private Map<String, WorkforceCount> buildWorkforceByRequestId(List<EmployeeEntity> employees) {
+        Map<String, WorkforceCount> workforceByRequestId = new HashMap<>();
+        for (EmployeeEntity employee : employees) {
+            String requestId = employee.getRequestId();
+            if (requestId == null || requestId.isBlank()) {
+                continue;
+            }
+            WorkforceCount workforceCount = workforceByRequestId.computeIfAbsent(requestId, key -> new WorkforceCount());
+            workforceCount.add(employee.getRecruitmentType());
+        }
+        return workforceByRequestId;
+    }
+
+    private static final class WorkforceCount {
+
+        private int internal;
+        private int external;
+
+        private static WorkforceCount empty() {
+            return new WorkforceCount();
+        }
+
+        private int internal() {
+            return internal;
+        }
+
+        private int external() {
+            return external;
+        }
+
+        private void add(String recruitmentType) {
+            if (INTERNAL.equalsIgnoreCase(recruitmentType)) {
+                internal++;
+            } else if (EXTERNAL.equalsIgnoreCase(recruitmentType)) {
+                external++;
+            }
+        }
     }
 }

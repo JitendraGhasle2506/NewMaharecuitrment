@@ -8,6 +8,8 @@
     --hr-brand-strong: var(--primary-strong, #163a59);
     --hr-internal: var(--primary, #1f4f78);
     --hr-external: #0f8b8d;
+    --hr-success: #2d8a57;
+    --hr-warning: #b7791f;
 }
 
 * {
@@ -35,15 +37,39 @@ body.hr-shell {
 }
 
 .hero-strip {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    background: linear-gradient(130deg, var(--hr-brand), var(--hr-brand-strong));
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(130deg, var(--hr-brand), var(--hr-brand-strong));
+    background-size: 40px 40px, 40px 40px, auto;
     color: #ffffff;
-    border-radius: 14px;
+    border-radius: 8px;
     padding: 1.15rem 1.2rem;
     box-shadow: 0 12px 24px rgba(8, 49, 92, 0.24);
+    overflow: hidden;
+}
+
+.hero-strip::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--hr-external), var(--hr-success), var(--hr-warning));
+}
+
+.hero-eyebrow {
+    display: block;
+    margin-bottom: 0.28rem;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .hero-strip h1 {
@@ -59,28 +85,91 @@ body.hr-shell {
     color: rgba(255, 255, 255, 0.92);
 }
 
-.dummy-tag {
-    padding: 0.36rem 0.7rem;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.14);
-    font-weight: 700;
-    font-size: 0.78rem;
+.attendance-summary {
+    --present: 0%;
+    flex: 0 0 auto;
+    min-width: 230px;
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background:
+        linear-gradient(90deg, var(--hr-success) var(--present), rgba(255, 255, 255, 0.16) 0),
+        rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.attendance-summary span,
+.attendance-summary em {
+    display: block;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.76rem;
+    font-style: normal;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.attendance-summary strong {
+    display: flex;
+    align-items: baseline;
+    gap: 0.28rem;
+    margin: 0.24rem 0;
+    color: #ffffff;
+    font-size: 1.72rem;
+    line-height: 1;
+}
+
+.attendance-summary small {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
 }
 
 .kpi-grid {
     margin-top: 1rem;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 0.72rem;
 }
 
 .kpi-card {
+    position: relative;
+    overflow: hidden;
     background: var(--hr-panel);
     border: 1px solid var(--hr-line);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 0.82rem 0.9rem;
     box-shadow: var(--hr-shadow);
+    transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+
+.kpi-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: var(--kpi-accent, var(--hr-brand));
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(31, 79, 120, 0.32);
+    box-shadow: 0 14px 28px rgba(18, 39, 67, 0.14);
+}
+
+.kpi-brand {
+    --kpi-accent: var(--hr-brand);
+}
+
+.kpi-accent {
+    --kpi-accent: var(--hr-external);
+}
+
+.kpi-success {
+    --kpi-accent: var(--hr-success);
+}
+
+.kpi-warning {
+    --kpi-accent: var(--hr-warning);
 }
 
 .kpi-card p {
@@ -93,26 +182,113 @@ body.hr-shell {
 }
 
 .kpi-card h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 0.28rem;
     margin: 0.24rem 0 0;
     font-size: 1.38rem;
     font-weight: 700;
     color: var(--hr-ink);
 }
 
+.kpi-card h3 small {
+    color: var(--hr-muted);
+    font-size: 0.84rem;
+    font-weight: 800;
+}
+
 .panel {
     background: var(--hr-panel);
     border: 1px solid var(--hr-line);
-    border-radius: 14px;
+    border-radius: 8px;
     padding: 1rem;
     box-shadow: var(--hr-shadow);
 }
 
 .panel h4 {
-    margin: 0 0 0.8rem;
+    margin: 0;
     font-size: var(--heading-size-sub);
     font-weight: 700;
     color: var(--hr-ink);
     font-family: "Merriweather Sans", "Public Sans", sans-serif;
+}
+
+.panel-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.8rem;
+}
+
+.panel-title > span {
+    color: var(--hr-muted);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.panel-subtitle {
+    display: block;
+    margin-top: 0.16rem;
+    color: var(--hr-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.attendance-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+}
+
+.attendance-panel-grid > div {
+    padding: 0.75rem;
+    border: 1px solid #e2eaf2;
+    border-radius: 8px;
+    background: #f8fbfd;
+}
+
+.attendance-panel-grid strong,
+.attendance-panel-grid span {
+    display: block;
+}
+
+.attendance-panel-grid strong {
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+.attendance-panel-grid span {
+    margin-top: 0.24rem;
+    color: var(--hr-muted);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.attendance-track {
+    height: 12px;
+    margin-top: 0.8rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e8eef5;
+}
+
+.attendance-track span {
+    display: block;
+    height: 100%;
+    min-width: 2px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #1f6f45, var(--hr-success));
+}
+
+.attendance-note {
+    margin: 0.75rem 0 0;
+    color: var(--hr-muted);
+    font-size: 0.88rem;
+}
+
+.attendance-note strong {
+    color: var(--hr-ink);
 }
 
 .mix-bar {
@@ -155,6 +331,89 @@ body.hr-shell {
     border-bottom-color: var(--hr-line);
 }
 
+.hr-table-tools {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.hr-search,
+.hr-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 36px;
+    padding: 0 0.7rem;
+    border: 1px solid #dbe6ee;
+    border-radius: 999px;
+    background: #ffffff;
+}
+
+.hr-search i,
+.hr-select i {
+    color: var(--hr-muted);
+    font-size: 0.84rem;
+}
+
+.hr-search input,
+.hr-select select {
+    width: min(210px, 42vw);
+    border: 0;
+    outline: 0;
+    color: var(--hr-ink);
+    background: transparent;
+    font-size: 0.86rem;
+}
+
+.cell-chip {
+    display: inline-flex;
+    max-width: 180px;
+    padding: 0.3rem 0.55rem;
+    border: 1px solid #d7e6f1;
+    border-radius: 999px;
+    color: var(--hr-brand-strong);
+    background: #edf5fb;
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: normal;
+}
+
+.workforce-meter {
+    display: grid;
+    grid-template-columns: 34px minmax(72px, 1fr);
+    gap: 0.55rem;
+    align-items: center;
+    min-width: 126px;
+}
+
+.workforce-meter strong {
+    text-align: right;
+}
+
+.meter-track {
+    display: block;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e8eef5;
+}
+
+.meter-fill {
+    display: block;
+    height: 100%;
+    min-width: 2px;
+    border-radius: inherit;
+}
+
+.meter-internal {
+    background: linear-gradient(90deg, var(--hr-brand-strong), var(--hr-internal));
+}
+
+.meter-external {
+    background: linear-gradient(90deg, #0d6f71, var(--hr-external));
+}
+
 @media (prefers-reduced-motion: reduce) {
     .kpi-card,
     .panel {
@@ -169,7 +428,7 @@ body.hr-shell {
 
 @media (max-width: 1199.98px) {
     .kpi-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 
@@ -181,6 +440,23 @@ body.hr-shell {
 
     .kpi-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .attendance-summary,
+    .hr-table-tools,
+    .hr-search,
+    .hr-select {
+        width: 100%;
+    }
+
+    .hr-search input,
+    .hr-select select {
+        width: 100%;
+    }
+
+    .panel-title {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 

@@ -20,6 +20,7 @@ public class HRController {
     public String hrDashboard(Model model) {
         HRDashboardView dashboard = hrDashboardService.getDashboard();
 
+        model.addAttribute("dashboard", dashboard);
         model.addAttribute("totalProjects", dashboard.totalProjects());
         model.addAttribute("internalProjects", dashboard.internalProjects());
         model.addAttribute("externalProjects", dashboard.externalProjects());

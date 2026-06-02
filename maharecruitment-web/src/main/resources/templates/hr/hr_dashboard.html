@@ -19,33 +19,52 @@
                 <div class="card-body">
                     <section class="hero-strip">
                         <div>
+                            <span class="hero-eyebrow">HR Operations View</span>
                             <h1>Human Resources Dashboard</h1>
-                            <p>Operational overview for projects, onboarding, and workforce mix.</p>
+                            <p>Operational overview for attendance, projects, onboarding, and workforce mix.</p>
+                        </div>
+                        <div class="attendance-summary"
+                            th:style="'--present:' + ${presentPercent} + '%'"
+                            aria-label="Today present employees out of total employees">
+                            <span>Present Today</span>
+                            <strong>
+                                <b th:text="${presentEmployees}">0</b>
+                                <small>/</small>
+                                <b th:text="${totalEmployees}">0</b>
+                            </strong>
+                            <em th:text="${presentPercent} + '% marked present'">0% marked present</em>
                         </div>
                     </section>
 
                     <section class="kpi-grid">
-                        <article class="kpi-card">
+                        <article class="kpi-card kpi-brand">
                             <p>Total Projects</p>
                             <h3 th:text="${totalProjects}">0</h3>
                         </article>
-                        <article class="kpi-card">
+                        <article class="kpi-card kpi-accent">
                             <p>Onboarding This Month</p>
                             <h3 th:text="${onboardingThisMonth}">0</h3>
                         </article>
-                        <article class="kpi-card">
+                        <article class="kpi-card kpi-brand">
                             <p>Total Employees</p>
                             <h3 th:text="${totalEmployees}">0</h3>
                         </article>
-                        <article class="kpi-card">
+                        <article class="kpi-card kpi-success">
+                            <p>Present Today</p>
+                            <h3>
+                                <span th:text="${presentEmployees}">0</span>
+                                <small th:text="'/ ' + ${totalEmployees}">/ 0</small>
+                            </h3>
+                        </article>
+                        <article class="kpi-card kpi-warning">
                             <p>Pending Department Requests</p>
                             <h3 th:text="${pendingApprovals}">0</h3>
                         </article>
-                        <article class="kpi-card">
+                        <article class="kpi-card kpi-accent">
                             <p>Open Positions</p>
                             <h3 th:text="${openPositions}">0</h3>
                         </article>
-                        <article class="kpi-card">
+                        <article class="kpi-card kpi-warning">
                             <p>Attrition Rate</p>
                             <h3 th:text="${attritionRate}">0%</h3>
                         </article>
@@ -54,7 +73,36 @@
                     <div class="row g-4 mt-1">
                         <div class="col-lg-5">
                             <section class="panel">
-                                <h4>Employee Mix</h4>
+                                <div class="panel-title">
+                                    <h4>Attendance Today</h4>
+                                    <span th:text="${presentPercent} + '%'">0%</span>
+                                </div>
+                                <div class="attendance-panel-grid">
+                                    <div>
+                                        <strong th:text="${presentEmployees}">0</strong>
+                                        <span>Present Employees</span>
+                                    </div>
+                                    <div>
+                                        <strong th:text="${absentEmployees}">0</strong>
+                                        <span>Not Marked / Absent</span>
+                                    </div>
+                                </div>
+                                <div class="attendance-track">
+                                    <span th:style="'width:' + ${presentPercent} + '%'"></span>
+                                </div>
+                                <p class="attendance-note">
+                                    <strong th:text="${presentEmployees}">0</strong>
+                                    <span th:text="' out of ' + ${totalEmployees} + ' employees are present today.'">
+                                        out of 0 employees are present today.
+                                    </span>
+                                </p>
+                            </section>
+
+                            <section class="panel mt-4">
+                                <div class="panel-title">
+                                    <h4>Employee Mix</h4>
+                                    <span th:text="${totalEmployees} + ' employees'">0 employees</span>
+                                </div>
                                 <div class="mix-bar">
                                     <span class="mix-internal" th:style="'width:' + ${internalPercent} + '%'"></span>
                                     <span class="mix-external" th:style="'width:' + ${externalPercent} + '%'"></span>
@@ -86,22 +134,61 @@
 
                         <div class="col-lg-7">
                             <section class="panel">
-                                <h4>Project Workforce Snapshot</h4>
+                                <div class="panel-title">
+                                    <div>
+                                        <h4>Project Workforce Snapshot</h4>
+                                        <span class="panel-subtitle">Showing limited project records for quick review</span>
+                                    </div>
+                                    <div class="hr-table-tools">
+                                        <div class="hr-search">
+                                            <i class="fa-solid fa-magnifying-glass"></i>
+                                            <input type="search" id="hrProjectSearch" placeholder="Search project or cell">
+                                        </div>
+                                        <div class="hr-select">
+                                            <i class="fa-solid fa-layer-group"></i>
+                                            <select id="hrCellFilter" aria-label="Filter by cell">
+                                                <option value="all">All Cells</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="table-responsive">
                                     <table class="table table-hover align-middle">
                                         <thead>
                                             <tr>
                                                 <th>Project Name</th>
-                                                <th class="text-center">Internal</th>
-                                                <th class="text-center">External</th>
+                                                <th>Cell</th>
+                                                <th class="text-center">Internal Employees</th>
+                                                <th class="text-center">External Employees</th>
                                                 <th>Status</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr th:each="project : ${projects}">
+                                            <tr class="hr-project-row" th:each="project : ${projects}"
+                                                th:with="projectWorkforce=${project.internal + project.external},
+                                                    internalPercent=${projectWorkforce > 0 ? (project.internal * 100) / projectWorkforce : 0},
+                                                    externalPercent=${projectWorkforce > 0 ? (project.external * 100) / projectWorkforce : 0}"
+                                                th:attr="data-project=${project.name},data-cell=${project.cellName}">
                                                 <td th:text="${project.name}">Project Name</td>
-                                                <td class="text-center" th:text="${project.internal}">0</td>
-                                                <td class="text-center" th:text="${project.external}">0</td>
+                                                <td><span class="cell-chip" th:text="${project.cellName}">Cell</span></td>
+                                                <td>
+                                                    <div class="workforce-meter">
+                                                        <strong th:text="${project.internal}">0</strong>
+                                                            <span class="meter-track">
+                                                                <span class="meter-fill meter-internal"
+                                                                th:style="'width:' + ${internalPercent} + '%'"></span>
+                                                            </span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="workforce-meter">
+                                                        <strong th:text="${project.external}">0</strong>
+                                                            <span class="meter-track">
+                                                                <span class="meter-fill meter-external"
+                                                                th:style="'width:' + ${externalPercent} + '%'"></span>
+                                                            </span>
+                                                    </div>
+                                                </td>
                                                 <td>
                                                     <span class="badge"
                                                         th:classappend="${project.status == 'In Progress'} ? ' text-bg-primary' :
@@ -109,6 +196,9 @@
                                                               (${project.status == 'UAT'} ? ' text-bg-success' : ' text-bg-warning'))"
                                                         th:text="${project.status}">Status</span>
                                                 </td>
+                                            </tr>
+                                            <tr id="hrProjectNoResults" class="d-none">
+                                                <td colspan="5" class="text-center text-muted py-4">No matching project found.</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -120,6 +210,55 @@
             </div>
         </section>
     </th:block>
+    <script>
+        (function () {
+            const searchInput = document.getElementById('hrProjectSearch');
+            const cellFilter = document.getElementById('hrCellFilter');
+            const rows = Array.from(document.querySelectorAll('.hr-project-row'));
+            const noResults = document.getElementById('hrProjectNoResults');
+
+            if (cellFilter) {
+                Array.from(new Set(rows.map((row) => row.dataset.cell).filter(Boolean)))
+                    .sort((first, second) => first.localeCompare(second))
+                    .forEach((cell) => {
+                        const option = document.createElement('option');
+                        option.value = cell;
+                        option.textContent = cell;
+                        cellFilter.appendChild(option);
+                    });
+            }
+
+            function filterProjects() {
+                const search = (searchInput ? searchInput.value : '').trim().toLowerCase();
+                const selectedCell = cellFilter ? cellFilter.value : 'all';
+                let visible = 0;
+
+                rows.forEach((row) => {
+                    const projectName = (row.dataset.project || '').toLowerCase();
+                    const cellName = row.dataset.cell || '';
+                    const matchesSearch = !search || projectName.includes(search) || cellName.toLowerCase().includes(search);
+                    const matchesCell = selectedCell === 'all' || cellName === selectedCell;
+                    const show = matchesSearch && matchesCell;
+                    row.classList.toggle('d-none', !show);
+                    if (show) {
+                        visible += 1;
+                    }
+                });
+
+                if (noResults) {
+                    noResults.classList.toggle('d-none', visible > 0 || rows.length === 0);
+                }
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', filterProjects);
+            }
+            if (cellFilter) {
+                cellFilter.addEventListener('change', filterProjects);
+            }
+            filterProjects();
+        })();
+    </script>
 
 </body>
 

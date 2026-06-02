@@ -23,6 +23,8 @@ public interface DepartmentProjectApplicationRepository extends JpaRepository<De
 
     boolean existsByRequestId(String requestId);
 
+    long countByApplicationStatus(DepartmentApplicationStatus applicationStatus);
+
     Optional<DepartmentProjectApplicationEntity> findByRequestIdIgnoreCase(String requestId);
     
     List<DepartmentProjectApplicationEntity> findByApplicationStatusInOrderByDepartmentProjectApplicationIdDesc(
