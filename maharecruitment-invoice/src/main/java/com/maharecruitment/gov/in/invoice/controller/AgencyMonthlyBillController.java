@@ -1,9 +1,15 @@
 package com.maharecruitment.gov.in.invoice.controller;
 
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -20,8 +26,10 @@ import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillListItemView;
 import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillView;
 import com.maharecruitment.gov.in.invoice.exception.TaxInvoiceException;
+import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillPdfGenerator;
 import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillQrCodeGenerator;
 import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillService;
+import com.maharecruitment.gov.in.invoice.service.model.GeneratedAgencyMonthlyBillDocument;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 
 @Controller
@@ -33,6 +41,7 @@ public class AgencyMonthlyBillController {
     private static final String BILL_PAGE_TITLE = "Monthly Generated Bills";
 
     private final AgencyMonthlyBillService billService;
+    private final AgencyMonthlyBillPdfGenerator pdfGenerator;
     private final AgencyMonthlyBillQrCodeGenerator qrCodeGenerator;
     private final UserAffiliationService userAffiliationService;
     private final UserRepository userRepository;
@@ -40,11 +49,13 @@ public class AgencyMonthlyBillController {
 
     public AgencyMonthlyBillController(
             AgencyMonthlyBillService billService,
+            AgencyMonthlyBillPdfGenerator pdfGenerator,
             AgencyMonthlyBillQrCodeGenerator qrCodeGenerator,
             UserAffiliationService userAffiliationService,
             UserRepository userRepository,
             AgencyMasterRepository agencyMasterRepository) {
         this.billService = billService;
+        this.pdfGenerator = pdfGenerator;
         this.qrCodeGenerator = qrCodeGenerator;
         this.userAffiliationService = userAffiliationService;
         this.userRepository = userRepository;
@@ -78,6 +89,14 @@ public class AgencyMonthlyBillController {
         return "invoice/agency-monthly-bill-detail";
     }
 
+    @GetMapping("/{billId}/download/pdf")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long billId) {
+        AgencyMonthlyBillView bill = billService.getBillForAgency(billId, resolveAgencyId());
+        String preparedByName = resolvePreparedByName(bill.getCreatedBy());
+        GeneratedAgencyMonthlyBillDocument document = pdfGenerator.generate(bill, preparedByName, false);
+        return buildDownloadResponse(document);
+    }
+
     private void populateAgencyBillPageModel(Model model) {
         model.addAttribute("pageRoleLabel", AGENCY_ROLE_LABEL);
         model.addAttribute("billPageTitle", BILL_PAGE_TITLE);
@@ -88,6 +107,18 @@ public class AgencyMonthlyBillController {
         model.addAttribute("canDeleteBill", false);
         model.addAttribute("showSignatureApproval", false);
         model.addAttribute("qrSectionTitle", "6. QR Verification");
+    }
+
+    private ResponseEntity<byte[]> buildDownloadResponse(GeneratedAgencyMonthlyBillDocument document) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename(document.originalFileName(), StandardCharsets.UTF_8)
+                .build());
+        headers.setContentType(MediaType.parseMediaType(document.contentType()));
+        headers.setContentLength(document.size());
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(document.bytes());
     }
 
     private Page<AgencyMonthlyBillListItemView> loadAgencyBills(Pageable pageable, Model model) {

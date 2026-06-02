@@ -341,7 +341,7 @@
         @media print {
             @page {
                 size: A4 landscape;
-                margin: 7mm 8mm;
+                margin: 6mm;
             }
             *,
             *::before,
@@ -355,7 +355,10 @@
                 font-family: Arial, Helvetica, sans-serif !important;
                 font-size: 7.4pt !important;
                 line-height: 1.18 !important;
+                width: auto !important;
                 height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
                 overflow: visible !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -374,6 +377,10 @@
             .app-content,
             .page-main-content,
             .page-contents,
+            .container,
+            .container-fluid,
+            .row,
+            [class*="col-"],
             main {
                 display: block !important;
                 width: 100% !important;
@@ -388,7 +395,7 @@
             .bill-detail-shell {
                 display: block !important;
                 width: 100% !important;
-                max-width: 281mm !important;
+                max-width: 285mm !important;
                 margin: 0 auto !important;
                 padding: 0 !important;
                 height: auto !important;
@@ -415,7 +422,7 @@
                 box-shadow: none;
                 border-radius: 0;
                 width: 100% !important;
-                max-width: 281mm !important;
+                max-width: 285mm !important;
                 margin: 0 auto !important;
                 height: auto !important;
                 overflow: visible;
@@ -436,14 +443,20 @@
                 background: #1f4f78 !important;
             }
             .official-header {
-                grid-template-columns: 74px 1fr 150px;
-                padding: 5px 6px 6px;
-                gap: 6px;
+                display: grid !important;
+                grid-template-columns: 20mm minmax(0, 1fr) 44mm;
+                padding: 3mm 3mm 2.5mm;
+                gap: 3mm;
+                align-items: center;
                 border-bottom: 1.5px solid #1f2937 !important;
                 background: #f8fafc !important;
             }
+            .office-heading,
+            .document-title-box {
+                min-width: 0;
+            }
             .document-logo {
-                width: 52px;
+                width: 16mm;
             }
             .office-kicker,
             .document-kicker {
@@ -471,8 +484,10 @@
                 gap: 0;
             }
             .document-control-grid {
-                grid-template-columns: repeat(4, 1fr);
-                border-color: #64748b !important;
+                display: grid !important;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                border: 1px solid #64748b !important;
+                border-bottom: 0 !important;
                 page-break-inside: avoid;
                 break-inside: avoid;
             }
@@ -485,6 +500,9 @@
             }
             .document-control-item:nth-child(4n) {
                 border-right: 0 !important;
+            }
+            .document-control-item:nth-last-child(-n + 4) {
+                border-bottom: 1px solid #555 !important;
             }
             .control-label {
                 color: #334155 !important;
@@ -516,6 +534,7 @@
                 width: 100% !important;
                 table-layout: fixed;
                 border-collapse: collapse !important;
+                border-spacing: 0 !important;
             }
             .table-report thead {
                 display: table-header-group;
@@ -556,9 +575,9 @@
             .table-report th,
             .table-report td {
                 border-color: #555 !important;
-                padding: 2px 3px !important;
-                font-size: 6.15pt !important;
-                line-height: 1.1;
+                padding: 1.6px 2.2px !important;
+                font-size: 5.95pt !important;
+                line-height: 1.08;
                 vertical-align: middle !important;
                 overflow-wrap: anywhere;
             }
@@ -586,16 +605,16 @@
                 table-layout: fixed !important;
             }
             .employee-lines col:nth-child(1) { width: 3.5% !important; }
-            .employee-lines col:nth-child(2) { width: 19% !important; }
-            .employee-lines col:nth-child(3) { width: 6.5% !important; }
+            .employee-lines col:nth-child(2) { width: 18.5% !important; }
+            .employee-lines col:nth-child(3) { width: 6% !important; }
             .employee-lines col:nth-child(4) { width: 13% !important; }
             .employee-lines col:nth-child(5) { width: 9% !important; }
             .employee-lines col:nth-child(6) { width: 6.5% !important; }
             .employee-lines col:nth-child(7) { width: 12% !important; }
-            .employee-lines col:nth-child(8) { width: 6% !important; }
+            .employee-lines col:nth-child(8) { width: 5.8% !important; }
             .employee-lines col:nth-child(9) { width: 8.5% !important; }
             .employee-lines col:nth-child(10) { width: 8% !important; }
-            .employee-lines col:nth-child(11) { width: 8.5% !important; }
+            .employee-lines col:nth-child(11) { width: 9.2% !important; }
             .employee-lines td:first-child {
                 text-align: center;
             }
@@ -610,6 +629,15 @@
             .number-cell {
                 white-space: nowrap !important;
                 font-variant-numeric: tabular-nums;
+            }
+            .table-report th.number-cell {
+                white-space: normal !important;
+            }
+            .table-report td.number-cell {
+                text-align: right !important;
+            }
+            .text-muted {
+                color: #475569 !important;
             }
             .employee-cell {
                 min-width: 0;
@@ -637,6 +665,7 @@
                 line-height: 1.18;
             }
             .verification-grid {
+                display: grid !important;
                 grid-template-columns: repeat(4, 1fr);
                 gap: 4px;
             }
@@ -655,6 +684,7 @@
                 line-height: 1.08;
             }
             .bill-qr-section {
+                display: grid !important;
                 border-color: #64748b !important;
                 grid-template-columns: 31mm 1fr;
                 gap: 7px;
@@ -674,6 +704,7 @@
                 margin-bottom: 2px;
             }
             .bill-qr-details {
+                display: grid !important;
                 grid-template-columns: repeat(4, minmax(0, 1fr));
                 gap: 2px 5px;
             }
@@ -715,6 +746,10 @@
                     <p class="text-muted mb-0" th:text="${bill.billNumber}">25MAY2026-0001</p>
                 </div>
                 <div class="screen-toolbar-actions">
+                    <a class="btn btn-primary rounded-pill px-4"
+                        th:href="@{|${billBasePath}/${bill.agencyMonthlyBillId}/download/pdf|}">
+                        Download PDF
+                    </a>
                     <button type="button" class="btn btn-outline-primary rounded-pill px-4" onclick="window.print()">Print</button>
                     <form class="d-inline" th:if="${canDeleteBill}"
                         th:action="@{|${billBasePath}/${bill.agencyMonthlyBillId}/delete|}"
