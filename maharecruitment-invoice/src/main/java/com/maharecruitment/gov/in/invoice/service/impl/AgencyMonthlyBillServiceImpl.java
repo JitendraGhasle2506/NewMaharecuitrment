@@ -106,11 +106,35 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
     }
 
     @Override
+    public Page<AgencyMonthlyBillListItemView> getGeneratedBillsForAgency(Long agencyId, Pageable pageable) {
+        Long resolvedAgencyId = requireAgencyId(agencyId);
+        Pageable resolvedPageable = pageable != null
+                ? pageable
+                : PageRequest.of(
+                        0,
+                        10,
+                        Sort.by(Sort.Order.desc("generatedDate"), Sort.Order.desc("agencyMonthlyBillId")));
+        return billRepository.findByAgencyIdAndActiveTrue(resolvedAgencyId, resolvedPageable)
+                .map(viewMapper::toListItemView);
+    }
+
+    @Override
     public AgencyMonthlyBillView getBill(Long billId) {
         if (billId == null) {
             throw new TaxInvoiceException("Bill id is required.");
         }
         return billRepository.findDetailedByAgencyMonthlyBillIdAndActiveTrue(billId)
+                .map(viewMapper::toView)
+                .orElseThrow(() -> new TaxInvoiceNotFoundException("Agency monthly bill not found for id: " + billId));
+    }
+
+    @Override
+    public AgencyMonthlyBillView getBillForAgency(Long billId, Long agencyId) {
+        if (billId == null) {
+            throw new TaxInvoiceException("Bill id is required.");
+        }
+        Long resolvedAgencyId = requireAgencyId(agencyId);
+        return billRepository.findDetailedByAgencyMonthlyBillIdAndAgencyIdAndActiveTrue(billId, resolvedAgencyId)
                 .map(viewMapper::toView)
                 .orElseThrow(() -> new TaxInvoiceNotFoundException("Agency monthly bill not found for id: " + billId));
     }
@@ -724,6 +748,13 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
         if (request.getEmployeeType() == null) {
             throw new TaxInvoiceException("Employee type is required.");
         }
+    }
+
+    private Long requireAgencyId(Long agencyId) {
+        if (agencyId == null) {
+            throw new TaxInvoiceException("Agency is required.");
+        }
+        return agencyId;
     }
 
     private AgencyMonthlyBillEmployeeType resolveEmployeeType(AgencyMonthlyBillGenerateRequest request) {

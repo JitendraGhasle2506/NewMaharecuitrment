@@ -38,6 +38,8 @@ import jakarta.validation.Valid;
 @RequestMapping("/hr/agency-monthly-bills")
 public class HrAgencyMonthlyBillController {
 
+    private static final String BILL_BASE_PATH = "/hr/agency-monthly-bills";
+
     private final AgencyMonthlyBillService billService;
     private final AgencyMonthlyBillQrCodeGenerator qrCodeGenerator;
     private final UserRepository userRepository;
@@ -65,6 +67,7 @@ public class HrAgencyMonthlyBillController {
                 Sort.by(Sort.Order.desc("generatedDate"), Sort.Order.desc("agencyMonthlyBillId")));
         Page<AgencyMonthlyBillListItemView> bills = billService.getGeneratedBills(pageable);
         model.addAttribute("bills", bills);
+        populateHrBillPageModel(model);
         return "invoice/agency-monthly-bill-list";
     }
     @GetMapping("/new")
@@ -128,6 +131,7 @@ public class HrAgencyMonthlyBillController {
         model.addAttribute("agencyBillQrCodeDataUrl", qrCodeGenerator.generateDataUrl(bill, preparedByName));
         model.addAttribute("agencyBillAuthorityName", "Maharashtra Information Technology Corporation Ltd.");
         model.addAttribute("preparedByName", preparedByName);
+        populateHrBillPageModel(model);
         return "invoice/agency-monthly-bill-detail";
     }
 
@@ -159,6 +163,19 @@ public class HrAgencyMonthlyBillController {
                 .sorted((first, second) -> Integer.compare(second, first))
                 .toList();
         model.addAttribute("years", years);
+    }
+
+    private void populateHrBillPageModel(Model model) {
+        model.addAttribute("pageRoleLabel", "HR");
+        model.addAttribute("billPageTitle", "Agency Monthly Bills");
+        model.addAttribute("billListTitle", "Agency Monthly Bills");
+        model.addAttribute("billListDescription",
+                "Generate monthly bills using payable attendance days, designation rate, and agency margin.");
+        model.addAttribute("billBasePath", BILL_BASE_PATH);
+        model.addAttribute("canGenerateBill", true);
+        model.addAttribute("canDeleteBill", true);
+        model.addAttribute("showSignatureApproval", true);
+        model.addAttribute("qrSectionTitle", "7. QR Verification");
     }
 
     private String resolveActorEmail() {
