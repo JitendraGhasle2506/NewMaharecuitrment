@@ -61,6 +61,7 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     private static final BigDecimal ZERO_AMOUNT = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     private static final String DEFAULT_ACTOR = "SYSTEM";
+    private static final String ACTIVE_STATUS = "ACTIVE";
 
     private final AgencyMonthlyBillRepository billRepository;
     private final AgencyMonthlyBillNumberGenerator billNumberGenerator;
@@ -105,11 +106,35 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
     }
 
     @Override
+    public Page<AgencyMonthlyBillListItemView> getGeneratedBillsForAgency(Long agencyId, Pageable pageable) {
+        Long resolvedAgencyId = requireAgencyId(agencyId);
+        Pageable resolvedPageable = pageable != null
+                ? pageable
+                : PageRequest.of(
+                        0,
+                        10,
+                        Sort.by(Sort.Order.desc("generatedDate"), Sort.Order.desc("agencyMonthlyBillId")));
+        return billRepository.findByAgencyIdAndActiveTrue(resolvedAgencyId, resolvedPageable)
+                .map(viewMapper::toListItemView);
+    }
+
+    @Override
     public AgencyMonthlyBillView getBill(Long billId) {
         if (billId == null) {
             throw new TaxInvoiceException("Bill id is required.");
         }
         return billRepository.findDetailedByAgencyMonthlyBillIdAndActiveTrue(billId)
+                .map(viewMapper::toView)
+                .orElseThrow(() -> new TaxInvoiceNotFoundException("Agency monthly bill not found for id: " + billId));
+    }
+
+    @Override
+    public AgencyMonthlyBillView getBillForAgency(Long billId, Long agencyId) {
+        if (billId == null) {
+            throw new TaxInvoiceException("Bill id is required.");
+        }
+        Long resolvedAgencyId = requireAgencyId(agencyId);
+        return billRepository.findDetailedByAgencyMonthlyBillIdAndAgencyIdAndActiveTrue(billId, resolvedAgencyId)
                 .map(viewMapper::toView)
                 .orElseThrow(() -> new TaxInvoiceNotFoundException("Agency monthly bill not found for id: " + billId));
     }
@@ -368,6 +393,9 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
             if (employee == null) {
                 throw new TaxInvoiceException("Employee profile not found for id: " + row.employeeId());
             }
+            if (!isActiveEmployee(employee)) {
+                continue;
+            }
             if (!matchesEmployeeType(employee, row.employeeType())) {
                 continue;
             }
@@ -430,6 +458,10 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
             return true;
         }
         return sourceType.name().equalsIgnoreCase(employee.getRecruitmentType().trim());
+    }
+
+    private boolean isActiveEmployee(EmployeeEntity employee) {
+        return employee != null && ACTIVE_STATUS.equalsIgnoreCase(trimToNull(employee.getStatus()));
     }
 
     private long resolveStatusCount(Map<Integer, String> dailyStatus, String statusCode, long fallbackCount) {
@@ -716,6 +748,13 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
         if (request.getEmployeeType() == null) {
             throw new TaxInvoiceException("Employee type is required.");
         }
+    }
+
+    private Long requireAgencyId(Long agencyId) {
+        if (agencyId == null) {
+            throw new TaxInvoiceException("Agency is required.");
+        }
+        return agencyId;
     }
 
     private AgencyMonthlyBillEmployeeType resolveEmployeeType(AgencyMonthlyBillGenerateRequest request) {

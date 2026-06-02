@@ -11,7 +11,11 @@ public interface AgencyMonthlyBillService {
 
     Page<AgencyMonthlyBillListItemView> getGeneratedBills(Pageable pageable);
 
+    Page<AgencyMonthlyBillListItemView> getGeneratedBillsForAgency(Long agencyId, Pageable pageable);
+
     AgencyMonthlyBillView getBill(Long billId);
+
+    AgencyMonthlyBillView getBillForAgency(Long billId, Long agencyId);
 
     AgencyMonthlyBillView preview(AgencyMonthlyBillGenerateRequest request);
 

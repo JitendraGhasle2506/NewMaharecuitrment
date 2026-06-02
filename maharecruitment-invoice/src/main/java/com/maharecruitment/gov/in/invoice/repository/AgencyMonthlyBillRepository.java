@@ -18,6 +18,8 @@ public interface AgencyMonthlyBillRepository extends JpaRepository<AgencyMonthly
 
     Page<AgencyMonthlyBillEntity> findByActiveTrue(Pageable pageable);
 
+    Page<AgencyMonthlyBillEntity> findByAgencyIdAndActiveTrue(Long agencyId, Pageable pageable);
+
     Optional<AgencyMonthlyBillEntity> findByAgencyIdAndBillYearAndBillMonthAndEmployeeTypeAndActiveTrue(
             Long agencyId,
             Integer billYear,
@@ -53,6 +55,11 @@ public interface AgencyMonthlyBillRepository extends JpaRepository<AgencyMonthly
 
     @EntityGraph(attributePaths = "lineItems")
     Optional<AgencyMonthlyBillEntity> findDetailedByAgencyMonthlyBillIdAndActiveTrue(Long agencyMonthlyBillId);
+
+    @EntityGraph(attributePaths = "lineItems")
+    Optional<AgencyMonthlyBillEntity> findDetailedByAgencyMonthlyBillIdAndAgencyIdAndActiveTrue(
+            Long agencyMonthlyBillId,
+            Long agencyId);
 
     @EntityGraph(attributePaths = "lineItems")
     Optional<AgencyMonthlyBillEntity> findByBillNumberIgnoreCase(String billNumber);

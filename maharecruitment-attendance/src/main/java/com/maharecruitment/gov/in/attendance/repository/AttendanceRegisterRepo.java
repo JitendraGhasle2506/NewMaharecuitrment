@@ -118,6 +118,7 @@ public interface AttendanceRegisterRepo extends JpaRepository<AttendanceRegister
 			"LEFT JOIN attendance_daily ad " +
 			"    ON ad.user_id = em.employee_id AND ad.month = :month AND ad.year = :year " +
 			"WHERE em.recruitment_type = 'EXTERNAL' " +
+			"AND UPPER(TRIM(COALESCE(em.status, ''))) = 'ACTIVE' " +
 			"AND (:regId IS NULL OR :regId = 0 OR deReg.department_registration_id = :regId) " +
 			"AND (:agencyId IS NULL OR :agencyId = 0 OR agm.agency_id = :agencyId) " +
 			"AND (:projectId IS NULL OR :projectId = 0 OR depProj.department_project_application_id = :projectId)", nativeQuery = true)
