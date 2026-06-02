@@ -23,6 +23,7 @@ public class DailyAttendanceInternalEntity extends AttendanceAuditable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
     @Column(name = "employee_id", nullable = false)
     private Long employeeId;
 

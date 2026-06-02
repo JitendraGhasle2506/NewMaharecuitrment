@@ -39,8 +39,17 @@ public class EmployeeRelievingEntity extends RecruitmentAuditable {
     @Column(name = "exit_date")
     private LocalDate exitDate;
 
+    @Column(name = "resign_date")
+    private LocalDate resignDate;
+
     @Column(name = "handover_given_to_id")
     private Long handoverGivenToId;
+
+    @Column(name = "pip_start_date")
+    private LocalDate pipStartDate;
+
+    @Column(name = "pip_duration", length = 20)
+    private String pipDuration;
 
     @Column(name = "status")
     private String status; // e.g., INITIATED, APPROVED, COMPLETED

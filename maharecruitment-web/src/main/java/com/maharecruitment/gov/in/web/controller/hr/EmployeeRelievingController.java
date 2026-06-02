@@ -53,8 +53,23 @@ public class EmployeeRelievingController {
             if (dto.getReasonOfRelieving() == null || dto.getReasonOfRelieving().isBlank()) {
                 throw new IllegalArgumentException("Reason of relieving is required.");
             }
-            if (dto.getExitDate() == null) {
-                throw new IllegalArgumentException("Exit date is required.");
+            if ("Resignation".equalsIgnoreCase(dto.getReasonOfRelieving())) {
+                if (dto.getResignDate() == null) {
+                    throw new IllegalArgumentException("Resign date is required.");
+                }
+                dto.setStatus("Resignation Submitted");
+            } else if ("PIP".equalsIgnoreCase(dto.getReasonOfRelieving())) {
+                if (dto.getPipStartDate() == null) {
+                    throw new IllegalArgumentException("PIP Start Date is required.");
+                }
+                if (dto.getPipDuration() == null || dto.getPipDuration().isBlank()) {
+                    throw new IllegalArgumentException("PIP Duration is required.");
+                }
+                dto.setStatus("Under PIP");
+            } else {
+                if (dto.getExitDate() == null) {
+                    throw new IllegalArgumentException("Exit date is required.");
+                }
             }
             relievingService.saveRelieving(dto);
             redirectAttributes.addFlashAttribute("successMessage",
@@ -62,6 +77,23 @@ public class EmployeeRelievingController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage",
                     "Error saving record: " + e.getMessage());
+        }
+        return "redirect:/hr/relieving";
+    }
+
+    @PostMapping("/mark-exit-date")
+    public String markExitDate(@ModelAttribute("relievingDto") EmployeeRelievingDto dto,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            if (dto.getRelievingId() == null || dto.getExitDate() == null) {
+                throw new IllegalArgumentException("Relieving ID and Exit Date are required.");
+            }
+            relievingService.markExitDate(dto.getRelievingId(), dto.getExitDate());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Exit Date marked successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Error marking exit date: " + e.getMessage());
         }
         return "redirect:/hr/relieving";
     }
