@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<body>
+    <th:block th:fragment="organogramNode(node)">
+        <li class="md-org-node"
+            th:classappend="' md-org-node-' + ${#strings.toLowerCase(node.nodeType)}"
+            th:attr="data-label=${#strings.toLowerCase(node.label + ' ' + node.caption + ' ' + node.nodeType)}">
+            <article class="md-org-card">
+                <div class="md-org-card-top">
+                    <span class="md-org-icon"><i th:class="${node.iconCssClass}"></i></span>
+                    <span class="md-org-type" th:text="${node.nodeType}">TYPE</span>
+                    <button type="button" class="md-org-node-toggle js-org-toggle"
+                        th:if="${!#lists.isEmpty(node.children)}"
+                        aria-label="Toggle node">
+                        <i class="fa-solid fa-chevron-up"></i>
+                    </button>
+                </div>
+                <h2 th:text="${node.label}">Node</h2>
+                <p th:text="${node.caption}">Caption</p>
+                <div class="md-org-card-metrics">
+                    <span>
+                        <strong th:text="${node.directChildren}">0</strong>
+                        <em>Direct</em>
+                    </span>
+                    <span>
+                        <strong th:text="${node.totalProjects}">0</strong>
+                        <em>Projects</em>
+                    </span>
+                    <span class="md-org-status" th:text="${node.status}">Active</span>
+                </div>
+            </article>
+            <ul class="md-org-children" th:if="${!#lists.isEmpty(node.children)}">
+                <th:block th:each="child : ${node.children}">
+                    <th:block th:replace="~{md/fragments/organogram-node :: organogramNode(${child})}"></th:block>
+                </th:block>
+            </ul>
+        </li>
+    </th:block>
+</body>
+
+</html>

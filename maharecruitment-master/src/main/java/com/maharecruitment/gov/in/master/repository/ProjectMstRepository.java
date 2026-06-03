@@ -46,6 +46,9 @@ public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
             ProjectScopeType projectScopeType,
             String activeFlag);
 
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    List<ProjectMst> findByActiveFlagIgnoreCaseOrderByProjectNameAsc(String activeFlag);
+
     long countByProjectScopeType(ProjectScopeType projectScopeType);
 
     Optional<ProjectMst> findByProjectIdAndProjectScopeType(Long projectId, ProjectScopeType projectScopeType);
