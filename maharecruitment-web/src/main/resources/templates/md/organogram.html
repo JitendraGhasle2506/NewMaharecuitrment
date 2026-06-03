@@ -94,8 +94,6 @@
                     </article>
 
                     <div class="md-org-guide" aria-label="Hierarchy levels">
-                        <span><b>Level 2</b> Wing</span>
-                        <i class="fa-solid fa-arrow-right"></i>
                         <span><b>Level 3</b> Cell</span>
                         <i class="fa-solid fa-arrow-right"></i>
                         <span><b>Level 4</b> Projects</span>
@@ -134,16 +132,6 @@
                                 <article class="md-org-relation-row md-org-map-item"
                                     th:each="cell : ${wing.children}"
                                     th:attr="data-search=${#strings.toLowerCase(wing.label + ' ' + cell.label + ' ' + cell.caption + ' ' + cell.nodeType)}">
-                                    <div class="md-org-row-block md-org-row-wing">
-                                        <span class="md-org-small-label">Wing</span>
-                                        <strong th:text="${wing.label}">Wing</strong>
-                                        <small th:text="${wing.status}">Active</small>
-                                    </div>
-
-                                    <span class="md-org-row-arrow" aria-hidden="true">
-                                        <i class="fa-solid fa-arrow-right"></i>
-                                    </span>
-
                                     <div class="md-org-row-block md-org-row-cell">
                                         <div class="md-org-row-title">
                                             <span class="md-org-cell-icon"><i th:class="${cell.iconCssClass}"></i></span>

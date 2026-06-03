@@ -666,7 +666,7 @@ body.md-org-shell {
 
 .md-org-guide {
     display: grid;
-    grid-template-columns: minmax(160px, 0.65fr) 30px minmax(180px, 0.75fr) 30px minmax(240px, 1fr);
+    grid-template-columns: minmax(220px, 0.8fr) 30px minmax(280px, 1fr);
     align-items: center;
     gap: 0.45rem;
     min-height: 42px;
@@ -711,7 +711,7 @@ body.md-org-shell {
 
 .md-org-relation-row {
     display: grid;
-    grid-template-columns: minmax(160px, 0.6fr) 30px minmax(210px, 0.8fr) 30px minmax(250px, 1fr);
+    grid-template-columns: minmax(240px, 0.85fr) 30px minmax(300px, 1fr);
     align-items: stretch;
     gap: 0.45rem;
     padding: 0.55rem;
@@ -731,10 +731,6 @@ body.md-org-shell {
     border: 1px solid #e3edf4;
     border-radius: 8px;
     background: #ffffff;
-}
-
-.md-org-row-wing {
-    background: #f6fafc;
 }
 
 .md-org-row-cell {
