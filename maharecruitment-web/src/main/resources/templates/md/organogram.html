@@ -71,15 +71,21 @@
                 </div>
 
                 <div class="md-org-map">
-                    <article class="md-org-md-card md-org-map-item"
+                    <article class="md-org-md-strip md-org-map-item"
                         th:attr="data-search=${#strings.toLowerCase(organogram.root.label + ' ' + organogram.root.caption + ' ' + organogram.root.nodeType)}">
-                        <div class="md-org-md-icon">
-                            <i th:class="${organogram.root.iconCssClass}"></i>
+                        <div class="md-org-level-badge">
+                            <span>Level 1</span>
+                            <strong>MD</strong>
                         </div>
-                        <div>
-                            <span th:text="${organogram.root.nodeType}">ROOT</span>
-                            <h2 th:text="${organogram.root.label}">Managing Director</h2>
-                            <p th:text="${organogram.root.caption}">Organisation Overview</p>
+                        <div class="md-org-person">
+                            <span class="md-org-person-icon">
+                                <i th:class="${organogram.root.iconCssClass}"></i>
+                            </span>
+                            <div>
+                                <span class="md-org-kicker" th:text="${organogram.root.nodeType}">ROOT</span>
+                                <h2 th:text="${organogram.root.label}">Managing Director</h2>
+                                <p th:text="${organogram.root.caption}">Organisation Overview</p>
+                            </div>
                         </div>
                         <div class="md-org-md-metrics">
                             <strong th:text="${organogram.root.directChildren}">0</strong>
@@ -87,7 +93,13 @@
                         </div>
                     </article>
 
-                    <div class="md-org-relation-line" aria-hidden="true"></div>
+                    <div class="md-org-guide" aria-label="Hierarchy levels">
+                        <span><b>Level 2</b> Wing</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <span><b>Level 3</b> Cell</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <span><b>Level 4</b> Projects</span>
+                    </div>
 
                     <div class="md-org-wing-stack">
                         <details class="md-org-wing md-org-map-item" open
@@ -95,6 +107,10 @@
                             th:attr="data-search=${#strings.toLowerCase(wing.label + ' ' + wing.caption + ' ' + wing.nodeType)}">
                             <summary class="md-org-wing-summary">
                                 <div class="md-org-wing-title">
+                                    <span class="md-org-level-badge md-org-level-badge-sm">
+                                        <span>Level 2</span>
+                                        <strong>Wing</strong>
+                                    </span>
                                     <span class="md-org-wing-icon"><i th:class="${wing.iconCssClass}"></i></span>
                                     <div>
                                         <span th:text="${wing.nodeType}">WING</span>
@@ -114,38 +130,60 @@
                                 </div>
                             </summary>
 
-                            <div class="md-org-cell-grid">
-                                <article class="md-org-cell md-org-map-item"
+                            <div class="md-org-row-list">
+                                <article class="md-org-relation-row md-org-map-item"
                                     th:each="cell : ${wing.children}"
                                     th:attr="data-search=${#strings.toLowerCase(wing.label + ' ' + cell.label + ' ' + cell.caption + ' ' + cell.nodeType)}">
-                                    <header class="md-org-cell-header">
-                                        <div class="md-org-cell-title">
+                                    <div class="md-org-row-block md-org-row-wing">
+                                        <span class="md-org-small-label">Wing</span>
+                                        <strong th:text="${wing.label}">Wing</strong>
+                                        <small th:text="${wing.status}">Active</small>
+                                    </div>
+
+                                    <span class="md-org-row-arrow" aria-hidden="true">
+                                        <i class="fa-solid fa-arrow-right"></i>
+                                    </span>
+
+                                    <div class="md-org-row-block md-org-row-cell">
+                                        <div class="md-org-row-title">
                                             <span class="md-org-cell-icon"><i th:class="${cell.iconCssClass}"></i></span>
                                             <div>
                                                 <span th:text="${cell.nodeType}">CELL</span>
-                                                <h3 th:text="${cell.label}">Cell</h3>
+                                                <strong th:text="${cell.label}">Cell</strong>
                                             </div>
                                         </div>
-                                        <div class="md-org-cell-count">
+                                        <div class="md-org-row-count">
                                             <strong th:text="${cell.totalProjects}">0</strong>
                                             <span>Projects</span>
                                         </div>
-                                    </header>
-
-                                    <div class="md-org-project-list" th:if="${!#lists.isEmpty(cell.children)}">
-                                        <span class="md-org-project-chip md-org-map-item"
-                                            th:each="project : ${cell.children}"
-                                            th:attr="data-search=${#strings.toLowerCase(wing.label + ' ' + cell.label + ' ' + project.label + ' ' + project.caption + ' ' + project.nodeType)}">
-                                            <i th:class="${project.iconCssClass}"></i>
-                                            <span th:text="${project.label}">Project</span>
-                                        </span>
                                     </div>
 
-                                    <div class="md-org-empty-projects" th:if="${#lists.isEmpty(cell.children)}">
-                                        <i class="fa-solid fa-circle-info"></i>
-                                        <span>No active projects mapped</span>
+                                    <span class="md-org-row-arrow" aria-hidden="true">
+                                        <i class="fa-solid fa-arrow-right"></i>
+                                    </span>
+
+                                    <div class="md-org-row-block md-org-row-projects">
+                                        <span class="md-org-small-label">Projects</span>
+                                        <div class="md-org-project-list" th:if="${!#lists.isEmpty(cell.children)}">
+                                            <span class="md-org-project-chip md-org-map-item"
+                                                th:each="project : ${cell.children}"
+                                                th:attr="data-search=${#strings.toLowerCase(wing.label + ' ' + cell.label + ' ' + project.label + ' ' + project.caption + ' ' + project.nodeType)}">
+                                                <i th:class="${project.iconCssClass}"></i>
+                                                <span th:text="${project.label}">Project</span>
+                                            </span>
+                                        </div>
+
+                                        <div class="md-org-empty-projects" th:if="${#lists.isEmpty(cell.children)}">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                            <span>No active projects mapped</span>
+                                        </div>
                                     </div>
                                 </article>
+
+                                <div class="md-org-empty-projects" th:if="${#lists.isEmpty(wing.children)}">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    <span>No active cells mapped</span>
+                                </div>
                             </div>
                         </details>
 
@@ -175,8 +213,7 @@
             const expandButton = document.getElementById('expandOrganogram');
             const collapseButton = document.getElementById('collapseOrganogram');
             const wings = Array.from(page.querySelectorAll('.md-org-wing'));
-            const cells = Array.from(page.querySelectorAll('.md-org-cell'));
-            const projects = Array.from(page.querySelectorAll('.md-org-project-chip'));
+            const rows = Array.from(page.querySelectorAll('.md-org-relation-row'));
             const noResults = document.getElementById('organogramNoResults');
 
             function textMatches(element, term) {
@@ -191,22 +228,24 @@
                 const term = searchInput ? searchInput.value.trim().toLowerCase() : '';
                 let visibleWings = 0;
 
-                projects.forEach((project) => {
-                    setHidden(project, term.length > 0 && !textMatches(project, term));
-                    project.classList.toggle('is-match', term.length > 0 && textMatches(project, term));
-                });
-
-                cells.forEach((cell) => {
-                    const cellMatch = textMatches(cell, term);
-                    const projectMatch = Array.from(cell.querySelectorAll('.md-org-project-chip'))
+                rows.forEach((row) => {
+                    const rowMatch = textMatches(row, term);
+                    const rowProjects = Array.from(row.querySelectorAll('.md-org-project-chip'));
+                    const projectMatch = rowProjects
                         .some((project) => textMatches(project, term));
-                    setHidden(cell, term.length > 0 && !cellMatch && !projectMatch);
-                    cell.classList.toggle('is-match', term.length > 0 && cellMatch);
+                    setHidden(row, term.length > 0 && !rowMatch && !projectMatch);
+                    row.classList.toggle('is-match', term.length > 0 && rowMatch);
+
+                    rowProjects.forEach((project) => {
+                        const matchingProject = textMatches(project, term);
+                        setHidden(project, term.length > 0 && !rowMatch && !matchingProject);
+                        project.classList.toggle('is-match', term.length > 0 && matchingProject);
+                    });
                 });
 
                 wings.forEach((wing) => {
                     const wingMatch = textMatches(wing, term);
-                    const childMatch = Array.from(wing.querySelectorAll('.md-org-cell, .md-org-project-chip'))
+                    const childMatch = Array.from(wing.querySelectorAll('.md-org-relation-row, .md-org-project-chip'))
                         .some((item) => textMatches(item, term));
                     const show = term.length === 0 || wingMatch || childMatch;
                     setHidden(wing, !show);
