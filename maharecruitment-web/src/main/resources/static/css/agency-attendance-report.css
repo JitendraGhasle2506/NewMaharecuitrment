@@ -113,29 +113,89 @@ body.agency-attendance-shell {
 }
 
 .agency-attendance-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 6;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.72rem;
     align-items: end;
+    padding: 0.65rem;
+    border: 1px solid #e1eaf1;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
 }
 
 .agency-attendance-filter {
     display: grid;
-    grid-template-columns: 140px 120px 150px minmax(240px, 1fr) auto;
+    grid-template-columns: 140px 120px minmax(260px, auto) minmax(240px, 1fr) auto;
     gap: 0.62rem;
     align-items: end;
 }
 
-.agency-attendance-filter label {
+.agency-attendance-filter label,
+.agency-attendance-type-control {
     display: grid;
     gap: 0.28rem;
     margin: 0;
 }
 
-.agency-attendance-filter label > span:first-child {
+.agency-attendance-filter label > span:first-child,
+.agency-attendance-type-control > span:first-child {
     color: var(--agency-att-muted);
     font-size: 0.76rem;
     font-weight: 850;
+}
+
+.agency-attendance-segmented {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+    min-height: 38px;
+    padding: 0.22rem;
+    border: 1px solid #d8e3ec;
+    border-radius: 8px;
+    background: #f7fafc;
+}
+
+.agency-attendance-segmented label {
+    position: relative;
+    display: inline-flex;
+    margin: 0;
+}
+
+.agency-attendance-segmented input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.agency-attendance-segmented span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0.28rem 0.68rem;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: var(--agency-att-muted);
+    font-size: 0.78rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.agency-attendance-segmented input:checked + span {
+    border-color: rgba(31, 93, 122, 0.28);
+    color: var(--agency-att-brand-strong);
+    background: #ffffff;
+    box-shadow: 0 5px 12px rgba(23, 36, 52, 0.08);
+}
+
+.agency-attendance-segmented input:focus-visible + span {
+    outline: 3px solid rgba(31, 93, 122, 0.16);
+    outline-offset: 2px;
 }
 
 .agency-attendance-searchbox {
@@ -166,6 +226,25 @@ body.agency-attendance-shell {
     background: transparent;
 }
 
+.agency-attendance-search-clear {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 26px;
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: 999px;
+    color: var(--agency-att-muted);
+    background: transparent;
+}
+
+.agency-attendance-search-clear:hover,
+.agency-attendance-search-clear:focus-visible {
+    color: var(--agency-att-brand-strong);
+    background: #eef5fa;
+    outline: none;
+}
+
 .agency-attendance-filter-actions,
 .agency-attendance-actions {
     display: flex;
@@ -192,6 +271,36 @@ body.agency-attendance-shell {
     border: 1px solid #e1eaf1;
     border-radius: 8px;
     background: var(--agency-att-soft);
+}
+
+.agency-attendance-table-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    padding: 0.56rem 0.64rem;
+    border: 1px solid #e1eaf1;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.agency-attendance-count,
+.agency-attendance-scroll-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.36rem;
+    color: var(--agency-att-muted);
+    font-size: 0.78rem;
+    font-weight: 850;
+}
+
+.agency-attendance-count strong {
+    color: var(--agency-att-brand-strong);
+}
+
+.agency-attendance-scroll-note i {
+    color: var(--agency-att-brand);
 }
 
 .agency-attendance-legend span {
@@ -261,6 +370,19 @@ body.agency-attendance-shell {
 
 .agency-attendance-table tbody tr:hover td {
     background: #fbfdff;
+}
+
+.agency-attendance-table tbody tr {
+    cursor: pointer;
+}
+
+.agency-attendance-table tbody tr:focus-visible td {
+    outline: 2px solid rgba(31, 93, 122, 0.24);
+    outline-offset: -2px;
+}
+
+.agency-attendance-table tbody tr.is-selected td {
+    background: #fffaf1;
 }
 
 .agency-attendance-type {
@@ -381,6 +503,28 @@ body.agency-attendance-shell {
     background: #f1f4f7;
 }
 
+.agency-attendance-page.is-dense .agency-attendance-card,
+.agency-attendance-page.is-dense .agency-attendance-toolbar,
+.agency-attendance-page.is-dense .agency-attendance-legend,
+.agency-attendance-page.is-dense .agency-attendance-table-tools {
+    gap: 0.48rem;
+    padding: 0.55rem;
+}
+
+.agency-attendance-page.is-dense .agency-attendance-table {
+    font-size: 0.72rem;
+}
+
+.agency-attendance-page.is-dense .agency-attendance-table th,
+.agency-attendance-page.is-dense .agency-attendance-table td {
+    padding: 0.32rem 0.38rem;
+}
+
+.agency-attendance-page.is-dense .agency-attendance-day span {
+    min-width: 22px;
+    min-height: 22px;
+}
+
 .agency-attendance-empty {
     display: flex;
     align-items: center;
@@ -420,6 +564,10 @@ body.agency-attendance-shell {
     .agency-attendance-actions {
         justify-content: flex-start;
     }
+
+    .agency-attendance-toolbar {
+        position: static;
+    }
 }
 
 @media (max-width: 575.98px) {
@@ -431,5 +579,16 @@ body.agency-attendance-shell {
     .agency-attendance-actions .btn {
         width: 100%;
         justify-content: center;
+    }
+
+    .agency-attendance-segmented,
+    .agency-attendance-segmented label,
+    .agency-attendance-segmented span {
+        width: 100%;
+    }
+
+    .agency-attendance-segmented {
+        display: grid;
+        grid-template-columns: 1fr;
     }
 }

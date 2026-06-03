@@ -53,7 +53,8 @@
 
             <div class="agency-attendance-card">
                 <div class="agency-attendance-toolbar">
-                    <form th:action="@{/agency/attendance-report}" method="get" class="agency-attendance-filter">
+                    <form th:action="@{/agency/attendance-report}" method="get" class="agency-attendance-filter"
+                        id="agencyAttendanceFilter">
                         <label>
                             <span>Month</span>
                             <select name="month" class="form-select">
@@ -70,20 +71,27 @@
                                 </option>
                             </select>
                         </label>
-                        <label>
+                        <div class="agency-attendance-type-control">
                             <span>Employee Type</span>
-                            <select name="employeeType" class="form-select">
-                                <option th:each="type : ${reportView.employeeTypeOptions()}" th:value="${type}"
-                                    th:text="${#strings.capitalize(#strings.toLowerCase(type))}"
-                                    th:selected="${type == filter.employeeType()}">All</option>
-                            </select>
-                        </label>
+                            <div class="agency-attendance-segmented" role="radiogroup"
+                                aria-label="Employee type">
+                                <label th:each="type : ${reportView.employeeTypeOptions()}">
+                                    <input type="radio" name="employeeType" th:value="${type}"
+                                        th:checked="${type == filter.employeeType()}">
+                                    <span th:text="${#strings.capitalize(#strings.toLowerCase(type))}">All</span>
+                                </label>
+                            </div>
+                        </div>
                         <label class="agency-attendance-search">
                             <span>Search</span>
                             <span class="agency-attendance-searchbox">
                                 <i class="fa-solid fa-magnifying-glass"></i>
-                                <input type="search" name="search" class="form-control"
+                                <input type="search" name="search" id="agencyAttendanceSearch" class="form-control"
                                     placeholder="Employee, request, project" th:value="${filter.searchText()}">
+                                <button type="button" class="agency-attendance-search-clear"
+                                    id="agencyAttendanceSearchClear" aria-label="Clear search" title="Clear search">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
                             </span>
                         </label>
                         <div class="agency-attendance-filter-actions">
@@ -99,6 +107,11 @@
                     </form>
 
                     <div class="agency-attendance-actions">
+                        <button type="button" class="btn btn-outline-secondary" id="agencyAttendanceDensity"
+                            th:disabled="${#lists.isEmpty(reportRows)}">
+                            <i class="fa-solid fa-grip-lines"></i>
+                            <span>Dense</span>
+                        </button>
                         <button type="button" class="btn btn-success" id="agencyAttendanceExport"
                             th:disabled="${#lists.isEmpty(reportRows)}">
                             <i class="fa-solid fa-file-csv"></i>
@@ -115,6 +128,19 @@
                     <span><b class="status-dot status-t">T</b> Tour</span>
                     <span><b class="status-dot status-h">H</b> Holiday</span>
                     <span><b class="status-dot status-w">W</b> Week Off</span>
+                </div>
+
+                <div class="agency-attendance-table-tools" th:if="${!#lists.isEmpty(reportRows)}">
+                    <div class="agency-attendance-count" aria-live="polite">
+                        <strong id="agencyAttendanceVisibleCount" th:text="${#lists.size(reportRows)}">0</strong>
+                        <span>of</span>
+                        <strong id="agencyAttendanceTotalCount" th:text="${#lists.size(reportRows)}">0</strong>
+                        <span>employees shown</span>
+                    </div>
+                    <div class="agency-attendance-scroll-note">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Scroll horizontally to view all dates</span>
+                    </div>
                 </div>
 
                 <div class="agency-attendance-table-shell" th:if="${!#lists.isEmpty(reportRows)}">
@@ -141,7 +167,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="row : ${reportRows}">
+                            <tr th:each="row : ${reportRows}" tabindex="0">
                                 <td class="sticky-col sticky-col-first"
                                     th:text="${row.requestId() != null and row.requestId() != '' ? row.requestId() : '-'}">REQ-0001</td>
                                 <td class="sticky-col sticky-col-second">
@@ -187,8 +213,16 @@
 
             <script th:inline="javascript">
                 (function () {
+                    const page = document.querySelector('.agency-attendance-page');
+                    const filterForm = document.getElementById('agencyAttendanceFilter');
+                    const searchInput = document.getElementById('agencyAttendanceSearch');
+                    const clearSearchButton = document.getElementById('agencyAttendanceSearchClear');
+                    const densityButton = document.getElementById('agencyAttendanceDensity');
+                    const densityLabel = densityButton ? densityButton.querySelector('span') : null;
                     const exportButton = document.getElementById('agencyAttendanceExport');
                     const table = document.getElementById('agencyAttendanceTable');
+                    const visibleCount = document.getElementById('agencyAttendanceVisibleCount');
+                    const rows = table ? Array.from(table.querySelectorAll('tbody tr')) : [];
 
                     function escapeCsvValue(value) {
                         const normalized = (value || '').replace(/\s+/g, ' ').trim();
@@ -203,8 +237,8 @@
                             return;
                         }
 
-                        const rows = Array.from(table.querySelectorAll('tr'));
-                        const csv = rows.map((row) => Array.from(row.children)
+                        const exportRows = Array.from(table.querySelectorAll('thead tr, tbody tr:not(.d-none)'));
+                        const csv = exportRows.map((row) => Array.from(row.children)
                             .map((cell) => escapeCsvValue(cell.textContent))
                             .join(','))
                             .join('\n');
@@ -220,6 +254,64 @@
                         URL.revokeObjectURL(link.href);
                         link.remove();
                     }
+
+                    function applyLiveFilter() {
+                        const term = searchInput ? searchInput.value.trim().toLowerCase() : '';
+                        let shown = 0;
+
+                        rows.forEach((row) => {
+                            const matches = term.length === 0 || row.textContent.toLowerCase().includes(term);
+                            row.classList.toggle('d-none', !matches);
+                            if (matches) {
+                                shown += 1;
+                            }
+                        });
+
+                        if (visibleCount) {
+                            visibleCount.textContent = String(shown);
+                        }
+                    }
+
+                    if (filterForm) {
+                        filterForm.querySelectorAll('input[name="employeeType"]').forEach((input) => {
+                            input.addEventListener('change', () => filterForm.requestSubmit());
+                        });
+                    }
+
+                    if (searchInput) {
+                        searchInput.addEventListener('input', applyLiveFilter);
+                        applyLiveFilter();
+                    }
+
+                    if (clearSearchButton && searchInput) {
+                        clearSearchButton.addEventListener('click', () => {
+                            searchInput.value = '';
+                            applyLiveFilter();
+                            searchInput.focus();
+                        });
+                    }
+
+                    if (densityButton && page) {
+                        densityButton.addEventListener('click', () => {
+                            const dense = page.classList.toggle('is-dense');
+                            if (densityLabel) {
+                                densityLabel.textContent = dense ? 'Comfort' : 'Dense';
+                            }
+                        });
+                    }
+
+                    rows.forEach((row) => {
+                        row.addEventListener('click', () => {
+                            rows.forEach((item) => item.classList.remove('is-selected'));
+                            row.classList.add('is-selected');
+                        });
+                        row.addEventListener('keydown', (event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                row.click();
+                            }
+                        });
+                    });
 
                     if (exportButton) {
                         exportButton.addEventListener('click', exportTableToCsv);
