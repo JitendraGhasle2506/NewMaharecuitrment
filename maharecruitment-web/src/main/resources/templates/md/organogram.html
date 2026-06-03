@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Organogram</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/md-organogram.css}">
+</head>
+
+<body class="md-org-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('MD', 'Organogram', ~{::section})}">
+        <section class="md-org-page">
+            <div class="md-org-hero">
+                <div>
+                    <span class="md-org-eyebrow">Managing Director View</span>
+                    <h1>Organisation Organogram</h1>
+                </div>
+                <div class="md-org-summary" aria-label="Organogram summary">
+                    <div>
+                        <span>Wings</span>
+                        <strong th:text="${organogram.wingCount}">0</strong>
+                    </div>
+                    <div>
+                        <span>Cells</span>
+                        <strong th:text="${organogram.cellCount}">0</strong>
+                    </div>
+                    <div>
+                        <span>Projects</span>
+                        <strong th:text="${organogram.projectCount}">0</strong>
+                    </div>
+                    <div>
+                        <span>Levels</span>
+                        <strong th:text="${organogram.hierarchyDepth}">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md-org-toolbar" aria-label="Organogram toolbar">
+                <div class="md-org-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="search" id="organogramSearch" placeholder="Search organogram">
+                </div>
+                <div class="md-org-actions">
+                    <button type="button" class="md-org-action" id="expandOrganogram">
+                        <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+                        <span>Expand</span>
+                    </button>
+                    <button type="button" class="md-org-action" id="collapseOrganogram">
+                        <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                        <span>Collapse</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="md-org-legend" aria-label="Organogram legend">
+                <span><i class="fa-solid fa-user-tie"></i> MD</span>
+                <span><i class="fa-solid fa-sitemap"></i> Wing</span>
+                <span><i class="fa-solid fa-table-cells"></i> Cell</span>
+                <span><i class="fa-solid fa-diagram-project"></i> Project</span>
+            </div>
+
+            <section class="md-org-canvas" aria-label="Organisation hierarchy">
+                <ul class="md-org-tree">
+                    <th:block th:replace="~{md/fragments/organogram-node :: organogramNode(${organogram.root})}"></th:block>
+                </ul>
+            </section>
+        </section>
+    </th:block>
+
+    <script>
+        (function () {
+            const page = document.querySelector('.md-org-page');
+            if (!page) {
+                return;
+            }
+
+            const searchInput = document.getElementById('organogramSearch');
+            const expandButton = document.getElementById('expandOrganogram');
+            const collapseButton = document.getElementById('collapseOrganogram');
+            const nodeItems = Array.from(page.querySelectorAll('.md-org-node'));
+            const toggles = Array.from(page.querySelectorAll('.js-org-toggle'));
+
+            function setCollapsed(item, collapsed) {
+                item.classList.toggle('is-collapsed', collapsed);
+                const icon = item.querySelector(':scope > .md-org-card .js-org-toggle i');
+                if (icon) {
+                    icon.className = collapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+                }
+            }
+
+            toggles.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const item = button.closest('.md-org-node');
+                    setCollapsed(item, !item.classList.contains('is-collapsed'));
+                });
+            });
+
+            if (expandButton) {
+                expandButton.addEventListener('click', () => {
+                    nodeItems.forEach((item) => setCollapsed(item, false));
+                });
+            }
+
+            if (collapseButton) {
+                collapseButton.addEventListener('click', () => {
+                    nodeItems
+                        .filter((item) => !item.classList.contains('md-org-node-root'))
+                        .forEach((item) => setCollapsed(item, true));
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    const term = searchInput.value.trim().toLowerCase();
+                    nodeItems.forEach((item) => {
+                        const matches = term.length === 0 || (item.dataset.label || '').includes(term);
+                        item.classList.toggle('is-dimmed', !matches);
+                        item.classList.toggle('is-match', term.length > 0 && matches);
+                        if (matches && term.length > 0) {
+                            let parent = item.parentElement.closest('.md-org-node');
+                            while (parent) {
+                                setCollapsed(parent, false);
+                                parent = parent.parentElement.closest('.md-org-node');
+                            }
+                        }
+                    });
+                });
+            }
+        })();
+    </script>
+</body>
+
+</html>
