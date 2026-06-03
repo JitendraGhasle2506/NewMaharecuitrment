@@ -60,91 +60,209 @@
                 <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
             </div>
 
-            <!-- ─── Form Card ─────────────────────────────────────────────── -->
-            <div class="card relieving-card">
-                <div class="relieving-header d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-                        <i class="fas fa-user-minus text-primary fs-5"></i>
-                    </div>
-                    <div>
-                        <h5 class="mb-0 fw-bold">Initiate Employee Relieving</h5>
-                        <p class="text-muted mb-0 small">Fill in the details below to process an internal employee's exit.</p>
+            <!-- ─── Form View ──────────────────────────────── -->
+            <div id="formView" class="d-none">
+                <div class="card relieving-card">
+                    <div class="relieving-header d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                    <i class="fas fa-user-minus text-primary fs-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">Initiate Employee Relieving</h5>
+                                    <p class="text-muted mb-0 small">Fill in the details below to process an internal employee's exit.</p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
+                        </div>
+
+                        <div class="relieving-body p-4">
+                            <form th:action="@{/hr/relieving/save}" th:object="${relievingDto}" method="post" id="relievingForm" novalidate>
+
+                                <!-- Row 1: Employee + Reason -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label for="employeeId" class="form-label">
+                                            Select Employee <span class="required-star">*</span>
+                                        </label>
+                                        <select id="employeeId" th:field="*{employeeId}" class="form-select" required>
+                                            <option value="">-- Select Internal Employee --</option>
+                                            <option th:each="emp : ${employees}"
+                                                    th:value="${emp.employeeId}"
+                                                    th:text="${emp.fullName + (emp.employeeCode != null ? ' (' + emp.employeeCode + ')' : '')}">
+                                            </option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select an employee.</div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="reasonOfRelieving" class="form-label">
+                                            Reason of Relieving <span class="required-star">*</span>
+                                        </label>
+                                        <select id="reasonOfRelieving" th:field="*{reasonOfRelieving}" class="form-select" required>
+                                            <option value="">-- Select Reason --</option>
+                                            <option value="Resignation">Resignation</option>
+                                            <option value="Released">Released</option>
+                                            <option value="PIP">PIP (Performance Improvement Plan)</option>
+                                            <option value="Return of Service">Return of Service</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select a reason.</div>
+                                    </div>
+                                </div>
+
+                                <!-- Employee Details Display -->
+                                <div class="row g-3 mb-3" id="companyProjectDetails" style="display: none;">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Agency Name</label>
+                                        <div class="position-relative">
+                                            <input type="text" class="form-control bg-light text-muted" id="agencyInput" readonly placeholder="Loading..." />
+                                            <span class="spinner-border spinner-border-sm text-primary position-absolute top-50 end-0 translate-middle-y me-3 d-none" role="status" id="agencySpinner"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Project Name</label>
+                                        <div class="position-relative">
+                                            <input type="text" class="form-control bg-light text-muted" id="projectInput" readonly placeholder="Loading..." />
+                                            <span class="spinner-border spinner-border-sm text-primary position-absolute top-50 end-0 translate-middle-y me-3 d-none" role="status" id="projectSpinner"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Row 2: Resign Date + Exit Date -->
+                                <div class="row g-3 mb-3" id="datesContainer">
+                                    <div class="col-md-6">
+                                        <label for="resignDate" class="form-label">
+                                            Resign Date <span class="required-star" id="resignDateStar">*</span>
+                                        </label>
+                                        <input type="date" id="resignDate" th:field="*{resignDate}" class="form-control" />
+                                        <div class="invalid-feedback">Please provide the resign date.</div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="exitDate" class="form-label">
+                                            Exit Date (Last Working Day) <span class="required-star" id="exitDateStar">*</span>
+                                        </label>
+                                        <input type="date" id="exitDate" th:field="*{exitDate}" class="form-control" />
+                                        <div class="invalid-feedback">Please provide the exit date.</div>
+                                    </div>
+                                </div>
+
+                                <!-- PIP Details Row -->
+                                <div class="row g-3 mb-3" id="pipDetailsContainer" style="display: none;">
+                                    <div class="col-md-6">
+                                        <label for="pipStartDate" class="form-label">
+                                            PIP Start Date <span class="required-star">*</span>
+                                        </label>
+                                        <input type="date" id="pipStartDate" th:field="*{pipStartDate}" class="form-control" />
+                                        <div class="invalid-feedback">Please provide PIP start date.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="pipDuration" class="form-label">
+                                            PIP Duration <span class="required-star">*</span>
+                                        </label>
+                                        <select id="pipDuration" th:field="*{pipDuration}" class="form-select">
+                                            <option value="">-- Select Duration --</option>
+                                            <option value="1 Month">1 Month</option>
+                                            <option value="2 Months">2 Months</option>
+                                            <option value="3 Months">3 Months</option>
+                                        </select>
+                                        <div class="invalid-feedback">Please select PIP duration.</div>
+                                    </div>
+                                </div>
+
+                                <!-- Row 3: Handover To -->
+                                <div class="row g-3 mb-3" id="handoverContainer">
+                                    <div class="col-md-12">
+                                        <label for="handoverGivenToId" class="form-label">Handover Given To</label>
+                                        <select id="handoverGivenToId" th:field="*{handoverGivenToId}" class="form-select">
+                                            <option value="">-- Optional: Select Employee --</option>
+                                            <option th:each="emp : ${employees}"
+                                                    th:value="${emp.employeeId}"
+                                                    th:text="${emp.fullName + (emp.employeeCode != null ? ' (' + emp.employeeCode + ')' : '')}">
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Row 3: Remarks -->
+                                <div class="mb-4">
+                                    <label for="remarks" class="form-label">Additional Remarks</label>
+                                    <textarea id="remarks" th:field="*{remarks}" class="form-control" rows="3"
+                                              placeholder="Any extra notes for the record..."></textarea>
+                                </div>
+
+                                <hr class="section-divider">
+
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-outline-secondary px-4" onclick="toggleView('listView')">
+                                        <i class="fas fa-times me-1"></i> Cancel
+                                    </button>
+                                    <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm" id="submitRelieving">
+                                        <i class="fas fa-save me-2"></i>Process Relieving
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
-                <div class="relieving-body">
-                    <form th:action="@{/hr/relieving/save}" th:object="${relievingDto}" method="post" id="relievingForm" novalidate>
+            <!-- ─── List View ────────────────────────────────── -->
+            <div id="listView">
+                <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                    <h4 class="mb-0 text-dark fw-bold">Employee Relieving Management</h4>
+                    <button type="button" class="btn btn-primary fw-bold shadow-sm px-4" onclick="toggleView('formView')">
+                        <i class="fas fa-user-minus me-2"></i> Relieve Employee
+                    </button>
+                </div>
 
-                        <!-- Row 1: Employee + Reason -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label for="employeeId" class="form-label">
-                                    Select Employee <span class="required-star">*</span>
-                                </label>
-                                <select id="employeeId" th:field="*{employeeId}" class="form-select" required>
-                                    <option value="">-- Select Internal Employee --</option>
-                                    <option th:each="emp : ${employees}"
-                                            th:value="${emp.employeeId}"
-                                            th:text="${emp.fullName + (emp.employeeCode != null ? ' (' + emp.employeeCode + ')' : '')}">
-                                    </option>
-                                </select>
-                                <div class="invalid-feedback">Please select an employee.</div>
-                            </div>
+            <!-- ─── Pending Exit Date List ─────────────────────────────────── -->
+            <div class="card relieving-card">
+                <div class="relieving-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-clock text-warning fs-5"></i>
+                        <h6 class="mb-0 fw-bold text-warning">Pending Actions (Resignations & PIP)</h6>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 record-table">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Employee ID</th>
+                                    <th>Employee Name</th>
+                                    <th>Company Name</th>
+                                    <th>Project Name</th>
+                                    <th>Start/Resign Date</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="record : ${allRecords}" th:if="${record.status == 'Resignation Submitted' or record.status == 'Under PIP'}">
+                                    <td class="ps-4 fw-semibold" th:text="${record.employeeCode != null ? record.employeeCode : 'N/A'}"></td>
+                                    <td th:text="${record.employeeName}"></td>
+                                    <td th:text="${record.companyName}"></td>
+                                    <td th:text="${record.projectName}"></td>
+                                    <td th:text="${record.reasonOfRelieving == 'PIP' ? (record.pipStartDate != null ? #temporals.format(record.pipStartDate, 'dd-MM-yyyy') : '-') : (record.resignDate != null ? #temporals.format(record.resignDate, 'dd-MM-yyyy') : '-')}"></td>
+                                    <td><span class="status-badge bg-warning-subtle text-warning-emphasis" th:text="${record.status}"></span></td>
+                                    <td>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#markExitDateModal" th:attr="data-relieving-id=${record.relievingId}, data-emp-name=${record.employeeName}">End / Mark Exit</button>
+                                            
+                                            <button th:if="${record.reasonOfRelieving == 'PIP'}" type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editPipModal" th:attr="data-relieving-id=${record.relievingId}, data-emp-name=${record.employeeName}, data-start-date=${record.pipStartDate}, data-duration=${record.pipDuration}">Edit PIP</button>
 
-                            <div class="col-md-6">
-                                <label for="reasonOfRelieving" class="form-label">
-                                    Reason of Relieving <span class="required-star">*</span>
-                                </label>
-                                <select id="reasonOfRelieving" th:field="*{reasonOfRelieving}" class="form-select" required>
-                                    <option value="">-- Select Reason --</option>
-                                    <option value="Released">Released</option>
-                                    <option value="PIP">PIP (Performance Improvement Plan)</option>
-                                    <option value="Return of Service">Return of Service</option>
-                                </select>
-                                <div class="invalid-feedback">Please select a reason.</div>
-                            </div>
-                        </div>
-
-                        <!-- Row 2: Exit Date + Handover To -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label for="exitDate" class="form-label">
-                                    Exit Date <span class="required-star">*</span>
-                                </label>
-                                <input type="date" id="exitDate" th:field="*{exitDate}" class="form-control" required />
-                                <div class="invalid-feedback">Please provide the exit date.</div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label for="handoverGivenToId" class="form-label">Handover Given To</label>
-                                <select id="handoverGivenToId" th:field="*{handoverGivenToId}" class="form-select">
-                                    <option value="">-- Optional: Select Employee --</option>
-                                    <option th:each="emp : ${employees}"
-                                            th:value="${emp.employeeId}"
-                                            th:text="${emp.fullName + (emp.employeeCode != null ? ' (' + emp.employeeCode + ')' : '')}">
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Row 3: Remarks -->
-                        <div class="mb-4">
-                            <label for="remarks" class="form-label">Additional Remarks</label>
-                            <textarea id="remarks" th:field="*{remarks}" class="form-control" rows="3"
-                                      placeholder="Any extra notes for the record..."></textarea>
-                        </div>
-
-                        <hr class="section-divider">
-
-                        <div class="d-flex justify-content-end gap-2">
-                            <a th:href="@{/hr/relieving}" class="btn btn-outline-secondary px-4">
-                                <i class="fas fa-times me-1"></i> Cancel
-                            </a>
-                            <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm" id="submitRelieving">
-                                <i class="fas fa-save me-2"></i>Process Relieving
-                            </button>
-                        </div>
-                    </form>
+                                            <form th:action="@{/hr/relieving/cancel-record}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this process? The employee will be restored to ACTIVE status.');">
+                                                <input type="hidden" name="relievingId" th:value="${record.relievingId}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel Process">
+                                                    <i class="fas fa-times me-1"></i> Cancel
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -166,6 +284,7 @@
                                     <th class="ps-4">#</th>
                                     <th>Employee Name</th>
                                     <th>Reason</th>
+                                    <th>Resign Date</th>
                                     <th>Exit Date</th>
                                     <th>Handover To</th>
                                     <th>Remarks</th>
@@ -185,6 +304,7 @@
                                               th:text="${record.reasonOfRelieving}">
                                         </span>
                                     </td>
+                                    <td th:text="${record.resignDate != null ? #temporals.format(record.resignDate, 'dd-MM-yyyy') : '-'}"></td>
                                     <td th:text="${record.exitDate != null ? #temporals.format(record.exitDate, 'dd-MM-yyyy') : '-'}"></td>
                                     <td th:text="${record.handoverGivenToName != null ? record.handoverGivenToName : 'N/A'}"></td>
                                     <td>
@@ -192,7 +312,7 @@
                                     </td>
                                     <td>
                                         <span class="status-badge"
-                                              th:classappend="${record.status == 'COMPLETED'} ? 'bg-success-subtle text-success-emphasis' : 'bg-warning-subtle text-warning-emphasis'"
+                                              th:classappend="${record.status == 'COMPLETED'} ? 'bg-success-subtle text-success-emphasis' : (${record.status == 'Cancelled'} ? 'bg-danger-subtle text-danger-emphasis' : 'bg-warning-subtle text-warning-emphasis')"
                                               th:text="${record.status}">
                                         </span>
                                     </td>
@@ -209,10 +329,84 @@
                 </div>
             </div>
 
+            </div> <!-- End List View -->
+
+            <!-- Mark Exit Date Modal -->
+            <div class="modal fade" id="markExitDateModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form th:action="@{/hr/relieving/mark-exit-date}" method="post">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Mark Exit Date</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="modalRelievingId" name="relievingId" />
+                                <p><strong>Employee:</strong> <span id="modalEmpName"></span></p>
+                                <div class="mb-3">
+                                    <label for="modalExitDate" class="form-label">Exit Date <span class="required-star">*</span></label>
+                                    <input type="date" id="modalExitDate" name="exitDate" class="form-control" required />
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-primary">Save Exit Date</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit PIP Modal -->
+            <div class="modal fade" id="editPipModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form th:action="@{/hr/relieving/edit-pip}" method="post">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit PIP Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="editPipRelievingId" name="relievingId" />
+                                <p><strong>Employee:</strong> <span id="editPipEmpName"></span></p>
+                                <div class="mb-3">
+                                    <label for="editPipStartDate" class="form-label">PIP Start Date <span class="required-star">*</span></label>
+                                    <input type="date" id="editPipStartDate" name="pipStartDate" class="form-control" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editPipDuration" class="form-label">PIP Duration <span class="required-star">*</span></label>
+                                    <select id="editPipDuration" name="pipDuration" class="form-select" required>
+                                        <option value="">-- Select Duration --</option>
+                                        <option value="1 Month">1 Month</option>
+                                        <option value="2 Months">2 Months</option>
+                                        <option value="3 Months">3 Months</option>
+                                        <option value="6 Months">6 Months</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
         </section>
     </th:block>
 
-    <script>
+    <script th:inline="javascript">
+        function toggleView(viewId) {
+            if (viewId === 'formView') {
+                document.getElementById('listView').classList.add('d-none');
+                document.getElementById('formView').classList.remove('d-none');
+            } else {
+                document.getElementById('formView').classList.add('d-none');
+                document.getElementById('listView').classList.remove('d-none');
+            }
+        }
+
         // Bootstrap validation
         (() => {
             const form = document.getElementById('relievingForm');
@@ -225,18 +419,135 @@
                 form.classList.add('was-validated');
             });
 
-            // Exclude the selected "employee being relieved" from the handover dropdown
+            // Exclude the selected "employee being relieved" from the handover dropdown and show agency details from DB
             const empSelect = document.getElementById('employeeId');
             const handoverSelect = document.getElementById('handoverGivenToId');
-            if (empSelect && handoverSelect) {
+            const companyProjectDetails = document.getElementById('companyProjectDetails');
+            const agencyInput = document.getElementById('agencyInput');
+            const projectInput = document.getElementById('projectInput');
+            const agencySpinner = document.getElementById('agencySpinner');
+            const projectSpinner = document.getElementById('projectSpinner');
+
+            if (empSelect) {
                 empSelect.addEventListener('change', function () {
                     const selectedId = this.value;
-                    Array.from(handoverSelect.options).forEach(opt => {
-                        opt.disabled = opt.value !== '' && opt.value === selectedId;
-                        if (opt.disabled && handoverSelect.value === selectedId) {
-                            handoverSelect.value = '';
-                        }
-                    });
+                    
+                    if (selectedId) {
+                        if (companyProjectDetails) companyProjectDetails.style.display = 'flex';
+                        
+                        // Show spinners
+                        if (agencyInput) agencyInput.value = 'Loading...';
+                        if (projectInput) projectInput.value = 'Loading...';
+                        if (agencySpinner) agencySpinner.classList.remove('d-none');
+                        if (projectSpinner) projectSpinner.classList.remove('d-none');
+
+                        // Fetch data from DB
+                        const baseUrl = /*[[@{/hr/relieving/employee-details/}]]*/ '/hr/relieving/employee-details/';
+                        fetch(`${baseUrl}${selectedId}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (agencySpinner) agencySpinner.classList.add('d-none');
+                                if (projectSpinner) projectSpinner.classList.add('d-none');
+                                if (agencyInput) agencyInput.value = data.agencyName || 'N/A';
+                                if (projectInput) projectInput.value = data.projectName || 'N/A';
+                            })
+                            .catch(error => {
+                                console.error('Error fetching employee details:', error);
+                                if (agencySpinner) agencySpinner.classList.add('d-none');
+                                if (projectSpinner) projectSpinner.classList.add('d-none');
+                                if (agencyInput) agencyInput.value = 'Error loading';
+                                if (projectInput) projectInput.value = 'Error loading';
+                            });
+
+                    } else {
+                        if (companyProjectDetails) companyProjectDetails.style.display = 'none';
+                        if (agencyInput) agencyInput.value = '';
+                        if (projectInput) projectInput.value = '';
+                    }
+
+                    if (handoverSelect) {
+                        Array.from(handoverSelect.options).forEach(opt => {
+                            opt.disabled = opt.value !== '' && opt.value === selectedId;
+                            if (opt.disabled && handoverSelect.value === selectedId) {
+                                handoverSelect.value = '';
+                            }
+                        });
+                    }
+                });
+            }
+
+            const reasonSelect = document.getElementById('reasonOfRelieving');
+            const exitDateInput = document.getElementById('exitDate');
+            const exitDateStar = document.getElementById('exitDateStar');
+            
+            const resignDateInput = document.getElementById('resignDate');
+            const resignDateStar = document.getElementById('resignDateStar');
+            
+            const pipContainer = document.getElementById('pipDetailsContainer');
+            const pipStartDate = document.getElementById('pipStartDate');
+            const pipDuration = document.getElementById('pipDuration');
+            
+            const datesContainer = document.getElementById('datesContainer');
+            const handoverContainer = document.getElementById('handoverContainer');
+
+            function updateFields() {
+                if(!reasonSelect) return;
+                const val = reasonSelect.value;
+                
+                if(exitDateInput) exitDateInput.required = false;
+                if(exitDateStar) exitDateStar.style.display = 'none';
+                
+                if(resignDateInput) resignDateInput.required = false;
+                if(resignDateStar) resignDateStar.style.display = 'none';
+                
+                if(pipContainer) pipContainer.style.display = 'none';
+                if(pipStartDate) pipStartDate.required = false;
+                if(pipDuration) pipDuration.required = false;
+                
+                if(datesContainer) datesContainer.style.display = 'flex';
+                if(handoverContainer) handoverContainer.style.display = 'flex';
+
+                if (val === 'Resignation') {
+                    if(resignDateInput) resignDateInput.required = true;
+                    if(resignDateStar) resignDateStar.style.display = 'inline';
+                } else if (val === 'PIP') {
+                    if(datesContainer) datesContainer.style.display = 'none';
+                    if(handoverContainer) handoverContainer.style.display = 'none';
+                    
+                    if(pipContainer) pipContainer.style.display = 'flex';
+                    if(pipStartDate) pipStartDate.required = true;
+                    if(pipDuration) pipDuration.required = true;
+                } else if (val) {
+                    if(exitDateInput) exitDateInput.required = true;
+                    if(exitDateStar) exitDateStar.style.display = 'inline';
+                }
+            }
+
+            if(reasonSelect) {
+                reasonSelect.addEventListener('change', updateFields);
+                updateFields();
+            }
+
+            const markExitDateModal = document.getElementById('markExitDateModal');
+            if (markExitDateModal) {
+                markExitDateModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const relievingId = button.getAttribute('data-relieving-id');
+                    const empName = button.getAttribute('data-emp-name');
+                    
+                    document.getElementById('modalRelievingId').value = relievingId;
+                    document.getElementById('modalEmpName').textContent = empName;
+                });
+            }
+
+            const editPipModal = document.getElementById('editPipModal');
+            if (editPipModal) {
+                editPipModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    document.getElementById('editPipRelievingId').value = button.getAttribute('data-relieving-id');
+                    document.getElementById('editPipEmpName').textContent = button.getAttribute('data-emp-name');
+                    document.getElementById('editPipStartDate').value = button.getAttribute('data-start-date');
+                    document.getElementById('editPipDuration').value = button.getAttribute('data-duration');
                 });
             }
         })();
