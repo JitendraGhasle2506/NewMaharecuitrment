@@ -118,7 +118,9 @@
                             <span>Export CSV</span>
                         </button>
                         <button type="submit" class="btn btn-danger" form="agencyAttendanceFilter"
-                            th:formaction="@{/agency/attendance-report/download/pdf}" formmethod="get">
+                            th:formaction="@{/agency/attendance-report/download/pdf}" formmethod="get"
+                            data-app-loader-behavior="download"
+                            data-app-loader-message="Please wait while we prepare your attendance PDF.">
                             <i class="fa-solid fa-file-pdf"></i>
                             <span>Export PDF</span>
                         </button>
