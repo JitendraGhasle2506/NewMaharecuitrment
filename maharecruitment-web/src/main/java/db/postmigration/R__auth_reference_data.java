@@ -165,6 +165,8 @@ public class R__auth_reference_data extends BaseJavaMigration {
                                 "fa fa-percent");
                 upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Project Master", "/master/projects",
                                 "fa fa-folder-tree");
+                upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Wing Master", "/master/wings",
+                                "fa fa-sitemap");
                 upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "Cell Master", "/master/cell",
                                 "fa fa-table-cells");
                 upsertSubMenu(jdbcTemplate, subMenuTable, masterMenuId, "MahaIT Profile",

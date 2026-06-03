@@ -15,6 +15,8 @@ public class CellMasterMapper {
         return CellMasterDto.builder()
                 .cellId(entity.getCellId())
                 .cellName(entity.getCellName())
+                .wingId(entity.getWing() != null ? entity.getWing().getWingId() : null)
+                .wingName(entity.getWing() != null ? entity.getWing().getWingName() : null)
                 .activeFlag(entity.getActiveFlag())
                 .createdUserId(entity.getCreatedUserId())
                 .updatedUserId(entity.getUpdatedUserId())

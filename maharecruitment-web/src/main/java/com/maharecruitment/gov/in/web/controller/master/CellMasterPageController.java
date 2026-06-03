@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.master.dto.CellMasterDto;
 import com.maharecruitment.gov.in.master.service.CellMasterService;
+import com.maharecruitment.gov.in.master.service.WingMasterService;
 
 import jakarta.validation.Valid;
 
@@ -25,13 +26,16 @@ import jakarta.validation.Valid;
 public class CellMasterPageController {
 
     private final CellMasterService service;
+    private final WingMasterService wingService;
 
-    public CellMasterPageController(CellMasterService service) {
+    public CellMasterPageController(CellMasterService service, WingMasterService wingService) {
         this.service = service;
+        this.wingService = wingService;
     }
 
     @GetMapping
     public String list(
+            @RequestParam(required = false) Long wingId,
             @RequestParam(defaultValue = "true") boolean includeInactive,
             @RequestParam(defaultValue = "") String searchText,
             @RequestParam(defaultValue = "0") int page,
@@ -41,9 +45,11 @@ public class CellMasterPageController {
                 Math.max(page, 0),
                 Math.max(size, 1),
                 Sort.by(Sort.Direction.ASC, "cellName"));
-        Page<CellMasterDto> cells = service.search(includeInactive, searchText, pageable);
+        Page<CellMasterDto> cells = service.search(wingId, includeInactive, searchText, pageable);
 
         model.addAttribute("cells", cells);
+        model.addAttribute("wingId", wingId);
+        model.addAttribute("availableWings", wingService.getAll(false));
         model.addAttribute("includeInactive", includeInactive);
         model.addAttribute("searchText", searchText);
         return "master/cell-master-list";
@@ -114,6 +120,7 @@ public class CellMasterPageController {
     @GetMapping("/status/{id}")
     public String toggleStatus(
             @PathVariable("id") Long cellId,
+            @RequestParam(required = false) Long wingId,
             @RequestParam(defaultValue = "true") boolean includeInactive,
             @RequestParam(defaultValue = "") String searchText,
             @RequestParam(defaultValue = "0") int page,
@@ -125,6 +132,7 @@ public class CellMasterPageController {
         } catch (RuntimeException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
+        redirectAttributes.addAttribute("wingId", wingId);
         redirectAttributes.addAttribute("includeInactive", includeInactive);
         redirectAttributes.addAttribute("searchText", searchText);
         redirectAttributes.addAttribute("page", page);
@@ -136,5 +144,6 @@ public class CellMasterPageController {
         model.addAttribute("cellForm", form);
         model.addAttribute("cellId", cellId);
         model.addAttribute("isEdit", cellId != null);
+        model.addAttribute("availableWings", wingService.getAll(false));
     }
 }

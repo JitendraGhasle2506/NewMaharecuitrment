@@ -22,6 +22,7 @@
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
                         <a class="btn btn-outline-primary btn-sm" th:href="@{/master/projects}">Projects</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/wings}">Wing Master</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/cell}">Cell Master</a>
                     </div>
 
@@ -36,7 +37,7 @@
                                 <option th:each="cell : ${availableCells}"
                                     th:value="${cell.cellId}"
                                     th:selected="${cellId != null and cellId == cell.cellId}"
-                                    th:text="${cell.cellName}"></option>
+                                    th:text="${cell.wingName != null ? cell.wingName + ' - ' + cell.cellName : cell.cellName}"></option>
                             </select>
                         </div>
                         <div class="col-auto form-check mb-1">
@@ -57,7 +58,7 @@
                                     <th>ID</th>
                                     <th>Project Name</th>
                                     <!-- <th>Project Description</th> -->
-                                    <th>Cell</th>
+                                    <th>Wing / Cell</th>
                                     <th>Project Type</th>
                                     <th>Status</th>
                                     <!-- <th>Project Scope</th> -->
@@ -68,13 +69,13 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${projects.isEmpty()}">
-                                    <td colspan="5" class="text-center text-muted">No records found</td>
+                                    <td colspan="6" class="text-center text-muted">No records found</td>
                                 </tr>
                                 <tr th:each="item : ${projects.content}">
                                     <td th:text="${item.projectId}"></td>
                                     <td th:text="${item.projectName}"></td>
                                     <!-- <td th:text="${item.projectDesc != null ? item.projectDesc : '-'}"></td> -->
-                                    <td th:text="${item.cellName != null ? item.cellName : '-'}"></td>
+                                    <td th:text="${item.cellName != null ? (item.wingName != null ? item.wingName + ' - ' + item.cellName : item.cellName) : '-'}"></td>
                                     <!-- <td th:text="${#strings.replace(item.projectType.name(), '_', ' ')}"></td> -->
                                     <td th:text="${#strings.capitalize(#strings.toLowerCase(item.projectScopeType.name()))}"></td>
                                     <td>

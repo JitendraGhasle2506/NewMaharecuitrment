@@ -54,12 +54,13 @@ public class CellMasterController {
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<Page<CellMasterDto>>> search(
+            @RequestParam(required = false) Long wingId,
             @RequestParam(defaultValue = "false") boolean includeInactive,
             @RequestParam(defaultValue = "") String searchText,
             @PageableDefault(size = 20, sort = "cellName", direction = Sort.Direction.ASC) Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.of(
                 "Cells fetched successfully",
-                service.search(includeInactive, searchText, pageable)));
+                service.search(wingId, includeInactive, searchText, pageable)));
     }
 
     @PutMapping("/{cellId}")

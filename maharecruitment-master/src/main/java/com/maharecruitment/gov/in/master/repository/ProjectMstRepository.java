@@ -18,24 +18,24 @@ import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
 
     @Override
-    @EntityGraph(attributePaths = "cell")
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
     List<ProjectMst> findAll();
 
     @Override
-    @EntityGraph(attributePaths = "cell")
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
     Page<ProjectMst> findAll(Pageable pageable);
 
-    @EntityGraph(attributePaths = "cell")
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
     Page<ProjectMst> findByCell_CellId(Long cellId, Pageable pageable);
 
-    @EntityGraph(attributePaths = "cell")
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
     Page<ProjectMst> findByActiveFlagIgnoreCase(String activeFlag, Pageable pageable);
 
-    @EntityGraph(attributePaths = "cell")
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
     Page<ProjectMst> findByCell_CellIdAndActiveFlagIgnoreCase(Long cellId, String activeFlag, Pageable pageable);
 
     @Override
-    @EntityGraph(attributePaths = "cell")
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
     Optional<ProjectMst> findById(Long projectId);
 
     Optional<ProjectMst> findFirstByApplicationId(Long applicationId);

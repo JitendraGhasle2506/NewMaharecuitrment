@@ -17,7 +17,11 @@ public interface CellMasterService {
 
     List<CellMasterDto> getAll(boolean includeInactive);
 
-    Page<CellMasterDto> search(boolean includeInactive, String searchText, Pageable pageable);
+    default Page<CellMasterDto> search(boolean includeInactive, String searchText, Pageable pageable) {
+        return search(null, includeInactive, searchText, pageable);
+    }
+
+    Page<CellMasterDto> search(Long wingId, boolean includeInactive, String searchText, Pageable pageable);
 
     void activate(Long cellId);
 
