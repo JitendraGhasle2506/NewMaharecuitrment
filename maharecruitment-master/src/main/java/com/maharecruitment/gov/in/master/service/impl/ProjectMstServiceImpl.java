@@ -164,6 +164,9 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         if (!"Y".equalsIgnoreCase(cell.getActiveFlag())) {
             throw new BusinessValidationException("Selected cell is inactive.");
         }
+        if (cell.getWing() == null || !"Y".equalsIgnoreCase(cell.getWing().getActiveFlag())) {
+            throw new BusinessValidationException("Selected cell belongs to an inactive wing.");
+        }
         return cell;
     }
 

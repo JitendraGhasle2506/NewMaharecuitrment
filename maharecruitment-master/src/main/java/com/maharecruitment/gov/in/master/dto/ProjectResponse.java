@@ -20,6 +20,7 @@ public class ProjectResponse {
     private Long departmentRegistrationId;
     private Long applicationId;
     private Long cellId;
+    private String wingName;
     private String cellName;
     private String activeFlag;
     private LocalDateTime createdAt;
