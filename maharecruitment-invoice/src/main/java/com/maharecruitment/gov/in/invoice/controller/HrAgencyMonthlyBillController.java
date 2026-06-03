@@ -1,9 +1,14 @@
 package com.maharecruitment.gov.in.invoice.controller;
 
+import java.nio.charset.StandardCharsets;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,8 +32,10 @@ import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillGenerateRequest;
 import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillListItemView;
 import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillView;
 import com.maharecruitment.gov.in.invoice.entity.AgencyMonthlyBillEmployeeType;
+import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillPdfGenerator;
 import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillQrCodeGenerator;
 import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillService;
+import com.maharecruitment.gov.in.invoice.service.model.GeneratedAgencyMonthlyBillDocument;
 import com.maharecruitment.gov.in.master.entity.AgencyStatus;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 
@@ -41,16 +48,19 @@ public class HrAgencyMonthlyBillController {
     private static final String BILL_BASE_PATH = "/hr/agency-monthly-bills";
 
     private final AgencyMonthlyBillService billService;
+    private final AgencyMonthlyBillPdfGenerator pdfGenerator;
     private final AgencyMonthlyBillQrCodeGenerator qrCodeGenerator;
     private final UserRepository userRepository;
     private final AgencyMasterRepository agencyMasterRepository;
 
     public HrAgencyMonthlyBillController(
             AgencyMonthlyBillService billService,
+            AgencyMonthlyBillPdfGenerator pdfGenerator,
             AgencyMonthlyBillQrCodeGenerator qrCodeGenerator,
             UserRepository userRepository,
             AgencyMasterRepository agencyMasterRepository) {
         this.billService = billService;
+        this.pdfGenerator = pdfGenerator;
         this.qrCodeGenerator = qrCodeGenerator;
         this.userRepository = userRepository;
         this.agencyMasterRepository = agencyMasterRepository;
@@ -135,6 +145,14 @@ public class HrAgencyMonthlyBillController {
         return "invoice/agency-monthly-bill-detail";
     }
 
+    @GetMapping("/{billId}/download/pdf")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long billId) {
+        AgencyMonthlyBillView bill = billService.getBill(billId);
+        String preparedByName = resolvePreparedByName(bill.getCreatedBy());
+        GeneratedAgencyMonthlyBillDocument document = pdfGenerator.generate(bill, preparedByName, true);
+        return buildDownloadResponse(document);
+    }
+
     @PostMapping("/{billId}/delete")
     public String delete(
             @PathVariable Long billId,
@@ -176,6 +194,18 @@ public class HrAgencyMonthlyBillController {
         model.addAttribute("canDeleteBill", true);
         model.addAttribute("showSignatureApproval", true);
         model.addAttribute("qrSectionTitle", "7. QR Verification");
+    }
+
+    private ResponseEntity<byte[]> buildDownloadResponse(GeneratedAgencyMonthlyBillDocument document) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename(document.originalFileName(), StandardCharsets.UTF_8)
+                .build());
+        headers.setContentType(MediaType.parseMediaType(document.contentType()));
+        headers.setContentLength(document.size());
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(document.bytes());
     }
 
     private String resolveActorEmail() {

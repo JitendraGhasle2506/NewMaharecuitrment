@@ -53,6 +53,12 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
             entity = relievingRepository.findById(dto.getRelievingId())
                 .orElse(new EmployeeRelievingEntity());
         } else {
+            List<EmployeeRelievingEntity> existingRecords = relievingRepository.findByEmployee_EmployeeId(dto.getEmployeeId());
+            boolean hasActiveRecord = existingRecords.stream()
+                .anyMatch(record -> record.getStatus() != null && !record.getStatus().equalsIgnoreCase("Cancelled"));
+            if (hasActiveRecord) {
+                throw new IllegalArgumentException("This employee already has an active relieving process.");
+            }
             entity = new EmployeeRelievingEntity();
         }
 
@@ -88,6 +94,41 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
         relievingRepository.save(entity);
     }
 
+    @Override
+    @Transactional
+    public void cancelResignation(Long relievingId) {
+        EmployeeRelievingEntity entity = relievingRepository.findById(relievingId)
+            .orElseThrow(() -> new IllegalArgumentException("Invalid relieving ID"));
+            
+        if ("COMPLETED".equalsIgnoreCase(entity.getStatus()) || "Relieved".equalsIgnoreCase(entity.getStatus())) {
+            throw new IllegalStateException("Cannot cancel an already completed relieving record.");
+        }
+        
+        entity.setStatus("Cancelled");
+        relievingRepository.save(entity);
+        
+        EmployeeEntity employee = entity.getEmployee();
+        if (employee != null) {
+            employee.setStatus("ACTIVE");
+            employeeRepository.save(employee);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updatePip(Long relievingId, java.time.LocalDate pipStartDate, String pipDuration) {
+        EmployeeRelievingEntity entity = relievingRepository.findById(relievingId)
+            .orElseThrow(() -> new IllegalArgumentException("Invalid relieving ID"));
+        
+        if (!"PIP".equalsIgnoreCase(entity.getReasonOfRelieving())) {
+            throw new IllegalArgumentException("This record is not a PIP record.");
+        }
+        
+        entity.setPipStartDate(pipStartDate);
+        entity.setPipDuration(pipDuration);
+        relievingRepository.save(entity);
+    }
+
     private EmployeeRelievingDto mapToDto(EmployeeRelievingEntity entity) {
         EmployeeRelievingDto dto = new EmployeeRelievingDto();
         dto.setRelievingId(entity.getRelievingId());
@@ -95,11 +136,20 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
             dto.setEmployeeId(entity.getEmployee().getEmployeeId());
             dto.setEmployeeName(entity.getEmployee().getFullName());
             dto.setEmployeeCode(entity.getEmployee().getEmployeeCode());
-            if (entity.getEmployee().getDepartmentRegistration() != null) {
-                dto.setDepartmentName(entity.getEmployee().getDepartmentRegistration().getDepartmentName());
-            } else {
-                dto.setDepartmentName("N/A");
+            EmployeeEntity emp = entity.getEmployee();
+            String agencyName = (emp.getAgency() != null) ? emp.getAgency().getAgencyName() : "N/A";
+            String projectName = "N/A";
+            if (emp.getPreOnboarding() != null
+                    && emp.getPreOnboarding().getInterviewDetail() != null
+                    && emp.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() != null
+                    && emp.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst() != null
+                    && org.springframework.util.StringUtils.hasText(emp.getPreOnboarding().getInterviewDetail().getRecruitmentNotification()
+                            .getProjectMst().getProjectName())) {
+                projectName = emp.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst()
+                        .getProjectName();
             }
+            dto.setCompanyName(agencyName);
+            dto.setProjectName(projectName);
         }
         dto.setReasonOfRelieving(entity.getReasonOfRelieving());
         dto.setExitDate(entity.getExitDate());

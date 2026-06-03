@@ -16,7 +16,8 @@ public class EmployeeRelievingDto {
     private Long employeeId;
     private String employeeCode;
     private String employeeName;
-    private String departmentName;
+    private String companyName;
+    private String projectName;
     
     // Reason of relieving: Released, PIP, Return of Service
     private String reasonOfRelieving;

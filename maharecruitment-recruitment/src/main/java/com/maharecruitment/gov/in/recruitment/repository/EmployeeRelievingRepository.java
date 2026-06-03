@@ -11,7 +11,7 @@ import java.util.List;
 
 @Repository
 public interface EmployeeRelievingRepository extends JpaRepository<EmployeeRelievingEntity, Long> {
-    Optional<EmployeeRelievingEntity> findByEmployee_EmployeeId(Long employeeId);
+    List<EmployeeRelievingEntity> findByEmployee_EmployeeId(Long employeeId);
     List<EmployeeRelievingEntity> findByEmployee_Agency_AgencyId(Long agencyId);
     List<EmployeeRelievingEntity> findByEmployee_DepartmentRegistration_DepartmentRegistrationId(Long departmentRegistrationId);
 }

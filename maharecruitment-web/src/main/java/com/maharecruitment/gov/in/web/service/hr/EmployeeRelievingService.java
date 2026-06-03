@@ -11,4 +11,6 @@ public interface EmployeeRelievingService {
     EmployeeRelievingDto getRelievingById(Long relievingId);
     void saveRelieving(EmployeeRelievingDto dto);
     void markExitDate(Long relievingId, LocalDate exitDate);
+    void cancelResignation(Long relievingId);
+    void updatePip(Long relievingId, LocalDate pipStartDate, String pipDuration);
 }

@@ -32,13 +32,23 @@ public class EmployeeRelievingController {
 
     @GetMapping
     public String viewRelievingForm(Model model) {
-        // Only show ACTIVE internal employees in both dropdowns
+        List<EmployeeRelievingDto> allRecords = relievingService.getAllRelievingRecords();
+        
+        // Filter out employees who already have an active relieving record
+        java.util.Set<Long> employeesWithActiveRelieving = allRecords.stream()
+                .filter(r -> r.getStatus() != null && !r.getStatus().equalsIgnoreCase("Cancelled"))
+                .map(EmployeeRelievingDto::getEmployeeId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // Only show ACTIVE internal employees in both dropdowns who don't have pending relieving processes
         List<EmployeeEntity> internalActiveEmployees =
-                employeeRepository.findByRecruitmentTypeAndStatus("INTERNAL", "ACTIVE");
+                employeeRepository.findByRecruitmentTypeAndStatus("INTERNAL", "ACTIVE").stream()
+                .filter(e -> !employeesWithActiveRelieving.contains(e.getEmployeeId()))
+                .collect(java.util.stream.Collectors.toList());
 
         model.addAttribute("employees", internalActiveEmployees);
         model.addAttribute("relievingDto", new EmployeeRelievingDto());
-        model.addAttribute("allRecords", relievingService.getAllRelievingRecords());
+        model.addAttribute("allRecords", allRecords);
 
         return "hr/employee-relieving";
     }
@@ -96,5 +106,56 @@ public class EmployeeRelievingController {
                     "Error marking exit date: " + e.getMessage());
         }
         return "redirect:/hr/relieving";
+    }
+
+    @PostMapping("/cancel-record")
+    public String cancelRecord(@org.springframework.web.bind.annotation.RequestParam("relievingId") Long relievingId, RedirectAttributes redirectAttributes) {
+        try {
+            relievingService.cancelResignation(relievingId);
+            redirectAttributes.addFlashAttribute("successMessage", "Process cancelled successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error cancelling process: " + e.getMessage());
+        }
+        return "redirect:/hr/relieving";
+    }
+
+    @PostMapping("/edit-pip")
+    public String editPip(@org.springframework.web.bind.annotation.RequestParam("relievingId") Long relievingId,
+                          @org.springframework.web.bind.annotation.RequestParam("pipStartDate") @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate pipStartDate,
+                          @org.springframework.web.bind.annotation.RequestParam("pipDuration") String pipDuration,
+                          RedirectAttributes redirectAttributes) {
+        try {
+            relievingService.updatePip(relievingId, pipStartDate, pipDuration);
+            redirectAttributes.addFlashAttribute("successMessage", "PIP details updated successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating PIP details: " + e.getMessage());
+        }
+        return "redirect:/hr/relieving";
+    }
+
+    @GetMapping("/employee-details/{id}")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public java.util.Map<String, String> getEmployeeDetails(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        EmployeeEntity emp = employeeRepository.findById(id).orElse(null);
+        java.util.Map<String, String> details = new java.util.HashMap<>();
+        if (emp != null) {
+            String agencyName = (emp.getAgency() != null) ? emp.getAgency().getAgencyName() : "N/A";
+            String projectName = "N/A";
+            if (emp.getPreOnboarding() != null
+                    && emp.getPreOnboarding().getInterviewDetail() != null
+                    && emp.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() != null
+                    && emp.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst() != null
+                    && org.springframework.util.StringUtils.hasText(emp.getPreOnboarding().getInterviewDetail().getRecruitmentNotification()
+                            .getProjectMst().getProjectName())) {
+                projectName = emp.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst()
+                        .getProjectName();
+            }
+            details.put("agencyName", agencyName);
+            details.put("projectName", projectName);
+        } else {
+            details.put("agencyName", "N/A");
+            details.put("projectName", "N/A");
+        }
+        return details;
     }
 }
