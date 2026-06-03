@@ -110,7 +110,7 @@ body.md-org-shell {
     border-radius: 8px;
     background: var(--org-panel);
     box-shadow: var(--org-shadow-soft);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .md-org-board-header {
@@ -121,6 +121,7 @@ body.md-org-shell {
     gap: 0.66rem;
     padding: 0.72rem;
     border-bottom: 1px solid #e1e9f0;
+    border-radius: 8px 8px 0 0;
     background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(10px);
 }
@@ -257,6 +258,7 @@ body.md-org-shell {
     display: grid;
     gap: 0.84rem;
     padding: 0.9rem;
+    border-radius: 0 0 8px 8px;
     background: #f7fafc;
 }
 
@@ -676,14 +678,18 @@ body.md-org-shell {
 
 .md-org-inspector {
     position: sticky;
-    top: 86px;
+    top: 88px;
     display: grid;
     gap: 0.72rem;
+    max-height: calc(100vh - 104px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 0.78rem;
     border: 1px solid #d8e5ee;
     border-radius: 8px;
     background: #ffffff;
     box-shadow: var(--org-shadow-soft);
+    scrollbar-width: thin;
 }
 
 .md-org-inspector-top {
