@@ -70,6 +70,7 @@ import db.postmigration.V68__employee_master_mahait_onboarding_date;
 import db.postmigration.V69__employee_master_company_payroll_more_than_three_months;
 import db.postmigration.V70__auth_agency_monthly_bills_hr_menu_fix;
 import db.postmigration.V71__master_wing_cell_mapping_support;
+import db.postmigration.V72__auth_agency_attendance_report_menu_backfill;
 import db.postmigration.V38__auth_mahait_profile_menu_backfill;
 import db.postmigration.V39__mahait_profile_cin_number_support;
 import db.postmigration.V40__department_tax_invoice_support;
@@ -165,7 +166,8 @@ public class PostSchemaFlywayRunner {
                         new V68__employee_master_mahait_onboarding_date(),
                         new V69__employee_master_company_payroll_more_than_three_months(),
                         new V70__auth_agency_monthly_bills_hr_menu_fix(),
-                        new V71__master_wing_cell_mapping_support())
+                        new V71__master_wing_cell_mapping_support(),
+                        new V72__auth_agency_attendance_report_menu_backfill())
                 .load();
 
         if (hasFailedPostSchemaMigration()) {

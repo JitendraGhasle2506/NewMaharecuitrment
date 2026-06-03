@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Agency Attendance Report</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/agency-attendance-report.css}">
+</head>
+
+<body class="agency-attendance-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Agency', 'Attendance Report', ~{::section})}">
+        <section class="agency-attendance-page">
+            <div class="agency-attendance-hero">
+                <div>
+                    <span class="agency-attendance-eyebrow">Attendance</span>
+                    <h1>Employee Attendance Report</h1>
+                    <p th:text="${agencyName != null ? agencyName : 'Agency'}">Agency</p>
+                </div>
+                <div class="agency-attendance-summary">
+                    <article>
+                        <i class="fa-solid fa-users"></i>
+                        <span>Employees</span>
+                        <strong th:text="${summary.employeeCount()}">0</strong>
+                    </article>
+                    <article>
+                        <i class="fa-solid fa-user-tie"></i>
+                        <span>Internal</span>
+                        <strong th:text="${summary.internalEmployeeCount()}">0</strong>
+                    </article>
+                    <article>
+                        <i class="fa-solid fa-people-carry-box"></i>
+                        <span>External</span>
+                        <strong th:text="${summary.externalEmployeeCount()}">0</strong>
+                    </article>
+                    <article>
+                        <i class="fa-solid fa-calendar-check"></i>
+                        <span>Present</span>
+                        <strong th:text="${summary.presentDays()}">0</strong>
+                    </article>
+                    <article>
+                        <i class="fa-solid fa-wallet"></i>
+                        <span>Payable</span>
+                        <strong th:text="${summary.payableDays()}">0</strong>
+                    </article>
+                    <article>
+                        <i class="fa-solid fa-calendar-xmark"></i>
+                        <span>Absent + Leave</span>
+                        <strong th:text="${summary.absentDays() + summary.leaveDays()}">0</strong>
+                    </article>
+                </div>
+            </div>
+
+            <div class="agency-attendance-card">
+                <div class="agency-attendance-toolbar">
+                    <form th:action="@{/agency/attendance-report}" method="get" class="agency-attendance-filter">
+                        <label>
+                            <span>Month</span>
+                            <select name="month" class="form-select">
+                                <option th:each="entry : ${monthNames}" th:value="${entry.key}"
+                                    th:text="${entry.value}" th:selected="${entry.key == filter.month()}">January
+                                </option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Year</span>
+                            <select name="year" class="form-select">
+                                <option th:each="reportYear : ${yearOptions}" th:value="${reportYear}"
+                                    th:text="${reportYear}" th:selected="${reportYear == filter.year()}">2026
+                                </option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Employee Type</span>
+                            <select name="employeeType" class="form-select">
+                                <option th:each="type : ${reportView.employeeTypeOptions()}" th:value="${type}"
+                                    th:text="${#strings.capitalize(#strings.toLowerCase(type))}"
+                                    th:selected="${type == filter.employeeType()}">All</option>
+                            </select>
+                        </label>
+                        <label class="agency-attendance-search">
+                            <span>Search</span>
+                            <span class="agency-attendance-searchbox">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="search" name="search" class="form-control"
+                                    placeholder="Employee, request, project" th:value="${filter.searchText()}">
+                            </span>
+                        </label>
+                        <div class="agency-attendance-filter-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-filter"></i>
+                                <span>Apply</span>
+                            </button>
+                            <a class="btn btn-outline-secondary" th:href="@{/agency/attendance-report}">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                <span>Reset</span>
+                            </a>
+                        </div>
+                    </form>
+
+                    <div class="agency-attendance-actions">
+                        <button type="button" class="btn btn-success" id="agencyAttendanceExport"
+                            th:disabled="${#lists.isEmpty(reportRows)}">
+                            <i class="fa-solid fa-file-csv"></i>
+                            <span>Export CSV</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="agency-attendance-legend" aria-label="Attendance legend">
+                    <span><b class="status-dot status-p">P</b> Present</span>
+                    <span><b class="status-dot status-a">A</b> Absent</span>
+                    <span><b class="status-dot status-l">L</b> Leave</span>
+                    <span><b class="status-dot status-co">CO</b> Comp Off</span>
+                    <span><b class="status-dot status-t">T</b> Tour</span>
+                    <span><b class="status-dot status-h">H</b> Holiday</span>
+                    <span><b class="status-dot status-w">W</b> Week Off</span>
+                </div>
+
+                <div class="agency-attendance-table-shell" th:if="${!#lists.isEmpty(reportRows)}">
+                    <table class="agency-attendance-table" id="agencyAttendanceTable">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col sticky-col-first">Request ID</th>
+                                <th class="sticky-col sticky-col-second">Employee</th>
+                                <th>Designation</th>
+                                <th>Type</th>
+                                <th>Department</th>
+                                <th>Project</th>
+                                <th>Level</th>
+                                <th th:each="day : ${#numbers.sequence(1, daysInMonth)}"
+                                    th:text="${day < 10 ? '0' + day : day}">01</th>
+                                <th>Present</th>
+                                <th>Absent + Leave</th>
+                                <th>Leave</th>
+                                <th>Comp Off</th>
+                                <th>Tour</th>
+                                <th>Holiday</th>
+                                <th>Week Off</th>
+                                <th>Payable</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="row : ${reportRows}">
+                                <td class="sticky-col sticky-col-first"
+                                    th:text="${row.requestId() != null and row.requestId() != '' ? row.requestId() : '-'}">REQ-0001</td>
+                                <td class="sticky-col sticky-col-second">
+                                    <strong th:text="${row.employeeName() != null and row.employeeName() != '' ? row.employeeName() : '-'}">Employee</strong>
+                                    <span th:text="${row.employeeCode() != null and row.employeeCode() != '' ? row.employeeCode() : (row.employeeId() != null ? 'ID: ' + row.employeeId() : '')}">ID</span>
+                                </td>
+                                <td th:text="${row.designation() != null and row.designation() != '' ? row.designation() : '-'}">Designation</td>
+                                <td>
+                                    <span class="agency-attendance-type"
+                                        th:classappend="${row.employeeType() == 'INTERNAL'} ? ' type-internal' : ' type-external'"
+                                        th:text="${#strings.capitalize(#strings.toLowerCase(row.employeeType()))}">External</span>
+                                </td>
+                                <td th:text="${row.department() != null and row.department() != '' ? row.department() : '-'}">Department</td>
+                                <td th:text="${row.projectName() != null and row.projectName() != '' ? row.projectName() : '-'}">Project</td>
+                                <td th:text="${row.level() != null and row.level() != '' ? row.level() : '-'}">L1</td>
+                                <td th:each="day : ${#numbers.sequence(1, daysInMonth)}"
+                                    th:with="status=${row.dailyStatus() != null ? row.dailyStatus().get(day) : ''}"
+                                    class="agency-attendance-day"
+                                    th:classappend="${status != null and status != '' ? ' status-' + #strings.toLowerCase(status) : ' status-empty'}">
+                                    <span th:text="${status != null and status != '' ? status : '-'}">P</span>
+                                </td>
+                                <td th:text="${row.presentCount()}">0</td>
+                                <td th:text="${row.absentTotalCount()}">0</td>
+                                <td th:text="${row.leaveCount()}">0</td>
+                                <td th:text="${row.compOffCount()}">0</td>
+                                <td th:text="${row.tourCount()}">0</td>
+                                <td th:text="${row.holidayCount()}">0</td>
+                                <td th:text="${row.weekOffCount()}">0</td>
+                                <td th:text="${row.payableDays()}">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="agency-attendance-empty" th:if="${#lists.isEmpty(reportRows)}">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div>
+                        <h2>No attendance records found</h2>
+                        <p>Try another month, year, or search value.</p>
+                    </div>
+                </div>
+            </div>
+
+            <script th:inline="javascript">
+                (function () {
+                    const exportButton = document.getElementById('agencyAttendanceExport');
+                    const table = document.getElementById('agencyAttendanceTable');
+
+                    function escapeCsvValue(value) {
+                        const normalized = (value || '').replace(/\s+/g, ' ').trim();
+                        if (normalized.includes(',') || normalized.includes('"') || normalized.includes('\n')) {
+                            return '"' + normalized.replace(/"/g, '""') + '"';
+                        }
+                        return normalized;
+                    }
+
+                    function exportTableToCsv() {
+                        if (!table) {
+                            return;
+                        }
+
+                        const rows = Array.from(table.querySelectorAll('tr'));
+                        const csv = rows.map((row) => Array.from(row.children)
+                            .map((cell) => escapeCsvValue(cell.textContent))
+                            .join(','))
+                            .join('\n');
+
+                        const month = /*[[${filter.month()}]]*/ 1;
+                        const year = /*[[${filter.year()}]]*/ 2026;
+                        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `agency-attendance-report-${month}-${year}.csv`;
+                        document.body.appendChild(link);
+                        link.click();
+                        URL.revokeObjectURL(link.href);
+                        link.remove();
+                    }
+
+                    if (exportButton) {
+                        exportButton.addEventListener('click', exportTableToCsv);
+                    }
+                })();
+            </script>
+        </section>
+    </th:block>
+</body>
+
+</html>
