@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -157,7 +158,12 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
                 generatedDate);
         AgencyMonthlyBillEntity bill = buildBill(request, billNumber, actorEmail, true, null);
 
-        AgencyMonthlyBillEntity saved = billRepository.save(bill);
+        AgencyMonthlyBillEntity saved;
+        try {
+            saved = billRepository.saveAndFlush(bill);
+        } catch (DataIntegrityViolationException ex) {
+            throw buildDuplicateBillException(request, ex);
+        }
         log.info(
                 "Agency monthly bill generated. billId={}, billNumber={}, agencyId={}, month={}, year={}, total={}",
                 saved.getAgencyMonthlyBillId(),
@@ -167,6 +173,15 @@ public class AgencyMonthlyBillServiceImpl implements AgencyMonthlyBillService {
                 saved.getBillYear(),
                 saved.getTotalAmount());
         return getBill(saved.getAgencyMonthlyBillId());
+    }
+
+    private TaxInvoiceException buildDuplicateBillException(
+            AgencyMonthlyBillGenerateRequest request,
+            DataIntegrityViolationException cause) {
+        return new TaxInvoiceException(
+                "Unable to generate agency monthly bill because the selected agency and period conflicts with an existing bill. "
+                        + "Please open the generated bill list or delete the old bill before generating again.",
+                cause);
     }
 
     @Override
