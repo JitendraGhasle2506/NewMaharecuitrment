@@ -70,6 +70,8 @@ import db.postmigration.V68__employee_master_mahait_onboarding_date;
 import db.postmigration.V69__employee_master_company_payroll_more_than_three_months;
 import db.postmigration.V70__auth_agency_monthly_bills_hr_menu_fix;
 import db.postmigration.V71__master_wing_cell_mapping_support;
+import db.postmigration.V72__auth_agency_attendance_report_menu_backfill;
+import db.postmigration.V73__agency_monthly_bill_stale_period_constraint_cleanup;
 import db.postmigration.V38__auth_mahait_profile_menu_backfill;
 import db.postmigration.V39__mahait_profile_cin_number_support;
 import db.postmigration.V40__department_tax_invoice_support;
@@ -96,90 +98,90 @@ public class PostSchemaFlywayRunner {
     @EventListener(ApplicationReadyEvent.class)
     public void migrate() {
         LOGGER.info("Running post-schema Flyway migrations");
-  
-            Flyway flyway = Flyway.configure()
-                    .dataSource(dataSource)
-                    .baselineOnMigrate(true)
-                    .table("flyway_post_schema_history")
-                    .ignoreMigrationPatterns("*:missing")
-                    .javaMigrations(
-                            new R__department_and_recruitment_schema(),
-                            new R__master_reference_data(),
-                            new R__department_and_recruitment_reference_data(),
-                            new R__auth_reference_data(),
-                            new R__common_mahait_profile_schema(),
-                            new V2__auth_menu_seed_fix(),
-                            new V3__auth_menu_seed_backfill(),
-                            new V4__auth_hr_resigned_menu_backfill(),
-                            new V5__auth_agency_resigned_menu_backfill(),
-                            new V6__auth_agency_resignation_menu_fix(),
-                            new V7__recruitment_pre_onboarding_hr_columns_fix(),
-                            new V8__auth_agency_profile_menu_backfill(),
-                            new V10__auth_department_attendance_reports_menu_backfill(),
-                            new V11__pre_onboarding_interview_detail_nullable(),
-                            new V12__auth_hr_internal_vacancy_menu_backfill(),
-                            new V13__auth_complete_menu_seed_backfill(),
-                            new V14__auth_hr_employees_menu_backfill(),
-                            new V15__auth_hr_employees_menu_conflict_fix(),
-                            new V16__project_scope_type_backfill(),
-                            new V17__internal_vacancy_draft_status_support(),
-                            new V18__recruitment_notification_internal_vacancy_support(),
-                            new V19__auth_hr_all_candidate_details_menu_backfill(),
-                            new V20__internal_vacancy_interview_panel_support(),
-                            new V21__internal_vacancy_interview_authority_support(),
-                            new V22__auth_role_name_normalization(),
-                            new V23__auth_interview_shortlisting_menu_backfill(),
-                            new V24__recruitment_assessment_internal_vacancy_support(),
-                            new V25__internal_feedback_leadership_quality_marks(),
-                            new V26__recruitment_internal_level_two_schedule_support(),
-                            new V27__auth_agency_internal_assessment_menu_backfill(),
-                            new V28__recruitment_internal_level_two_hr_workflow_support(),
-                            new V29__auth_hr_internal_level_two_menu_backfill(),
-                            new V30__recruitment_internal_level_two_panel_user_support(),
-                            new V31__recruitment_internal_level_two_feedback_support(),
-                            new V32__auth_level_two_panel_menu_backfill(),
-                            new V33__recruitment_internal_level_two_workflow_status_support(),
-                            new V38__auth_mahait_profile_menu_backfill(),
-                            new V39__mahait_profile_cin_number_support(),
-                            new V40__department_tax_invoice_support(),
-                            new V41__auth_auditor_department_tax_invoice_menu_backfill(),
-                            new V42__auth_department_onboarded_employees_menu_backfill(),
-                            new V43__auth_department_onboarded_employees_direct_menu_fix(),
-                            new V44__auth_agency_shortlisted_candidates_menu_backfill(),
-                            new V45__auth_hod_approve_attendance_menu_backfill(),
-                            new V46__auth_hod_approve_leave_menu_backfill(),
-                            new V47__auth_employee_attendance_leave_tour_menu_backfill(),
-                            new V48__auth_hr_external_interviews_menu_backfill(),
-                            new V49__attendance_internal_daily_audit_columns_support(),
-                            new V50__pre_onboarding_onboarding_date_optional(),
-                            new V51__auth_submenu_role_mapping_support(),
-                            new V52__attendance_holiday_soft_delete_support(),
-                            new V53__attendance_week_off_working_day_support(),
-                            new V54__auth_user_soft_delete_support(),
-                            new V55__department_approved_payment_report_index_support(),
-                            new V56__master_cell_master_support(),
-                            new V57__project_cell_mapping_support(),
-                            new V58__project_soft_delete_support(),
-                            new V59__attendance_leave_compoff_support(),
-                            new V66__attendance_internal_daily_unique_employee_date(),
-                            new V67__pre_onboarding_company_payroll_proof(),
-                            new V68__employee_master_mahait_onboarding_date(),
-                            new V69__employee_master_company_payroll_more_than_three_months(),
-                            new V70__auth_agency_monthly_bills_hr_menu_fix(),
-                            new V71__master_wing_cell_mapping_support())
-                    .load();
+        Flyway flyway = Flyway.configure()
+                .dataSource(dataSource)
+                .baselineOnMigrate(true)
+                .table("flyway_post_schema_history")
+                .ignoreMigrationPatterns("*:missing")
+                .javaMigrations(
+                        new R__department_and_recruitment_schema(),
+                        new R__master_reference_data(),
+                        new R__department_and_recruitment_reference_data(),
+                        new R__auth_reference_data(),
+                        new R__common_mahait_profile_schema(),
+                        new V2__auth_menu_seed_fix(),
+                        new V3__auth_menu_seed_backfill(),
+                        new V4__auth_hr_resigned_menu_backfill(),
+                        new V5__auth_agency_resigned_menu_backfill(),
+                        new V6__auth_agency_resignation_menu_fix(),
+                        new V7__recruitment_pre_onboarding_hr_columns_fix(),
+                        new V8__auth_agency_profile_menu_backfill(),
+                        new V10__auth_department_attendance_reports_menu_backfill(),
+                        new V11__pre_onboarding_interview_detail_nullable(),
+                        new V12__auth_hr_internal_vacancy_menu_backfill(),
+                        new V13__auth_complete_menu_seed_backfill(),
+                        new V14__auth_hr_employees_menu_backfill(),
+                        new V15__auth_hr_employees_menu_conflict_fix(),
+                        new V16__project_scope_type_backfill(),
+                        new V17__internal_vacancy_draft_status_support(),
+                        new V18__recruitment_notification_internal_vacancy_support(),
+                        new V19__auth_hr_all_candidate_details_menu_backfill(),
+                        new V20__internal_vacancy_interview_panel_support(),
+                        new V21__internal_vacancy_interview_authority_support(),
+                        new V22__auth_role_name_normalization(),
+                        new V23__auth_interview_shortlisting_menu_backfill(),
+                        new V24__recruitment_assessment_internal_vacancy_support(),
+                        new V25__internal_feedback_leadership_quality_marks(),
+                        new V26__recruitment_internal_level_two_schedule_support(),
+                        new V27__auth_agency_internal_assessment_menu_backfill(),
+                        new V28__recruitment_internal_level_two_hr_workflow_support(),
+                        new V29__auth_hr_internal_level_two_menu_backfill(),
+                        new V30__recruitment_internal_level_two_panel_user_support(),
+                        new V31__recruitment_internal_level_two_feedback_support(),
+                        new V32__auth_level_two_panel_menu_backfill(),
+                        new V33__recruitment_internal_level_two_workflow_status_support(),
+                        new V38__auth_mahait_profile_menu_backfill(),
+                        new V39__mahait_profile_cin_number_support(),
+                        new V40__department_tax_invoice_support(),
+                        new V41__auth_auditor_department_tax_invoice_menu_backfill(),
+                        new V42__auth_department_onboarded_employees_menu_backfill(),
+                        new V43__auth_department_onboarded_employees_direct_menu_fix(),
+                        new V44__auth_agency_shortlisted_candidates_menu_backfill(),
+                        new V45__auth_hod_approve_attendance_menu_backfill(),
+                        new V46__auth_hod_approve_leave_menu_backfill(),
+                        new V47__auth_employee_attendance_leave_tour_menu_backfill(),
+                        new V48__auth_hr_external_interviews_menu_backfill(),
+                        new V49__attendance_internal_daily_audit_columns_support(),
+                        new V50__pre_onboarding_onboarding_date_optional(),
+                        new V51__auth_submenu_role_mapping_support(),
+                        new V52__attendance_holiday_soft_delete_support(),
+                        new V53__attendance_week_off_working_day_support(),
+                        new V54__auth_user_soft_delete_support(),
+                        new V55__department_approved_payment_report_index_support(),
+                        new V56__master_cell_master_support(),
+                        new V57__project_cell_mapping_support(),
+                        new V58__project_soft_delete_support(),
+                        new V59__attendance_leave_compoff_support(),
+                        new V66__attendance_internal_daily_unique_employee_date(),
+                        new V67__pre_onboarding_company_payroll_proof(),
+                        new V68__employee_master_mahait_onboarding_date(),
+                        new V69__employee_master_company_payroll_more_than_three_months(),
+                        new V70__auth_agency_monthly_bills_hr_menu_fix(),
+                        new V71__master_wing_cell_mapping_support(),
+                        new V72__auth_agency_attendance_report_menu_backfill(),
+                        new V73__agency_monthly_bill_stale_period_constraint_cleanup())
+                .load();
 
-            if (hasFailedPostSchemaMigration()) {
-                LOGGER.warn(
-                        "Detected failed entries in flyway_post_schema_history. Repairing the post-schema history before retrying.");
-                flyway.repair();
-            }
+        if (hasFailedPostSchemaMigration()) {
+            LOGGER.warn(
+                    "Detected failed entries in flyway_post_schema_history. Repairing the post-schema history before retrying.");
+            flyway.repair();
+        }
 
-            flyway.migrate();
-            LOGGER.info("Post-schema Flyway migrations completed");
-        } 
-        
-  
+        flyway.migrate();
+        LOGGER.info("Post-schema Flyway migrations completed");
+    }
+
     private boolean hasFailedPostSchemaMigration() {
         try (Connection connection = dataSource.getConnection();
                 Statement statement = connection.createStatement();

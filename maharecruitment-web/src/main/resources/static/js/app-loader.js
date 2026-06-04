@@ -204,6 +204,14 @@
         }
     };
 
+    const getEffectiveFormAction = (form, submitter) => {
+        if (submitter && "formAction" in submitter && submitter.formAction) {
+            return submitter.formAction;
+        }
+
+        return form.action || window.location.href;
+    };
+
     const wireNavigationLoader = () => {
         document.addEventListener("click", (event) => {
             const link = event.target.closest("a[href]");
@@ -250,7 +258,7 @@
             const message = submitter?.dataset.appLoaderMessage || form.dataset.appLoaderMessage || DEFAULT_MESSAGE;
             const status = submitter?.dataset.appLoaderStatus || form.dataset.appLoaderStatus || "Validating request";
 
-            if (behavior === "download") {
+            if (behavior === "download" || isDownloadLikeUrl(getEffectiveFormAction(form, submitter))) {
                 showForDownload(message);
                 return;
             }
