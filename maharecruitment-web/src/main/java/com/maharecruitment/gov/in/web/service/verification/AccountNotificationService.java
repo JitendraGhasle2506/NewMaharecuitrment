@@ -17,4 +17,6 @@ public interface AccountNotificationService {
             String temporaryPassword);
 
     void sendAgencyCredentials(String email, String contactName, String temporaryPassword);
+
+    void sendResignationNotification(String email, String role, String employeeName, String resignDate);
 }

@@ -13,5 +13,6 @@ import java.util.List;
 public interface EmployeeRelievingRepository extends JpaRepository<EmployeeRelievingEntity, Long> {
     List<EmployeeRelievingEntity> findByEmployee_EmployeeId(Long employeeId);
     List<EmployeeRelievingEntity> findByEmployee_Agency_AgencyId(Long agencyId);
+    org.springframework.data.domain.Page<EmployeeRelievingEntity> findByEmployee_Agency_AgencyId(Long agencyId, org.springframework.data.domain.Pageable pageable);
     List<EmployeeRelievingEntity> findByEmployee_DepartmentRegistration_DepartmentRegistrationId(Long departmentRegistrationId);
 }

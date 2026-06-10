@@ -205,5 +205,6 @@
 		<module>maharecruitment-audit</module>
 		<module>maharecruitment-security</module>
 		<module>maharecruitment-dms</module>
+		<module>maharecruitment-asset</module>
 	</modules>
 </project>

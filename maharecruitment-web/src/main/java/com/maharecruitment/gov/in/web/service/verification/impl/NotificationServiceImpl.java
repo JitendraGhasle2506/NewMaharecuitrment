@@ -234,6 +234,37 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         }
     }
 
+    @Override
+    public void sendResignationNotification(String email, String role, String employeeName, String resignDate) {
+        if (!notificationChannelProperties.isEmailEnabled()) {
+            log.info("Email dispatch is disabled. Skipping resignation notification email for {}.", email);
+            return;
+        }
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(getFromAddress());
+        message.setTo(email);
+        message.setSubject("Resignation Submitted by " + employeeName);
+        message.setText("""
+                Dear %s,
+
+                This is to notify you that %s has submitted their resignation.
+                Resignation Date: %s
+
+                Please log in to the MahaIT Recruitment portal to process the relieving request.
+
+                Regards,
+                MahaIT Recruitment
+                """.formatted(role, employeeName, resignDate));
+
+        try {
+            mailSender.send(message);
+        } catch (Exception ex) {
+            log.error("Failed to send resignation notification to {} from {}. Reason: {}",
+                    email, message.getFrom(), extractFailureReason(ex), ex);
+        }
+    }
+
     private String buildFailureMessage(String baseMessage, Exception ex) {
         String reason = extractFailureReason(ex);
         if (!StringUtils.hasText(reason) || baseMessage.contains(reason)) {

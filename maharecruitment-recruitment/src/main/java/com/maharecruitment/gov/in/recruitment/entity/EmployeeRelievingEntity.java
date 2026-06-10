@@ -56,4 +56,28 @@ public class EmployeeRelievingEntity extends RecruitmentAuditable {
 
     @Column(name = "remarks", length = 500)
     private String remarks;
+
+    @Column(name = "detailed_reason", length = 255)
+    private String detailedReason;
+
+    @Column(name = "requested_last_working_date")
+    private LocalDate requestedLastWorkingDate;
+
+    @Column(name = "notice_period_shortfall", length = 100)
+    private String noticePeriodShortfall;
+
+    @Column(name = "active_projects_handover", length = 1000)
+    private String activeProjectsHandover;
+
+    @Column(name = "personal_email", length = 255)
+    private String personalEmail;
+
+    @Column(name = "alternate_mobile", length = 20)
+    private String alternateMobile;
+
+    @Column(name = "exit_feedback", columnDefinition = "TEXT")
+    private String exitFeedback;
+
+    @Column(name = "forwarding_address", columnDefinition = "TEXT")
+    private String forwardingAddress;
 }

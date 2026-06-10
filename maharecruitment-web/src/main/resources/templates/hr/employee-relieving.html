@@ -247,6 +247,11 @@
                                     <td><span class="status-badge bg-warning-subtle text-warning-emphasis" th:text="${record.status}"></span></td>
                                     <td>
                                         <div class="d-flex gap-2 flex-wrap">
+                                            <button th:if="${record.reasonOfRelieving == 'Resignation'}" type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#viewDetailsModal" 
+                                                    th:attr="data-emp-name=${record.employeeName}, data-detailed-reason=${record.detailedReason}, data-requested-date=${record.requestedLastWorkingDate}, data-active-projects=${record.activeProjectsHandover}, data-personal-email=${record.personalEmail}, data-alternate-mobile=${record.alternateMobile}, data-feedback=${record.exitFeedback}, data-forwarding-address=${record.forwardingAddress}">
+                                                <i class="fas fa-eye me-1"></i> View
+                                            </button>
+                                            
                                             <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#markExitDateModal" th:attr="data-relieving-id=${record.relievingId}, data-emp-name=${record.employeeName}">End / Mark Exit</button>
                                             
                                             <button th:if="${record.reasonOfRelieving == 'PIP'}" type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editPipModal" th:attr="data-relieving-id=${record.relievingId}, data-emp-name=${record.employeeName}, data-start-date=${record.pipStartDate}, data-duration=${record.pipDuration}">Edit PIP</button>
@@ -389,6 +394,61 @@
                                 <button type="submit" class="btn btn-primary">Save Changes</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Resignation Details Modal -->
+            <div class="modal fade" id="viewDetailsModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-fullscreen">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Resignation Details - <span id="viewEmpName"></span></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <p class="mb-1 text-muted small">Primary Reason</p>
+                                    <strong id="viewDetailedReason"></strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-1 text-muted small">Requested Last Working Date</p>
+                                    <strong id="viewRequestedDate"></strong>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <p class="mb-1 text-muted small">Active Projects / Handover Details</p>
+                                    <div class="p-2 bg-light rounded" id="viewActiveProjects"></div>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <p class="mb-1 text-muted small">Personal Email</p>
+                                    <strong id="viewPersonalEmail"></strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-1 text-muted small">Alternate Mobile</p>
+                                    <strong id="viewAlternateMobile"></strong>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <p class="mb-1 text-muted small">Forwarding Address</p>
+                                    <div class="p-2 bg-light rounded" id="viewForwardingAddress"></div>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <p class="mb-1 text-muted small">Exit Feedback / Suggestions</p>
+                                    <div class="p-2 bg-light rounded" id="viewExitFeedback"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -548,6 +608,24 @@
                     document.getElementById('editPipEmpName').textContent = button.getAttribute('data-emp-name');
                     document.getElementById('editPipStartDate').value = button.getAttribute('data-start-date');
                     document.getElementById('editPipDuration').value = button.getAttribute('data-duration');
+                });
+            }
+
+            const viewDetailsModal = document.getElementById('viewDetailsModal');
+            if (viewDetailsModal) {
+                viewDetailsModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    document.getElementById('viewEmpName').textContent = button.getAttribute('data-emp-name') || 'N/A';
+                    document.getElementById('viewDetailedReason').textContent = button.getAttribute('data-detailed-reason') || 'N/A';
+                    
+                    const reqDate = button.getAttribute('data-requested-date');
+                    document.getElementById('viewRequestedDate').textContent = reqDate ? reqDate : 'N/A';
+                    
+                    document.getElementById('viewActiveProjects').textContent = button.getAttribute('data-active-projects') || 'N/A';
+                    document.getElementById('viewPersonalEmail').textContent = button.getAttribute('data-personal-email') || 'N/A';
+                    document.getElementById('viewAlternateMobile').textContent = button.getAttribute('data-alternate-mobile') || 'N/A';
+                    document.getElementById('viewForwardingAddress').textContent = button.getAttribute('data-forwarding-address') || 'N/A';
+                    document.getElementById('viewExitFeedback').textContent = button.getAttribute('data-feedback') || 'N/A';
                 });
             }
         })();

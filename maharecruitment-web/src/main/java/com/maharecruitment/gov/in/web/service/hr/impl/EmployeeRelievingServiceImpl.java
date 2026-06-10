@@ -35,6 +35,12 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
     }
 
     @Override
+    public org.springframework.data.domain.Page<EmployeeRelievingDto> getRelievingRecordsByAgency(Long agencyId, org.springframework.data.domain.Pageable pageable) {
+        return relievingRepository.findByEmployee_Agency_AgencyId(agencyId, pageable)
+                .map(this::mapToDto);
+    }
+
+    @Override
     public List<EmployeeRelievingDto> getRelievingRecordsByDepartment(Long departmentId) {
         return relievingRepository.findByEmployee_DepartmentRegistration_DepartmentRegistrationId(departmentId)
                 .stream().map(this::mapToDto).collect(Collectors.toList());
@@ -74,6 +80,15 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
         entity.setHandoverGivenToId(dto.getHandoverGivenToId());
         entity.setStatus(dto.getStatus() == null ? "INITIATED" : dto.getStatus());
         entity.setRemarks(dto.getRemarks());
+        
+        entity.setDetailedReason(dto.getDetailedReason());
+        entity.setRequestedLastWorkingDate(dto.getRequestedLastWorkingDate());
+        entity.setNoticePeriodShortfall(dto.getNoticePeriodShortfall());
+        entity.setActiveProjectsHandover(dto.getActiveProjectsHandover());
+        entity.setPersonalEmail(dto.getPersonalEmail());
+        entity.setAlternateMobile(dto.getAlternateMobile());
+        entity.setExitFeedback(dto.getExitFeedback());
+        entity.setForwardingAddress(dto.getForwardingAddress());
 
         relievingRepository.save(entity);
         
@@ -165,6 +180,16 @@ public class EmployeeRelievingServiceImpl implements EmployeeRelievingService {
         
         dto.setStatus(entity.getStatus());
         dto.setRemarks(entity.getRemarks());
+        
+        dto.setDetailedReason(entity.getDetailedReason());
+        dto.setRequestedLastWorkingDate(entity.getRequestedLastWorkingDate());
+        dto.setNoticePeriodShortfall(entity.getNoticePeriodShortfall());
+        dto.setActiveProjectsHandover(entity.getActiveProjectsHandover());
+        dto.setPersonalEmail(entity.getPersonalEmail());
+        dto.setAlternateMobile(entity.getAlternateMobile());
+        dto.setExitFeedback(entity.getExitFeedback());
+        dto.setForwardingAddress(entity.getForwardingAddress());
+        
         return dto;
     }
 }

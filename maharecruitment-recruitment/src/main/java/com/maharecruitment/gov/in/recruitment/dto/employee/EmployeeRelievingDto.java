@@ -32,6 +32,18 @@ public class EmployeeRelievingDto {
     private LocalDate pipStartDate;
     
     private String pipDuration;
+
+    private String detailedReason;
+    
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate requestedLastWorkingDate;
+    
+    private String noticePeriodShortfall;
+    private String activeProjectsHandover;
+    private String personalEmail;
+    private String alternateMobile;
+    private String exitFeedback;
+    private String forwardingAddress;
     
     private Long handoverGivenToId;
     private String handoverGivenToName;

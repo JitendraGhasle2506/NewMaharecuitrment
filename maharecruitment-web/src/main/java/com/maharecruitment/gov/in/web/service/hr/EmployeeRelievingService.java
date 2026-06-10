@@ -7,6 +7,7 @@ import com.maharecruitment.gov.in.recruitment.dto.employee.EmployeeRelievingDto;
 public interface EmployeeRelievingService {
     List<EmployeeRelievingDto> getAllRelievingRecords();
     List<EmployeeRelievingDto> getRelievingRecordsByAgency(Long agencyId);
+    org.springframework.data.domain.Page<EmployeeRelievingDto> getRelievingRecordsByAgency(Long agencyId, org.springframework.data.domain.Pageable pageable);
     List<EmployeeRelievingDto> getRelievingRecordsByDepartment(Long departmentId);
     EmployeeRelievingDto getRelievingById(Long relievingId);
     void saveRelieving(EmployeeRelievingDto dto);

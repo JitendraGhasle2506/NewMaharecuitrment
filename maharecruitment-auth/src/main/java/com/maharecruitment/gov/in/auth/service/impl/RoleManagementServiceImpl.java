@@ -31,7 +31,7 @@ public class RoleManagementServiceImpl implements RoleManagementService {
             "ROLE_MD",
             "ROLE_PM",
             "ROLE_AUDITOR",
-            "ROLE_EMPLOYEE");
+            "ROLE_EMPLOYEE","ROLE_INFRA");
 
     private final RoleRepository roleRepository;
 
