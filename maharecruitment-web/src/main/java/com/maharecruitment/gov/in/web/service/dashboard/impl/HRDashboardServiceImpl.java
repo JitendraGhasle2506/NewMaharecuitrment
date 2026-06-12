@@ -84,28 +84,27 @@ public class HRDashboardServiceImpl implements HRDashboardService {
             departmentOnboarding = List.of(new DepartmentOnboardingView("No Data", 0, 0));
         }
 
-        List<DepartmentProjectApplicationEntity> applications = departmentProjectApplicationRepository.findAll();
-        Map<Long, ProjectMst> projectsByApplicationId = projectMstRepository.findAll().stream()
-                .filter(project -> project.getApplicationId() != null)
+        List<ProjectMst> masterProjects = projectMstRepository.findAll();
+        Map<Long, DepartmentProjectApplicationEntity> applicationsById = departmentProjectApplicationRepository.findAll()
+                .stream()
                 .collect(Collectors.toMap(
-                        ProjectMst::getApplicationId,
-                        project -> project,
+                        DepartmentProjectApplicationEntity::getDepartmentProjectApplicationId,
+                        application -> application,
                         (first, second) -> first));
         Map<String, WorkforceCount> workforceByRequestId = buildWorkforceByRequestId(allEmployees);
-        List<ProjectWorkforceView> projects = applications.stream()
-                .map(app -> {
-                    WorkforceCount workforce = workforceByRequestId.getOrDefault(app.getRequestId(), WorkforceCount.empty());
-                    ProjectMst projectMst = projectsByApplicationId.get(app.getDepartmentProjectApplicationId());
-                    String cellName = projectMst != null && projectMst.getCell() != null
-                            ? projectMst.getCell().getCellName()
-                            : UNASSIGNED_CELL;
+        List<ProjectWorkforceView> projects = masterProjects.stream()
+                .map(project -> {
+                    DepartmentProjectApplicationEntity app = resolveApplication(project, applicationsById);
+                    WorkforceCount workforce = app != null
+                            ? workforceByRequestId.getOrDefault(app.getRequestId(), WorkforceCount.empty())
+                            : WorkforceCount.empty();
                     return new ProjectWorkforceView(
-                            app.getProjectCode(),
-                            app.getProjectName(),
-                            cellName,
+                            app != null ? app.getProjectCode() : null,
+                            project.getProjectName(),
+                            resolveCellName(project),
                             workforce.internal(),
                             workforce.external(),
-                            app.getApplicationStatus().toString());
+                            app != null ? app.getApplicationStatus().toString() : resolveProjectStatus(project));
                 })
                 .sorted(Comparator.comparing(ProjectWorkforceView::cellName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
                         .thenComparing(ProjectWorkforceView::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
@@ -136,6 +135,36 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 departmentOnboarding,
                 projects
         );
+    }
+
+    private DepartmentProjectApplicationEntity resolveApplication(
+            ProjectMst project,
+            Map<Long, DepartmentProjectApplicationEntity> applicationsById) {
+        return project != null && project.getApplicationId() != null
+                ? applicationsById.get(project.getApplicationId())
+                : null;
+    }
+
+    private String resolveCellName(ProjectMst project) {
+        if (hasCellName(project)) {
+            return project.getCell().getCellName().trim();
+        }
+
+        return UNASSIGNED_CELL;
+    }
+
+    private String resolveProjectStatus(ProjectMst project) {
+        return project != null && "N".equalsIgnoreCase(project.getActiveFlag()) ? "Inactive" : "Active";
+    }
+
+    private boolean hasCellName(ProjectMst project) {
+        return project != null
+                && project.getCell() != null
+                && hasText(project.getCell().getCellName());
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private long countPresentEmployees(LocalDate today) {
