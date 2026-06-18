@@ -326,6 +326,8 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     List<EmployeeEntity> findByDesignation_DesignationNameIgnoreCaseAndStatusIgnoreCase(String designationName, String status);
 
+    List<EmployeeEntity> findByFullNameIgnoreCaseAndStatusIgnoreCase(String fullName, String status);
+
     @Query("select employee from EmployeeEntity employee "
             + "where upper(trim(coalesce(employee.recruitmentType, ''))) = 'INTERNAL' "
             + "and trim(coalesce(employee.aadhaarNumber, '')) <> '' "
@@ -368,4 +370,20 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "     lower(cast(e.mobile as String)) like :search) "
             + "order by e.fullName asc, e.employeeId asc")
     Page<EmployeeEntity> findActiveWithSearch(@Param("search") String search, Pageable pageable);
+
+    @EntityGraph(attributePaths = "designation")
+    @Query("select e from EmployeeEntity e "
+            + "where upper(trim(coalesce(e.status, ''))) = 'ACTIVE' "
+            + "and e.designation.designationId = :designationId "
+            + "and upper(trim(coalesce(e.levelCode, ''))) = upper(trim(:levelCode)) "
+            + "and (:search is null or "
+            + "     lower(cast(e.fullName as String)) like :search or "
+            + "     lower(cast(e.employeeCode as String)) like :search or "
+            + "     lower(cast(e.email as String)) like :search) "
+            + "order by e.fullName asc, e.employeeId asc")
+    Page<EmployeeEntity> findActiveByDesignationAndLevelWithSearch(
+            @Param("designationId") Long designationId,
+            @Param("levelCode") String levelCode,
+            @Param("search") String search,
+            Pageable pageable);
 }

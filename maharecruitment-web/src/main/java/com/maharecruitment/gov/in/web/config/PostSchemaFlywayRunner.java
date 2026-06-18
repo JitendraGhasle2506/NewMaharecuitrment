@@ -72,6 +72,11 @@ import db.postmigration.V70__auth_agency_monthly_bills_hr_menu_fix;
 import db.postmigration.V71__master_wing_cell_mapping_support;
 import db.postmigration.V72__auth_agency_attendance_report_menu_backfill;
 import db.postmigration.V73__agency_monthly_bill_stale_period_constraint_cleanup;
+import db.postmigration.V75__team_management_hierarchy_support;
+import db.postmigration.V76__team_master_cell_mapping_primary;
+import db.postmigration.V77__position_master_level_mapping;
+import db.postmigration.V78__position_master_project_optional;
+import db.postmigration.V79__position_master_cell_mapping;
 import db.postmigration.V38__auth_mahait_profile_menu_backfill;
 import db.postmigration.V39__mahait_profile_cin_number_support;
 import db.postmigration.V40__department_tax_invoice_support;
@@ -169,7 +174,12 @@ public class PostSchemaFlywayRunner {
                         new V70__auth_agency_monthly_bills_hr_menu_fix(),
                         new V71__master_wing_cell_mapping_support(),
                         new V72__auth_agency_attendance_report_menu_backfill(),
-                        new V73__agency_monthly_bill_stale_period_constraint_cleanup())
+                        new V73__agency_monthly_bill_stale_period_constraint_cleanup(),
+                        new V75__team_management_hierarchy_support(),
+                        new V76__team_master_cell_mapping_primary(),
+                        new V77__position_master_level_mapping(),
+                        new V78__position_master_project_optional(),
+                        new V79__position_master_cell_mapping())
                 .load();
 
         if (hasFailedPostSchemaMigration()) {

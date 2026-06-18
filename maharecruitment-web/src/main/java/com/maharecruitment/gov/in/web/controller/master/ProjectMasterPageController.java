@@ -67,6 +67,7 @@ public class ProjectMasterPageController {
             ProjectResponse existing = projectService.getById(projectId);
             ProjectRequest form = new ProjectRequest();
             form.setProjectName(existing.getProjectName());
+            form.setProjectCode(existing.getProjectCode());
             form.setProjectDesc(existing.getProjectDesc());
             form.setProjectType(existing.getProjectType());
             form.setProjectScopeType(existing.getProjectScopeType());

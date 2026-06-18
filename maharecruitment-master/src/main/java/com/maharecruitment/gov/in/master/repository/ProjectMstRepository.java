@@ -64,6 +64,14 @@ public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
 
     @Query("select count(p) > 0 "
             + "from ProjectMst p "
+            + "where lower(p.projectCode) = lower(:projectCode) "
+            + "and (:excludeId is null or p.projectId <> :excludeId)")
+    boolean existsByProjectCodeExcludingId(
+            @Param("projectCode") String projectCode,
+            @Param("excludeId") Long excludeId);
+
+    @Query("select count(p) > 0 "
+            + "from ProjectMst p "
             + "where lower(p.projectName) = lower(:projectName) "
             + "and ((:departmentRegistrationId is null and p.departmentRegistrationId is null) "
             + "or p.departmentRegistrationId = :departmentRegistrationId) "
