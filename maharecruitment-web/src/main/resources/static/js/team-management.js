@@ -192,14 +192,14 @@
             renderTeamsTable();
         } catch (error) {
             state.teams = [];
-            renderTableError($('tmTeamsBody'), 4, 'Unable to load teams.');
+            renderTableError($('tmTeamsBody'), 5, 'Unable to load teams.');
             throw error;
         }
     }
 
     async function loadPositions() {
         const body = $('tmPositionsBody');
-        body.innerHTML = loadingRow(6, 'Loading positions...');
+        body.innerHTML = loadingRow(7, 'Loading positions...');
         try {
             const page = await request(`/api/master/positions${query({
                 cellId: selectedCellId(),
@@ -209,7 +209,7 @@
             renderPositionsTable();
         } catch (error) {
             state.positions = [];
-            renderTableError(body, 6, 'Unable to load positions.');
+            renderTableError(body, 7, 'Unable to load positions.');
             throw error;
         }
     }
@@ -222,7 +222,7 @@
             })}`);
             renderMappingsTable(pageItems(page));
         } catch (error) {
-            renderTableError($('tmMappingsBody'), 5, 'Unable to load employee mappings.');
+            renderTableError($('tmMappingsBody'), 6, 'Unable to load employee mappings.');
             throw error;
         }
     }
@@ -456,15 +456,16 @@
     function renderStrength(rows) {
         const body = $('tmStrengthBody');
         if (!rows.length) {
-            body.innerHTML = emptyRow(4);
+            body.innerHTML = emptyRow(5);
             return;
         }
-        body.innerHTML = rows.map((row) => `
+        body.innerHTML = rows.map((row, index) => `
             <tr>
-                <td>${escapeHtml(row.teamName)}</td>
-                <td>${escapeHtml(row.teamType)}</td>
-                <td class="text-end">${row.filledPositions || 0}/${row.totalPositions || 0}</td>
-                <td class="text-end text-danger fw-semibold">${row.vacantPositions || 0}</td>
+                <td class="tm-cell-serial">${index + 1}</td>
+                <td><span class="tm-cell-primary">${escapeHtml(row.teamName)}</span></td>
+                <td>${teamTypeBadge(row.teamType)}</td>
+                <td class="text-center tm-cell-number">${row.filledPositions || 0} / ${row.totalPositions || 0}</td>
+                <td class="text-center tm-cell-number tm-cell-vacant">${row.vacantPositions || 0}</td>
             </tr>
         `).join('');
     }
@@ -472,19 +473,20 @@
     function renderTeamsTable() {
         const body = $('tmTeamsBody');
         if (!state.teams.length) {
-            body.innerHTML = emptyRow(4);
+            body.innerHTML = emptyRow(5);
             return;
         }
-        body.innerHTML = state.teams.map((team) => `
+        body.innerHTML = state.teams.map((team, index) => `
             <tr>
-                <td>${escapeHtml(team.teamName)}</td>
+                <td class="tm-cell-serial">${index + 1}</td>
+                <td><span class="tm-cell-primary">${escapeHtml(team.teamName)}</span></td>
                 <td>${escapeHtml(team.cellName || '-')}</td>
-                <td>${escapeHtml(team.teamType)}</td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary" data-action="edit-team" data-id="${team.teamId}" title="Edit">
+                <td>${teamTypeBadge(team.teamType)}</td>
+                <td class="tm-cell-actions">
+                    <button class="btn btn-sm btn-outline-primary tm-action-btn" data-action="edit-team" data-id="${team.teamId}" title="Edit team" aria-label="Edit ${escapeHtml(team.teamName)}">
                         <i class="fa-solid fa-pen"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger" data-action="deactivate-team" data-id="${team.teamId}" title="Deactivate">
+                    <button class="btn btn-sm btn-outline-danger tm-action-btn" data-action="deactivate-team" data-id="${team.teamId}" title="Deactivate team" aria-label="Deactivate ${escapeHtml(team.teamName)}">
                         <i class="fa-solid fa-ban"></i>
                     </button>
                 </td>
@@ -495,26 +497,30 @@
     function renderPositionsTable() {
         const body = $('tmPositionsBody');
         if (!state.positions.length) {
-            body.innerHTML = emptyRow(6);
+            body.innerHTML = emptyRow(7);
             return;
         }
-        body.innerHTML = state.positions.map((position) => `
+        body.innerHTML = state.positions.map((position, index) => `
             <tr>
+                <td class="tm-cell-serial">${index + 1}</td>
                 <td>
-                    <div class="fw-semibold">${escapeHtml(position.positionName)}</div>
-                    <small class="text-muted">${escapeHtml(designationLevel(position))}</small>
+                    <span class="tm-cell-primary">${escapeHtml(position.positionName)}</span>
+                    <span class="tm-cell-secondary">${escapeHtml(designationLevel(position))}</span>
                 </td>
                 <td>${escapeHtml(position.cellName || '-')}</td>
                 <td>${escapeHtml(position.teamName || '-')}</td>
-                <td class="${position.positionStatus === 'VACANT' ? 'text-danger fw-semibold' : ''}">
-                    ${escapeHtml(position.displayName)}
+                <td>
+                    <span class="tm-cell-primary ${position.positionStatus === 'VACANT' ? 'tm-text-vacant' : ''}">
+                        ${escapeHtml(position.displayName)}
+                    </span>
+                    ${position.employeeCode ? `<span class="tm-cell-secondary">Employee Code: ${escapeHtml(position.employeeCode)}</span>` : ''}
                 </td>
-                <td>${badge(position.positionStatus, position.positionStatus === 'VACANT' ? 'danger' : 'success')}</td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary" data-action="edit-position" data-id="${position.positionId}" title="Edit">
+                <td class="text-center">${statusBadge(position.positionStatus)}</td>
+                <td class="tm-cell-actions">
+                    <button class="btn btn-sm btn-outline-primary tm-action-btn" data-action="edit-position" data-id="${position.positionId}" title="Edit position" aria-label="Edit ${escapeHtml(position.positionName)}">
                         <i class="fa-solid fa-pen"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger" data-action="deactivate-position" data-id="${position.positionId}" title="Deactivate">
+                    <button class="btn btn-sm btn-outline-danger tm-action-btn" data-action="deactivate-position" data-id="${position.positionId}" title="Deactivate position" aria-label="Deactivate ${escapeHtml(position.positionName)}">
                         <i class="fa-solid fa-ban"></i>
                     </button>
                 </td>
@@ -525,23 +531,27 @@
     function renderMappingsTable(rows) {
         const body = $('tmMappingsBody');
         if (!rows.length) {
-            body.innerHTML = emptyRow(5);
+            body.innerHTML = emptyRow(6);
             return;
         }
-        body.innerHTML = rows.map((mapping) => `
+        body.innerHTML = rows.map((mapping, index) => `
             <tr>
-                <td>${escapeHtml(mapping.employeeName || 'Vacant')}</td>
+                <td class="tm-cell-serial">${index + 1}</td>
+                <td>
+                    <span class="tm-cell-primary ${mapping.employeeId ? '' : 'tm-text-vacant'}">${escapeHtml(mapping.employeeName || 'Vacant')}</span>
+                    ${mapping.employeeCode ? `<span class="tm-cell-secondary">Employee Code: ${escapeHtml(mapping.employeeCode)}</span>` : ''}
+                </td>
                 <td>${escapeHtml(mapping.teamName)}</td>
                 <td>
-                    <div class="fw-semibold">${escapeHtml(mapping.positionName)}</div>
-                    <small class="text-muted">${escapeHtml(designationLevel(mapping))}</small>
+                    <span class="tm-cell-primary">${escapeHtml(mapping.positionName)}</span>
+                    <span class="tm-cell-secondary">${escapeHtml(designationLevel(mapping))}</span>
                 </td>
-                <td>${escapeHtml(mapping.effectiveDate)}</td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary" data-action="edit-mapping" data-id="${mapping.mappingId}" title="Edit">
+                <td class="text-center text-nowrap">${escapeHtml(formatDisplayDate(mapping.effectiveDate))}</td>
+                <td class="tm-cell-actions">
+                    <button class="btn btn-sm btn-outline-primary tm-action-btn" data-action="edit-mapping" data-id="${mapping.mappingId}" title="Edit mapping" aria-label="Edit mapping for ${escapeHtml(mapping.employeeName || 'vacant position')}">
                         <i class="fa-solid fa-pen"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger" data-action="deactivate-mapping" data-id="${mapping.mappingId}" title="Deactivate">
+                    <button class="btn btn-sm btn-outline-danger tm-action-btn" data-action="deactivate-mapping" data-id="${mapping.mappingId}" title="Deactivate mapping" aria-label="Deactivate mapping for ${escapeHtml(mapping.employeeName || 'vacant position')}">
                         <i class="fa-solid fa-ban"></i>
                     </button>
                 </td>
@@ -1052,26 +1062,60 @@
         return item.levelCode ? `${designation} (${item.levelCode})` : designation;
     }
 
-    function badge(label, type) {
-        return `<span class="badge text-bg-${type}">${escapeHtml(label)}</span>`;
+    function statusBadge(status) {
+        const vacant = status === 'VACANT';
+        return `<span class="tm-status-badge ${vacant ? 'is-vacant' : 'is-filled'}">
+            <i class="fa-solid ${vacant ? 'fa-circle-exclamation' : 'fa-circle-check'}" aria-hidden="true"></i>
+            ${escapeHtml(vacant ? 'Vacant' : 'Filled')}
+        </span>`;
+    }
+
+    function teamTypeBadge(teamType) {
+        const normalized = String(teamType || '').toUpperCase();
+        const labels = {
+            DEVELOPMENT: 'Development',
+            OM: 'O&M',
+            SUPPORT: 'Support'
+        };
+        return `<span class="tm-type-badge">${escapeHtml(labels[normalized] || teamType || '-')}</span>`;
+    }
+
+    function formatDisplayDate(value) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+        return match ? `${match[3]}-${match[2]}-${match[1]}` : (value || '-');
     }
 
     function emptyRow(colspan) {
-        return `<tr><td colspan="${colspan}" class="text-center text-muted">No records found</td></tr>`;
+        return `<tr class="tm-state-row"><td colspan="${colspan}">
+            <div class="tm-table-state">
+                <i class="fa-regular fa-folder-open" aria-hidden="true"></i>
+                <span>No records found</span>
+            </div>
+        </td></tr>`;
     }
 
     function loadingRow(colspan, message) {
-        return `<tr><td colspan="${colspan}" class="text-center text-muted">${escapeHtml(message)}</td></tr>`;
+        return `<tr class="tm-state-row"><td colspan="${colspan}">
+            <div class="tm-table-state">
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                <span>${escapeHtml(message)}</span>
+            </div>
+        </td></tr>`;
     }
 
     function renderTableError(body, colspan, message) {
-        body.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-danger">${escapeHtml(message)}</td></tr>`;
+        body.innerHTML = `<tr class="tm-state-row"><td colspan="${colspan}">
+            <div class="tm-table-state is-error">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                <span>${escapeHtml(message)}</span>
+            </div>
+        </td></tr>`;
     }
 
     function renderInitialLoadingState() {
-        $('tmTeamsBody').innerHTML = loadingRow(4, 'Loading teams...');
-        $('tmPositionsBody').innerHTML = loadingRow(6, 'Loading positions...');
-        $('tmMappingsBody').innerHTML = loadingRow(5, 'Loading employee mappings...');
+        $('tmTeamsBody').innerHTML = loadingRow(5, 'Loading teams...');
+        $('tmPositionsBody').innerHTML = loadingRow(7, 'Loading positions...');
+        $('tmMappingsBody').innerHTML = loadingRow(6, 'Loading employee mappings...');
     }
 
     function nodeIcon(node) {
