@@ -5,6 +5,7 @@
 
     const state = {
         projects: [],
+        projectsLoaded: false,
         cells: [],
         teams: [],
         positionTeams: [],
@@ -14,7 +15,17 @@
         employees: [],
         positionEmployeeRequestId: 0,
         mappingEmployees: [],
-        mappingEmployeeRequestId: 0
+        mappingEmployeeRequestId: 0,
+        dataVersion: 0,
+        loaded: {
+            dashboard: false,
+            teams: false,
+            positions: false,
+            mappings: false,
+            tree: false,
+            chart: false
+        },
+        loading: {}
     };
 
     const $ = (id) => document.getElementById(id);
@@ -30,11 +41,15 @@
         } catch (error) {
             showAlert(`Some form options could not be loaded: ${error.message}`, 'warning');
         }
-        await refreshAll();
+        try {
+            await loadActiveTab();
+        } catch (error) {
+            showAlert(error.message, 'danger');
+        }
     });
 
     function bindEvents() {
-        $('tmCellFilter').addEventListener('change', refreshAll);
+        $('tmCellFilter').addEventListener('change', handleCellFilterChange);
         $('tmSearchButton').addEventListener('click', runSearch);
         $('tmSearchInput').addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
@@ -98,16 +113,7 @@
         document.querySelectorAll('#tmTabs [data-bs-toggle="tab"]').forEach((tabButton) => {
             tabButton.addEventListener('shown.bs.tab', async (event) => {
                 try {
-                    const target = event.target.getAttribute('data-bs-target');
-                    if (target === '#tmTree') {
-                        await loadTree();
-                    } else if (target === '#tmChart') {
-                        await loadChart();
-                    } else if (target === '#tmPositions') {
-                        await loadPositions();
-                        populatePositionReportingSelect();
-                        populateMappingPositionSelect();
-                    }
+                    await loadTab(event.target.getAttribute('data-bs-target'));
                 } catch (error) {
                     showAlert(error.message, 'danger');
                 }
@@ -116,13 +122,14 @@
     }
 
     async function loadLookups() {
-        const [projects, cells, designations] = await Promise.all([
-            request('/api/master/organization-hierarchy/options/projects'),
-            request('/api/master/organization-hierarchy/options/cells'),
-            request('/api/master/organization-hierarchy/options/designations')
-        ]);
-        state.projects = projects || [];
-        state.cells = cells || [];
+        const designations = await request('/api/master/organization-hierarchy/options/designations');
+        state.cells = Array.from($('tmCellFilter').options)
+            .filter((option) => option.value)
+            .map((option) => ({
+                id: Number(option.value),
+                label: option.textContent.trim(),
+                code: null
+            }));
         state.designations = designations || [];
         populateCellSelects();
         populateDesignationSelect();
@@ -131,24 +138,107 @@
         resetMappingEmployeeSelect('Select Position First');
     }
 
-    async function refreshAll() {
-        const results = await Promise.allSettled([
-            loadDashboard(),
-            loadTeams(),
-            loadPositions(),
-            loadMappings(),
-            loadTree(),
-            loadChart()
-        ]);
-        populateTeamSelects(valueOrNull($('teamCellId').value));
-        populatePositionReportingSelect();
-        populateMappingTeamSelect();
-        populateMappingPositionSelect();
-
-        const failedResult = results.find((result) => result.status === 'rejected');
-        if (failedResult) {
-            showAlert(failedResult.reason?.message || 'Some team-management data could not be loaded.', 'danger');
+    async function handleCellFilterChange() {
+        invalidateData();
+        state.teams = [];
+        state.positions = [];
+        $('tmSearchResults').innerHTML = '';
+        resetTeamForm();
+        resetPositionForm();
+        resetMappingForm();
+        try {
+            await loadActiveTab();
+        } catch (error) {
+            showAlert(error.message, 'danger');
         }
+    }
+
+    function activeTabTarget() {
+        return document.querySelector('#tmTabs .nav-link.active')?.getAttribute('data-bs-target') || '#tmDashboard';
+    }
+
+    async function loadActiveTab(force = false) {
+        return loadTab(activeTabTarget(), force);
+    }
+
+    async function loadTab(target, force = false) {
+        switch (target) {
+            case '#tmTeams':
+                await loadTeams(force);
+                populateTeamSelects(valueOrNull($('teamCellId').value));
+                break;
+            case '#tmPositions':
+                await loadPositions(force);
+                populatePositionReportingSelect();
+                break;
+            case '#tmMappings':
+                await Promise.all([
+                    loadTeams(force),
+                    loadPositions(force),
+                    loadMappings(force)
+                ]);
+                populateMappingTeamSelect();
+                populateMappingPositionSelect();
+                break;
+            case '#tmTree':
+                await loadTree(force);
+                break;
+            case '#tmChart':
+                await loadChart(force);
+                break;
+            default:
+                await loadDashboard(force);
+        }
+    }
+
+    function invalidateData(...keys) {
+        state.dataVersion += 1;
+        const targets = keys.length ? keys : Object.keys(state.loaded);
+        targets.forEach((key) => {
+            state.loaded[key] = false;
+        });
+    }
+
+    function invalidateAfterMutation(path) {
+        if (path.includes('/employee-team-mappings')) {
+            invalidateData('dashboard', 'positions', 'mappings', 'tree', 'chart');
+        } else if (path.includes('/positions')) {
+            invalidateData('dashboard', 'positions', 'mappings', 'tree', 'chart');
+        } else {
+            invalidateData();
+        }
+    }
+
+    async function loadOnce(key, force, loader) {
+        if (!force && state.loaded[key]) {
+            return;
+        }
+        const version = state.dataVersion;
+        const activeLoad = state.loading[key];
+        if (activeLoad?.version === version) {
+            return activeLoad.promise;
+        }
+        const pending = Promise.resolve()
+            .then(() => loader(version))
+            .then(() => {
+                if (version === state.dataVersion) {
+                    state.loaded[key] = true;
+                }
+            })
+            .catch((error) => {
+                if (version !== state.dataVersion) {
+                    return;
+                }
+                state.loaded[key] = false;
+                throw error;
+            })
+            .finally(() => {
+                if (state.loading[key]?.promise === pending) {
+                    delete state.loading[key];
+                }
+            });
+        state.loading[key] = { version, promise: pending };
+        return pending;
     }
 
     async function request(path, options = {}) {
@@ -172,71 +262,81 @@
         return Object.prototype.hasOwnProperty.call(payload, 'data') ? payload.data : payload;
     }
 
-    async function loadDashboard() {
-        try {
+    async function loadDashboard(force = false) {
+        return loadOnce('dashboard', force, async (version) => {
             const cellId = selectedCellId();
             const dashboard = await request(`/api/master/organization-hierarchy/dashboard${query({ cellId })}`);
+            if (version !== state.dataVersion) return;
             $('tmTotalPositions').textContent = dashboard.totalPositions || 0;
             $('tmFilledPositions').textContent = dashboard.filledPositions || 0;
             $('tmVacantPositions').textContent = dashboard.vacantPositions || 0;
             renderStrength(dashboard.teamStrength || []);
-        } catch (error) {
-            showAlert(error.message, 'danger');
-        }
+        });
     }
 
-    async function loadTeams() {
-        try {
+    async function loadTeams(force = false) {
+        return loadOnce('teams', force, async (version) => {
             const page = await request(`/api/master/teams${query({ cellId: selectedCellId(), size: 500 })}`);
+            if (version !== state.dataVersion) return;
             state.teams = pageItems(page);
             renderTeamsTable();
-        } catch (error) {
+        }).catch((error) => {
             state.teams = [];
             renderTableError($('tmTeamsBody'), 5, 'Unable to load teams.');
             throw error;
-        }
+        });
     }
 
-    async function loadPositions() {
+    async function loadPositions(force = false) {
         const body = $('tmPositionsBody');
-        body.innerHTML = loadingRow(7, 'Loading positions...');
-        try {
+        return loadOnce('positions', force, async (version) => {
+            body.innerHTML = loadingRow(7, 'Loading positions...');
             const page = await request(`/api/master/positions${query({
                 cellId: selectedCellId(),
                 size: 300
             })}`);
+            if (version !== state.dataVersion) return;
             state.positions = pageItems(page);
             renderPositionsTable();
-        } catch (error) {
+        }).catch((error) => {
             state.positions = [];
             renderTableError(body, 7, 'Unable to load positions.');
             throw error;
-        }
+        });
     }
 
-    async function loadMappings() {
-        try {
+    async function loadMappings(force = false) {
+        return loadOnce('mappings', force, async (version) => {
             const page = await request(`/api/master/employee-team-mappings${query({
                 cellId: selectedCellId(),
                 size: 200
             })}`);
+            if (version !== state.dataVersion) return;
             renderMappingsTable(pageItems(page));
-        } catch (error) {
+        }).catch((error) => {
             renderTableError($('tmMappingsBody'), 6, 'Unable to load employee mappings.');
             throw error;
-        }
+        });
     }
 
-    async function loadTree() {
-        const cellId = selectedCellId();
-        const tree = await request(`/api/master/organization-hierarchy/tree${query({ cellId })}`);
-        renderHierarchy($('tmTreeRoot'), tree, false);
+    async function loadTree(force = false) {
+        return loadOnce('tree', force, async (version) => {
+            const root = $('tmTreeRoot');
+            root.innerHTML = '<div class="tm-empty">Loading hierarchy...</div>';
+            const tree = await request(`/api/master/organization-hierarchy/tree${query({ cellId: selectedCellId() })}`);
+            if (version !== state.dataVersion) return;
+            renderHierarchy(root, tree, false);
+        });
     }
 
-    async function loadChart() {
-        const cellId = selectedCellId();
-        const chart = await request(`/api/master/organization-hierarchy/chart${query({ cellId })}`);
-        renderHierarchy($('tmChartRoot'), chart, true);
+    async function loadChart(force = false) {
+        return loadOnce('chart', force, async (version) => {
+            const root = $('tmChartRoot');
+            root.innerHTML = '<div class="tm-empty">Loading organization chart...</div>';
+            const chart = await request(`/api/master/organization-hierarchy/chart${query({ cellId: selectedCellId() })}`);
+            if (version !== state.dataVersion) return;
+            renderHierarchy(root, chart, true);
+        });
     }
 
     async function runSearch() {
@@ -262,6 +362,10 @@
             showAlert('Select a cell before generating sample hierarchy.', 'warning');
             return;
         }
+        if (!state.projectsLoaded) {
+            state.projects = await request('/api/master/organization-hierarchy/options/projects') || [];
+            state.projectsLoaded = true;
+        }
         const projectId = state.projects.find((project) => String(project.cellId) === String(cellId))?.id;
         if (!projectId) {
             showAlert('The selected cell has no active project for sample hierarchy generation.', 'warning');
@@ -271,7 +375,8 @@
             await request(`/api/master/organization-hierarchy/projects/${projectId}/seed-sample`, { method: 'POST' });
             showAlert('Sample hierarchy generated successfully.', 'success');
             await loadLookups();
-            await refreshAll();
+            invalidateData();
+            await loadActiveTab();
         } catch (error) {
             showAlert(error.message, 'danger');
         }
@@ -378,7 +483,8 @@
         try {
             await request(path, { method, body: JSON.stringify(payload) });
             showAlert(message, 'success');
-            await refreshAll();
+            invalidateAfterMutation(path);
+            await loadActiveTab();
         } catch (error) {
             showAlert(error.message, 'danger');
         }
@@ -447,7 +553,8 @@
         try {
             await request(path, { method: 'DELETE' });
             showAlert(message, 'success');
-            await refreshAll();
+            invalidateAfterMutation(path);
+            await loadActiveTab();
         } catch (error) {
             showAlert(error.message, 'danger');
         }
@@ -1113,6 +1220,7 @@
     }
 
     function renderInitialLoadingState() {
+        $('tmStrengthBody').innerHTML = loadingRow(5, 'Loading team strength...');
         $('tmTeamsBody').innerHTML = loadingRow(5, 'Loading teams...');
         $('tmPositionsBody').innerHTML = loadingRow(7, 'Loading positions...');
         $('tmMappingsBody').innerHTML = loadingRow(6, 'Loading employee mappings...');

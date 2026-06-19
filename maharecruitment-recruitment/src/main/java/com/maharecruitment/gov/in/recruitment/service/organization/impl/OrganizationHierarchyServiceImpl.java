@@ -69,24 +69,28 @@ public class OrganizationHierarchyServiceImpl implements OrganizationHierarchySe
 
         if (cellId != null) {
             CellMaster cell = getCell(cellId);
-            List<PositionMasterEntity> activePositions = positionRepository
-                    .findByCellScopeAndStatusOrderByDisplayOrderAscPositionIdAsc(
-                            cell.getCellId(),
-                            OrganizationRecordStatus.ACTIVE);
-            totalPositions = activePositions.size();
-            filledPositions = activePositions.stream()
-                    .filter(position -> position.getPositionStatus() == PositionStatus.FILLED)
-                    .count();
+            totalPositions = positionRepository.countByCell_CellIdAndStatus(
+                    cell.getCellId(),
+                    OrganizationRecordStatus.ACTIVE);
+            filledPositions = positionRepository.countByCell_CellIdAndStatusAndPositionStatus(
+                    cell.getCellId(),
+                    OrganizationRecordStatus.ACTIVE,
+                    PositionStatus.FILLED);
             vacantPositions = totalPositions - filledPositions;
-            teamStrength = buildCellTeamStrength(cell.getCellId(), activePositions);
+            teamStrength = positionRepository
+                    .getTeamStrengthByCell(
+                            cell.getCellId(),
+                            OrganizationRecordStatus.ACTIVE,
+                            PositionStatus.FILLED,
+                            PositionStatus.VACANT)
+                    .stream()
+                    .map(this::toTeamStrength)
+                    .collect(Collectors.toList());
         } else if (projectId == null) {
-            List<PositionMasterEntity> activePositions = positionRepository
-                    .findByStatusOrderByCell_CellNameAscDisplayOrderAscPositionIdAsc(
-                            OrganizationRecordStatus.ACTIVE);
-            totalPositions = activePositions.size();
-            filledPositions = activePositions.stream()
-                    .filter(position -> position.getPositionStatus() == PositionStatus.FILLED)
-                    .count();
+            totalPositions = positionRepository.countByStatus(OrganizationRecordStatus.ACTIVE);
+            filledPositions = positionRepository.countByStatusAndPositionStatus(
+                    OrganizationRecordStatus.ACTIVE,
+                    PositionStatus.FILLED);
             vacantPositions = totalPositions - filledPositions;
             teamStrength = positionRepository
                     .getTeamStrength(
@@ -437,34 +441,6 @@ public class OrganizationHierarchyServiceImpl implements OrganizationHierarchySe
             throw new BusinessValidationException("Selected cell is inactive.");
         }
         return cell;
-    }
-
-    private List<TeamStrengthResponse> buildCellTeamStrength(
-            Long cellId,
-            List<PositionMasterEntity> positions) {
-        Map<Long, List<PositionMasterEntity>> positionsByTeamId = positions.stream()
-                .filter(position -> position.getTeam() != null)
-                .collect(Collectors.groupingBy(position -> position.getTeam().getTeamId()));
-        return teamRepository.findByCell_CellIdAndStatusOrderByDisplayOrderAscTeamNameAsc(
-                cellId,
-                OrganizationRecordStatus.ACTIVE)
-                .stream()
-                .map(team -> {
-                    List<PositionMasterEntity> teamPositions = positionsByTeamId
-                            .getOrDefault(team.getTeamId(), List.of());
-                    long filled = teamPositions.stream()
-                            .filter(position -> position.getPositionStatus() == PositionStatus.FILLED)
-                            .count();
-                    return TeamStrengthResponse.builder()
-                            .teamId(team.getTeamId())
-                            .teamName(team.getTeamName())
-                            .teamType(team.getTeamType())
-                            .totalPositions(teamPositions.size())
-                            .filledPositions(filled)
-                            .vacantPositions(teamPositions.size() - filled)
-                            .build();
-                })
-                .collect(Collectors.toList());
     }
 
     private TeamStrengthResponse toTeamStrength(TeamStrengthProjection projection) {

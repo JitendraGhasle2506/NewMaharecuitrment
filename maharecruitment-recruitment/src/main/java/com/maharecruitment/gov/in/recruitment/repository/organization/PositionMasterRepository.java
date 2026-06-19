@@ -107,6 +107,21 @@ public interface PositionMasterRepository extends JpaRepository<PositionMasterEn
             OrganizationRecordStatus status,
             PositionStatus positionStatus);
 
+    long countByStatus(OrganizationRecordStatus status);
+
+    long countByStatusAndPositionStatus(
+            OrganizationRecordStatus status,
+            PositionStatus positionStatus);
+
+    long countByCell_CellIdAndStatus(
+            Long cellId,
+            OrganizationRecordStatus status);
+
+    long countByCell_CellIdAndStatusAndPositionStatus(
+            Long cellId,
+            OrganizationRecordStatus status,
+            PositionStatus positionStatus);
+
     long countByTeam_TeamId(Long teamId);
 
     boolean existsByReportingPosition_PositionIdAndStatus(Long reportingPositionId, OrganizationRecordStatus status);
@@ -139,6 +154,23 @@ public interface PositionMasterRepository extends JpaRepository<PositionMasterEn
             + "order by t.displayOrder asc, t.teamName asc")
     List<TeamStrengthProjection> getTeamStrength(
             @Param("projectId") Long projectId,
+            @Param("activeStatus") OrganizationRecordStatus activeStatus,
+            @Param("filledStatus") PositionStatus filledStatus,
+            @Param("vacantStatus") PositionStatus vacantStatus);
+
+    @Query("select t.teamId as teamId, t.teamName as teamName, t.teamType as teamType, "
+            + "count(p.positionId) as totalPositions, "
+            + "sum(case when p.positionStatus = :filledStatus then 1 else 0 end) as filledPositions, "
+            + "sum(case when p.positionStatus = :vacantStatus then 1 else 0 end) as vacantPositions "
+            + "from TeamMasterEntity t "
+            + "left join PositionMasterEntity p on p.team.teamId = t.teamId "
+            + "and p.status = :activeStatus "
+            + "where t.cell.cellId = :cellId "
+            + "and t.status = :activeStatus "
+            + "group by t.teamId, t.teamName, t.teamType, t.displayOrder "
+            + "order by t.displayOrder asc, t.teamName asc")
+    List<TeamStrengthProjection> getTeamStrengthByCell(
+            @Param("cellId") Long cellId,
             @Param("activeStatus") OrganizationRecordStatus activeStatus,
             @Param("filledStatus") PositionStatus filledStatus,
             @Param("vacantStatus") PositionStatus vacantStatus);

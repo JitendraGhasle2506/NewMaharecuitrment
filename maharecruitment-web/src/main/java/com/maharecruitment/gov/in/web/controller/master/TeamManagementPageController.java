@@ -23,9 +23,9 @@ public class TeamManagementPageController {
     }
 
     @GetMapping
-    public String index(Model model) {
+    public String teamManagementPage(Model model) {
         model.addAttribute("cellOptions", organizationManagementService.getCellOptions());
-        return "master/team-management/index";
+        return "master/team-management/team-management";
     }
 
     @GetMapping("/teams-by-cell/{cellId}")
