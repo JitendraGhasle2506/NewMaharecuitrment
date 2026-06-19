@@ -40,6 +40,9 @@ public class ProjectMst extends Auditable {
     @Column(name = "project_name", nullable = false, length = 100)
     private String projectName;
 
+    @Column(name = "project_code", length = 30)
+    private String projectCode;
+
     @Column(name = "project_desc", length = 100)
     private String projectDesc;
 
@@ -71,6 +74,9 @@ public class ProjectMst extends Auditable {
     void normalizeFields() {
         if (projectName != null) {
             projectName = projectName.trim();
+        }
+        if (projectCode != null) {
+            projectCode = projectCode.trim().toUpperCase();
         }
         if (projectDesc != null) {
             projectDesc = projectDesc.trim();

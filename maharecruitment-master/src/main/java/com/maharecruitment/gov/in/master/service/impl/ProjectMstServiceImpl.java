@@ -44,9 +44,11 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     public ProjectResponse create(ProjectRequest request) {
         String projectName = normalizeName(request.getProjectName());
         ensureUniqueProject(projectName, null, null);
+        String projectCode = normalizeCode(request.getProjectCode());
+        ensureUniqueProjectCode(projectCode, null);
 
         ProjectMst entity = new ProjectMst();
-        mapRequestToEntity(request, entity, projectName);
+        mapRequestToEntity(request, entity, projectName, projectCode);
 
         return projectMapper.toResponse(projectRepository.save(entity));
     }
@@ -59,7 +61,9 @@ public class ProjectMstServiceImpl implements ProjectMstService {
 
         String projectName = normalizeName(request.getProjectName());
         ensureUniqueProject(projectName, entity.getDepartmentRegistrationId(), projectId);
-        mapRequestToEntity(request, entity, projectName);
+        String projectCode = normalizeCode(request.getProjectCode());
+        ensureUniqueProjectCode(projectCode, projectId);
+        mapRequestToEntity(request, entity, projectName, projectCode);
 
         return projectMapper.toResponse(projectRepository.save(entity));
     }
@@ -138,6 +142,9 @@ public class ProjectMstServiceImpl implements ProjectMstService {
                         .orElseGet(ProjectMst::new));
 
         entity.setProjectName(normalizedProjectName);
+        if (entity.getProjectCode() == null || entity.getProjectCode().isBlank()) {
+            entity.setProjectCode(generateSyncedProjectCode(applicationId, normalizedProjectName));
+        }
         entity.setProjectType(projectType);
         entity.setProjectScopeType(ProjectScopeType.EXTERNAL);
         entity.setDepartmentRegistrationId(departmentRegistrationId);
@@ -147,8 +154,13 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         return projectMapper.toResponse(projectRepository.save(entity));
     }
 
-    private void mapRequestToEntity(ProjectRequest request, ProjectMst entity, String normalizedProjectName) {
+    private void mapRequestToEntity(
+            ProjectRequest request,
+            ProjectMst entity,
+            String normalizedProjectName,
+            String projectCode) {
         entity.setProjectName(normalizedProjectName);
+        entity.setProjectCode(projectCode);
         entity.setProjectDesc(normalizeDescription(request.getProjectDesc()));
         entity.setProjectType(request.getProjectType());
         entity.setProjectScopeType(resolveProjectScopeType(request.getProjectScopeType(), entity.getApplicationId()));
@@ -190,8 +202,18 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         }
     }
 
+    private void ensureUniqueProjectCode(String projectCode, Long excludeId) {
+        if (projectRepository.existsByProjectCodeExcludingId(projectCode, excludeId)) {
+            throw new DuplicateResourceException("Project already exists with code: " + projectCode);
+        }
+    }
+
     private String normalizeName(String value) {
         return value == null ? null : value.trim();
+    }
+
+    private String normalizeCode(String value) {
+        return value == null ? null : value.trim().toUpperCase();
     }
 
     private String normalizeDescription(String value) {
@@ -200,5 +222,23 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String generateSyncedProjectCode(Long applicationId, String projectName) {
+        String base = "APP-" + applicationId;
+        if (!projectRepository.existsByProjectCodeExcludingId(base, null)) {
+            return base;
+        }
+
+        String prefix = projectName == null
+                ? "PRJ"
+                : projectName.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
+        if (prefix.length() > 12) {
+            prefix = prefix.substring(0, 12);
+        }
+        if (prefix.isBlank()) {
+            prefix = "PRJ";
+        }
+        return prefix + "-" + applicationId;
     }
 }

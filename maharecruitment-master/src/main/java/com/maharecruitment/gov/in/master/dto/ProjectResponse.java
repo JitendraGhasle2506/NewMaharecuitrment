@@ -14,6 +14,7 @@ public class ProjectResponse {
 
     private Long projectId;
     private String projectName;
+    private String projectCode;
     private String projectDesc;
     private ProjectType projectType;
     private ProjectScopeType projectScopeType;

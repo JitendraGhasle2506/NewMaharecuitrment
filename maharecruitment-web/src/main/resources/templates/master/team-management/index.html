@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Team Management</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/team-management.css}">
+    <script th:src="@{/js/team-management.js}" defer></script>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Team Management', ~{::section})}">
+        <section class="team-management-page">
+            <div class="tm-toolbar">
+                <div class="tm-toolbar-left">
+                    <label class="form-label" for="tmCellFilter">Cell</label>
+                    <select id="tmCellFilter" class="form-select form-select-sm">
+                        <option value="">All Cells</option>
+                        <option th:each="cell : ${cellOptions}"
+                                th:value="${cell.id}"
+                                th:text="${cell.code != null ? cell.code + ' - ' + cell.label : cell.label}">
+                        </option>
+                    </select>
+                </div>
+                <div class="tm-toolbar-search">
+                    <label class="form-label" for="tmSearchInput">Search</label>
+                    <div class="input-group input-group-sm">
+                        <input id="tmSearchInput" type="search" class="form-control" placeholder="Employee, team, designation, cell">
+                        <button id="tmSearchButton" class="btn btn-outline-primary" type="button" title="Search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
+                </div>
+                <button id="tmSeedButton" class="btn btn-sm btn-outline-secondary tm-seed-button" type="button" title="Generate sample hierarchy">
+                    <i class="fa-solid fa-seedling"></i>
+                </button>
+            </div>
+
+            <div id="tmAlert" class="alert d-none" role="alert"></div>
+
+            <ul class="nav nav-tabs tm-tabs" id="tmTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tmDashboard" type="button">Dashboard</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tmTeams" type="button">Teams</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tmPositions" type="button">Positions</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tmMappings" type="button">Mappings</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tmTree" type="button">Tree</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tmChart" type="button">Chart</button>
+                </li>
+            </ul>
+
+            <div class="tab-content tm-tab-content">
+                <div class="tab-pane fade show active" id="tmDashboard">
+                    <div class="tm-stat-grid">
+                        <div class="tm-stat-card">
+                            <span>Total Positions</span>
+                            <strong id="tmTotalPositions">0</strong>
+                        </div>
+                        <div class="tm-stat-card">
+                            <span>Filled Positions</span>
+                            <strong id="tmFilledPositions">0</strong>
+                        </div>
+                        <div class="tm-stat-card tm-stat-vacant">
+                            <span>Vacant Positions</span>
+                            <strong id="tmVacantPositions">0</strong>
+                        </div>
+                    </div>
+                    <div class="tm-panel">
+                        <div class="tm-panel-header">
+                            <h2>Team Strength</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Team</th>
+                                        <th>Type</th>
+                                        <th class="text-end">Strength</th>
+                                        <th class="text-end">Vacancy</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tmStrengthBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tm-panel" id="tmSearchPanel">
+                        <div class="tm-panel-header">
+                            <h2>Search Results</h2>
+                        </div>
+                        <div id="tmSearchResults" class="tm-search-results"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tmTeams">
+                    <div class="tm-two-column">
+                        <form id="tmTeamForm" class="tm-panel tm-form">
+                            <input type="hidden" id="teamId">
+                            <div class="tm-panel-header">
+                                <h2>Team Master</h2>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="teamResetButton" title="Reset">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </div>
+                            <label class="form-label" for="teamName">Team Name</label>
+                            <input id="teamName" class="form-control form-control-sm" maxlength="150" required>
+                            <label class="form-label" for="teamType">Team Type</label>
+                            <select id="teamType" class="form-select form-select-sm" required>
+                                <option value="DEVELOPMENT">Development</option>
+                                <option value="OM">O&M</option>
+                                <option value="SUPPORT">Support</option>
+                            </select>
+                            <label class="form-label" for="teamCellId">Cell</label>
+                            <select id="teamCellId" class="form-select form-select-sm" required></select>
+                            <label class="form-label" for="parentTeamId">Parent Team</label>
+                            <select id="parentTeamId" class="form-select form-select-sm"></select>
+                            <label class="form-label" for="teamDisplayOrder">Display Order</label>
+                            <input id="teamDisplayOrder" type="number" min="0" class="form-control form-control-sm" value="0">
+                            <button class="btn btn-primary btn-sm" type="submit">
+                                <i class="fa-solid fa-floppy-disk"></i> Save
+                            </button>
+                        </form>
+                        <div class="tm-panel">
+                            <div class="tm-panel-header">
+                                <h2>Teams</h2>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Team</th>
+                                            <th>Cell</th>
+                                            <th>Type</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tmTeamsBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tmPositions">
+                    <div class="tm-two-column">
+                        <form id="tmPositionForm" class="tm-panel tm-form" novalidate>
+                            <input type="hidden" id="positionId">
+                            <input type="hidden" id="positionDisplayOrder" value="0">
+                            <div class="tm-panel-header">
+                                <h2>Position Master</h2>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="positionResetButton" title="Reset">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </div>
+                            <label class="form-label" for="positionName">Position Name (Auto)</label>
+                            <input id="positionName" class="form-control form-control-sm" maxlength="150" required readonly>
+                            <label class="form-label" for="positionCellId">Cell</label>
+                            <select id="positionCellId" class="form-select form-select-sm" required
+                                    aria-describedby="positionCellIdFeedback">
+                                <option value="">Select Cell</option>
+                                <option th:each="cell : ${cellOptions}"
+                                        th:value="${cell.id}"
+                                        th:text="${cell.code != null ? cell.code + ' - ' + cell.label : cell.label}">
+                                </option>
+                            </select>
+                            <div id="positionCellIdFeedback" class="invalid-feedback">Cell is required.</div>
+                            <label class="form-label" for="positionTeamId">Team</label>
+                            <select id="positionTeamId" class="form-select form-select-sm" required disabled
+                                    aria-describedby="positionTeamIdFeedback">
+                                <option value="">Select Team</option>
+                            </select>
+                            <div id="positionTeamIdFeedback" class="invalid-feedback">Team is required.</div>
+                            <label class="form-label" for="designationId">Designation</label>
+                            <select id="designationId" class="form-select form-select-sm" required></select>
+                            <label class="form-label" for="positionLevelCode">Level</label>
+                            <select id="positionLevelCode" class="form-select form-select-sm"></select>
+                            <label class="form-label" for="reportingPositionId">Reporting Position</label>
+                            <select id="reportingPositionId" class="form-select form-select-sm"></select>
+                            <label class="form-label" for="employeeId">Employee</label>
+                            <select id="employeeId" class="form-select form-select-sm" disabled>
+                                <option value="">Select Designation and Level First</option>
+                            </select>
+                            <button class="btn btn-primary btn-sm" type="submit">
+                                <i class="fa-solid fa-floppy-disk"></i> Save
+                            </button>
+                        </form>
+                        <div class="tm-panel">
+                            <div class="tm-panel-header">
+                                <h2>Positions</h2>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Position</th>
+                                            <th>Cell</th>
+                                            <th>Team</th>
+                                            <th>Employee</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tmPositionsBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tmMappings">
+                    <div class="tm-two-column">
+                        <form id="tmMappingForm" class="tm-panel tm-form">
+                            <input type="hidden" id="mappingId">
+                            <div class="tm-panel-header">
+                                <h2>Employee Team Mapping</h2>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="mappingResetButton" title="Reset">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </div>
+                            <label class="form-label" for="mappingTeamId">Team</label>
+                            <select id="mappingTeamId" class="form-select form-select-sm" required></select>
+                            <label class="form-label" for="mappingPositionId">Position</label>
+                            <select id="mappingPositionId" class="form-select form-select-sm" required></select>
+                            <label class="form-label" for="mappingEmployeeId">Employee</label>
+                            <select id="mappingEmployeeId" class="form-select form-select-sm" disabled>
+                                <option value="">Select Position First</option>
+                            </select>
+                            <label class="form-label" for="effectiveDate">Effective Date</label>
+                            <input id="effectiveDate" type="date" class="form-control form-control-sm" required>
+                            <button class="btn btn-primary btn-sm" type="submit">
+                                <i class="fa-solid fa-floppy-disk"></i> Save
+                            </button>
+                        </form>
+                        <div class="tm-panel">
+                            <div class="tm-panel-header">
+                                <h2>Mappings</h2>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Employee</th>
+                                            <th>Team</th>
+                                            <th>Position</th>
+                                            <th>Effective</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tmMappingsBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tmTree">
+                    <div class="tm-panel">
+                        <div class="tm-panel-header">
+                            <h2>Tree View</h2>
+                        </div>
+                        <div id="tmTreeRoot" class="tm-tree"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tmChart">
+                    <div class="tm-panel tm-chart-panel">
+                        <div class="tm-panel-header">
+                            <h2>Organization Chart</h2>
+                        </div>
+                        <div id="tmChartRoot" class="tm-org-chart"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

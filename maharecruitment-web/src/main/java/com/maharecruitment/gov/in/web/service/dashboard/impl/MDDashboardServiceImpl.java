@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -96,17 +95,17 @@ public class MDDashboardServiceImpl implements MDDashboardService {
     }
 
     private List<CellProjectWorkforceView> buildCellProjectSummary(List<DepartmentProjectApplicationEntity> applications) {
-        Map<Long, ProjectMst> projectsByApplicationId = projectMstRepository.findAll().stream()
-                .filter(project -> project.getApplicationId() != null)
+        List<ProjectMst> masterProjects = projectMstRepository.findAll();
+        Map<Long, DepartmentProjectApplicationEntity> applicationsById = applications.stream()
                 .collect(Collectors.toMap(
-                        ProjectMst::getApplicationId,
-                        Function.identity(),
+                        DepartmentProjectApplicationEntity::getDepartmentProjectApplicationId,
+                        application -> application,
                         (first, second) -> first));
         Map<String, Map<String, Long>> employeeCountsByRequest = countEmployeesByRequestIdAndType();
 
         Map<String, CellProjectAggregate> aggregates = new LinkedHashMap<>();
-        for (DepartmentProjectApplicationEntity app : applications) {
-            ProjectMst project = projectsByApplicationId.get(app.getDepartmentProjectApplicationId());
+        for (ProjectMst project : masterProjects) {
+            DepartmentProjectApplicationEntity app = resolveApplication(project, applicationsById);
             String cellName = resolveCellName(project);
             CellProjectAggregate aggregate = aggregates.computeIfAbsent(cellName, ignored -> new CellProjectAggregate());
             applyProject(aggregate, app, project, employeeCountsByRequest);
@@ -146,15 +145,33 @@ public class MDDashboardServiceImpl implements MDDashboardService {
             aggregate.externalProjects++;
         }
 
-        Map<String, Long> employeeCounts = employeeCountsByRequest.getOrDefault(app.getRequestId(), Map.of());
+        Map<String, Long> employeeCounts = app != null && hasText(app.getRequestId())
+                ? employeeCountsByRequest.getOrDefault(app.getRequestId(), Map.of())
+                : Map.of();
         aggregate.internalEmployees += toInt(employeeCounts.getOrDefault(INTERNAL, 0L));
         aggregate.externalEmployees += toInt(employeeCounts.getOrDefault(EXTERNAL, 0L));
     }
 
+    private DepartmentProjectApplicationEntity resolveApplication(
+            ProjectMst project,
+            Map<Long, DepartmentProjectApplicationEntity> applicationsById) {
+        return project != null && project.getApplicationId() != null
+                ? applicationsById.get(project.getApplicationId())
+                : null;
+    }
+
     private String resolveCellName(ProjectMst project) {
-        return project != null && project.getCell() != null && hasText(project.getCell().getCellName())
-                ? project.getCell().getCellName()
-                : UNASSIGNED_CELL;
+        if (hasCellName(project)) {
+            return project.getCell().getCellName().trim();
+        }
+
+        return UNASSIGNED_CELL;
+    }
+
+    private boolean hasCellName(ProjectMst project) {
+        return project != null
+                && project.getCell() != null
+                && hasText(project.getCell().getCellName());
     }
 
     private String normalizeRecruitmentType(String recruitmentType) {

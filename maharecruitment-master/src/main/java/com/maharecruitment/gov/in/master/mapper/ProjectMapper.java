@@ -12,6 +12,7 @@ public class ProjectMapper {
         return ProjectResponse.builder()
                 .projectId(entity.getProjectId())
                 .projectName(entity.getProjectName())
+                .projectCode(entity.getProjectCode())
                 .projectDesc(entity.getProjectDesc())
                 .projectType(entity.getProjectType())
                 .projectScopeType(entity.getProjectScopeType())
