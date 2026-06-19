@@ -1,13 +1,19 @@
 :root {
     --ui-control-height: 44px;
     --ui-control-height-compact: 40px;
-    --ui-control-radius: 10px;
+    --ui-control-radius: 0;
     --ui-control-padding-y: 0.55rem;
     --ui-control-padding-x: 0.8rem;
     --ui-table-header-font-size: 0.875rem;
     --ui-table-body-font-size: 0.95rem;
     --ui-table-cell-padding-y: 0.82rem;
     --ui-table-cell-padding-x: 0.72rem;
+    --bs-border-radius: 0;
+    --bs-border-radius-sm: 0;
+    --bs-border-radius-lg: 0;
+    --bs-border-radius-xl: 0;
+    --bs-border-radius-xxl: 0;
+    --bs-border-radius-pill: 0;
 }
 
 body:not(.tax-invoice) .page-contents,
@@ -240,4 +246,72 @@ body:not(.tax-invoice) .app-pagination .app-pagination-ellipsis {
     body:not(.tax-invoice) .app-pagination {
         justify-content: center;
     }
+}
+
+/* Application-wide square-corner standard for administrative screens. */
+body:not(.tax-invoice) :where(
+    .card,
+    .card-header,
+    .card-footer,
+    .modal-content,
+    .offcanvas,
+    .toast,
+    .alert,
+    .dropdown-menu,
+    .popover,
+    .tooltip-inner,
+    .accordion,
+    .accordion-item,
+    .accordion-button,
+    .list-group,
+    .list-group-item,
+    .table-responsive,
+    .input-group-text,
+    .form-control,
+    .form-select,
+    .btn,
+    .badge,
+    .nav-tabs,
+    .nav-tabs .nav-link,
+    .nav-pills .nav-link,
+    .page-link,
+    .progress,
+    .app-pagination-shell,
+    [class$="-card"],
+    [class*="-card "],
+    [class$="-panel"],
+    [class*="-panel "],
+    [class$="-toolbar"],
+    [class*="-toolbar "],
+    [class$="-filter"],
+    [class*="-filter "],
+    [class$="-section"],
+    [class*="-section "]
+) {
+    border-radius: 0 !important;
+}
+
+body:not(.tax-invoice) :where(
+    input:not([type="radio"]):not([type="checkbox"]),
+    select,
+    textarea,
+    button
+) {
+    border-radius: 0 !important;
+}
+
+/* Keep controls whose shape communicates function circular. */
+body:not(.tax-invoice) :where(
+    .rounded-circle,
+    .spinner-border,
+    .spinner-grow,
+    [class*="avatar"],
+    [class*="profile-icon"]
+) {
+    border-radius: 50% !important;
+}
+
+body:not(.tax-invoice) .form-check-input[type="radio"],
+body:not(.tax-invoice) .form-switch .form-check-input {
+    border-radius: 50% !important;
 }
