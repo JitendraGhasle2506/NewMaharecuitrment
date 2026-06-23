@@ -59,8 +59,7 @@ public class V22__auth_role_name_normalization extends BaseJavaMigration {
             remapUserRoles(jdbcTemplate, roleIds);
         }
 
-        cleanupObsoleteRoleLinks(jdbcTemplate, connection, roleIds);
-        deleteObsoleteRoles(jdbcTemplate, roleIds);
+        cleanupObsoleteUserRoleLinks(jdbcTemplate, connection, roleIds);
 
         new R__auth_reference_data().migrate(context);
     }
@@ -109,10 +108,12 @@ public class V22__auth_role_name_normalization extends BaseJavaMigration {
         }
     }
 
-    private void cleanupObsoleteRoleLinks(JdbcTemplate jdbcTemplate, Connection connection, Map<String, Long> roleIds) {
+    private void cleanupObsoleteUserRoleLinks(
+            JdbcTemplate jdbcTemplate,
+            Connection connection,
+            Map<String, Long> roleIds) {
         Set<String> canonicalRoleNameSet = Set.copyOf(CANONICAL_ROLE_NAMES);
         boolean hasUsersRolesTable = tableExists(connection, "users_roles");
-        boolean hasMenuRoleTable = tableExists(connection, "menu_role");
 
         for (Map.Entry<String, Long> entry : roleIds.entrySet()) {
             if (canonicalRoleNameSet.contains(entry.getKey())) {
@@ -123,20 +124,6 @@ public class V22__auth_role_name_normalization extends BaseJavaMigration {
             if (hasUsersRolesTable) {
                 jdbcTemplate.update("delete from users_roles where role_id = ?", obsoleteRoleId);
             }
-            if (hasMenuRoleTable) {
-                jdbcTemplate.update("delete from menu_role where id = ?", obsoleteRoleId);
-            }
-        }
-    }
-
-    private void deleteObsoleteRoles(JdbcTemplate jdbcTemplate, Map<String, Long> roleIds) {
-        Set<String> canonicalRoleNameSet = Set.copyOf(CANONICAL_ROLE_NAMES);
-
-        for (Map.Entry<String, Long> entry : roleIds.entrySet()) {
-            if (canonicalRoleNameSet.contains(entry.getKey())) {
-                continue;
-            }
-            jdbcTemplate.update("delete from roles where id = ?", entry.getValue());
         }
     }
 
