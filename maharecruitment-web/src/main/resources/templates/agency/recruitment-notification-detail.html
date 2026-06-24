@@ -162,8 +162,15 @@
                                     <tr th:each="candidateRow, rowStat : ${candidateForm.candidates}" class="candidate-input-row">
                                         <td class="text-center candidate-index" th:text="${rowStat.count}">1</td>
                                         <td>
-                                            <input type="text" class="form-control"
-                                                th:field="*{candidates[__${rowStat.index}__].candidateName}" required>
+                                            <input type="text" class="form-control candidate-name-input"
+                                                th:field="*{candidates[__${rowStat.index}__].candidateName}"
+                                                th:classappend="${#fields.hasErrors('candidates[' + rowStat.index + '].candidateName')} ? ' is-invalid'"
+                                                minlength="2" maxlength="100" required>
+                                            <div class="invalid-feedback"
+                                                th:classappend="${#fields.hasErrors('candidates[' + rowStat.index + '].candidateName')} ? ' d-block'"
+                                                th:text="${#fields.hasErrors('candidates[' + rowStat.index + '].candidateName') ? #fields.errors('candidates[' + rowStat.index + '].candidateName')[0] : 'Name must be 2-100 characters, cannot start with space, and cannot contain numbers.'}">
+                                                Name must be 2-100 characters, cannot start with space, and cannot contain numbers.
+                                            </div>
                                         </td>
                                         <td>
                                             <input type="email" class="form-control email-input"

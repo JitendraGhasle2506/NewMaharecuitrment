@@ -32,7 +32,10 @@
         row.className = "candidate-input-row";
         row.innerHTML =
             '<td class="text-center candidate-index">' + (index + 1) + "</td>" +
-            '<td><input type="text" class="form-control" name="candidates[' + index + '].candidateName" required></td>' +
+            '<td>' +
+            '<input type="text" class="form-control candidate-name-input" name="candidates[' + index + '].candidateName" minlength="2" maxlength="100" required>' +
+            '<div class="invalid-feedback">Name must be 2-100 characters, cannot start with space, and cannot contain numbers.</div>' +
+            '</td>' +
             '<td>' +
             '<input type="email" class="form-control email-input" name="candidates[' + index + '].email" maxlength="255" required>' +
             '<div class="invalid-feedback">Please enter a valid email address.</div>' +
@@ -96,6 +99,7 @@
         }
         var index = tableBody.querySelectorAll(".candidate-input-row").length;
         tableBody.appendChild(createRow(index));
+        validateAllNameFields();
         validateAllEmailFields();
         validateAllMobileFields();
     });
@@ -108,6 +112,7 @@
         var rows = tableBody.querySelectorAll(".candidate-input-row");
         if (rows.length <= 1) {
             clearRowValues(rows[0]);
+            validateAllNameFields();
             validateAllEmailFields();
             validateAllMobileFields();
             return;
@@ -115,11 +120,16 @@
 
         event.target.closest(".candidate-input-row").remove();
         resequenceRows();
+        validateAllNameFields();
         validateAllEmailFields();
         validateAllMobileFields();
     });
 
     tableBody.addEventListener("input", function (event) {
+        if (event.target.classList.contains("candidate-name-input")) {
+            validateCandidateNameField(event.target);
+            return;
+        }
         if (event.target.classList.contains("mobile-input")) {
             event.target.value = event.target.value.replace(/[^0-9]/g, "");
             validateAllMobileFields();
@@ -131,6 +141,10 @@
     });
 
     tableBody.addEventListener("focusout", function (event) {
+        if (event.target.classList.contains("candidate-name-input")) {
+            validateCandidateNameField(event.target);
+            return;
+        }
         if (event.target.classList.contains("mobile-input")) {
             validateAllMobileFields();
             return;
@@ -198,6 +212,37 @@
         }
 
         return !message;
+    }
+
+    function validateCandidateNameField(field) {
+        if (!field) {
+            return true;
+        }
+
+        var value = field.value;
+        if (!value) {
+            return setFieldValidity(field, "Candidate name is required.");
+        }
+        if (value.startsWith(" ")) {
+            return setFieldValidity(field, "Candidate name must not start with a space.");
+        }
+        if (/[0-9]/.test(value)) {
+            return setFieldValidity(field, "Candidate name must not contain numbers.");
+        }
+        if (value.length < 2 || value.length > 100) {
+            return setFieldValidity(field, "Candidate name must be between 2 and 100 characters.");
+        }
+        return setFieldValidity(field, "");
+    }
+
+    function validateAllNameFields() {
+        var valid = true;
+        tableBody.querySelectorAll(".candidate-name-input").forEach(function (field) {
+            if (!validateCandidateNameField(field)) {
+                valid = false;
+            }
+        });
+        return valid;
     }
 
     function validateEmailField(field, duplicateCounts) {
@@ -431,6 +476,9 @@
 
         var valid = true;
 
+        if (!validateAllNameFields()) {
+            valid = false;
+        }
         if (!validateAllEmailFields()) {
             valid = false;
         }

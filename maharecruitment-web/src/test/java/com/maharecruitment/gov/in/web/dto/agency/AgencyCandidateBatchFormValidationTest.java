@@ -45,6 +45,46 @@ class AgencyCandidateBatchFormValidationTest {
     }
 
     @Test
+    void validateRejectsCandidateNameStartingWithSpace() {
+        AgencyCandidateBatchForm form = buildValidForm();
+        form.getCandidates().get(0).setCandidateName(" Test");
+
+        Set<ConstraintViolation<AgencyCandidateBatchForm>> violations = validator.validate(form);
+
+        assertEquals("Candidate name must not start with a space", findViolationMessage(violations, "candidates[0].candidateName"));
+    }
+
+    @Test
+    void validateRejectsCandidateNameContainingNumbers() {
+        AgencyCandidateBatchForm form = buildValidForm();
+        form.getCandidates().get(0).setCandidateName("Test1");
+
+        Set<ConstraintViolation<AgencyCandidateBatchForm>> violations = validator.validate(form);
+
+        assertEquals("Candidate name must not contain numbers", findViolationMessage(violations, "candidates[0].candidateName"));
+    }
+
+    @Test
+    void validateRejectsCandidateNameTooShort() {
+        AgencyCandidateBatchForm form = buildValidForm();
+        form.getCandidates().get(0).setCandidateName("T");
+
+        Set<ConstraintViolation<AgencyCandidateBatchForm>> violations = validator.validate(form);
+
+        assertEquals("Candidate name must be between 2 and 100 characters", findViolationMessage(violations, "candidates[0].candidateName"));
+    }
+
+    @Test
+    void validateRejectsCandidateNameTooLong() {
+        AgencyCandidateBatchForm form = buildValidForm();
+        form.getCandidates().get(0).setCandidateName("A".repeat(101));
+
+        Set<ConstraintViolation<AgencyCandidateBatchForm>> violations = validator.validate(form);
+
+        assertEquals("Candidate name must be between 2 and 100 characters", findViolationMessage(violations, "candidates[0].candidateName"));
+    }
+
+    @Test
     void validateAcceptsValidCandidateContactDetails() {
         AgencyCandidateBatchForm form = buildValidForm();
 

@@ -259,6 +259,15 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
         if (!StringUtils.hasText(rowForm.getCandidateName())) {
             throw new RecruitmentNotificationException("Candidate name is required at row " + rowNumber + ".");
         }
+        if (rowForm.getCandidateName().startsWith(" ")) {
+            throw new RecruitmentNotificationException("Candidate name must not start with a space at row " + rowNumber + ".");
+        }
+        if (Pattern.compile("[0-9]").matcher(rowForm.getCandidateName()).find()) {
+            throw new RecruitmentNotificationException("Candidate name must not contain numbers at row " + rowNumber + ".");
+        }
+        if (rowForm.getCandidateName().length() < 2 || rowForm.getCandidateName().length() > 100) {
+            throw new RecruitmentNotificationException("Candidate name must be between 2 and 100 characters at row " + rowNumber + ".");
+        }
         if (!StringUtils.hasText(rowForm.getEmail())) {
             throw new RecruitmentNotificationException("Candidate email is required at row " + rowNumber + ".");
         }
