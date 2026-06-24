@@ -309,6 +309,14 @@
     display: block;
 }
 
+.otp-captcha-section {
+    display: none;
+}
+
+.otp-captcha-section.is-visible {
+    display: block;
+}
+
 @keyframes panelFade {
     from {
         opacity: 0;

@@ -43,8 +43,10 @@
         var otpInput = document.getElementById("loginOtp");
         var otpSection = document.getElementById("loginOtpSection");
         var sendButton = document.getElementById("sendLoginOtpBtn");
+        var verifyButton = document.getElementById("loginOtpVerifyBtn");
         var statusElement = document.getElementById("otpLoginStatus");
         var timingElement = document.getElementById("otpLoginTiming");
+        var lockCountdownElement = document.getElementById("otpLoginLockCountdown");
         var sendUrl = form.dataset.otpSendUrl;
         var csrfToken = form.dataset.csrfToken || "";
         var otpExpirySeconds = parseInt(form.dataset.otpExpirySeconds || "600", 10);
@@ -100,6 +102,31 @@
                 parts.push("Resend available in " + formatDuration(resendRemaining));
             }
             setTiming(parts.join(" | "));
+        };
+
+        var startLockCountdown = function () {
+            if (!lockCountdownElement) {
+                return;
+            }
+            var remaining = parseInt(lockCountdownElement.dataset.lockSeconds || "0", 10);
+            if (!remaining || remaining <= 0) {
+                lockCountdownElement.textContent = "";
+                return;
+            }
+
+            var render = function () {
+                lockCountdownElement.textContent = "OTP verification failed. Please try again in " + formatDuration(remaining) + ".";
+            };
+            render();
+            var timerId = window.setInterval(function () {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    window.clearInterval(timerId);
+                    lockCountdownElement.textContent = "You can request a new OTP now.";
+                    return;
+                }
+                render();
+            }, 1000);
         };
 
         var startOtpTimers = function (shouldCooldown) {
@@ -206,6 +233,9 @@
                     throw new Error(data.message || "Unable to send OTP.");
                 }
 
+                if (data.expirySeconds && data.expirySeconds > 0) {
+                    otpExpirySeconds = data.expirySeconds;
+                }
                 var isResend = hasSentOtpOnce;
                 hasSentOtpOnce = true;
                 updateSendButtonLabel();
@@ -224,6 +254,13 @@
             }
         });
 
+        form.addEventListener("submit", function () {
+            if (verifyButton) {
+                verifyButton.disabled = true;
+                verifyButton.textContent = "Verifying...";
+            }
+        });
+
         var isOtpSentOnLoad = form.dataset.otpSent === "true";
         if (isOtpSentOnLoad) {
             hasSentOtpOnce = true;
@@ -233,6 +270,7 @@
         }
         setTiming("");
         updateSendButtonLabel();
+        startLockCountdown();
 
         // Toggle password visibility
         var togglePasswordButton = document.getElementById("togglePassword");

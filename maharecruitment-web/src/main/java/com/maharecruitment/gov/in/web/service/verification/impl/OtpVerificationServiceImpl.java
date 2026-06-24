@@ -19,20 +19,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.service.verification.OtpChannelHandler;
-import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
 
 import jakarta.servlet.http.HttpSession;
 
-@Service
-public class OtpVerificationServiceImpl implements OtpVerificationService {
+@Deprecated(forRemoval = true)
+class LegacyInMemoryOtpVerificationService {
 
-    private static final Logger log = LoggerFactory.getLogger(OtpVerificationServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(LegacyInMemoryOtpVerificationService.class);
     private static final String SESSION_KEY = "otp.verification.state";
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -40,7 +38,7 @@ public class OtpVerificationServiceImpl implements OtpVerificationService {
     private final OtpVerificationProperties properties;
     private final Map<String, SendThrottleState> sendThrottleStore = new ConcurrentHashMap<>();
 
-    public OtpVerificationServiceImpl(
+    public LegacyInMemoryOtpVerificationService(
             List<OtpChannelHandler> handlers,
             OtpVerificationProperties properties) {
         this.handlers = new EnumMap<>(VerificationChannel.class);
@@ -48,7 +46,6 @@ public class OtpVerificationServiceImpl implements OtpVerificationService {
         this.properties = properties;
     }
 
-    @Override
     public void sendOtp(HttpSession session, String purpose, VerificationChannel channel, String reference) {
         OtpChannelHandler handler = getHandler(channel);
         String normalizedPurpose = normalizePurpose(purpose);
@@ -68,7 +65,6 @@ public class OtpVerificationServiceImpl implements OtpVerificationService {
         }
     }
 
-    @Override
     public boolean verifyOtp(
             HttpSession session,
             String purpose,
@@ -85,7 +81,6 @@ public class OtpVerificationServiceImpl implements OtpVerificationService {
         return true;
     }
 
-    @Override
     public boolean isVerified(HttpSession session, String purpose, VerificationChannel channel, String reference) {
         if (session == null || channel == null || !StringUtils.hasText(purpose) || !StringUtils.hasText(reference)) {
             return false;
@@ -104,7 +99,6 @@ public class OtpVerificationServiceImpl implements OtpVerificationService {
         }
     }
 
-    @Override
     public void clear(HttpSession session, String purpose) {
         String normalizedPurpose = normalizePurpose(purpose);
         Map<String, VerificationState> store = getSessionStore(session);
@@ -113,7 +107,6 @@ public class OtpVerificationServiceImpl implements OtpVerificationService {
         }
     }
 
-    @Override
     public void clear(HttpSession session, String purpose, VerificationChannel channel) {
         getSessionStore(session).remove(toStateKey(normalizePurpose(purpose), channel));
     }

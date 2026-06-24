@@ -343,7 +343,8 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
     }
 
     private String resolveOtpValidityText() {
-        int expirySeconds = environment.getProperty("otp.verification.expiry-seconds", Integer.class, 600);
+        int expiryMinutes = environment.getProperty("otp.expiry-minutes", Integer.class, 5);
+        int expirySeconds = Math.max(1, expiryMinutes) * 60;
         if (expirySeconds % 60 == 0) {
             int minutes = expirySeconds / 60;
             return minutes == 1 ? "1 minute" : minutes + " minutes";

@@ -33,8 +33,14 @@
         const validateReference = config.validateReference || channelValidators[config.channel];
         const listeners = [];
         const state = {
-            verified: Boolean(config.initialVerified)
+            verified: Boolean(config.initialVerified),
+            captchaId: "",
+            locked: false
         };
+        let captchaSection = null;
+        let captchaQuestion = null;
+        let captchaInput = null;
+        let lockTimerId = null;
 
         const setStatus = (message, mode) => {
             if (!config.statusElement) {
@@ -85,7 +91,10 @@
                 }
 
                 if (!response.ok) {
-                    throw new Error(data.message || "Request failed.");
+                    const requestError = new Error(data.message || "Request failed.");
+                    requestError.response = data;
+                    requestError.status = response.status;
+                    throw requestError;
                 }
 
                 return data;
@@ -101,8 +110,124 @@
             }
         };
 
+        const formatDuration = (totalSeconds) => {
+            const seconds = Math.max(0, totalSeconds);
+            const minutesPart = Math.floor(seconds / 60);
+            const secondsPart = seconds % 60;
+            return String(minutesPart).padStart(2, "0") + ":" + String(secondsPart).padStart(2, "0");
+        };
+
+        const ensureCaptchaElements = () => {
+            if (captchaSection) {
+                return;
+            }
+
+            captchaSection = document.createElement("div");
+            captchaSection.className = "verification-row otp-captcha-section";
+            captchaSection.style.display = "none";
+
+            captchaQuestion = document.createElement("label");
+            captchaQuestion.className = "form-label mb-0";
+
+            captchaInput = document.createElement("input");
+            captchaInput.type = "text";
+            captchaInput.className = "form-control";
+            captchaInput.inputMode = "numeric";
+            captchaInput.maxLength = 3;
+            captchaInput.autocomplete = "off";
+            captchaInput.addEventListener("input", () => {
+                captchaInput.value = captchaInput.value.replace(/[^0-9]/g, "");
+            });
+
+            captchaSection.appendChild(captchaQuestion);
+            captchaSection.appendChild(captchaInput);
+
+            const anchor = config.otpSection || config.statusElement || config.verifyButton;
+            if (anchor && anchor.parentElement) {
+                anchor.parentElement.insertBefore(captchaSection, anchor.nextSibling);
+            }
+        };
+
+        const hideCaptcha = () => {
+            state.captchaId = "";
+            if (captchaInput) {
+                captchaInput.value = "";
+            }
+            if (captchaSection) {
+                captchaSection.style.display = "none";
+            }
+        };
+
+        const showCaptcha = (data) => {
+            if (!data || data.captchaRequired !== true) {
+                hideCaptcha();
+                return;
+            }
+
+            ensureCaptchaElements();
+            state.captchaId = data.captchaId || "";
+            captchaQuestion.textContent = data.captchaQuestion || "CAPTCHA";
+            captchaSection.style.display = "flex";
+            captchaInput.disabled = false;
+        };
+
+        const stopLockCountdown = () => {
+            if (lockTimerId) {
+                window.clearInterval(lockTimerId);
+                lockTimerId = null;
+            }
+            state.locked = false;
+        };
+
+        const startLockCountdown = (seconds) => {
+            stopLockCountdown();
+            let remaining = Number(seconds || 0);
+            if (remaining <= 0) {
+                return;
+            }
+            state.locked = true;
+            config.verifyButton.disabled = true;
+            const render = () => {
+                setStatus("OTP verification failed. Please try again in " + formatDuration(remaining) + ".", "is-error");
+            };
+            render();
+            lockTimerId = window.setInterval(() => {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    stopLockCountdown();
+                    setStatus("You can request a new OTP now.", "is-pending");
+                    config.verifyButton.disabled = false;
+                    return;
+                }
+                render();
+            }, 1000);
+        };
+
+        const applySecurityState = (data, fallbackMessage) => {
+            if (!data) {
+                setStatus(fallbackMessage, "is-error");
+                return;
+            }
+            showCaptcha(data);
+            if (data.lockSecondsRemaining && data.lockSecondsRemaining > 0) {
+                startLockCountdown(data.lockSecondsRemaining);
+                return;
+            }
+
+            const parts = [data.message || fallbackMessage];
+            if (data.remainingAttempts && data.remainingAttempts > 0) {
+                parts.push("Remaining attempts: " + data.remainingAttempts);
+            }
+            if (data.retryAfterSeconds && data.retryAfterSeconds > 0) {
+                parts.push("Retry after " + formatDuration(data.retryAfterSeconds));
+            }
+            setStatus(parts.join(" "), "is-error");
+        };
+
         const reset = () => {
             state.verified = false;
+            stopLockCountdown();
+            hideCaptcha();
             if (config.otpInput) {
                 config.otpInput.value = "";
                 config.otpInput.disabled = true;
@@ -131,6 +256,8 @@
                     channel: config.channel,
                     reference
                 });
+                stopLockCountdown();
+                hideCaptcha();
                 if (config.otpSection) {
                     config.otpSection.style.display = "flex";
                 }
@@ -142,7 +269,7 @@
                     config.otpInput.focus();
                 }
             } catch (error) {
-                setStatus(error.message, "is-error");
+                applySecurityState(error.response, error.message);
             } finally {
                 config.sendButton.disabled = false;
             }
@@ -162,13 +289,20 @@
             setStatus("Verifying OTP...", "is-pending");
 
             try {
-                const data = await apiPost(config.verifyUrl, {
+                const payload = {
                     purpose: config.purpose,
                     channel: config.channel,
                     reference: config.referenceInput.value.trim(),
                     otp
-                });
+                };
+                if (state.captchaId) {
+                    payload.captchaId = state.captchaId;
+                    payload.captchaAnswer = captchaInput ? captchaInput.value.trim() : "";
+                }
+                const data = await apiPost(config.verifyUrl, payload);
                 state.verified = data.verified === true;
+                stopLockCountdown();
+                hideCaptcha();
                 if (config.otpSection) {
                     config.otpSection.style.display = "none";
                 }
@@ -176,10 +310,10 @@
                 notify();
             } catch (error) {
                 state.verified = false;
-                setStatus(error.message, "is-error");
+                applySecurityState(error.response, error.message);
                 notify();
             } finally {
-                config.verifyButton.disabled = false;
+                config.verifyButton.disabled = state.locked;
             }
         };
 

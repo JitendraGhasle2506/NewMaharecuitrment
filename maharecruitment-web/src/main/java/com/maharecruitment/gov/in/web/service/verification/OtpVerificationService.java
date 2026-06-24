@@ -6,9 +6,34 @@ import jakarta.servlet.http.HttpSession;
 
 public interface OtpVerificationService {
 
-    void sendOtp(HttpSession session, String purpose, VerificationChannel channel, String reference);
+    OtpVerificationResult sendOtp(
+            HttpSession session,
+            String purpose,
+            VerificationChannel channel,
+            String reference,
+            OtpRequestContext context);
 
-    boolean verifyOtp(HttpSession session, String purpose, VerificationChannel channel, String reference, String otp);
+    OtpVerificationResult verifyOtp(
+            HttpSession session,
+            String purpose,
+            VerificationChannel channel,
+            String reference,
+            String otp,
+            String captchaId,
+            String captchaAnswer,
+            OtpRequestContext context);
+
+    void recordUnknownSendAttempt(
+            String purpose,
+            VerificationChannel channel,
+            String reference,
+            OtpRequestContext context);
+
+    void recordUnknownVerifyAttempt(
+            String purpose,
+            VerificationChannel channel,
+            String reference,
+            OtpRequestContext context);
 
     boolean isVerified(HttpSession session, String purpose, VerificationChannel channel, String reference);
 

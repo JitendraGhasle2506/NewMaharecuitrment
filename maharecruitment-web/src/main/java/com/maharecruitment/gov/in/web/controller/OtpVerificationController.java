@@ -1,7 +1,9 @@
 package com.maharecruitment.gov.in.web.controller;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,15 +12,24 @@ import org.springframework.web.bind.annotation.RestController;
 import com.maharecruitment.gov.in.web.dto.verification.OtpSendRequest;
 import com.maharecruitment.gov.in.web.dto.verification.OtpVerifyRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
+import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
+import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
+import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
+import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/verifications/otp")
 public class OtpVerificationController {
+
+    private static final String GENERIC_VERIFY_FAILURE = "OTP verification failed. Please try again.";
+    private static final String GENERIC_SEND_FAILURE = "Unable to process OTP request. Please try again.";
+    private static final String RATE_LIMIT_MESSAGE = "Too many OTP requests. Please try again later.";
 
     private final OtpVerificationService otpVerificationService;
     private final boolean departmentRegistrationOtpBypassEnabled;
@@ -39,7 +50,16 @@ public class OtpVerificationController {
     @PostMapping("/send")
     public ResponseEntity<VerificationResponse> sendOtp(
             @Valid @RequestBody OtpSendRequest request,
+            BindingResult bindingResult,
+            HttpServletRequest httpRequest,
             HttpSession session) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(new VerificationResponse(
+                    GENERIC_SEND_FAILURE,
+                    false,
+                    request.getPurpose(),
+                    request.getChannel()));
+        }
         if (isDepartmentRegistrationOtpDisabled(request.getPurpose(), request.getChannel())) {
             return ResponseEntity.badRequest().body(new VerificationResponse(
                     buildDepartmentRegistrationOtpDisabledMessage(request.getChannel()),
@@ -56,19 +76,28 @@ public class OtpVerificationController {
         }
 
         try {
-            otpVerificationService.sendOtp(
+            OtpVerificationResult result = otpVerificationService.sendOtp(
                     session,
                     request.getPurpose(),
                     request.getChannel(),
-                    request.getReference());
-            return ResponseEntity.ok(new VerificationResponse(
+                    request.getReference(),
+                    OtpRequestContext.from(httpRequest));
+            return ResponseEntity.ok(toResponse(
                     "OTP sent successfully.",
                     false,
                     request.getPurpose(),
-                    request.getChannel()));
+                    request.getChannel(),
+                    result));
+        } catch (OtpRateLimitException ex) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(toResponse(
+                    RATE_LIMIT_MESSAGE,
+                    false,
+                    request.getPurpose(),
+                    request.getChannel(),
+                    ex.getResult()));
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(new VerificationResponse(
-                    ex.getMessage(),
+                    GENERIC_SEND_FAILURE,
                     false,
                     request.getPurpose(),
                     request.getChannel()));
@@ -78,7 +107,16 @@ public class OtpVerificationController {
     @PostMapping("/verify")
     public ResponseEntity<VerificationResponse> verifyOtp(
             @Valid @RequestBody OtpVerifyRequest request,
+            BindingResult bindingResult,
+            HttpServletRequest httpRequest,
             HttpSession session) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(new VerificationResponse(
+                    GENERIC_VERIFY_FAILURE,
+                    false,
+                    request.getPurpose(),
+                    request.getChannel()));
+        }
         if (isDepartmentRegistrationOtpDisabled(request.getPurpose(), request.getChannel())) {
             return ResponseEntity.badRequest().body(new VerificationResponse(
                     buildDepartmentRegistrationOtpDisabledMessage(request.getChannel()),
@@ -95,24 +133,72 @@ public class OtpVerificationController {
         }
 
         try {
-            otpVerificationService.verifyOtp(
+            OtpVerificationResult result = otpVerificationService.verifyOtp(
                     session,
                     request.getPurpose(),
                     request.getChannel(),
                     request.getReference(),
-                    request.getOtp());
-            return ResponseEntity.ok(new VerificationResponse(
+                    request.getOtp(),
+                    request.getCaptchaId(),
+                    request.getCaptchaAnswer(),
+                    OtpRequestContext.from(httpRequest));
+            return ResponseEntity.ok(toResponse(
                     "OTP verified successfully.",
                     true,
                     request.getPurpose(),
-                    request.getChannel()));
+                    request.getChannel(),
+                    result));
+        } catch (OtpRateLimitException ex) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(toResponse(
+                    RATE_LIMIT_MESSAGE,
+                    false,
+                    request.getPurpose(),
+                    request.getChannel(),
+                    ex.getResult()));
+        } catch (OtpVerificationException ex) {
+            return ResponseEntity.badRequest().body(new VerificationResponse(
+                    GENERIC_VERIFY_FAILURE,
+                    false,
+                    request.getPurpose(),
+                    request.getChannel(),
+                    ex.getResult().remainingAttempts(),
+                    ex.getResult().captchaRequired(),
+                    ex.getResult().captchaId(),
+                    ex.getResult().captchaQuestion(),
+                    ex.getResult().lockedUntil() == null ? null : ex.getResult().lockedUntil().toString(),
+                    ex.getResult().lockSecondsRemaining(),
+                    ex.getResult().remainingResends(),
+                    ex.getResult().retryAfterSeconds(),
+                    ex.getResult().expirySeconds()));
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(new VerificationResponse(
-                    ex.getMessage(),
+                    GENERIC_VERIFY_FAILURE,
                     false,
                     request.getPurpose(),
                     request.getChannel()));
         }
+    }
+
+    private VerificationResponse toResponse(
+            String message,
+            boolean verified,
+            String purpose,
+            com.maharecruitment.gov.in.web.dto.verification.VerificationChannel channel,
+            OtpVerificationResult result) {
+        return new VerificationResponse(
+                message,
+                verified,
+                purpose,
+                channel,
+                result.remainingAttempts(),
+                result.captchaRequired(),
+                result.captchaId(),
+                result.captchaQuestion(),
+                result.lockedUntil() == null ? null : result.lockedUntil().toString(),
+                result.lockSecondsRemaining(),
+                result.remainingResends(),
+                result.retryAfterSeconds(),
+                result.expirySeconds());
     }
 
     private boolean isDepartmentRegistrationOtpBypassed(String purpose) {

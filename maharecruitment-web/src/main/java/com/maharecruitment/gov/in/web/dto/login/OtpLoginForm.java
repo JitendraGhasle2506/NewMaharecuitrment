@@ -18,6 +18,10 @@ public class OtpLoginForm {
     @Pattern(regexp = "^[0-9]{6}$", message = "Invalid/Incorrect OTP")
     private String otp;
 
+    private String captchaId;
+
+    private String captchaAnswer;
+
     public String getIdentifier() {
         return identifier;
     }
@@ -40,5 +44,21 @@ public class OtpLoginForm {
 
     public void setOtp(String otp) {
         this.otp = otp;
+    }
+
+    public String getCaptchaId() {
+        return captchaId;
+    }
+
+    public void setCaptchaId(String captchaId) {
+        this.captchaId = captchaId;
+    }
+
+    public String getCaptchaAnswer() {
+        return captchaAnswer;
+    }
+
+    public void setCaptchaAnswer(String captchaAnswer) {
+        this.captchaAnswer = captchaAnswer;
     }
 }

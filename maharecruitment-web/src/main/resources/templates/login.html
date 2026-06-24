@@ -128,8 +128,25 @@
                                     placeholder="Enter 6 digit OTP" inputmode="numeric" minlength="6" maxlength="6" 
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '');" required disabled />
                             </div>
+                            <div th:if="${otpRemainingAttempts != null}" class="otp-status"
+                                th:text="'Remaining attempts: ' + ${otpRemainingAttempts}">
+                                Remaining attempts: 5
+                            </div>
+                            <div th:if="${otpLockSecondsRemaining != null and otpLockSecondsRemaining > 0}"
+                                id="otpLoginLockCountdown"
+                                class="otp-status is-error"
+                                th:attr="data-lock-seconds=${otpLockSecondsRemaining}">
+                                OTP verification failed. Please try again.
+                            </div>
+                            <div th:if="${otpCaptchaRequired == true}" id="loginOtpCaptchaSection" class="form-group mb-3 otp-captcha-section is-visible">
+                                <input type="hidden" name="captchaId" th:value="${otpCaptchaId}" />
+                                <label for="loginOtpCaptchaAnswer" class="control-label" th:text="${otpCaptchaQuestion}">Captcha</label>
+                                <input type="text" id="loginOtpCaptchaAnswer" name="captchaAnswer" class="form-control"
+                                    inputmode="numeric" maxlength="3" autocomplete="off"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '');" required />
+                            </div>
                             <div class="form-group mb-0 d-grid">
-                                <button type="submit" class="btn btn-primary btn-login">Login with OTP</button>
+                                <button type="submit" id="loginOtpVerifyBtn" class="btn btn-primary btn-login">Login with OTP</button>
                             </div>
                             <div class="form-group mt-3 mb-0 d-grid">
                                 <a th:href="@{/register/department-registration}"

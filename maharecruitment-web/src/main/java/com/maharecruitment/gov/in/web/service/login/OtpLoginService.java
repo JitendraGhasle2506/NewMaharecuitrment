@@ -11,6 +11,8 @@ import com.maharecruitment.gov.in.auth.service.CustomUserDetailsService;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
+import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
+import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
@@ -35,19 +37,63 @@ public class OtpLoginService {
         this.notificationChannelProperties = notificationChannelProperties;
     }
 
-    public void sendOtp(HttpSession session, String identifier, VerificationChannel channel) {
+    public OtpVerificationResult sendOtp(
+            HttpSession session,
+            String identifier,
+            VerificationChannel channel,
+            OtpRequestContext context) {
         ensureChannelEnabled(channel);
-        User user = userDetailsService.loadDomainUserByIdentifier(identifier);
+        User user;
+        try {
+            user = userDetailsService.loadDomainUserByIdentifier(identifier);
+        } catch (RuntimeException ex) {
+            otpVerificationService.recordUnknownSendAttempt(
+                    VerificationPurposes.LOGIN_AUTHENTICATION,
+                    channel,
+                    identifier,
+                    context);
+            return OtpVerificationResult.sent(0, 0);
+        }
+
         String reference = resolveReference(user, channel);
-        otpVerificationService.clear(session, VerificationPurposes.LOGIN_AUTHENTICATION);
-        otpVerificationService.sendOtp(session, VerificationPurposes.LOGIN_AUTHENTICATION, channel, reference);
+        return otpVerificationService.sendOtp(
+                session,
+                VerificationPurposes.LOGIN_AUTHENTICATION,
+                channel,
+                reference,
+                context);
     }
 
-    public Authentication authenticate(HttpSession session, String identifier, VerificationChannel channel, String otp) {
+    public Authentication authenticate(
+            HttpSession session,
+            String identifier,
+            VerificationChannel channel,
+            String otp,
+            String captchaId,
+            String captchaAnswer,
+            OtpRequestContext context) {
         ensureChannelEnabled(channel);
-        User user = userDetailsService.loadDomainUserByIdentifier(identifier);
+        User user;
+        try {
+            user = userDetailsService.loadDomainUserByIdentifier(identifier);
+        } catch (RuntimeException ex) {
+            otpVerificationService.recordUnknownVerifyAttempt(
+                    VerificationPurposes.LOGIN_AUTHENTICATION,
+                    channel,
+                    identifier,
+                    context);
+            throw ex;
+        }
         String reference = resolveReference(user, channel);
-        otpVerificationService.verifyOtp(session, VerificationPurposes.LOGIN_AUTHENTICATION, channel, reference, otp);
+        otpVerificationService.verifyOtp(
+                session,
+                VerificationPurposes.LOGIN_AUTHENTICATION,
+                channel,
+                reference,
+                otp,
+                captchaId,
+                captchaAnswer,
+                context);
         otpVerificationService.clear(session, VerificationPurposes.LOGIN_AUTHENTICATION);
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         return UsernamePasswordAuthenticationToken.authenticated(
