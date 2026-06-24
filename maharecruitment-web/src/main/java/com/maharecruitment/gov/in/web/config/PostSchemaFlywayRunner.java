@@ -61,6 +61,7 @@ import db.postmigration.V76__team_master_cell_mapping_primary;
 import db.postmigration.V77__position_master_level_mapping;
 import db.postmigration.V78__position_master_project_optional;
 import db.postmigration.V79__position_master_cell_mapping;
+import db.postmigration.V80__sensitive_identity_data_encryption;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -140,7 +141,8 @@ public class PostSchemaFlywayRunner {
                 new V76__team_master_cell_mapping_primary(),
                 new V77__position_master_level_mapping(),
                 new V78__position_master_project_optional(),
-                new V79__position_master_cell_mapping());
+                new V79__position_master_cell_mapping(),
+                new V80__sensitive_identity_data_encryption());
     }
 
     private boolean hasFailedPostSchemaMigration() {
