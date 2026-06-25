@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.common.upload;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +30,32 @@ public class SecureFileUploadService {
     private static final Logger log = LoggerFactory.getLogger(SecureFileUploadService.class);
 
     private static final Pattern META_CHARACTERS = Pattern.compile("[<>:\"/\\\\|?*;&$`~]");
+    private static final String MALICIOUS_CONTENT_MESSAGE =
+            "Uploaded file is malicious because it contains script or active content.";
+    private static final int MAX_CONTENT_INSPECTION_BYTES = 8 * 1024 * 1024;
+    private static final int MAX_ZIP_ENTRY_INSPECTION_BYTES = MAX_CONTENT_INSPECTION_BYTES;
+    private static final List<Pattern> SCRIPT_CONTENT_PATTERNS = List.of(
+            Pattern.compile("<\\s*/?\\s*script\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\bjavascript\\s*:", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\bvbscript\\s*:", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\bdata\\s*:\\s*text/html", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("<\\s*(iframe|object|embed|applet|svg|meta|link)\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\bon(load|error|click|mouseover|focus|submit|readystatechange)\\s*=",
+                    Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\beval\\s*\\(", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\bdocument\\s*\\.\\s*(cookie|write)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\bwindow\\s*\\.\\s*location", Pattern.CASE_INSENSITIVE));
+    private static final List<Pattern> PDF_ACTIVE_CONTENT_PATTERNS = List.of(
+            Pattern.compile("/(JavaScript|JS|OpenAction|AA|Launch|RichMedia|EmbeddedFile)\\b",
+                    Pattern.CASE_INSENSITIVE));
+    private static final List<Pattern> OFFICE_ACTIVE_CONTENT_PATTERNS = List.of(
+            Pattern.compile("\\b(vbaproject|vba project|macros?|activex|oleobject)\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("attribute\\s+vb_name", Pattern.CASE_INSENSITIVE));
+    private static final List<Pattern> DOCX_ACTIVE_ENTRY_PATTERNS = List.of(
+            Pattern.compile("(^|/)vbaproject\\.bin$", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(^|/)activex/", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(^|/)embeddings/", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(^|/)oleobject", Pattern.CASE_INSENSITIVE));
     private static final byte[] PNG_SIGNATURE = new byte[] {
             (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
     };
@@ -74,7 +101,12 @@ public class SecureFileUploadService {
 
             byte[] signature = readSignature(path);
             try (InputStream inputStream = Files.newInputStream(path)) {
-                return matchesMagicBytes(extension, signature, inputStream);
+                if (!matchesMagicBytes(extension, signature, inputStream)) {
+                    return false;
+                }
+            }
+            try (InputStream inputStream = Files.newInputStream(path)) {
+                return !containsMaliciousContent(extension, inputStream);
             }
         } catch (RuntimeException | IOException ex) {
             log.warn("Stored upload validation failed. reason={}", ex.getMessage());
@@ -139,6 +171,7 @@ public class SecureFileUploadService {
         validateSize(file.getSize(), extension);
         validateDeclaredMimeType(file.getContentType(), extension);
         validateMagicBytes(file, extension);
+        validateContentSafety(file, extension);
 
         String storedFileName = UUID.randomUUID() + "." + extension;
         return new ValidatedFileUpload(
@@ -249,6 +282,16 @@ public class SecureFileUploadService {
         }
     }
 
+    private void validateContentSafety(MultipartFile file, String extension) {
+        try (InputStream inputStream = file.getInputStream()) {
+            if (containsMaliciousContent(extension, inputStream)) {
+                throw new SecureFileUploadException(MALICIOUS_CONTENT_MESSAGE);
+            }
+        } catch (IOException ex) {
+            throw new SecureFileUploadException("Unable to inspect uploaded file content.", ex);
+        }
+    }
+
     private boolean matchesMagicBytes(String extension, byte[] signature, InputStream contentInputStream)
             throws IOException {
         return switch (extension) {
@@ -288,6 +331,85 @@ public class SecureFileUploadService {
         }
 
         return false;
+    }
+
+    private boolean containsMaliciousContent(String extension, InputStream inputStream) throws IOException {
+        return switch (extension) {
+            case "pdf" -> containsAnyPattern(
+                    readLimitedBytes(inputStream, MAX_CONTENT_INSPECTION_BYTES),
+                    mergePatterns(SCRIPT_CONTENT_PATTERNS, PDF_ACTIVE_CONTENT_PATTERNS));
+            case "jpg", "jpeg", "png" -> containsAnyPattern(
+                    readLimitedBytes(inputStream, MAX_CONTENT_INSPECTION_BYTES),
+                    SCRIPT_CONTENT_PATTERNS);
+            case "doc" -> containsAnyPattern(
+                    readLimitedBytes(inputStream, MAX_CONTENT_INSPECTION_BYTES),
+                    mergePatterns(SCRIPT_CONTENT_PATTERNS, OFFICE_ACTIVE_CONTENT_PATTERNS));
+            case "docx" -> containsMaliciousDocxContent(inputStream);
+            default -> true;
+        };
+    }
+
+    private boolean containsMaliciousDocxContent(InputStream inputStream) throws IOException {
+        int inspectedEntries = 0;
+        try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null && inspectedEntries < 200) {
+                inspectedEntries++;
+                String entryName = entry.getName().replace('\\', '/').toLowerCase(Locale.ROOT);
+                if (DOCX_ACTIVE_ENTRY_PATTERNS.stream().anyMatch(pattern -> pattern.matcher(entryName).find())) {
+                    return true;
+                }
+                if (isInspectableTextEntry(entryName)
+                        && containsAnyPattern(
+                                readLimitedBytes(zipInputStream, MAX_ZIP_ENTRY_INSPECTION_BYTES),
+                                mergePatterns(SCRIPT_CONTENT_PATTERNS, OFFICE_ACTIVE_CONTENT_PATTERNS))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isInspectableTextEntry(String entryName) {
+        return entryName.endsWith(".xml")
+                || entryName.endsWith(".rels")
+                || entryName.endsWith(".html")
+                || entryName.endsWith(".htm")
+                || entryName.endsWith(".svg")
+                || entryName.endsWith(".txt");
+    }
+
+    private boolean containsAnyPattern(byte[] content, List<Pattern> patterns) {
+        if (content.length == 0) {
+            return false;
+        }
+
+        String latinText = new String(content, StandardCharsets.ISO_8859_1).replace("\u0000", "");
+        String utf8Text = new String(content, StandardCharsets.UTF_8).replace("\u0000", "");
+        String utf16Text = new String(content, StandardCharsets.UTF_16LE).replace("\u0000", "");
+        return patterns.stream().anyMatch(pattern ->
+                pattern.matcher(latinText).find()
+                        || pattern.matcher(utf8Text).find()
+                        || pattern.matcher(utf16Text).find());
+    }
+
+    private List<Pattern> mergePatterns(List<Pattern> first, List<Pattern> second) {
+        return java.util.stream.Stream.concat(first.stream(), second.stream()).toList();
+    }
+
+    private byte[] readLimitedBytes(InputStream inputStream, int limit) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(Math.min(limit, 8192));
+        byte[] chunk = new byte[8192];
+        int totalRead = 0;
+        int read;
+        while ((read = inputStream.read(chunk)) != -1) {
+            totalRead += read;
+            if (totalRead > limit) {
+                throw new SecureFileUploadException("Uploaded file is too large to inspect safely.");
+            }
+            buffer.write(chunk, 0, read);
+        }
+        return buffer.toByteArray();
     }
 
     private byte[] readSignature(Path path) throws IOException {

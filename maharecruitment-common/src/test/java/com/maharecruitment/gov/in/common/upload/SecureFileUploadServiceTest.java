@@ -8,6 +8,9 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.io.ByteArrayOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -96,6 +99,50 @@ class SecureFileUploadServiceTest {
                 file("document.pdf", "application/pdf", mzBytes()),
                 defaultPolicy))
                 .isInstanceOf(SecureFileUploadException.class);
+    }
+
+    @Test
+    void pdfContainingJavaScriptShouldFailAsMalicious() {
+        assertThatThrownBy(() -> secureFileUploadService.validate(
+                file("document.pdf", "application/pdf", pdfWithJavaScriptBytes()),
+                defaultPolicy))
+                .isInstanceOf(SecureFileUploadException.class)
+                .hasMessageContaining("malicious");
+    }
+
+    @Test
+    void imageContainingScriptShouldFailAsMalicious() {
+        assertThatThrownBy(() -> secureFileUploadService.validate(
+                file("photo.jpg", "image/jpeg", jpegWithScriptBytes()),
+                defaultPolicy))
+                .isInstanceOf(SecureFileUploadException.class)
+                .hasMessageContaining("malicious");
+    }
+
+    @Test
+    void validDocxWithoutScriptShouldPass() throws Exception {
+        SecureFileUploadPolicy docxPolicy = SecureFileUploadPolicy.allowedExtensions("test-docx", Set.of("docx"));
+
+        ValidatedFileUpload result = secureFileUploadService.validate(
+                file("document.docx",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        docxBytes("<w:document><w:body><w:p><w:r><w:t>Valid document</w:t></w:r></w:p></w:body></w:document>")),
+                docxPolicy);
+
+        assertThat(result.extension()).isEqualTo("docx");
+    }
+
+    @Test
+    void docxContainingScriptShouldFailAsMalicious() throws Exception {
+        SecureFileUploadPolicy docxPolicy = SecureFileUploadPolicy.allowedExtensions("test-docx", Set.of("docx"));
+
+        assertThatThrownBy(() -> secureFileUploadService.validate(
+                file("document.docx",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        docxBytes("<w:document><script>alert(1)</script></w:document>")),
+                docxPolicy))
+                .isInstanceOf(SecureFileUploadException.class)
+                .hasMessageContaining("malicious");
     }
 
     @Test
@@ -202,10 +249,23 @@ class SecureFileUploadServiceTest {
         return "%PDF-1.7\n%secure-test".getBytes(StandardCharsets.US_ASCII);
     }
 
+    private byte[] pdfWithJavaScriptBytes() {
+        return "%PDF-1.7\n1 0 obj<</OpenAction<</S/JavaScript/JS(app.alert(1))>>>>endobj"
+                .getBytes(StandardCharsets.US_ASCII);
+    }
+
     private byte[] jpegBytes() {
         return new byte[] {
                 (byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0x00, 0x10, 'J', 'F', 'I', 'F'
         };
+    }
+
+    private byte[] jpegWithScriptBytes() {
+        byte[] signature = jpegBytes();
+        byte[] script = "<script>alert(1)</script>".getBytes(StandardCharsets.US_ASCII);
+        byte[] content = Arrays.copyOf(signature, signature.length + script.length);
+        System.arraycopy(script, 0, content, signature.length, script.length);
+        return content;
     }
 
     private byte[] pngBytes() {
@@ -221,5 +281,28 @@ class SecureFileUploadServiceTest {
 
     private byte[] mzBytes() {
         return new byte[] { 'M', 'Z', 0x00, 0x00, 0x00 };
+    }
+
+    private byte[] docxBytes(String documentXml) throws Exception {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
+            addZipEntry(zipOutputStream, "[Content_Types].xml",
+                    """
+                            <?xml version="1.0" encoding="UTF-8"?>
+                            <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                                <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                                <Default Extension="xml" ContentType="application/xml"/>
+                                <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+                            </Types>
+                            """);
+            addZipEntry(zipOutputStream, "word/document.xml", documentXml);
+        }
+        return outputStream.toByteArray();
+    }
+
+    private void addZipEntry(ZipOutputStream zipOutputStream, String name, String content) throws Exception {
+        zipOutputStream.putNextEntry(new ZipEntry(name));
+        zipOutputStream.write(content.getBytes(StandardCharsets.UTF_8));
+        zipOutputStream.closeEntry();
     }
 }
