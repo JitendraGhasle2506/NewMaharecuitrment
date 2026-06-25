@@ -19,6 +19,7 @@ import com.maharecruitment.gov.in.web.dto.login.OtpLoginSendRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
 import com.maharecruitment.gov.in.web.service.login.OtpLoginService;
+import com.maharecruitment.gov.in.web.service.login.UnknownLoginIdentifierException;
 
 class OtpLoginControllerTest {
 
@@ -47,5 +48,28 @@ class OtpLoginControllerTest {
         assertThat(response.getBody().message()).isEqualTo("Email OTP login is not enabled in this environment.");
         assertThat(response.getBody().verified()).isFalse();
         verify(otpLoginService, never()).sendOtp(any(), any(), any(), any());
+    }
+
+    @Test
+    void unknownIdentifierReturnsVisibleValidationMessage() {
+        OtpLoginSendRequest request = new OtpLoginSendRequest();
+        request.setIdentifier("invalid@example.com");
+        request.setChannel(VerificationChannel.EMAIL);
+        when(otpLoginService.isChannelEnabled(VerificationChannel.EMAIL)).thenReturn(true);
+        when(otpLoginService.sendOtp(any(), any(), any(), any()))
+                .thenThrow(new UnknownLoginIdentifierException(
+                        "Username, email, or mobile number is not registered."));
+
+        ResponseEntity<VerificationResponse> response = controller.sendOtp(
+                request,
+                new BeanPropertyBindingResult(request, "request"),
+                new MockHttpServletRequest(),
+                new MockHttpSession());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message())
+                .isEqualTo("Username, email, or mobile number is not registered.");
+        assertThat(response.getBody().expirySeconds()).isZero();
     }
 }

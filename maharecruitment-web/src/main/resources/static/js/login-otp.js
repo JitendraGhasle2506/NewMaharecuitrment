@@ -334,9 +334,14 @@
                     throw new Error(data.message || "Unable to send OTP.");
                 }
 
-                if (data.expirySeconds && data.expirySeconds > 0) {
-                    otpExpirySeconds = data.expirySeconds;
+                if (!data.expirySeconds || data.expirySeconds <= 0) {
+                    setOtpSectionVisible(false);
+                    setStatus(data.message || "Unable to send OTP.", "is-error");
+                    setTiming("");
+                    return;
                 }
+
+                otpExpirySeconds = data.expirySeconds;
                 var isResend = hasSentOtpOnce;
                 hasSentOtpOnce = true;
                 updateSendButtonLabel();

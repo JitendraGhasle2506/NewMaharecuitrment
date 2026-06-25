@@ -23,6 +23,7 @@ import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 import com.maharecruitment.gov.in.web.service.login.OtpLoginService;
+import com.maharecruitment.gov.in.web.service.login.UnknownLoginIdentifierException;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -90,6 +91,12 @@ public class OtpLoginController {
                     VerificationPurposes.LOGIN_AUTHENTICATION,
                     request.getChannel(),
                     ex.getResult()));
+        } catch (UnknownLoginIdentifierException ex) {
+            return ResponseEntity.ok(new VerificationResponse(
+                    ex.getMessage(),
+                    false,
+                    VerificationPurposes.LOGIN_AUTHENTICATION,
+                    request.getChannel()));
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(new VerificationResponse(
                     GENERIC_SEND_ACCEPTED,

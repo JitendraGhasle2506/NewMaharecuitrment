@@ -21,6 +21,9 @@ import jakarta.servlet.http.HttpSession;
 @Service
 public class OtpLoginService {
 
+    private static final String UNKNOWN_IDENTIFIER_MESSAGE =
+            "Username, email, or mobile number is not registered.";
+
     private final CustomUserDetailsService userDetailsService;
     private final UserAffiliationService userAffiliationService;
     private final OtpVerificationService otpVerificationService;
@@ -52,7 +55,7 @@ public class OtpLoginService {
                     channel,
                     identifier,
                     context);
-            return OtpVerificationResult.sent(0, 0);
+            throw new UnknownLoginIdentifierException(UNKNOWN_IDENTIFIER_MESSAGE);
         }
 
         String reference = resolveReference(user, channel);
