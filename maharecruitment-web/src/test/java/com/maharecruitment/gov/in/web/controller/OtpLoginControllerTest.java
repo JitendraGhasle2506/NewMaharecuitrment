@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.FieldError;
 
 import com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler;
 import com.maharecruitment.gov.in.web.dto.login.OtpLoginSendRequest;
@@ -32,7 +33,7 @@ class OtpLoginControllerTest {
     void disabledOtpChannelReturnsOkMessageWithoutSendingOtp() {
         OtpLoginSendRequest request = new OtpLoginSendRequest();
         request.setIdentifier("hr@mahait.org");
-        request.setChannel(VerificationChannel.EMAIL);
+        request.setChannel("EMAIL");
         when(otpLoginService.isChannelEnabled(VerificationChannel.EMAIL)).thenReturn(false);
         when(otpLoginService.disabledChannelMessage(VerificationChannel.EMAIL))
                 .thenReturn("Email OTP login is not enabled in this environment.");
@@ -54,7 +55,7 @@ class OtpLoginControllerTest {
     void unknownIdentifierReturnsVisibleValidationMessage() {
         OtpLoginSendRequest request = new OtpLoginSendRequest();
         request.setIdentifier("invalid@example.com");
-        request.setChannel(VerificationChannel.EMAIL);
+        request.setChannel("EMAIL");
         when(otpLoginService.isChannelEnabled(VerificationChannel.EMAIL)).thenReturn(true);
         when(otpLoginService.sendOtp(any(), any(), any(), any()))
                 .thenThrow(new UnknownLoginIdentifierException(
@@ -71,5 +72,27 @@ class OtpLoginControllerTest {
         assertThat(response.getBody().message())
                 .isEqualTo("Username, email, or mobile number is not registered.");
         assertThat(response.getBody().expirySeconds()).isZero();
+    }
+
+    @Test
+    void missingOtpChannelReturnsRequiredSelectionMessage() {
+        OtpLoginSendRequest request = new OtpLoginSendRequest();
+        request.setIdentifier("hr@mahait.org");
+        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(request, "request");
+        bindingResult.addError(new FieldError(
+                "request",
+                "channel",
+                "Select Email OTP or Mobile OTP"));
+
+        ResponseEntity<VerificationResponse> response = controller.sendOtp(
+                request,
+                bindingResult,
+                new MockHttpServletRequest(),
+                new MockHttpSession());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Select Email OTP or Mobile OTP");
+        verify(otpLoginService, never()).sendOtp(any(), any(), any(), any());
     }
 }

@@ -28,6 +28,8 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("spring.mvc.log-request-details")).isEqualTo("false");
         assertThat(properties.getProperty("app.security.transport.require-https")).isEqualTo("true");
         assertThat(properties.getProperty("app.security.transport.allow-loopback-http")).isEqualTo("false");
+        assertThat(properties.getProperty("otp.resend-limit")).isEqualTo("3");
+        assertThat(properties.getProperty("otp.resend-window-minutes")).isEqualTo("5");
         assertThat(properties.getProperty("spring.profiles.active")).isNull();
         assertThat(properties.getProperty("spring.profiles.default")).isEqualTo("local");
     }

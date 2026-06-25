@@ -71,11 +71,13 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         String normalizedReference = handler.normalizeReference(reference);
         OtpRequestContext requestContext = normalizeContext(context);
 
-        rateLimiter.checkSendAllowed(normalizedPurpose, channel, normalizedReference, requestContext);
-
         Instant now = Instant.now();
         OtpVerificationStateEntity state = findState(session, normalizedPurpose, channel)
                 .orElseGet(() -> newState(session, normalizedPurpose, channel));
+        rejectResendWhileOtpIsActive(state, normalizedReference, now);
+
+        rateLimiter.checkSendAllowed(normalizedPurpose, channel, normalizedReference, requestContext);
+
         boolean resend = state.getOtpStateId() != null && state.getOtpExpiryTime() != null;
         int resendCount = nextResendCount(state, now);
 
@@ -407,6 +409,25 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         }
 
         return state.getOtpResendCount() + 1;
+    }
+
+    private void rejectResendWhileOtpIsActive(
+            OtpVerificationStateEntity state,
+            String normalizedReference,
+            Instant now) {
+        if (state == null
+                || state.getOtpStateId() == null
+                || state.isOtpVerified()
+                || state.getOtpHash() == null
+                || state.getOtpExpiryTime() == null
+                || !now.isBefore(state.getOtpExpiryTime())
+                || !hash(normalizedReference).equals(state.getReferenceHash())) {
+            return;
+        }
+
+        throw new OtpRateLimitException(
+                "OTP is already valid. Resend is allowed after it expires.",
+                secondsUntil(now, state.getOtpExpiryTime()));
     }
 
     private void invalidateOtp(OtpVerificationStateEntity state) {

@@ -225,11 +225,11 @@
             }, 1000);
         };
 
-        var startOtpTimers = function (shouldCooldown) {
+        var startOtpTimers = function () {
             clearTimers();
 
             var expiryRemaining = otpExpirySeconds;
-            var resendRemaining = shouldCooldown ? otpResendCooldownSeconds : 0;
+            var resendRemaining = Math.max(otpExpirySeconds, otpResendCooldownSeconds);
             sendButton.disabled = resendRemaining > 0;
             updateTimingMessage(expiryRemaining, resendRemaining);
 
@@ -245,22 +245,18 @@
                 updateTimingMessage(expiryRemaining, resendRemaining);
             }, 1000);
 
-            if (shouldCooldown) {
-                resendTimerId = window.setInterval(function () {
-                    resendRemaining -= 1;
-                    if (resendRemaining <= 0) {
-                        resendRemaining = 0;
-                        sendButton.disabled = false;
-                        if (resendTimerId) {
-                            window.clearInterval(resendTimerId);
-                            resendTimerId = null;
-                        }
+            resendTimerId = window.setInterval(function () {
+                resendRemaining -= 1;
+                if (resendRemaining <= 0) {
+                    resendRemaining = 0;
+                    sendButton.disabled = false;
+                    if (resendTimerId) {
+                        window.clearInterval(resendTimerId);
+                        resendTimerId = null;
                     }
-                    updateTimingMessage(expiryRemaining, resendRemaining);
-                }, 1000);
-            } else {
-                sendButton.disabled = false;
-            }
+                }
+                updateTimingMessage(expiryRemaining, resendRemaining);
+            }, 1000);
         };
 
         var setOtpSectionVisible = function (visible) {
@@ -290,6 +286,10 @@
             return value.trim().length > 0;
         };
 
+        var validateChannel = function (value) {
+            return value === "EMAIL" || value === "MOBILE";
+        };
+
         identifierInput.addEventListener("input", resetStatus);
         channelSelect.addEventListener("change", resetStatus);
 
@@ -305,6 +305,12 @@
             if (!validateIdentifier(identifier)) {
                 setStatus("Enter your registered username, email, or mobile number first.", "is-error");
                 identifierInput.focus();
+                return;
+            }
+
+            if (!validateChannel(channel)) {
+                setStatus("Select Email OTP or Mobile OTP.", "is-error");
+                channelSelect.focus();
                 return;
             }
 
@@ -342,12 +348,11 @@
                 }
 
                 otpExpirySeconds = data.expirySeconds;
-                var isResend = hasSentOtpOnce;
                 hasSentOtpOnce = true;
                 updateSendButtonLabel();
                 setStatus(data.message || "OTP sent successfully.", "is-success");
                 setOtpSectionVisible(true);
-                startOtpTimers(isResend);
+                startOtpTimers();
                 otpInput.focus();
             } catch (error) {
                 setOtpSectionVisible(false);

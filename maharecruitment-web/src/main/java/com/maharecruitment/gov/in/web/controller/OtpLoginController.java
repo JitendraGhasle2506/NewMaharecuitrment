@@ -37,6 +37,7 @@ public class OtpLoginController {
     private static final String GENERIC_VERIFY_FAILURE = "OTP verification failed. Please try again.";
     private static final String GENERIC_SEND_ACCEPTED =
             "OTP request accepted. If the account details are valid, an OTP will be sent.";
+    private static final String GENERIC_SEND_VALIDATION_FAILURE = "Please enter required OTP login details.";
     private static final String RATE_LIMIT_MESSAGE = "Too many OTP requests. Please try again later.";
 
     private final OtpLoginService otpLoginService;
@@ -58,7 +59,7 @@ public class OtpLoginController {
             HttpSession session) {
         if (bindingResult.hasErrors()) {
             return ResponseEntity.badRequest().body(new VerificationResponse(
-                    GENERIC_SEND_ACCEPTED,
+                    validationMessage(bindingResult),
                     false,
                     VerificationPurposes.LOGIN_AUTHENTICATION,
                     request.getChannel()));
@@ -187,5 +188,13 @@ public class OtpLoginController {
                 result.remainingResends(),
                 result.retryAfterSeconds(),
                 result.expirySeconds());
+    }
+
+    private String validationMessage(BindingResult bindingResult) {
+        return bindingResult.getFieldErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .filter(message -> message != null && !message.isBlank())
+                .findFirst()
+                .orElse(GENERIC_SEND_VALIDATION_FAILURE);
     }
 }

@@ -20,6 +20,8 @@ class LoginClientTransportGuardTest {
                 .contains("HTTPS is required before submitting credentials.")
                 .contains("passwordLoginForm.addEventListener(\"submit\"")
                 .contains("event.preventDefault();")
+                .contains("Select Email OTP or Mobile OTP.")
+                .contains("Math.max(otpExpirySeconds, otpResendCooldownSeconds)")
                 .contains("window.crypto.subtle.encrypt")
                 .contains("encryptCredential(passwordInput.value")
                 .contains("window.HTMLFormElement.prototype.submit.call(passwordLoginForm)");

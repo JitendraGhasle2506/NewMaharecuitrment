@@ -55,7 +55,7 @@ class DatabaseOtpVerificationServiceTest {
         properties.setMaxAttempts(5);
         properties.setLockDurationMinutes(15);
         properties.setResendLimit(3);
-        properties.setResendWindowMinutes(15);
+        properties.setResendWindowMinutes(5);
         properties.setVerifyRateLimit(10);
         properties.setVerifyRateWindowSeconds(60);
         properties.setCaptchaThreshold(3);
@@ -167,6 +167,7 @@ class DatabaseOtpVerificationServiceTest {
     void newOtpAfterResendInvalidatesOldOtp() {
         service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
         String oldOtp = emailHandler.lastOtp;
+        currentState().setOtpExpiryTime(Instant.now().minusSeconds(1));
 
         service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
         String newOtp = emailHandler.lastOtp;
@@ -175,6 +176,20 @@ class DatabaseOtpVerificationServiceTest {
 
         OtpVerificationResult result = verify(newOtp);
         assertTrue(result.verified());
+    }
+
+    @Test
+    void resendIsBlockedWhileCurrentOtpIsStillValid() {
+        service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
+        String activeOtp = emailHandler.lastOtp;
+
+        OtpVerificationException exception = assertThrows(
+                OtpVerificationException.class,
+                () -> service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT));
+
+        assertEquals(OtpFailureReason.RATE_LIMITED, exception.getReason());
+        assertTrue(exception.getResult().retryAfterSeconds() > 0);
+        assertEquals(activeOtp, emailHandler.lastOtp);
     }
 
     @Test
