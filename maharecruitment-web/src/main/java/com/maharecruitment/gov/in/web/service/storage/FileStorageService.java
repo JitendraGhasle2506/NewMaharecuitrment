@@ -7,15 +7,17 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.maharecruitment.gov.in.common.upload.SecureFileUploadException;
+import com.maharecruitment.gov.in.common.upload.SecureFileUploadPolicy;
+import com.maharecruitment.gov.in.common.upload.SecureFileUploadService;
+import com.maharecruitment.gov.in.common.upload.ValidatedFileUpload;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.exception.FileStorageException;
 import com.maharecruitment.gov.in.web.properties.FileUploadProperties;
@@ -25,14 +27,22 @@ public class FileStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
 
-    private final FileUploadProperties properties;
+    private static final Set<String> DEFAULT_DOCUMENT_EXTENSIONS = Set.of("pdf", "jpg", "jpeg", "png");
+    private static final Set<String> PDF_EXTENSIONS = Set.of("pdf");
+    private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png");
 
-    public FileStorageService(FileUploadProperties properties) {
+    private final FileUploadProperties properties;
+    private final SecureFileUploadService secureFileUploadService;
+
+    public FileStorageService(
+            FileUploadProperties properties,
+            SecureFileUploadService secureFileUploadService) {
         this.properties = properties;
+        this.secureFileUploadService = secureFileUploadService;
     }
 
     public FileUploadResult store(MultipartFile file, String module) {
-        validate(file);
+        ValidatedFileUpload validatedFile = validate(file, module);
 
         try {
             Path baseDir = Paths.get(properties.getBasePath())
@@ -40,29 +50,25 @@ public class FileStorageService {
                     .normalize();
 
             String yearMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"));
-            Path uploadDir = baseDir.resolve(module).resolve(yearMonth).normalize();
+            Path uploadDir = secureFileUploadService.resolveSecureDirectory(baseDir, module, yearMonth);
             Files.createDirectories(uploadDir);
 
-            String originalFileName = StringUtils.cleanPath(file.getOriginalFilename() == null
-                    ? "document"
-                    : file.getOriginalFilename());
-
-            if (originalFileName.contains("..")) {
-                throw new FileStorageException("Invalid file name.");
-            }
-
-            String storedFileName = UUID.randomUUID() + "_" + originalFileName;
-            Path targetLocation = uploadDir.resolve(storedFileName);
+            Path targetLocation = secureFileUploadService.resolveSecureFile(
+                    uploadDir,
+                    validatedFile.storedFileName());
 
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            secureFileUploadService.applyNonExecutableFilePermissions(targetLocation);
             log.info("File stored successfully at {}", targetLocation);
 
             return new FileUploadResult(
-                    originalFileName,
-                    storedFileName,
+                    validatedFile.originalFileName(),
+                    validatedFile.storedFileName(),
                     targetLocation.toString(),
-                    file.getContentType(),
-                    file.getSize());
+                    validatedFile.contentType(),
+                    validatedFile.size());
+        } catch (SecureFileUploadException ex) {
+            throw new FileStorageException(ex.getMessage(), ex);
         } catch (IOException ex) {
             log.error("File upload failed", ex);
             throw new FileStorageException("File upload failed.", ex);
@@ -70,7 +76,7 @@ public class FileStorageService {
     }
 
     public void deleteQuietly(String fullPath) {
-        if (!StringUtils.hasText(fullPath)) {
+        if (!isManagedPath(fullPath)) {
             return;
         }
 
@@ -82,7 +88,7 @@ public class FileStorageService {
     }
 
     public boolean isManagedPath(String fullPath) {
-        if (!StringUtils.hasText(fullPath)) {
+        if (fullPath == null || fullPath.isBlank()) {
             return false;
         }
 
@@ -101,26 +107,33 @@ public class FileStorageService {
         }
     }
 
-    private void validate(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new FileStorageException("File is empty.");
+    public boolean isManagedFileAllowed(String fullPath, String module) {
+        if (!isManagedPath(fullPath)) {
+            return false;
         }
 
-        if (file.getSize() > properties.getMaxSize().toBytes()) {
-            throw new FileStorageException("File size exceeds the allowed limit.");
-        }
+        Path path = Paths.get(fullPath).toAbsolutePath().normalize();
+        return secureFileUploadService.isStoredFileAllowed(path, policyForModule(module));
+    }
 
-        String contentType = file.getContentType();
-        if (contentType == null) {
-            throw new FileStorageException("File content type is missing.");
+    private ValidatedFileUpload validate(MultipartFile file, String module) {
+        try {
+            return secureFileUploadService.validate(file, policyForModule(module));
+        } catch (SecureFileUploadException ex) {
+            throw new FileStorageException(ex.getMessage(), ex);
         }
+    }
 
-        boolean supported = properties.getAllowedTypes().stream()
-                .map(type -> type.toLowerCase(Locale.ROOT))
-                .anyMatch(type -> type.equals(contentType.toLowerCase(Locale.ROOT)));
-
-        if (!supported) {
-            throw new FileStorageException("Invalid file type.");
+    private SecureFileUploadPolicy policyForModule(String module) {
+        String normalizedModule = module == null ? "" : module.toLowerCase();
+        if (normalizedModule.contains("photo")) {
+            return SecureFileUploadPolicy.allowedExtensions(module, IMAGE_EXTENSIONS);
         }
+        if (normalizedModule.contains("resume")
+                || normalizedModule.contains("department-registration")
+                || normalizedModule.contains("office-order")) {
+            return SecureFileUploadPolicy.allowedExtensions(module, PDF_EXTENSIONS);
+        }
+        return SecureFileUploadPolicy.allowedExtensions(module, DEFAULT_DOCUMENT_EXTENSIONS);
     }
 }

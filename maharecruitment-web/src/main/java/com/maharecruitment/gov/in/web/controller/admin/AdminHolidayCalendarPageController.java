@@ -1,11 +1,6 @@
 package com.maharecruitment.gov.in.web.controller.admin;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -17,7 +12,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -50,8 +44,6 @@ import jakarta.validation.Valid;
 public class AdminHolidayCalendarPageController {
 
     private static final String WORKING_DAY_UPLOAD_MODULE = "attendance/week-off-working-day-office-order";
-    private static final String PDF_EXTENSION = ".pdf";
-    private static final String PDF_SIGNATURE = "%PDF-";
 
     private final HolidayService holidayService;
     private final WeekOffWorkingDayService weekOffWorkingDayService;
@@ -447,14 +439,6 @@ public class AdminHolidayCalendarPageController {
             return null;
         }
 
-        if (!isPdfUpload(officeOrderFile)) {
-            bindingResult.rejectValue(
-                    "officeOrderFile",
-                    "workingDay.officeOrderFile",
-                    "Office order must be uploaded as a PDF file only.");
-            return null;
-        }
-
         try {
             FileUploadResult uploadedFile = fileStorageService.store(officeOrderFile, WORKING_DAY_UPLOAD_MODULE);
             workingDayForm.setOfficeOrderOriginalName(uploadedFile.originalFileName());
@@ -496,19 +480,11 @@ public class AdminHolidayCalendarPageController {
     }
 
     private void validateStoredOfficeOrderReference(String officeOrderPath, BindingResult bindingResult) {
-        if (!fileStorageService.isManagedPath(officeOrderPath)) {
+        if (!fileStorageService.isManagedFileAllowed(officeOrderPath, WORKING_DAY_UPLOAD_MODULE)) {
             bindingResult.rejectValue(
                     "officeOrderFile",
                     "workingDay.officeOrderFile",
                     "Existing office order reference is invalid.");
-            return;
-        }
-
-        if (!isStoredPdf(officeOrderPath)) {
-            bindingResult.rejectValue(
-                    "officeOrderFile",
-                    "workingDay.officeOrderFile",
-                    "Existing office order must be a PDF file.");
         }
     }
 
@@ -543,48 +519,6 @@ public class AdminHolidayCalendarPageController {
 
     private boolean hasFile(MultipartFile file) {
         return file != null && !file.isEmpty();
-    }
-
-    private boolean isPdfUpload(MultipartFile file) {
-        String originalFileName = file.getOriginalFilename();
-        if (!StringUtils.hasText(originalFileName)
-                || !originalFileName.toLowerCase(Locale.ROOT).endsWith(PDF_EXTENSION)) {
-            return false;
-        }
-
-        String contentType = file.getContentType();
-        if (!MediaType.APPLICATION_PDF_VALUE.equalsIgnoreCase(contentType)) {
-            return false;
-        }
-
-        return hasPdfSignature(file);
-    }
-
-    private boolean isStoredPdf(String fullPath) {
-        Path path = Paths.get(fullPath).toAbsolutePath().normalize();
-        String fileName = path.getFileName() != null ? path.getFileName().toString() : "";
-        if (!fileName.toLowerCase(Locale.ROOT).endsWith(PDF_EXTENSION)) {
-            return false;
-        }
-
-        try (InputStream inputStream = Files.newInputStream(path)) {
-            return hasPdfSignature(inputStream);
-        } catch (IOException ex) {
-            return false;
-        }
-    }
-
-    private boolean hasPdfSignature(MultipartFile file) {
-        try (InputStream inputStream = file.getInputStream()) {
-            return hasPdfSignature(inputStream);
-        } catch (IOException ex) {
-            return false;
-        }
-    }
-
-    private boolean hasPdfSignature(InputStream inputStream) throws IOException {
-        byte[] signature = inputStream.readNBytes(PDF_SIGNATURE.length());
-        return PDF_SIGNATURE.equals(new String(signature, StandardCharsets.US_ASCII));
     }
 
     private String resolveMessage(RuntimeException ex) {

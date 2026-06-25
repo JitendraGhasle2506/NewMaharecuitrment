@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.web.properties;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,7 +12,7 @@ import org.springframework.util.unit.DataSize;
 @ConfigurationProperties(prefix = "file.upload")
 public class FileUploadProperties {
 
-    private String basePath = "uploads";
+    private String basePath = Paths.get(System.getProperty("user.home"), "uploaded-files").toString();
 
     private DataSize maxSize = DataSize.ofMegabytes(10);
 
