@@ -38,7 +38,8 @@ public class OtpLoginController {
     private static final String GENERIC_SEND_ACCEPTED =
             "OTP request accepted. If the account details are valid, an OTP will be sent.";
     private static final String GENERIC_SEND_VALIDATION_FAILURE = "Please enter required OTP login details.";
-    private static final String RATE_LIMIT_MESSAGE = "Too many OTP requests. Please try again later.";
+    private static final String RATE_LIMIT_MESSAGE =
+            "OTP already sent. Please enter the latest valid OTP. Resend is available after the timer ends.";
 
     private final OtpLoginService otpLoginService;
     private final MySimpleUrlAuthenticationSuccessHandler successHandler;
@@ -87,7 +88,7 @@ public class OtpLoginController {
                     result));
         } catch (OtpRateLimitException ex) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(toResponse(
-                    RATE_LIMIT_MESSAGE,
+                    rateLimitMessage(ex),
                     false,
                     VerificationPurposes.LOGIN_AUTHENTICATION,
                     request.getChannel(),
@@ -196,5 +197,13 @@ public class OtpLoginController {
                 .filter(message -> message != null && !message.isBlank())
                 .findFirst()
                 .orElse(GENERIC_SEND_VALIDATION_FAILURE);
+    }
+
+    private String rateLimitMessage(OtpRateLimitException exception) {
+        if (exception.getMessage() != null && exception.getMessage().contains("already valid")) {
+            return RATE_LIMIT_MESSAGE;
+        }
+
+        return "Too many OTP requests. Please enter the latest valid OTP or try again after the timer ends.";
     }
 }

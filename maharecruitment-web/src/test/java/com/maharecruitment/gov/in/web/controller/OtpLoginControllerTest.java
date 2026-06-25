@@ -21,6 +21,7 @@ import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
 import com.maharecruitment.gov.in.web.service.login.OtpLoginService;
 import com.maharecruitment.gov.in.web.service.login.UnknownLoginIdentifierException;
+import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 
 class OtpLoginControllerTest {
 
@@ -94,5 +95,29 @@ class OtpLoginControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Select Email OTP or Mobile OTP");
         verify(otpLoginService, never()).sendOtp(any(), any(), any(), any());
+    }
+
+    @Test
+    void activeOtpRateLimitTellsUserToEnterLatestValidOtp() {
+        OtpLoginSendRequest request = new OtpLoginSendRequest();
+        request.setIdentifier("hr@mahait.org");
+        request.setChannel("EMAIL");
+        when(otpLoginService.isChannelEnabled(VerificationChannel.EMAIL)).thenReturn(true);
+        when(otpLoginService.sendOtp(any(), any(), any(), any()))
+                .thenThrow(new OtpRateLimitException(
+                        "OTP is already valid. Resend is allowed after it expires.",
+                        240));
+
+        ResponseEntity<VerificationResponse> response = controller.sendOtp(
+                request,
+                new BeanPropertyBindingResult(request, "request"),
+                new MockHttpServletRequest(),
+                new MockHttpSession());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message())
+                .isEqualTo("OTP already sent. Please enter the latest valid OTP. Resend is available after the timer ends.");
+        assertThat(response.getBody().retryAfterSeconds()).isEqualTo(240);
     }
 }

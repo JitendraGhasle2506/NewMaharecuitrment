@@ -22,6 +22,8 @@ class LoginClientTransportGuardTest {
                 .contains("event.preventDefault();")
                 .contains("Select Email OTP or Mobile OTP.")
                 .contains("Math.max(otpExpirySeconds, otpResendCooldownSeconds)")
+                .contains("response.status === 429")
+                .contains("Please enter the latest valid OTP")
                 .contains("window.crypto.subtle.encrypt")
                 .contains("encryptCredential(passwordInput.value")
                 .contains("window.HTMLFormElement.prototype.submit.call(passwordLoginForm)");

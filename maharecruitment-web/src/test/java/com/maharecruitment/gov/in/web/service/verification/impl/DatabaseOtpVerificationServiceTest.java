@@ -117,6 +117,14 @@ class DatabaseOtpVerificationServiceTest {
     }
 
     @Test
+    void sentOtpIncludesUserFacingOtpReferenceId() {
+        service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
+
+        assertNotNull(emailHandler.lastOtpReferenceId);
+        assertTrue(emailHandler.lastOtpReferenceId.matches("OTP-[A-Z2-9]{6}"));
+    }
+
+    @Test
     void wrongOtpIncrementsCounter() {
         service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
 
@@ -269,6 +277,7 @@ class DatabaseOtpVerificationServiceTest {
     private static final class CapturingEmailHandler implements OtpChannelHandler {
 
         private String lastOtp;
+        private String lastOtpReferenceId;
 
         @Override
         public VerificationChannel getChannel() {
@@ -283,6 +292,12 @@ class DatabaseOtpVerificationServiceTest {
         @Override
         public void dispatchOtp(String purpose, String reference, String otp) {
             lastOtp = otp;
+        }
+
+        @Override
+        public void dispatchOtp(String purpose, String reference, String otp, String otpReferenceId) {
+            lastOtp = otp;
+            lastOtpReferenceId = otpReferenceId;
         }
     }
 }

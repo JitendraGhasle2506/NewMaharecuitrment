@@ -82,6 +82,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         int resendCount = nextResendCount(state, now);
 
         String otp = generateOtp();
+        String otpReferenceId = generateOtpReferenceId();
         state.setReferenceHash(hash(normalizedReference));
         state.setReferenceMasked(maskReference(channel, normalizedReference));
         state.setOtpHash(hash(otp));
@@ -92,7 +93,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         state.setOtpResendCount(resendCount);
         clearCaptcha(state);
 
-        handler.dispatchOtp(normalizedPurpose, normalizedReference, otp);
+        handler.dispatchOtp(normalizedPurpose, normalizedReference, otp, otpReferenceId);
         stateRepository.save(state);
 
         auditService.record(
@@ -102,7 +103,9 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                 state.getReferenceMasked(),
                 requestContext,
                 null,
-                Map.of("remainingResends", Math.max(0, properties.getResendLimit() - resendCount)));
+                Map.of(
+                        "remainingResends", Math.max(0, properties.getResendLimit() - resendCount),
+                        "otpReferenceId", otpReferenceId));
 
         return OtpVerificationResult.sent(
                 properties.getResendLimit() - resendCount,
@@ -556,6 +559,15 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                 nextDigit = RANDOM.nextInt(9) + 1;
             }
             builder.append(nextDigit);
+        }
+        return builder.toString();
+    }
+
+    private String generateOtpReferenceId() {
+        char[] alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
+        StringBuilder builder = new StringBuilder("OTP-");
+        for (int i = 0; i < 6; i++) {
+            builder.append(alphabet[RANDOM.nextInt(alphabet.length)]);
         }
         return builder.toString();
     }

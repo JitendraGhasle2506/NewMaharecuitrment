@@ -336,6 +336,17 @@
                     };
                 });
 
+                if (response.status === 429 && data.retryAfterSeconds && data.retryAfterSeconds > 0) {
+                    otpExpirySeconds = data.retryAfterSeconds;
+                    hasSentOtpOnce = true;
+                    updateSendButtonLabel();
+                    setOtpSectionVisible(true);
+                    setStatus(data.message || "OTP already sent. Please enter the latest valid OTP.", "is-error");
+                    startOtpTimers();
+                    otpInput.focus();
+                    return;
+                }
+
                 if (!response.ok) {
                     throw new Error(data.message || "Unable to send OTP.");
                 }
