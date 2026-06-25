@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.AntPathMatcher;
@@ -18,6 +19,7 @@ public class RoleBasedNavigationService implements NavigationService {
 
         private static final String DEFAULT_HOME_URL = "/home";
         private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+        private static final Pattern ABSOLUTE_HTTP_URL = Pattern.compile("^https?://", Pattern.CASE_INSENSITIVE);
 
         private static final List<String> ROLE_PRIORITY = List.of(
                         "ROLE_ADMIN",
@@ -97,7 +99,7 @@ public class RoleBasedNavigationService implements NavigationService {
                         return false;
                 }
 
-                if (normalizedUrl.startsWith("http://") || normalizedUrl.startsWith("https://")) {
+                if (isAbsoluteHttpUrl(normalizedUrl)) {
                         return true;
                 }
 
@@ -153,7 +155,7 @@ public class RoleBasedNavigationService implements NavigationService {
                         return "";
                 }
 
-                if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+                if (isAbsoluteHttpUrl(normalized)) {
                         return normalized;
                 }
 
@@ -176,6 +178,10 @@ public class RoleBasedNavigationService implements NavigationService {
                 }
 
                 return normalized;
+        }
+
+        private static boolean isAbsoluteHttpUrl(String url) {
+                return ABSOLUTE_HTTP_URL.matcher(url).find();
         }
 
         private record AccessRule(List<String> patterns, Set<String> roles, boolean authenticatedOnly) {

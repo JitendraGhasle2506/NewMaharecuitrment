@@ -63,6 +63,14 @@ public class OtpLoginController {
                     request.getChannel()));
         }
 
+        if (!otpLoginService.isChannelEnabled(request.getChannel())) {
+            return ResponseEntity.ok(new VerificationResponse(
+                    otpLoginService.disabledChannelMessage(request.getChannel()),
+                    false,
+                    VerificationPurposes.LOGIN_AUTHENTICATION,
+                    request.getChannel()));
+        }
+
         try {
             OtpVerificationResult result = otpLoginService.sendOtp(
                     session,

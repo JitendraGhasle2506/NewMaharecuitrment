@@ -14,15 +14,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
-import com.maharecruitment.gov.in.common.security.ApplicationCookieService;
 import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
+import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 @Configuration
 @EnableWebSecurity
@@ -49,7 +48,7 @@ public class SecurityConfig {
     SecurityFilterChain filterChain(
             HttpSecurity http,
             DaoAuthenticationProvider authenticationProvider,
-            ApplicationCookieService applicationCookieService,
+            TransportSecurityProperties transportSecurityProperties,
             com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler successHandler,
             CustomLoginFailureHandler loginFailureHandler,
             CustomAccessDeniedHandler accessDeniedHandler,
@@ -59,12 +58,27 @@ public class SecurityConfig {
 
         http
             // 🔥 (Optional) disable CSRF temporarily if needed
-            .csrf(Customizer.withDefaults())
+            .csrf(Customizer.withDefaults());
+
+        if (transportSecurityProperties.hasPortMapping()) {
+            http.portMapper(portMapper -> portMapper
+                    .http(transportSecurityProperties.getHttpPort())
+                    .mapsTo(transportSecurityProperties.getHttpsPort()));
+        }
+
+        http
+            .requiresChannel(channel -> {
+                if (transportSecurityProperties.isRequireHttps()) {
+                    channel.requestMatchers(new HttpsRequiredRequestMatcher(transportSecurityProperties))
+                            .requiresSecure();
+                }
+            })
 
             .authorizeHttpRequests(auth -> auth
 
                 // ✅ IMPORTANT: keep login FIRST
                 .requestMatchers("/login", "/doLogin", "/login/otp", "/login/otp/send").permitAll()
+                .requestMatchers("/security/credential-encryption/public-key").permitAll()
                 .requestMatchers("/api/verifications/otp/**").permitAll()
 
                 .requestMatchers(
@@ -180,19 +194,19 @@ public class SecurityConfig {
 
             .logout(logout -> logout
             	    .logoutUrl("/logout")
-            	    .logoutSuccessHandler((request, response, authentication) -> {
-            	        HttpSession session = request.getSession(false);
-            	        if (session != null) {
-            	            session.invalidate();
-            	        }
-            	        response.sendRedirect(request.getContextPath() + "/login?logout=true");
-            	    })
+            	    .logoutSuccessHandler(logoutSuccessHandler)
+            	    .invalidateHttpSession(true)
+            	    .clearAuthentication(true)
             	    .deleteCookies("JSESSIONID")
+                    .permitAll()
             	)
             
             .headers(headers -> headers
                 .httpStrictTransportSecurity(
-                        hsts -> hsts.includeSubDomains(true).preload(true))
+                        hsts -> hsts
+                                .maxAgeInSeconds(31_536_000)
+                                .includeSubDomains(true)
+                                .preload(false))
                 .frameOptions(frame -> frame.sameOrigin())
                 .cacheControl(cache -> {})
                 .addHeaderWriter(new CacheControlHeadersWriter())
@@ -201,10 +215,18 @@ public class SecurityConfig {
         return http.build();
     }
 
-    private static void clearSessionCookie(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            ApplicationCookieService applicationCookieService) {
-        applicationCookieService.expireManagedCookie(request, response, "JSESSIONID");
+    private static final class HttpsRequiredRequestMatcher implements RequestMatcher {
+
+        private final TransportSecurityProperties transportSecurityProperties;
+
+        private HttpsRequiredRequestMatcher(TransportSecurityProperties transportSecurityProperties) {
+            this.transportSecurityProperties = transportSecurityProperties;
+        }
+
+        @Override
+        public boolean matches(HttpServletRequest request) {
+            return transportSecurityProperties.isHttpsRequiredFor(request);
+        }
     }
+
 }

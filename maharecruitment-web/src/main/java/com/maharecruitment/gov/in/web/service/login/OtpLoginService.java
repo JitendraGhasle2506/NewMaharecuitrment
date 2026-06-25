@@ -64,6 +64,21 @@ public class OtpLoginService {
                 context);
     }
 
+    public boolean isChannelEnabled(VerificationChannel channel) {
+        if (channel == null) {
+            return false;
+        }
+
+        return channel == VerificationChannel.EMAIL
+                ? notificationChannelProperties.isEmailEnabled()
+                : notificationChannelProperties.isSmsEnabled();
+    }
+
+    public String disabledChannelMessage(VerificationChannel channel) {
+        String channelLabel = channel == VerificationChannel.MOBILE ? "Mobile" : "Email";
+        return channelLabel + " OTP login is not enabled in this environment.";
+    }
+
     public Authentication authenticate(
             HttpSession session,
             String identifier,
@@ -115,13 +130,8 @@ public class OtpLoginService {
     }
 
     private void ensureChannelEnabled(VerificationChannel channel) {
-        boolean enabled = channel == VerificationChannel.EMAIL
-                ? notificationChannelProperties.isEmailEnabled()
-                : notificationChannelProperties.isSmsEnabled();
-
-        if (!enabled) {
-            String channelLabel = channel == VerificationChannel.EMAIL ? "Email" : "Mobile";
-            throw new IllegalStateException(channelLabel + " OTP login is not enabled in this environment.");
+        if (!isChannelEnabled(channel)) {
+            throw new IllegalStateException(disabledChannelMessage(channel));
         }
     }
 }

@@ -22,7 +22,7 @@ public class V39__mahait_profile_cin_number_support extends BaseJavaMigration {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(new SingleConnectionDataSource(connection, true));
 
         if (!columnExists(connection, "mahait_profile_master", "cin_number")) {
-            jdbcTemplate.execute("alter table mahait_profile_master add column cin_number varchar(21)");
+            jdbcTemplate.execute("alter table mahait_profile_master add column cin_number varchar(255)");
         }
 
         jdbcTemplate.execute(

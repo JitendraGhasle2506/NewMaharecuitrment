@@ -57,12 +57,108 @@
         var initialSendButtonLabel = "Send OTP";
         var resendButtonLabel = "Resend OTP";
 
+        var isInsecureTransport = function () {
+            return window.location.protocol !== "https:";
+        };
+
         var setStatus = function (message, mode) {
             statusElement.textContent = message || "";
             statusElement.classList.remove("is-error", "is-pending", "is-success");
             if (mode) {
                 statusElement.classList.add(mode);
             }
+        };
+
+        var showTransportError = function () {
+            setStatus("HTTPS is required before submitting credentials.", "is-error");
+        };
+
+        var setElementStatus = function (element, message, mode) {
+            if (!element) {
+                return;
+            }
+            element.textContent = message || "";
+            element.classList.remove("is-error", "is-pending", "is-success");
+            if (mode) {
+                element.classList.add(mode);
+            }
+        };
+
+        var base64ToArrayBuffer = function (base64Value) {
+            var binary = window.atob(base64Value);
+            var bytes = new Uint8Array(binary.length);
+            for (var i = 0; i < binary.length; i += 1) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes.buffer;
+        };
+
+        var arrayBufferToBase64 = function (buffer) {
+            var bytes = new Uint8Array(buffer);
+            var chunks = [];
+            var chunkSize = 0x8000;
+            for (var i = 0; i < bytes.length; i += chunkSize) {
+                chunks.push(String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize)));
+            }
+            return window.btoa(chunks.join(""));
+        };
+
+        var credentialKeyPromise = null;
+
+        var getCredentialEncryptionKey = function (keyUrl) {
+            if (!credentialKeyPromise) {
+                credentialKeyPromise = fetch(keyUrl, {
+                    method: "GET",
+                    credentials: "same-origin",
+                    cache: "no-store",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }).then(function (response) {
+                    if (!response.ok) {
+                        throw new Error("Unable to initialize secure login.");
+                    }
+                    return response.json();
+                }).then(function (keyData) {
+                    if (!keyData || keyData.algorithm !== "RSA-OAEP-256" || !keyData.publicKey) {
+                        throw new Error("Invalid secure login key received.");
+                    }
+                    return window.crypto.subtle.importKey(
+                        "spki",
+                        base64ToArrayBuffer(keyData.publicKey),
+                        {
+                            name: "RSA-OAEP",
+                            hash: "SHA-256"
+                        },
+                        false,
+                        ["encrypt"]
+                    ).then(function (publicKey) {
+                        return {
+                            publicKey: publicKey,
+                            encryptedPrefix: keyData.encryptedPrefix || "ENC:v1:"
+                        };
+                    });
+                });
+            }
+            return credentialKeyPromise;
+        };
+
+        var encryptCredential = function (value, keyUrl) {
+            if (!window.crypto || !window.crypto.subtle || !window.TextEncoder) {
+                return Promise.reject(new Error("This browser does not support secure credential submission."));
+            }
+
+            return getCredentialEncryptionKey(keyUrl).then(function (keyData) {
+                return window.crypto.subtle.encrypt(
+                    {
+                        name: "RSA-OAEP"
+                    },
+                    keyData.publicKey,
+                    new window.TextEncoder().encode(value)
+                ).then(function (ciphertext) {
+                    return keyData.encryptedPrefix + arrayBufferToBase64(ciphertext);
+                });
+            });
         };
 
         var updateSendButtonLabel = function () {
@@ -198,6 +294,11 @@
         channelSelect.addEventListener("change", resetStatus);
 
         sendButton.addEventListener("click", async function () {
+            if (isInsecureTransport()) {
+                showTransportError();
+                return;
+            }
+
             var identifier = identifierInput.value.trim();
             var channel = channelSelect.value;
 
@@ -254,7 +355,13 @@
             }
         });
 
-        form.addEventListener("submit", function () {
+        form.addEventListener("submit", function (event) {
+            if (isInsecureTransport()) {
+                event.preventDefault();
+                showTransportError();
+                return;
+            }
+
             if (verifyButton) {
                 verifyButton.disabled = true;
                 verifyButton.textContent = "Verifying...";
@@ -275,7 +382,47 @@
         // Toggle password visibility
         var togglePasswordButton = document.getElementById("togglePassword");
         var passwordInput = document.getElementById("password");
+        var encryptedPasswordInput = document.getElementById("encryptedPassword");
         var togglePasswordIcon = document.getElementById("togglePasswordIcon");
+        var passwordStatusElement = document.getElementById("passwordLoginStatus");
+
+        var passwordLoginForm = document.getElementById("loginForm");
+        if (passwordLoginForm) {
+            passwordLoginForm.addEventListener("submit", function (event) {
+                if (isInsecureTransport()) {
+                    event.preventDefault();
+                    setElementStatus(passwordStatusElement, "HTTPS is required before submitting credentials.", "is-error");
+                    return;
+                }
+
+                event.preventDefault();
+                if (!passwordInput || !encryptedPasswordInput || !passwordLoginForm.dataset.credentialKeyUrl) {
+                    setElementStatus(passwordStatusElement, "Secure login is unavailable. Please refresh and try again.", "is-error");
+                    return;
+                }
+
+                if (!passwordLoginForm.reportValidity()) {
+                    return;
+                }
+
+                setElementStatus(passwordStatusElement, "Securing credentials...", "is-pending");
+                encryptCredential(passwordInput.value, passwordLoginForm.dataset.credentialKeyUrl)
+                    .then(function (encryptedCredential) {
+                        encryptedPasswordInput.value = encryptedCredential;
+                        passwordInput.value = "";
+                        setElementStatus(passwordStatusElement, "", null);
+                        window.HTMLFormElement.prototype.submit.call(passwordLoginForm);
+                    })
+                    .catch(function (error) {
+                        encryptedPasswordInput.value = "";
+                        setElementStatus(
+                            passwordStatusElement,
+                            error.message || "Unable to secure credentials. Please refresh and try again.",
+                            "is-error"
+                        );
+                    });
+            });
+        }
 
         if (togglePasswordButton && passwordInput && togglePasswordIcon) {
             togglePasswordButton.addEventListener("click", function () {

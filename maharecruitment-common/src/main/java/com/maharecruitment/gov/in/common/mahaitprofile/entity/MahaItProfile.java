@@ -42,13 +42,13 @@ public class MahaItProfile extends Auditable {
     @Column(name = "company_address", nullable = false, length = 1000)
     private String companyAddress;
 
-    @Column(name = "cin_number", nullable = false, length = 21)
+    @Column(name = "cin_number", nullable = false, length = 255)
     private String cinNumber;
 
-    @Column(name = "pan_number", nullable = false, length = 10)
+    @Column(name = "pan_number", nullable = false, length = 255)
     private String panNumber;
 
-    @Column(name = "gst_number", nullable = false, length = 15)
+    @Column(name = "gst_number", nullable = false, length = 255)
     private String gstNumber;
 
     @Column(name = "bank_name", nullable = false, length = 150)
@@ -60,7 +60,7 @@ public class MahaItProfile extends Auditable {
     @Column(name = "account_holder_name", nullable = false, length = 150)
     private String accountHolderName;
 
-    @Column(name = "account_number", nullable = false, length = 30)
+    @Column(name = "account_number", nullable = false, length = 255)
     private String accountNumber;
 
     @Column(name = "ifsc_code", nullable = false, length = 11)
