@@ -19,6 +19,8 @@
 
         <script th:src="@{/assets/vendor/bootstrap/bootstrap.bundle.min.js}" defer></script>
         <script th:src="@{/js/app-loader.js}" defer></script>
+        <script th:src="@{/js/upload-content-guard.js(v='20260625')}" defer></script>
+        <script th:src="@{/js/credential-encryption.js(v='20260625')}" defer></script>
     </th:block>
 </head>
 
@@ -39,17 +41,15 @@
 
                 <ul class="list-unstyled components">
                     <li>
-                        <a th:href="${homePageUrl}">
+                        <a th:href="${@contextPathUrl.resolve(contextPath, homePageUrl, '/home')}">
                             <i class="fa fa-house"></i>
                             <span>Home</span>
                         </a>
                     </li>
 
                     <li th:each="menuItem : ${session.menus}" class="menu-item">
-                        <a th:href="${menuItem.isSubMenu == 0 ? '#' :
-                                     (menuItem.url != null ?
-                                     (menuItem.url.startsWith('/') ? contextPath + menuItem.url : contextPath + '/' + menuItem.url)
-                                     : '#')}" th:classappend="${menuItem.isSubMenu == 0} ? 'toggle-submenu' : ''"
+                        <a th:href="${menuItem.isSubMenu == 0 ? '#' : @contextPathUrl.resolve(contextPath, menuItem.url)}"
+                            th:classappend="${menuItem.isSubMenu == 0} ? 'toggle-submenu' : ''"
                             th:attr="data-target=${'submenu-' + menuItem.menuId}">
                             <i th:class="${menuItem.icon}"></i>
                             <span th:text="${menuItem.menuNameEnglish}"></span>
@@ -60,9 +60,7 @@
                             th:if="${menuItem.isSubMenu == 0 and session.submenus != null}">
                             <li th:each="subItem : ${session.submenus}"
                                 th:if="${subItem.menu.menuId == menuItem.menuId}">
-                                <a th:href="${subItem.url != null ?
-                                             (subItem.url.startsWith('/') ? contextPath + subItem.url : contextPath + '/' + subItem.url)
-                                             : '#'}">
+                                <a th:href="${@contextPathUrl.resolve(contextPath, subItem.url)}">
                                     <i th:class="${subItem.icon}"></i>
                                     <span th:text="${subItem.subMenuNameEnglish}"></span>
                                 </a>
@@ -351,4 +349,3 @@
 </body>
 
 </html>
-

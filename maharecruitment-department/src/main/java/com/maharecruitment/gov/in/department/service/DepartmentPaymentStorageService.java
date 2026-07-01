@@ -7,11 +7,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.maharecruitment.gov.in.common.upload.SecureFileUploadException;
+import com.maharecruitment.gov.in.common.upload.SecureFileUploadPolicy;
+import com.maharecruitment.gov.in.common.upload.SecureFileUploadService;
+import com.maharecruitment.gov.in.common.upload.ValidatedFileUpload;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.service.model.StoredDocument;
 
@@ -30,52 +30,41 @@ public class DepartmentPaymentStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(DepartmentPaymentStorageService.class);
     private static final DateTimeFormatter YEAR_MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM");
+    private static final SecureFileUploadPolicy PAYMENT_RECEIPT_POLICY =
+            SecureFileUploadPolicy.allowedExtensions("department-payment-receipt", Set.of("pdf", "jpg", "jpeg", "png"));
 
     private final Path baseDirectory;
-    private final long maxFileSizeInBytes;
-    private final Set<String> allowedContentTypes;
+    private final SecureFileUploadService secureFileUploadService;
 
     public DepartmentPaymentStorageService(
-            @Value("${department.payment.receipt.base-path:uploads}") String basePath,
-            @Value("${department.payment.receipt.max-size-bytes:5242880}") long maxFileSizeInBytes,
-            @Value("${department.payment.receipt.allowed-types:application/pdf,image/jpeg,image/png}") String allowedTypes) {
+            @Value("${department.payment.receipt.base-path:${secure.upload.base-path:${user.home}/uploaded-files}/receipts}") String basePath,
+            SecureFileUploadService secureFileUploadService) {
         this.baseDirectory = Paths.get(basePath).toAbsolutePath().normalize();
-        this.maxFileSizeInBytes = maxFileSizeInBytes;
-        this.allowedContentTypes = Arrays.stream(allowedTypes.split(","))
-                .map(String::trim)
-                .filter(type -> !type.isBlank())
-                .map(type -> type.toLowerCase(Locale.ROOT))
-                .collect(Collectors.toSet());
+        this.secureFileUploadService = secureFileUploadService;
     }
 
     public StoredDocument storePaymentReceipt(MultipartFile file, String existingPath) {
-        validateFile(file);
+        ValidatedFileUpload validatedFile = validateFile(file);
 
         try {
-            Path uploadDirectory = baseDirectory
-                    .resolve("department/payment/receipt")
-                    .resolve(LocalDate.now().format(YEAR_MONTH_FORMAT))
-                    .normalize();
+            Path uploadDirectory = secureFileUploadService.resolveSecureDirectory(
+                    baseDirectory,
+                    "department/payment/receipt",
+                    LocalDate.now().format(YEAR_MONTH_FORMAT));
             Files.createDirectories(uploadDirectory);
 
-            String originalFileName = StringUtils.cleanPath(
-                    file.getOriginalFilename() == null ? "receipt" : file.getOriginalFilename());
-            if (originalFileName.contains("..")) {
-                throw new DepartmentApplicationException("Invalid receipt file name.");
-            }
-
-            String storedFileName = UUID.randomUUID().toString() + "_" + originalFileName;
-            Path targetPath = uploadDirectory.resolve(storedFileName).normalize();
+            Path targetPath = secureFileUploadService.resolveSecureFile(uploadDirectory, validatedFile.storedFileName());
 
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            secureFileUploadService.applyNonExecutableFilePermissions(targetPath);
             removeManagedFileQuietly(existingPath);
 
             log.info("Payment receipt document stored. path={}", targetPath);
             return StoredDocument.builder()
-                    .originalFileName(originalFileName)
+                    .originalFileName(validatedFile.originalFileName())
                     .fullPath(targetPath.toString())
-                    .contentType(file.getContentType())
-                    .fileSize(file.getSize())
+                    .contentType(validatedFile.contentType())
+                    .fileSize(validatedFile.size())
                     .build();
         } catch (IOException ex) {
             log.error("Unable to store payment receipt document.", ex);
@@ -127,22 +116,11 @@ public class DepartmentPaymentStorageService {
         }
     }
 
-    private void validateFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new DepartmentApplicationException("Receipt document is required.");
-        }
-
-        if (file.getSize() > maxFileSizeInBytes) {
-            throw new DepartmentApplicationException("Receipt file size must be 5 MB or less.");
-        }
-
-        String contentType = file.getContentType();
-        if (contentType == null || contentType.isBlank()) {
-            throw new DepartmentApplicationException("Receipt file type is missing.");
-        }
-
-        if (!allowedContentTypes.contains(contentType.toLowerCase(Locale.ROOT))) {
-            throw new DepartmentApplicationException("Only PDF, JPEG or PNG receipt files are allowed.");
+    private ValidatedFileUpload validateFile(MultipartFile file) {
+        try {
+            return secureFileUploadService.validate(file, PAYMENT_RECEIPT_POLICY);
+        } catch (SecureFileUploadException ex) {
+            throw new DepartmentApplicationException(ex.getMessage());
         }
     }
 }

@@ -7,11 +7,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.maharecruitment.gov.in.common.upload.SecureFileUploadException;
+import com.maharecruitment.gov.in.common.upload.SecureFileUploadPolicy;
+import com.maharecruitment.gov.in.common.upload.SecureFileUploadService;
+import com.maharecruitment.gov.in.common.upload.ValidatedFileUpload;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.service.model.StoredDocument;
 
@@ -30,52 +30,41 @@ public class DepartmentProfileDocumentStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(DepartmentProfileDocumentStorageService.class);
     private static final DateTimeFormatter YEAR_MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM");
+    private static final SecureFileUploadPolicy PROFILE_DOCUMENT_POLICY =
+            SecureFileUploadPolicy.allowedExtensions("department-profile-document", Set.of("pdf", "jpg", "jpeg", "png"));
 
     private final Path baseDirectory;
-    private final long maxFileSizeInBytes;
-    private final Set<String> allowedContentTypes;
+    private final SecureFileUploadService secureFileUploadService;
 
     public DepartmentProfileDocumentStorageService(
-            @Value("${department.profile.documents.base-path:uploads}") String basePath,
-            @Value("${department.profile.documents.max-size-bytes:5242880}") long maxFileSizeInBytes,
-            @Value("${department.profile.documents.allowed-types:application/pdf,image/png,image/jpeg}") String allowedTypes) {
+            @Value("${department.profile.documents.base-path:${secure.upload.base-path:${user.home}/uploaded-files}/profiles}") String basePath,
+            SecureFileUploadService secureFileUploadService) {
         this.baseDirectory = Paths.get(basePath).toAbsolutePath().normalize();
-        this.maxFileSizeInBytes = maxFileSizeInBytes;
-        this.allowedContentTypes = Arrays.stream(allowedTypes.split(","))
-                .map(String::trim)
-                .filter(type -> !type.isBlank())
-                .map(type -> type.toLowerCase(Locale.ROOT))
-                .collect(Collectors.toSet());
+        this.secureFileUploadService = secureFileUploadService;
     }
 
     public StoredDocument storeDocument(MultipartFile file, String modulePath, String existingPath) {
-        validateFile(file);
+        ValidatedFileUpload validatedFile = validateFile(file);
 
         try {
-            Path uploadDirectory = baseDirectory
-                    .resolve(modulePath)
-                    .resolve(LocalDate.now().format(YEAR_MONTH_FORMAT))
-                    .normalize();
+            Path uploadDirectory = secureFileUploadService.resolveSecureDirectory(
+                    baseDirectory,
+                    modulePath,
+                    LocalDate.now().format(YEAR_MONTH_FORMAT));
             Files.createDirectories(uploadDirectory);
 
-            String originalFileName = StringUtils.cleanPath(
-                    file.getOriginalFilename() == null ? "document" : file.getOriginalFilename());
-            if (originalFileName.contains("..")) {
-                throw new DepartmentApplicationException("Invalid document file name.");
-            }
-
-            String storedFileName = UUID.randomUUID().toString() + "_" + originalFileName;
-            Path targetPath = uploadDirectory.resolve(storedFileName).normalize();
+            Path targetPath = secureFileUploadService.resolveSecureFile(uploadDirectory, validatedFile.storedFileName());
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            secureFileUploadService.applyNonExecutableFilePermissions(targetPath);
 
             removeManagedFileQuietly(existingPath);
 
             log.info("Department profile document stored. modulePath={}, path={}", modulePath, targetPath);
             return StoredDocument.builder()
-                    .originalFileName(originalFileName)
+                    .originalFileName(validatedFile.originalFileName())
                     .fullPath(targetPath.toString())
-                    .contentType(file.getContentType())
-                    .fileSize(file.getSize())
+                    .contentType(validatedFile.contentType())
+                    .fileSize(validatedFile.size())
                     .build();
         } catch (IOException ex) {
             log.error("Unable to store department profile document. modulePath={}", modulePath, ex);
@@ -126,22 +115,11 @@ public class DepartmentProfileDocumentStorageService {
         }
     }
 
-    private void validateFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new DepartmentApplicationException("Document file is required.");
-        }
-
-        if (file.getSize() > maxFileSizeInBytes) {
-            throw new DepartmentApplicationException("Document file size must be 5 MB or less.");
-        }
-
-        String contentType = file.getContentType();
-        if (contentType == null || contentType.isBlank()) {
-            throw new DepartmentApplicationException("Document file type is missing.");
-        }
-
-        if (!allowedContentTypes.contains(contentType.toLowerCase(Locale.ROOT))) {
-            throw new DepartmentApplicationException("Only PDF, PNG, JPG or JPEG files are allowed.");
+    private ValidatedFileUpload validateFile(MultipartFile file) {
+        try {
+            return secureFileUploadService.validate(file, PROFILE_DOCUMENT_POLICY);
+        } catch (SecureFileUploadException ex) {
+            throw new DepartmentApplicationException(ex.getMessage());
         }
     }
 }

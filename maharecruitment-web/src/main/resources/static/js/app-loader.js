@@ -24,7 +24,7 @@
         if (!path) {
             return "";
         }
-        if (path.startsWith("http://") || path.startsWith("https://")) {
+        if (/^https?:\/\//i.test(path)) {
             return path;
         }
         return `${contextPath}${path.startsWith("/") ? path : `/${path}`}`;

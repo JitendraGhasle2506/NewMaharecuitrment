@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.security.cookie")
 public class CookieSecurityProperties {
 
-    private boolean secure;
+    private boolean secure = true;
 
     private boolean httpOnly = true;
 

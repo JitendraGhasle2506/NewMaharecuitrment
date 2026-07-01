@@ -16,6 +16,7 @@ import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
+import com.maharecruitment.gov.in.web.util.ApplicationUrlService;
 
 @Service
 public class NotificationServiceImpl implements OtpDispatchService, AccountNotificationService {
@@ -26,25 +27,35 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
     private final RestClient restClient;
     private final Environment environment;
     private final NotificationChannelProperties notificationChannelProperties;
+    private final ApplicationUrlService applicationUrlService;
 
     public NotificationServiceImpl(
             JavaMailSender mailSender,
             RestClient restClient,
             Environment environment,
-            NotificationChannelProperties notificationChannelProperties) {
+            NotificationChannelProperties notificationChannelProperties,
+            ApplicationUrlService applicationUrlService) {
         this.mailSender = mailSender;
         this.restClient = restClient;
         this.environment = environment;
         this.notificationChannelProperties = notificationChannelProperties;
+        this.applicationUrlService = applicationUrlService;
     }
 
     @Override
     public void sendMobileOtp(String mobileNo, String otp) {
+        sendMobileOtp(mobileNo, otp, null);
+    }
+
+    @Override
+    public void sendMobileOtp(String mobileNo, String otp, String otpReferenceId) {
         if (!notificationChannelProperties.isSmsEnabled()) {
             log.info("SMS dispatch is disabled. Skipping OTP SMS for mobile {}.", mobileNo);
             return;
         }
-        String message = "Your MahaIT Recruitment OTP is " + otp + ". It is valid for 10 minutes.";
+        String message = "Your MahaIT Recruitment OTP is " + otp
+                + ". OTP ID: " + formatOtpReferenceId(otpReferenceId)
+                + ". It is valid for " + resolveOtpValidityText() + ".";
         sendSmsMessage(mobileNo, message, "OTP");
     }
 
@@ -55,6 +66,11 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
     @Override
     public void sendEmailOtp(String email, String otp, String purpose) {
+        sendEmailOtp(email, otp, purpose, null);
+    }
+
+    @Override
+    public void sendEmailOtp(String email, String otp, String purpose, String otpReferenceId) {
         if (!notificationChannelProperties.isEmailEnabled()) {
             log.info("Email dispatch is disabled. Skipping OTP email for address {}.", email);
             return;
@@ -65,13 +81,13 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         message.setTo(email);
         if (VerificationPurposes.LOGIN_AUTHENTICATION.equalsIgnoreCase(valueOrBlank(purpose))) {
             message.setSubject("Maha Recruitment Portal Login OTP");
-            message.setText(buildLoginOtpEmailBody(otp));
+            message.setText(buildLoginOtpEmailBody(otp, otpReferenceId));
         } else if (VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT.equalsIgnoreCase(valueOrBlank(purpose))) {
             message.setSubject("MahaIT Recruitment Department Registration Email Verification OTP");
-            message.setText(buildDepartmentRegistrationOtpEmailBody(otp, email));
+            message.setText(buildDepartmentRegistrationOtpEmailBody(otp, email, otpReferenceId));
         } else {
             message.setSubject("MahaIT Recruitment Email Verification OTP");
-            message.setText(buildGenericVerificationOtpEmailBody(otp));
+            message.setText(buildGenericVerificationOtpEmailBody(otp, otpReferenceId));
         }
 
         try {
@@ -104,12 +120,12 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                             Username: %s
                             Temporary Password: %s
 
-                            Please sign in and change the password after first login.
+                            Please sign in at %s and change the password after first login.
 
                             Regards,
                             MahaIT Recruitment
                             """
-                            .formatted(contactName, username, temporaryPassword));
+                            .formatted(contactName, username, temporaryPassword, portalLoginUrl()));
 
             try {
                 mailSender.send(message);
@@ -156,11 +172,11 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                     Username: %s
                     Temporary Password: %s
 
-                    Please sign in and change the password after first login.
+                    Please sign in at %s and change the password after first login.
 
                     Regards,
                     MahaIT Recruitment
-                    """.formatted(contactName, username, temporaryPassword));
+                    """.formatted(contactName, username, temporaryPassword, portalLoginUrl()));
 
             try {
                 mailSender.send(message);
@@ -219,11 +235,11 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                 Username: %s
                 Temporary Password: %s
 
-                Please sign in and change the password after first login.
+                Please sign in at %s and change the password after first login.
 
                 Regards,
                 MahaIT Recruitment
-                """.formatted(contactName, email, temporaryPassword));
+                """.formatted(contactName, email, temporaryPassword, portalLoginUrl()));
 
         try {
             mailSender.send(message);
@@ -251,11 +267,12 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                 This is to notify you that %s has submitted their resignation.
                 Resignation Date: %s
 
-                Please log in to the MahaIT Recruitment portal to process the relieving request.
+                Please log in to the MahaIT Recruitment portal to process the relieving request:
+                %s
 
                 Regards,
                 MahaIT Recruitment
-                """.formatted(role, employeeName, resignDate));
+                """.formatted(role, employeeName, resignDate, portalLoginUrl()));
 
         try {
             mailSender.send(message);
@@ -273,13 +290,15 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         return baseMessage + " " + reason;
     }
 
-    private String buildLoginOtpEmailBody(String otp) {
+    private String buildLoginOtpEmailBody(String otp, String otpReferenceId) {
         return """
                 Dear User,
 
                 Your One-Time Password (OTP) for login to the Maha Recruitment Portal is:
 
                 %s
+
+                OTP ID: %s
 
                 This OTP is valid for %s. Please do not share this OTP with anyone for security reasons.
 
@@ -289,10 +308,10 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
                 Regards,
                 Maha Recruitment Team
-                """.formatted(otp, resolveOtpValidityText());
+                """.formatted(otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText());
     }
 
-    private String buildDepartmentRegistrationOtpEmailBody(String otp, String email) {
+    private String buildDepartmentRegistrationOtpEmailBody(String otp, String email, String otpReferenceId) {
         return """
                 Dear User,
 
@@ -302,6 +321,8 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
                 %s
 
+                OTP ID: %s
+
                 This OTP is valid for %s. Do not share this OTP with anyone.
 
                 If you did not initiate this request, please ignore this email.
@@ -310,10 +331,10 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
                 Regards,
                 Maha Recruitment Team
-                """.formatted(email, otp, resolveOtpValidityText());
+                """.formatted(email, otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText());
     }
 
-    private String buildGenericVerificationOtpEmailBody(String otp) {
+    private String buildGenericVerificationOtpEmailBody(String otp, String otpReferenceId) {
         return """
                 Dear User,
 
@@ -321,13 +342,19 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
                 %s
 
+                OTP ID: %s
+
                 This OTP is valid for %s. Do not share this OTP with anyone.
 
                 If you did not request this OTP, please ignore this email.
 
                 Regards,
                 Maha Recruitment Team
-                """.formatted(otp, resolveOtpValidityText());
+                """.formatted(otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText());
+    }
+
+    private String formatOtpReferenceId(String otpReferenceId) {
+        return StringUtils.hasText(otpReferenceId) ? otpReferenceId.trim() : "N/A";
     }
 
     private String extractFailureReason(Throwable throwable) {
@@ -343,7 +370,8 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
     }
 
     private String resolveOtpValidityText() {
-        int expirySeconds = environment.getProperty("otp.verification.expiry-seconds", Integer.class, 600);
+        int expiryMinutes = environment.getProperty("otp.expiry-minutes", Integer.class, 5);
+        int expirySeconds = Math.max(1, expiryMinutes) * 60;
         if (expirySeconds % 60 == 0) {
             int minutes = expirySeconds / 60;
             return minutes == 1 ? "1 minute" : minutes + " minutes";
@@ -353,6 +381,10 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
     private String valueOrBlank(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String portalLoginUrl() {
+        return applicationUrlService.absoluteUrl("/login");
     }
 
     private String getFromAddress() {

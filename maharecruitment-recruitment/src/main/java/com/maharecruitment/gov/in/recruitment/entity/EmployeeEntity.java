@@ -90,10 +90,10 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @Column(name = "resignation_date")
     private LocalDate resignationDate;
 
-    @Column(name = "pan_number", nullable = false, length = 10)
+    @Column(name = "pan_number", nullable = false, length = 255)
     private String panNumber;
 
-    @Column(name = "aadhaar_number", nullable = false, length = 12)
+    @Column(name = "aadhaar_number", nullable = false, length = 255)
     private String aadhaarNumber;
 
     @Column(name = "company_payroll_more_than_three_months", nullable = false)

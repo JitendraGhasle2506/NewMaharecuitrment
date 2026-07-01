@@ -40,4 +40,9 @@ public class EmailOtpChannelHandler implements OtpChannelHandler {
     public void dispatchOtp(String purpose, String reference, String otp) {
         otpDispatchService.sendEmailOtp(reference, otp, purpose);
     }
+
+    @Override
+    public void dispatchOtp(String purpose, String reference, String otp, String otpReferenceId) {
+        otpDispatchService.sendEmailOtp(reference, otp, purpose, otpReferenceId);
+    }
 }

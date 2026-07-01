@@ -95,7 +95,7 @@ public class DepartmentTaxInvoiceEntity extends Auditable {
     @Column(name = "client_gstin_available", nullable = false)
     private Boolean clientGstinAvailable = Boolean.FALSE;
 
-    @Column(name = "client_gst_number", length = 15)
+    @Column(name = "client_gst_number", length = 255)
     private String clientGstNumber;
 
     @Column(name = "place_of_supply", nullable = false, length = 100)
@@ -134,13 +134,13 @@ public class DepartmentTaxInvoiceEntity extends Auditable {
     @Column(name = "company_address", nullable = false, length = 1000)
     private String companyAddress;
 
-    @Column(name = "cin_number", nullable = false, length = 21)
+    @Column(name = "cin_number", nullable = false, length = 255)
     private String cinNumber;
 
-    @Column(name = "pan_number", nullable = false, length = 10)
+    @Column(name = "pan_number", nullable = false, length = 255)
     private String panNumber;
 
-    @Column(name = "gst_number", nullable = false, length = 15)
+    @Column(name = "gst_number", nullable = false, length = 255)
     private String gstNumber;
 
     @Column(name = "bank_name", nullable = false, length = 150)
@@ -152,7 +152,7 @@ public class DepartmentTaxInvoiceEntity extends Auditable {
     @Column(name = "account_holder_name", nullable = false, length = 150)
     private String accountHolderName;
 
-    @Column(name = "account_number", nullable = false, length = 30)
+    @Column(name = "account_number", nullable = false, length = 255)
     private String accountNumber;
 
     @Column(name = "ifsc_code", nullable = false, length = 11)

@@ -38,4 +38,9 @@ public class MobileOtpChannelHandler implements OtpChannelHandler {
     public void dispatchOtp(String purpose, String reference, String otp) {
         otpDispatchService.sendMobileOtp(reference, otp);
     }
+
+    @Override
+    public void dispatchOtp(String purpose, String reference, String otp, String otpReferenceId) {
+        otpDispatchService.sendMobileOtp(reference, otp, otpReferenceId);
+    }
 }

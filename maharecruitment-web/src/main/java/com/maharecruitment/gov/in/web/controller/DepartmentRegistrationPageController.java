@@ -1,18 +1,10 @@
 package com.maharecruitment.gov.in.web.controller;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Consumer;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -45,9 +37,6 @@ import jakarta.validation.Valid;
 @Controller
 @RequestMapping("/register")
 public class DepartmentRegistrationPageController {
-
-    private static final String PDF_EXTENSION = ".pdf";
-    private static final String PDF_SIGNATURE = "%PDF-";
 
     private final DepartmentMstService departmentService;
     private final SubDepartmentService subDepartmentService;
@@ -189,16 +178,19 @@ public class DepartmentRegistrationPageController {
 
         validateUploadedDocumentReference(
                 form.getUploadedGstFilePath(),
+                "department-registration/gst",
                 "gstFile",
                 "GST document",
                 bindingResult);
         validateUploadedDocumentReference(
                 form.getUploadedPanFilePath(),
+                "department-registration/pan",
                 "panFile",
                 "PAN document",
                 bindingResult);
         validateUploadedDocumentReference(
                 form.getUploadedTanFilePath(),
+                "department-registration/tan",
                 "tanFile",
                 "TAN document",
                 bindingResult);
@@ -343,14 +335,6 @@ public class DepartmentRegistrationPageController {
             return;
         }
 
-        if (!isPdfUpload(file)) {
-            bindingResult.rejectValue(
-                    fieldName,
-                    "registration." + fieldName,
-                    label + " must be uploaded as a PDF file only.");
-            return;
-        }
-
         try {
             FileUploadResult result = fileStorageService.store(file, modulePath);
             if (fileStorageService.isManagedPath(existingPath) && !existingPath.equals(result.fullPath())) {
@@ -371,6 +355,7 @@ public class DepartmentRegistrationPageController {
 
     private void validateUploadedDocumentReference(
             String uploadedPath,
+            String modulePath,
             String fieldName,
             String label,
             BindingResult bindingResult) {
@@ -378,61 +363,11 @@ public class DepartmentRegistrationPageController {
             return;
         }
 
-        if (!fileStorageService.isManagedPath(uploadedPath)) {
+        if (!fileStorageService.isManagedFileAllowed(uploadedPath, modulePath)) {
             bindingResult.rejectValue(
                     fieldName,
                     "registration." + fieldName,
                     label + " upload reference is invalid.");
-            return;
         }
-
-        if (!isStoredPdf(uploadedPath)) {
-            bindingResult.rejectValue(
-                    fieldName,
-                    "registration." + fieldName,
-                    label + " must be uploaded as a PDF file only.");
-        }
-    }
-
-    private boolean isPdfUpload(org.springframework.web.multipart.MultipartFile file) {
-        String originalFileName = file.getOriginalFilename();
-        if (!StringUtils.hasText(originalFileName)
-                || !originalFileName.toLowerCase(Locale.ROOT).endsWith(PDF_EXTENSION)) {
-            return false;
-        }
-
-        String contentType = file.getContentType();
-        if (!MediaType.APPLICATION_PDF_VALUE.equalsIgnoreCase(contentType)) {
-            return false;
-        }
-
-        return hasPdfSignature(file);
-    }
-
-    private boolean isStoredPdf(String fullPath) {
-        Path path = Paths.get(fullPath).toAbsolutePath().normalize();
-        String fileName = path.getFileName() != null ? path.getFileName().toString() : "";
-        if (!fileName.toLowerCase(Locale.ROOT).endsWith(PDF_EXTENSION)) {
-            return false;
-        }
-
-        try (InputStream inputStream = Files.newInputStream(path)) {
-            return hasPdfSignature(inputStream);
-        } catch (IOException ex) {
-            return false;
-        }
-    }
-
-    private boolean hasPdfSignature(org.springframework.web.multipart.MultipartFile file) {
-        try (InputStream inputStream = file.getInputStream()) {
-            return hasPdfSignature(inputStream);
-        } catch (IOException ex) {
-            return false;
-        }
-    }
-
-    private boolean hasPdfSignature(InputStream inputStream) throws IOException {
-        byte[] signature = inputStream.readNBytes(PDF_SIGNATURE.length());
-        return PDF_SIGNATURE.equals(new String(signature, StandardCharsets.US_ASCII));
     }
 }

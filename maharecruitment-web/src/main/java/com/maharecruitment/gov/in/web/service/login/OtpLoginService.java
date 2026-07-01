@@ -11,6 +11,8 @@ import com.maharecruitment.gov.in.auth.service.CustomUserDetailsService;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
+import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
+import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
@@ -18,6 +20,9 @@ import jakarta.servlet.http.HttpSession;
 
 @Service
 public class OtpLoginService {
+
+    private static final String UNKNOWN_IDENTIFIER_MESSAGE =
+            "Username, email, or mobile number is not registered.";
 
     private final CustomUserDetailsService userDetailsService;
     private final UserAffiliationService userAffiliationService;
@@ -35,19 +40,78 @@ public class OtpLoginService {
         this.notificationChannelProperties = notificationChannelProperties;
     }
 
-    public void sendOtp(HttpSession session, String identifier, VerificationChannel channel) {
+    public OtpVerificationResult sendOtp(
+            HttpSession session,
+            String identifier,
+            VerificationChannel channel,
+            OtpRequestContext context) {
         ensureChannelEnabled(channel);
-        User user = userDetailsService.loadDomainUserByIdentifier(identifier);
+        User user;
+        try {
+            user = userDetailsService.loadDomainUserByIdentifier(identifier);
+        } catch (RuntimeException ex) {
+            otpVerificationService.recordUnknownSendAttempt(
+                    VerificationPurposes.LOGIN_AUTHENTICATION,
+                    channel,
+                    identifier,
+                    context);
+            throw new UnknownLoginIdentifierException(UNKNOWN_IDENTIFIER_MESSAGE);
+        }
+
         String reference = resolveReference(user, channel);
-        otpVerificationService.clear(session, VerificationPurposes.LOGIN_AUTHENTICATION);
-        otpVerificationService.sendOtp(session, VerificationPurposes.LOGIN_AUTHENTICATION, channel, reference);
+        return otpVerificationService.sendOtp(
+                session,
+                VerificationPurposes.LOGIN_AUTHENTICATION,
+                channel,
+                reference,
+                context);
     }
 
-    public Authentication authenticate(HttpSession session, String identifier, VerificationChannel channel, String otp) {
+    public boolean isChannelEnabled(VerificationChannel channel) {
+        if (channel == null) {
+            return false;
+        }
+
+        return channel == VerificationChannel.EMAIL
+                ? notificationChannelProperties.isEmailEnabled()
+                : notificationChannelProperties.isSmsEnabled();
+    }
+
+    public String disabledChannelMessage(VerificationChannel channel) {
+        String channelLabel = channel == VerificationChannel.MOBILE ? "Mobile" : "Email";
+        return channelLabel + " OTP login is not enabled in this environment.";
+    }
+
+    public Authentication authenticate(
+            HttpSession session,
+            String identifier,
+            VerificationChannel channel,
+            String otp,
+            String captchaId,
+            String captchaAnswer,
+            OtpRequestContext context) {
         ensureChannelEnabled(channel);
-        User user = userDetailsService.loadDomainUserByIdentifier(identifier);
+        User user;
+        try {
+            user = userDetailsService.loadDomainUserByIdentifier(identifier);
+        } catch (RuntimeException ex) {
+            otpVerificationService.recordUnknownVerifyAttempt(
+                    VerificationPurposes.LOGIN_AUTHENTICATION,
+                    channel,
+                    identifier,
+                    context);
+            throw ex;
+        }
         String reference = resolveReference(user, channel);
-        otpVerificationService.verifyOtp(session, VerificationPurposes.LOGIN_AUTHENTICATION, channel, reference, otp);
+        otpVerificationService.verifyOtp(
+                session,
+                VerificationPurposes.LOGIN_AUTHENTICATION,
+                channel,
+                reference,
+                otp,
+                captchaId,
+                captchaAnswer,
+                context);
         otpVerificationService.clear(session, VerificationPurposes.LOGIN_AUTHENTICATION);
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         return UsernamePasswordAuthenticationToken.authenticated(
@@ -69,13 +133,8 @@ public class OtpLoginService {
     }
 
     private void ensureChannelEnabled(VerificationChannel channel) {
-        boolean enabled = channel == VerificationChannel.EMAIL
-                ? notificationChannelProperties.isEmailEnabled()
-                : notificationChannelProperties.isSmsEnabled();
-
-        if (!enabled) {
-            String channelLabel = channel == VerificationChannel.EMAIL ? "Email" : "Mobile";
-            throw new IllegalStateException(channelLabel + " OTP login is not enabled in this environment.");
+        if (!isChannelEnabled(channel)) {
+            throw new IllegalStateException(disabledChannelMessage(channel));
         }
     }
 }

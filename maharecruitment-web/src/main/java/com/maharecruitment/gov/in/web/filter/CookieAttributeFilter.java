@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.maharecruitment.gov.in.common.security.CookieSecurityProperties;
+import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,10 +23,14 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 public class CookieAttributeFilter extends OncePerRequestFilter {
 
     private final CookieSecurityProperties cookieSecurityProperties;
+    private final TransportSecurityProperties transportSecurityProperties;
     private final String sameSitePolicy;
 
-    public CookieAttributeFilter(CookieSecurityProperties cookieSecurityProperties) {
+    public CookieAttributeFilter(
+            CookieSecurityProperties cookieSecurityProperties,
+            TransportSecurityProperties transportSecurityProperties) {
         this.cookieSecurityProperties = cookieSecurityProperties;
+        this.transportSecurityProperties = transportSecurityProperties;
         this.sameSitePolicy = normalizeSameSite(cookieSecurityProperties.getSameSite());
         if ("None".equals(this.sameSitePolicy) && !cookieSecurityProperties.isSecure()) {
             throw new IllegalStateException(
@@ -38,10 +43,17 @@ public class CookieAttributeFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
-        filterChain.doFilter(request, new CookieAttributeResponseWrapper(response));
+        filterChain.doFilter(request, new CookieAttributeResponseWrapper(
+                response,
+                shouldUseSecureCookie(request)));
     }
 
-    private String normalizeSetCookieHeader(String headerValue) {
+    private boolean shouldUseSecureCookie(HttpServletRequest request) {
+        return cookieSecurityProperties.isSecure()
+                && !transportSecurityProperties.isLoopbackHttpAllowed(request);
+    }
+
+    private String normalizeSetCookieHeader(String headerValue, boolean secureCookieRequired) {
         if (headerValue == null || headerValue.isBlank()) {
             return headerValue;
         }
@@ -49,8 +61,15 @@ public class CookieAttributeFilter extends OncePerRequestFilter {
         String normalizedHeader = headerValue;
         String lowerCaseHeader = headerValue.toLowerCase(Locale.ROOT);
 
-        if (cookieSecurityProperties.isSecure() && !lowerCaseHeader.contains("; secure")) {
+        if (secureCookieRequired && !lowerCaseHeader.contains("; secure")) {
             normalizedHeader += "; Secure";
+        }
+        if (!secureCookieRequired && lowerCaseHeader.contains("; secure")) {
+            normalizedHeader = normalizedHeader.replaceAll("(?i);\\s*Secure\\b", "");
+        }
+
+        if (cookieSecurityProperties.isHttpOnly() && !lowerCaseHeader.contains("; httponly")) {
+            normalizedHeader += "; HttpOnly";
         }
 
         if (!lowerCaseHeader.contains("; samesite=")) {
@@ -76,8 +95,11 @@ public class CookieAttributeFilter extends OncePerRequestFilter {
 
     private final class CookieAttributeResponseWrapper extends HttpServletResponseWrapper {
 
-        private CookieAttributeResponseWrapper(HttpServletResponse response) {
+        private final boolean secureCookieRequired;
+
+        private CookieAttributeResponseWrapper(HttpServletResponse response, boolean secureCookieRequired) {
             super(response);
+            this.secureCookieRequired = secureCookieRequired;
         }
 
         @Override
@@ -86,15 +108,16 @@ public class CookieAttributeFilter extends OncePerRequestFilter {
                 return;
             }
 
-            cookie.setSecure(cookieSecurityProperties.isSecure());
+            cookie.setSecure(secureCookieRequired);
+            cookie.setHttpOnly(cookieSecurityProperties.isHttpOnly());
             cookie.setAttribute("SameSite", sameSitePolicy);
-            super.addCookie(cookie);
+            super.addHeader("Set-Cookie", buildSetCookieHeader(cookie));
         }
 
         @Override
         public void addHeader(String name, String value) {
             if (isSetCookieHeader(name)) {
-                super.addHeader(name, normalizeSetCookieHeader(value));
+                super.addHeader(name, normalizeSetCookieHeader(value, secureCookieRequired));
                 return;
             }
             super.addHeader(name, value);
@@ -103,7 +126,7 @@ public class CookieAttributeFilter extends OncePerRequestFilter {
         @Override
         public void setHeader(String name, String value) {
             if (isSetCookieHeader(name)) {
-                super.setHeader(name, normalizeSetCookieHeader(value));
+                super.setHeader(name, normalizeSetCookieHeader(value, secureCookieRequired));
                 return;
             }
             super.setHeader(name, value);
@@ -111,6 +134,33 @@ public class CookieAttributeFilter extends OncePerRequestFilter {
 
         private boolean isSetCookieHeader(String name) {
             return "Set-Cookie".equalsIgnoreCase(name);
+        }
+
+        private String buildSetCookieHeader(Cookie cookie) {
+            StringBuilder header = new StringBuilder();
+            header.append(cookie.getName()).append('=');
+            if (cookie.getValue() != null) {
+                header.append(cookie.getValue());
+            }
+            appendCookieAttribute(header, "Path", cookie.getPath());
+            appendCookieAttribute(header, "Domain", cookie.getDomain());
+            if (cookie.getMaxAge() >= 0) {
+                appendCookieAttribute(header, "Max-Age", String.valueOf(cookie.getMaxAge()));
+            }
+            if (cookie.getSecure()) {
+                header.append("; Secure");
+            }
+            if (cookie.isHttpOnly()) {
+                header.append("; HttpOnly");
+            }
+            appendCookieAttribute(header, "SameSite", sameSitePolicy);
+            return header.toString();
+        }
+
+        private void appendCookieAttribute(StringBuilder header, String name, String value) {
+            if (value != null && !value.isBlank()) {
+                header.append("; ").append(name).append('=').append(value);
+            }
         }
     }
 }

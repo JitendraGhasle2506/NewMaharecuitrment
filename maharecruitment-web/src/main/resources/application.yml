@@ -1,0 +1,14 @@
+app:
+  base-url: ${APP_BASE_URL:https://portal.example.gov.in/MahaitRecruitment}
+
+security:
+  allowed-hosts:
+    - ${SECURITY_ALLOWED_HOST_PORTAL:portal.example.gov.in}
+    - ${SECURITY_ALLOWED_HOST_WWW:www.portal.example.gov.in}
+    - ${SECURITY_ALLOWED_HOST_LOCAL:localhost}
+    - ${SECURITY_ALLOWED_HOST_LOOPBACK:127.0.0.1}
+  allowed-ports:
+    - ${SECURITY_ALLOWED_PORT_HTTP:80}
+    - ${SECURITY_ALLOWED_PORT_HTTPS:443}
+    - ${SECURITY_ALLOWED_PORT_LOCAL_HTTP:8777}
+    - ${SECURITY_ALLOWED_PORT_LOCAL_HTTPS:8443}
