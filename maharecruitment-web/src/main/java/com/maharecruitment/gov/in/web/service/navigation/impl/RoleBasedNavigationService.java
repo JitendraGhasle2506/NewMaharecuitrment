@@ -20,6 +20,7 @@ public class RoleBasedNavigationService implements NavigationService {
         private static final String DEFAULT_HOME_URL = "/home";
         private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
         private static final Pattern ABSOLUTE_HTTP_URL = Pattern.compile("^https?://", Pattern.CASE_INSENSITIVE);
+        private static final Pattern URI_SCHEME = Pattern.compile("^[a-z][a-z0-9+.-]*:", Pattern.CASE_INSENSITIVE);
 
         private static final List<String> ROLE_PRIORITY = List.of(
                         "ROLE_ADMIN",
@@ -99,10 +100,6 @@ public class RoleBasedNavigationService implements NavigationService {
                         return false;
                 }
 
-                if (isAbsoluteHttpUrl(normalizedUrl)) {
-                        return true;
-                }
-
                 Set<String> resolvedRoles = new HashSet<>(orderRoles(roles));
                 for (AccessRule accessRule : ACCESS_RULES) {
                         if (accessRule.matches(normalizedUrl)) {
@@ -155,8 +152,8 @@ public class RoleBasedNavigationService implements NavigationService {
                         return "";
                 }
 
-                if (isAbsoluteHttpUrl(normalized)) {
-                        return normalized;
+                if (isExternalUrl(normalized)) {
+                        return "";
                 }
 
                 int fragmentIndex = normalized.indexOf('#');
@@ -182,6 +179,10 @@ public class RoleBasedNavigationService implements NavigationService {
 
         private static boolean isAbsoluteHttpUrl(String url) {
                 return ABSOLUTE_HTTP_URL.matcher(url).find();
+        }
+
+        private static boolean isExternalUrl(String url) {
+                return isAbsoluteHttpUrl(url) || url.startsWith("//") || URI_SCHEME.matcher(url).find();
         }
 
         private record AccessRule(List<String> patterns, Set<String> roles, boolean authenticatedOnly) {

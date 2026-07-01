@@ -6,6 +6,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +34,7 @@ import com.maharecruitment.gov.in.web.controller.HomeController;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
+import com.maharecruitment.gov.in.web.security.host.HostProperties;
 import com.maharecruitment.gov.in.web.util.ContextPathUrlResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,6 +59,7 @@ class SecurityLocalHttpMvcTest {
     @Test
     void localhostHttpLoginPageRedirectsToLocalHttpsForDevelopment() throws Exception {
         mockMvc.perform(get("/login")
+                .header("Host", "localhost")
                 .secure(false)
                 .with(request -> {
                     request.setServerName("localhost");
@@ -101,6 +106,14 @@ class SecurityLocalHttpMvcTest {
             properties.setAllowLoopbackHttp(false);
             properties.setHttpPort(8777);
             properties.setHttpsPort(8443);
+            return properties;
+        }
+
+        @Bean
+        HostProperties hostProperties() {
+            HostProperties properties = new HostProperties();
+            properties.setAllowedHosts(List.of("localhost", "127.0.0.1", "portal.example.gov.in"));
+            properties.setAllowedPorts(Set.of(80, 443, 8443, 8777));
             return properties;
         }
 

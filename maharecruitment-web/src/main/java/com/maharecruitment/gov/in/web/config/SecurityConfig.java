@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.web.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -13,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -20,6 +22,9 @@ import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
+import com.maharecruitment.gov.in.web.security.host.HostHeaderValidationFilter;
+import com.maharecruitment.gov.in.web.security.host.HostProperties;
+import com.maharecruitment.gov.in.web.security.host.HostValidator;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -45,16 +50,37 @@ public class SecurityConfig {
     }
 
     @Bean
+    HostValidator hostValidator(HostProperties hostProperties) {
+        return new HostValidator(hostProperties);
+    }
+
+    @Bean
+    HostHeaderValidationFilter hostHeaderValidationFilter(HostValidator hostValidator) {
+        return new HostHeaderValidationFilter(hostValidator);
+    }
+
+    @Bean
+    FilterRegistrationBean<HostHeaderValidationFilter> hostHeaderValidationFilterRegistration(
+            HostHeaderValidationFilter hostHeaderValidationFilter) {
+        FilterRegistrationBean<HostHeaderValidationFilter> registration = new FilterRegistrationBean<>(
+                hostHeaderValidationFilter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
     SecurityFilterChain filterChain(
             HttpSecurity http,
             DaoAuthenticationProvider authenticationProvider,
             TransportSecurityProperties transportSecurityProperties,
+            HostHeaderValidationFilter hostHeaderValidationFilter,
             com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler successHandler,
             CustomLoginFailureHandler loginFailureHandler,
             CustomAccessDeniedHandler accessDeniedHandler,
             CustomLogoutSuccessHandler logoutSuccessHandler) throws Exception {
 
         http.authenticationProvider(authenticationProvider);
+        http.addFilterBefore(hostHeaderValidationFilter, ChannelProcessingFilter.class);
 
         http
             // 🔥 (Optional) disable CSRF temporarily if needed

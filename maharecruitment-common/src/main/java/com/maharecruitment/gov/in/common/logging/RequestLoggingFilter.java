@@ -30,8 +30,6 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestLoggingFilter.class);
 
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
-    private static final String FORWARDED_FOR_HEADER = "X-Forwarded-For";
-
     private static final String REQUEST_ID_KEY = "requestId";
     private static final String USERNAME_KEY = "username";
     private static final String CLIENT_IP_KEY = "clientIp";
@@ -103,10 +101,6 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader(FORWARDED_FOR_HEADER);
-        if (StringUtils.hasText(forwardedFor)) {
-            return forwardedFor.split(",")[0].trim();
-        }
         return request.getRemoteAddr();
     }
 

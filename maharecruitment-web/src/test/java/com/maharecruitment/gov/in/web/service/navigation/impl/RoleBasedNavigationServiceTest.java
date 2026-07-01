@@ -39,4 +39,11 @@ class RoleBasedNavigationServiceTest {
         assertFalse(service.canAccessUrl("   ", List.of("ROLE_ADMIN")));
         assertFalse(service.canAccessUrl("#", List.of("ROLE_ADMIN")));
     }
+
+    @Test
+    void canAccessUrlRejectsExternalUrls() {
+        assertFalse(service.canAccessUrl("https://evil.example.com/login", List.of("ROLE_ADMIN")));
+        assertFalse(service.canAccessUrl("//evil.example.com/login", List.of("ROLE_ADMIN")));
+        assertFalse(service.canAccessUrl("javascript:alert(1)", List.of("ROLE_ADMIN")));
+    }
 }

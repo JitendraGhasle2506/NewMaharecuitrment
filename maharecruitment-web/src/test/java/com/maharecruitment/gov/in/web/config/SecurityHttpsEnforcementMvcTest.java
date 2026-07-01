@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +36,7 @@ import com.maharecruitment.gov.in.web.controller.HomeController;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
+import com.maharecruitment.gov.in.web.security.host.HostProperties;
 import com.maharecruitment.gov.in.web.util.ContextPathUrlResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,14 +60,14 @@ class SecurityHttpsEnforcementMvcTest {
 
     @Test
     void httpLoginRequestRedirectsToHttps() throws Exception {
-        mockMvc.perform(get("/login").secure(false))
+        mockMvc.perform(get("/login").header("Host", "portal.example.gov.in").secure(false))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("https://")));
     }
 
     @Test
     void httpsLoginResponseContainsHstsHeader() throws Exception {
-        MvcResult result = mockMvc.perform(get("/login").secure(true))
+        MvcResult result = mockMvc.perform(get("/login").header("Host", "portal.example.gov.in").secure(true))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -71,6 +75,12 @@ class SecurityHttpsEnforcementMvcTest {
                 .contains("max-age=31536000")
                 .contains("includeSubDomains")
                 .doesNotContain("preload");
+    }
+
+    @Test
+    void invalidHostIsRejectedBeforeLoginPage() throws Exception {
+        mockMvc.perform(get("/login").header("Host", "evil.example.com").secure(true))
+                .andExpect(status().isBadRequest());
     }
 
     @Configuration
@@ -105,6 +115,14 @@ class SecurityHttpsEnforcementMvcTest {
         TransportSecurityProperties transportSecurityProperties() {
             TransportSecurityProperties properties = new TransportSecurityProperties();
             properties.setAllowLoopbackHttp(false);
+            return properties;
+        }
+
+        @Bean
+        HostProperties hostProperties() {
+            HostProperties properties = new HostProperties();
+            properties.setAllowedHosts(List.of("localhost", "127.0.0.1", "portal.example.gov.in"));
+            properties.setAllowedPorts(Set.of(80, 443, 8443, 8777));
             return properties;
         }
 

@@ -11,8 +11,10 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.web.client.RestClient;
 
+import com.maharecruitment.gov.in.web.properties.ApplicationUrlProperties;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
+import com.maharecruitment.gov.in.web.util.ApplicationUrlService;
 
 class NotificationServiceImplTest {
 
@@ -25,7 +27,8 @@ class NotificationServiceImplTest {
                 new MockEnvironment()
                         .withProperty("spring.mail.from.email", "noreply@mahait.org")
                         .withProperty("otp.expiry-minutes", "5"),
-                new NotificationChannelProperties());
+                new NotificationChannelProperties(),
+                applicationUrlService());
 
         service.sendEmailOtp(
                 "user@example.com",
@@ -42,5 +45,32 @@ class NotificationServiceImplTest {
                 .contains("209552")
                 .contains("OTP ID: OTP-ABCD23")
                 .contains("This OTP is valid for 5 minutes");
+    }
+
+    @Test
+    void accountCredentialEmailUsesConfiguredPortalUrl() {
+        JavaMailSender mailSender = mock(JavaMailSender.class);
+        NotificationServiceImpl service = new NotificationServiceImpl(
+                mailSender,
+                mock(RestClient.class),
+                new MockEnvironment()
+                        .withProperty("spring.mail.from.email", "noreply@mahait.org"),
+                new NotificationChannelProperties(),
+                applicationUrlService());
+
+        service.sendAgencyCredentials("agency@example.com", "Agency User", "TempPassword123!");
+
+        ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(messageCaptor.capture());
+
+        assertThat(messageCaptor.getValue().getText())
+                .contains("https://portal.example.gov.in/MahaitRecruitment/login")
+                .doesNotContain("evil.example.com");
+    }
+
+    private ApplicationUrlService applicationUrlService() {
+        ApplicationUrlProperties properties = new ApplicationUrlProperties();
+        properties.setBaseUrl("https://portal.example.gov.in/MahaitRecruitment");
+        return new ApplicationUrlService(properties);
     }
 }

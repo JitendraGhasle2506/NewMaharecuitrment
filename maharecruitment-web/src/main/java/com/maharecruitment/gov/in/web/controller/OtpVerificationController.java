@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.maharecruitment.gov.in.web.dto.verification.OtpSendRequest;
 import com.maharecruitment.gov.in.web.dto.verification.OtpVerifyRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
+import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
@@ -35,16 +36,19 @@ public class OtpVerificationController {
     private final boolean departmentRegistrationOtpBypassEnabled;
     private final boolean departmentRegistrationMobileOtpEnabled;
     private final boolean departmentRegistrationEmailOtpEnabled;
+    private final TransportSecurityProperties transportSecurityProperties;
 
     public OtpVerificationController(
             OtpVerificationService otpVerificationService,
             @Value("${registration.department.otp-bypass-enabled:false}") boolean departmentRegistrationOtpBypassEnabled,
             @Value("${registration.department.mobile-otp-enabled:true}") boolean departmentRegistrationMobileOtpEnabled,
-            @Value("${registration.department.email-otp-enabled:true}") boolean departmentRegistrationEmailOtpEnabled) {
+            @Value("${registration.department.email-otp-enabled:true}") boolean departmentRegistrationEmailOtpEnabled,
+            TransportSecurityProperties transportSecurityProperties) {
         this.otpVerificationService = otpVerificationService;
         this.departmentRegistrationOtpBypassEnabled = departmentRegistrationOtpBypassEnabled;
         this.departmentRegistrationMobileOtpEnabled = departmentRegistrationMobileOtpEnabled;
         this.departmentRegistrationEmailOtpEnabled = departmentRegistrationEmailOtpEnabled;
+        this.transportSecurityProperties = transportSecurityProperties;
     }
 
     @PostMapping("/send")
@@ -81,7 +85,7 @@ public class OtpVerificationController {
                     request.getPurpose(),
                     request.getChannel(),
                     request.getReference(),
-                    OtpRequestContext.from(httpRequest));
+                    OtpRequestContext.from(httpRequest, transportSecurityProperties.isTrustForwardedHeaders()));
             return ResponseEntity.ok(toResponse(
                     "OTP sent successfully.",
                     false,
@@ -141,7 +145,7 @@ public class OtpVerificationController {
                     request.getOtp(),
                     request.getCaptchaId(),
                     request.getCaptchaAnswer(),
-                    OtpRequestContext.from(httpRequest));
+                    OtpRequestContext.from(httpRequest, transportSecurityProperties.isTrustForwardedHeaders()));
             return ResponseEntity.ok(toResponse(
                     "OTP verified successfully.",
                     true,

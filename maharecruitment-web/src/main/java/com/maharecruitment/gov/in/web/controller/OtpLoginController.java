@@ -18,6 +18,7 @@ import com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessH
 import com.maharecruitment.gov.in.web.dto.login.OtpLoginForm;
 import com.maharecruitment.gov.in.web.dto.login.OtpLoginSendRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
+import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
@@ -43,12 +44,15 @@ public class OtpLoginController {
 
     private final OtpLoginService otpLoginService;
     private final MySimpleUrlAuthenticationSuccessHandler successHandler;
+    private final TransportSecurityProperties transportSecurityProperties;
 
     public OtpLoginController(
             OtpLoginService otpLoginService,
-            MySimpleUrlAuthenticationSuccessHandler successHandler) {
+            MySimpleUrlAuthenticationSuccessHandler successHandler,
+            TransportSecurityProperties transportSecurityProperties) {
         this.otpLoginService = otpLoginService;
         this.successHandler = successHandler;
+        this.transportSecurityProperties = transportSecurityProperties;
     }
 
     @PostMapping("/login/otp/send")
@@ -79,7 +83,7 @@ public class OtpLoginController {
                     session,
                     request.getIdentifier(),
                     request.getChannel(),
-                    OtpRequestContext.from(httpRequest));
+                    OtpRequestContext.from(httpRequest, transportSecurityProperties.isTrustForwardedHeaders()));
             return ResponseEntity.ok(toResponse(
                     GENERIC_SEND_ACCEPTED,
                     false,
@@ -133,7 +137,7 @@ public class OtpLoginController {
                     form.getOtp(),
                     form.getCaptchaId(),
                     form.getCaptchaAnswer(),
-                    OtpRequestContext.from(request));
+                    OtpRequestContext.from(request, transportSecurityProperties.isTrustForwardedHeaders()));
             request.changeSessionId();
             successHandler.onAuthenticationSuccess(request, response, authentication);
         } catch (OtpVerificationException ex) {

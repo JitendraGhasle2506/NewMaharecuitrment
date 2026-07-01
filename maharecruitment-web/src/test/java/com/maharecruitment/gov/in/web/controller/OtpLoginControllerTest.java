@@ -19,6 +19,7 @@ import com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessH
 import com.maharecruitment.gov.in.web.dto.login.OtpLoginSendRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
+import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.login.OtpLoginService;
 import com.maharecruitment.gov.in.web.service.login.UnknownLoginIdentifierException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
@@ -28,7 +29,8 @@ class OtpLoginControllerTest {
     private final OtpLoginService otpLoginService = mock(OtpLoginService.class);
     private final OtpLoginController controller = new OtpLoginController(
             otpLoginService,
-            mock(MySimpleUrlAuthenticationSuccessHandler.class));
+            mock(MySimpleUrlAuthenticationSuccessHandler.class),
+            new TransportSecurityProperties());
 
     @Test
     void disabledOtpChannelReturnsOkMessageWithoutSendingOtp() {

@@ -16,6 +16,7 @@ import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
+import com.maharecruitment.gov.in.web.util.ApplicationUrlService;
 
 @Service
 public class NotificationServiceImpl implements OtpDispatchService, AccountNotificationService {
@@ -26,16 +27,19 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
     private final RestClient restClient;
     private final Environment environment;
     private final NotificationChannelProperties notificationChannelProperties;
+    private final ApplicationUrlService applicationUrlService;
 
     public NotificationServiceImpl(
             JavaMailSender mailSender,
             RestClient restClient,
             Environment environment,
-            NotificationChannelProperties notificationChannelProperties) {
+            NotificationChannelProperties notificationChannelProperties,
+            ApplicationUrlService applicationUrlService) {
         this.mailSender = mailSender;
         this.restClient = restClient;
         this.environment = environment;
         this.notificationChannelProperties = notificationChannelProperties;
+        this.applicationUrlService = applicationUrlService;
     }
 
     @Override
@@ -116,12 +120,12 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                             Username: %s
                             Temporary Password: %s
 
-                            Please sign in and change the password after first login.
+                            Please sign in at %s and change the password after first login.
 
                             Regards,
                             MahaIT Recruitment
                             """
-                            .formatted(contactName, username, temporaryPassword));
+                            .formatted(contactName, username, temporaryPassword, portalLoginUrl()));
 
             try {
                 mailSender.send(message);
@@ -168,11 +172,11 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                     Username: %s
                     Temporary Password: %s
 
-                    Please sign in and change the password after first login.
+                    Please sign in at %s and change the password after first login.
 
                     Regards,
                     MahaIT Recruitment
-                    """.formatted(contactName, username, temporaryPassword));
+                    """.formatted(contactName, username, temporaryPassword, portalLoginUrl()));
 
             try {
                 mailSender.send(message);
@@ -231,11 +235,11 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                 Username: %s
                 Temporary Password: %s
 
-                Please sign in and change the password after first login.
+                Please sign in at %s and change the password after first login.
 
                 Regards,
                 MahaIT Recruitment
-                """.formatted(contactName, email, temporaryPassword));
+                """.formatted(contactName, email, temporaryPassword, portalLoginUrl()));
 
         try {
             mailSender.send(message);
@@ -263,11 +267,12 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                 This is to notify you that %s has submitted their resignation.
                 Resignation Date: %s
 
-                Please log in to the MahaIT Recruitment portal to process the relieving request.
+                Please log in to the MahaIT Recruitment portal to process the relieving request:
+                %s
 
                 Regards,
                 MahaIT Recruitment
-                """.formatted(role, employeeName, resignDate));
+                """.formatted(role, employeeName, resignDate, portalLoginUrl()));
 
         try {
             mailSender.send(message);
@@ -376,6 +381,10 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
     private String valueOrBlank(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String portalLoginUrl() {
+        return applicationUrlService.absoluteUrl("/login");
     }
 
     private String getFromAddress() {

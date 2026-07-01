@@ -21,6 +21,7 @@ import com.maharecruitment.gov.in.auth.repository.MstMenuRepository;
 import com.maharecruitment.gov.in.auth.repository.MstSubMenuRepository;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.service.SubMenuManagementService;
+import com.maharecruitment.gov.in.auth.util.InternalNavigationUrlValidator;
 
 @Service
 @Transactional
@@ -33,14 +34,17 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
     private final MstSubMenuRepository mstSubMenuRepository;
     private final MstMenuRepository mstMenuRepository;
     private final RoleRepository roleRepository;
+    private final InternalNavigationUrlValidator navigationUrlValidator;
 
     public SubMenuManagementServiceImpl(
             MstSubMenuRepository mstSubMenuRepository,
             MstMenuRepository mstMenuRepository,
-            RoleRepository roleRepository) {
+            RoleRepository roleRepository,
+            InternalNavigationUrlValidator navigationUrlValidator) {
         this.mstSubMenuRepository = mstSubMenuRepository;
         this.mstMenuRepository = mstMenuRepository;
         this.roleRepository = roleRepository;
+        this.navigationUrlValidator = navigationUrlValidator;
     }
 
     @Override
@@ -122,7 +126,9 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
     private ValidatedSubMenu validateForCreate(SubMenuUpsertRequest request) {
         MstMenu menu = validateParentMenu(request.getMenuId());
         String nameEnglish = normalizeRequired(request.getSubMenuNameEnglish(), "Submenu name (English)");
-        String normalizedUrl = normalizeRequired(request.getUrl(), "Submenu URL");
+        String normalizedUrl = navigationUrlValidator.normalizeRequiredApplicationPath(
+                request.getUrl(),
+                "Submenu URL");
 
         if (mstSubMenuRepository.existsByMenuMenuIdAndSubMenuNameEnglishIgnoreCase(menu.getMenuId(), nameEnglish)) {
             throw new IllegalArgumentException("Submenu name already exists under selected menu: " + nameEnglish);
@@ -152,7 +158,9 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
     private ValidatedSubMenu validateForUpdate(Long subMenuId, SubMenuUpsertRequest request) {
         MstMenu menu = validateParentMenu(request.getMenuId());
         String nameEnglish = normalizeRequired(request.getSubMenuNameEnglish(), "Submenu name (English)");
-        String normalizedUrl = normalizeRequired(request.getUrl(), "Submenu URL");
+        String normalizedUrl = navigationUrlValidator.normalizeRequiredApplicationPath(
+                request.getUrl(),
+                "Submenu URL");
 
         if (mstSubMenuRepository.existsByMenuMenuIdAndSubMenuNameEnglishIgnoreCaseAndSubMenuIdNot(
                 menu.getMenuId(),

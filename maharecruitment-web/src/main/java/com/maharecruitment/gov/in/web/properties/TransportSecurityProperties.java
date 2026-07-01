@@ -18,6 +18,8 @@ public class TransportSecurityProperties {
 
     private boolean allowLoopbackHttp = true;
 
+    private boolean trustForwardedHeaders;
+
     private Integer httpPort;
 
     private Integer httpsPort;
@@ -42,6 +44,14 @@ public class TransportSecurityProperties {
 
     public void setAllowLoopbackHttp(boolean allowLoopbackHttp) {
         this.allowLoopbackHttp = allowLoopbackHttp;
+    }
+
+    public boolean isTrustForwardedHeaders() {
+        return trustForwardedHeaders;
+    }
+
+    public void setTrustForwardedHeaders(boolean trustForwardedHeaders) {
+        this.trustForwardedHeaders = trustForwardedHeaders;
     }
 
     public Integer getHttpPort() {
@@ -94,8 +104,7 @@ public class TransportSecurityProperties {
             return false;
         }
 
-        return isLoopbackHost(request.getServerName())
-                || isLoopbackHost(request.getRemoteAddr())
+        return isLoopbackHost(request.getRemoteAddr())
                 || isLoopbackHost(request.getLocalAddr());
     }
 

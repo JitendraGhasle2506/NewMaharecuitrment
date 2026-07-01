@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 class SecurityTransportConfigurationTest {
 
     @Test
-    void baseConfigurationEnforcesSecureSessionCookiesAndForwardedHeaders() throws Exception {
+    void baseConfigurationEnforcesSecureSessionCookiesAndIgnoresForwardedHeadersByDefault() throws Exception {
         Properties properties = loadProperties("application.properties");
 
         assertThat(properties.getProperty("app.security.cookie.secure")).isEqualTo("true");
@@ -24,10 +24,11 @@ class SecurityTransportConfigurationTest {
                 .isEqualTo("${app.security.cookie.secure}");
         assertThat(properties.getProperty("server.servlet.session.cookie.http-only"))
                 .isEqualTo("${app.security.cookie.http-only}");
-        assertThat(properties.getProperty("server.forward-headers-strategy")).isEqualTo("framework");
+        assertThat(properties.getProperty("server.forward-headers-strategy")).isEqualTo("none");
         assertThat(properties.getProperty("spring.mvc.log-request-details")).isEqualTo("false");
         assertThat(properties.getProperty("app.security.transport.require-https")).isEqualTo("true");
         assertThat(properties.getProperty("app.security.transport.allow-loopback-http")).isEqualTo("false");
+        assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers")).isEqualTo("false");
         assertThat(properties.getProperty("otp.resend-limit")).isEqualTo("3");
         assertThat(properties.getProperty("otp.resend-window-minutes")).isEqualTo("5");
         assertThat(properties.getProperty("spring.profiles.active")).isNull();
@@ -50,6 +51,9 @@ class SecurityTransportConfigurationTest {
             assertThat(properties.getProperty("app.security.transport.allow-loopback-http"))
                     .as(fileName)
                     .isEqualTo("false");
+            assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers"))
+                    .as(fileName)
+                    .isEqualTo("${APP_SECURITY_TRUST_FORWARDED_HEADERS:false}");
         }
     }
 
@@ -62,6 +66,7 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("app.security.cookie.secure")).isEqualTo("true");
         assertThat(properties.getProperty("app.security.transport.require-https")).isEqualTo("true");
         assertThat(properties.getProperty("app.security.transport.allow-loopback-http")).isEqualTo("false");
+        assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers")).isEqualTo("false");
         assertThat(properties.getProperty("app.security.transport.http-port")).isEqualTo("8777");
         assertThat(properties.getProperty("app.security.transport.https-port")).isEqualTo("8443");
         assertThat(properties.getProperty("app.security.local-http-redirect.enabled")).isEqualTo("true");

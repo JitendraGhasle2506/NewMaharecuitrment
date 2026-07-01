@@ -12,12 +12,15 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
+
 import jakarta.servlet.ServletException;
 
 @ExtendWith(OutputCaptureExtension.class)
 class CredentialTransportSecurityFilterTest {
 
-    private final CredentialTransportSecurityFilter filter = new CredentialTransportSecurityFilter();
+    private final CredentialTransportSecurityFilter filter = new CredentialTransportSecurityFilter(
+            transportSecurityProperties(false));
 
     @Test
     void httpLoginRequestWithPasswordIsRejected() throws Exception {
@@ -51,6 +54,8 @@ class CredentialTransportSecurityFilterTest {
 
     @Test
     void forwardedHttpsCredentialRequestIsAllowedBehindProxy() throws Exception {
+        CredentialTransportSecurityFilter proxyAwareFilter = new CredentialTransportSecurityFilter(
+                transportSecurityProperties(true));
         MockHttpServletRequest request = post("/common/profile/password");
         request.addHeader("X-Forwarded-Proto", "https");
         request.addParameter("currentPassword", "OldSecret123!");
@@ -58,10 +63,23 @@ class CredentialTransportSecurityFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         AtomicBoolean chainInvoked = new AtomicBoolean(false);
 
-        filter.doFilter(request, response, (servletRequest, servletResponse) -> chainInvoked.set(true));
+        proxyAwareFilter.doFilter(request, response, (servletRequest, servletResponse) -> chainInvoked.set(true));
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(chainInvoked).isTrue();
+    }
+
+    @Test
+    void forwardedHttpsCredentialRequestIsRejectedUnlessProxyTrustIsEnabled() throws Exception {
+        MockHttpServletRequest request = post("/common/profile/password");
+        request.addHeader("X-Forwarded-Proto", "https");
+        request.addParameter("currentPassword", "OldSecret123!");
+        request.addParameter("newPassword", "NewSecret123!");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, noOpChain());
+
+        assertThat(response.getStatus()).isEqualTo(403);
     }
 
     @Test
@@ -131,6 +149,12 @@ class CredentialTransportSecurityFilterTest {
                 throw new ServletException(ex);
             }
         };
+    }
+
+    private TransportSecurityProperties transportSecurityProperties(boolean trustForwardedHeaders) {
+        TransportSecurityProperties properties = new TransportSecurityProperties();
+        properties.setTrustForwardedHeaders(trustForwardedHeaders);
+        return properties;
     }
 
 }

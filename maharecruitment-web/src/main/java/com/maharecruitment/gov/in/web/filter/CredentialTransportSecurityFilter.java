@@ -15,6 +15,8 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,6 +55,12 @@ public class CredentialTransportSecurityFilter extends OncePerRequestFilter {
     private static final String HTTPS_REQUIRED_MESSAGE = "HTTPS is required for credential submission.";
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    private final TransportSecurityProperties transportSecurityProperties;
+
+    public CredentialTransportSecurityFilter(TransportSecurityProperties transportSecurityProperties) {
+        this.transportSecurityProperties = transportSecurityProperties;
+    }
 
     @Override
     protected void doFilterInternal(
@@ -95,8 +103,9 @@ public class CredentialTransportSecurityFilter extends OncePerRequestFilter {
 
     private boolean isSecureTransport(HttpServletRequest request) {
         return request.isSecure()
-                || isForwardedHttps(request.getHeader("X-Forwarded-Proto"))
-                || isForwardedHttps(request.getHeader("Forwarded"));
+                || (transportSecurityProperties.isTrustForwardedHeaders()
+                        && (isForwardedHttps(request.getHeader("X-Forwarded-Proto"))
+                                || isForwardedHttps(request.getHeader("Forwarded"))));
     }
 
     private boolean isForwardedHttps(String headerValue) {

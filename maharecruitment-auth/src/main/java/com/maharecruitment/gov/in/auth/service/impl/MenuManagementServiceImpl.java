@@ -19,6 +19,7 @@ import com.maharecruitment.gov.in.auth.repository.MstMenuRepository;
 import com.maharecruitment.gov.in.auth.repository.MstSubMenuRepository;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.service.MenuManagementService;
+import com.maharecruitment.gov.in.auth.util.InternalNavigationUrlValidator;
 
 @Service
 @Transactional
@@ -32,14 +33,17 @@ public class MenuManagementServiceImpl implements MenuManagementService {
     private final MstMenuRepository mstMenuRepository;
     private final MstSubMenuRepository mstSubMenuRepository;
     private final RoleRepository roleRepository;
+    private final InternalNavigationUrlValidator navigationUrlValidator;
 
     public MenuManagementServiceImpl(
             MstMenuRepository mstMenuRepository,
             MstSubMenuRepository mstSubMenuRepository,
-            RoleRepository roleRepository) {
+            RoleRepository roleRepository,
+            InternalNavigationUrlValidator navigationUrlValidator) {
         this.mstMenuRepository = mstMenuRepository;
         this.mstSubMenuRepository = mstSubMenuRepository;
         this.roleRepository = roleRepository;
+        this.navigationUrlValidator = navigationUrlValidator;
     }
 
     @Override
@@ -225,7 +229,7 @@ public class MenuManagementServiceImpl implements MenuManagementService {
         if (normalizedUrl == null) {
             throw new IllegalArgumentException("URL is required for direct-link menu.");
         }
-        return normalizedUrl;
+        return navigationUrlValidator.normalizeRequiredApplicationPath(normalizedUrl, "Menu URL");
     }
 
     private String normalizeRequired(String value, String label) {
