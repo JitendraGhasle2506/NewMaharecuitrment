@@ -18,6 +18,7 @@ public class LocationMasterMapper {
                 .officeName(entity.getOfficeName())
                 .latitude(entity.getLatitude())
                 .longitude(entity.getLongitude())
+                .radiusMeters(entity.getRadiusMeters())
                 .activeFlag(entity.getActiveFlag())
                 .createdUserId(entity.getCreatedUserId())
                 .updatedUserId(entity.getUpdatedUserId())

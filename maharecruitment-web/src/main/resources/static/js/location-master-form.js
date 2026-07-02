@@ -5,6 +5,7 @@
     const locationNameInput = document.getElementById("locationName");
     const latitudeInput = document.getElementById("latitude");
     const longitudeInput = document.getElementById("longitude");
+    const radiusMetersInput = document.getElementById("radiusMeters");
     const findButton = document.getElementById("findLocationOnMap");
     const statusElement = document.getElementById("locationMapStatus");
     const selectedAddressElement = document.getElementById("locationSelectedAddress");
@@ -21,7 +22,11 @@
     const SEARCH_DELAY_MS = 1000;
     const GEOCODE_LIMIT = 8;
     const MAHARASHTRA_VIEWBOX = "72.6,22.1,80.9,15.6";
+    const DEFAULT_RADIUS_METERS = 100;
+    const MIN_RADIUS_METERS = 1;
+    const MAX_RADIUS_METERS = 10000;
     let marker = null;
+    let coverageCircle = null;
     let lastMapSuggestedName = "";
     let searchTimeoutId = null;
     let geocodeAbortController = null;
@@ -90,6 +95,10 @@
 
     latitudeInput.addEventListener("change", syncMapFromManualCoordinates);
     longitudeInput.addEventListener("change", syncMapFromManualCoordinates);
+    if (radiusMetersInput) {
+        radiusMetersInput.addEventListener("input", syncCoverageCircle);
+        radiusMetersInput.addEventListener("change", syncCoverageCircle);
+    }
 
     function scheduleSearch() {
         clearScheduledSearch();
@@ -462,9 +471,40 @@
             latitudeInput.value = formatCoordinate(latitude);
             longitudeInput.value = formatCoordinate(longitude);
         }
+        syncCoverageCircle();
         if (settings.moveMap) {
             map.setView(latLng, Math.max(map.getZoom(), SELECTED_ZOOM));
         }
+    }
+
+    function syncCoverageCircle() {
+        if (!marker) {
+            return;
+        }
+        const radiusMeters = parseRadiusMeters();
+        if (radiusMeters === null) {
+            if (coverageCircle) {
+                coverageCircle.remove();
+                coverageCircle = null;
+            }
+            return;
+        }
+
+        const latLng = marker.getLatLng();
+        if (!coverageCircle) {
+            coverageCircle = window.L.circle(latLng, {
+                radius: radiusMeters,
+                color: "#0d6efd",
+                weight: 2,
+                opacity: 0.9,
+                fillColor: "#0d6efd",
+                fillOpacity: 0.12
+            }).addTo(map);
+            return;
+        }
+
+        coverageCircle.setLatLng(latLng);
+        coverageCircle.setRadius(radiusMeters);
     }
 
     function syncMapFromManualCoordinates() {
@@ -552,6 +592,21 @@
         }
         const parsed = Number(value);
         if (!Number.isFinite(parsed) || parsed < minimum || parsed > maximum) {
+            return null;
+        }
+        return parsed;
+    }
+
+    function parseRadiusMeters() {
+        if (!radiusMetersInput) {
+            return DEFAULT_RADIUS_METERS;
+        }
+        const rawValue = String(radiusMetersInput.value || "").trim();
+        if (!rawValue) {
+            return null;
+        }
+        const parsed = Number(rawValue);
+        if (!Number.isInteger(parsed) || parsed < MIN_RADIUS_METERS || parsed > MAX_RADIUS_METERS) {
             return null;
         }
         return parsed;

@@ -51,7 +51,10 @@ public class LocationMasterPageController {
 
     @GetMapping("/new")
     public String createForm(Model model) {
-        populateForm(model, LocationMasterDto.builder().activeFlag("Y").build(), null);
+        populateForm(model, LocationMasterDto.builder()
+                .radiusMeters(100)
+                .activeFlag("Y")
+                .build(), null);
         return "master/locations/form";
     }
 

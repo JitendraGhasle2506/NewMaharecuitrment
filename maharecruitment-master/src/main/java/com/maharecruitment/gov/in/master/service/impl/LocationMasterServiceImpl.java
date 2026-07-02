@@ -32,6 +32,9 @@ public class LocationMasterServiceImpl implements LocationMasterService {
     private static final BigDecimal MAX_LATITUDE = new BigDecimal("90");
     private static final BigDecimal MIN_LONGITUDE = new BigDecimal("-180");
     private static final BigDecimal MAX_LONGITUDE = new BigDecimal("180");
+    private static final int DEFAULT_RADIUS_METERS = 100;
+    private static final int MIN_RADIUS_METERS = 1;
+    private static final int MAX_RADIUS_METERS = 10_000;
 
     private final LocationMasterRepository repository;
     private final LocationMasterMapper mapper;
@@ -54,6 +57,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
                 .officeName(normalizeOfficeName(request.getOfficeName()))
                 .latitude(validateLatitude(request.getLatitude()))
                 .longitude(validateLongitude(request.getLongitude()))
+                .radiusMeters(validateRadiusMeters(request.getRadiusMeters()))
                 .activeFlag(normalizeActiveFlag(request.getActiveFlag()))
                 .build();
         return mapper.toDto(repository.save(entity));
@@ -72,6 +76,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
         entity.setOfficeName(normalizeOfficeName(request.getOfficeName()));
         entity.setLatitude(validateLatitude(request.getLatitude()));
         entity.setLongitude(validateLongitude(request.getLongitude()));
+        entity.setRadiusMeters(validateRadiusMeters(request.getRadiusMeters()));
         entity.setActiveFlag(normalizeActiveFlag(request.getActiveFlag()));
         return mapper.toDto(repository.save(entity));
     }
@@ -197,5 +202,14 @@ public class LocationMasterServiceImpl implements LocationMasterService {
             return ACTIVE;
         }
         return INACTIVE.equals(activeFlag.trim().toUpperCase(Locale.ROOT)) ? INACTIVE : ACTIVE;
+    }
+
+    private int validateRadiusMeters(Integer radiusMeters) {
+        int resolvedRadiusMeters = radiusMeters == null ? DEFAULT_RADIUS_METERS : radiusMeters;
+        if (resolvedRadiusMeters < MIN_RADIUS_METERS || resolvedRadiusMeters > MAX_RADIUS_METERS) {
+            throw new BusinessValidationException(
+                    "Area radius must be between " + MIN_RADIUS_METERS + " and " + MAX_RADIUS_METERS + " meters");
+        }
+        return resolvedRadiusMeters;
     }
 }

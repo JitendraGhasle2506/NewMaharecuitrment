@@ -60,9 +60,11 @@ class LocationMasterServiceImplTest {
         LocationMaster saved = captor.getValue();
         assertThat(saved.getOfficeName()).isEqualTo("MahaIT Office");
         assertThat(saved.getLocationName()).isEqualTo("Mumbai Central");
+        assertThat(saved.getRadiusMeters()).isEqualTo(100);
         assertThat(saved.getActiveFlag()).isEqualTo("Y");
         assertThat(response.getLocationId()).isEqualTo(11L);
         assertThat(response.getLatitude()).isEqualByComparingTo("18.9690000");
+        assertThat(response.getRadiusMeters()).isEqualTo(100);
     }
 
     @Test
@@ -90,11 +92,25 @@ class LocationMasterServiceImplTest {
         verify(repository, never()).save(any(LocationMaster.class));
     }
 
+    @Test
+    void createRejectsRadiusOutsideAllowedRange() {
+        LocationMasterDto request = validRequest();
+        request.setRadiusMeters(0);
+        when(repository.existsByLocationNameIgnoreCase("Mumbai Central")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("Area radius must be between");
+
+        verify(repository, never()).save(any(LocationMaster.class));
+    }
+
     private LocationMasterDto validRequest() {
         return LocationMasterDto.builder()
                 .locationName("Mumbai Central")
                 .latitude(new BigDecimal("18.9690000"))
                 .longitude(new BigDecimal("72.8205000"))
+                .radiusMeters(100)
                 .activeFlag("Y")
                 .build();
     }

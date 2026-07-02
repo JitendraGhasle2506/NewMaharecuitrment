@@ -47,6 +47,10 @@ public class LocationMaster extends Auditable {
     @Column(name = "longitude", nullable = false, precision = 10, scale = 7)
     private BigDecimal longitude;
 
+    @Column(name = "radius_meters", nullable = false)
+    @Builder.Default
+    private Integer radiusMeters = 100;
+
     @Column(name = "active_flag", nullable = false, length = 1)
     @Builder.Default
     private String activeFlag = "Y";
@@ -59,6 +63,9 @@ public class LocationMaster extends Auditable {
         }
         if (officeName != null) {
             officeName = officeName.trim();
+        }
+        if (radiusMeters == null) {
+            radiusMeters = 100;
         }
         activeFlag = "N".equalsIgnoreCase(activeFlag) ? "N" : "Y";
     }

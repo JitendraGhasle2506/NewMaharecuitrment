@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -47,6 +49,10 @@ public class LocationMasterDto {
     @DecimalMax(value = "180.0", message = "Longitude must be less than or equal to 180")
     @Digits(integer = 3, fraction = 7, message = "Longitude can have up to 7 decimal places")
     private BigDecimal longitude;
+
+    @Min(value = 1, message = "Area radius must be at least 1 meter")
+    @Max(value = 10000, message = "Area radius must not exceed 10000 meters")
+    private Integer radiusMeters;
 
     private String activeFlag;
     private Long createdUserId;

@@ -67,6 +67,7 @@ import db.postmigration.V82__master_location_master_support;
 import db.postmigration.V83__master_location_office_name_support;
 import db.postmigration.V84__employee_location_mapping_support;
 import db.postmigration.V85__employee_location_mapping_audit_log_support;
+import db.postmigration.V86__master_location_radius_meters_support;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -160,7 +161,8 @@ public class PostSchemaFlywayRunner {
                 new V82__master_location_master_support(),
                 new V83__master_location_office_name_support(),
                 new V84__employee_location_mapping_support(),
-                new V85__employee_location_mapping_audit_log_support());
+                new V85__employee_location_mapping_audit_log_support(),
+                new V86__master_location_radius_meters_support());
     }
 
     private boolean hasFailedPostSchemaMigration() {

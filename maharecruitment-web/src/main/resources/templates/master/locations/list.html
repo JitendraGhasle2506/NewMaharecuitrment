@@ -56,13 +56,14 @@
                                     <th>Address</th>
                                     <th>Latitude</th>
                                     <th>Longitude</th>
+                                    <th>Area Radius</th>
                                     <th>Status</th>
                                     <th class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:if="${locations.isEmpty()}">
-                                    <td colspan="7" class="text-center text-muted">No records found</td>
+                                    <td colspan="8" class="text-center text-muted">No records found</td>
                                 </tr>
                                 <tr th:each="item, stat : ${locations.content}">
                                     <td th:text="${locations.number * locations.size + stat.count}">1</td>
@@ -70,6 +71,7 @@
                                     <td th:text="${item.locationName}">Location</td>
                                     <td th:text="${item.latitude}">0.0000000</td>
                                     <td th:text="${item.longitude}">0.0000000</td>
+                                    <td th:text="${item.radiusMeters != null ? item.radiusMeters + ' m' : '100 m'}">100 m</td>
                                     <td>
                                         <span class="badge"
                                             th:classappend="${item.activeFlag == 'Y'} ? ' text-bg-success' : ' text-bg-secondary'"
