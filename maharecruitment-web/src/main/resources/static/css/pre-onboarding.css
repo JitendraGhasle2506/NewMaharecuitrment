@@ -545,6 +545,23 @@
     min-height: 40px;
 }
 
+.hr-location-mapping-field .select2-container {
+    width: 100% !important;
+}
+
+.hr-location-mapping-field .select2-container--bootstrap-5 .select2-selection {
+    min-height: 40px;
+    border-color: #c9d3dc;
+    border-radius: 6px;
+    box-shadow: none;
+}
+
+.hr-location-mapping-field .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+.hr-location-mapping-field .select2-container--bootstrap-5.select2-container--open .select2-selection {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
+}
+
 .hr-selected-location-box {
     margin-top: 0.7rem;
     min-height: 52px;

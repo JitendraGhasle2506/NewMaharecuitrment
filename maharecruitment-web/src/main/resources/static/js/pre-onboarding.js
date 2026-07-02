@@ -848,15 +848,43 @@
         }) || null;
     }
 
+    function resetEmployeeLocationPicker() {
+        if (!employeeLocationPicker) {
+            return;
+        }
+        employeeLocationPicker.value = "";
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
+            window.jQuery(employeeLocationPicker).val("").trigger("change.select2");
+        }
+    }
+
+    function initializeEmployeeLocationPicker() {
+        if (!employeeLocationPicker || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.select2) {
+            return false;
+        }
+
+        const placeholder = employeeLocationPicker.getAttribute("data-placeholder") || "Search and select location";
+        const picker = window.jQuery(employeeLocationPicker);
+        picker.select2({
+            theme: "bootstrap-5",
+            width: "100%",
+            placeholder: placeholder,
+            allowClear: true
+        });
+        picker.on("select2:select", function () {
+            addEmployeeLocation(employeeLocationPicker.value);
+        });
+        picker.on("select2:clear", checkFormValidity);
+        return true;
+    }
+
     function addEmployeeLocation(locationId) {
         if (!selectedEmployeeLocationInputs || !locationId) {
             return;
         }
         const normalizedLocationId = String(locationId);
         if (getSelectedEmployeeLocationIds().includes(normalizedLocationId)) {
-            if (employeeLocationPicker) {
-                employeeLocationPicker.value = "";
-            }
+            resetEmployeeLocationPicker();
             return;
         }
 
@@ -866,9 +894,7 @@
         input.value = normalizedLocationId;
         selectedEmployeeLocationInputs.appendChild(input);
 
-        if (employeeLocationPicker) {
-            employeeLocationPicker.value = "";
-        }
+        resetEmployeeLocationPicker();
         renderSelectedEmployeeLocations();
         checkFormValidity();
     }
@@ -1061,9 +1087,11 @@
         const hrCheck = document.getElementById("hrVerified");
         [hrLoc, hrDate].forEach(el => el && el.addEventListener("input", checkFormValidity));
         if (employeeLocationPicker) {
-            employeeLocationPicker.addEventListener("change", function () {
-                addEmployeeLocation(employeeLocationPicker.value);
-            });
+            if (!initializeEmployeeLocationPicker()) {
+                employeeLocationPicker.addEventListener("change", function () {
+                    addEmployeeLocation(employeeLocationPicker.value);
+                });
+            }
             renderSelectedEmployeeLocations();
         }
         if (hrCheck) hrCheck.addEventListener("change", checkFormValidity);

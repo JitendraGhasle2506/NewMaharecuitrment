@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <title>Pre-Onboarding Form</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}" />
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}" />
     <link rel="stylesheet" th:href="@{/css/pre-onboarding.css}" />
 </head>
 
@@ -643,7 +645,8 @@
                                     Employee Location Mapping <span class="text-danger">*</span>
                                 </label>
                                 <select id="employeeLocationPicker"
-                                    class="form-select hr-verification-input hr-location-mapping-picker">
+                                    class="form-select hr-verification-input hr-location-mapping-picker"
+                                    data-placeholder="Search and select location">
                                     <option value="">Select location</option>
                                     <option th:each="location : ${locationOptions}"
                                         th:value="${location.locationId}"
@@ -707,6 +710,8 @@
     <script th:inline="javascript">
         window.preOnboardingConfig = { contextPath: /*[[@{/}]]*/ '/' };
     </script>
+    <script th:src="@{/assets/vendor/jquery/jquery-3.7.1.min.js}"></script>
+    <script th:src="@{/assets/vendor/select2/select2.min.js}"></script>
     <script th:src="@{/js/pre-onboarding.js}"></script>
 </body>
 
