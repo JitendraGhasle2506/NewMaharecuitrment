@@ -10,9 +10,14 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
+import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
+import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
+import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.service.employee.EmployeeProfileService;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
+import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
+import org.springframework.web.multipart.MultipartFile;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,12 +27,18 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
 
     private final EmployeeRepository employeeRepository;
     private final HROnboardingPageService hrOnboardingPageService;
+    private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
+    private final FileStorageService fileStorageService;
 
     public EmployeeProfileServiceImpl(
             EmployeeRepository employeeRepository,
-            HROnboardingPageService hrOnboardingPageService) {
+            HROnboardingPageService hrOnboardingPageService,
+            AgencyCandidatePreOnboardingRepository preOnboardingRepository,
+            FileStorageService fileStorageService) {
         this.employeeRepository = employeeRepository;
         this.hrOnboardingPageService = hrOnboardingPageService;
+        this.preOnboardingRepository = preOnboardingRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     @Override
@@ -42,6 +53,32 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         }
 
         return buildDetailView(employee);
+    }
+
+    @Override
+    public void updateEmployeePhoto(String loginEmail, MultipartFile file) {
+        if (!StringUtils.hasText(loginEmail)) {
+            throw new RecruitmentNotificationException("Employee login email is required.");
+        }
+        if (file == null || file.isEmpty()) {
+            throw new RecruitmentNotificationException("Photo file is required.");
+        }
+
+        EmployeeEntity employee = resolveEmployeeProfile(loginEmail.trim());
+        if (!hasOnboardingDetails(employee)) {
+            throw new RecruitmentNotificationException("Employee onboarding details are not available.");
+        }
+
+        AgencyCandidatePreOnboardingEntity preOnboarding = employee.getPreOnboarding();
+        FileUploadResult uploadResult = fileStorageService.store(file, "employee-photo");
+
+        preOnboarding.setPhotoFilePath(uploadResult.fullPath());
+        preOnboarding.setPhotoOriginalName(uploadResult.originalFileName());
+        preOnboarding.setPhotoFileType(uploadResult.contentType());
+        preOnboarding.setPhotoFileSize(uploadResult.size());
+
+        preOnboardingRepository.save(preOnboarding);
+        log.info("Updated employee photo for employeeId={} (loginEmail={})", employee.getEmployeeId(), loginEmail);
     }
 
     private EmployeeEntity resolveEmployeeProfile(String loginEmail) {

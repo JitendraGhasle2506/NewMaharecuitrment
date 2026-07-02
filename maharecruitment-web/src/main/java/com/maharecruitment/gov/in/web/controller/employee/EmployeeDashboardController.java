@@ -37,4 +37,18 @@ public class EmployeeDashboardController {
             return "employee/profile-unavailable";
         }
     }
+
+    @org.springframework.web.bind.annotation.PostMapping("/upload-photo")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public org.springframework.http.ResponseEntity<?> uploadPhoto(
+            Principal principal,
+            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String loginEmail = principal != null ? principal.getName() : null;
+            employeeProfileService.updateEmployeePhoto(loginEmail, file);
+            return org.springframework.http.ResponseEntity.ok().body("{\"message\": \"Photo uploaded successfully\"}");
+        } catch (Exception ex) {
+            return org.springframework.http.ResponseEntity.badRequest().body("{\"error\": \"" + ex.getMessage() + "\"}");
+        }
+    }
 }
