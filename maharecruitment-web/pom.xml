@@ -176,6 +176,7 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
 				<configuration>
+					<webappDirectory>${project.build.directory}/${project.build.finalName}-staging</webappDirectory>
 					<packagingExcludes>
 						WEB-INF/lib/logback-*.jar
 					</packagingExcludes>

@@ -18,7 +18,7 @@ class SecurityTransportConfigurationTest {
         Properties properties = loadProperties("application.properties");
 
         assertThat(properties.getProperty("app.security.cookie.secure"))
-                .isEqualTo("${APP_SECURITY_COOKIE_SECURE:false}");
+                .isEqualTo("${APP_SECURITY_COOKIE_SECURE:true}");
         assertThat(properties.getProperty("app.security.cookie.http-only")).isEqualTo("true");
         assertThat(properties.getProperty("app.security.cookie.same-site")).isEqualTo("Lax");
         assertThat(properties.getProperty("server.servlet.session.cookie.secure"))
@@ -61,7 +61,7 @@ class SecurityTransportConfigurationTest {
 
             assertThat(properties.getProperty("app.security.cookie.secure"))
                     .as(fileName)
-                    .isEqualTo("${APP_SECURITY_COOKIE_SECURE:false}");
+                    .isEqualTo("${APP_SECURITY_COOKIE_SECURE:true}");
             assertThat(properties.getProperty("app.security.transport.require-https"))
                     .as(fileName)
                     .isEqualTo("${APP_SECURITY_REQUIRE_HTTPS:false}");
