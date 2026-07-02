@@ -233,7 +233,7 @@
         }
 
         .filter-input-group .form-control {
-            padding-left: 38px;
+            padding-left: 38px !important;
         }
 
         .filter-actions {
@@ -665,7 +665,8 @@
                                         <i class="fa fa-search" aria-hidden="true"></i>
                                     </span>
                                     <input type="text" id="notificationSearch" class="form-control" name="search"
-                                        th:value="${searchTerm}" placeholder="Search by request ID or project name">
+                                        th:value="${searchTerm}" placeholder="Search by request ID or project name"
+                                        style="padding-left: 38px !important;">
                                 </div>
                             </div>
                             <div class="filter-field">
@@ -690,23 +691,7 @@
                                 </a>
                             </div>
                         </form>
-                        <div class="filter-summary-panel">
-                            <div class="filter-summary-label">Result Summary</div>
-                            <div class="filter-meta"
-                                th:text="${notificationPage.totalElements > 0 ? 'Showing ' + (notificationPage.number * notificationPage.size + 1) + ' to ' + (((notificationPage.number + 1) * notificationPage.size) > notificationPage.totalElements ? notificationPage.totalElements : ((notificationPage.number + 1) * notificationPage.size)) + ' of ' + notificationPage.totalElements + ' notifications' : 'No notifications found for the current filter'}">
-                                Showing 1 to 10 of 25 notifications
-                            </div>
-                            <div class="filter-meta-quick">
-                                <span class="filter-meta-pill">
-                                    <i class="fa fa-bell-o" aria-hidden="true"></i>
-                                    Total <span th:text="${notificationMetrics.totalNotifications}">0</span>
-                                </span>
-                                <span class="filter-meta-pill" th:if="${!#strings.isEmpty(searchTerm)}">
-                                    <i class="fa fa-filter" aria-hidden="true"></i>
-                                    Filter applied
-                                </span>
-                            </div>
-                        </div>
+                        
                     </div>
 
                     <div th:if="${#lists.isEmpty(notifications)}" class="empty-state">

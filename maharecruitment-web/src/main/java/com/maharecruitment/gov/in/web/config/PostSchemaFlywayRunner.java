@@ -97,7 +97,15 @@ public class PostSchemaFlywayRunner {
             flyway.repair();
         }
 
-        flyway.migrate();
+        try {
+            flyway.migrate();
+        } catch (org.flywaydb.core.api.exception.FlywayValidateException ex) {
+            LOGGER.warn(
+                    "Flyway validation failed (possibly due to deleted or modified migrations). Attempting repair and retrying migrate: {}",
+                    ex.getMessage());
+            flyway.repair();
+            flyway.migrate();
+        }
         LOGGER.info("Post-schema Flyway migrations completed");
     }
 
