@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.web.config;
 
+import org.springframework.core.Ordered;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -21,12 +22,14 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
+import com.maharecruitment.gov.in.web.filter.CookieAttributeFilter;
 import com.maharecruitment.gov.in.web.filter.MobileBearerTokenAuthenticationFilter;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.security.host.HostHeaderValidationFilter;
 import com.maharecruitment.gov.in.web.security.host.HostProperties;
 import com.maharecruitment.gov.in.web.security.host.HostValidator;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -67,6 +70,22 @@ public class SecurityConfig {
         FilterRegistrationBean<HostHeaderValidationFilter> registration = new FilterRegistrationBean<>(
                 hostHeaderValidationFilter);
         registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    FilterRegistrationBean<CookieAttributeFilter> cookieAttributeFilterRegistration(
+            CookieAttributeFilter cookieAttributeFilter) {
+        FilterRegistrationBean<CookieAttributeFilter> registration = new FilterRegistrationBean<>(
+                cookieAttributeFilter);
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        registration.addUrlPatterns("/*");
+        registration.setDispatcherTypes(
+                DispatcherType.REQUEST,
+                DispatcherType.FORWARD,
+                DispatcherType.ERROR,
+                DispatcherType.INCLUDE,
+                DispatcherType.ASYNC);
         return registration;
     }
 

@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.web.filter;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -21,6 +22,10 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CookieAttributeFilter extends OncePerRequestFilter {
+
+    private static final Pattern SECURE_ATTRIBUTE = Pattern.compile("(?i);\\s*Secure\\b");
+    private static final Pattern HTTP_ONLY_ATTRIBUTE = Pattern.compile("(?i);\\s*HttpOnly\\b");
+    private static final Pattern SAME_SITE_ATTRIBUTE = Pattern.compile("(?i);\\s*SameSite\\s*=\\s*[^;]*");
 
     private final CookieSecurityProperties cookieSecurityProperties;
     private final TransportSecurityProperties transportSecurityProperties;
@@ -58,23 +63,20 @@ public class CookieAttributeFilter extends OncePerRequestFilter {
             return headerValue;
         }
 
-        String normalizedHeader = headerValue;
-        String lowerCaseHeader = headerValue.toLowerCase(Locale.ROOT);
+        String normalizedHeader = SAME_SITE_ATTRIBUTE.matcher(headerValue).replaceAll("");
 
-        if (secureCookieRequired && !lowerCaseHeader.contains("; secure")) {
+        if (secureCookieRequired && !SECURE_ATTRIBUTE.matcher(normalizedHeader).find()) {
             normalizedHeader += "; Secure";
         }
-        if (!secureCookieRequired && lowerCaseHeader.contains("; secure")) {
-            normalizedHeader = normalizedHeader.replaceAll("(?i);\\s*Secure\\b", "");
+        if (!secureCookieRequired) {
+            normalizedHeader = SECURE_ATTRIBUTE.matcher(normalizedHeader).replaceAll("");
         }
 
-        if (cookieSecurityProperties.isHttpOnly() && !lowerCaseHeader.contains("; httponly")) {
+        if (cookieSecurityProperties.isHttpOnly() && !HTTP_ONLY_ATTRIBUTE.matcher(normalizedHeader).find()) {
             normalizedHeader += "; HttpOnly";
         }
 
-        if (!lowerCaseHeader.contains("; samesite=")) {
-            normalizedHeader += "; SameSite=" + sameSitePolicy;
-        }
+        normalizedHeader += "; SameSite=" + sameSitePolicy;
 
         return normalizedHeader;
     }

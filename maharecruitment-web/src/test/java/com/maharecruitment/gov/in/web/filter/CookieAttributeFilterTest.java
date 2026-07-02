@@ -50,6 +50,23 @@ class CookieAttributeFilterTest {
     }
 
     @Test
+    void existingSameSiteValueIsReplacedWithConfiguredPolicy() throws Exception {
+        CookieAttributeFilter filter = new CookieAttributeFilter(secureCookieProperties(), strictTransport());
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(new MockHttpServletRequest(), response, (request, servletResponse) ->
+                ((HttpServletResponse) servletResponse).addHeader(
+                        "Set-Cookie",
+                        "JSESSIONID=abc123; Path=/maharecruitment; SameSite=None"));
+
+        assertThat(response.getHeader("Set-Cookie"))
+                .contains("Secure")
+                .contains("HttpOnly")
+                .contains("SameSite=Lax")
+                .doesNotContain("SameSite=None");
+    }
+
+    @Test
     void loopbackHttpCookieDoesNotUseSecureFlag() throws Exception {
         CookieAttributeFilter filter = new CookieAttributeFilter(secureCookieProperties(), localTransport());
         MockHttpServletRequest request = new MockHttpServletRequest();
