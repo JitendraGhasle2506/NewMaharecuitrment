@@ -29,6 +29,14 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("app.security.transport.require-https")).isEqualTo("true");
         assertThat(properties.getProperty("app.security.transport.allow-loopback-http")).isEqualTo("false");
         assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers")).isEqualTo("false");
+        assertThat(properties.getProperty("app.base-url"))
+                .isEqualTo("${APP_BASE_URL:http://103.5.84.215:8080/mahaitRecruitment}");
+        assertThat(properties.getProperty("app.mobile-auth.issuer"))
+                .isEqualTo("${MOBILE_AUTH_JWT_ISSUER:maharecruitment-mobile}");
+        assertThat(properties.getProperty("security.allowed-hosts[0]"))
+                .isEqualTo("${SECURITY_ALLOWED_HOST_PORTAL:103.5.84.215}");
+        assertThat(properties.getProperty("security.allowed-ports[1]"))
+                .isEqualTo("${SECURITY_ALLOWED_PORT_HTTPS:443}");
         assertThat(properties.getProperty("otp.resend-limit")).isEqualTo("3");
         assertThat(properties.getProperty("otp.resend-window-minutes")).isEqualTo("5");
         assertThat(properties.getProperty("spring.profiles.active")).isNull();
@@ -36,7 +44,7 @@ class SecurityTransportConfigurationTest {
     }
 
     @Test
-    void deployedProfileOverridesKeepSecureDefaultsConfigurableForServerDeployment() throws Exception {
+    void deployedProfilesAllowHttpOnlyWildFlyDeploymentWithoutCertificate() throws Exception {
         for (String fileName : List.of(
                 "application-uat.properties",
                 "application-prod.properties")) {
@@ -44,10 +52,10 @@ class SecurityTransportConfigurationTest {
 
             assertThat(properties.getProperty("app.security.cookie.secure"))
                     .as(fileName)
-                    .isEqualTo("${APP_SECURITY_COOKIE_SECURE:true}");
+                    .isEqualTo("${APP_SECURITY_COOKIE_SECURE:false}");
             assertThat(properties.getProperty("app.security.transport.require-https"))
                     .as(fileName)
-                    .isEqualTo("${APP_SECURITY_REQUIRE_HTTPS:true}");
+                    .isEqualTo("${APP_SECURITY_REQUIRE_HTTPS:false}");
             assertThat(properties.getProperty("app.security.transport.allow-loopback-http"))
                     .as(fileName)
                     .isEqualTo("false");
