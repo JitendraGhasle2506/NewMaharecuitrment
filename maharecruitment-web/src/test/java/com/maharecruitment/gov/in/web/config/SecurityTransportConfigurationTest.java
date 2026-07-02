@@ -36,7 +36,7 @@ class SecurityTransportConfigurationTest {
     }
 
     @Test
-    void deployedProfileOverridesDoNotDisableSecureCookies() throws Exception {
+    void deployedProfileOverridesKeepSecureDefaultsConfigurableForServerDeployment() throws Exception {
         for (String fileName : List.of(
                 "application-uat.properties",
                 "application-prod.properties")) {
@@ -44,10 +44,10 @@ class SecurityTransportConfigurationTest {
 
             assertThat(properties.getProperty("app.security.cookie.secure"))
                     .as(fileName)
-                    .isEqualTo("true");
+                    .isEqualTo("${APP_SECURITY_COOKIE_SECURE:true}");
             assertThat(properties.getProperty("app.security.transport.require-https"))
                     .as(fileName)
-                    .isEqualTo("true");
+                    .isEqualTo("${APP_SECURITY_REQUIRE_HTTPS:true}");
             assertThat(properties.getProperty("app.security.transport.allow-loopback-http"))
                     .as(fileName)
                     .isEqualTo("false");
