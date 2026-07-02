@@ -1,5 +1,9 @@
 app:
   base-url: ${APP_BASE_URL:https://portal.example.gov.in/MahaitRecruitment}
+  mobile-auth:
+    issuer: ${MOBILE_AUTH_JWT_ISSUER:maharecruitment-mobile}
+    access-token-ttl: ${MOBILE_AUTH_ACCESS_TOKEN_TTL:30m}
+    jwt-secret: ${MOBILE_AUTH_JWT_SECRET:}
 
 security:
   allowed-hosts:

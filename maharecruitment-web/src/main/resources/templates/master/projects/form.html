@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -23,6 +23,7 @@
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/team-management}">Team Management</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/wings}">Wing Master</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/cell}">Cell Master</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/locations}">Location Master</a>
                     </div>
 
                     <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>

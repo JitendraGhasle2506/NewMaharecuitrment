@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -15,18 +14,21 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.channel.ChannelProcessingFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
+import com.maharecruitment.gov.in.web.filter.MobileBearerTokenAuthenticationFilter;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.security.host.HostHeaderValidationFilter;
 import com.maharecruitment.gov.in.web.security.host.HostProperties;
 import com.maharecruitment.gov.in.web.security.host.HostValidator;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
@@ -69,11 +71,21 @@ public class SecurityConfig {
     }
 
     @Bean
+    FilterRegistrationBean<MobileBearerTokenAuthenticationFilter> mobileBearerTokenAuthenticationFilterRegistration(
+            MobileBearerTokenAuthenticationFilter mobileBearerTokenAuthenticationFilter) {
+        FilterRegistrationBean<MobileBearerTokenAuthenticationFilter> registration = new FilterRegistrationBean<>(
+                mobileBearerTokenAuthenticationFilter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
     SecurityFilterChain filterChain(
             HttpSecurity http,
             DaoAuthenticationProvider authenticationProvider,
             TransportSecurityProperties transportSecurityProperties,
             HostHeaderValidationFilter hostHeaderValidationFilter,
+            MobileBearerTokenAuthenticationFilter mobileBearerTokenAuthenticationFilter,
             com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler successHandler,
             CustomLoginFailureHandler loginFailureHandler,
             CustomAccessDeniedHandler accessDeniedHandler,
@@ -81,10 +93,11 @@ public class SecurityConfig {
 
         http.authenticationProvider(authenticationProvider);
         http.addFilterBefore(hostHeaderValidationFilter, ChannelProcessingFilter.class);
+        http.addFilterBefore(mobileBearerTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         http
             // 🔥 (Optional) disable CSRF temporarily if needed
-            .csrf(Customizer.withDefaults());
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/mobile/**"));
 
         if (transportSecurityProperties.hasPortMapping()) {
             http.portMapper(portMapper -> portMapper
@@ -104,6 +117,7 @@ public class SecurityConfig {
 
                 // ✅ IMPORTANT: keep login FIRST
                 .requestMatchers("/login", "/doLogin", "/login/otp", "/login/otp/send").permitAll()
+                .requestMatchers("/api/mobile/auth/login").permitAll()
                 .requestMatchers("/security/credential-encryption/public-key").permitAll()
                 .requestMatchers("/api/verifications/otp/**").permitAll()
 
@@ -114,6 +128,8 @@ public class SecurityConfig {
                         "/test/**", "/otp/**",
                         "/error", "/error/**"
                 ).permitAll()
+
+                .requestMatchers("/api/mobile/**").authenticated()
 
                 .requestMatchers("/common/mahait-profile/**", "/common/holidays/**")
                     .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR")
@@ -206,6 +222,10 @@ public class SecurityConfig {
                 // ✅ FIX: prevent infinite redirect
                 .authenticationEntryPoint((req, res, authEx) -> {
                     String uri = req.getRequestURI();
+                    if (isApiRequest(req)) {
+                        writeUnauthorizedApiResponse(res);
+                        return;
+                    }
                     if (!uri.equals(req.getContextPath() + "/login")) {
                         res.sendRedirect(req.getContextPath() + "/login?unauthenticated=true");
                     }
@@ -239,6 +259,21 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    private boolean isApiRequest(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        String path = contextPath != null && !contextPath.isBlank() && requestUri.startsWith(contextPath)
+                ? requestUri.substring(contextPath.length())
+                : requestUri;
+        return path.startsWith("/api/");
+    }
+
+    private void writeUnauthorizedApiResponse(HttpServletResponse response) throws java.io.IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication is required.\"}");
     }
 
     private static final class HttpsRequiredRequestMatcher implements RequestMatcher {

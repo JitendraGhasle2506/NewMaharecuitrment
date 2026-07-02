@@ -33,10 +33,12 @@ import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
 import com.maharecruitment.gov.in.web.controller.HomeController;
+import com.maharecruitment.gov.in.web.filter.MobileBearerTokenAuthenticationFilter;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.security.host.HostProperties;
+import com.maharecruitment.gov.in.web.service.mobile.MobileTokenService;
 import com.maharecruitment.gov.in.web.util.ContextPathUrlResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -132,6 +134,18 @@ class SecurityHttpsEnforcementMvcTest {
                     .password(passwordEncoder.encode("Password123!"))
                     .roles("USER")
                     .build();
+        }
+
+        @Bean
+        MobileTokenService mobileTokenService() {
+            return mock(MobileTokenService.class);
+        }
+
+        @Bean
+        MobileBearerTokenAuthenticationFilter mobileBearerTokenAuthenticationFilter(
+                MobileTokenService mobileTokenService,
+                UserDetailsService userDetailsService) {
+            return new MobileBearerTokenAuthenticationFilter(mobileTokenService, userDetailsService);
         }
 
         @Bean
