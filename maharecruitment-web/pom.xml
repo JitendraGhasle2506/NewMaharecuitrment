@@ -170,7 +170,7 @@
 	</dependencies>
 
 	<build>
-		<finalName>maharecruitment-web</finalName>
+		<finalName>maharecruitment</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
