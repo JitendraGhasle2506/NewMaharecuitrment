@@ -68,7 +68,9 @@ public class CredentialTransportSecurityFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        if (!isCredentialSubmission(request) || isSecureTransport(request)) {
+        if (!transportSecurityProperties.isHttpsRequiredFor(request)
+                || !isCredentialSubmission(request)
+                || isSecureTransport(request)) {
             filterChain.doFilter(request, response);
             return;
         }

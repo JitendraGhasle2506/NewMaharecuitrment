@@ -14,9 +14,23 @@ import org.springframework.util.StringUtils;
 @ConfigurationProperties(prefix = "security")
 public class HostProperties {
 
+    private HostValidation hostValidation = new HostValidation();
+
     private List<String> allowedHosts = new ArrayList<>();
 
     private Set<Integer> allowedPorts = new LinkedHashSet<>();
+
+    public HostValidation getHostValidation() {
+        return hostValidation;
+    }
+
+    public void setHostValidation(HostValidation hostValidation) {
+        this.hostValidation = hostValidation == null ? new HostValidation() : hostValidation;
+    }
+
+    boolean isHostValidationEnabled() {
+        return hostValidation.isEnabled();
+    }
 
     public List<String> getAllowedHosts() {
         return List.copyOf(allowedHosts);
@@ -51,5 +65,18 @@ public class HostProperties {
 
     boolean isPortAllowed(int port) {
         return allowedPorts.contains(port);
+    }
+
+    public static class HostValidation {
+
+        private boolean enabled = true;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
     }
 }

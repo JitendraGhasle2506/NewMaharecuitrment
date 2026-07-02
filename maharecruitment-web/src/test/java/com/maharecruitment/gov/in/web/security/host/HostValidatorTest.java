@@ -58,6 +58,20 @@ class HostValidatorTest {
                 .isFalse();
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "unexpected.example.gov.in",
+            "192.0.2.55:8080",
+            "server.internal:9999"
+    })
+    void allowsAnyHostWhenHostValidationIsDisabled(String hostHeader) {
+        HostProperties properties = new HostProperties();
+        properties.getHostValidation().setEnabled(false);
+        HostValidator disabledValidator = new HostValidator(properties);
+
+        assertThat(disabledValidator.validate(hostHeader).valid()).isTrue();
+    }
+
     private static Stream<Arguments> invalidHostHeaders() {
         return Stream.of(
                 Arguments.of("unallowlisted host", "evil.example.com"),

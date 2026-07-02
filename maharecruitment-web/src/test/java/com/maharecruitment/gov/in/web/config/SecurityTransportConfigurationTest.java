@@ -14,10 +14,11 @@ import org.junit.jupiter.api.Test;
 class SecurityTransportConfigurationTest {
 
     @Test
-    void baseConfigurationEnforcesSecureSessionCookiesAndIgnoresForwardedHeadersByDefault() throws Exception {
+    void baseConfigurationUsesWildFlyHttpSafeDefaults() throws Exception {
         Properties properties = loadProperties("application.properties");
 
-        assertThat(properties.getProperty("app.security.cookie.secure")).isEqualTo("true");
+        assertThat(properties.getProperty("app.security.cookie.secure"))
+                .isEqualTo("${APP_SECURITY_COOKIE_SECURE:false}");
         assertThat(properties.getProperty("app.security.cookie.http-only")).isEqualTo("true");
         assertThat(properties.getProperty("app.security.cookie.same-site")).isEqualTo("Lax");
         assertThat(properties.getProperty("server.servlet.session.cookie.secure"))
@@ -26,21 +27,29 @@ class SecurityTransportConfigurationTest {
                 .isEqualTo("${app.security.cookie.http-only}");
         assertThat(properties.getProperty("server.forward-headers-strategy")).isEqualTo("none");
         assertThat(properties.getProperty("spring.mvc.log-request-details")).isEqualTo("false");
-        assertThat(properties.getProperty("app.security.transport.require-https")).isEqualTo("true");
+        assertThat(properties.getProperty("app.security.transport.require-https"))
+                .isEqualTo("${APP_SECURITY_REQUIRE_HTTPS:false}");
         assertThat(properties.getProperty("app.security.transport.allow-loopback-http")).isEqualTo("false");
-        assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers")).isEqualTo("false");
+        assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers"))
+                .isEqualTo("${APP_SECURITY_TRUST_FORWARDED_HEADERS:false}");
         assertThat(properties.getProperty("app.base-url"))
                 .isEqualTo("${APP_BASE_URL:http://103.5.84.215:8080/maharecruitment-web}");
         assertThat(properties.getProperty("app.mobile-auth.issuer"))
                 .isEqualTo("${MOBILE_AUTH_JWT_ISSUER:maharecruitment-mobile}");
+        assertThat(properties.getProperty("security.host-validation.enabled"))
+                .isEqualTo("${SECURITY_HOST_VALIDATION_ENABLED:false}");
         assertThat(properties.getProperty("security.allowed-hosts[0]"))
                 .isEqualTo("${SECURITY_ALLOWED_HOST_PORTAL:103.5.84.215}");
+        assertThat(properties.getProperty("security.allowed-hosts[4]"))
+                .isEqualTo("${SECURITY_ALLOWED_HOST_SERVER:}");
         assertThat(properties.getProperty("security.allowed-ports[1]"))
                 .isEqualTo("${SECURITY_ALLOWED_PORT_HTTPS:443}");
+        assertThat(properties.getProperty("security.allowed-ports[4]"))
+                .isEqualTo("${SECURITY_ALLOWED_PORT_WILDFLY_HTTP:8080}");
         assertThat(properties.getProperty("otp.resend-limit")).isEqualTo("3");
         assertThat(properties.getProperty("otp.resend-window-minutes")).isEqualTo("5");
         assertThat(properties.getProperty("spring.profiles.active")).isNull();
-        assertThat(properties.getProperty("spring.profiles.default")).isEqualTo("local");
+        assertThat(properties.getProperty("spring.profiles.default")).isEqualTo("uat");
     }
 
     @Test
@@ -62,6 +71,9 @@ class SecurityTransportConfigurationTest {
             assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers"))
                     .as(fileName)
                     .isEqualTo("${APP_SECURITY_TRUST_FORWARDED_HEADERS:false}");
+            assertThat(properties.getProperty("security.host-validation.enabled"))
+                    .as(fileName)
+                    .isEqualTo("${SECURITY_HOST_VALIDATION_ENABLED:false}");
         }
     }
 
@@ -77,6 +89,8 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers")).isEqualTo("false");
         assertThat(properties.getProperty("app.security.transport.http-port")).isEqualTo("8777");
         assertThat(properties.getProperty("app.security.transport.https-port")).isEqualTo("8443");
+        assertThat(properties.getProperty("security.host-validation.enabled"))
+                .isEqualTo("${SECURITY_HOST_VALIDATION_ENABLED:true}");
         assertThat(properties.getProperty("app.security.local-http-redirect.enabled")).isEqualTo("true");
     }
 

@@ -29,6 +29,9 @@ public class HostValidator {
     }
 
     public HostValidationResult validate(List<String> hostHeaders) {
+        if (!hostProperties.isHostValidationEnabled()) {
+            return HostValidationResult.allowed();
+        }
         if (hostHeaders == null || hostHeaders.isEmpty()) {
             return HostValidationResult.rejected("missing Host header");
         }
@@ -39,6 +42,9 @@ public class HostValidator {
     }
 
     public HostValidationResult validate(String hostHeader) {
+        if (!hostProperties.isHostValidationEnabled()) {
+            return HostValidationResult.allowed();
+        }
         if (!StringUtils.hasText(hostHeader)) {
             return HostValidationResult.rejected("empty Host header");
         }

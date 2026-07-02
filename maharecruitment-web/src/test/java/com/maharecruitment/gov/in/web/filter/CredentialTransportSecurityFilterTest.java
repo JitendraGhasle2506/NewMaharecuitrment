@@ -38,6 +38,22 @@ class CredentialTransportSecurityFilterTest {
     }
 
     @Test
+    void httpLoginRequestWithPasswordIsAllowedWhenHttpsIsNotRequired() throws Exception {
+        CredentialTransportSecurityFilter httpAllowedFilter = new CredentialTransportSecurityFilter(
+                transportSecurityProperties(false, false));
+        MockHttpServletRequest request = post("/doLogin");
+        request.addParameter("username", "user@example.com");
+        request.addParameter("password", "SecretPassword123!");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean chainInvoked = new AtomicBoolean(false);
+
+        httpAllowedFilter.doFilter(request, response, (servletRequest, servletResponse) -> chainInvoked.set(true));
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(chainInvoked).isTrue();
+    }
+
+    @Test
     void httpsLoginRequestWithPasswordIsAllowed() throws Exception {
         MockHttpServletRequest request = post("/doLogin");
         request.setSecure(true);
@@ -152,8 +168,14 @@ class CredentialTransportSecurityFilterTest {
     }
 
     private TransportSecurityProperties transportSecurityProperties(boolean trustForwardedHeaders) {
+        return transportSecurityProperties(trustForwardedHeaders, true);
+    }
+
+    private TransportSecurityProperties transportSecurityProperties(boolean trustForwardedHeaders, boolean requireHttps) {
         TransportSecurityProperties properties = new TransportSecurityProperties();
         properties.setTrustForwardedHeaders(trustForwardedHeaders);
+        properties.setRequireHttps(requireHttps);
+        properties.setAllowLoopbackHttp(false);
         return properties;
     }
 
