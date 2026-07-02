@@ -90,6 +90,11 @@
                         <h2 class="mb-0" th:text="${pageTitle != null ? pageTitle : 'Employees'}">Employees</h2>
                         <p class="text-muted mb-0" th:text="${pageSubtitle != null ? pageSubtitle : 'Employee list'}">Employee list</p>
                     </div>
+                    <a class="btn btn-outline-primary btn-sm"
+                        th:if="${currentStatus == 'ACTIVE'}"
+                        th:href="@{/hr/employee-location-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                        <i class="fa-solid fa-location-dot me-1"></i> Location Mapping
+                    </a>
                     <div class="d-flex align-items-end gap-2 flex-grow-1 justify-content-end flex-wrap">
                         <div class="filter-group flex-grow-1" style="max-width: 860px;">
                             <form method="get"
@@ -152,6 +157,7 @@
                                     <th>Mahait Joining Date</th>
                                     <th>Type</th>
                                     <th>Status</th>
+                                    <th class="text-end pe-4">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -191,9 +197,17 @@
                                             th:classappend="${emp.status == 'ACTIVE'} ? ' status-active' : ' bg-danger-subtle text-danger-emphasis'"
                                             th:text="${emp.status}">ACTIVE</span>
                                     </td>
+                                    <td class="text-end pe-4">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:if="${currentStatus == 'ACTIVE'}"
+                                            th:href="@{/hr/employee-location-mappings/{employeeId}(employeeId=${emp.employeeId},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                                            <i class="fa-solid fa-location-dot me-1"></i> Locations
+                                        </a>
+                                        <span th:if="${currentStatus != 'ACTIVE'}" class="text-muted">-</span>
+                                    </td>
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(employees)}">
-                                    <td colspan="8" class="text-center py-5 text-muted">
+                                    <td colspan="9" class="text-center py-5 text-muted">
                                         No employee records found.
                                     </td>
                                 </tr>

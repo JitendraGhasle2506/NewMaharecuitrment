@@ -257,10 +257,17 @@
                             Full employee profile captured during onboarding, including HR verification, documents, and previous employment.
                         </small>
                     </div>
-                    <a th:if="${showBackButton == null or showBackButton}" class="btn btn-outline-secondary btn-sm"
-                        th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})} : @{/hr/employees(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
-                        Back to Employees
-                    </a>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-outline-primary btn-sm"
+                            th:if="${employeeDetail.status == 'ACTIVE'}"
+                            th:href="@{/hr/employee-location-mappings/{employeeId}(employeeId=${employeeDetail.employeeId},type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                            <i class="fa-solid fa-location-dot me-1"></i> Manage Locations
+                        </a>
+                        <a th:if="${showBackButton == null or showBackButton}" class="btn btn-outline-secondary btn-sm"
+                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})} : @{/hr/employees(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                            Back to Employees
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body" th:with="detail=${employeeDetail.onboardingForm}">
                     <div class="pre-onboarding-hero hero-hr employee-hero-shell">

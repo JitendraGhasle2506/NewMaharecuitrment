@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Location Mapping</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/employee-location-mapping.css}">
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Employee Location Mapping', ~{::section})}">
+        <section>
+            <div class="card employee-location-card">
+                <div class="header employee-location-page-header">
+                    <div class="employee-location-heading">
+                        <h2>Employee Location Mapping</h2>
+                        <div class="employee-location-page-meta">
+                            <span>
+                                <i class="fa-solid fa-user-check"></i>
+                                <span th:text="${employeePage.totalElements + ' active employees'}">0 active employees</span>
+                            </span>
+                            <span>
+                                <i class="fa-solid fa-filter"></i>
+                                <span th:text="${currentType == 'ALL' ? 'All types' : currentType}">All types</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="employee-location-toolbar">
+                        <form method="get" class="employee-location-filter-form"
+                            th:action="@{/hr/employee-location-mappings}">
+                            <input type="hidden" name="page" value="0">
+                            <div class="employee-location-filter-field employee-location-filter-search">
+                                <label class="form-label mb-1">Search</label>
+                                <input type="text" name="search" class="form-control form-control-sm"
+                                    th:value="${searchTerm}"
+                                    placeholder="Employee, code, email, project, location"
+                                    aria-label="Search employee location mappings">
+                            </div>
+                            <div class="employee-location-filter-field">
+                                <label class="form-label mb-1">Type</label>
+                                <select name="type" class="form-select form-select-sm">
+                                    <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
+                                    <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
+                                    <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
+                                </select>
+                            </div>
+                            <div class="employee-location-filter-field">
+                                <label class="form-label mb-1">Page Size</label>
+                                <select name="size" class="form-select form-select-sm">
+                                    <option value="10" th:selected="${pageSize == 10}">10 per page</option>
+                                    <option value="25" th:selected="${pageSize == 25}">25 per page</option>
+                                    <option value="50" th:selected="${pageSize == 50}">50 per page</option>
+                                </select>
+                            </div>
+                            <div class="employee-location-filter-actions">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fa-solid fa-magnifying-glass me-1"></i> Search
+                                </button>
+                                <a class="btn btn-outline-secondary btn-sm"
+                                    th:href="@{/hr/employee-location-mappings}">
+                                    Clear
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <div th:if="${successMessage}" class="alert alert-success m-3" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger m-3" th:text="${errorMessage}"></div>
+
+                    <div class="employee-location-result-strip"
+                        th:text="${employeePage.totalElements > 0 ? 'Showing ' + (employeePage.number * employeePage.size + 1) + ' to ' + (employeePage.number * employeePage.size + employeePage.numberOfElements) + ' of ' + employeePage.totalElements + ' employees' : 'No employee records found for the current filter'}">
+                        Showing 1 to 10 of 10 employees
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Employee</th>
+                                    <th>Project</th>
+                                    <th>Designation</th>
+                                    <th>Mapped Locations</th>
+                                    <th>Type</th>
+                                    <th class="text-end pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="employee : ${employees}">
+                                    <td class="ps-4">
+                                        <div class="employee-location-person">
+                                            <div class="employee-location-avatar"
+                                                th:text="${#strings.isEmpty(employee.fullName) ? 'E' : #strings.substring(employee.fullName, 0, 1)}">
+                                                E
+                                            </div>
+                                            <div>
+                                                <a class="employee-location-name"
+                                                    th:href="@{/hr/employee-location-mappings/{employeeId}(employeeId=${employee.employeeId},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}"
+                                                    th:text="${employee.fullName}">Employee Name</a>
+                                                <div class="small text-muted">
+                                                    <span th:text="${employee.employeeCode}">EMP000001</span>
+                                                    <span> | </span>
+                                                    <span th:text="${employee.email}">email@domain.com</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="employee-location-strong-text" th:text="${employee.projectName}">Project</div>
+                                    </td>
+                                    <td>
+                                        <div class="employee-location-strong-text" th:text="${employee.designation}">Designation</div>
+                                        <small class="text-muted" th:text="${employee.department}">Department</small>
+                                    </td>
+                                    <td>
+                                        <div th:if="${!#lists.isEmpty(employee.mappedLocations)}"
+                                            class="employee-location-mapped-cell">
+                                            <span class="employee-location-count-pill"
+                                                th:text="${#lists.size(employee.mappedLocations) + ' mapped'}">
+                                                1 mapped
+                                            </span>
+                                            <div class="employee-location-chip-list">
+                                                <span class="employee-location-chip"
+                                                    th:each="location : ${employee.mappedLocations}"
+                                                    th:title="${location.displayName}"
+                                                    th:text="${location.displayName}">
+                                                    Location
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span class="employee-location-pending-pill"
+                                            th:if="${#lists.isEmpty(employee.mappedLocations)}">
+                                            <i class="fa-regular fa-circle"></i> Not mapped
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${employee.recruitmentType == 'INTERNAL'}"
+                                            class="badge bg-info">Internal</span>
+                                        <span th:if="${employee.recruitmentType == 'EXTERNAL'}"
+                                            class="badge bg-secondary">External</span>
+                                        <span th:if="${employee.recruitmentType == null}"
+                                            class="badge bg-light text-dark">-</span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:href="@{/hr/employee-location-mappings/{employeeId}(employeeId=${employee.employeeId},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                                            <i class="fa-solid fa-location-dot me-1"></i> Manage
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(employees)}">
+                                    <td colspan="6" class="text-center py-5">
+                                        <div class="employee-location-empty-state">
+                                            <i class="fa-regular fa-folder-open"></i>
+                                            <span>No active onboarded employees found.</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card-footer bg-white border-top px-4 py-3" th:if="${employeePage.totalPages > 1}">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                            <div class="text-muted small">
+                                Page <span th:text="${employeePage.number + 1}">1</span> of
+                                <span th:text="${employeePage.totalPages}">1</span>
+                            </div>
+                            <nav aria-label="Employee location mapping pagination">
+                                <ul class="pagination mb-0">
+                                    <li class="page-item" th:classappend="${employeePage.first} ? ' disabled'">
+                                        <a class="page-link"
+                                            th:href="@{/hr/employee-location-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number - 1},size=${employeePage.size})}">
+                                            Previous
+                                        </a>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <span class="page-link"
+                                            th:text="${employeePage.number + 1}">1</span>
+                                    </li>
+                                    <li class="page-item" th:classappend="${employeePage.last} ? ' disabled'">
+                                        <a class="page-link"
+                                            th:href="@{/hr/employee-location-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number + 1},size=${employeePage.size})}">
+                                            Next
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

@@ -15,5 +15,9 @@ public interface EmployeeLocationMappingRepository extends JpaRepository<Employe
     @EntityGraph(attributePaths = { "employee", "location" })
     List<EmployeeLocationMappingEntity> findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(Long employeeId);
 
+    @EntityGraph(attributePaths = { "employee", "location" })
+    List<EmployeeLocationMappingEntity> findByEmployeeEmployeeIdInOrderByEmployeeEmployeeIdAscLocationLocationNameAsc(
+            Collection<Long> employeeIds);
+
     boolean existsByEmployeeEmployeeIdAndLocationLocationIdIn(Long employeeId, Collection<Long> locationIds);
 }
