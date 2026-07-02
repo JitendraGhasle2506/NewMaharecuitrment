@@ -22,7 +22,7 @@ class CookieAttributeFilterTest {
         filter.doFilter(new MockHttpServletRequest(), response, (request, servletResponse) ->
                 ((HttpServletResponse) servletResponse).addHeader(
                         "Set-Cookie",
-                        "JSESSIONID=abc123; Path=/MahaitRecruitment"));
+                        "JSESSIONID=abc123; Path=/maharecruitment"));
 
         assertThat(response.getHeaders("Set-Cookie")).hasSize(1);
         assertThat(response.getHeader("Set-Cookie"))
@@ -38,7 +38,7 @@ class CookieAttributeFilterTest {
 
         filter.doFilter(new MockHttpServletRequest(), response, (request, servletResponse) -> {
             Cookie cookie = new Cookie("JSESSIONID", "abc123");
-            cookie.setPath("/MahaitRecruitment");
+            cookie.setPath("/maharecruitment");
             ((HttpServletResponse) servletResponse).addCookie(cookie);
         });
 
@@ -61,7 +61,7 @@ class CookieAttributeFilterTest {
         filter.doFilter(request, response, (servletRequest, servletResponse) ->
                 ((HttpServletResponse) servletResponse).addHeader(
                         "Set-Cookie",
-                        "JSESSIONID=abc123; Path=/MahaitRecruitment; Secure"));
+                        "JSESSIONID=abc123; Path=/maharecruitment; Secure"));
 
         assertThat(response.getHeader("Set-Cookie"))
                 .doesNotContain("Secure")

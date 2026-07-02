@@ -64,13 +64,13 @@ class NotificationServiceImplTest {
         verify(mailSender).send(messageCaptor.capture());
 
         assertThat(messageCaptor.getValue().getText())
-                .contains("https://portal.example.gov.in/MahaitRecruitment/login")
+                .contains("https://portal.example.gov.in/maharecruitment/login")
                 .doesNotContain("evil.example.com");
     }
 
     private ApplicationUrlService applicationUrlService() {
         ApplicationUrlProperties properties = new ApplicationUrlProperties();
-        properties.setBaseUrl("https://portal.example.gov.in/MahaitRecruitment");
+        properties.setBaseUrl("https://portal.example.gov.in/maharecruitment");
         return new ApplicationUrlService(properties);
     }
 }

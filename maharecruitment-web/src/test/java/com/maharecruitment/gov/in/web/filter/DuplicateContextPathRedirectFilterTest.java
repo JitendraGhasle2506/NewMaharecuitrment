@@ -13,7 +13,7 @@ import jakarta.servlet.ServletException;
 
 class DuplicateContextPathRedirectFilterTest {
 
-    private static final String CONTEXT_PATH = "/MahaitRecruitment";
+    private static final String CONTEXT_PATH = "/maharecruitment";
 
     private final DuplicateContextPathRedirectFilter filter = new DuplicateContextPathRedirectFilter();
 

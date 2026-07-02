@@ -13,7 +13,7 @@ import com.maharecruitment.gov.in.web.util.ContextPathUrlResolver;
 
 class HomeControllerTest {
 
-    private static final String CONTEXT_PATH = "/MahaitRecruitment";
+    private static final String CONTEXT_PATH = "/maharecruitment";
 
     private final NotificationChannelProperties notificationChannelProperties = new NotificationChannelProperties();
     private final HomeController controller = new HomeController(
@@ -25,7 +25,7 @@ class HomeControllerTest {
     void homeRedirectStripsContextPathBeforeReturningSpringRedirect() {
         MockHttpServletRequest request = request();
         MockHttpSession session = new MockHttpSession();
-        session.setAttribute("homepageUrl", "/MahaitRecruitment/admin/dashboard");
+        session.setAttribute("homepageUrl", "/maharecruitment/admin/dashboard");
 
         String viewName = controller.home(request, session);
 
@@ -36,7 +36,7 @@ class HomeControllerTest {
     void homeRedirectStripsRepeatedContextPathBeforeReturningSpringRedirect() {
         MockHttpServletRequest request = request();
         MockHttpSession session = new MockHttpSession();
-        session.setAttribute("homepageUrl", "/MahaitRecruitment/MahaitRecruitment/");
+        session.setAttribute("homepageUrl", "/maharecruitment/maharecruitment/");
 
         String viewName = controller.home(request, session);
 
