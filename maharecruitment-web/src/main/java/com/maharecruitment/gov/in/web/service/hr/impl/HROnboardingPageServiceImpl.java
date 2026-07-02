@@ -2,9 +2,11 @@ package com.maharecruitment.gov.in.web.service.hr.impl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -28,11 +30,15 @@ import com.maharecruitment.gov.in.auth.service.UserManagementService;
 import com.maharecruitment.gov.in.auth.util.SecurePasswordGenerator;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
+import com.maharecruitment.gov.in.master.entity.LocationMaster;
+import com.maharecruitment.gov.in.master.repository.LocationMasterRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeLocationMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentDesignationVacancyEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeLocationMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
@@ -67,6 +73,8 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     private final AccountNotificationService accountNotificationService;
     private final CandidateIdentityValidationService candidateIdentityValidationService;
     private final FileStorageService fileStorageService;
+    private final LocationMasterRepository locationMasterRepository;
+    private final EmployeeLocationMappingRepository employeeLocationMappingRepository;
 
     public HROnboardingPageServiceImpl(
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
@@ -80,7 +88,9 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             RoleRepository roleRepository,
             AccountNotificationService accountNotificationService,
             CandidateIdentityValidationService candidateIdentityValidationService,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            LocationMasterRepository locationMasterRepository,
+            EmployeeLocationMappingRepository employeeLocationMappingRepository) {
         this.preOnboardingRepository = preOnboardingRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.subDepartmentRepository = subDepartmentRepository;
@@ -93,6 +103,8 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         this.accountNotificationService = accountNotificationService;
         this.candidateIdentityValidationService = candidateIdentityValidationService;
         this.fileStorageService = fileStorageService;
+        this.locationMasterRepository = locationMasterRepository;
+        this.employeeLocationMappingRepository = employeeLocationMappingRepository;
     }
 
     @Override
@@ -215,6 +227,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         if (!form.isHrVerified()) {
             throw new RecruitmentNotificationException("HR Verification is required.");
         }
+        List<LocationMaster> selectedLocations = resolveSelectedEmployeeLocations(form.getSelectedLocationIds());
         validateEmployeeAccountData(form);
         if (entity.getOnboardedAt() != null) {
             throw new RecruitmentNotificationException("Candidate is already onboarded.");
@@ -313,6 +326,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
 
             EmployeeOnboardingResult accountResult = createEmployeeAccessAccount(entity, departmentRegistration,
                     savedEmployee);
+            saveEmployeeLocationMappings(savedEmployee, selectedLocations);
             replacedPaths.forEach(fileStorageService::deleteQuietly);
             log.info(
                     "HR onboarding completed successfully. preOnboardingId={}, actorEmail={}, employeeId={}",
@@ -472,6 +486,47 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 createdUser.getEmail(),
                 temporaryPassword,
                 notificationWarning);
+    }
+
+    private List<LocationMaster> resolveSelectedEmployeeLocations(List<Long> selectedLocationIds) {
+        Set<Long> uniqueLocationIds = new LinkedHashSet<>();
+        if (selectedLocationIds != null) {
+            selectedLocationIds.stream()
+                    .filter(id -> id != null && id > 0)
+                    .forEach(uniqueLocationIds::add);
+        }
+        if (uniqueLocationIds.isEmpty()) {
+            throw new RecruitmentNotificationException("Select at least one employee location.");
+        }
+
+        List<LocationMaster> locations = locationMasterRepository.findAllById(uniqueLocationIds);
+        if (locations.size() != uniqueLocationIds.size()) {
+            throw new RecruitmentNotificationException("One or more selected employee locations are invalid.");
+        }
+        List<LocationMaster> inactiveLocations = locations.stream()
+                .filter(location -> !"Y".equalsIgnoreCase(location.getActiveFlag()))
+                .toList();
+        if (!inactiveLocations.isEmpty()) {
+            throw new RecruitmentNotificationException("Inactive employee locations cannot be mapped.");
+        }
+
+        Map<Long, LocationMaster> locationById = new HashMap<>();
+        locations.forEach(location -> locationById.put(location.getLocationId(), location));
+        return uniqueLocationIds.stream()
+                .map(locationById::get)
+                .toList();
+    }
+
+    private void saveEmployeeLocationMappings(EmployeeEntity employee, List<LocationMaster> locations) {
+        List<EmployeeLocationMappingEntity> mappings = locations.stream()
+                .map(location -> {
+                    EmployeeLocationMappingEntity mapping = new EmployeeLocationMappingEntity();
+                    mapping.setEmployee(employee);
+                    mapping.setLocation(location);
+                    return mapping;
+                })
+                .toList();
+        employeeLocationMappingRepository.saveAll(mappings);
     }
 
     private void validateEmployeeAccountData(AgencyPreOnboardingForm form) {

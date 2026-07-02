@@ -38,6 +38,9 @@
         : "";
     const hrFlowInput = form.querySelector("[name='hrFlow']");
     const hrFlow = hrFlowInput && hrFlowInput.value === "true";
+    const employeeLocationPicker = document.getElementById("employeeLocationPicker");
+    const selectedEmployeeLocationInputs = document.getElementById("selectedEmployeeLocationInputs");
+    const selectedEmployeeLocationBox = document.getElementById("selectedEmployeeLocationBox");
     const existingPhotoPath = candidatePhotoPreview
         ? (candidatePhotoPreview.getAttribute("data-managed-path") || "")
         : "";
@@ -823,6 +826,101 @@
         reader.readAsDataURL(file);
     }
 
+    function getSelectedEmployeeLocationInputs() {
+        if (!selectedEmployeeLocationInputs) {
+            return [];
+        }
+        return Array.from(selectedEmployeeLocationInputs.querySelectorAll("input[name='selectedLocationIds']"));
+    }
+
+    function getSelectedEmployeeLocationIds() {
+        return getSelectedEmployeeLocationInputs()
+            .map(function (input) { return input.value; })
+            .filter(Boolean);
+    }
+
+    function getLocationOption(locationId) {
+        if (!employeeLocationPicker) {
+            return null;
+        }
+        return Array.from(employeeLocationPicker.options).find(function (option) {
+            return option.value === String(locationId);
+        }) || null;
+    }
+
+    function addEmployeeLocation(locationId) {
+        if (!selectedEmployeeLocationInputs || !locationId) {
+            return;
+        }
+        const normalizedLocationId = String(locationId);
+        if (getSelectedEmployeeLocationIds().includes(normalizedLocationId)) {
+            if (employeeLocationPicker) {
+                employeeLocationPicker.value = "";
+            }
+            return;
+        }
+
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "selectedLocationIds";
+        input.value = normalizedLocationId;
+        selectedEmployeeLocationInputs.appendChild(input);
+
+        if (employeeLocationPicker) {
+            employeeLocationPicker.value = "";
+        }
+        renderSelectedEmployeeLocations();
+        checkFormValidity();
+    }
+
+    function removeEmployeeLocation(locationId) {
+        getSelectedEmployeeLocationInputs().forEach(function (input) {
+            if (input.value === String(locationId)) {
+                input.remove();
+            }
+        });
+        renderSelectedEmployeeLocations();
+        checkFormValidity();
+    }
+
+    function renderSelectedEmployeeLocations() {
+        if (!selectedEmployeeLocationBox) {
+            return;
+        }
+
+        selectedEmployeeLocationBox.innerHTML = "";
+        const selectedIds = getSelectedEmployeeLocationIds();
+        if (selectedIds.length === 0) {
+            const emptyState = document.createElement("div");
+            emptyState.className = "hr-selected-location-empty";
+            emptyState.textContent = "No employee location selected.";
+            selectedEmployeeLocationBox.appendChild(emptyState);
+            return;
+        }
+
+        selectedIds.forEach(function (locationId) {
+            const option = getLocationOption(locationId);
+            const item = document.createElement("div");
+            item.className = "hr-selected-location-item";
+
+            const label = document.createElement("span");
+            label.className = "hr-selected-location-label";
+            label.textContent = option ? option.textContent.trim() : "Location #" + locationId;
+
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.className = "hr-selected-location-remove";
+            removeButton.textContent = "Remove";
+            removeButton.addEventListener("click", function () {
+                removeEmployeeLocation(locationId);
+            });
+
+            item.appendChild(label);
+            item.appendChild(removeButton);
+            selectedEmployeeLocationBox.appendChild(item);
+        });
+    }
+
     function checkFormValidity() {
         if (hrFlow) {
             const hrLoc = document.getElementById("hrOnboardingLocation");
@@ -832,11 +930,13 @@
             const locValid = hrLoc && hrLoc.value.trim() !== "";
             const dateValid = hrDate && hrDate.value !== "";
             const checkValid = hrCheck && hrCheck.checked;
+            const mappedLocationValid = !employeeLocationPicker || getSelectedEmployeeLocationIds().length > 0;
             
             if (hrLoc) setFieldValidity(hrLoc, locValid ? "" : "Location is required.");
             if (hrDate) setFieldValidity(hrDate, dateValid ? "" : "Date is required.");
+            if (employeeLocationPicker) setFieldValidity(employeeLocationPicker, mappedLocationValid ? "" : "Select at least one employee location.");
             
-            submitBtn.disabled = !locValid || !dateValid || !checkValid;
+            submitBtn.disabled = !locValid || !dateValid || !checkValid || !mappedLocationValid;
             return;
         }
 
@@ -960,6 +1060,12 @@
         const hrDate = document.getElementById("hrOnboardingDate");
         const hrCheck = document.getElementById("hrVerified");
         [hrLoc, hrDate].forEach(el => el && el.addEventListener("input", checkFormValidity));
+        if (employeeLocationPicker) {
+            employeeLocationPicker.addEventListener("change", function () {
+                addEmployeeLocation(employeeLocationPicker.value);
+            });
+            renderSelectedEmployeeLocations();
+        }
         if (hrCheck) hrCheck.addEventListener("change", checkFormValidity);
     }
 

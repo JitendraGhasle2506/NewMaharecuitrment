@@ -23,11 +23,11 @@ public class LocationMasterDto {
 
     private Long locationId;
 
-    @NotBlank(message = "Location name is required")
-    @Size(max = 150, message = "Location name must not exceed 150 characters")
+    @NotBlank(message = "Address is required")
+    @Size(max = 150, message = "Address must not exceed 150 characters")
     @Pattern(
             regexp = "^(?=.*[A-Za-z0-9])[A-Za-z0-9\\s\\-/().,]+$",
-            message = "Location name can contain alphabets, numbers, spaces, hyphen, slash, brackets, dot and comma only")
+            message = "Address can contain alphabets, numbers, spaces, hyphen, slash, brackets, dot and comma only")
     private String locationName;
 
     @Size(max = 150, message = "Office name must not exceed 150 characters")

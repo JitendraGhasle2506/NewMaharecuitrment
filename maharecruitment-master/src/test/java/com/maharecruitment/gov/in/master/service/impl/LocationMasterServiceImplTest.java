@@ -72,7 +72,7 @@ class LocationMasterServiceImplTest {
 
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(DuplicateResourceException.class)
-                .hasMessageContaining("Location name already exists");
+                .hasMessageContaining("Address already exists");
 
         verify(repository, never()).save(any(LocationMaster.class));
     }

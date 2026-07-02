@@ -32,9 +32,9 @@
 
                     <form class="row g-2 mb-3 align-items-end" method="get" th:action="@{/master/locations}">
                         <div class="col-md-4">
-                            <label class="form-label" for="searchText">Search Location / Office</label>
+                            <label class="form-label" for="searchText">Search Address / Office</label>
                             <input class="form-control form-control-sm" type="text" id="searchText" name="searchText"
-                                th:value="${searchText}" maxlength="150" placeholder="Enter location or office name">
+                                th:value="${searchText}" maxlength="150" placeholder="Enter address or office name">
                         </div>
                         <div class="col-auto form-check mb-1">
                             <input class="form-check-input" type="checkbox" id="includeInactive" name="includeInactive"
@@ -53,7 +53,7 @@
                                 <tr>
                                     <th>Sr.No</th>
                                     <th>Office Name</th>
-                                    <th>Location Name</th>
+                                    <th>Address</th>
                                     <th>Latitude</th>
                                     <th>Longitude</th>
                                     <th>Status</th>

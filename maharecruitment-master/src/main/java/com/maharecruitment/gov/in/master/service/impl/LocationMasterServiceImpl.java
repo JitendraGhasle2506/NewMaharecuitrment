@@ -46,7 +46,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
     public LocationMasterDto create(LocationMasterDto request) {
         String locationName = normalizeLocationName(request.getLocationName());
         if (repository.existsByLocationNameIgnoreCase(locationName)) {
-            throw new DuplicateResourceException("Location name already exists: " + locationName);
+            throw new DuplicateResourceException("Address already exists: " + locationName);
         }
 
         LocationMaster entity = LocationMaster.builder()
@@ -65,7 +65,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
         LocationMaster entity = findLocation(locationId);
         String locationName = normalizeLocationName(request.getLocationName());
         if (repository.existsByLocationNameIgnoreCaseAndLocationIdNot(locationName, locationId)) {
-            throw new DuplicateResourceException("Location name already exists: " + locationName);
+            throw new DuplicateResourceException("Address already exists: " + locationName);
         }
 
         entity.setLocationName(locationName);
@@ -144,14 +144,14 @@ public class LocationMasterServiceImpl implements LocationMasterService {
     private String normalizeLocationName(String locationName) {
         String normalized = locationName == null ? "" : locationName.trim();
         if (normalized.isBlank()) {
-            throw new BusinessValidationException("Location name is required");
+            throw new BusinessValidationException("Address is required");
         }
         if (normalized.length() > LOCATION_NAME_MAX_LENGTH) {
-            throw new BusinessValidationException("Location name must not exceed 150 characters");
+            throw new BusinessValidationException("Address must not exceed 150 characters");
         }
         if (!LOCATION_NAME_PATTERN.matcher(normalized).matches()) {
             throw new BusinessValidationException(
-                    "Location name can contain alphabets, numbers, spaces, hyphen, slash, brackets, dot and comma only");
+                    "Address can contain alphabets, numbers, spaces, hyphen, slash, brackets, dot and comma only");
         }
         return normalized;
     }

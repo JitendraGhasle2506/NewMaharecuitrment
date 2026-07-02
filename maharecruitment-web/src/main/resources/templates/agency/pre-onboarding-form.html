@@ -638,6 +638,32 @@
                                     <input type="date" class="form-control hr-verification-input" th:field="*{hrOnboardingDate}" required />
                                 </div>
                             </div>
+                            <div class="form-group hr-verification-field hr-location-mapping-field mt-3">
+                                <label class="form-label" for="employeeLocationPicker">
+                                    Employee Location Mapping <span class="text-danger">*</span>
+                                </label>
+                                <select id="employeeLocationPicker"
+                                    class="form-select hr-verification-input hr-location-mapping-picker">
+                                    <option value="">Select location</option>
+                                    <option th:each="location : ${locationOptions}"
+                                        th:value="${location.locationId}"
+                                        th:text="${(location.officeName != null && !#strings.isEmpty(location.officeName) ? location.officeName + ' - ' : '') + location.locationName}">
+                                        MahaIT Office - Mumbai
+                                    </option>
+                                </select>
+                                <div id="selectedEmployeeLocationInputs">
+                                    <input type="hidden" th:each="selectedLocationId : *{selectedLocationIds}"
+                                        name="selectedLocationIds" th:value="${selectedLocationId}">
+                                </div>
+                                <div id="selectedEmployeeLocationBox" class="hr-selected-location-box"
+                                    aria-live="polite">
+                                    <div class="hr-selected-location-empty">No employee location selected.</div>
+                                </div>
+                                <div class="text-danger small mt-1"
+                                    th:if="${locationOptions != null and #lists.isEmpty(locationOptions)}">
+                                    No active Location Master records are available.
+                                </div>
+                            </div>
                             <div class="verification-box hr-verification-box mt-3">
                                 <label class="check-card verification-card mb-0">
                                     <input type="checkbox" id="hrVerified" th:field="*{hrVerified}" required />

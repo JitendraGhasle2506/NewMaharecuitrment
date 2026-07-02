@@ -17,6 +17,7 @@ import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
+import com.maharecruitment.gov.in.master.service.LocationMasterService;
 
 @Controller
 @RequestMapping("/hr/onboarding")
@@ -24,9 +25,13 @@ import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
 public class HROnboardingPageController {
 
     private final HROnboardingPageService hrOnboardingPageService;
+    private final LocationMasterService locationMasterService;
 
-    public HROnboardingPageController(HROnboardingPageService hrOnboardingPageService) {
+    public HROnboardingPageController(
+            HROnboardingPageService hrOnboardingPageService,
+            LocationMasterService locationMasterService) {
         this.hrOnboardingPageService = hrOnboardingPageService;
+        this.locationMasterService = locationMasterService;
     }
 
     @GetMapping
@@ -40,6 +45,7 @@ public class HROnboardingPageController {
     public String onboardingForm(@PathVariable("id") Long preOnboardingId, Model model) {
         AgencyPreOnboardingForm form = hrOnboardingPageService.loadOnboardingForm(preOnboardingId);
         model.addAttribute("preOnboardingForm", form);
+        model.addAttribute("locationOptions", locationMasterService.getAll(false));
         return "agency/pre-onboarding-form"; // REUSING THE SAME FORM
     }
 

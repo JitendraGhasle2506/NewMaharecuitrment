@@ -34,7 +34,7 @@ public class LocationMaster extends Auditable {
     @Column(name = "location_id")
     private Long locationId;
 
-    @NotBlank(message = "Location name is required")
+    @NotBlank(message = "Address is required")
     @Column(name = "location_name", nullable = false, length = 150)
     private String locationName;
 

@@ -152,6 +152,8 @@ public class AgencyPreOnboardingForm {
 
     private String hrOnboardingLocation;
 
+    private List<Long> selectedLocationIds = new ArrayList<>();
+
     private boolean hrVerified;
 
     private List<AgencyPreOnboardingEmploymentForm> previousEmployments = new ArrayList<>();
