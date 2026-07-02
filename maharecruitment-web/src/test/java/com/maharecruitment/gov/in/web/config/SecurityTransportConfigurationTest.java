@@ -30,7 +30,7 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("app.security.transport.allow-loopback-http")).isEqualTo("false");
         assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers")).isEqualTo("false");
         assertThat(properties.getProperty("app.base-url"))
-                .isEqualTo("${APP_BASE_URL:http://103.5.84.215:8080/mahaitRecruitment}");
+                .isEqualTo("${APP_BASE_URL:http://103.5.84.215:8080/maharecruitment-web}");
         assertThat(properties.getProperty("app.mobile-auth.issuer"))
                 .isEqualTo("${MOBILE_AUTH_JWT_ISSUER:maharecruitment-mobile}");
         assertThat(properties.getProperty("security.allowed-hosts[0]"))
