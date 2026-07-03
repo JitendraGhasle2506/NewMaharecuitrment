@@ -1,0 +1,257 @@
+package com.maharecruitment.gov.in.web.service.mobile;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
+import java.util.Locale;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.master.entity.DepartmentMst;
+import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
+import com.maharecruitment.gov.in.master.entity.SubDepartment;
+import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
+import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
+import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.web.dto.mobile.MobileEmployeeDetails;
+import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
+
+@Service
+public class MobileEmployeeDetailsService {
+
+    private static final Logger log = LoggerFactory.getLogger(MobileEmployeeDetailsService.class);
+    private static final String EMPLOYEE_TYPE_INTERNAL = "INTERNAL";
+    private static final String EMPLOYEE_TYPE_EXTERNAL = "EXTERNAL";
+    private static final String DOCUMENT_VIEW_PATH = "/documents/view";
+
+    private final EmployeeRepository employeeRepository;
+    private final EmployeeReportingMappingRepository reportingMappingRepository;
+    private final SubDepartmentRepository subDepartmentRepository;
+    private final DepartmentMstRepository departmentRepository;
+    private final FileStorageService fileStorageService;
+
+    public MobileEmployeeDetailsService(
+            EmployeeRepository employeeRepository,
+            EmployeeReportingMappingRepository reportingMappingRepository,
+            SubDepartmentRepository subDepartmentRepository,
+            DepartmentMstRepository departmentRepository,
+            FileStorageService fileStorageService) {
+        this.employeeRepository = employeeRepository;
+        this.reportingMappingRepository = reportingMappingRepository;
+        this.subDepartmentRepository = subDepartmentRepository;
+        this.departmentRepository = departmentRepository;
+        this.fileStorageService = fileStorageService;
+    }
+
+    @Transactional(readOnly = true)
+    public MobileEmployeeDetails loadForUser(User user) {
+        if (user == null || !StringUtils.hasText(user.getEmail())) {
+            return MobileEmployeeDetails.empty();
+        }
+
+        List<EmployeeEntity> profiles = employeeRepository.findMobileLoginProfilesByEmail(user.getEmail().trim());
+        if (profiles.isEmpty()) {
+            log.debug("Employee profile not found for mobile login userId={}", user.getId());
+            return MobileEmployeeDetails.empty();
+        }
+        if (profiles.size() > 1) {
+            log.warn("Multiple employee profiles found for mobile login userId={}. Selecting the highest-priority record.",
+                    user.getId());
+        }
+
+        EmployeeEntity employee = profiles.getFirst();
+        DepartmentInfo departmentInfo = resolveDepartmentInfo(employee);
+        SubDepartmentInfo subDepartmentInfo = resolveSubDepartmentInfo(employee);
+        String employeeType = normalizeEmployeeType(employee.getRecruitmentType());
+        ReportingInfo reportingInfo = resolveReportingInfo(employee, departmentInfo, employeeType);
+
+        return new MobileEmployeeDetails(
+                employee.getEmployeeId(),
+                textOrNull(employee.getEmployeeCode()),
+                textOrNull(employee.getFullName()),
+                buildPhotoUrl(employee),
+                designationId(employee),
+                designationName(employee),
+                departmentInfo.id(),
+                departmentInfo.name(),
+                subDepartmentInfo.id(),
+                subDepartmentInfo.name(),
+                employeeType,
+                reportingInfo.managerId(),
+                reportingInfo.managerName(),
+                reportingInfo.departmentId(),
+                reportingInfo.departmentName());
+    }
+
+    private ReportingInfo resolveReportingInfo(
+            EmployeeEntity employee,
+            DepartmentInfo departmentInfo,
+            String employeeType) {
+        EmployeeReportingMappingEntity mapping = employee.getEmployeeId() == null
+                ? null
+                : reportingMappingRepository
+                        .findFirstByEmployeeIdOrderByMappingIdDesc(employee.getEmployeeId())
+                        .orElse(null);
+        EmployeeEntity manager = resolveReportingManager(mapping);
+        Long managerId = manager != null ? manager.getEmployeeId() : null;
+        String managerName = manager != null ? textOrNull(manager.getFullName()) : null;
+
+        if (EMPLOYEE_TYPE_EXTERNAL.equals(employeeType)) {
+            return new ReportingInfo(managerId, managerName, departmentInfo.id(), departmentInfo.name());
+        }
+
+        return new ReportingInfo(managerId, managerName, null, null);
+    }
+
+    private EmployeeEntity resolveReportingManager(EmployeeReportingMappingEntity mapping) {
+        if (mapping == null || mapping.getManagerEmployeeId() == null) {
+            return null;
+        }
+
+        return employeeRepository.findById(mapping.getManagerEmployeeId()).orElse(null);
+    }
+
+    private Long designationId(EmployeeEntity employee) {
+        ManpowerDesignationMaster designation = employee.getDesignation();
+        return designation != null ? designation.getDesignationId() : null;
+    }
+
+    private String designationName(EmployeeEntity employee) {
+        ManpowerDesignationMaster designation = employee.getDesignation();
+        return designation != null ? textOrNull(designation.getDesignationName()) : null;
+    }
+
+    private DepartmentInfo resolveDepartmentInfo(EmployeeEntity employee) {
+        DepartmentRegistrationEntity registration = employee.getDepartmentRegistration();
+        SubDepartment subDepartment = employee.getSubDepartment();
+        DepartmentMst mappedDepartment = subDepartment != null ? subDepartment.getDepartment() : null;
+
+        Long departmentId = firstNonNull(
+                registration != null ? registration.getDepartmentId() : null,
+                mappedDepartment != null ? mappedDepartment.getDepartmentId() : null,
+                registration != null ? registration.getDepartmentRegistrationId() : null);
+
+        String departmentName = firstText(
+                registration != null ? registration.getDepartmentName() : null,
+                mappedDepartment != null ? mappedDepartment.getDepartmentName() : null);
+        if (departmentName == null) {
+            departmentName = lookupDepartmentName(departmentId);
+        }
+
+        return new DepartmentInfo(departmentId, departmentName);
+    }
+
+    private SubDepartmentInfo resolveSubDepartmentInfo(EmployeeEntity employee) {
+        SubDepartment subDepartment = employee.getSubDepartment();
+        DepartmentRegistrationEntity registration = employee.getDepartmentRegistration();
+        Long subDepartmentId = firstNonNull(
+                subDepartment != null ? subDepartment.getSubDeptId() : null,
+                registration != null ? registration.getSubDeptId() : null);
+
+        String subDepartmentName = firstText(subDepartment != null ? subDepartment.getSubDeptName() : null);
+        if (subDepartmentName == null) {
+            subDepartmentName = lookupSubDepartmentName(subDepartmentId);
+        }
+
+        return new SubDepartmentInfo(subDepartmentId, subDepartmentName);
+    }
+
+    private String lookupDepartmentName(Long departmentId) {
+        if (departmentId == null) {
+            return null;
+        }
+
+        return departmentRepository.findById(departmentId)
+                .map(DepartmentMst::getDepartmentName)
+                .map(this::textOrNull)
+                .orElse(null);
+    }
+
+    private String lookupSubDepartmentName(Long subDepartmentId) {
+        if (subDepartmentId == null) {
+            return null;
+        }
+
+        return subDepartmentRepository.findById(subDepartmentId)
+                .map(SubDepartment::getSubDeptName)
+                .map(this::textOrNull)
+                .orElse(null);
+    }
+
+    private String buildPhotoUrl(EmployeeEntity employee) {
+        AgencyCandidatePreOnboardingEntity preOnboarding = employee.getPreOnboarding();
+        if (preOnboarding == null || !StringUtils.hasText(preOnboarding.getPhotoFilePath())) {
+            return null;
+        }
+
+        String photoFilePath = preOnboarding.getPhotoFilePath().trim();
+        if (!fileStorageService.isManagedPath(photoFilePath)) {
+            log.warn("Skipping unmanaged or missing employee photo path for employeeId={}", employee.getEmployeeId());
+            return null;
+        }
+
+        String encodedPath = Base64.getEncoder()
+                .encodeToString(photoFilePath.getBytes(StandardCharsets.UTF_8));
+        return DOCUMENT_VIEW_PATH + "?path=" + URLEncoder.encode(encodedPath, StandardCharsets.UTF_8);
+    }
+
+    private String normalizeEmployeeType(String employeeType) {
+        if (!StringUtils.hasText(employeeType)) {
+            return null;
+        }
+
+        String normalized = employeeType.trim().toUpperCase(Locale.ROOT);
+        if (EMPLOYEE_TYPE_INTERNAL.equals(normalized) || EMPLOYEE_TYPE_EXTERNAL.equals(normalized)) {
+            return normalized;
+        }
+        return normalized;
+    }
+
+    @SafeVarargs
+    private final <T> T firstNonNull(T... values) {
+        for (T value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String firstText(String... values) {
+        for (String value : values) {
+            String normalized = textOrNull(value);
+            if (normalized != null) {
+                return normalized;
+            }
+        }
+        return null;
+    }
+
+    private String textOrNull(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private record DepartmentInfo(Long id, String name) {
+    }
+
+    private record SubDepartmentInfo(Long id, String name) {
+    }
+
+    private record ReportingInfo(
+            Long managerId,
+            String managerName,
+            Long departmentId,
+            String departmentName) {
+    }
+}

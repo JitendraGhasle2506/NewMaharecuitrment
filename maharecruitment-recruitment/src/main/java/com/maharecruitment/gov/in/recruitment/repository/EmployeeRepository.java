@@ -59,6 +59,20 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     List<EmployeeEntity> findDetailedProfilesByEmail(@Param("email") String email);
 
     @EntityGraph(attributePaths = {
+            "departmentRegistration",
+            "subDepartment",
+            "subDepartment.department",
+            "designation",
+            "preOnboarding" })
+    @Query("select employee from EmployeeEntity employee "
+            + "where upper(trim(employee.email)) = upper(trim(:email)) "
+            + "order by case when upper(coalesce(employee.status, '')) = 'ACTIVE' then 0 else 1 end, "
+            + "case when employee.preOnboarding is not null then 0 else 1 end, "
+            + "coalesce(employee.onboardingDate, employee.joiningDate) desc, "
+            + "employee.employeeId desc")
+    List<EmployeeEntity> findMobileLoginProfilesByEmail(@Param("email") String email);
+
+    @EntityGraph(attributePaths = {
             "agency",
             "departmentRegistration",
             "subDepartment",

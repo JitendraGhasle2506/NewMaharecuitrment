@@ -14,10 +14,13 @@ import org.springframework.util.StringUtils;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.service.CustomUserDetailsService;
 import com.maharecruitment.gov.in.auth.service.UserLoginTrackingService;
+import com.maharecruitment.gov.in.web.dto.mobile.MobileEmployeeDetails;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLoginRequest;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLoginResponse;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAuthenticatedUser;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAuthenticationService;
+import com.maharecruitment.gov.in.web.service.mobile.MobileEmployeeDetailsService;
+import com.maharecruitment.gov.in.web.service.mobile.MobileLoginResponseMapper;
 import com.maharecruitment.gov.in.web.service.mobile.MobileTokenIssue;
 import com.maharecruitment.gov.in.web.service.mobile.MobileTokenService;
 
@@ -28,16 +31,22 @@ public class MobileAuthenticationServiceImpl implements MobileAuthenticationServ
     private final CustomUserDetailsService userDetailsService;
     private final UserLoginTrackingService userLoginTrackingService;
     private final MobileTokenService tokenService;
+    private final MobileEmployeeDetailsService employeeDetailsService;
+    private final MobileLoginResponseMapper responseMapper;
 
     public MobileAuthenticationServiceImpl(
             AuthenticationManager authenticationManager,
             CustomUserDetailsService userDetailsService,
             UserLoginTrackingService userLoginTrackingService,
-            MobileTokenService tokenService) {
+            MobileTokenService tokenService,
+            MobileEmployeeDetailsService employeeDetailsService,
+            MobileLoginResponseMapper responseMapper) {
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.userLoginTrackingService = userLoginTrackingService;
         this.tokenService = tokenService;
+        this.employeeDetailsService = employeeDetailsService;
+        this.responseMapper = responseMapper;
     }
 
     @Override
@@ -59,18 +68,8 @@ public class MobileAuthenticationServiceImpl implements MobileAuthenticationServ
                 user.getMobileNo(),
                 roles));
 
-        return new MobileLoginResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getMobileNo(),
-                roles,
-                token.tokenType(),
-                token.accessToken(),
-                token.expiresInSeconds(),
-                token.expiresAt(),
-                loginAt,
-                lastLoginAt);
+        MobileEmployeeDetails employeeDetails = employeeDetailsService.loadForUser(user);
+        return responseMapper.toResponse(user, employeeDetails, roles, token, loginAt, lastLoginAt);
     }
 
     private String normalizeIdentifier(String username) {

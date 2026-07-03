@@ -6,9 +6,24 @@ import java.util.List;
 
 public record MobileLoginResponse(
         Long userId,
+        Long empId,
+        String employeeCode,
         String name,
+        String employeeName,
         String email,
         String mobileNo,
+        String photoUrl,
+        Long designationId,
+        String designationName,
+        Long departmentId,
+        String departmentName,
+        Long subDepartmentId,
+        String subDepartmentName,
+        String employeeType,
+        Long reportingManagerId,
+        String reportingManagerName,
+        Long reportingDepartmentId,
+        String reportingDepartmentName,
         List<String> roles,
         String tokenType,
         String accessToken,
@@ -19,5 +34,46 @@ public record MobileLoginResponse(
 
     public MobileLoginResponse {
         roles = roles == null ? List.of() : List.copyOf(roles);
+    }
+
+    public MobileLoginResponse(
+            Long userId,
+            String name,
+            String email,
+            String mobileNo,
+            List<String> roles,
+            String tokenType,
+            String accessToken,
+            long expiresIn,
+            Instant expiresAt,
+            LocalDateTime loginAt,
+            LocalDateTime lastLoginAt) {
+        this(
+                userId,
+                null,
+                null,
+                name,
+                null,
+                email,
+                mobileNo,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                roles,
+                tokenType,
+                accessToken,
+                expiresIn,
+                expiresAt,
+                loginAt,
+                lastLoginAt);
     }
 }
