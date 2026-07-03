@@ -57,8 +57,16 @@
         var initialSendButtonLabel = "Send OTP";
         var resendButtonLabel = "Resend OTP";
 
+        var isLoopbackHost = function (hostname) {
+            var normalizedHostname = (hostname || "").toLowerCase();
+            return normalizedHostname === "localhost"
+                || normalizedHostname === "127.0.0.1"
+                || normalizedHostname === "::1"
+                || normalizedHostname === "[::1]";
+        };
+
         var isInsecureTransport = function () {
-            return window.location.protocol !== "https:";
+            return window.location.protocol !== "https:" && !isLoopbackHost(window.location.hostname);
         };
 
         var setStatus = function (message, mode) {

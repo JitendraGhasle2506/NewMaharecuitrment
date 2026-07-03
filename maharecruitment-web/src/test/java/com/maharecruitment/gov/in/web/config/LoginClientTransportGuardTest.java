@@ -11,12 +11,15 @@ import org.junit.jupiter.api.Test;
 class LoginClientTransportGuardTest {
 
     @Test
-    void loginJavascriptBlocksCredentialSubmissionOnHttpPages() throws Exception {
+    void loginJavascriptBlocksCredentialSubmissionOnNonLocalHttpPages() throws Exception {
         String loginScript = Files.readString(loginScriptPath());
         String loginTemplate = Files.readString(loginTemplatePath());
 
         assertThat(loginScript)
                 .contains("window.location.protocol !== \"https:\"")
+                .contains("isLoopbackHost(window.location.hostname)")
+                .contains("normalizedHostname === \"localhost\"")
+                .contains("normalizedHostname === \"127.0.0.1\"")
                 .contains("HTTPS is required before submitting credentials.")
                 .contains("passwordLoginForm.addEventListener(\"submit\"")
                 .contains("event.preventDefault();")
