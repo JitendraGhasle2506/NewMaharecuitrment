@@ -4,14 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,15 +49,21 @@ class MobileEmployeeDetailsServiceTest {
     @Mock
     private FileStorageService fileStorageService;
 
+    @TempDir
+    private Path tempDir;
+
     @Test
-    void internalEmployeeReturnsDepartmentDesignationPhotoAndReportingManager() {
+    void internalEmployeeReturnsDepartmentDesignationInlinePhotoAndReportingManager() throws Exception {
         MobileEmployeeDetailsService service = service();
         User user = user(9L, "Shiv Krushna", "shiva@gmail.com", "7998966981");
         EmployeeEntity employee = employee(101L, "EMP001", "Shiv Krushna", "shiva@gmail.com", "INTERNAL");
         employee.setDepartmentRegistration(departmentRegistration(22L, 2L, "IT Department", 5L));
         employee.setSubDepartment(subDepartment(5L, "Development", department(2L, "IT Department")));
         employee.setDesignation(designation(3L, "Project Manager"));
-        employee.setPreOnboarding(preOnboarding("E:\\uploads\\employees\\101\\photo.jpg"));
+        byte[] photoBytes = new byte[] { 1, 2, 3, 4, 5 };
+        Path photoPath = tempDir.resolve("photo.jpg");
+        Files.write(photoPath, photoBytes);
+        employee.setPreOnboarding(preOnboarding(photoPath.toString()));
 
         EmployeeReportingMappingEntity mapping = new EmployeeReportingMappingEntity();
         mapping.setEmployeeId(101L);
@@ -68,7 +75,7 @@ class MobileEmployeeDetailsServiceTest {
         when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(101L))
                 .thenReturn(Optional.of(mapping));
         when(employeeRepository.findById(15L)).thenReturn(Optional.of(manager));
-        when(fileStorageService.isManagedPath("E:\\uploads\\employees\\101\\photo.jpg")).thenReturn(true);
+        when(fileStorageService.resolveManagedPath(photoPath.toString())).thenReturn(Optional.of(photoPath));
 
         MobileEmployeeDetails details = service.loadForUser(user);
 
@@ -86,7 +93,7 @@ class MobileEmployeeDetailsServiceTest {
         assertThat(details.reportingManagerName()).isEqualTo("Mahesh Patil");
         assertThat(details.reportingDepartmentId()).isNull();
         assertThat(details.reportingDepartmentName()).isNull();
-        assertThat(decodedDocumentPath(details.photoUrl())).isEqualTo("E:\\uploads\\employees\\101\\photo.jpg");
+        assertThat(decodedDataImage(details.photoUrl())).isEqualTo(photoBytes);
     }
 
     @Test
@@ -137,6 +144,31 @@ class MobileEmployeeDetailsServiceTest {
         assertThat(details.reportingManagerName()).isNull();
         assertThat(details.reportingDepartmentId()).isNull();
         assertThat(details.reportingDepartmentName()).isNull();
+    }
+
+    @Test
+    void usesPhotoFromAnotherProfileForSameLoginWhenPrimaryProfileHasNoPhoto() throws Exception {
+        MobileEmployeeDetailsService service = service();
+        User user = user(13L, "Primary Employee", "shared@example.com", "9555555555");
+        EmployeeEntity primaryProfile = employee(201L, "EMP201", "Primary Employee", "shared@example.com", "INTERNAL");
+        primaryProfile.setDepartmentRegistration(departmentRegistration(40L, 9L, "Operations", null));
+
+        byte[] photoBytes = new byte[] { 9, 8, 7 };
+        Path photoPath = tempDir.resolve("fallback-photo.png");
+        Files.write(photoPath, photoBytes);
+        EmployeeEntity photoProfile = employee(202L, "EMP202", "Photo Employee", "shared@example.com", "INTERNAL");
+        photoProfile.setPreOnboarding(preOnboarding(photoPath.toString()));
+
+        when(employeeRepository.findMobileLoginProfilesByEmail("shared@example.com"))
+                .thenReturn(List.of(primaryProfile, photoProfile));
+        when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(201L))
+                .thenReturn(Optional.empty());
+        when(fileStorageService.resolveManagedPath(photoPath.toString())).thenReturn(Optional.of(photoPath));
+
+        MobileEmployeeDetails details = service.loadForUser(user);
+
+        assertThat(details.empId()).isEqualTo(201L);
+        assertThat(decodedDataImage(details.photoUrl(), "image/png")).isEqualTo(photoBytes);
     }
 
     @Test
@@ -228,10 +260,14 @@ class MobileEmployeeDetailsServiceTest {
         return preOnboarding;
     }
 
-    private String decodedDocumentPath(String photoUrl) {
-        assertThat(photoUrl).startsWith("/documents/view?path=");
-        String encodedPath = photoUrl.substring("/documents/view?path=".length());
-        String base64Path = URLDecoder.decode(encodedPath, StandardCharsets.UTF_8);
-        return new String(Base64.getDecoder().decode(base64Path), StandardCharsets.UTF_8);
+    private byte[] decodedDataImage(String photoUrl) {
+        return decodedDataImage(photoUrl, "image/jpeg");
+    }
+
+    private byte[] decodedDataImage(String photoUrl, String contentType) {
+        String prefix = "data:" + contentType + ";base64,";
+        assertThat(photoUrl).startsWith(prefix);
+        String encodedImage = photoUrl.substring(prefix.length());
+        return Base64.getDecoder().decode(encodedImage);
     }
 }

@@ -1,7 +1,8 @@
 package com.maharecruitment.gov.in.web.service.mobile;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
@@ -33,7 +34,7 @@ public class MobileEmployeeDetailsService {
     private static final Logger log = LoggerFactory.getLogger(MobileEmployeeDetailsService.class);
     private static final String EMPLOYEE_TYPE_INTERNAL = "INTERNAL";
     private static final String EMPLOYEE_TYPE_EXTERNAL = "EXTERNAL";
-    private static final String DOCUMENT_VIEW_PATH = "/documents/view";
+    private static final String IMAGE_CONTENT_TYPE_PREFIX = "image/";
 
     private final EmployeeRepository employeeRepository;
     private final EmployeeReportingMappingRepository reportingMappingRepository;
@@ -80,7 +81,7 @@ public class MobileEmployeeDetailsService {
                 employee.getEmployeeId(),
                 textOrNull(employee.getEmployeeCode()),
                 textOrNull(employee.getFullName()),
-                buildPhotoUrl(employee),
+                buildPhotoDataUri(profiles),
                 designationId(employee),
                 designationName(employee),
                 departmentInfo.id(),
@@ -189,21 +190,69 @@ public class MobileEmployeeDetailsService {
                 .orElse(null);
     }
 
-    private String buildPhotoUrl(EmployeeEntity employee) {
+    private String buildPhotoDataUri(List<EmployeeEntity> profiles) {
+        for (EmployeeEntity profile : profiles) {
+            String photoDataUri = buildPhotoDataUri(profile);
+            if (photoDataUri != null) {
+                return photoDataUri;
+            }
+        }
+        return null;
+    }
+
+    private String buildPhotoDataUri(EmployeeEntity employee) {
         AgencyCandidatePreOnboardingEntity preOnboarding = employee.getPreOnboarding();
         if (preOnboarding == null || !StringUtils.hasText(preOnboarding.getPhotoFilePath())) {
             return null;
         }
 
         String photoFilePath = preOnboarding.getPhotoFilePath().trim();
-        if (!fileStorageService.isManagedPath(photoFilePath)) {
+        Path path = fileStorageService.resolveManagedPath(photoFilePath).orElse(null);
+        if (path == null) {
             log.warn("Skipping unmanaged or missing employee photo path for employeeId={}", employee.getEmployeeId());
             return null;
         }
 
-        String encodedPath = Base64.getEncoder()
-                .encodeToString(photoFilePath.getBytes(StandardCharsets.UTF_8));
-        return DOCUMENT_VIEW_PATH + "?path=" + URLEncoder.encode(encodedPath, StandardCharsets.UTF_8);
+        try {
+            String contentType = resolveImageContentType(path);
+            if (!StringUtils.hasText(contentType) || !contentType.startsWith(IMAGE_CONTENT_TYPE_PREFIX)) {
+                log.warn("Skipping non-image employee photo path for employeeId={}", employee.getEmployeeId());
+                return null;
+            }
+
+            byte[] imageBytes = Files.readAllBytes(path);
+            if (imageBytes.length == 0) {
+                return null;
+            }
+
+            String encodedImage = Base64.getEncoder().encodeToString(imageBytes);
+            return "data:" + contentType + ";base64," + encodedImage;
+        } catch (IOException | RuntimeException ex) {
+            log.warn("Unable to inline employee photo for employeeId={}", employee.getEmployeeId(), ex);
+            return null;
+        }
+    }
+
+    private String resolveImageContentType(Path path) throws IOException {
+        String detected = Files.probeContentType(path);
+        if (StringUtils.hasText(detected)) {
+            return detected.trim().toLowerCase(Locale.ROOT);
+        }
+
+        String fileName = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        if (fileName.endsWith(".png")) {
+            return "image/png";
+        }
+        if (fileName.endsWith(".gif")) {
+            return "image/gif";
+        }
+        if (fileName.endsWith(".webp")) {
+            return "image/webp";
+        }
+        return null;
     }
 
     private String normalizeEmployeeType(String employeeType) {

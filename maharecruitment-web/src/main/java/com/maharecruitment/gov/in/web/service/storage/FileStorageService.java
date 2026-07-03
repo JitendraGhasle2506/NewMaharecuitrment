@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -88,22 +89,30 @@ public class FileStorageService {
     }
 
     public boolean isManagedPath(String fullPath) {
+        return resolveManagedPath(fullPath).isPresent();
+    }
+
+    public Optional<Path> resolveManagedPath(String fullPath) {
         if (fullPath == null || fullPath.isBlank()) {
-            return false;
+            return Optional.empty();
         }
 
         try {
             Path baseDir = Paths.get(properties.getBasePath())
                     .toAbsolutePath()
                     .normalize();
-            Path candidate = Paths.get(fullPath)
-                    .toAbsolutePath()
-                    .normalize();
+            Path requestedPath = Paths.get(fullPath.trim());
+            Path candidate = requestedPath.isAbsolute()
+                    ? requestedPath.toAbsolutePath().normalize()
+                    : baseDir.resolve(requestedPath).normalize();
 
-            return candidate.startsWith(baseDir) && Files.exists(candidate) && Files.isRegularFile(candidate);
+            if (candidate.startsWith(baseDir) && Files.exists(candidate) && Files.isRegularFile(candidate)) {
+                return Optional.of(candidate);
+            }
+            return Optional.empty();
         } catch (RuntimeException ex) {
             log.warn("Invalid managed file path check for {}", fullPath, ex);
-            return false;
+            return Optional.empty();
         }
     }
 
