@@ -49,7 +49,9 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("otp.resend-limit")).isEqualTo("3");
         assertThat(properties.getProperty("otp.resend-window-minutes")).isEqualTo("5");
         assertThat(properties.getProperty("spring.profiles.active")).isNull();
-        assertThat(properties.getProperty("spring.profiles.default")).isEqualTo("uat");
+        assertThat(properties.getProperty("spring.profiles.default")).isEqualTo("local");
+        assertThat(properties.getProperty("server.servlet.context-path"))
+                .isEqualTo("${SERVER_SERVLET_CONTEXT_PATH:/maharecruitment}");
     }
 
     @Test
@@ -81,17 +83,19 @@ class SecurityTransportConfigurationTest {
     void localProfileAllowsHttpLoopbackDevelopment() throws Exception {
         Properties properties = loadProperties("application-local.properties");
 
-        assertThat(properties.getProperty("server.port")).isEqualTo("8443");
-        assertThat(properties.getProperty("server.ssl.enabled")).isEqualTo("true");
-        assertThat(properties.getProperty("app.security.cookie.secure")).isEqualTo("true");
-        assertThat(properties.getProperty("app.security.transport.require-https")).isEqualTo("true");
-        assertThat(properties.getProperty("app.security.transport.allow-loopback-http")).isEqualTo("false");
+        assertThat(properties.getProperty("server.port")).isEqualTo("8777");
+        assertThat(properties.getProperty("server.ssl.enabled")).isEqualTo("false");
+        assertThat(properties.getProperty("app.security.cookie.secure")).isEqualTo("false");
+        assertThat(properties.getProperty("app.security.transport.require-https")).isEqualTo("false");
+        assertThat(properties.getProperty("app.security.transport.allow-loopback-http")).isEqualTo("true");
         assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers")).isEqualTo("false");
         assertThat(properties.getProperty("app.security.transport.http-port")).isEqualTo("8777");
         assertThat(properties.getProperty("app.security.transport.https-port")).isEqualTo("8443");
+        assertThat(properties.getProperty("app.base-url"))
+                .isEqualTo("${APP_BASE_URL:http://localhost:8777/maharecruitment}");
         assertThat(properties.getProperty("security.host-validation.enabled"))
                 .isEqualTo("${SECURITY_HOST_VALIDATION_ENABLED:true}");
-        assertThat(properties.getProperty("app.security.local-http-redirect.enabled")).isEqualTo("true");
+        assertThat(properties.getProperty("app.security.local-http-redirect.enabled")).isEqualTo("false");
     }
 
     private Properties loadProperties(String fileName) throws IOException {
