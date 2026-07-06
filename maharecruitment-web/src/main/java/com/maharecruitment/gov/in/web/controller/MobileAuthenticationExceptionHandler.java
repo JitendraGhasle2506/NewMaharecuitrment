@@ -26,7 +26,8 @@ import jakarta.validation.ConstraintViolationException;
 @RestControllerAdvice(assignableTypes = {
         MobileAuthenticationController.class,
         MobileAttendanceController.class,
-        MobileEmployeeLocationController.class
+        MobileEmployeeLocationController.class,
+        MobileProfileController.class
 })
 public class MobileAuthenticationExceptionHandler {
 

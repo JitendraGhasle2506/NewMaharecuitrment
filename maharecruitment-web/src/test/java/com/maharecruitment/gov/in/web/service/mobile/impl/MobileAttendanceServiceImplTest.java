@@ -28,6 +28,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.mock.web.MockMultipartFile;
 
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.attendance.entity.AttendanceSource;
 import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
@@ -53,6 +55,9 @@ class MobileAttendanceServiceImplTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-06T10:15:00Z"), ZoneOffset.UTC);
     private static final LocalDate TODAY = LocalDate.of(2026, 7, 6);
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 6, 10, 15);
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private EmployeeRepository employeeRepository;
@@ -313,7 +318,7 @@ class MobileAttendanceServiceImplTest {
 
     private MobileAttendanceServiceImpl service() {
         return new MobileAttendanceServiceImpl(
-                new MobileEmployeeAccessService(employeeRepository),
+                new MobileEmployeeAccessService(userRepository, employeeRepository),
                 dailyAttendanceInternalRepository,
                 fileStorageService,
                 holidayRepository,
@@ -384,6 +389,17 @@ class MobileAttendanceServiceImplTest {
     private void authenticate(String email) {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(email, null, List.of()));
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue(email)).thenReturn(Optional.of(user(email)));
+    }
+
+    private User user(String email) {
+        User user = new User();
+        user.setId(10L);
+        user.setName("Test Employee");
+        user.setEmail(email);
+        user.setMobileNo("9876543210");
+        user.setActive(true);
+        return user;
     }
 
     private MockMultipartFile image() {

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.master.entity.LocationMaster;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeLocationMappingEntity;
@@ -27,6 +30,9 @@ import com.maharecruitment.gov.in.web.service.mobile.MobileEmployeeAccessService
 
 @ExtendWith(MockitoExtension.class)
 class MobileEmployeeLocationServiceImplTest {
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private EmployeeRepository employeeRepository;
@@ -138,13 +144,24 @@ class MobileEmployeeLocationServiceImplTest {
 
     private MobileEmployeeLocationServiceImpl service() {
         return new MobileEmployeeLocationServiceImpl(
-                new MobileEmployeeAccessService(employeeRepository),
+                new MobileEmployeeAccessService(userRepository, employeeRepository),
                 employeeLocationMappingRepository);
     }
 
     private void authenticate(String username) {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(username, null, List.of()));
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue(username)).thenReturn(Optional.of(user(username)));
+    }
+
+    private User user(String email) {
+        User user = new User();
+        user.setId(10L);
+        user.setName("Test Employee");
+        user.setEmail(email);
+        user.setMobileNo("9876543210");
+        user.setActive(true);
+        return user;
     }
 
     private EmployeeEntity employee(Long employeeId, String employeeCode, String email) {

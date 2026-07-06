@@ -1,0 +1,627 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R 20 0 R 22 0 R 24 0 R] /Count 10 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 2637 >>
+stream
+BT /F2 18 Tf 40 800 Td (Mobile API Documentation) Tj ET
+BT /F1 9 Tf 40 768 Td (Version: 1.0) Tj ET
+BT /F1 9 Tf 40 756 Td (Last updated: 2026-07-06) Tj ET
+BT /F2 14 Tf 40 736 Td (1. Overview) Tj ET
+BT /F1 9 Tf 40 708 Td (This document describes the mobile APIs used by the Android and iOS applications.) Tj ET
+BT /F1 9 Tf 40 688 Td (Base path:) Tj ET
+BT /F3 7 Tf 40 660 Td (/api/mobile) Tj ET
+BT /F1 9 Tf 40 634 Td (Authentication:) Tj ET
+BT /F1 9 Tf 40 614 Td (- Login API does not require a token.) Tj ET
+BT /F1 9 Tf 40 602 Td (- All other mobile APIs require this header:) Tj ET
+BT /F3 7 Tf 40 574 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F1 9 Tf 40 548 Td (Default content type:) Tj ET
+BT /F3 7 Tf 40 520 Td (Content-Type: application/json) Tj ET
+BT /F1 9 Tf 40 494 Td (Multipart APIs use:) Tj ET
+BT /F3 7 Tf 40 466 Td (Content-Type: multipart/form-data) Tj ET
+BT /F1 9 Tf 40 440 Td (Security rule:) Tj ET
+BT /F1 9 Tf 40 420 Td (- The authenticated mobile user can access only the active employee profile mapped to that user.) Tj ET
+BT /F1 9 Tf 40 408 Td (- Pass `employeeId` in protected APIs.) Tj ET
+BT /F1 9 Tf 40 396 Td (- If the token user does not match the requested `employeeId`, the API returns an authorization) Tj ET
+BT /F1 9 Tf 40 384 Td (error.) Tj ET
+BT /F1 9 Tf 40 364 Td (Date and time format:) Tj ET
+BT /F1 9 Tf 40 344 Td (- Dates use ISO format: `yyyy-MM-dd`) Tj ET
+BT /F1 9 Tf 40 332 Td (- Date-times use ISO format: `yyyy-MM-dd'T'HH:mm:ss`) Tj ET
+BT /F1 9 Tf 40 320 Td (- Token expiry timestamps use ISO instant format.) Tj ET
+BT /F2 14 Tf 40 300 Td (2. Standard Error Response) Tj ET
+BT /F1 9 Tf 40 272 Td (All mobile API validation and business errors return this format:) Tj ET
+BT /F3 7 Tf 40 244 Td ({) Tj ET
+BT /F3 7 Tf 40 234 Td (  "code": "VALIDATION_FAILED",) Tj ET
+BT /F3 7 Tf 40 224 Td (  "message": "Please provide valid request details.",) Tj ET
+BT /F3 7 Tf 40 214 Td (  "timestamp": "2026-07-06T12:20:30Z",) Tj ET
+BT /F3 7 Tf 40 204 Td (  "fieldErrors": [) Tj ET
+BT /F3 7 Tf 40 194 Td (    {) Tj ET
+BT /F3 7 Tf 40 184 Td (      "field": "mobileNo",) Tj ET
+BT /F3 7 Tf 40 174 Td (      "message": "Mobile number must be 10 to 15 digits.") Tj ET
+BT /F3 7 Tf 40 164 Td (    }) Tj ET
+BT /F3 7 Tf 40 154 Td (  ]) Tj ET
+BT /F3 7 Tf 40 144 Td (}) Tj ET
+BT /F1 9 Tf 40 118 Td (Common HTTP status codes:) Tj ET
+BT /F3 7 Tf 40 98 Td (| Status | Meaning |) Tj ET
+BT /F3 7 Tf 40 88 Td (| --- | --- |) Tj ET
+BT /F3 7 Tf 40 78 Td (| 200 | Success |) Tj ET
+BT /F3 7 Tf 40 68 Td (| 400 | Invalid request or validation failed |) Tj ET
+BT /F3 7 Tf 40 58 Td (| 401 | Missing, invalid, or expired token |) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 4064 >>
+stream
+BT /F3 7 Tf 40 800 Td (| 403 | User is not allowed to access the requested employee |) Tj ET
+BT /F3 7 Tf 40 790 Td (| 404 | Employee, profile, or mapping not found |) Tj ET
+BT /F3 7 Tf 40 780 Td (| 409 | Duplicate email or mobile number |) Tj ET
+BT /F3 7 Tf 40 770 Td (| 500 | Server configuration or unexpected error |) Tj ET
+BT /F2 14 Tf 40 752 Td (3. Endpoint Summary) Tj ET
+BT /F3 7 Tf 40 724 Td (| Feature | Method | Endpoint | Auth Required |) Tj ET
+BT /F3 7 Tf 40 714 Td (| --- | --- | --- | --- |) Tj ET
+BT /F3 7 Tf 40 704 Td (| Login | POST | `/api/mobile/auth/login` | No |) Tj ET
+BT /F3 7 Tf 40 694 Td (| Get mapped locations | GET | `/api/mobile/employee-locations?employeeId={employeeId}` | Yes |) Tj ET
+BT /F3 7 Tf 40 684 Td (| Get profile | GET | `/api/mobile/profile?employeeId={employeeId}` | Yes |) Tj ET
+BT /F3 7 Tf 40 674 Td (| Update email/mobile | PATCH | `/api/mobile/profile/contact` | Yes |) Tj ET
+BT /F3 7 Tf 40 664 Td (| Update photo | POST | `/api/mobile/profile/photo` | Yes |) Tj ET
+BT /F3 7 Tf 40 654 Td (| Change password | POST | `/api/mobile/profile/password/change` | Yes |) Tj ET
+BT /F3 7 Tf 40 644 Td (| Reset password | POST | `/api/mobile/profile/password/reset` | Yes |) Tj ET
+BT /F3 7 Tf 40 634 Td (| Check in | POST | `/api/mobile/attendance/check-in` | Yes |) Tj ET
+BT /F3 7 Tf 40 624 Td (| Check out | POST | `/api/mobile/attendance/check-out` | Yes |) Tj ET
+BT /F3 7 Tf 40 614 Td (| Mark attendance | POST | `/api/mobile/attendance/mark` | Yes |) Tj ET
+BT /F3 7 Tf 40 604 Td (| Attendance history | GET | `/api/mobile/attendance/history` | Yes |) Tj ET
+BT /F2 14 Tf 40 586 Td (4. Login) Tj ET
+BT /F2 11 Tf 40 558 Td (POST `/api/mobile/auth/login`) Tj ET
+BT /F1 9 Tf 40 534 Td (Use this API to authenticate the mobile app user and receive a bearer token.) Tj ET
+BT /F1 9 Tf 40 514 Td (Request:) Tj ET
+BT /F3 7 Tf 40 486 Td ({) Tj ET
+BT /F3 7 Tf 40 476 Td (  "username": "employee@example.com",) Tj ET
+BT /F3 7 Tf 40 466 Td (  "password": "Password@123") Tj ET
+BT /F3 7 Tf 40 456 Td (}) Tj ET
+BT /F1 9 Tf 40 430 Td (Validation:) Tj ET
+BT /F3 7 Tf 40 410 Td (| Field | Required | Rule |) Tj ET
+BT /F3 7 Tf 40 400 Td (| --- | --- | --- |) Tj ET
+BT /F3 7 Tf 40 390 Td (| `username` | Yes | Max 254 characters |) Tj ET
+BT /F3 7 Tf 40 380 Td (| `password` | Yes | Max 128 characters |) Tj ET
+BT /F1 9 Tf 40 362 Td (Success response:) Tj ET
+BT /F3 7 Tf 40 334 Td ({) Tj ET
+BT /F3 7 Tf 40 324 Td (  "userId": 101,) Tj ET
+BT /F3 7 Tf 40 314 Td (  "empId": 20,) Tj ET
+BT /F3 7 Tf 40 304 Td (  "employeeCode": "EMP-020",) Tj ET
+BT /F3 7 Tf 40 294 Td (  "name": "Rahul Patil",) Tj ET
+BT /F3 7 Tf 40 284 Td (  "employeeName": "Rahul Patil",) Tj ET
+BT /F3 7 Tf 40 274 Td (  "email": "employee@example.com",) Tj ET
+BT /F3 7 Tf 40 264 Td (  "mobileNo": "9876543210",) Tj ET
+BT /F3 7 Tf 40 254 Td (  "photoUrl": "/uploads/employee-photo/rahul.jpg",) Tj ET
+BT /F3 7 Tf 40 244 Td (  "designationId": 3,) Tj ET
+BT /F3 7 Tf 40 234 Td (  "designationName": "Operator",) Tj ET
+BT /F3 7 Tf 40 224 Td (  "departmentId": 7,) Tj ET
+BT /F3 7 Tf 40 214 Td (  "departmentName": "Operations",) Tj ET
+BT /F3 7 Tf 40 204 Td (  "subDepartmentId": 12,) Tj ET
+BT /F3 7 Tf 40 194 Td (  "subDepartmentName": "Field Team",) Tj ET
+BT /F3 7 Tf 40 184 Td (  "employeeType": "CONTRACT",) Tj ET
+BT /F3 7 Tf 40 174 Td (  "reportingManagerId": 44,) Tj ET
+BT /F3 7 Tf 40 164 Td (  "reportingManagerName": "Manager Name",) Tj ET
+BT /F3 7 Tf 40 154 Td (  "reportingDepartmentId": 7,) Tj ET
+BT /F3 7 Tf 40 144 Td (  "reportingDepartmentName": "Operations",) Tj ET
+BT /F3 7 Tf 40 134 Td (  "roles": [) Tj ET
+BT /F3 7 Tf 40 124 Td (    "ROLE_EMPLOYEE") Tj ET
+BT /F3 7 Tf 40 114 Td (  ],) Tj ET
+BT /F3 7 Tf 40 104 Td (  "tokenType": "Bearer",) Tj ET
+BT /F3 7 Tf 40 94 Td (  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",) Tj ET
+BT /F3 7 Tf 40 84 Td (  "expiresIn": 3600,) Tj ET
+BT /F3 7 Tf 40 74 Td (  "expiresAt": "2026-07-06T13:20:30Z",) Tj ET
+BT /F3 7 Tf 40 64 Td (  "loginAt": "2026-07-06T17:50:00",) Tj ET
+BT /F3 7 Tf 40 54 Td (  "lastLoginAt": "2026-07-05T18:10:00") Tj ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 11 0 R >>
+endobj
+11 0 obj
+<< /Length 2868 >>
+stream
+BT /F3 7 Tf 40 800 Td (}) Tj ET
+BT /F1 9 Tf 40 774 Td (Mobile app action:) Tj ET
+BT /F1 9 Tf 40 754 Td (- Store `accessToken`.) Tj ET
+BT /F1 9 Tf 40 742 Td (- Send it in `Authorization: Bearer <accessToken>` for all protected APIs.) Tj ET
+BT /F1 9 Tf 40 730 Td (- Store `empId`; pass it as `employeeId` in protected APIs.) Tj ET
+BT /F2 14 Tf 40 710 Td (5. Employee Mapped Locations) Tj ET
+BT /F2 11 Tf 40 682 Td (GET `/api/mobile/employee-locations?employeeId={employeeId}`) Tj ET
+BT /F1 9 Tf 40 658 Td (Use this API to get the locations mapped to the authenticated employee.) Tj ET
+BT /F1 9 Tf 40 638 Td (Headers:) Tj ET
+BT /F3 7 Tf 40 610 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F1 9 Tf 40 584 Td (Query parameters:) Tj ET
+BT /F3 7 Tf 40 564 Td (| Parameter | Required | Description |) Tj ET
+BT /F3 7 Tf 40 554 Td (| --- | --- | --- |) Tj ET
+BT /F3 7 Tf 40 544 Td (| `employeeId` | Yes | Employee ID returned by login as `empId` |) Tj ET
+BT /F1 9 Tf 40 526 Td (Success response:) Tj ET
+BT /F3 7 Tf 40 498 Td ({) Tj ET
+BT /F3 7 Tf 40 488 Td (  "success": true,) Tj ET
+BT /F3 7 Tf 40 478 Td (  "message": "Mapped locations fetched successfully.",) Tj ET
+BT /F3 7 Tf 40 468 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 458 Td (  "locations": [) Tj ET
+BT /F3 7 Tf 40 448 Td (    {) Tj ET
+BT /F3 7 Tf 40 438 Td (      "locationId": 5,) Tj ET
+BT /F3 7 Tf 40 428 Td (      "officeName": "Mumbai Office",) Tj ET
+BT /F3 7 Tf 40 418 Td (      "locationName": "Gate 1",) Tj ET
+BT /F3 7 Tf 40 408 Td (      "latitude": 19.076,) Tj ET
+BT /F3 7 Tf 40 398 Td (      "longitude": 72.8777,) Tj ET
+BT /F3 7 Tf 40 388 Td (      "radiusMeters": 100,) Tj ET
+BT /F3 7 Tf 40 378 Td (      "displayName": "Mumbai Office - Gate 1") Tj ET
+BT /F3 7 Tf 40 368 Td (    }) Tj ET
+BT /F3 7 Tf 40 358 Td (  ]) Tj ET
+BT /F3 7 Tf 40 348 Td (}) Tj ET
+BT /F2 14 Tf 40 322 Td (6. Profile) Tj ET
+BT /F2 11 Tf 40 294 Td (GET `/api/mobile/profile?employeeId={employeeId}`) Tj ET
+BT /F1 9 Tf 40 270 Td (Use this API to show the latest mobile profile details.) Tj ET
+BT /F1 9 Tf 40 250 Td (Headers:) Tj ET
+BT /F3 7 Tf 40 222 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F1 9 Tf 40 196 Td (Success response:) Tj ET
+BT /F3 7 Tf 40 168 Td ({) Tj ET
+BT /F3 7 Tf 40 158 Td (  "success": true,) Tj ET
+BT /F3 7 Tf 40 148 Td (  "message": "Mobile profile fetched successfully.",) Tj ET
+BT /F3 7 Tf 40 138 Td (  "userId": 101,) Tj ET
+BT /F3 7 Tf 40 128 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 118 Td (  "employeeCode": "EMP-020",) Tj ET
+BT /F3 7 Tf 40 108 Td (  "name": "Rahul Patil",) Tj ET
+BT /F3 7 Tf 40 98 Td (  "email": "employee@example.com",) Tj ET
+BT /F3 7 Tf 40 88 Td (  "mobileNo": "9876543210",) Tj ET
+BT /F3 7 Tf 40 78 Td (  "photoUrl": "/uploads/employee-photo/rahul.jpg",) Tj ET
+BT /F3 7 Tf 40 68 Td (  "tokenType": null,) Tj ET
+BT /F3 7 Tf 40 58 Td (  "accessToken": null,) Tj ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 13 0 R >>
+endobj
+13 0 obj
+<< /Length 3308 >>
+stream
+BT /F3 7 Tf 40 800 Td (  "expiresIn": null,) Tj ET
+BT /F3 7 Tf 40 790 Td (  "expiresAt": null) Tj ET
+BT /F3 7 Tf 40 780 Td (}) Tj ET
+BT /F2 11 Tf 40 754 Td (PATCH `/api/mobile/profile/contact`) Tj ET
+BT /F1 9 Tf 40 730 Td (Use this API to update the user's email address and/or mobile number.) Tj ET
+BT /F1 9 Tf 40 710 Td (Headers:) Tj ET
+BT /F3 7 Tf 40 682 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F3 7 Tf 40 672 Td (Content-Type: application/json) Tj ET
+BT /F1 9 Tf 40 646 Td (Request:) Tj ET
+BT /F3 7 Tf 40 618 Td ({) Tj ET
+BT /F3 7 Tf 40 608 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 598 Td (  "email": "new.email@example.com",) Tj ET
+BT /F3 7 Tf 40 588 Td (  "mobileNo": "9876543211") Tj ET
+BT /F3 7 Tf 40 578 Td (}) Tj ET
+BT /F1 9 Tf 40 552 Td (Validation:) Tj ET
+BT /F3 7 Tf 40 532 Td (| Field | Required | Rule |) Tj ET
+BT /F3 7 Tf 40 522 Td (| --- | --- | --- |) Tj ET
+BT /F3 7 Tf 40 512 Td (| `employeeId` | Yes | Must belong to authenticated user |) Tj ET
+BT /F3 7 Tf 40 502 Td (| `email` | No | Must be valid email if provided |) Tj ET
+BT /F3 7 Tf 40 492 Td (| `mobileNo` | No | Must be 10 to 15 digits if provided |) Tj ET
+BT /F1 9 Tf 40 474 Td (Business rules:) Tj ET
+BT /F1 9 Tf 40 454 Td (- At least one value should be changed.) Tj ET
+BT /F1 9 Tf 40 442 Td (- Email must be unique.) Tj ET
+BT /F1 9 Tf 40 430 Td (- Mobile number must be unique.) Tj ET
+BT /F1 9 Tf 40 418 Td (- Updated values are synchronized with user, employee, and onboarding profile records.) Tj ET
+BT /F1 9 Tf 40 406 Td (- This API returns a refreshed token after contact update. The mobile app should replace the old) Tj ET
+BT /F1 9 Tf 40 394 Td (token with the new one.) Tj ET
+BT /F1 9 Tf 40 374 Td (Success response:) Tj ET
+BT /F3 7 Tf 40 346 Td ({) Tj ET
+BT /F3 7 Tf 40 336 Td (  "success": true,) Tj ET
+BT /F3 7 Tf 40 326 Td (  "message": "Mobile profile updated successfully.",) Tj ET
+BT /F3 7 Tf 40 316 Td (  "userId": 101,) Tj ET
+BT /F3 7 Tf 40 306 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 296 Td (  "employeeCode": "EMP-020",) Tj ET
+BT /F3 7 Tf 40 286 Td (  "name": "Rahul Patil",) Tj ET
+BT /F3 7 Tf 40 276 Td (  "email": "new.email@example.com",) Tj ET
+BT /F3 7 Tf 40 266 Td (  "mobileNo": "9876543211",) Tj ET
+BT /F3 7 Tf 40 256 Td (  "photoUrl": "/uploads/employee-photo/rahul.jpg",) Tj ET
+BT /F3 7 Tf 40 246 Td (  "tokenType": "Bearer",) Tj ET
+BT /F3 7 Tf 40 236 Td (  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",) Tj ET
+BT /F3 7 Tf 40 226 Td (  "expiresIn": 3600,) Tj ET
+BT /F3 7 Tf 40 216 Td (  "expiresAt": "2026-07-06T13:20:30Z") Tj ET
+BT /F3 7 Tf 40 206 Td (}) Tj ET
+BT /F1 9 Tf 40 180 Td (Common errors:) Tj ET
+BT /F3 7 Tf 40 160 Td (| Code | Meaning |) Tj ET
+BT /F3 7 Tf 40 150 Td (| --- | --- |) Tj ET
+BT /F3 7 Tf 40 140 Td (| `INVALID_EMAIL` | Email format is invalid |) Tj ET
+BT /F3 7 Tf 40 130 Td (| `EMAIL_ALREADY_EXISTS` | Email is already registered |) Tj ET
+BT /F3 7 Tf 40 120 Td (| `INVALID_MOBILE` | Mobile number format is invalid |) Tj ET
+BT /F3 7 Tf 40 110 Td (| `MOBILE_ALREADY_EXISTS` | Mobile number is already registered |) Tj ET
+BT /F3 7 Tf 40 100 Td (| `PROFILE_UPDATE_NOT_MODIFIED` | No changed value was provided |) Tj ET
+BT /F2 11 Tf 40 82 Td (POST `/api/mobile/profile/photo`) Tj ET
+BT /F1 9 Tf 40 58 Td (Use this API to update the employee profile photo.) Tj ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 15 0 R >>
+endobj
+15 0 obj
+<< /Length 3069 >>
+stream
+BT /F1 9 Tf 40 792 Td (Headers:) Tj ET
+BT /F3 7 Tf 40 764 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F3 7 Tf 40 754 Td (Content-Type: multipart/form-data) Tj ET
+BT /F1 9 Tf 40 728 Td (Multipart form fields:) Tj ET
+BT /F3 7 Tf 40 708 Td (| Field | Required | Type | Description |) Tj ET
+BT /F3 7 Tf 40 698 Td (| --- | --- | --- | --- |) Tj ET
+BT /F3 7 Tf 40 688 Td (| `employeeId` | Yes | Number | Employee ID |) Tj ET
+BT /F3 7 Tf 40 678 Td (| `photo` | Yes | File | Profile photo file |) Tj ET
+BT /F1 9 Tf 40 660 Td (Success response:) Tj ET
+BT /F3 7 Tf 40 632 Td ({) Tj ET
+BT /F3 7 Tf 40 622 Td (  "success": true,) Tj ET
+BT /F3 7 Tf 40 612 Td (  "message": "Profile photo updated successfully.",) Tj ET
+BT /F3 7 Tf 40 602 Td (  "userId": 101,) Tj ET
+BT /F3 7 Tf 40 592 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 582 Td (  "employeeCode": "EMP-020",) Tj ET
+BT /F3 7 Tf 40 572 Td (  "name": "Rahul Patil",) Tj ET
+BT /F3 7 Tf 40 562 Td (  "email": "employee@example.com",) Tj ET
+BT /F3 7 Tf 40 552 Td (  "mobileNo": "9876543210",) Tj ET
+BT /F3 7 Tf 40 542 Td (  "photoUrl": "/uploads/employee-photo/new-photo.jpg",) Tj ET
+BT /F3 7 Tf 40 532 Td (  "tokenType": null,) Tj ET
+BT /F3 7 Tf 40 522 Td (  "accessToken": null,) Tj ET
+BT /F3 7 Tf 40 512 Td (  "expiresIn": null,) Tj ET
+BT /F3 7 Tf 40 502 Td (  "expiresAt": null) Tj ET
+BT /F3 7 Tf 40 492 Td (}) Tj ET
+BT /F1 9 Tf 40 466 Td (Common errors:) Tj ET
+BT /F3 7 Tf 40 446 Td (| Code | Meaning |) Tj ET
+BT /F3 7 Tf 40 436 Td (| --- | --- |) Tj ET
+BT /F3 7 Tf 40 426 Td (| `PHOTO_REQUIRED` | Photo file was not provided |) Tj ET
+BT /F3 7 Tf 40 416 Td (| `ONBOARDING_PROFILE_NOT_FOUND` | Employee onboarding profile is missing |) Tj ET
+BT /F3 7 Tf 40 406 Td (| `INVALID_IMAGE` | File could not be stored or validated |) Tj ET
+BT /F2 14 Tf 40 388 Td (7. Password) Tj ET
+BT /F2 11 Tf 40 360 Td (POST `/api/mobile/profile/password/change`) Tj ET
+BT /F1 9 Tf 40 336 Td (Use this API when the logged-in mobile user wants to change the password.) Tj ET
+BT /F1 9 Tf 40 316 Td (Headers:) Tj ET
+BT /F3 7 Tf 40 288 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F3 7 Tf 40 278 Td (Content-Type: application/json) Tj ET
+BT /F1 9 Tf 40 252 Td (Request:) Tj ET
+BT /F3 7 Tf 40 224 Td ({) Tj ET
+BT /F3 7 Tf 40 214 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 204 Td (  "currentPassword": "OldPass@123",) Tj ET
+BT /F3 7 Tf 40 194 Td (  "newPassword": "NewPass@123",) Tj ET
+BT /F3 7 Tf 40 184 Td (  "confirmPassword": "NewPass@123") Tj ET
+BT /F3 7 Tf 40 174 Td (}) Tj ET
+BT /F1 9 Tf 40 148 Td (Validation:) Tj ET
+BT /F3 7 Tf 40 128 Td (| Field | Required | Rule |) Tj ET
+BT /F3 7 Tf 40 118 Td (| --- | --- | --- |) Tj ET
+BT /F3 7 Tf 40 108 Td (| `employeeId` | Yes | Must belong to authenticated user |) Tj ET
+BT /F3 7 Tf 40 98 Td (| `currentPassword` | Yes | Must match existing password |) Tj ET
+BT /F3 7 Tf 40 88 Td (| `newPassword` | Yes | Must follow application password policy |) Tj ET
+BT /F3 7 Tf 40 78 Td (| `confirmPassword` | Yes | Must match `newPassword` |) Tj ET
+BT /F1 9 Tf 40 60 Td (Success response:) Tj ET
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 17 0 R >>
+endobj
+17 0 obj
+<< /Length 2804 >>
+stream
+BT /F3 7 Tf 40 784 Td ({) Tj ET
+BT /F3 7 Tf 40 774 Td (  "success": true,) Tj ET
+BT /F3 7 Tf 40 764 Td (  "message": "Password changed successfully.",) Tj ET
+BT /F3 7 Tf 40 754 Td (  "userId": 101,) Tj ET
+BT /F3 7 Tf 40 744 Td (  "employeeId": 20) Tj ET
+BT /F3 7 Tf 40 734 Td (}) Tj ET
+BT /F1 9 Tf 40 708 Td (Common errors:) Tj ET
+BT /F3 7 Tf 40 688 Td (| Code | Meaning |) Tj ET
+BT /F3 7 Tf 40 678 Td (| --- | --- |) Tj ET
+BT /F3 7 Tf 40 668 Td (| `CURRENT_PASSWORD_INVALID` | Current password is incorrect |) Tj ET
+BT /F3 7 Tf 40 658 Td (| `PASSWORD_CONFIRMATION_MISMATCH` | New password and confirm password do not match |) Tj ET
+BT /F3 7 Tf 40 648 Td (| `INVALID_PASSWORD` | New password does not match policy |) Tj ET
+BT /F3 7 Tf 40 638 Td (| `PASSWORD_REUSE_NOT_ALLOWED` | New password is same as current password |) Tj ET
+BT /F2 11 Tf 40 620 Td (POST `/api/mobile/profile/password/reset`) Tj ET
+BT /F1 9 Tf 40 596 Td (Use this API for authenticated password reset from the mobile app.) Tj ET
+BT /F1 9 Tf 40 576 Td (Important:) Tj ET
+BT /F1 9 Tf 40 556 Td (- This endpoint currently requires `currentPassword`.) Tj ET
+BT /F1 9 Tf 40 544 Td (- For "forgot password" without current password, create a separate OTP/token-based API.) Tj ET
+BT /F1 9 Tf 40 524 Td (Headers:) Tj ET
+BT /F3 7 Tf 40 496 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F3 7 Tf 40 486 Td (Content-Type: application/json) Tj ET
+BT /F1 9 Tf 40 460 Td (Request:) Tj ET
+BT /F3 7 Tf 40 432 Td ({) Tj ET
+BT /F3 7 Tf 40 422 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 412 Td (  "currentPassword": "OldPass@123",) Tj ET
+BT /F3 7 Tf 40 402 Td (  "newPassword": "NewPass@123",) Tj ET
+BT /F3 7 Tf 40 392 Td (  "confirmPassword": "NewPass@123") Tj ET
+BT /F3 7 Tf 40 382 Td (}) Tj ET
+BT /F1 9 Tf 40 356 Td (Success response:) Tj ET
+BT /F3 7 Tf 40 328 Td ({) Tj ET
+BT /F3 7 Tf 40 318 Td (  "success": true,) Tj ET
+BT /F3 7 Tf 40 308 Td (  "message": "Password reset successfully.",) Tj ET
+BT /F3 7 Tf 40 298 Td (  "userId": 101,) Tj ET
+BT /F3 7 Tf 40 288 Td (  "employeeId": 20) Tj ET
+BT /F3 7 Tf 40 278 Td (}) Tj ET
+BT /F2 14 Tf 40 252 Td (8. Attendance) Tj ET
+BT /F1 9 Tf 40 224 Td (Attendance APIs support both multipart image upload and JSON Base64 image upload.) Tj ET
+BT /F1 9 Tf 40 204 Td (Allowed JSON image formats:) Tj ET
+BT /F1 9 Tf 40 184 Td (- Raw Base64 string.) Tj ET
+BT /F1 9 Tf 40 172 Td (- Data URI format: `data:image/jpeg;base64,<base64>` or `data:image/png;base64,<base64>`.) Tj ET
+BT /F1 9 Tf 40 152 Td (Allowed image content types for JSON upload:) Tj ET
+BT /F1 9 Tf 40 132 Td (- `image/jpeg`) Tj ET
+BT /F1 9 Tf 40 120 Td (- `image/png`) Tj ET
+BT /F2 11 Tf 40 100 Td (POST `/api/mobile/attendance/check-in`) Tj ET
+BT /F1 9 Tf 40 76 Td (Use this API to mark check-in.) Tj ET
+BT /F1 9 Tf 40 56 Td (Headers:) Tj ET
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 19 0 R >>
+endobj
+19 0 obj
+<< /Length 2926 >>
+stream
+BT /F3 7 Tf 40 784 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F1 9 Tf 40 758 Td (JSON request:) Tj ET
+BT /F3 7 Tf 40 730 Td ({) Tj ET
+BT /F3 7 Tf 40 720 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 710 Td (  "latitude": 19.076,) Tj ET
+BT /F3 7 Tf 40 700 Td (  "longitude": 72.8777,) Tj ET
+BT /F3 7 Tf 40 690 Td (  "locationAddress": "Mumbai Office Gate 1",) Tj ET
+BT /F3 7 Tf 40 680 Td (  "imageBase64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...",) Tj ET
+BT /F3 7 Tf 40 670 Td (  "imageFileName": "check-in.jpg",) Tj ET
+BT /F3 7 Tf 40 660 Td (  "imageContentType": "image/jpeg") Tj ET
+BT /F3 7 Tf 40 650 Td (}) Tj ET
+BT /F1 9 Tf 40 624 Td (Multipart form fields:) Tj ET
+BT /F3 7 Tf 40 604 Td (| Field | Required | Type |) Tj ET
+BT /F3 7 Tf 40 594 Td (| --- | --- | --- |) Tj ET
+BT /F3 7 Tf 40 584 Td (| `employeeId` | Yes | Number |) Tj ET
+BT /F3 7 Tf 40 574 Td (| `latitude` | Yes | Decimal |) Tj ET
+BT /F3 7 Tf 40 564 Td (| `longitude` | Yes | Decimal |) Tj ET
+BT /F3 7 Tf 40 554 Td (| `locationAddress` | No | Text |) Tj ET
+BT /F3 7 Tf 40 544 Td (| `image` | Yes | File |) Tj ET
+BT /F1 9 Tf 40 526 Td (Success response:) Tj ET
+BT /F3 7 Tf 40 498 Td ({) Tj ET
+BT /F3 7 Tf 40 488 Td (  "success": true,) Tj ET
+BT /F3 7 Tf 40 478 Td (  "message": "Check-in marked successfully.",) Tj ET
+BT /F3 7 Tf 40 468 Td (  "attendanceId": 501,) Tj ET
+BT /F3 7 Tf 40 458 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 448 Td (  "employeeCode": "EMP-020",) Tj ET
+BT /F3 7 Tf 40 438 Td (  "attendanceDate": "2026-07-06",) Tj ET
+BT /F3 7 Tf 40 428 Td (  "checkInTime": "2026-07-06T09:35:00",) Tj ET
+BT /F3 7 Tf 40 418 Td (  "checkOutTime": null,) Tj ET
+BT /F3 7 Tf 40 408 Td (  "attendanceSource": "MOBILE_APP") Tj ET
+BT /F3 7 Tf 40 398 Td (}) Tj ET
+BT /F2 11 Tf 40 372 Td (POST `/api/mobile/attendance/check-out`) Tj ET
+BT /F1 9 Tf 40 348 Td (Use this API to mark check-out.) Tj ET
+BT /F1 9 Tf 40 328 Td (Headers:) Tj ET
+BT /F3 7 Tf 40 300 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F1 9 Tf 40 274 Td (JSON request:) Tj ET
+BT /F3 7 Tf 40 246 Td ({) Tj ET
+BT /F3 7 Tf 40 236 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 226 Td (  "latitude": 19.076,) Tj ET
+BT /F3 7 Tf 40 216 Td (  "longitude": 72.8777,) Tj ET
+BT /F3 7 Tf 40 206 Td (  "locationAddress": "Mumbai Office Gate 1",) Tj ET
+BT /F3 7 Tf 40 196 Td (  "imageBase64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...",) Tj ET
+BT /F3 7 Tf 40 186 Td (  "imageFileName": "check-out.jpg",) Tj ET
+BT /F3 7 Tf 40 176 Td (  "imageContentType": "image/jpeg") Tj ET
+BT /F3 7 Tf 40 166 Td (}) Tj ET
+BT /F1 9 Tf 40 140 Td (Multipart fields are the same as check-in.) Tj ET
+BT /F1 9 Tf 40 120 Td (Success response:) Tj ET
+BT /F3 7 Tf 40 92 Td ({) Tj ET
+BT /F3 7 Tf 40 82 Td (  "success": true,) Tj ET
+BT /F3 7 Tf 40 72 Td (  "message": "Check-out marked successfully.",) Tj ET
+BT /F3 7 Tf 40 62 Td (  "attendanceId": 501,) Tj ET
+BT /F3 7 Tf 40 52 Td (  "employeeId": 20,) Tj ET
+endstream
+endobj
+20 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 21 0 R >>
+endobj
+21 0 obj
+<< /Length 3004 >>
+stream
+BT /F3 7 Tf 40 800 Td (  "employeeCode": "EMP-020",) Tj ET
+BT /F3 7 Tf 40 790 Td (  "attendanceDate": "2026-07-06",) Tj ET
+BT /F3 7 Tf 40 780 Td (  "checkInTime": "2026-07-06T09:35:00",) Tj ET
+BT /F3 7 Tf 40 770 Td (  "checkOutTime": "2026-07-06T18:10:00",) Tj ET
+BT /F3 7 Tf 40 760 Td (  "attendanceSource": "MOBILE_APP") Tj ET
+BT /F3 7 Tf 40 750 Td (}) Tj ET
+BT /F2 11 Tf 40 724 Td (POST `/api/mobile/attendance/mark`) Tj ET
+BT /F1 9 Tf 40 700 Td (Use this API when the app wants one common endpoint for check-in and check-out.) Tj ET
+BT /F1 9 Tf 40 680 Td (Headers:) Tj ET
+BT /F3 7 Tf 40 652 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F1 9 Tf 40 626 Td (JSON request:) Tj ET
+BT /F3 7 Tf 40 598 Td ({) Tj ET
+BT /F3 7 Tf 40 588 Td (  "attendanceFlag": "CHECK_IN",) Tj ET
+BT /F3 7 Tf 40 578 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 568 Td (  "latitude": 19.076,) Tj ET
+BT /F3 7 Tf 40 558 Td (  "longitude": 72.8777,) Tj ET
+BT /F3 7 Tf 40 548 Td (  "locationAddress": "Mumbai Office Gate 1",) Tj ET
+BT /F3 7 Tf 40 538 Td (  "imageBase64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...",) Tj ET
+BT /F3 7 Tf 40 528 Td (  "imageFileName": "attendance.jpg",) Tj ET
+BT /F3 7 Tf 40 518 Td (  "imageContentType": "image/jpeg") Tj ET
+BT /F3 7 Tf 40 508 Td (}) Tj ET
+BT /F1 9 Tf 40 482 Td (Accepted attendance flag values:) Tj ET
+BT /F1 9 Tf 40 462 Td (- `CHECK_IN`) Tj ET
+BT /F1 9 Tf 40 450 Td (- `CHECK_OUT`) Tj ET
+BT /F1 9 Tf 40 438 Td (- `CHECKIN`) Tj ET
+BT /F1 9 Tf 40 426 Td (- `CHECKOUT`) Tj ET
+BT /F1 9 Tf 40 414 Td (- `IN`) Tj ET
+BT /F1 9 Tf 40 402 Td (- `OUT`) Tj ET
+BT /F1 9 Tf 40 382 Td (Multipart form fields:) Tj ET
+BT /F3 7 Tf 40 362 Td (| Field | Required | Type |) Tj ET
+BT /F3 7 Tf 40 352 Td (| --- | --- | --- |) Tj ET
+BT /F3 7 Tf 40 342 Td (| `attendanceFlag` | No | Text |) Tj ET
+BT /F3 7 Tf 40 332 Td (| `flag` | No | Text |) Tj ET
+BT /F3 7 Tf 40 322 Td (| `employeeId` | Yes | Number |) Tj ET
+BT /F3 7 Tf 40 312 Td (| `latitude` | Yes | Decimal |) Tj ET
+BT /F3 7 Tf 40 302 Td (| `longitude` | Yes | Decimal |) Tj ET
+BT /F3 7 Tf 40 292 Td (| `locationAddress` | No | Text |) Tj ET
+BT /F3 7 Tf 40 282 Td (| `image` | Yes | File |) Tj ET
+BT /F1 9 Tf 40 264 Td (Note:) Tj ET
+BT /F1 9 Tf 40 244 Td (- For multipart, send either `attendanceFlag` or `flag`.) Tj ET
+BT /F2 11 Tf 40 224 Td (GET `/api/mobile/attendance/history`) Tj ET
+BT /F1 9 Tf 40 200 Td (Use this API to show attendance history.) Tj ET
+BT /F1 9 Tf 40 180 Td (Headers:) Tj ET
+BT /F3 7 Tf 40 152 Td (Authorization: Bearer <accessToken>) Tj ET
+BT /F1 9 Tf 40 126 Td (Query options:) Tj ET
+BT /F3 7 Tf 40 106 Td (| Parameter | Required | Description |) Tj ET
+BT /F3 7 Tf 40 96 Td (| --- | --- | --- |) Tj ET
+BT /F3 7 Tf 40 86 Td (| `employeeId` | Yes | Employee ID |) Tj ET
+BT /F3 7 Tf 40 76 Td (| `date` | No | Single date in `yyyy-MM-dd` format |) Tj ET
+BT /F3 7 Tf 40 66 Td (| `fromDate` | No | Start date in `yyyy-MM-dd` format |) Tj ET
+BT /F3 7 Tf 40 56 Td (| `toDate` | No | End date in `yyyy-MM-dd` format |) Tj ET
+endstream
+endobj
+22 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 23 0 R >>
+endobj
+23 0 obj
+<< /Length 3761 >>
+stream
+BT /F1 9 Tf 40 792 Td (Examples:) Tj ET
+BT /F3 7 Tf 40 764 Td (GET /api/mobile/attendance/history?employeeId=20&date=2026-07-06) Tj ET
+BT /F3 7 Tf 40 754 Td (GET /api/mobile/attendance/history?employeeId=20&fromDate=2026-07-01&toDate=2026-07-06) Tj ET
+BT /F1 9 Tf 40 728 Td (Success response:) Tj ET
+BT /F3 7 Tf 40 700 Td ({) Tj ET
+BT /F3 7 Tf 40 690 Td (  "success": true,) Tj ET
+BT /F3 7 Tf 40 680 Td (  "message": "Attendance history fetched successfully.",) Tj ET
+BT /F3 7 Tf 40 670 Td (  "employeeId": 20,) Tj ET
+BT /F3 7 Tf 40 660 Td (  "fromDate": "2026-07-01",) Tj ET
+BT /F3 7 Tf 40 650 Td (  "toDate": "2026-07-06",) Tj ET
+BT /F3 7 Tf 40 640 Td (  "attendanceHistory": [) Tj ET
+BT /F3 7 Tf 40 630 Td (    {) Tj ET
+BT /F3 7 Tf 40 620 Td (      "attendanceId": 501,) Tj ET
+BT /F3 7 Tf 40 610 Td (      "attendanceDate": "2026-07-06",) Tj ET
+BT /F3 7 Tf 40 600 Td (      "checkInTime": "2026-07-06T09:35:00",) Tj ET
+BT /F3 7 Tf 40 590 Td (      "checkOutTime": "2026-07-06T18:10:00",) Tj ET
+BT /F3 7 Tf 40 580 Td (      "inTime": "09:35",) Tj ET
+BT /F3 7 Tf 40 570 Td (      "outTime": "18:10",) Tj ET
+BT /F3 7 Tf 40 560 Td (      "totalHours": "08:35",) Tj ET
+BT /F3 7 Tf 40 550 Td (      "status": "PRESENT",) Tj ET
+BT /F3 7 Tf 40 540 Td (      "attendanceSource": "MOBILE_APP",) Tj ET
+BT /F3 7 Tf 40 530 Td (      "checkedIn": true,) Tj ET
+BT /F3 7 Tf 40 520 Td (      "checkedOut": true) Tj ET
+BT /F3 7 Tf 40 510 Td (    }) Tj ET
+BT /F3 7 Tf 40 500 Td (  ]) Tj ET
+BT /F3 7 Tf 40 490 Td (}) Tj ET
+BT /F1 9 Tf 40 464 Td (Common attendance errors:) Tj ET
+BT /F3 7 Tf 40 444 Td (| Code | Meaning |) Tj ET
+BT /F3 7 Tf 40 434 Td (| --- | --- |) Tj ET
+BT /F3 7 Tf 40 424 Td (| `IMAGE_REQUIRED` | Attendance image is required |) Tj ET
+BT /F3 7 Tf 40 414 Td (| `INVALID_IMAGE` | Image data is invalid |) Tj ET
+BT /F3 7 Tf 40 404 Td (| `LATITUDE_REQUIRED` | Latitude is missing |) Tj ET
+BT /F3 7 Tf 40 394 Td (| `LONGITUDE_REQUIRED` | Longitude is missing |) Tj ET
+BT /F3 7 Tf 40 384 Td (| `INVALID_LATITUDE` | Latitude is outside allowed range |) Tj ET
+BT /F3 7 Tf 40 374 Td (| `INVALID_LONGITUDE` | Longitude is outside allowed range |) Tj ET
+BT /F3 7 Tf 40 364 Td (| `INVALID_ATTENDANCE_FLAG` | Attendance flag is invalid |) Tj ET
+BT /F3 7 Tf 40 354 Td (| `ATTENDANCE_FLAG_REQUIRED` | Attendance flag is required |) Tj ET
+BT /F2 14 Tf 40 336 Td (9. Mobile App Implementation Notes) Tj ET
+BT /F1 9 Tf 40 308 Td (Android and iOS app should follow these rules:) Tj ET
+BT /F1 9 Tf 40 288 Td (- Use HTTPS only.) Tj ET
+BT /F1 9 Tf 40 276 Td (- Store bearer token securely in platform secure storage.) Tj ET
+BT /F1 9 Tf 40 264 Td (- Always send `Authorization: Bearer <accessToken>` after login.) Tj ET
+BT /F1 9 Tf 40 252 Td (- Use `empId` from login response as `employeeId`.) Tj ET
+BT /F1 9 Tf 40 240 Td (- After contact update, replace the old token with the new `accessToken` returned by the API.) Tj ET
+BT /F1 9 Tf 40 228 Td (- Do not hardcode location radius in the app. Use the radius returned by mapped locations API.) Tj ET
+BT /F1 9 Tf 40 216 Td (- For image APIs, prefer multipart upload when possible. Use JSON Base64 only when multipart is) Tj ET
+BT /F1 9 Tf 40 204 Td (not suitable.) Tj ET
+BT /F1 9 Tf 40 192 Td (- Do not store passwords in the app.) Tj ET
+BT /F1 9 Tf 40 180 Td (- For forgot password without login, use a separate OTP/token API. Do not use the authenticated) Tj ET
+BT /F1 9 Tf 40 168 Td (reset endpoint.) Tj ET
+BT /F2 14 Tf 40 148 Td (10. Suggested Future APIs) Tj ET
+BT /F1 9 Tf 40 120 Td (These APIs are not part of the current implementation but are recommended for a complete mobile) Tj ET
+BT /F1 9 Tf 40 108 Td (app flow.) Tj ET
+BT /F2 11 Tf 40 88 Td (Device Registration) Tj ET
+BT /F1 9 Tf 40 64 Td (Recommended endpoint:) Tj ET
+endstream
+endobj
+24 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 25 0 R >>
+endobj
+25 0 obj
+<< /Length 1752 >>
+stream
+BT /F3 7 Tf 40 792 Td (POST /api/mobile/devices) Tj ET
+BT /F1 9 Tf 40 766 Td (Purpose:) Tj ET
+BT /F1 9 Tf 40 746 Td (- Store Android/iOS device details.) Tj ET
+BT /F1 9 Tf 40 734 Td (- Store FCM/APNS push token.) Tj ET
+BT /F1 9 Tf 40 722 Td (- Track app version and device login.) Tj ET
+BT /F1 9 Tf 40 702 Td (Recommended table:) Tj ET
+BT /F3 7 Tf 40 674 Td (mobile_user_device) Tj ET
+BT /F1 9 Tf 40 648 Td (Recommended columns:) Tj ET
+BT /F3 7 Tf 40 620 Td (id) Tj ET
+BT /F3 7 Tf 40 610 Td (user_id) Tj ET
+BT /F3 7 Tf 40 600 Td (employee_id) Tj ET
+BT /F3 7 Tf 40 590 Td (device_id) Tj ET
+BT /F3 7 Tf 40 580 Td (platform) Tj ET
+BT /F3 7 Tf 40 570 Td (push_token) Tj ET
+BT /F3 7 Tf 40 560 Td (app_version) Tj ET
+BT /F3 7 Tf 40 550 Td (os_version) Tj ET
+BT /F3 7 Tf 40 540 Td (is_active) Tj ET
+BT /F3 7 Tf 40 530 Td (last_login_at) Tj ET
+BT /F3 7 Tf 40 520 Td (created_at) Tj ET
+BT /F3 7 Tf 40 510 Td (updated_at) Tj ET
+BT /F2 11 Tf 40 484 Td (Forgot Password With OTP) Tj ET
+BT /F1 9 Tf 40 460 Td (Recommended endpoints:) Tj ET
+BT /F3 7 Tf 40 432 Td (POST /api/mobile/auth/password/forgot) Tj ET
+BT /F3 7 Tf 40 422 Td (POST /api/mobile/auth/password/verify-otp) Tj ET
+BT /F3 7 Tf 40 412 Td (POST /api/mobile/auth/password/reset) Tj ET
+BT /F1 9 Tf 40 386 Td (Recommended table:) Tj ET
+BT /F3 7 Tf 40 358 Td (mobile_password_reset_token) Tj ET
+BT /F1 9 Tf 40 332 Td (Recommended columns:) Tj ET
+BT /F3 7 Tf 40 304 Td (id) Tj ET
+BT /F3 7 Tf 40 294 Td (user_id) Tj ET
+BT /F3 7 Tf 40 284 Td (otp_hash) Tj ET
+BT /F3 7 Tf 40 274 Td (expires_at) Tj ET
+BT /F3 7 Tf 40 264 Td (attempt_count) Tj ET
+BT /F3 7 Tf 40 254 Td (is_verified) Tj ET
+BT /F3 7 Tf 40 244 Td (consumed_at) Tj ET
+BT /F3 7 Tf 40 234 Td (created_at) Tj ET
+BT /F3 7 Tf 40 224 Td (updated_at) Tj ET
+endstream
+endobj
+xref
+0 26
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000178 00000 n 
+0000000275 00000 n 
+0000000377 00000 n 
+0000000472 00000 n 
+0000000618 00000 n 
+0000003307 00000 n 
+0000003453 00000 n 
+0000007569 00000 n 
+0000007717 00000 n 
+0000010638 00000 n 
+0000010786 00000 n 
+0000014147 00000 n 
+0000014295 00000 n 
+0000017417 00000 n 
+0000017565 00000 n 
+0000020422 00000 n 
+0000020570 00000 n 
+0000023549 00000 n 
+0000023697 00000 n 
+0000026754 00000 n 
+0000026902 00000 n 
+0000030716 00000 n 
+0000030864 00000 n 
+trailer
+<< /Size 26 /Root 1 0 R >>
+startxref
+32669
+%%EOF
