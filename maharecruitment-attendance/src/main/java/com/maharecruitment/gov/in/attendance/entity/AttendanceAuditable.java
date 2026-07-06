@@ -2,7 +2,7 @@ package com.maharecruitment.gov.in.attendance.entity;
 
 import java.time.LocalDateTime;
 
-import com.maharecruitment.gov.in.auth.entity.Auditable;
+import com.maharecruitment.gov.in.common.entity.Auditable;
 
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;

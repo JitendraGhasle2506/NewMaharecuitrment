@@ -54,9 +54,10 @@ class HmacSha256MobileTokenServiceTest {
                 "9876543210",
                 List.of("ROLE_EMPLOYEE")));
 
-        String accessToken = token.accessToken();
-        char replacement = accessToken.charAt(accessToken.length() - 1) == 'x' ? 'y' : 'x';
-        String tamperedToken = accessToken.substring(0, accessToken.length() - 1) + replacement;
+        String[] tokenParts = token.accessToken().split("\\.", -1);
+        char replacement = tokenParts[2].charAt(0) == 'A' ? 'B' : 'A';
+        String tamperedSignature = replacement + tokenParts[2].substring(1);
+        String tamperedToken = tokenParts[0] + "." + tokenParts[1] + "." + tamperedSignature;
 
         assertThatThrownBy(() -> tokenService.validateToken(tamperedToken))
                 .isInstanceOf(MobileTokenValidationException.class);

@@ -5,7 +5,7 @@ import java.security.Principal;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
+import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 

@@ -33,7 +33,7 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers"))
                 .isEqualTo("${APP_SECURITY_TRUST_FORWARDED_HEADERS:false}");
         assertThat(properties.getProperty("app.base-url"))
-                .isEqualTo("${APP_BASE_URL:http://103.5.84.215:8080/maharecruitment-web}");
+                .isEqualTo("${APP_BASE_URL:https://portal.example.gov.in/maharecruitment-web}");
         assertThat(properties.getProperty("app.mobile-auth.issuer"))
                 .isEqualTo("${MOBILE_AUTH_JWT_ISSUER:maharecruitment-mobile}");
         assertThat(properties.getProperty("security.host-validation.enabled"))
@@ -92,7 +92,7 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("app.security.transport.http-port")).isEqualTo("8777");
         assertThat(properties.getProperty("app.security.transport.https-port")).isEqualTo("8443");
         assertThat(properties.getProperty("app.base-url"))
-                .isEqualTo("${APP_BASE_URL:http://localhost:8777/maharecruitment}");
+                .isEqualTo("${APP_BASE_URL:https://localhost:8443/maharecruitment}");
         assertThat(properties.getProperty("security.host-validation.enabled"))
                 .isEqualTo("${SECURITY_HOST_VALIDATION_ENABLED:true}");
         assertThat(properties.getProperty("app.security.local-http-redirect.enabled")).isEqualTo("false");

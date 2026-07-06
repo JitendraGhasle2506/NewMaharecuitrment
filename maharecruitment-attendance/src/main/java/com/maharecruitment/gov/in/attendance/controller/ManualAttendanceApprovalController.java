@@ -2,7 +2,7 @@ package com.maharecruitment.gov.in.attendance.controller;
 
 import java.time.LocalDate;
 import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
-import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
+import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;

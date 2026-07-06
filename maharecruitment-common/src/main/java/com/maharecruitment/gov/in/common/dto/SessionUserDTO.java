@@ -1,10 +1,9 @@
-package com.maharecruitment.gov.in.auth.dto;
+package com.maharecruitment.gov.in.common.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public record SessionUserDTO(
-         
         Long id,
         String name,
         String email,

@@ -5,7 +5,7 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
+import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.master.service.CurrentActorProvider;
 
 import jakarta.servlet.http.HttpSession;

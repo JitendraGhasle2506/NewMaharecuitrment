@@ -1,4 +1,4 @@
-package com.maharecruitment.gov.in.auth.entity;
+package com.maharecruitment.gov.in.common.entity;
 
 import java.time.LocalDateTime;
 

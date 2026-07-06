@@ -21,7 +21,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.stereotype.Component;
 
 import com.maharecruitment.gov.in.auth.constant.CommonConstant;
-import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
+import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.auth.dto.UserAffiliationView;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;

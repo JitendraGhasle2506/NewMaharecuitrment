@@ -29,10 +29,12 @@ import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler;
+import com.maharecruitment.gov.in.common.security.CookieSecurityProperties;
 import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
 import com.maharecruitment.gov.in.web.controller.HomeController;
+import com.maharecruitment.gov.in.web.filter.CookieAttributeFilter;
 import com.maharecruitment.gov.in.web.filter.MobileBearerTokenAuthenticationFilter;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
@@ -87,7 +89,7 @@ class SecurityHttpsEnforcementMvcTest {
 
     @Configuration
     @EnableWebMvc
-    @Import(SecurityConfig.class)
+    @Import({ SecurityConfig.class, CookieAttributeFilter.class })
     static class TestConfig {
 
         @Bean
@@ -117,6 +119,15 @@ class SecurityHttpsEnforcementMvcTest {
         TransportSecurityProperties transportSecurityProperties() {
             TransportSecurityProperties properties = new TransportSecurityProperties();
             properties.setAllowLoopbackHttp(false);
+            return properties;
+        }
+
+        @Bean
+        CookieSecurityProperties cookieSecurityProperties() {
+            CookieSecurityProperties properties = new CookieSecurityProperties();
+            properties.setSecure(true);
+            properties.setHttpOnly(true);
+            properties.setSameSite("Lax");
             return properties;
         }
 

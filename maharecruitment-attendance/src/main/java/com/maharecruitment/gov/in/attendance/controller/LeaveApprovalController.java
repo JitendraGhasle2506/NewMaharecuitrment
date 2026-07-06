@@ -11,7 +11,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.attendance.service.LeaveApplicationService;
 import com.maharecruitment.gov.in.attendance.service.TourApplicationService;
-import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
+import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 
 import jakarta.servlet.http.HttpSession;
 

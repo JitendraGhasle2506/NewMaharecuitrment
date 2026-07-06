@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.maharecruitment.gov.in.auth.entity.Auditable;
+import com.maharecruitment.gov.in.common.entity.Auditable;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

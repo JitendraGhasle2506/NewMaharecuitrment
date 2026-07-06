@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.maharecruitment.gov.in.auth.dto.SessionUserDTO;
+import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.auth.dto.UserPasswordChangeRequest;
 import com.maharecruitment.gov.in.auth.dto.UserProfileUpdateRequest;
 import com.maharecruitment.gov.in.auth.dto.UserProfileView;

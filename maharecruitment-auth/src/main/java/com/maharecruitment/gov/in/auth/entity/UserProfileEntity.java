@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.auth.entity;
 
+import com.maharecruitment.gov.in.common.entity.Auditable;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
