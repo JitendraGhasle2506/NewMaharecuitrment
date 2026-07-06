@@ -43,7 +43,8 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileAttendanceHistoryResponse;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileAttendanceResponse;
-import com.maharecruitment.gov.in.web.service.mobile.MobileAttendanceException;
+import com.maharecruitment.gov.in.web.service.mobile.MobileApiException;
+import com.maharecruitment.gov.in.web.service.mobile.MobileEmployeeAccessService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 
 @ExtendWith(MockitoExtension.class)
@@ -141,7 +142,7 @@ class MobileAttendanceServiceImplTest {
                 new BigDecimal("72.8777000"),
                 "Mumbai Office",
                 image()))
-                .isInstanceOfSatisfying(MobileAttendanceException.class, ex -> {
+                .isInstanceOfSatisfying(MobileApiException.class, ex -> {
                     assertThat(ex.getStatus().value()).isEqualTo(403);
                     assertThat(ex.getCode()).isEqualTo("EMPLOYEE_MISMATCH");
                 });
@@ -312,7 +313,7 @@ class MobileAttendanceServiceImplTest {
 
     private MobileAttendanceServiceImpl service() {
         return new MobileAttendanceServiceImpl(
-                employeeRepository,
+                new MobileEmployeeAccessService(employeeRepository),
                 dailyAttendanceInternalRepository,
                 fileStorageService,
                 holidayRepository,

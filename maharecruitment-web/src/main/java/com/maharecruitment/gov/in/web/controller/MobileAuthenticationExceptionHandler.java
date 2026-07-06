@@ -17,6 +17,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 import com.maharecruitment.gov.in.web.dto.mobile.MobileApiError;
 import com.maharecruitment.gov.in.web.exception.FileStorageException;
+import com.maharecruitment.gov.in.web.service.mobile.MobileApiException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAttendanceException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileTokenConfigurationException;
 
@@ -24,7 +25,8 @@ import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice(assignableTypes = {
         MobileAuthenticationController.class,
-        MobileAttendanceController.class
+        MobileAttendanceController.class,
+        MobileEmployeeLocationController.class
 })
 public class MobileAuthenticationExceptionHandler {
 
@@ -68,16 +70,21 @@ public class MobileAuthenticationExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(MobileApiError.of(ex.getCode(), ex.getMessage()));
     }
 
+    @ExceptionHandler(MobileApiException.class)
+    public ResponseEntity<MobileApiError> handleMobileApi(MobileApiException ex) {
+        return ResponseEntity.status(ex.getStatus()).body(MobileApiError.of(ex.getCode(), ex.getMessage()));
+    }
+
     @ExceptionHandler({
             MissingServletRequestParameterException.class,
             MissingServletRequestPartException.class,
             MethodArgumentTypeMismatchException.class,
             ConstraintViolationException.class
     })
-    public ResponseEntity<MobileApiError> handleInvalidMultipartRequest() {
+    public ResponseEntity<MobileApiError> handleInvalidRequest() {
         return ResponseEntity.badRequest().body(MobileApiError.of(
-                "INVALID_ATTENDANCE_REQUEST",
-                "Please provide valid attendance details."));
+                "INVALID_MOBILE_REQUEST",
+                "Please provide valid mobile API request details."));
     }
 
     @ExceptionHandler(FileStorageException.class)

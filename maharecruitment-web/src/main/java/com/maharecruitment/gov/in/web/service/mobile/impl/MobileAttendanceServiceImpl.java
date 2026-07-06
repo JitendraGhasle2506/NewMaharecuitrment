@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,12 +39,12 @@ import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepositor
 import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
 import com.maharecruitment.gov.in.attendance.service.AttendanceStatusResolver;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
-import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileAttendanceHistoryResponse;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileAttendanceResponse;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAttendanceException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAttendanceService;
+import com.maharecruitment.gov.in.web.service.mobile.MobileEmployeeAccessService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 
 @Service
@@ -58,12 +57,11 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
     private static final BigDecimal MAX_LONGITUDE = BigDecimal.valueOf(180);
     private static final int COORDINATE_SCALE = 7;
     private static final int LOCATION_ADDRESS_MAX_LENGTH = 1000;
-    private static final String ACTIVE_STATUS = "ACTIVE";
     private static final String PRESENT_STATUS = "PRESENT";
     private static final String APPROVED_STATUS = "APPROVED";
     private static final String MOBILE_ATTENDANCE_PHOTO_MODULE = "mobile-attendance-photo";
 
-    private final EmployeeRepository employeeRepository;
+    private final MobileEmployeeAccessService mobileEmployeeAccessService;
     private final DailyAttendanceInternalRepository dailyAttendanceInternalRepository;
     private final FileStorageService fileStorageService;
     private final HolidayRepository holidayRepository;
@@ -74,7 +72,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
 
     @Autowired
     public MobileAttendanceServiceImpl(
-            EmployeeRepository employeeRepository,
+            MobileEmployeeAccessService mobileEmployeeAccessService,
             DailyAttendanceInternalRepository dailyAttendanceInternalRepository,
             FileStorageService fileStorageService,
             HolidayRepository holidayRepository,
@@ -82,7 +80,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
             LeaveApplicationRepository leaveApplicationRepository,
             TourApplicationRepository tourApplicationRepository) {
         this(
-                employeeRepository,
+                mobileEmployeeAccessService,
                 dailyAttendanceInternalRepository,
                 fileStorageService,
                 holidayRepository,
@@ -93,7 +91,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
     }
 
     MobileAttendanceServiceImpl(
-            EmployeeRepository employeeRepository,
+            MobileEmployeeAccessService mobileEmployeeAccessService,
             DailyAttendanceInternalRepository dailyAttendanceInternalRepository,
             FileStorageService fileStorageService,
             HolidayRepository holidayRepository,
@@ -101,7 +99,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
             LeaveApplicationRepository leaveApplicationRepository,
             TourApplicationRepository tourApplicationRepository,
             Clock clock) {
-        this.employeeRepository = employeeRepository;
+        this.mobileEmployeeAccessService = mobileEmployeeAccessService;
         this.dailyAttendanceInternalRepository = dailyAttendanceInternalRepository;
         this.fileStorageService = fileStorageService;
         this.holidayRepository = holidayRepository;
@@ -224,7 +222,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
                 .findByWorkingDateBetween(startDate, endDate)
                 .stream()
                 .map(workingDay -> workingDay.getWorkingDate())
-                .filter(Objects::nonNull)
+                .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toSet());
         List<LeaveApplicationEntity> approvedLeaves = leaveApplicationRepository
                 .findByEmployeeIdAndStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
@@ -263,33 +261,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
     }
 
     private EmployeeEntity resolveAuthenticatedEmployee(Long requestedEmployeeId) {
-        if (requestedEmployeeId == null) {
-            throw badRequest("EMPLOYEE_ID_REQUIRED", "Employee ID is required.");
-        }
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || !StringUtils.hasText(authentication.getName())) {
-            throw new MobileAttendanceException(
-                    HttpStatus.UNAUTHORIZED,
-                    "UNAUTHENTICATED",
-                    "Valid mobile authentication token is required.");
-        }
-
-        List<EmployeeEntity> profiles = employeeRepository.findMobileLoginProfilesByEmail(authentication.getName().trim());
-        EmployeeEntity employee = profiles.stream()
-                .filter(this::isActiveEmployee)
-                .findFirst()
-                .orElseThrow(() -> new MobileAttendanceException(
-                        HttpStatus.FORBIDDEN,
-                        "EMPLOYEE_INACTIVE",
-                        "Active employee profile was not found for the logged-in user."));
-
-        if (!Objects.equals(employee.getEmployeeId(), requestedEmployeeId)) {
-            throw new MobileAttendanceException(
-                    HttpStatus.FORBIDDEN,
-                    "EMPLOYEE_MISMATCH",
-                    "You can mark attendance only for the logged-in employee.");
-        }
+        EmployeeEntity employee = mobileEmployeeAccessService.requireCurrentActiveEmployee(requestedEmployeeId);
         if (!StringUtils.hasText(employee.getEmployeeCode())) {
             throw badRequest("EMPLOYEE_CODE_REQUIRED", "Employee code is not available in employee master.");
         }
@@ -577,10 +549,6 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         long hours = duration.toHours();
         long minutes = duration.toMinutesPart();
         return "%02d:%02d".formatted(hours, minutes);
-    }
-
-    private boolean isActiveEmployee(EmployeeEntity employee) {
-        return employee != null && ACTIVE_STATUS.equalsIgnoreCase(StringUtils.trimWhitespace(employee.getStatus()));
     }
 
     private String currentUsername() {
