@@ -23,6 +23,7 @@ import com.maharecruitment.gov.in.attendance.dto.AttendanceDayDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceRegisterDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceReportDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceReportProjection;
+import com.maharecruitment.gov.in.attendance.entity.AttendanceSource;
 import com.maharecruitment.gov.in.attendance.entity.AttendanceRegisterEntity;
 import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
@@ -1516,6 +1517,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			if ("APPROVED".equalsIgnoreCase(status)) {
 				int month = request.getAttendanceDate().getMonthValue();
 				int year = request.getAttendanceDate().getYear();
+				EmployeeEntity employee = employeeRepository.findById(request.getUserId()).orElse(null);
 
 				com.maharecruitment.gov.in.attendance.entity.AttendanceRegisterEntity entity = attendanceRegisterRepo
 						.findByUserIdAndMonthAndYear(request.getUserId(), month, year)
@@ -1525,12 +1527,11 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 					entity.setUserId(request.getUserId());
 					entity.setMonth(month);
 					entity.setYear(year);
-					EmployeeEntity emp = employeeRepository.findById(request.getUserId()).orElse(null);
-					if (emp != null) {
-						entity.setRequestId(emp.getRequestId());
+					if (employee != null) {
+						entity.setRequestId(employee.getRequestId());
 						entity.setDesignation(
-								emp.getDesignation() != null ? emp.getDesignation().getDesignationName() : null);
-						entity.setName(emp.getFullName());
+								employee.getDesignation() != null ? employee.getDesignation().getDesignationName() : null);
+						entity.setName(employee.getFullName());
 					}
 				}
 
@@ -1544,6 +1545,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 						.orElse(new DailyAttendanceInternalEntity());
 				daily.setEmployeeId(request.getUserId());
 				daily.setAttendanceDate(request.getAttendanceDate());
+				daily.setEmployeeCode(employee != null ? employee.getEmployeeCode() : null);
+				daily.setAttendanceSource(AttendanceSource.WEB);
 				daily.setInTime(request.getInTime());
 				daily.setOutTime(request.getOutTime());
 				daily.setStatus("PRESENT");

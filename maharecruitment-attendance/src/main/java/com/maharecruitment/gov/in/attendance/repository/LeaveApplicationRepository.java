@@ -20,6 +20,12 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
 
     List<LeaveApplicationEntity> findByEmployeeIdAndStatus(Long employeeId, String status);
 
+    List<LeaveApplicationEntity> findByEmployeeIdAndStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            Long employeeId,
+            String status,
+            LocalDate endDate,
+            LocalDate startDate);
+
     boolean existsByEmployeeIdAndCompOffWorkDateAndStatusIn(
             Long employeeId,
             LocalDate compOffWorkDate,

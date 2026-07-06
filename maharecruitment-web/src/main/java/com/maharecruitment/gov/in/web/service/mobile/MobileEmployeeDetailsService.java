@@ -71,7 +71,15 @@ public class MobileEmployeeDetailsService {
                     user.getId());
         }
 
-        EmployeeEntity employee = profiles.getFirst();
+        EmployeeEntity employee = profiles.stream()
+                .filter(this::isActiveEmployee)
+                .findFirst()
+                .orElse(null);
+        if (employee == null) {
+            log.debug("Active employee profile not found for mobile login userId={}", user.getId());
+            return MobileEmployeeDetails.empty();
+        }
+
         DepartmentInfo departmentInfo = resolveDepartmentInfo(employee);
         SubDepartmentInfo subDepartmentInfo = resolveSubDepartmentInfo(employee);
         String employeeType = normalizeEmployeeType(employee.getRecruitmentType());
@@ -265,6 +273,12 @@ public class MobileEmployeeDetailsService {
             return normalized;
         }
         return normalized;
+    }
+
+    private boolean isActiveEmployee(EmployeeEntity employee) {
+        return employee != null
+                && StringUtils.hasText(employee.getStatus())
+                && "ACTIVE".equalsIgnoreCase(employee.getStatus().trim());
     }
 
     @SafeVarargs

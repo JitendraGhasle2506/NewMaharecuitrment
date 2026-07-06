@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -14,6 +15,8 @@ import org.springframework.util.StringUtils;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.service.CustomUserDetailsService;
 import com.maharecruitment.gov.in.auth.service.UserLoginTrackingService;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileEmployeeDetails;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLoginRequest;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLoginResponse;
@@ -33,6 +36,7 @@ public class MobileAuthenticationServiceImpl implements MobileAuthenticationServ
     private final MobileTokenService tokenService;
     private final MobileEmployeeDetailsService employeeDetailsService;
     private final MobileLoginResponseMapper responseMapper;
+    private final EmployeeRepository employeeRepository;
 
     public MobileAuthenticationServiceImpl(
             AuthenticationManager authenticationManager,
@@ -40,23 +44,31 @@ public class MobileAuthenticationServiceImpl implements MobileAuthenticationServ
             UserLoginTrackingService userLoginTrackingService,
             MobileTokenService tokenService,
             MobileEmployeeDetailsService employeeDetailsService,
-            MobileLoginResponseMapper responseMapper) {
+            MobileLoginResponseMapper responseMapper,
+            EmployeeRepository employeeRepository) {
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.userLoginTrackingService = userLoginTrackingService;
         this.tokenService = tokenService;
         this.employeeDetailsService = employeeDetailsService;
         this.responseMapper = responseMapper;
+        this.employeeRepository = employeeRepository;
     }
 
     @Override
     @Transactional
     public MobileLoginResponse authenticate(MobileLoginRequest request) {
         String identifier = normalizeIdentifier(request.username());
+        String authenticationIdentifier = resolveAuthenticationIdentifier(identifier);
         Authentication authentication = authenticationManager.authenticate(
-                UsernamePasswordAuthenticationToken.unauthenticated(identifier, request.password()));
+                UsernamePasswordAuthenticationToken.unauthenticated(authenticationIdentifier, request.password()));
 
         User user = userDetailsService.loadDomainUserByIdentifier(authentication.getName());
+        MobileEmployeeDetails employeeDetails = employeeDetailsService.loadForUser(user);
+        if (employeeDetails.empId() == null) {
+            throw new DisabledException("Active employee profile was not found for mobile login.");
+        }
+
         LocalDateTime loginAt = LocalDateTime.now();
         LocalDateTime lastLoginAt = userLoginTrackingService.recordSuccessfulLogin(user, loginAt);
         List<String> roles = authorities(authentication);
@@ -68,8 +80,27 @@ public class MobileAuthenticationServiceImpl implements MobileAuthenticationServ
                 user.getMobileNo(),
                 roles));
 
-        MobileEmployeeDetails employeeDetails = employeeDetailsService.loadForUser(user);
         return responseMapper.toResponse(user, employeeDetails, roles, token, loginAt, lastLoginAt);
+    }
+
+    private String resolveAuthenticationIdentifier(String identifier) {
+        if (!StringUtils.hasText(identifier) || identifier.contains("@") || identifier.matches("^[0-9]{10,15}$")) {
+            return identifier;
+        }
+
+        return employeeRepository.findByEmployeeCodeIgnoreCase(identifier)
+                .map(this::emailForActiveEmployee)
+                .orElse(identifier);
+    }
+
+    private String emailForActiveEmployee(EmployeeEntity employee) {
+        if (employee == null
+                || !StringUtils.hasText(employee.getStatus())
+                || !"ACTIVE".equalsIgnoreCase(employee.getStatus().trim())
+                || !StringUtils.hasText(employee.getEmail())) {
+            throw new DisabledException("Active employee profile was not found for mobile login.");
+        }
+        return employee.getEmail().trim();
     }
 
     private String normalizeIdentifier(String username) {

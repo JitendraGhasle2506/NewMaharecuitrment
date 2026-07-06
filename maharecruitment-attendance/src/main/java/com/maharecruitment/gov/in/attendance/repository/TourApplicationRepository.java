@@ -15,6 +15,12 @@ public interface TourApplicationRepository extends JpaRepository<TourApplication
     List<TourApplicationEntity> findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(List<Long> employeeIds, List<String> statuses);
     List<TourApplicationEntity> findByEmployeeIdAndStatus(Long employeeId, String status);
 
+    List<TourApplicationEntity> findByEmployeeIdAndStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            Long employeeId,
+            String status,
+            LocalDate endDate,
+            LocalDate startDate);
+
     boolean existsByEmployeeIdAndStatusInAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
             Long employeeId,
             Collection<String> statuses,

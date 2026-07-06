@@ -97,7 +97,7 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
     @Column(name = "onboarding_date")
     private LocalDate onboardingDate;
 
-    @Column(name = "aadhaar_number", nullable = false, length = 12)
+    @Column(name = "aadhaar_number", nullable = false, length = 255)
     private String aadhaarNumber;
 
     @Column(name = "aadhaar_original_name", length = 255)

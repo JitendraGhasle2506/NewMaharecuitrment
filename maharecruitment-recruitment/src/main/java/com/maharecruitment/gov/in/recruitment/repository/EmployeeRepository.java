@@ -18,6 +18,8 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> {
     Optional<EmployeeEntity> findByEmployeeCode(String employeeCode);
 
+    Optional<EmployeeEntity> findByEmployeeCodeIgnoreCase(String employeeCode);
+
     Optional<EmployeeEntity> findByEmail(String email);
 
     List<EmployeeEntity> findByRecruitmentType(String recruitmentType);

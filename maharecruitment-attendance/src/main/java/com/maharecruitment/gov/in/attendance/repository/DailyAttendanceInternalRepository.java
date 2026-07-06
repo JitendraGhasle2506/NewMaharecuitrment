@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.maharecruitment.gov.in.attendance.entity.AttendanceSource;
 import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 
 @Repository
@@ -26,6 +27,11 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
             LocalDate endDate);
 
     Optional<DailyAttendanceInternalEntity> findByEmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);
+
+    Optional<DailyAttendanceInternalEntity> findByEmployeeIdAndAttendanceDateAndAttendanceSource(
+            Long employeeId,
+            LocalDate date,
+            AttendanceSource attendanceSource);
 
     Optional<DailyAttendanceInternalEntity> findFirstByEmployeeIdAndAttendanceDateOrderByIdDesc(
             Long employeeId,
