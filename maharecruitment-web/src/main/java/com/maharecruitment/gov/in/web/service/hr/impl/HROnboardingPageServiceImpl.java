@@ -28,6 +28,7 @@ import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.UserManagementService;
 import com.maharecruitment.gov.in.auth.util.SecurePasswordGenerator;
+import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.master.entity.LocationMaster;
@@ -396,6 +397,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         }
 
         AgencyPreOnboardingForm onboardingForm = loadOnboardingForm(employee.getPreOnboarding().getPreOnboardingId());
+        onboardingForm.setAadhaar(SensitiveDataMaskingUtil.maskAadhaar(onboardingForm.getAadhaar()));
         return new EmployeeOnboardingDetailView(
                 employee.getEmployeeId(),
                 employee.getEmployeeCode(),

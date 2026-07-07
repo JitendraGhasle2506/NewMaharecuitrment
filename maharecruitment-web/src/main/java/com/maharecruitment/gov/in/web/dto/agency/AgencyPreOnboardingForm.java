@@ -8,6 +8,8 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -157,4 +159,8 @@ public class AgencyPreOnboardingForm {
     private boolean hrVerified;
 
     private List<AgencyPreOnboardingEmploymentForm> previousEmployments = new ArrayList<>();
+
+    public String getMaskedAadhaar() {
+        return SensitiveDataMaskingUtil.maskAadhaar(aadhaar);
+    }
 }
