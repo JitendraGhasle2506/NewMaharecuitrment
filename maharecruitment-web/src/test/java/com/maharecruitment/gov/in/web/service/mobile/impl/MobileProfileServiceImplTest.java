@@ -148,9 +148,11 @@ class MobileProfileServiceImplTest {
         assertThat(preOnboarding.getPhotoFileType()).isEqualTo("image/jpeg");
         assertThat(preOnboarding.getPhotoFileSize()).isEqualTo(3);
         assertThat(preOnboarding.getEmbedding()).isEqualTo("[0.123, 0.456]");
+        assertThat(employee.getEmbedding()).isEqualTo("[0.123, 0.456]");
         assertThat(response.photoUrl()).isEqualTo("updated-photo");
         assertThat(response.faceData()).isEqualTo("[0.123, 0.456]");
         assertThat(response.embedding()).isEqualTo("[0.123, 0.456]");
+        verify(employeeRepository).save(employee);
         verify(preOnboardingRepository).save(preOnboarding);
     }
 

@@ -156,7 +156,7 @@ Mobile app action:
 - Store `accessToken`.
 - Send it in `Authorization: Bearer <accessToken>` for all protected APIs.
 - Store `empId`; pass it as `employeeId` in protected APIs.
-- Store `faceData` or `embedding` for app-side face verification.
+- Store `faceData` or `embedding` for app-side face verification. This value is read from `employee_master.embedding`.
 
 ## 5. Employee Mapped Locations
 
@@ -317,7 +317,7 @@ Multipart form fields:
 | --- | --- | --- | --- |
 | `employeeId` | Yes | Number | Employee ID |
 | `photo` | Yes | File | Profile photo file |
-| `embedding` | No | Text | Face/photo embedding text to store with the profile photo |
+| `embedding` | No | Text | Face/photo embedding text to store in `employee_master.embedding` |
 | `faceData` | No | Text | Alias for `embedding` |
 | `faceEmbedding` | No | Text | Alias for `embedding` |
 
@@ -346,7 +346,7 @@ JSON fields:
 | `photo` | Yes | Text | Base64 image data. Data URI format is supported. |
 | `photoFileName` | No | Text | Optional file name. Defaults to `profile-photo.jpg` or `profile-photo.png`. |
 | `photoContentType` | No | Text | Required only when `photo` is plain Base64 without a data URI. Allowed: `image/jpeg`, `image/png`. |
-| `embedding` | No | Text | Face/photo embedding text to store with the profile photo. Aliases: `faceData`, `faceEmbedding`, `embeddingData`. |
+| `embedding` | No | Text | Face/photo embedding text to store in `employee_master.embedding`. Aliases: `faceData`, `faceEmbedding`, `embeddingData`. |
 
 Success response:
 

@@ -220,6 +220,10 @@ public class MobileEmployeeDetailsService {
     }
 
     private String resolveFaceData(EmployeeEntity employee) {
+        String employeeEmbedding = textOrNull(employee.getEmbedding());
+        if (employeeEmbedding != null) {
+            return employeeEmbedding;
+        }
         AgencyCandidatePreOnboardingEntity preOnboarding = employee.getPreOnboarding();
         return preOnboarding != null ? textOrNull(preOnboarding.getEmbedding()) : null;
     }

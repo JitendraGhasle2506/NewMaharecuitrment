@@ -126,7 +126,8 @@ public class MobileProfileServiceImpl implements MobileProfileService {
             throw badRequest("PHOTO_REQUIRED", "Photo file is required.");
         }
 
-        AgencyCandidatePreOnboardingEntity preOnboarding = context.employee().getPreOnboarding();
+        EmployeeEntity employee = context.employee();
+        AgencyCandidatePreOnboardingEntity preOnboarding = employee.getPreOnboarding();
         if (preOnboarding == null || preOnboarding.getPreOnboardingId() == null) {
             throw badRequest("ONBOARDING_PROFILE_NOT_FOUND", "Employee onboarding profile is not available.");
         }
@@ -137,7 +138,10 @@ public class MobileProfileServiceImpl implements MobileProfileService {
         preOnboarding.setPhotoFileType(uploadResult.contentType());
         preOnboarding.setPhotoFileSize(uploadResult.size());
         if (embedding != null) {
-            preOnboarding.setEmbedding(normalizeEmbedding(embedding));
+            String normalizedEmbedding = normalizeEmbedding(embedding);
+            employee.setEmbedding(normalizedEmbedding);
+            preOnboarding.setEmbedding(normalizedEmbedding);
+            employeeRepository.save(employee);
         }
         preOnboardingRepository.save(preOnboarding);
 

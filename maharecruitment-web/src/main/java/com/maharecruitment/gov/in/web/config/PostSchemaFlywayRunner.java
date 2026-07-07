@@ -71,6 +71,7 @@ import db.postmigration.V86__master_location_radius_meters_support;
 import db.postmigration.V87__mobile_attendance_internal_daily_support;
 import db.postmigration.V88__pre_onboarding_photo_embedding_support;
 import db.postmigration.V89__employee_profile_support;
+import db.postmigration.V90__employee_master_embedded_support;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -168,7 +169,8 @@ public class PostSchemaFlywayRunner {
                 new V86__master_location_radius_meters_support(),
                 new V87__mobile_attendance_internal_daily_support(),
                 new V88__pre_onboarding_photo_embedding_support(),
-                new V89__employee_profile_support());
+                new V89__employee_profile_support(),
+                new V90__employee_master_embedded_support());
     }
 
     private boolean hasFailedPostSchemaMigration() {

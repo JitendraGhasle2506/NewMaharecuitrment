@@ -64,6 +64,7 @@ class MobileEmployeeDetailsServiceTest {
         Path photoPath = tempDir.resolve("photo.jpg");
         Files.write(photoPath, photoBytes);
         employee.setPreOnboarding(preOnboarding(photoPath.toString(), "[0.123,0.456]"));
+        employee.setEmbedding("[0.987,0.654]");
 
         EmployeeReportingMappingEntity mapping = new EmployeeReportingMappingEntity();
         mapping.setEmployeeId(101L);
@@ -94,7 +95,7 @@ class MobileEmployeeDetailsServiceTest {
         assertThat(details.reportingDepartmentId()).isNull();
         assertThat(details.reportingDepartmentName()).isNull();
         assertThat(decodedDataImage(details.photoUrl())).isEqualTo(photoBytes);
-        assertThat(details.faceData()).isEqualTo("[0.123,0.456]");
+        assertThat(details.faceData()).isEqualTo("[0.987,0.654]");
     }
 
     @Test
@@ -172,6 +173,25 @@ class MobileEmployeeDetailsServiceTest {
         assertThat(details.empId()).isEqualTo(201L);
         assertThat(decodedDataImage(details.photoUrl(), "image/png")).isEqualTo(photoBytes);
         assertThat(details.faceData()).isEqualTo("[0.789,0.321]");
+    }
+
+    @Test
+    void usesPreOnboardingEmbeddingWhenEmployeeMasterEmbeddedIsMissing() throws Exception {
+        MobileEmployeeDetailsService service = service();
+        User user = user(14L, "Fallback Employee", "fallback@example.com", "9444444444");
+        EmployeeEntity employee = employee(301L, "EMP301", "Fallback Employee", "fallback@example.com", "INTERNAL");
+        Path photoPath = tempDir.resolve("fallback-embedding-photo.jpg");
+        Files.write(photoPath, new byte[] { 4, 5, 6 });
+        employee.setPreOnboarding(preOnboarding(photoPath.toString(), "[0.111,0.222]"));
+
+        when(employeeRepository.findMobileLoginProfilesByEmail("fallback@example.com")).thenReturn(List.of(employee));
+        when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(301L))
+                .thenReturn(Optional.empty());
+        when(fileStorageService.resolveManagedPath(photoPath.toString())).thenReturn(Optional.of(photoPath));
+
+        MobileEmployeeDetails details = service.loadForUser(user);
+
+        assertThat(details.faceData()).isEqualTo("[0.111,0.222]");
     }
 
     @Test

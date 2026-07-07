@@ -102,6 +102,9 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @Column(name = "photo_path", length = 1000)
     private String photoPath;
 
+    @Column(name = "embedding", columnDefinition = "text")
+    private String embedding;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pre_onboarding_id")
     private AgencyCandidatePreOnboardingEntity preOnboarding;
