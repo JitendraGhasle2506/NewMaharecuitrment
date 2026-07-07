@@ -36,6 +36,16 @@ public class InternalAttendanceReportApiRow {
         this.code = code;
     }
 
+    @JsonProperty("Employe_code")
+    public void setEmployeCode(String code) {
+        this.code = code;
+    }
+
+    @JsonProperty("employee_code")
+    public void setEmployeeCode(String code) {
+        this.code = code;
+    }
+
     public String getDate() {
         return date;
     }

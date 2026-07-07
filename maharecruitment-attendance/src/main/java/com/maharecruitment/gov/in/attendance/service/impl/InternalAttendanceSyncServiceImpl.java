@@ -13,8 +13,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -75,14 +75,16 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
     @Override
     public InternalAttendanceSyncResult syncAttendance(LocalDate startDate, LocalDate endDate) {
         validateSyncRange(startDate, endDate);
+        long syncStartedAtNanos = System.nanoTime();
 
         if (!properties.isEnabled()) {
             log.debug("Internal attendance API sync is disabled. startDate={}, endDate={}", startDate, endDate);
-            return new InternalAttendanceSyncResult(false, startDate, endDate, 0, 0, 0, 0, 0);
+            return new InternalAttendanceSyncResult(false, startDate, endDate, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0L, elapsedMillis(syncStartedAtNanos), null);
         }
 
         List<EmployeeEntity> candidates = employeeRepository.findInternalAttendanceSyncCandidates();
-        Map<String, List<EmployeeEntity>> employeesByUniqueCode = new LinkedHashMap<>();
+        Map<String, List<EmployeeEntity>> employeesByEmployeeCode = new LinkedHashMap<>();
         int skippedEmployees = 0;
 
         for (EmployeeEntity employee : candidates) {
@@ -91,69 +93,138 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                 continue;
             }
 
+            String employeeCode;
             try {
-                String uniqueCode = buildUniqueCode(employee);
-                employeesByUniqueCode.computeIfAbsent(uniqueCode, ignored -> new ArrayList<>()).add(employee);
+                employeeCode = buildEmployeeCode(employee);
             } catch (IllegalArgumentException ex) {
                 skippedEmployees++;
-                log.warn("Skipping attendance sync for employeeId={} because the external unique code is invalid. {}",
-                        employee != null ? employee.getEmployeeId() : null,
+                log.warn("Skipping attendance sync for employeeId={} because employee_code cannot be derived. {}",
+                        employee.getEmployeeId(),
                         ex.getMessage());
+                continue;
             }
+            employeesByEmployeeCode.computeIfAbsent(employeeCode, ignored -> new ArrayList<>()).add(employee);
         }
 
         List<EmployeeSyncTarget> syncTargets = new ArrayList<>();
-        for (Map.Entry<String, List<EmployeeEntity>> entry : employeesByUniqueCode.entrySet()) {
+        List<EmployeeEntity> employeesToUpdate = new ArrayList<>();
+        for (Map.Entry<String, List<EmployeeEntity>> entry : employeesByEmployeeCode.entrySet()) {
             List<EmployeeEntity> employees = entry.getValue();
             if (employees.size() > 1) {
                 skippedEmployees += employees.size();
                 log.warn(
-                        "Skipping attendance sync for ambiguous unique code {} because it maps to multiple employees {}.",
+                        "Skipping attendance sync for ambiguous employee_code {} because it maps to multiple employees {}.",
                         entry.getKey(),
                         employees.stream().map(EmployeeEntity::getEmployeeId).toList());
                 continue;
             }
 
-            syncTargets.add(new EmployeeSyncTarget(entry.getKey(), employees.get(0)));
+            EmployeeEntity employee = employees.get(0);
+            Optional<EmployeeEntity> existingEmployeeWithCode = employeeRepository.findByEmployeeCodeIgnoreCase(entry.getKey());
+            if (existingEmployeeWithCode.isPresent()
+                    && !Objects.equals(existingEmployeeWithCode.get().getEmployeeId(), employee.getEmployeeId())) {
+                skippedEmployees++;
+                log.warn(
+                        "Skipping attendance sync for employeeId={} because derived employee_code {} is already assigned to employeeId={}.",
+                        employee.getEmployeeId(),
+                        entry.getKey(),
+                        existingEmployeeWithCode.get().getEmployeeId());
+                continue;
+            }
+
+            if (!entry.getKey().equals(normalizeText(employee.getEmployeeCode()))) {
+                employee.setEmployeeCode(entry.getKey());
+                employeesToUpdate.add(employee);
+            }
+            syncTargets.add(new EmployeeSyncTarget(entry.getKey(), employee));
         }
+
+        if (!employeesToUpdate.isEmpty()) {
+            employeeRepository.saveAll(employeesToUpdate);
+            log.info("Updated employee_master.employee_code for {} internal employees before attendance sync.",
+                    employeesToUpdate.size());
+        }
+
+        List<InternalAttendanceDayRecord> apiRecords;
+        long apiStartedAtNanos = System.nanoTime();
+        long apiTimeMillis;
+        try {
+            apiRecords = attendanceReportClient.fetchAttendanceReport(startDate, endDate);
+            apiTimeMillis = elapsedMillis(apiStartedAtNanos);
+        } catch (InternalAttendanceReportClientUnavailableException ex) {
+            apiTimeMillis = elapsedMillis(apiStartedAtNanos);
+            log.error("Attendance sync failed because the upstream API is unavailable.", ex);
+            int failedEmployees = syncTargets.size();
+            return new InternalAttendanceSyncResult(
+                    true,
+                    startDate,
+                    endDate,
+                    failedEmployees,
+                    0,
+                    skippedEmployees,
+                    failedEmployees,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    apiTimeMillis,
+                    elapsedMillis(syncStartedAtNanos),
+                    ex.getMessage());
+        } catch (Exception ex) {
+            apiTimeMillis = elapsedMillis(apiStartedAtNanos);
+            log.error("Attendance sync failed while fetching organization attendance.", ex);
+            int failedEmployees = syncTargets.isEmpty() ? 0 : syncTargets.size();
+            return new InternalAttendanceSyncResult(
+                    true,
+                    startDate,
+                    endDate,
+                    failedEmployees,
+                    0,
+                    skippedEmployees,
+                    failedEmployees,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    apiTimeMillis,
+                    elapsedMillis(syncStartedAtNanos),
+                    ex.getMessage());
+        }
+
+        if (apiRecords.isEmpty()) {
+            log.info("No attendance data found for selected date range. startDate={}, endDate={}", startDate, endDate);
+        }
+
+        Map<String, List<InternalAttendanceDayRecord>> apiRecordsByEmployeeCode = apiRecords.stream()
+                .filter(record -> StringUtils.hasText(record.getUniqueCode()))
+                .collect(Collectors.groupingBy(
+                        record -> normalizeEmployeeCode(record.getUniqueCode()),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
 
         int attemptedEmployees = 0;
         int syncedEmployees = 0;
         int failedEmployees = 0;
-        int upsertedRows = 0;
-        long lastRequestStartedAtNanos = 0L;
+        AttendanceSyncCounters counters = new AttendanceSyncCounters();
 
         for (int index = 0; index < syncTargets.size(); index++) {
             EmployeeSyncTarget syncTarget = syncTargets.get(index);
             EmployeeEntity employee = syncTarget.employee();
             attemptedEmployees++;
             try {
-                waitForNextUpstreamRequestWindow(lastRequestStartedAtNanos);
-                lastRequestStartedAtNanos = System.nanoTime();
-                int savedRows = syncEmployeeAttendance(employee, syncTarget.uniqueCode(), startDate, endDate);
+                List<InternalAttendanceDayRecord> employeeRecords = apiRecordsByEmployeeCode
+                        .getOrDefault(normalizeEmployeeCode(syncTarget.employeeCode()), List.of());
+                AttendancePersistenceResult persistenceResult =
+                        syncEmployeeAttendance(employee, employeeRecords, startDate, endDate);
                 syncedEmployees++;
-                upsertedRows += savedRows;
-            } catch (InternalAttendanceReportClientUnavailableException ex) {
-                failedEmployees++;
-                log.error("Attendance sync failed for employeeId={}, uniqueCode={}",
-                        employee.getEmployeeId(),
-                        syncTarget.uniqueCode(),
-                        ex);
-                if (properties.isStopOnUpstreamUnavailable()) {
-                    int remainingEmployees = syncTargets.size() - index - 1;
-                    skippedEmployees += remainingEmployees;
-                    log.warn(
-                            "Stopping internal attendance sync early because the upstream API is unavailable. skippedRemainingEmployees={}, startDate={}, endDate={}",
-                            remainingEmployees,
-                            startDate,
-                            endDate);
-                    break;
-                }
+                counters.add(persistenceResult);
             } catch (Exception ex) {
                 failedEmployees++;
-                log.error("Attendance sync failed for employeeId={}, uniqueCode={}",
+                log.error("Attendance sync failed for employeeId={}, employeeCode={}",
                         employee.getEmployeeId(),
-                        syncTarget.uniqueCode(),
+                        syncTarget.employeeCode(),
                         ex);
             }
         }
@@ -166,7 +237,14 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                 syncedEmployees,
                 skippedEmployees,
                 failedEmployees,
-                upsertedRows);
+                counters.upsertedRows(),
+                counters.insertedRows(),
+                counters.updatedRows(),
+                counters.skippedRows(),
+                counters.duplicateRows(),
+                apiTimeMillis,
+                elapsedMillis(syncStartedAtNanos),
+                apiRecords.isEmpty() ? "No attendance data found for selected date." : null);
     }
 
     @Override
@@ -174,42 +252,15 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         return employeeRepository.countInternalAttendanceSyncCandidates();
     }
 
-    private void waitForNextUpstreamRequestWindow(long lastRequestStartedAtNanos) {
-        long minIntervalMillis = Math.max(properties.getMinRequestIntervalMillis(), 0L);
-        if (lastRequestStartedAtNanos <= 0L || minIntervalMillis <= 0L) {
-            return;
-        }
-
-        long elapsedNanos = System.nanoTime() - lastRequestStartedAtNanos;
-        long remainingNanos = TimeUnit.MILLISECONDS.toNanos(minIntervalMillis) - elapsedNanos;
-        if (remainingNanos <= 0L) {
-            return;
-        }
-
-        try {
-            TimeUnit.NANOSECONDS.sleep(remainingNanos);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new InternalAttendanceReportClientUnavailableException(
-                    "Internal attendance sync was interrupted while waiting for the upstream API rate limit window.",
-                    ex);
-        }
-    }
-
-    protected int syncEmployeeAttendance(
+    protected AttendancePersistenceResult syncEmployeeAttendance(
             EmployeeEntity employee,
-            String uniqueCode,
+            List<InternalAttendanceDayRecord> apiRecords,
             LocalDate startDate,
             LocalDate endDate) {
-        List<InternalAttendanceDayRecord> apiRecords = attendanceReportClient.fetchAttendanceReport(
-                uniqueCode,
-                startDate,
-                endDate);
-
         return transactionTemplate.execute(status -> persistEmployeeAttendance(employee, apiRecords, startDate, endDate));
     }
 
-    private int persistEmployeeAttendance(
+    private AttendancePersistenceResult persistEmployeeAttendance(
             EmployeeEntity employee,
             List<InternalAttendanceDayRecord> apiRecords,
             LocalDate startDate,
@@ -218,22 +269,29 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         if (apiRecords.isEmpty()) {
             log.info("Attendance API returned no records for employeeId={}, uniqueCode={}, startDate={}, endDate={}",
                     employee.getEmployeeId(),
-                    buildUniqueCode(employee),
+                    employee.getEmployeeCode(),
                     startDate,
                     endDate);
-            return 0;
+            return AttendancePersistenceResult.empty();
         }
 
-        Map<LocalDate, DailyAttendanceInternalEntity> existingRowsByDate = dailyAttendanceInternalRepository
+        List<DailyAttendanceInternalEntity> existingRows = dailyAttendanceInternalRepository
                 .findByEmployeeIdAndAttendanceDateBetween(employee.getEmployeeId(), startDate, endDate)
-                .stream()
+                .stream().toList();
+        int duplicateRows = Math.max(existingRows.size()
+                - (int) existingRows.stream()
+                        .map(DailyAttendanceInternalEntity::getAttendanceDate)
+                        .distinct()
+                        .count(), 0);
+
+        Map<LocalDate, DailyAttendanceInternalEntity> existingRowsByDate = existingRows.stream()
                 .collect(Collectors.toMap(
                         DailyAttendanceInternalEntity::getAttendanceDate,
                         daily -> daily,
                         this::pickLatestPersistedRow,
                         HashMap::new));
 
-        Set<LocalDate> approvedManualAttendanceDates = manualAttendanceRequestRepository
+        java.util.Set<LocalDate> approvedManualAttendanceDates = manualAttendanceRequestRepository
                 .findByUserIdAndAttendanceDateBetweenAndHodStatusIgnoreCase(
                         employee.getEmployeeId(),
                         startDate,
@@ -243,8 +301,16 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                 .map(ManualAttendanceRequestEntity::getAttendanceDate)
                 .collect(Collectors.toSet());
 
-        Map<LocalDate, InternalAttendanceDayRecord> apiRecordByDate = apiRecords.stream()
+        List<InternalAttendanceDayRecord> datedApiRecords = apiRecords.stream()
                 .filter(record -> record.getAttendanceDate() != null)
+                .toList();
+        duplicateRows += Math.max(datedApiRecords.size()
+                - (int) datedApiRecords.stream()
+                        .map(InternalAttendanceDayRecord::getAttendanceDate)
+                        .distinct()
+                        .count(), 0);
+
+        Map<LocalDate, InternalAttendanceDayRecord> apiRecordByDate = datedApiRecords.stream()
                 .collect(Collectors.toMap(
                         InternalAttendanceDayRecord::getAttendanceDate,
                         record -> record,
@@ -253,20 +319,26 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
 
         List<DailyAttendanceInternalEntity> entitiesToSave = new ArrayList<>();
         LocalDateTime syncTimestamp = LocalDateTime.now(resolveZoneId());
+        int insertedRows = 0;
+        int updatedRows = 0;
+        int skippedRows = apiRecords.size() - datedApiRecords.size();
         for (InternalAttendanceDayRecord apiRecord : apiRecordByDate.values().stream()
                 .sorted(Comparator.comparing(InternalAttendanceDayRecord::getAttendanceDate))
                 .toList()) {
             LocalDate attendanceDate = apiRecord.getAttendanceDate();
             if (attendanceDate == null || attendanceDate.isBefore(startDate) || attendanceDate.isAfter(endDate)) {
+                skippedRows++;
                 continue;
             }
             if (employee.getJoiningDate() != null && attendanceDate.isBefore(employee.getJoiningDate())) {
+                skippedRows++;
                 continue;
             }
             if (approvedManualAttendanceDates.contains(attendanceDate)) {
                 log.debug("Skipping API overwrite for approved manual attendance. employeeId={}, date={}",
                         employee.getEmployeeId(),
                         attendanceDate);
+                skippedRows++;
                 continue;
             }
 
@@ -276,21 +348,27 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                         employee.getEmployeeId(),
                         attendanceDate,
                         existingRow.getAttendanceSource());
+                skippedRows++;
                 continue;
             }
 
             DailyAttendanceInternalEntity entity = existingRow != null ? existingRow : new DailyAttendanceInternalEntity();
+            if (existingRow == null) {
+                insertedRows++;
+            } else {
+                updatedRows++;
+            }
             applyApiRecord(entity, employee, apiRecord);
             stampAuditFields(entity, syncTimestamp);
             entitiesToSave.add(entity);
         }
 
         if (entitiesToSave.isEmpty()) {
-            return 0;
+            return new AttendancePersistenceResult(0, 0, skippedRows, duplicateRows);
         }
 
         dailyAttendanceInternalRepository.saveAll(entitiesToSave);
-        return entitiesToSave.size();
+        return new AttendancePersistenceResult(insertedRows, updatedRows, skippedRows, duplicateRows);
     }
 
     private void applyApiRecord(
@@ -298,7 +376,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
             EmployeeEntity employee,
             InternalAttendanceDayRecord apiRecord) {
         entity.setEmployeeId(employee.getEmployeeId());
-        entity.setEmployeeCode(normalizeText(employee.getEmployeeCode()));
+        entity.setEmployeeCode(normalizeText(apiRecord.getUniqueCode()));
         entity.setAttendanceDate(apiRecord.getAttendanceDate());
         entity.setAttendanceSource(AttendanceSource.API);
         entity.setInTime(normalizeText(apiRecord.getInTime()));
@@ -370,19 +448,6 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
             score += 1;
         }
         return score;
-    }
-
-    private String buildUniqueCode(EmployeeEntity employee) {
-        if (employee == null || !StringUtils.hasText(employee.getAadhaarNumber())) {
-            throw new IllegalArgumentException("Aadhaar number is missing.");
-        }
-
-        String digitsOnly = employee.getAadhaarNumber().replaceAll("\\D", "");
-        if (digitsOnly.length() < 4) {
-            throw new IllegalArgumentException("Aadhaar number must contain at least 4 digits.");
-        }
-
-        return properties.getUniqueCodePrefix() + digitsOnly.substring(digitsOnly.length() - 4);
     }
 
     private boolean isFutureJoining(EmployeeEntity employee, LocalDate endDate) {
@@ -481,6 +546,80 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         return StringUtils.hasText(value) ? value.trim() : null;
     }
 
-    private record EmployeeSyncTarget(String uniqueCode, EmployeeEntity employee) {
+    private String normalizeEmployeeCode(String value) {
+        return StringUtils.hasText(value) ? value.trim().toUpperCase() : null;
+    }
+
+    private String buildEmployeeCode(EmployeeEntity employee) {
+        if (employee == null || !StringUtils.hasText(employee.getAadhaarNumber())) {
+            throw new IllegalArgumentException("Aadhaar number is missing.");
+        }
+
+        String digitsOnly = employee.getAadhaarNumber().replaceAll("\\D", "");
+        if (digitsOnly.length() < 4) {
+            throw new IllegalArgumentException("Aadhaar number must contain at least 4 digits.");
+        }
+
+        return properties.getUniqueCodePrefix() + digitsOnly.substring(digitsOnly.length() - 4);
+    }
+
+    private long elapsedMillis(long startedAtNanos) {
+        return Duration.ofNanos(System.nanoTime() - startedAtNanos).toMillis();
+    }
+
+    private record EmployeeSyncTarget(String employeeCode, EmployeeEntity employee) {
+    }
+
+    protected record AttendancePersistenceResult(
+            int insertedRows,
+            int updatedRows,
+            int skippedRows,
+            int duplicateRows) {
+
+        static AttendancePersistenceResult empty() {
+            return new AttendancePersistenceResult(0, 0, 0, 0);
+        }
+
+        int upsertedRows() {
+            return insertedRows + updatedRows;
+        }
+    }
+
+    private static final class AttendanceSyncCounters {
+
+        private int insertedRows;
+        private int updatedRows;
+        private int skippedRows;
+        private int duplicateRows;
+
+        void add(AttendancePersistenceResult result) {
+            if (result == null) {
+                return;
+            }
+            insertedRows += result.insertedRows();
+            updatedRows += result.updatedRows();
+            skippedRows += result.skippedRows();
+            duplicateRows += result.duplicateRows();
+        }
+
+        int upsertedRows() {
+            return insertedRows + updatedRows;
+        }
+
+        int insertedRows() {
+            return insertedRows;
+        }
+
+        int updatedRows() {
+            return updatedRows;
+        }
+
+        int skippedRows() {
+            return skippedRows;
+        }
+
+        int duplicateRows() {
+            return duplicateRows;
+        }
     }
 }

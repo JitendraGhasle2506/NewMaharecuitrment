@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.web.controller.admin;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,6 +24,8 @@ import jakarta.validation.Valid;
 @Controller
 @RequestMapping("/admin/attendance/internal-sync")
 public class AdminInternalAttendanceSyncPageController {
+
+    private static final DateTimeFormatter UPSTREAM_DATE_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     private final InternalAttendanceSyncService internalAttendanceSyncService;
     private final InternalAttendanceSyncProperties internalAttendanceSyncProperties;
@@ -59,9 +62,19 @@ public class AdminInternalAttendanceSyncPageController {
             InternalAttendanceSyncResult result = internalAttendanceSyncService.syncAttendance(
                     syncForm.getStartDate(),
                     syncForm.getEndDate());
-            redirectAttributes.addFlashAttribute(
-                    "successMessage",
-                    "Internal attendance sync completed for the requested date range.");
+            if (result.getFailureMessage() != null) {
+                redirectAttributes.addFlashAttribute(
+                        "warningMessage",
+                        result.getFailureMessage());
+            } else if (result.getEmployeesFailed() > 0) {
+                redirectAttributes.addFlashAttribute(
+                        "warningMessage",
+                        "Internal attendance sync finished with employee-level failures. Review application logs for failed employee codes.");
+            } else {
+                redirectAttributes.addFlashAttribute(
+                        "successMessage",
+                        "Internal attendance sync completed for the requested date range.");
+            }
             redirectAttributes.addFlashAttribute("syncForm", syncForm);
             redirectAttributes.addFlashAttribute("syncResult", result);
             return "redirect:/admin/attendance/internal-sync";
@@ -75,7 +88,7 @@ public class AdminInternalAttendanceSyncPageController {
     private void populateViewModel(Model model) {
         model.addAttribute("maxSelectableDate", resolveToday());
         model.addAttribute("syncEnabled", internalAttendanceSyncProperties.isEnabled());
-        model.addAttribute("syncApiUrl", internalAttendanceSyncProperties.getApiUrl());
+        model.addAttribute("syncApiUrl", buildUpstreamApiExample(resolveToday(), resolveToday()));
         model.addAttribute("syncCron", internalAttendanceSyncProperties.getSchedulerCron());
         model.addAttribute("syncZone", internalAttendanceSyncProperties.getSchedulerZone());
         model.addAttribute("currentDateOnly", internalAttendanceSyncProperties.isCurrentDateOnly());
@@ -126,5 +139,15 @@ public class AdminInternalAttendanceSyncPageController {
     private LocalDate resolveToday() {
         ZoneId zoneId = ZoneId.of(internalAttendanceSyncProperties.getSchedulerZone());
         return LocalDate.now(zoneId);
+    }
+
+    private String buildUpstreamApiExample(LocalDate startDate, LocalDate endDate) {
+        return internalAttendanceSyncProperties.getApiUrl()
+                + "?organization_code="
+                + internalAttendanceSyncProperties.getOrganizationCode()
+                + "&start_date="
+                + UPSTREAM_DATE_FORMAT.format(startDate)
+                + "&end_date="
+                + UPSTREAM_DATE_FORMAT.format(endDate);
     }
 }

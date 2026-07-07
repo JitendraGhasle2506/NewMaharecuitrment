@@ -11,7 +11,9 @@ public class InternalAttendanceSyncProperties {
 
     private boolean enabled = true;
 
-    private String apiUrl = "https://mahait.fitechit.in/api/attendance-report-employee";
+    private String apiUrl = "https://mahait.fitechit.in/api/attendance-report-org";
+
+    private String organizationCode = "ALL";
 
     private String uniqueCodePrefix = "MahaIT";
 
@@ -51,6 +53,14 @@ public class InternalAttendanceSyncProperties {
 
     public void setApiUrl(String apiUrl) {
         this.apiUrl = apiUrl;
+    }
+
+    public String getOrganizationCode() {
+        return organizationCode;
+    }
+
+    public void setOrganizationCode(String organizationCode) {
+        this.organizationCode = organizationCode;
     }
 
     public String getUniqueCodePrefix() {

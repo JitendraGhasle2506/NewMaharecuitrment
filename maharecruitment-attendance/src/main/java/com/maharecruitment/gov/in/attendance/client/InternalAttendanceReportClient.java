@@ -7,8 +7,5 @@ import com.maharecruitment.gov.in.attendance.client.model.InternalAttendanceDayR
 
 public interface InternalAttendanceReportClient {
 
-    List<InternalAttendanceDayRecord> fetchAttendanceReport(
-            String uniqueCode,
-            LocalDate startDate,
-            LocalDate endDate);
+    List<InternalAttendanceDayRecord> fetchAttendanceReport(LocalDate startDate, LocalDate endDate);
 }

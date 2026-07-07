@@ -32,14 +32,20 @@ public class InternalAttendanceSyncScheduler {
         try {
             InternalAttendanceSyncResult result = internalAttendanceSyncService.syncScheduledAttendance();
             log.info(
-                    "Internal attendance sync completed. startDate={}, endDate={}, attempted={}, synced={}, skipped={}, failed={}, upsertedRows={}",
+                    "Internal attendance sync completed. startDate={}, endDate={}, attempted={}, synced={}, skipped={}, failed={}, insertedRows={}, updatedRows={}, duplicateRows={}, upsertedRows={}, apiTimeMs={}, totalTimeMs={}, message={}",
                     result.getStartDate(),
                     result.getEndDate(),
                     result.getEmployeesAttempted(),
                     result.getEmployeesSynced(),
                     result.getEmployeesSkipped(),
                     result.getEmployeesFailed(),
-                    result.getAttendanceRowsUpserted());
+                    result.getAttendanceRowsInserted(),
+                    result.getAttendanceRowsUpdated(),
+                    result.getDuplicateRows(),
+                    result.getAttendanceRowsUpserted(),
+                    result.getApiTimeMillis(),
+                    result.getTotalProcessingTimeMillis(),
+                    result.getFailureMessage());
         } catch (Exception ex) {
             log.error("Internal attendance sync scheduler failed.", ex);
         }

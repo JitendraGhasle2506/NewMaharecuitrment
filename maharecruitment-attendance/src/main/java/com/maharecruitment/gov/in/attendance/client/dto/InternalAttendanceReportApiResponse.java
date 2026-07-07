@@ -1,9 +1,7 @@
 package com.maharecruitment.gov.in.attendance.client.dto;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class InternalAttendanceReportApiResponse {
@@ -12,7 +10,9 @@ public class InternalAttendanceReportApiResponse {
 
     private String message;
 
-    private List<InternalAttendanceReportApiRow> data = new ArrayList<>();
+    private int count;
+
+    private JsonNode data;
 
     public boolean isStatus() {
         return status;
@@ -30,11 +30,19 @@ public class InternalAttendanceReportApiResponse {
         this.message = message;
     }
 
-    public List<InternalAttendanceReportApiRow> getData() {
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
+    }
+
+    public JsonNode getData() {
         return data;
     }
 
-    public void setData(List<InternalAttendanceReportApiRow> data) {
+    public void setData(JsonNode data) {
         this.data = data;
     }
 }

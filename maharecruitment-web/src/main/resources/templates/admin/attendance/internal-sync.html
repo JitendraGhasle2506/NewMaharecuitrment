@@ -82,6 +82,7 @@
                 </div>
                 <div class="card-body">
                     <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+                    <div class="alert alert-warning" th:if="${warningMessage}" th:text="${warningMessage}"></div>
                     <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
                     <div class="row g-3 mb-4">
@@ -110,7 +111,7 @@
                             <div class="sync-metric-card">
                                 <div class="sync-metric-label">Unique Code Rule</div>
                                 <div class="sync-metric-value" th:text="${uniqueCodeRule}">MahaIT + Aadhaar last 4 digits</div>
-                                <div class="text-muted small mt-2">Used for upstream API requests for each internal employee.</div>
+                                <div class="text-muted small mt-2">Saved into <code>employee_master.employee_code</code> and used to match upstream attendance rows.</div>
                             </div>
                         </div>
                     </div>
@@ -120,8 +121,8 @@
                             <div class="sync-panel">
                                 <div class="sync-panel-title">Manual Admin Sync</div>
                                 <p class="sync-panel-copy">
-                                    Fetch attendance data from the MahaIT API for all internal employees from
-                                    <code>employee_master</code> by entering a start date and end date.
+                                    Fetch organization attendance data from the MahaIT API, update
+                                    <code>employee_master.employee_code</code> from Aadhaar, and match rows to internal employees.
                                 </p>
 
                                 <form th:object="${syncForm}" th:action="@{/admin/attendance/internal-sync}" method="post" class="row g-3">
@@ -173,6 +174,10 @@
                                             <td><code th:text="${syncApiUrl}">https://mahait.fitechit.in/api/attendance-report</code></td>
                                         </tr>
                                         <tr>
+                                            <td>Upstream Method</td>
+                                            <td><code>POST</code></td>
+                                        </tr>
+                                        <tr>
                                             <td>Admin Trigger API</td>
                                             <td><code>/attendance/internal-sync/run-now</code></td>
                                         </tr>
@@ -198,6 +203,10 @@
                             <p class="sync-panel-copy mb-3">
                                 This summary is from the most recent sync request submitted from the admin page.
                             </p>
+                            <div class="alert alert-warning" th:if="${syncResult.failureMessage != null}">
+                                <strong>Failure reason:</strong>
+                                <span th:text="${syncResult.failureMessage}">Upstream API unavailable.</span>
+                            </div>
 
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover align-middle mb-0">
@@ -207,9 +216,14 @@
                                             <th>End Date</th>
                                             <th>Attempted</th>
                                             <th>Synced</th>
+                                            <th>Inserted</th>
+                                            <th>Updated</th>
                                             <th>Skipped</th>
                                             <th>Failed</th>
+                                            <th>Duplicate</th>
                                             <th>Rows Upserted</th>
+                                            <th>API Time</th>
+                                            <th>Total Time</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -218,9 +232,19 @@
                                             <td th:text="${syncResult.endDate != null ? #temporals.format(syncResult.endDate, 'dd-MM-yyyy') : '-'}">04-05-2026</td>
                                             <td th:text="${syncResult.employeesAttempted}">0</td>
                                             <td th:text="${syncResult.employeesSynced}">0</td>
-                                            <td th:text="${syncResult.employeesSkipped}">0</td>
+                                            <td th:text="${syncResult.attendanceRowsInserted}">0</td>
+                                            <td th:text="${syncResult.attendanceRowsUpdated}">0</td>
+                                            <td>
+                                                <span th:text="${syncResult.employeesSkipped}">0</span>
+                                                <span class="text-muted small d-block">employees</span>
+                                                <span th:text="${syncResult.attendanceRowsSkipped}">0</span>
+                                                <span class="text-muted small">rows</span>
+                                            </td>
                                             <td th:text="${syncResult.employeesFailed}">0</td>
+                                            <td th:text="${syncResult.duplicateRows}">0</td>
                                             <td th:text="${syncResult.attendanceRowsUpserted}">0</td>
+                                            <td th:text="${syncResult.apiTimeMillis + ' ms'}">0 ms</td>
+                                            <td th:text="${syncResult.totalProcessingTimeMillis + ' ms'}">0 ms</td>
                                         </tr>
                                     </tbody>
                                 </table>

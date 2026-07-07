@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,16 @@ class InternalAttendanceSyncServiceImplTest {
             if ("findInternalAttendanceSyncCandidates".equals(method.getName())) {
                 return candidateEmployees;
             }
+            if ("findByEmployeeCodeIgnoreCase".equals(method.getName())) {
+                String employeeCode = (String) args[0];
+                return candidateEmployees.stream()
+                        .filter(employee -> employee.getEmployeeCode() != null
+                                && employeeCode.equalsIgnoreCase(employee.getEmployeeCode()))
+                        .findFirst();
+            }
+            if ("saveAll".equals(method.getName())) {
+                return args[0];
+            }
             throw new UnsupportedOperationException("Unexpected EmployeeRepository call: " + method.getName());
         });
 
@@ -84,7 +95,7 @@ class InternalAttendanceSyncServiceImplTest {
                             "Unexpected ManualAttendanceRequestRepository call: " + method.getName());
                 });
 
-        InternalAttendanceReportClient attendanceReportClient = (uniqueCode, startDate, endDate) -> {
+        InternalAttendanceReportClient attendanceReportClient = (startDate, endDate) -> {
             if (fetchFailure != null) {
                 throw fetchFailure;
             }
@@ -120,14 +131,18 @@ class InternalAttendanceSyncServiceImplTest {
                 "P"));
         existingRows = Collections.emptyList();
 
-        int savedRows = service.syncEmployeeAttendance(employee, "MahaIT1234", attendanceDate, attendanceDate);
+        InternalAttendanceSyncServiceImpl.AttendancePersistenceResult persistenceResult =
+                service.syncEmployeeAttendance(employee, apiResponse, attendanceDate, attendanceDate);
 
-        assertEquals(1, savedRows);
+        assertEquals(1, persistenceResult.upsertedRows());
+        assertEquals(1, persistenceResult.insertedRows());
+        assertEquals(0, persistenceResult.updatedRows());
         DailyAttendanceInternalEntity savedEntity = savedEntities.get().get(0);
         assertNotNull(savedEntity.getCreatedDate());
         assertNotNull(savedEntity.getUpdatedDate());
         assertEquals(savedEntity.getCreatedDate(), savedEntity.getUpdatedDate());
         assertEquals("PRESENT", savedEntity.getStatus());
+        assertEquals("MahaIT1234", savedEntity.getEmployeeCode());
     }
 
     @Test
@@ -159,9 +174,12 @@ class InternalAttendanceSyncServiceImplTest {
                 "P"));
         existingRows = List.of(existingEntity);
 
-        int savedRows = service.syncEmployeeAttendance(employee, "MahaIT1234", attendanceDate, attendanceDate);
+        InternalAttendanceSyncServiceImpl.AttendancePersistenceResult persistenceResult =
+                service.syncEmployeeAttendance(employee, apiResponse, attendanceDate, attendanceDate);
 
-        assertEquals(1, savedRows);
+        assertEquals(1, persistenceResult.upsertedRows());
+        assertEquals(0, persistenceResult.insertedRows());
+        assertEquals(1, persistenceResult.updatedRows());
         DailyAttendanceInternalEntity savedEntity = savedEntities.get().get(0);
         assertEquals(createdDate, savedEntity.getCreatedDate());
         assertNotNull(savedEntity.getUpdatedDate());
@@ -169,7 +187,35 @@ class InternalAttendanceSyncServiceImplTest {
     }
 
     @Test
-    void syncAttendanceStopsAfterFirstUpstreamUnavailability() {
+    void syncAttendanceMatchesApiRowsByEmployeeCode() {
+        LocalDate attendanceDate = LocalDate.of(2026, 7, 7);
+        EmployeeEntity employee = buildEmployee(7281L, "111122227281");
+        employee.setEmployeeCode(null);
+        candidateEmployees = List.of(employee);
+        apiResponse = List.of(new InternalAttendanceDayRecord(
+                "Roshan Namdev Gondhali",
+                "MahaIT7281",
+                attendanceDate,
+                "09:56",
+                "09:56",
+                "P"));
+
+        InternalAttendanceSyncResult result = service.syncAttendance(attendanceDate, attendanceDate);
+
+        assertEquals(1, result.getEmployeesAttempted());
+        assertEquals(1, result.getEmployeesSynced());
+        assertEquals(1, result.getAttendanceRowsUpserted());
+        assertEquals(1, result.getAttendanceRowsInserted());
+        assertEquals(0, result.getAttendanceRowsUpdated());
+        DailyAttendanceInternalEntity savedEntity = savedEntities.get().get(0);
+        assertEquals(7281L, savedEntity.getEmployeeId());
+        assertEquals("MahaIT7281", employee.getEmployeeCode());
+        assertEquals("MahaIT7281", savedEntity.getEmployeeCode());
+        assertEquals("PRESENT", savedEntity.getStatus());
+    }
+
+    @Test
+    void syncAttendanceReportsUpstreamUnavailabilityForAllTargets() {
         LocalDate attendanceDate = LocalDate.of(2026, 5, 4);
         candidateEmployees = List.of(buildEmployee(301L, "123412341234"), buildEmployee(302L, "567856785678"));
         fetchFailure = new InternalAttendanceReportClientUnavailableException(
@@ -178,10 +224,11 @@ class InternalAttendanceSyncServiceImplTest {
 
         InternalAttendanceSyncResult result = service.syncAttendance(attendanceDate, attendanceDate);
 
-        assertEquals(1, result.getEmployeesAttempted());
+        assertEquals(2, result.getEmployeesAttempted());
         assertEquals(0, result.getEmployeesSynced());
-        assertEquals(1, result.getEmployeesFailed());
-        assertEquals(1, result.getEmployeesSkipped());
+        assertEquals(2, result.getEmployeesFailed());
+        assertEquals(0, result.getEmployeesSkipped());
+        assertEquals("Upstream attendance API is unreachable.", result.getFailureMessage());
     }
 
     private EmployeeEntity buildEmployee(Long employeeId) {
@@ -193,6 +240,7 @@ class InternalAttendanceSyncServiceImplTest {
         employee.setEmployeeId(employeeId);
         employee.setJoiningDate(LocalDate.of(2026, 1, 1));
         employee.setAadhaarNumber(aadhaarNumber);
+        employee.setEmployeeCode("MahaIT" + aadhaarNumber.substring(aadhaarNumber.length() - 4));
         return employee;
     }
 
