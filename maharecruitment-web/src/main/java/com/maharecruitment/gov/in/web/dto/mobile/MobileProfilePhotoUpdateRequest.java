@@ -23,5 +23,6 @@ public record MobileProfilePhotoUpdateRequest(
         String photoContentType,
 
         @Size(max = 200000, message = "Embedding must not exceed 200000 characters.")
+        @JsonAlias({ "faceData", "faceEmbedding", "embeddingData" })
         String embedding) {
 }

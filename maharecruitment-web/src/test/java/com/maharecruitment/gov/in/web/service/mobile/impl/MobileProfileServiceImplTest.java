@@ -149,6 +149,8 @@ class MobileProfileServiceImplTest {
         assertThat(preOnboarding.getPhotoFileSize()).isEqualTo(3);
         assertThat(preOnboarding.getEmbedding()).isEqualTo("[0.123, 0.456]");
         assertThat(response.photoUrl()).isEqualTo("updated-photo");
+        assertThat(response.faceData()).isEqualTo("[0.123, 0.456]");
+        assertThat(response.embedding()).isEqualTo("[0.123, 0.456]");
         verify(preOnboardingRepository).save(preOnboarding);
     }
 
@@ -251,6 +253,7 @@ class MobileProfileServiceImplTest {
                 "EMP101",
                 "Test Employee",
                 photoUrl,
+                "[0.123, 0.456]",
                 null,
                 null,
                 null,

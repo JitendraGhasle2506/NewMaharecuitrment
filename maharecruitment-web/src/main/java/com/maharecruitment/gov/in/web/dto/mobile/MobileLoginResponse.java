@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record MobileLoginResponse(
         Long userId,
         Long empId,
@@ -13,6 +15,7 @@ public record MobileLoginResponse(
         String email,
         String mobileNo,
         String photoUrl,
+        String faceData,
         Long designationId,
         String designationName,
         Long departmentId,
@@ -68,6 +71,7 @@ public record MobileLoginResponse(
                 null,
                 null,
                 null,
+                null,
                 roles,
                 tokenType,
                 accessToken,
@@ -75,5 +79,10 @@ public record MobileLoginResponse(
                 expiresAt,
                 loginAt,
                 lastLoginAt);
+    }
+
+    @JsonProperty("embedding")
+    public String embedding() {
+        return faceData;
     }
 }

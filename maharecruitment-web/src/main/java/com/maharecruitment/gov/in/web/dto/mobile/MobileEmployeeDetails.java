@@ -5,6 +5,7 @@ public record MobileEmployeeDetails(
         String employeeCode,
         String employeeName,
         String photoUrl,
+        String faceData,
         Long designationId,
         String designationName,
         Long departmentId,
@@ -19,6 +20,7 @@ public record MobileEmployeeDetails(
 
     public static MobileEmployeeDetails empty() {
         return new MobileEmployeeDetails(
+                null,
                 null,
                 null,
                 null,

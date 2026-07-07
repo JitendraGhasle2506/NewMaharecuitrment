@@ -63,7 +63,7 @@ class MobileEmployeeDetailsServiceTest {
         byte[] photoBytes = new byte[] { 1, 2, 3, 4, 5 };
         Path photoPath = tempDir.resolve("photo.jpg");
         Files.write(photoPath, photoBytes);
-        employee.setPreOnboarding(preOnboarding(photoPath.toString()));
+        employee.setPreOnboarding(preOnboarding(photoPath.toString(), "[0.123,0.456]"));
 
         EmployeeReportingMappingEntity mapping = new EmployeeReportingMappingEntity();
         mapping.setEmployeeId(101L);
@@ -94,6 +94,7 @@ class MobileEmployeeDetailsServiceTest {
         assertThat(details.reportingDepartmentId()).isNull();
         assertThat(details.reportingDepartmentName()).isNull();
         assertThat(decodedDataImage(details.photoUrl())).isEqualTo(photoBytes);
+        assertThat(details.faceData()).isEqualTo("[0.123,0.456]");
     }
 
     @Test
@@ -119,6 +120,7 @@ class MobileEmployeeDetailsServiceTest {
         assertThat(details.reportingDepartmentId()).isEqualTo(7L);
         assertThat(details.reportingDepartmentName()).isEqualTo("Finance Department");
         assertThat(details.photoUrl()).isNull();
+        assertThat(details.faceData()).isNull();
     }
 
     @Test
@@ -157,7 +159,7 @@ class MobileEmployeeDetailsServiceTest {
         Path photoPath = tempDir.resolve("fallback-photo.png");
         Files.write(photoPath, photoBytes);
         EmployeeEntity photoProfile = employee(202L, "EMP202", "Photo Employee", "shared@example.com", "INTERNAL");
-        photoProfile.setPreOnboarding(preOnboarding(photoPath.toString()));
+        photoProfile.setPreOnboarding(preOnboarding(photoPath.toString(), "[0.789,0.321]"));
 
         when(employeeRepository.findMobileLoginProfilesByEmail("shared@example.com"))
                 .thenReturn(List.of(primaryProfile, photoProfile));
@@ -169,6 +171,7 @@ class MobileEmployeeDetailsServiceTest {
 
         assertThat(details.empId()).isEqualTo(201L);
         assertThat(decodedDataImage(details.photoUrl(), "image/png")).isEqualTo(photoBytes);
+        assertThat(details.faceData()).isEqualTo("[0.789,0.321]");
     }
 
     @Test
@@ -255,8 +258,13 @@ class MobileEmployeeDetailsServiceTest {
     }
 
     private AgencyCandidatePreOnboardingEntity preOnboarding(String photoFilePath) {
+        return preOnboarding(photoFilePath, null);
+    }
+
+    private AgencyCandidatePreOnboardingEntity preOnboarding(String photoFilePath, String embedding) {
         AgencyCandidatePreOnboardingEntity preOnboarding = new AgencyCandidatePreOnboardingEntity();
         preOnboarding.setPhotoFilePath(photoFilePath);
+        preOnboarding.setEmbedding(embedding);
         return preOnboarding;
     }
 

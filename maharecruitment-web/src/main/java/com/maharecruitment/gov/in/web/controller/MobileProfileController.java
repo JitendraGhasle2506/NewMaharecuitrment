@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.web.controller;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -55,8 +56,13 @@ public class MobileProfileController {
     public ResponseEntity<MobileProfileResponse> updatePhoto(
             @RequestParam("employeeId") @NotNull Long employeeId,
             @RequestParam("photo") MultipartFile photo,
-            @RequestParam(value = "embedding", required = false) String embedding) {
-        return ResponseEntity.ok(mobileProfileService.updatePhoto(employeeId, photo, embedding));
+            @RequestParam(value = "embedding", required = false) String embedding,
+            @RequestParam(value = "faceData", required = false) String faceData,
+            @RequestParam(value = "faceEmbedding", required = false) String faceEmbedding) {
+        return ResponseEntity.ok(mobileProfileService.updatePhoto(
+                employeeId,
+                photo,
+                firstText(embedding, faceData, faceEmbedding)));
     }
 
     @PostMapping(value = "/photo", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -92,5 +98,14 @@ public class MobileProfileController {
                     "INVALID_IMAGE",
                     ex.getMessage());
         }
+    }
+
+    private String firstText(String... values) {
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
     }
 }

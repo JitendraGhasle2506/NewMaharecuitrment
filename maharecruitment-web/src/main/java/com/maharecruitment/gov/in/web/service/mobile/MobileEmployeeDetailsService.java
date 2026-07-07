@@ -90,6 +90,7 @@ public class MobileEmployeeDetailsService {
                 textOrNull(employee.getEmployeeCode()),
                 textOrNull(employee.getFullName()),
                 buildPhotoDataUri(profiles),
+                resolveFaceData(profiles),
                 designationId(employee),
                 designationName(employee),
                 departmentInfo.id(),
@@ -206,6 +207,21 @@ public class MobileEmployeeDetailsService {
             }
         }
         return null;
+    }
+
+    private String resolveFaceData(List<EmployeeEntity> profiles) {
+        for (EmployeeEntity profile : profiles) {
+            String faceData = resolveFaceData(profile);
+            if (faceData != null) {
+                return faceData;
+            }
+        }
+        return null;
+    }
+
+    private String resolveFaceData(EmployeeEntity employee) {
+        AgencyCandidatePreOnboardingEntity preOnboarding = employee.getPreOnboarding();
+        return preOnboarding != null ? textOrNull(preOnboarding.getEmbedding()) : null;
     }
 
     private String buildPhotoDataUri(EmployeeEntity employee) {

@@ -2,6 +2,8 @@ package com.maharecruitment.gov.in.web.dto.mobile;
 
 import java.time.Instant;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record MobileProfileResponse(
         boolean success,
         String message,
@@ -12,8 +14,14 @@ public record MobileProfileResponse(
         String email,
         String mobileNo,
         String photoUrl,
+        String faceData,
         String tokenType,
         String accessToken,
         Long expiresIn,
         Instant expiresAt) {
+
+    @JsonProperty("embedding")
+    public String embedding() {
+        return faceData;
+    }
 }

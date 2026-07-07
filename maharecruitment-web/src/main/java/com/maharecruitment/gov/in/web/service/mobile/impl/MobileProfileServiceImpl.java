@@ -235,6 +235,7 @@ public class MobileProfileServiceImpl implements MobileProfileService {
                 user.getEmail(),
                 user.getMobileNo(),
                 details.photoUrl(),
+                details.faceData(),
                 token != null ? token.tokenType() : null,
                 token != null ? token.accessToken() : null,
                 token != null ? token.expiresInSeconds() : null,

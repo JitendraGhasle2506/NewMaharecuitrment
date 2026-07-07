@@ -1,7 +1,7 @@
 # Mobile API Documentation
 
 Version: 1.0  
-Last updated: 2026-07-06
+Last updated: 2026-07-07
 
 ## 1. Overview
 
@@ -126,6 +126,8 @@ Success response:
   "email": "employee@example.com",
   "mobileNo": "9876543210",
   "photoUrl": "/uploads/employee-photo/rahul.jpg",
+  "faceData": "[0.0,0.0,0.0]",
+  "embedding": "[0.0,0.0,0.0]",
   "designationId": 3,
   "designationName": "Operator",
   "departmentId": 7,
@@ -154,6 +156,7 @@ Mobile app action:
 - Store `accessToken`.
 - Send it in `Authorization: Bearer <accessToken>` for all protected APIs.
 - Store `empId`; pass it as `employeeId` in protected APIs.
+- Store `faceData` or `embedding` for app-side face verification.
 
 ## 5. Employee Mapped Locations
 
@@ -219,6 +222,8 @@ Success response:
   "email": "employee@example.com",
   "mobileNo": "9876543210",
   "photoUrl": "/uploads/employee-photo/rahul.jpg",
+  "faceData": "[0.0,0.0,0.0]",
+  "embedding": "[0.0,0.0,0.0]",
   "tokenType": null,
   "accessToken": null,
   "expiresIn": null,
@@ -276,6 +281,8 @@ Success response:
   "email": "new.email@example.com",
   "mobileNo": "9876543211",
   "photoUrl": "/uploads/employee-photo/rahul.jpg",
+  "faceData": "[0.0,0.0,0.0]",
+  "embedding": "[0.0,0.0,0.0]",
   "tokenType": "Bearer",
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
   "expiresIn": 3600,
@@ -311,6 +318,8 @@ Multipart form fields:
 | `employeeId` | Yes | Number | Employee ID |
 | `photo` | Yes | File | Profile photo file |
 | `embedding` | No | Text | Face/photo embedding text to store with the profile photo |
+| `faceData` | No | Text | Alias for `embedding` |
+| `faceEmbedding` | No | Text | Alias for `embedding` |
 
 JSON headers:
 
@@ -337,7 +346,7 @@ JSON fields:
 | `photo` | Yes | Text | Base64 image data. Data URI format is supported. |
 | `photoFileName` | No | Text | Optional file name. Defaults to `profile-photo.jpg` or `profile-photo.png`. |
 | `photoContentType` | No | Text | Required only when `photo` is plain Base64 without a data URI. Allowed: `image/jpeg`, `image/png`. |
-| `embedding` | No | Text | Face/photo embedding text to store with the profile photo |
+| `embedding` | No | Text | Face/photo embedding text to store with the profile photo. Aliases: `faceData`, `faceEmbedding`, `embeddingData`. |
 
 Success response:
 
@@ -352,6 +361,8 @@ Success response:
   "email": "employee@example.com",
   "mobileNo": "9876543210",
   "photoUrl": "/uploads/employee-photo/new-photo.jpg",
+  "faceData": "[0.0,0.0,0.0]",
+  "embedding": "[0.0,0.0,0.0]",
   "tokenType": null,
   "accessToken": null,
   "expiresIn": null,

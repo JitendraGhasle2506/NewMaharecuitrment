@@ -33,6 +33,7 @@ public class MobileLoginResponseMapper {
                 textOrNull(user.getEmail()),
                 textOrNull(user.getMobileNo()),
                 details.photoUrl(),
+                details.faceData(),
                 details.designationId(),
                 details.designationName(),
                 details.departmentId(),

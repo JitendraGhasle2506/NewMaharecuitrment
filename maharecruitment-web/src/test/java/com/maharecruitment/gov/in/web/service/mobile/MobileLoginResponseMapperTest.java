@@ -29,6 +29,7 @@ class MobileLoginResponseMapperTest {
                 "EMP001",
                 "Shiv Krushna",
                 "/documents/view?path=abc",
+                "[0.123,0.456]",
                 3L,
                 "Project Manager",
                 2L,
@@ -73,6 +74,8 @@ class MobileLoginResponseMapperTest {
         assertThat(response.employeeCode()).isEqualTo("EMP001");
         assertThat(response.employeeName()).isEqualTo("Shiv Krushna");
         assertThat(response.photoUrl()).isEqualTo("/documents/view?path=abc");
+        assertThat(response.faceData()).isEqualTo("[0.123,0.456]");
+        assertThat(response.embedding()).isEqualTo("[0.123,0.456]");
         assertThat(response.designationId()).isEqualTo(3L);
         assertThat(response.designationName()).isEqualTo("Project Manager");
         assertThat(response.departmentId()).isEqualTo(2L);
