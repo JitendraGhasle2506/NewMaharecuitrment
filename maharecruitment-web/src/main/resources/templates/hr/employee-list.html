@@ -90,11 +90,18 @@
                         <h2 class="mb-0" th:text="${pageTitle != null ? pageTitle : 'Employees'}">Employees</h2>
                         <p class="text-muted mb-0" th:text="${pageSubtitle != null ? pageSubtitle : 'Employee list'}">Employee list</p>
                     </div>
-                    <a class="btn btn-outline-primary btn-sm"
-                        th:if="${currentStatus == 'ACTIVE'}"
-                        th:href="@{/hr/employee-location-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
-                        <i class="fa-solid fa-location-dot me-1"></i> Location Mapping
-                    </a>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-outline-primary btn-sm"
+                            th:if="${currentStatus == 'ACTIVE'}"
+                            th:href="@{/hr/employees/import}">
+                            <i class="fa-solid fa-file-import me-1"></i> Import CSV
+                        </a>
+                        <a class="btn btn-outline-primary btn-sm"
+                            th:if="${currentStatus == 'ACTIVE'}"
+                            th:href="@{/hr/employee-location-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                            <i class="fa-solid fa-location-dot me-1"></i> Location Mapping
+                        </a>
+                    </div>
                     <div class="d-flex align-items-end gap-2 flex-grow-1 justify-content-end flex-wrap">
                         <div class="filter-group flex-grow-1" style="max-width: 860px;">
                             <form method="get"
@@ -168,20 +175,27 @@
                                                 th:text="${#strings.substring(emp.fullName, 0, 1)}">E</div>
                                             <div>
                                                 <a class="employee-detail-link fw-bold"
+                                                    th:if="${emp.onboardingDetailAvailable}"
                                                     th:href="@{/hr/employees/{employeeId}(employeeId=${emp.employeeId},status=${currentStatus},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}"
                                                     th:text="${emp.fullName}">
                                                     Full Name
                                                 </a>
+                                                <span class="fw-bold" th:unless="${emp.onboardingDetailAvailable}"
+                                                    th:text="${emp.fullName}">Full Name</span>
                                                 <small class="text-muted" th:text="${emp.email}">email@domain.com</small>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
                                         <a class="employee-detail-link"
+                                            th:if="${emp.onboardingDetailAvailable}"
                                             th:href="@{/hr/employees/{employeeId}(employeeId=${emp.employeeId},status=${currentStatus},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
                                             <span class="badge bg-secondary-subtle text-secondary-emphasis"
                                                 th:text="${emp.employeeCode}">EMP001</span>
                                         </a>
+                                        <span th:unless="${emp.onboardingDetailAvailable}"
+                                            class="badge bg-secondary-subtle text-secondary-emphasis"
+                                            th:text="${emp.employeeCode}">EMP001</span>
                                     </td>
                                     <td th:text="${emp.projectName}">Project Name</td>
                                     <td th:text="${emp.agencyName}">Agency</td>

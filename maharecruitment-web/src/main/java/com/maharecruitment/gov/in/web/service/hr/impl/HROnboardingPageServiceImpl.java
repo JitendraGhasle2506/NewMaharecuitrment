@@ -650,7 +650,8 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 entity.getOnboardingDate(),
                 entity.getRecruitmentType(),
                 entity.getAgency() != null ? entity.getAgency().getAgencyName() : "-",
-                entity.getStatus());
+                entity.getStatus(),
+                entity.getPreOnboarding() != null && entity.getPreOnboarding().getPreOnboardingId() != null);
     }
 
     private String normalizeRecruitmentType(String recruitmentType) {

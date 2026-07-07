@@ -16,5 +16,6 @@ public record EmployeeListView(
         LocalDate mahaitJoiningDate,
         String recruitmentType,
         String agencyName,
-        String status) {
+        String status,
+        boolean onboardingDetailAvailable) {
 }

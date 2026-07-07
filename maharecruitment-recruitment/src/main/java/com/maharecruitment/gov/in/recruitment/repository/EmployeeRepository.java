@@ -151,8 +151,6 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "left join interviewDetail.recruitmentNotification notification "
             + "left join notification.projectMst project "
             + "where upper(trim(coalesce(employee.status, ''))) = :status "
-            + "and preOnboarding is not null "
-            + "and preOnboarding.onboardedAt is not null "
             + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
             + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
             + "and (:recruitmentType is null or upper(employee.recruitmentType) = :recruitmentType) "
@@ -167,8 +165,6 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
                     + "left join interviewDetail.recruitmentNotification notification "
                     + "left join notification.projectMst project "
                     + "where upper(trim(coalesce(employee.status, ''))) = :status "
-                    + "and preOnboarding is not null "
-                    + "and preOnboarding.onboardedAt is not null "
                     + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
                     + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
                     + "and (:recruitmentType is null or upper(employee.recruitmentType) = :recruitmentType) "
@@ -200,8 +196,6 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             left join interviewDetail.recruitmentNotification notification
             left join notification.projectMst project
             where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
-              and preOnboarding is not null
-              and preOnboarding.onboardedAt is not null
               and trim(coalesce(employee.employeeCode, '')) <> ''
               and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING'
               and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%'
@@ -237,8 +231,6 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
                     left join interviewDetail.recruitmentNotification notification
                     left join notification.projectMst project
                     where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
-                      and preOnboarding is not null
-                      and preOnboarding.onboardedAt is not null
                       and trim(coalesce(employee.employeeCode, '')) <> ''
                       and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING'
                       and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%'

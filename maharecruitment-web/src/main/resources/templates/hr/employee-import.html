@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Import</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .employee-import-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .employee-import-card .header {
+            background: #fff;
+            border-bottom: 1px solid #edf2f7;
+            border-radius: 12px 12px 0 0;
+            padding: 1.5rem 2rem;
+        }
+
+        .employee-import-meta {
+            color: #6c757d;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .employee-import-upload {
+            align-items: flex-end;
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: minmax(260px, 1fr) auto;
+        }
+
+        .employee-import-column-list {
+            columns: 2;
+            font-size: 0.875rem;
+            margin-bottom: 0;
+        }
+
+        .employee-import-result-strip {
+            background: #f8fafc;
+            border-top: 1px solid #edf2f7;
+            border-bottom: 1px solid #edf2f7;
+            padding: 0.75rem 2rem;
+        }
+
+        .employee-import-password {
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 767.98px) {
+            .employee-import-upload {
+                grid-template-columns: 1fr;
+            }
+
+            .employee-import-column-list {
+                columns: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Employee Import', ~{::section})}">
+        <section>
+            <div class="card employee-import-card">
+                <div class="header d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <div>
+                        <h2 class="mb-0">Employee Import</h2>
+                        <div class="employee-import-meta">
+                            <span><i class="fa-solid fa-file-csv me-1"></i>CSV format</span>
+                            <span><i class="fa-solid fa-user-check me-1"></i>Internal and external employees</span>
+                            <span><i class="fa-solid fa-key me-1"></i>Login users created automatically</span>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/hr/employees/import/template}">
+                            <i class="fa-solid fa-download me-1"></i> Download Dummy CSV
+                        </a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/employees}">
+                            <i class="fa-solid fa-list me-1"></i> Employee List
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${warningMessage}" class="alert alert-warning" th:text="${warningMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <form method="post" enctype="multipart/form-data" th:action="@{/hr/employees/import}"
+                        class="employee-import-upload mb-4">
+                        <div>
+                            <label for="file" class="form-label fw-semibold">Upload Employee CSV</label>
+                            <input id="file" type="file" name="file" class="form-control" accept=".csv,text/csv" required>
+                            <div class="form-text">
+                                Use comma-separated CSV. For multiple location IDs, use pipe format like
+                                <code>1|2|3</code>.
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-upload me-1"></i> Import Employees
+                        </button>
+                    </form>
+
+                    <div class="row g-4">
+                        <div class="col-lg-7">
+                            <h5 class="mb-2">Required Columns</h5>
+                            <ul class="employee-import-column-list">
+                                <li><code>recruitmentType</code> - INTERNAL or EXTERNAL</li>
+                                <li><code>fullName</code></li>
+                                <li><code>email</code></li>
+                                <li><code>mobile</code></li>
+                                <li><code>dateOfBirth</code> - yyyy-MM-dd</li>
+                                <li><code>gender</code></li>
+                                <li><code>bloodGroup</code></li>
+                                <li><code>address</code></li>
+                                <li><code>emergencyContactName</code></li>
+                                <li><code>emergencyContactRelation</code></li>
+                                <li><code>emergencyContactMobile</code></li>
+                                <li><code>joiningDate</code> - yyyy-MM-dd</li>
+                                <li><code>onboardingDate</code> - yyyy-MM-dd</li>
+                                <li><code>panNumber</code></li>
+                                <li><code>aadhaarNumber</code></li>
+                                <li><code>agencyId</code> - mandatory for INTERNAL and EXTERNAL</li>
+                            </ul>
+                        </div>
+                        <div class="col-lg-5">
+                            <h5 class="mb-2">Optional Columns</h5>
+                            <ul class="employee-import-column-list">
+                                <li><code>employeeCode</code> - blank auto-generates code</li>
+                                <li><code>departmentRegistrationId</code></li>
+                                <li><code>subDepartmentId</code></li>
+                                <li><code>designationId</code></li>
+                                <li><code>levelCode</code></li>
+                                <li><code>requestId</code></li>
+                                <li><code>status</code> - default ACTIVE</li>
+                                <li><code>locationIds</code> - example 1|2</li>
+                                <li><code>temporaryPassword</code> - blank auto-generates</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${importResult != null}">
+                    <div class="employee-import-result-strip d-flex flex-wrap justify-content-between gap-2">
+                        <div>
+                            <strong th:text="${importResult.successCount}">0</strong> successful,
+                            <strong th:text="${importResult.failureCount}">0</strong> failed,
+                            <strong th:text="${importResult.totalRows}">0</strong> total rows
+                        </div>
+                        <div class="text-muted small">
+                            Share generated temporary passwords securely and ask users to change them after login.
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Row</th>
+                                    <th>Status</th>
+                                    <th>Employee</th>
+                                    <th>Type</th>
+                                    <th>Employee Code</th>
+                                    <th>Username</th>
+                                    <th>Temporary Password</th>
+                                    <th class="pe-4">Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="row : ${importResult.rows}">
+                                    <td class="ps-4" th:text="${row.rowNumber}">2</td>
+                                    <td>
+                                        <span th:if="${row.success}" class="badge bg-success">Success</span>
+                                        <span th:unless="${row.success}" class="badge bg-danger">Failed</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold" th:text="${row.fullName ?: '-'}">Employee</div>
+                                        <small class="text-muted" th:text="${row.email ?: '-'}">email</small>
+                                    </td>
+                                    <td th:text="${row.recruitmentType ?: '-'}">INTERNAL</td>
+                                    <td th:text="${row.employeeCode ?: '-'}">EMP000001</td>
+                                    <td th:text="${row.username ?: '-'}">email</td>
+                                    <td>
+                                        <span class="employee-import-password"
+                                            th:text="${row.temporaryPassword ?: '-'}">-</span>
+                                    </td>
+                                    <td class="pe-4" th:text="${row.message}">Message</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
