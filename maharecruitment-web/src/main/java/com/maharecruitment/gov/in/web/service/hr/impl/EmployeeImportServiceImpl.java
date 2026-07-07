@@ -5,7 +5,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -15,6 +19,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -85,22 +91,30 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
             "status",
             "locationIds",
             "temporaryPassword");
+    private static final LocalDate DEFAULT_DATE_OF_BIRTH = LocalDate.of(1900, 1, 1);
+    private static final String DEFAULT_TEXT_VALUE = "NOT_PROVIDED";
+    private static final String DEFAULT_BLOOD_GROUP = "NA";
+    private static final String DEFAULT_GENDER = "NOT_SPECIFIED";
+    private static final Pattern MOBILE_CANDIDATE_PATTERN = Pattern.compile("\\+?\\d[\\d\\s().-]{8,}\\d");
+    private static final Pattern ORDINAL_DAY_PATTERN = Pattern.compile("(?i)\\b(\\d{1,2})(st|nd|rd|th)\\b");
+    private static final List<DateTimeFormatter> DATE_FORMATTERS = List.of(
+            DateTimeFormatter.ISO_LOCAL_DATE,
+            numericDateFormatter("d-M-uuuu"),
+            numericDateFormatter("d/M/uuuu"),
+            numericDateFormatter("d.M.uuuu"),
+            monthNameFormatter("d MMM uuuu"),
+            monthNameFormatter("d MMMM uuuu"),
+            monthNameFormatter("d-MMM-uuuu"),
+            monthNameFormatter("d-MMMM-uuuu"),
+            reducedYearMonthNameFormatter("d-MMM-"),
+            reducedYearMonthNameFormatter("d-MMMM-"));
     private static final Set<String> REQUIRED_HEADERS = Set.of(
             "recruitmenttype",
             "fullname",
             "email",
             "mobile",
-            "dateofbirth",
-            "gender",
-            "bloodgroup",
-            "address",
-            "emergencycontactname",
-            "emergencycontactrelation",
-            "emergencycontactmobile",
             "joiningdate",
             "onboardingdate",
-            "pannumber",
-            "aadhaarnumber",
             "agencyid");
 
     private final EmployeeRepository employeeRepository;
@@ -470,18 +484,18 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
                 UserValidationUtil.normalizeName(required(row, "fullName")),
                 email,
                 mobile,
-                parseDate(required(row, "dateOfBirth"), "dateOfBirth"),
-                normalizeRequiredText(required(row, "gender"), "gender"),
-                normalizeRequiredText(required(row, "bloodGroup"), "bloodGroup"),
-                normalizeRequiredText(required(row, "address"), "address"),
-                normalizeRequiredText(required(row, "emergencyContactName"), "emergencyContactName"),
-                normalizeRequiredText(required(row, "emergencyContactRelation"), "emergencyContactRelation"),
-                normalizeRequiredMobile(required(row, "emergencyContactMobile")),
+                parseOptionalDate(optional(row, "dateOfBirth"), "dateOfBirth", DEFAULT_DATE_OF_BIRTH),
+                normalizeOptionalText(optional(row, "gender"), DEFAULT_GENDER),
+                normalizeOptionalText(optional(row, "bloodGroup"), DEFAULT_BLOOD_GROUP),
+                normalizeOptionalText(optional(row, "address"), DEFAULT_TEXT_VALUE),
+                normalizeOptionalText(optional(row, "emergencyContactName"), DEFAULT_TEXT_VALUE),
+                normalizeOptionalText(optional(row, "emergencyContactRelation"), DEFAULT_TEXT_VALUE),
+                normalizeOptionalMobile(optional(row, "emergencyContactMobile"), mobile),
                 normalizeOptionalMobile(optional(row, "emergencyContactAltMobile")),
                 parseDate(required(row, "joiningDate"), "joiningDate"),
                 parseDate(required(row, "onboardingDate"), "onboardingDate"),
-                normalizePan(required(row, "panNumber")),
-                normalizeAadhaar(required(row, "aadhaarNumber")),
+                normalizePan(optional(row, "panNumber")),
+                normalizeAadhaar(optional(row, "aadhaarNumber")),
                 parseOptionalLong(optional(row, "departmentRegistrationId"), "departmentRegistrationId"),
                 parseOptionalLong(optional(row, "subDepartmentId"), "subDepartmentId"),
                 parseOptionalLong(optional(row, "designationId"), "designationId"),
@@ -552,36 +566,85 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
     private List<CsvRow> readCsvRows(MultipartFile file) {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            String headerLine = reader.readLine();
-            if (!StringUtils.hasText(headerLine)) {
+            List<CsvRecord> records = readCsvRecords(reader);
+            if (records.isEmpty()) {
                 throw new IllegalArgumentException("CSV header row is required.");
             }
 
-            List<String> headers = parseCsvLine(stripBom(headerLine)).stream()
+            CsvRecord headerRecord = records.get(0);
+            List<String> headers = parseCsvLine(stripBom(headerRecord.value())).stream()
                     .map(this::normalizeHeader)
                     .toList();
             validateHeaders(headers);
 
             List<CsvRow> rows = new ArrayList<>();
-            String line;
-            int rowNumber = 1;
-            while ((line = reader.readLine()) != null) {
-                rowNumber++;
-                if (!StringUtils.hasText(line)) {
-                    continue;
-                }
-                List<String> values = parseCsvLine(line);
+            for (int recordIndex = 1; recordIndex < records.size(); recordIndex++) {
+                CsvRecord record = records.get(recordIndex);
+                List<String> values = parseCsvLine(record.value());
                 Map<String, String> valueByHeader = new LinkedHashMap<>();
                 for (int index = 0; index < headers.size(); index++) {
                     String value = index < values.size() ? values.get(index) : "";
                     valueByHeader.put(headers.get(index), value);
                 }
-                rows.add(new CsvRow(rowNumber, valueByHeader));
+                if (valueByHeader.values().stream().allMatch(value -> !StringUtils.hasText(value))) {
+                    continue;
+                }
+                rows.add(new CsvRow(record.startLineNumber(), valueByHeader));
             }
             return rows;
         } catch (IOException ex) {
             throw new IllegalArgumentException("Unable to read uploaded CSV file.", ex);
         }
+    }
+
+    private List<CsvRecord> readCsvRecords(BufferedReader reader) throws IOException {
+        List<CsvRecord> records = new ArrayList<>();
+        StringBuilder currentRecord = new StringBuilder();
+        boolean quoted = false;
+        int startLineNumber = 0;
+        int lineNumber = 0;
+        String line;
+
+        while ((line = reader.readLine()) != null) {
+            lineNumber++;
+            if (currentRecord.length() == 0) {
+                if (!StringUtils.hasText(line)) {
+                    continue;
+                }
+                startLineNumber = lineNumber;
+            } else {
+                currentRecord.append('\n');
+            }
+            currentRecord.append(line);
+            quoted = updateQuotedState(line, quoted);
+            if (!quoted) {
+                records.add(new CsvRecord(startLineNumber, currentRecord.toString()));
+                currentRecord.setLength(0);
+                startLineNumber = 0;
+            }
+        }
+
+        if (quoted) {
+            throw new IllegalArgumentException(
+                    "CSV row starting at line " + startLineNumber + " has an unclosed quoted value.");
+        }
+        return records;
+    }
+
+    private boolean updateQuotedState(String line, boolean quoted) {
+        boolean currentQuoted = quoted;
+        for (int index = 0; index < line.length(); index++) {
+            char value = line.charAt(index);
+            if (value != '"') {
+                continue;
+            }
+            if (currentQuoted && index + 1 < line.length() && line.charAt(index + 1) == '"') {
+                index++;
+                continue;
+            }
+            currentQuoted = !currentQuoted;
+        }
+        return currentQuoted;
     }
 
     private void validateHeaders(List<String> headers) {
@@ -703,6 +766,11 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         return StringUtils.hasText(value) ? value.trim() : null;
     }
 
+    private String normalizeOptionalText(String value, String defaultValue) {
+        String normalized = normalizeOptionalText(value);
+        return normalized != null ? normalized : defaultValue;
+    }
+
     private String normalizeEmail(String value) {
         try {
             return UserValidationUtil.normalizeEmail(value);
@@ -719,16 +787,42 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         return mobile;
     }
 
+    private String normalizeOptionalMobile(String value, String defaultMobile) {
+        String mobile = normalizeOptionalMobile(value);
+        return StringUtils.hasText(mobile) ? mobile : defaultMobile;
+    }
+
     private String normalizeOptionalMobile(String value) {
         try {
-            return UserValidationUtil.normalizeOptionalMobile(value);
+            String extractedMobile = extractFirstMobileCandidate(value);
+            return UserValidationUtil.normalizeOptionalMobile(extractedMobile);
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
     }
 
+    private String extractFirstMobileCandidate(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String trimmed = value.trim();
+        Matcher matcher = MOBILE_CANDIDATE_PATTERN.matcher(trimmed);
+        while (matcher.find()) {
+            String digits = matcher.group().replaceAll("\\D", "");
+            if (digits.length() >= 10 && digits.length() <= 15) {
+                return digits;
+            }
+        }
+
+        String digits = trimmed.replaceAll("\\D", "");
+        if (digits.length() >= 10 && digits.length() <= 15) {
+            return digits;
+        }
+        return trimmed;
+    }
+
     private String normalizePan(String value) {
-        String normalized = normalizeRequiredText(value, "panNumber").toUpperCase(Locale.ROOT);
+        String normalized = StringUtils.hasText(value) ? value.trim().toUpperCase(Locale.ROOT) : DEFAULT_TEXT_VALUE;
         if (normalized.length() > 255) {
             throw new IllegalArgumentException("panNumber must not exceed 255 characters.");
         }
@@ -736,6 +830,9 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
     }
 
     private String normalizeAadhaar(String value) {
+        if (!StringUtils.hasText(value)) {
+            return DEFAULT_TEXT_VALUE;
+        }
         String normalized = normalizeRequiredText(value, "aadhaarNumber").replaceAll("\\s+", "");
         String digitsOnly = normalized.replaceAll("\\D", "");
         if (digitsOnly.length() < 4) {
@@ -745,11 +842,51 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
     }
 
     private LocalDate parseDate(String value, String fieldName) {
-        try {
-            return LocalDate.parse(value.trim());
-        } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException(fieldName + " must be in yyyy-MM-dd format.", ex);
+        String normalized = normalizeDateText(value);
+        for (DateTimeFormatter formatter : DATE_FORMATTERS) {
+            try {
+                return LocalDate.parse(normalized, formatter);
+            } catch (DateTimeParseException ex) {
+                // Try the next supported import format.
+            }
         }
+        throw new IllegalArgumentException(
+                fieldName + " must be a valid date. Preferred format is yyyy-MM-dd.");
+    }
+
+    private LocalDate parseOptionalDate(String value, String fieldName, LocalDate defaultValue) {
+        return StringUtils.hasText(value) ? parseDate(value, fieldName) : defaultValue;
+    }
+
+    private String normalizeDateText(String value) {
+        String normalized = normalizeRequiredText(value, "date")
+                .replace('\u00A0', ' ')
+                .replaceAll("\\s+", " ")
+                .trim();
+        normalized = ORDINAL_DAY_PATTERN.matcher(normalized).replaceAll("$1");
+        return normalized.replaceAll("(?i)\\bsept\\b", "Sep");
+    }
+
+    private static DateTimeFormatter monthNameFormatter(String pattern) {
+        return new DateTimeFormatterBuilder()
+                .parseCaseInsensitive()
+                .appendPattern(pattern)
+                .toFormatter(Locale.ENGLISH)
+                .withResolverStyle(ResolverStyle.STRICT);
+    }
+
+    private static DateTimeFormatter reducedYearMonthNameFormatter(String prefixPattern) {
+        return new DateTimeFormatterBuilder()
+                .parseCaseInsensitive()
+                .appendPattern(prefixPattern)
+                .appendValueReduced(ChronoField.YEAR, 2, 2, 1950)
+                .toFormatter(Locale.ENGLISH)
+                .withResolverStyle(ResolverStyle.STRICT);
+    }
+
+    private static DateTimeFormatter numericDateFormatter(String pattern) {
+        return DateTimeFormatter.ofPattern(pattern)
+                .withResolverStyle(ResolverStyle.STRICT);
     }
 
     private Long parseOptionalLong(String value, String fieldName) {
@@ -808,6 +945,9 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
     }
 
     private record CsvRow(int rowNumber, Map<String, String> values) {
+    }
+
+    private record CsvRecord(int startLineNumber, String value) {
     }
 
     private record EmployeeImportRow(

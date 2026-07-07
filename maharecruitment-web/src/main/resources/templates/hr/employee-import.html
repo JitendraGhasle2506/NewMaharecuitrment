@@ -117,17 +117,8 @@
                                 <li><code>fullName</code></li>
                                 <li><code>email</code></li>
                                 <li><code>mobile</code></li>
-                                <li><code>dateOfBirth</code> - yyyy-MM-dd</li>
-                                <li><code>gender</code></li>
-                                <li><code>bloodGroup</code></li>
-                                <li><code>address</code></li>
-                                <li><code>emergencyContactName</code></li>
-                                <li><code>emergencyContactRelation</code></li>
-                                <li><code>emergencyContactMobile</code></li>
-                                <li><code>joiningDate</code> - yyyy-MM-dd</li>
-                                <li><code>onboardingDate</code> - yyyy-MM-dd</li>
-                                <li><code>panNumber</code></li>
-                                <li><code>aadhaarNumber</code></li>
+                                <li><code>joiningDate</code> - prefer yyyy-MM-dd</li>
+                                <li><code>onboardingDate</code> - prefer yyyy-MM-dd</li>
                                 <li><code>agencyId</code> - mandatory for INTERNAL and EXTERNAL</li>
                             </ul>
                         </div>
@@ -135,6 +126,15 @@
                             <h5 class="mb-2">Optional Columns</h5>
                             <ul class="employee-import-column-list">
                                 <li><code>employeeCode</code> - blank auto-generates code</li>
+                                <li><code>dateOfBirth</code> - blank uses 1900-01-01</li>
+                                <li><code>gender</code> - blank uses NOT_SPECIFIED</li>
+                                <li><code>bloodGroup</code> - blank uses NA</li>
+                                <li><code>address</code> - blank uses NOT_PROVIDED</li>
+                                <li><code>emergencyContactName</code> - blank uses NOT_PROVIDED</li>
+                                <li><code>emergencyContactRelation</code> - blank uses NOT_PROVIDED</li>
+                                <li><code>emergencyContactMobile</code> - blank uses employee mobile</li>
+                                <li><code>panNumber</code> - blank uses NOT_PROVIDED</li>
+                                <li><code>aadhaarNumber</code> - blank skips API attendance sync for that employee</li>
                                 <li><code>departmentRegistrationId</code></li>
                                 <li><code>subDepartmentId</code></li>
                                 <li><code>designationId</code></li>
