@@ -47,6 +47,7 @@ class InternalAttendanceSyncServiceImplTest {
         properties.setUniqueCodePrefix("MahaIT");
         properties.setSchedulerZone("Asia/Kolkata");
         properties.setStopOnUpstreamUnavailable(true);
+        properties.setMinRequestIntervalMillis(0);
 
         EmployeeRepository employeeRepository = proxyWithDefaults(EmployeeRepository.class, (proxy, method, args) -> {
             if ("findInternalAttendanceSyncCandidates".equals(method.getName())) {

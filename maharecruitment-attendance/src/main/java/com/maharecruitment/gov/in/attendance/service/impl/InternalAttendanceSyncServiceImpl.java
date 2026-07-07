@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -120,12 +121,15 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         int syncedEmployees = 0;
         int failedEmployees = 0;
         int upsertedRows = 0;
+        long lastRequestStartedAtNanos = 0L;
 
         for (int index = 0; index < syncTargets.size(); index++) {
             EmployeeSyncTarget syncTarget = syncTargets.get(index);
             EmployeeEntity employee = syncTarget.employee();
             attemptedEmployees++;
             try {
+                waitForNextUpstreamRequestWindow(lastRequestStartedAtNanos);
+                lastRequestStartedAtNanos = System.nanoTime();
                 int savedRows = syncEmployeeAttendance(employee, syncTarget.uniqueCode(), startDate, endDate);
                 syncedEmployees++;
                 upsertedRows += savedRows;
@@ -168,6 +172,28 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
     @Override
     public long countEligibleInternalEmployees() {
         return employeeRepository.countInternalAttendanceSyncCandidates();
+    }
+
+    private void waitForNextUpstreamRequestWindow(long lastRequestStartedAtNanos) {
+        long minIntervalMillis = Math.max(properties.getMinRequestIntervalMillis(), 0L);
+        if (lastRequestStartedAtNanos <= 0L || minIntervalMillis <= 0L) {
+            return;
+        }
+
+        long elapsedNanos = System.nanoTime() - lastRequestStartedAtNanos;
+        long remainingNanos = TimeUnit.MILLISECONDS.toNanos(minIntervalMillis) - elapsedNanos;
+        if (remainingNanos <= 0L) {
+            return;
+        }
+
+        try {
+            TimeUnit.NANOSECONDS.sleep(remainingNanos);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new InternalAttendanceReportClientUnavailableException(
+                    "Internal attendance sync was interrupted while waiting for the upstream API rate limit window.",
+                    ex);
+        }
     }
 
     protected int syncEmployeeAttendance(

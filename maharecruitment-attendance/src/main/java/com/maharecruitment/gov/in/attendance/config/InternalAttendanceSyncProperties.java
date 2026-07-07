@@ -31,6 +31,12 @@ public class InternalAttendanceSyncProperties {
 
     private boolean stopOnUpstreamUnavailable = true;
 
+    private long minRequestIntervalMillis = 1100;
+
+    private int rateLimitRetryAttempts = 2;
+
+    private int rateLimitRetryDelaySeconds = 60;
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -117,5 +123,29 @@ public class InternalAttendanceSyncProperties {
 
     public void setStopOnUpstreamUnavailable(boolean stopOnUpstreamUnavailable) {
         this.stopOnUpstreamUnavailable = stopOnUpstreamUnavailable;
+    }
+
+    public long getMinRequestIntervalMillis() {
+        return minRequestIntervalMillis;
+    }
+
+    public void setMinRequestIntervalMillis(long minRequestIntervalMillis) {
+        this.minRequestIntervalMillis = minRequestIntervalMillis;
+    }
+
+    public int getRateLimitRetryAttempts() {
+        return rateLimitRetryAttempts;
+    }
+
+    public void setRateLimitRetryAttempts(int rateLimitRetryAttempts) {
+        this.rateLimitRetryAttempts = rateLimitRetryAttempts;
+    }
+
+    public int getRateLimitRetryDelaySeconds() {
+        return rateLimitRetryDelaySeconds;
+    }
+
+    public void setRateLimitRetryDelaySeconds(int rateLimitRetryDelaySeconds) {
+        this.rateLimitRetryDelaySeconds = rateLimitRetryDelaySeconds;
     }
 }
