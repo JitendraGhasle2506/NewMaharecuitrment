@@ -157,6 +157,9 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
     @Column(name = "photo_file_size")
     private Long photoFileSize;
 
+    @Column(name = "embedding", columnDefinition = "text")
+    private String embedding;
+
     @Column(name = "doc_educational_cert", nullable = false)
     private Boolean docEducationalCert = false;
 
@@ -274,6 +277,7 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
         photoOriginalName = normalizeText(photoOriginalName);
         photoFilePath = normalizeText(photoFilePath);
         photoFileType = normalizeText(photoFileType);
+        embedding = normalizeText(embedding);
         companyPayrollProofOriginalName = normalizeText(companyPayrollProofOriginalName);
         companyPayrollProofFilePath = normalizeText(companyPayrollProofFilePath);
         companyPayrollProofFileType = normalizeText(companyPayrollProofFileType);

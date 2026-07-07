@@ -47,8 +47,9 @@ public class MobileProfileController {
     @PostMapping(value = "/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MobileProfileResponse> updatePhoto(
             @RequestParam("employeeId") @NotNull Long employeeId,
-            @RequestParam("photo") MultipartFile photo) {
-        return ResponseEntity.ok(mobileProfileService.updatePhoto(employeeId, photo));
+            @RequestParam("photo") MultipartFile photo,
+            @RequestParam(value = "embedding", required = false) String embedding) {
+        return ResponseEntity.ok(mobileProfileService.updatePhoto(employeeId, photo, embedding));
     }
 
     @PostMapping(value = "/password/change", consumes = MediaType.APPLICATION_JSON_VALUE)

@@ -40,6 +40,7 @@ import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 public class MobileProfileServiceImpl implements MobileProfileService {
 
     private static final String EMPLOYEE_PHOTO_MODULE = "employee-photo";
+    private static final int MAX_EMBEDDING_LENGTH = 200_000;
 
     private final MobileEmployeeAccessService mobileEmployeeAccessService;
     private final UserRepository userRepository;
@@ -119,7 +120,7 @@ public class MobileProfileServiceImpl implements MobileProfileService {
 
     @Override
     @Transactional
-    public MobileProfileResponse updatePhoto(Long employeeId, MultipartFile photo) {
+    public MobileProfileResponse updatePhoto(Long employeeId, MultipartFile photo, String embedding) {
         MobileEmployeeAccessContext context = mobileEmployeeAccessService.requireCurrentActiveEmployeeContext(employeeId);
         if (photo == null || photo.isEmpty()) {
             throw badRequest("PHOTO_REQUIRED", "Photo file is required.");
@@ -135,6 +136,9 @@ public class MobileProfileServiceImpl implements MobileProfileService {
         preOnboarding.setPhotoOriginalName(uploadResult.originalFileName());
         preOnboarding.setPhotoFileType(uploadResult.contentType());
         preOnboarding.setPhotoFileSize(uploadResult.size());
+        if (embedding != null) {
+            preOnboarding.setEmbedding(normalizeEmbedding(embedding));
+        }
         preOnboardingRepository.save(preOnboarding);
 
         return toProfileResponse(context.user(), "Profile photo updated successfully.", null);
@@ -279,6 +283,14 @@ public class MobileProfileServiceImpl implements MobileProfileService {
         } catch (IllegalArgumentException ex) {
             throw badRequest("INVALID_MOBILE", ex.getMessage());
         }
+    }
+
+    private String normalizeEmbedding(String embedding) {
+        String normalized = StringUtils.hasText(embedding) ? embedding.trim() : null;
+        if (normalized != null && normalized.length() > MAX_EMBEDDING_LENGTH) {
+            throw badRequest("EMBEDDING_TOO_LARGE", "Embedding must not exceed 200000 characters.");
+        }
+        return normalized;
     }
 
     private boolean equalsIgnoreCase(String first, String second) {

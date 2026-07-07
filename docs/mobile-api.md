@@ -310,6 +310,7 @@ Multipart form fields:
 | --- | --- | --- | --- |
 | `employeeId` | Yes | Number | Employee ID |
 | `photo` | Yes | File | Profile photo file |
+| `embedding` | No | Text | Face/photo embedding text to store with the profile photo |
 
 Success response:
 

@@ -13,7 +13,7 @@ public interface MobileProfileService {
 
     MobileProfileResponse updateContact(MobileProfileContactUpdateRequest request);
 
-    MobileProfileResponse updatePhoto(Long employeeId, MultipartFile photo);
+    MobileProfileResponse updatePhoto(Long employeeId, MultipartFile photo, String embedding);
 
     MobilePasswordUpdateResponse changePassword(MobilePasswordUpdateRequest request);
 

@@ -141,12 +141,13 @@ class MobileProfileServiceImplTest {
                 .thenReturn(new FileUploadResult("profile.jpg", "stored.jpg", "/uploads/profile.jpg", "image/jpeg", 3));
         when(employeeDetailsService.loadForUser(user)).thenReturn(details("updated-photo"));
 
-        MobileProfileResponse response = service().updatePhoto(101L, photo);
+        MobileProfileResponse response = service().updatePhoto(101L, photo, " [0.123, 0.456] ");
 
         assertThat(preOnboarding.getPhotoOriginalName()).isEqualTo("profile.jpg");
         assertThat(preOnboarding.getPhotoFilePath()).isEqualTo("/uploads/profile.jpg");
         assertThat(preOnboarding.getPhotoFileType()).isEqualTo("image/jpeg");
         assertThat(preOnboarding.getPhotoFileSize()).isEqualTo(3);
+        assertThat(preOnboarding.getEmbedding()).isEqualTo("[0.123, 0.456]");
         assertThat(response.photoUrl()).isEqualTo("updated-photo");
         verify(preOnboardingRepository).save(preOnboarding);
     }
