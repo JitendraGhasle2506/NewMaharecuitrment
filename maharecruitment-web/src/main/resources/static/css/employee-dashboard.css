@@ -327,8 +327,7 @@
 }
 
 .employee-dashboard .photo-preview {
-    width: 100%;
-    aspect-ratio: 4 / 5;
+    width: 50%;
     border-radius: 8px;
     margin-bottom: 14px;
 }

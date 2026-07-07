@@ -25,16 +25,20 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileDTO;
 import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileUpdateResponse;
 import com.maharecruitment.gov.in.web.service.employee.EmployeeProfileService;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/employee")
 @PreAuthorize("hasAuthority('ROLE_EMPLOYEE')")
 public class EmployeeDashboardController {
+
+    private static final String SESSION_USER_KEY = "SESSION_USER";
 
     private final EmployeeProfileService employeeProfileService;
 
@@ -43,9 +47,12 @@ public class EmployeeDashboardController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(Principal principal, Model model) {
+    public String dashboard(Principal principal, HttpSession session, Model model) {
         EmployeeProfileDTO profile = employeeProfileService.getCurrentEmployeeProfile(resolveLoginEmail(principal));
+        SessionUserDTO loggedInUser = refreshSessionUser(session, profile);
         model.addAttribute("profile", profile);
+        model.addAttribute("sessionUser", loggedInUser);
+        model.addAttribute("loggedInUser", loggedInUser);
         model.addAttribute("pageHeading", "Employee Dashboard");
         model.addAttribute("pageSubtitle", profile.isProfileAvailable()
                 ? "View and update your personal information."
@@ -95,11 +102,13 @@ public class EmployeeDashboardController {
     @ResponseBody
     public ResponseEntity<EmployeeProfileUpdateResponse> uploadPhoto(
             Principal principal,
+            HttpSession session,
             @RequestParam("file") MultipartFile file) {
         try {
             EmployeeProfileDTO savedProfile = employeeProfileService.uploadCurrentEmployeePhoto(
                     resolveLoginEmail(principal),
                     file);
+            refreshSessionUser(session, savedProfile);
             return ResponseEntity.ok(new EmployeeProfileUpdateResponse(
                     true,
                     "Photo uploaded successfully.",
@@ -118,8 +127,9 @@ public class EmployeeDashboardController {
     @ResponseBody
     public ResponseEntity<EmployeeProfileUpdateResponse> legacyUploadPhoto(
             Principal principal,
+            HttpSession session,
             @RequestParam("file") MultipartFile file) {
-        return uploadPhoto(principal, file);
+        return uploadPhoto(principal, session, file);
     }
 
     @GetMapping("/profile/photo")
@@ -159,5 +169,37 @@ public class EmployeeDashboardController {
         bindingResult.getFieldErrors().forEach(error ->
                 errors.putIfAbsent(error.getField(), error.getDefaultMessage()));
         return errors;
+    }
+
+    private SessionUserDTO refreshSessionUser(HttpSession session, EmployeeProfileDTO profile) {
+        if (session == null) {
+            return null;
+        }
+
+        SessionUserDTO sessionUser = extractSessionUser(session);
+        if (sessionUser == null) {
+            return null;
+        }
+
+        SessionUserDTO refreshedUser = new SessionUserDTO(
+                sessionUser.id(),
+                profile.getFullName(),
+                profile.getEmail(),
+                sessionUser.roles(),
+                sessionUser.departmentId(),
+                profile.getMobileNo(),
+                profile.getPhotoUrl(),
+                sessionUser.loginTime(),
+                sessionUser.lastLoginTime());
+        session.setAttribute(SESSION_USER_KEY, refreshedUser);
+        return refreshedUser;
+    }
+
+    private SessionUserDTO extractSessionUser(HttpSession session) {
+        Object candidate = session.getAttribute(SESSION_USER_KEY);
+        if (candidate instanceof SessionUserDTO dto) {
+            return dto;
+        }
+        return null;
     }
 }

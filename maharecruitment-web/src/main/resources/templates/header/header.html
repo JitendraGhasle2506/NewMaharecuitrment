@@ -128,7 +128,11 @@
                                 <a class="nav-link dropdown-toggle user-profile-chip" href="#" id="navbarDropdown"
                                     role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span class="user-avatar">
-                                        <i class="fas fa-user"></i>
+                                        <img class="app-user-photo"
+                                            th:if="${sessionUser.photoPath != null and !#strings.isEmpty(sessionUser.photoPath)}"
+                                            th:src="@{${sessionUser.photoPath}}" alt="Profile photo">
+                                        <i th:unless="${sessionUser.photoPath != null and !#strings.isEmpty(sessionUser.photoPath)}"
+                                            class="fas fa-user"></i>
                                     </span>
                                     <span class="user-info-text">
                                         <span class="user-name" th:text="${sessionUser.name}">User</span>
@@ -141,7 +145,11 @@
                                     <div class="dropdown-header profile-dropdown-header">
                                         <div class="profile-dropdown-identity">
                                             <span class="profile-dropdown-avatar" aria-hidden="true">
-                                                <i class="fas fa-user"></i>
+                                                <img class="app-user-photo"
+                                                    th:if="${sessionUser.photoPath != null and !#strings.isEmpty(sessionUser.photoPath)}"
+                                                    th:src="@{${sessionUser.photoPath}}" alt="">
+                                                <i th:unless="${sessionUser.photoPath != null and !#strings.isEmpty(sessionUser.photoPath)}"
+                                                    class="fas fa-user"></i>
                                             </span>
                                             <div class="profile-dropdown-copy">
                                                 <div class="fw-semibold profile-dropdown-name"

@@ -7,13 +7,14 @@
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}" />
     <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}" />
+    <script th:if="${preOnboardingForm.hrFlow}" th:src="@{/assets/vendor/sweetalert2/sweetalert2.all.min.js}"></script>
     <link rel="stylesheet" th:href="@{/css/pre-onboarding.css}" />
 </head>
 
 <body th:class="${preOnboardingForm.hrFlow ? 'hr-shell' : 'agency-shell'}">
     <th:block
         th:replace="~{header/header :: var-sidebar-header(${preOnboardingForm.hrFlow ? 'HR' : 'Agency'}, 'Onboarding', ~{::section})}">
-        <section>
+        <section th:classappend="${preOnboardingForm.hrFlow} ? ' onboarding-process-page' : ''">
             <div class="card add-emp-card pre-onboarding-card">
                 <div class="header d-flex justify-content-between align-items-center">
                     <div>
@@ -61,6 +62,11 @@
                             </div>
                         </div>
                         <div class="pre-onboarding-summary-grid">
+                            <div class="summary-card" th:if="${preOnboardingForm.hrFlow}">
+                                <span class="summary-card-label">Candidate Name</span>
+                                <strong class="summary-card-value"
+                                    th:text="${preOnboardingForm.name != null ? preOnboardingForm.name : '-'}">Candidate Name</strong>
+                            </div>
                             <div class="summary-card">
                                 <span class="summary-card-label">Request ID</span>
                                 <strong class="summary-card-value"
@@ -104,14 +110,14 @@
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
                                             <input type="text" class="form-control personal-input" th:field="*{name}"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                                required />
+                                                placeholder="Enter candidate full name" required />
                                         </div>
                                         <div class="form-group personal-field">
                                             <label class="form-label">Email <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
                                             <input type="email" class="form-control personal-input" th:field="*{email}"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                                required />
+                                                placeholder="name@example.com" required />
                                             <div class="invalid-feedback" id="emailValidationMessage">Please enter a
                                                 valid email address.</div>
                                         </div>
@@ -120,7 +126,8 @@
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
                                             <input type="text" class="form-control personal-input" th:field="*{mobile}"
                                                 pattern="[0-9]{10}" maxlength="10" th:readonly="*{hrFlow}"
-                                                th:classappend="*{hrFlow} ? 'readonly-field'" required />
+                                                th:classappend="*{hrFlow} ? 'readonly-field'"
+                                                placeholder="Enter 10-digit mobile number" required />
                                             <div class="invalid-feedback" id="mobileValidationMessage">Mobile number
                                                 must be exactly 10 digits.</div>
                                         </div>
@@ -166,7 +173,7 @@
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
                                             <textarea class="form-control personal-input personal-textarea" th:field="*{address}" rows="2"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
-                                                required></textarea>
+                                                placeholder="Enter complete residential address" required></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -181,8 +188,8 @@
                                                 th:attr="data-managed-path=${preOnboardingForm.existingPhotoFilePath}, data-managed-name=${preOnboardingForm.existingPhotoFileName}"
                                                 alt="Candidate Photo" />
                                             <div id="candidatePhotoEmpty" class="passport-photo-empty">
-                                                <i class="fa-solid fa-cloud-arrow-up"></i>
-                                                <span>Upload photo</span>
+                                                <i class="fa-solid fa-user"></i>
+                                                <span>No photo available</span>
                                             </div>
                                         </div>
 
@@ -202,6 +209,8 @@
                                                 th:text="${preOnboardingForm.existingPhotoFileName != null ? preOnboardingForm.existingPhotoFileName : 'No photo selected'}">
                                                 No photo selected
                                             </span>
+                                            <small class="passport-photo-note">JPG, JPEG, PNG only</small>
+                                            <small class="passport-photo-note">Max size: 1 MB</small>
                                         </div>
                                     </div>
                                 </div>
