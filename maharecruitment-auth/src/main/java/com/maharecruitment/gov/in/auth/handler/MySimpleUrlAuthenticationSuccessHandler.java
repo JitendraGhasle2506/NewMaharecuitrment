@@ -125,6 +125,7 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
                 roles,
                 affiliation.getDepartmentRegistrationId(),
                 affiliation.getMobileNo(),
+                null,
                 loginTime,
                 lastLoginTime
         );

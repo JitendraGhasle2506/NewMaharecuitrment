@@ -30,6 +30,8 @@
     const candidatePhotoPreview = document.getElementById("candidatePhotoPreview");
     const candidatePhotoEmpty = document.getElementById("candidatePhotoEmpty");
     const candidatePhotoFileName = document.getElementById("candidatePhotoFileName");
+    const allowedPhotoExtensions = ["jpg", "jpeg", "png"];
+    const maxPhotoSizeBytes = 1024 * 1024;
     const companyPayrollCheckbox = document.getElementById("companyPayrollMoreThanThreeMonths");
     const companyPayrollProofInput = document.getElementById("companyPayrollProof");
     const companyPayrollProofBlock = document.getElementById("companyPayrollProofBlock");
@@ -783,6 +785,47 @@
         }
     }
 
+    function showPhotoUploadError(message) {
+        if (window.Swal) {
+            window.Swal.fire({
+                icon: "error",
+                title: "Invalid photo",
+                text: message
+            });
+            return;
+        }
+        window.alert(message);
+    }
+
+    function getFileExtension(fileName) {
+        const normalizedName = (fileName || "").toLowerCase();
+        const lastDotIndex = normalizedName.lastIndexOf(".");
+        return lastDotIndex >= 0 ? normalizedName.substring(lastDotIndex + 1) : "";
+    }
+
+    function validatePhotoFile(file) {
+        if (!file) {
+            return { valid: true, message: "" };
+        }
+
+        const extension = getFileExtension(file.name);
+        if (!allowedPhotoExtensions.includes(extension)) {
+            return {
+                valid: false,
+                message: "Please select a JPG, JPEG, or PNG photo."
+            };
+        }
+
+        if (file.size > maxPhotoSizeBytes) {
+            return {
+                valid: false,
+                message: "Photo size must be 1 MB or smaller."
+            };
+        }
+
+        return { valid: true, message: "" };
+    }
+
     function showManagedPhoto(path) {
         if (!candidatePhotoPreview || !path) {
             showPhotoPlaceholder();
@@ -1100,12 +1143,30 @@
     if (candidatePhotoInput) {
         candidatePhotoInput.addEventListener("change", function () {
             if (this.files && this.files[0]) {
-                showUploadedPhoto(this.files[0]);
+                const selectedPhoto = this.files[0];
+                const validation = validatePhotoFile(selectedPhoto);
+                if (!validation.valid) {
+                    this.value = "";
+                    if (existingPhotoPath) {
+                        showManagedPhoto(existingPhotoPath);
+                    } else {
+                        showPhotoPlaceholder();
+                    }
+                    showPhotoUploadError(validation.message);
+                    return;
+                }
+                showUploadedPhoto(selectedPhoto);
             } else if (existingPhotoPath) {
                 showManagedPhoto(existingPhotoPath);
             } else {
                 showPhotoPlaceholder();
             }
+        });
+    }
+
+    if (candidatePhotoPreview) {
+        candidatePhotoPreview.addEventListener("error", function () {
+            showPhotoPlaceholder();
         });
     }
 

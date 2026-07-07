@@ -123,15 +123,13 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
 
         profile.setPhotoPath(uploadResult.fullPath());
         profile.setUpdatedBy(user.getEmail());
-        employee.setPhotoPath(uploadResult.fullPath());
         EmployeeProfile savedProfile = employeeProfileRepository.save(profile);
-        EmployeeEntity savedEmployee = employeeRepository.save(employee);
         if (StringUtils.hasText(previousPhotoPath) && !Objects.equals(previousPhotoPath, uploadResult.fullPath())) {
             fileStorageService.deleteQuietly(previousPhotoPath);
         }
 
         log.info("Employee profile photo uploaded for employeeId={} userId={}", employee.getEmployeeId(), user.getId());
-        return toDto(savedProfile, user, savedEmployee);
+        return toDto(savedProfile, user, employee);
     }
 
     @Override
@@ -139,10 +137,8 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     public Optional<Path> resolveCurrentEmployeePhoto(String loginEmail) {
         requireUser(loginEmail);
         EmployeeEntity employee = requireEmployee(loginEmail);
-        Optional<String> profilePhotoPath = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId())
-                .map(EmployeeProfile::getPhotoPath)
-                .filter(StringUtils::hasText);
-        String photoPath = profilePhotoPath.orElse(employee.getPhotoPath());
+        EmployeeProfile profile = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()).orElse(null);
+        String photoPath = resolvePhotoPath(profile, employee);
         if (!StringUtils.hasText(photoPath) || !fileStorageService.isManagedFileAllowed(photoPath, EMPLOYEE_PHOTO_MODULE)) {
             return Optional.empty();
         }
@@ -203,7 +199,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         dto.setRole(resolveRole(user, employee));
         dto.setDepartment(resolveDepartment(employee, user));
         dto.setMobileNo(firstText(employee != null ? normalizeText(employee.getMobile()) : null, user.getMobileNo()));
-        dto.setPhotoUrl(hasProfilePhoto(profile, employee) ? "/employee/profile/photo" : "");
+        dto.setPhotoUrl(StringUtils.hasText(resolvePhotoPath(profile, employee)) ? cacheBustedEmployeePhotoUrl() : "");
         dto.setCompletionPercentage(calculateCompletionPercentage(dto));
         return dto;
     }
@@ -269,9 +265,15 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         return (int) Math.round((completed * 100.0d) / values.size());
     }
 
-    private boolean hasProfilePhoto(EmployeeProfile profile, EmployeeEntity employee) {
-        return (profile != null && StringUtils.hasText(profile.getPhotoPath()))
-                || (employee != null && StringUtils.hasText(employee.getPhotoPath()));
+    private String resolvePhotoPath(EmployeeProfile profile, EmployeeEntity employee) {
+        if (profile != null && StringUtils.hasText(profile.getPhotoPath())) {
+            return profile.getPhotoPath();
+        }
+        return employee != null ? employee.getPhotoPath() : null;
+    }
+
+    private String cacheBustedEmployeePhotoUrl() {
+        return "/employee/profile/photo?v=" + System.currentTimeMillis();
     }
 
     private LocalDate firstDate(LocalDate... values) {

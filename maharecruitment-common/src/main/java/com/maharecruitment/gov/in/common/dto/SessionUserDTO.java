@@ -10,6 +10,7 @@ public record SessionUserDTO(
         List<String> roles,
         Long departmentId,
         String mobileNo,
+        String photoPath,
         LocalDateTime loginTime,
         LocalDateTime lastLoginTime
 ) {

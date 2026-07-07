@@ -951,6 +951,298 @@
     filter: grayscale(0.5);
 }
 
+.onboarding-process-page {
+    --hr-page-bg: #f3f6f9;
+    --hr-card-bg: #ffffff;
+    --hr-border: #d8e1e8;
+    --hr-label: #40586b;
+    --hr-text: #1f3142;
+    --hr-muted: #687c8f;
+    --hr-primary: #1f4f78;
+    --hr-primary-dark: #173d5e;
+    --hr-soft-blue: #edf5fb;
+    --hr-soft-gold: #fff8e6;
+}
+
+.onboarding-process-page .pre-onboarding-card {
+    border: 0;
+    border-radius: 8px;
+    background: var(--hr-page-bg);
+    box-shadow: none;
+}
+
+.onboarding-process-page .pre-onboarding-card > .header {
+    position: relative;
+    align-items: flex-start !important;
+    gap: 16px;
+    border: 1px solid var(--hr-border);
+    border-radius: 8px;
+    background: var(--hr-card-bg);
+    margin-bottom: 16px;
+    padding: 18px 20px;
+}
+
+.onboarding-process-page .pre-onboarding-card > .header h2 {
+    color: var(--hr-primary-dark);
+    font-size: 1.35rem;
+    letter-spacing: 0;
+}
+
+.onboarding-process-page .pre-onboarding-card > .header .btn {
+    border-color: #b8c6d2;
+    border-radius: 6px;
+    color: #31495c;
+    font-weight: 700;
+}
+
+.onboarding-process-page .card-body {
+    padding: 0;
+}
+
+.onboarding-process-page .pre-onboarding-hero {
+    grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
+    gap: 18px;
+    border: 1px solid var(--hr-border);
+    border-radius: 8px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+    padding: 18px;
+}
+
+.onboarding-process-page .pre-onboarding-eyebrow {
+    border: 1px solid #c8d9e7;
+    border-radius: 6px;
+    background: var(--hr-soft-blue);
+    letter-spacing: 0.04em;
+}
+
+.onboarding-process-page .pre-onboarding-hero-title {
+    color: var(--hr-text);
+    font-size: 1.4rem;
+    letter-spacing: 0;
+}
+
+.onboarding-process-page .pre-onboarding-summary-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.onboarding-process-page .summary-card {
+    min-height: 82px;
+    border-color: #d5e0e8;
+    border-radius: 8px;
+    background: #f9fcff;
+    padding: 12px 14px;
+}
+
+.onboarding-process-page .summary-card:nth-child(1) {
+    background: var(--hr-soft-gold);
+    border-color: #eadba7;
+}
+
+.onboarding-process-page .summary-card-label,
+.onboarding-process-page .personal-field .form-label,
+.onboarding-process-page .job-field .form-label,
+.onboarding-process-page .hr-verification-field .form-label,
+.onboarding-process-page .kyc-field .form-label,
+.onboarding-process-page .employment-details-section .form-label {
+    color: var(--hr-label);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.onboarding-process-page .summary-card-value {
+    color: var(--hr-text);
+}
+
+.onboarding-process-page .section-block {
+    border: 1px solid var(--hr-border);
+    border-radius: 8px;
+    background: var(--hr-card-bg);
+    padding: 20px;
+    margin-bottom: 18px;
+}
+
+.onboarding-process-page .section-title {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin: -20px -20px 18px !important;
+    border-bottom: 1px solid var(--hr-border) !important;
+    background: #f7fafc !important;
+    color: var(--hr-primary-dark) !important;
+    padding: 12px 20px !important;
+}
+
+.onboarding-process-page .personal-details-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 20px;
+}
+
+.onboarding-process-page .personal-details-grid-top {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px 18px;
+}
+
+.onboarding-process-page .personal-details-grid-top > .personal-field {
+    grid-column: auto;
+}
+
+.onboarding-process-page .personal-details-grid-top > .personal-field-address {
+    grid-column: 1 / -1;
+}
+
+.onboarding-process-page .form-control,
+.onboarding-process-page .form-select,
+.onboarding-process-page .personal-input,
+.onboarding-process-page .job-input,
+.onboarding-process-page .kyc-input,
+.onboarding-process-page .hr-verification-input {
+    min-height: 42px;
+    border-color: #c8d4de;
+    border-radius: 6px;
+    color: var(--hr-text);
+    box-shadow: none;
+}
+
+.onboarding-process-page .form-control:focus,
+.onboarding-process-page .form-select:focus {
+    border-color: #6f9fc2;
+    box-shadow: 0 0 0 0.2rem rgba(31, 79, 120, 0.12);
+}
+
+.onboarding-process-page .readonly-field,
+.onboarding-process-page .form-control:read-only {
+    background: #f7fafc;
+    color: #32495b;
+}
+
+.onboarding-process-page .personal-textarea {
+    min-height: 92px;
+}
+
+.onboarding-process-page .passport-photo-panel {
+    width: 100%;
+    max-width: none;
+    border: 1px solid #d3dee7;
+    border-radius: 8px;
+    background: #fbfdff;
+    padding: 16px;
+    gap: 12px;
+}
+
+.onboarding-process-page .passport-photo-panel-header {
+    text-align: left;
+}
+
+.onboarding-process-page .passport-photo-heading {
+    color: var(--hr-primary-dark);
+    font-size: 0.9rem;
+}
+
+.onboarding-process-page .passport-photo-frame {
+    width: 150px;
+    max-width: 150px;
+    aspect-ratio: 1;
+    border: 1px solid #c6d6e1;
+    border-radius: 50%;
+    background: #eef4f8;
+    box-shadow: inset 0 0 0 6px #ffffff;
+}
+
+.onboarding-process-page .passport-photo-image {
+    object-fit: cover;
+}
+
+.onboarding-process-page .passport-photo-empty {
+    color: #607384;
+    background: #edf4f9;
+}
+
+.onboarding-process-page .passport-photo-empty i {
+    color: var(--hr-primary);
+    font-size: 2rem;
+}
+
+.onboarding-process-page .passport-photo-actions {
+    align-items: stretch;
+}
+
+.onboarding-process-page .passport-photo-action-btn {
+    width: 100%;
+    min-height: 38px;
+    border-radius: 6px;
+    font-weight: 800;
+}
+
+.onboarding-process-page .passport-photo-file-name {
+    max-width: 100%;
+    border: 1px dashed #c9d6e0;
+    border-radius: 6px;
+    background: #ffffff;
+    padding: 7px 9px;
+    font-size: 0.84rem;
+    text-align: center;
+}
+
+.onboarding-process-page .passport-photo-note {
+    color: var(--hr-muted);
+    font-size: 0.78rem;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.onboarding-process-page .pre-onboarding-two-column {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: stretch;
+}
+
+.onboarding-process-page .pre-onboarding-two-column .section-block {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 18px);
+}
+
+.onboarding-process-page .pre-onboarding-two-column .personal-details-grid-4,
+.onboarding-process-page .pre-onboarding-two-column .job-details-grid-3,
+.onboarding-process-page .job-details-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.onboarding-process-page .document-checklist-grid {
+    gap: 10px;
+}
+
+.onboarding-process-page .check-card {
+    border-radius: 6px;
+    background: #fbfdff;
+}
+
+.onboarding-process-page .pre-onboarding-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    border: 1px solid #cbd8e1;
+    border-radius: 8px 8px 0 0;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 -8px 24px rgba(31, 49, 66, 0.08);
+}
+
+.onboarding-process-page .pre-onboarding-action-buttons .btn {
+    min-height: 40px;
+    border-radius: 6px;
+    padding-inline: 18px;
+    font-weight: 800;
+}
+
+.onboarding-process-page .pre-onboarding-action-buttons .btn-primary {
+    background: var(--hr-primary);
+    border-color: var(--hr-primary);
+}
+
 .form-control.is-invalid {
     border-color: #ef4444;
     padding-right: calc(1.5em + 0.75rem);
@@ -981,6 +1273,38 @@
 }
 
 @media (max-width: 1199.98px) {
+    .onboarding-process-page .pre-onboarding-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .onboarding-process-page .personal-details-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .onboarding-process-page .personal-details-grid-top {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .onboarding-process-page .personal-photo-shell {
+        justify-items: stretch;
+    }
+
+    .onboarding-process-page .passport-photo-panel {
+        display: grid;
+        grid-template-columns: minmax(170px, auto) minmax(0, 1fr);
+        align-items: center;
+    }
+
+    .onboarding-process-page .passport-photo-panel-header,
+    .onboarding-process-page .passport-photo-actions {
+        grid-column: 2;
+    }
+
+    .onboarding-process-page .passport-photo-frame {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+    }
+
     .pre-onboarding-hero {
         grid-template-columns: 1fr;
     }
@@ -1000,6 +1324,53 @@
 }
 
 @media (max-width: 767.98px) {
+    .onboarding-process-page .pre-onboarding-card > .header {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .onboarding-process-page .pre-onboarding-card > .header .btn {
+        width: 100%;
+    }
+
+    .onboarding-process-page .pre-onboarding-hero,
+    .onboarding-process-page .section-block {
+        padding: 14px;
+    }
+
+    .onboarding-process-page .section-title {
+        margin: -14px -14px 14px !important;
+        padding: 10px 14px !important;
+    }
+
+    .onboarding-process-page .personal-details-grid-top,
+    .onboarding-process-page .pre-onboarding-summary-grid,
+    .onboarding-process-page .pre-onboarding-two-column .personal-details-grid-4,
+    .onboarding-process-page .pre-onboarding-two-column .job-details-grid-3,
+    .onboarding-process-page .job-details-grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .onboarding-process-page .passport-photo-panel {
+        display: flex;
+        align-items: stretch;
+    }
+
+    .onboarding-process-page .passport-photo-panel-header {
+        text-align: center;
+    }
+
+    .onboarding-process-page .passport-photo-frame {
+        width: 136px;
+        max-width: 136px;
+    }
+
+    .onboarding-process-page .pre-onboarding-actions {
+        bottom: 0;
+        margin-left: -6px;
+        margin-right: -6px;
+    }
+
     .pre-onboarding-card > .header {
         padding: 18px 18px 16px;
     }

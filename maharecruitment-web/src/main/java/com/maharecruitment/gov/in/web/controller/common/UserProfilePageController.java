@@ -170,6 +170,7 @@ public class UserProfilePageController {
                 sessionUser.roles(),
                 sessionUser.departmentId(),
                 updatedProfile.getMobileNo(),
+                sessionUser.photoPath(),
                 sessionUser.loginTime(),
                 sessionUser.lastLoginTime()));
     }

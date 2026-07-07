@@ -117,6 +117,7 @@
             const cacheBustUrl = `${root.dataset.photoUrl}?v=${Date.now()}`;
             showImage('profilePhoto', 'profilePhotoFallback', cacheBustUrl);
             showImage('photoPreview', 'photoPreviewFallback', cacheBustUrl);
+            updateSharedAvatars(cacheBustUrl);
         }
     }
 
@@ -143,6 +144,20 @@
         if (fallback) {
             fallback.classList.add('d-none');
         }
+    }
+
+    function updateSharedAvatars(source) {
+        document.querySelectorAll('.user-avatar, .profile-dropdown-avatar').forEach((avatar) => {
+            let image = avatar.querySelector('img.app-user-photo');
+            if (!image) {
+                image = document.createElement('img');
+                image.className = 'app-user-photo';
+                image.alt = avatar.classList.contains('profile-dropdown-avatar') ? '' : 'Profile photo';
+                avatar.prepend(image);
+            }
+            image.src = source;
+            avatar.querySelectorAll('i').forEach((icon) => icon.remove());
+        });
     }
 
     function validatePhoto(file) {
