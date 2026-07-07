@@ -297,7 +297,7 @@ Common errors:
 
 Use this API to update the employee profile photo.
 
-Headers:
+Multipart headers:
 
 ```http
 Authorization: Bearer <accessToken>
@@ -310,6 +310,33 @@ Multipart form fields:
 | --- | --- | --- | --- |
 | `employeeId` | Yes | Number | Employee ID |
 | `photo` | Yes | File | Profile photo file |
+| `embedding` | No | Text | Face/photo embedding text to store with the profile photo |
+
+JSON headers:
+
+```http
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+JSON request:
+
+```json
+{
+  "employeeId": 20,
+  "photo": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...",
+  "embedding": "[0.0,0.0,0.0]"
+}
+```
+
+JSON fields:
+
+| Field | Required | Type | Description |
+| --- | --- | --- | --- |
+| `employeeId` | Yes | Number | Employee ID |
+| `photo` | Yes | Text | Base64 image data. Data URI format is supported. |
+| `photoFileName` | No | Text | Optional file name. Defaults to `profile-photo.jpg` or `profile-photo.png`. |
+| `photoContentType` | No | Text | Required only when `photo` is plain Base64 without a data URI. Allowed: `image/jpeg`, `image/png`. |
 | `embedding` | No | Text | Face/photo embedding text to store with the profile photo |
 
 Success response:

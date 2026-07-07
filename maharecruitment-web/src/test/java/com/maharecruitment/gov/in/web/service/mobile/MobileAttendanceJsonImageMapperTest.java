@@ -16,7 +16,8 @@ import com.maharecruitment.gov.in.web.dto.mobile.MobileAttendanceMarkJsonRequest
 
 class MobileAttendanceJsonImageMapperTest {
 
-    private final MobileAttendanceJsonImageMapper mapper = new MobileAttendanceJsonImageMapper();
+    private final MobileAttendanceJsonImageMapper mapper =
+            new MobileAttendanceJsonImageMapper(new MobileBase64ImageMapper());
 
     @Test
     void mapsPlainBase64ToMultipartImage() throws Exception {

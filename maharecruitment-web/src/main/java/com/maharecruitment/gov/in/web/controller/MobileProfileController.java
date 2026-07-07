@@ -15,7 +15,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.maharecruitment.gov.in.web.dto.mobile.MobilePasswordUpdateRequest;
 import com.maharecruitment.gov.in.web.dto.mobile.MobilePasswordUpdateResponse;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileProfileContactUpdateRequest;
+import com.maharecruitment.gov.in.web.dto.mobile.MobileProfilePhotoUpdateRequest;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileProfileResponse;
+import com.maharecruitment.gov.in.web.service.mobile.MobileApiException;
+import com.maharecruitment.gov.in.web.service.mobile.MobileBase64ImageMapper;
 import com.maharecruitment.gov.in.web.service.mobile.MobileProfileService;
 
 import jakarta.validation.Valid;
@@ -27,9 +30,13 @@ import jakarta.validation.constraints.NotNull;
 public class MobileProfileController {
 
     private final MobileProfileService mobileProfileService;
+    private final MobileBase64ImageMapper mobileBase64ImageMapper;
 
-    public MobileProfileController(MobileProfileService mobileProfileService) {
+    public MobileProfileController(
+            MobileProfileService mobileProfileService,
+            MobileBase64ImageMapper mobileBase64ImageMapper) {
         this.mobileProfileService = mobileProfileService;
+        this.mobileBase64ImageMapper = mobileBase64ImageMapper;
     }
 
     @GetMapping
@@ -52,6 +59,13 @@ public class MobileProfileController {
         return ResponseEntity.ok(mobileProfileService.updatePhoto(employeeId, photo, embedding));
     }
 
+    @PostMapping(value = "/photo", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<MobileProfileResponse> updatePhotoJson(
+            @Valid @RequestBody MobileProfilePhotoUpdateRequest request) {
+        MultipartFile photo = toPhotoMultipartFile(request);
+        return ResponseEntity.ok(mobileProfileService.updatePhoto(request.employeeId(), photo, request.embedding()));
+    }
+
     @PostMapping(value = "/password/change", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<MobilePasswordUpdateResponse> changePassword(
             @Valid @RequestBody MobilePasswordUpdateRequest request) {
@@ -62,5 +76,21 @@ public class MobileProfileController {
     public ResponseEntity<MobilePasswordUpdateResponse> resetPassword(
             @Valid @RequestBody MobilePasswordUpdateRequest request) {
         return ResponseEntity.ok(mobileProfileService.resetPassword(request));
+    }
+
+    private MultipartFile toPhotoMultipartFile(MobileProfilePhotoUpdateRequest request) {
+        try {
+            return mobileBase64ImageMapper.toMultipartFile(
+                    request.photo(),
+                    request.photoFileName(),
+                    request.photoContentType(),
+                    "photo",
+                    "profile-photo");
+        } catch (MobileBase64ImageMapper.InvalidBase64ImageException ex) {
+            throw new MobileApiException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "INVALID_IMAGE",
+                    ex.getMessage());
+        }
     }
 }
