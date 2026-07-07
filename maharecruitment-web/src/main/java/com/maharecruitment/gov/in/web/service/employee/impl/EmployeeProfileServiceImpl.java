@@ -1,23 +1,31 @@
 package com.maharecruitment.gov.in.web.service.employee.impl;
 
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
-import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
-import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
-import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
-import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
-import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
-import com.maharecruitment.gov.in.web.dto.FileUploadResult;
-import com.maharecruitment.gov.in.web.service.employee.EmployeeProfileService;
-import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
-import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
-import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.maharecruitment.gov.in.auth.entity.Role;
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeProfile;
+import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeProfileRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.web.dto.FileUploadResult;
+import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileDTO;
+import com.maharecruitment.gov.in.web.exception.FileStorageException;
+import com.maharecruitment.gov.in.web.service.employee.EmployeeProfileService;
+import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,142 +33,317 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EmployeeProfileServiceImpl implements EmployeeProfileService {
 
+    private static final String EMPLOYEE_PHOTO_MODULE = "employee-profile-photo";
+    private static final long MAX_PHOTO_SIZE_BYTES = 2L * 1024L * 1024L;
+    private static final LocalDate DEFAULT_DOB = LocalDate.of(1900, 1, 1);
+
+    private final EmployeeProfileRepository employeeProfileRepository;
     private final EmployeeRepository employeeRepository;
-    private final HROnboardingPageService hrOnboardingPageService;
-    private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
+    private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
 
     public EmployeeProfileServiceImpl(
+            EmployeeProfileRepository employeeProfileRepository,
             EmployeeRepository employeeRepository,
-            HROnboardingPageService hrOnboardingPageService,
-            AgencyCandidatePreOnboardingRepository preOnboardingRepository,
+            UserRepository userRepository,
             FileStorageService fileStorageService) {
+        this.employeeProfileRepository = employeeProfileRepository;
         this.employeeRepository = employeeRepository;
-        this.hrOnboardingPageService = hrOnboardingPageService;
-        this.preOnboardingRepository = preOnboardingRepository;
+        this.userRepository = userRepository;
         this.fileStorageService = fileStorageService;
     }
 
     @Override
-    public EmployeeOnboardingDetailView loadCurrentEmployeeProfile(String loginEmail) {
-        if (!StringUtils.hasText(loginEmail)) {
-            throw new RecruitmentNotificationException("Employee login email is required.");
-        }
-
-        EmployeeEntity employee = resolveEmployeeProfile(loginEmail.trim());
-        if (!hasOnboardingDetails(employee)) {
-            throw new RecruitmentNotificationException("Employee onboarding details are not available.");
-        }
-
-        return buildDetailView(employee);
+    @Transactional(readOnly = true)
+    public EmployeeProfileDTO getCurrentEmployeeProfile(String loginEmail) {
+        User user = requireUser(loginEmail);
+        EmployeeEntity employee = requireEmployee(loginEmail);
+        EmployeeProfile profile = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()).orElse(null);
+        return toDto(profile, user, employee);
     }
 
     @Override
-    public void updateEmployeePhoto(String loginEmail, MultipartFile file) {
-        if (!StringUtils.hasText(loginEmail)) {
-            throw new RecruitmentNotificationException("Employee login email is required.");
-        }
+    @Transactional
+    public EmployeeProfileDTO updateCurrentEmployeeProfile(String loginEmail, EmployeeProfileDTO profileDTO) {
+        User user = requireUser(loginEmail);
+        EmployeeEntity employee = requireEmployee(loginEmail);
+        EmployeeProfile profile = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()).orElseGet(() -> {
+            EmployeeProfile created = new EmployeeProfile();
+            created.setEmployee(employee);
+            created.setCreatedBy(user.getEmail());
+            return created;
+        });
+
+        profile.setDob(normalizeDob(profileDTO.getDob()));
+        profile.setGender(normalizeText(profileDTO.getGender()));
+        profile.setAlternateMobileNo(normalizeText(profileDTO.getAlternateMobileNo()));
+        profile.setPanNo(normalizePan(profileDTO.getPanNo()));
+        profile.setMaritalStatus(normalizeText(profileDTO.getMaritalStatus()));
+        profile.setBloodGroup(normalizeText(profileDTO.getBloodGroup()));
+        profile.setEmergencyContactName(normalizeText(profileDTO.getEmergencyContactName()));
+        profile.setEmergencyContactNo(normalizeText(profileDTO.getEmergencyContactNo()));
+        profile.setCurrentAddress(normalizeText(profileDTO.getCurrentAddress()));
+        profile.setPermanentAddress(normalizeText(profileDTO.getPermanentAddress()));
+        profile.setUpdatedBy(user.getEmail());
+        syncEmployeeMaster(employee, profileDTO, profile);
+
+        EmployeeProfile savedProfile = employeeProfileRepository.save(profile);
+        EmployeeEntity savedEmployee = employeeRepository.save(employee);
+        log.info("Employee profile saved for employeeId={} userId={}", employee.getEmployeeId(), user.getId());
+        return toDto(savedProfile, user, savedEmployee);
+    }
+
+    @Override
+    @Transactional
+    public EmployeeProfileDTO uploadCurrentEmployeePhoto(String loginEmail, MultipartFile file) {
+        User user = requireUser(loginEmail);
+        EmployeeEntity employee = requireEmployee(loginEmail);
         if (file == null || file.isEmpty()) {
             throw new RecruitmentNotificationException("Photo file is required.");
         }
-
-        EmployeeEntity employee = resolveEmployeeProfile(loginEmail.trim());
-        if (!hasOnboardingDetails(employee)) {
-            throw new RecruitmentNotificationException("Employee onboarding details are not available.");
+        if (file.getSize() > MAX_PHOTO_SIZE_BYTES) {
+            throw new RecruitmentNotificationException("Photo must be 2 MB or smaller.");
         }
 
-        AgencyCandidatePreOnboardingEntity preOnboarding = employee.getPreOnboarding();
-        FileUploadResult uploadResult = fileStorageService.store(file, "employee-photo");
+        EmployeeProfile profile = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId())
+                .orElseGet(() -> {
+                    EmployeeProfile created = new EmployeeProfile();
+                    created.setEmployee(employee);
+                    created.setCreatedBy(user.getEmail());
+                    return created;
+                });
+        String previousPhotoPath = profile.getPhotoPath();
 
-        preOnboarding.setPhotoFilePath(uploadResult.fullPath());
-        preOnboarding.setPhotoOriginalName(uploadResult.originalFileName());
-        preOnboarding.setPhotoFileType(uploadResult.contentType());
-        preOnboarding.setPhotoFileSize(uploadResult.size());
+        FileUploadResult uploadResult;
+        try {
+            uploadResult = fileStorageService.store(file, EMPLOYEE_PHOTO_MODULE);
+        } catch (FileStorageException ex) {
+            throw new RecruitmentNotificationException(ex.getMessage());
+        }
 
-        preOnboardingRepository.save(preOnboarding);
-        log.info("Updated employee photo for employeeId={} (loginEmail={})", employee.getEmployeeId(), loginEmail);
+        profile.setPhotoPath(uploadResult.fullPath());
+        profile.setUpdatedBy(user.getEmail());
+        employee.setPhotoPath(uploadResult.fullPath());
+        EmployeeProfile savedProfile = employeeProfileRepository.save(profile);
+        EmployeeEntity savedEmployee = employeeRepository.save(employee);
+        if (StringUtils.hasText(previousPhotoPath) && !Objects.equals(previousPhotoPath, uploadResult.fullPath())) {
+            fileStorageService.deleteQuietly(previousPhotoPath);
+        }
+
+        log.info("Employee profile photo uploaded for employeeId={} userId={}", employee.getEmployeeId(), user.getId());
+        return toDto(savedProfile, user, savedEmployee);
     }
 
-    private EmployeeEntity resolveEmployeeProfile(String loginEmail) {
-        List<EmployeeEntity> employeeProfiles = employeeRepository.findDetailedProfilesByEmail(loginEmail);
-        if (employeeProfiles.isEmpty()) {
-            throw new RecruitmentNotificationException("Employee profile not found for the logged-in user.");
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Path> resolveCurrentEmployeePhoto(String loginEmail) {
+        requireUser(loginEmail);
+        EmployeeEntity employee = requireEmployee(loginEmail);
+        Optional<String> profilePhotoPath = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId())
+                .map(EmployeeProfile::getPhotoPath)
+                .filter(StringUtils::hasText);
+        String photoPath = profilePhotoPath.orElse(employee.getPhotoPath());
+        if (!StringUtils.hasText(photoPath) || !fileStorageService.isManagedFileAllowed(photoPath, EMPLOYEE_PHOTO_MODULE)) {
+            return Optional.empty();
         }
+        return fileStorageService.resolveManagedPath(photoPath);
+    }
+
+    private User requireUser(String loginEmail) {
+        if (!StringUtils.hasText(loginEmail)) {
+            throw new RecruitmentNotificationException("Logged-in user is required.");
+        }
+        return userRepository.findByEmailIgnoreCaseAndActiveTrue(loginEmail.trim())
+                .orElseThrow(() -> new RecruitmentNotificationException("Logged-in user account is not active."));
+    }
+
+    private Optional<EmployeeEntity> resolveEmployee(String loginEmail) {
+        if (!StringUtils.hasText(loginEmail)) {
+            return Optional.empty();
+        }
+        List<EmployeeEntity> employeeProfiles = employeeRepository.findDetailedProfilesByEmail(loginEmail.trim());
         if (employeeProfiles.size() > 1) {
-            log.warn("Multiple employee profiles found for loginEmail={}. Selecting the highest-priority record.",
-                    loginEmail);
+            log.warn("Multiple employee master profiles found for loginEmail={}. Selecting first profile.", loginEmail);
         }
+        return employeeProfiles.stream().findFirst();
+    }
 
-        return employeeProfiles.stream()
-                .filter(this::hasOnboardingDetails)
+    private EmployeeEntity requireEmployee(String loginEmail) {
+        return resolveEmployee(loginEmail)
+                .orElseThrow(() -> new RecruitmentNotificationException("Employee master record was not found for the logged-in user."));
+    }
+
+    private EmployeeProfileDTO toDto(EmployeeProfile profile, User user, EmployeeEntity employee) {
+        EmployeeProfileDTO dto = new EmployeeProfileDTO();
+        dto.setProfileAvailable(profile != null);
+
+        dto.setId(profile != null ? profile.getId() : null);
+        dto.setEmployeeId(employee != null ? employee.getEmployeeId() : null);
+        dto.setFullName(firstText(employee != null ? employee.getFullName() : null, user.getName()));
+        dto.setDob(firstDate(profile != null ? normalizeDob(profile.getDob()) : null,
+                employee != null ? normalizeDob(employee.getDateOfBirth()) : null));
+        dto.setGender(firstText(profile != null ? normalizeText(profile.getGender()) : null,
+                employee != null ? normalizeText(employee.getGender()) : null));
+        dto.setAlternateMobileNo(profile != null ? profile.getAlternateMobileNo() : null);
+        dto.setEmail(firstText(employee != null ? employee.getEmail() : null, user.getEmail()));
+        dto.setPanNo(firstText(profile != null ? normalizePan(profile.getPanNo()) : null,
+                employee != null ? normalizePanForDisplay(employee.getPanNumber()) : null));
+        dto.setMaritalStatus(profile != null ? profile.getMaritalStatus() : null);
+        dto.setBloodGroup(firstText(profile != null ? normalizeText(profile.getBloodGroup()) : null,
+                employee != null ? normalizeText(employee.getBloodGroup()) : null));
+        dto.setEmergencyContactName(firstText(profile != null ? normalizeText(profile.getEmergencyContactName()) : null,
+                employee != null ? normalizeText(employee.getEmergencyContactName()) : null));
+        dto.setEmergencyContactNo(firstText(profile != null ? normalizeText(profile.getEmergencyContactNo()) : null,
+                employee != null ? normalizeText(employee.getEmergencyContactMobile()) : null));
+        dto.setCurrentAddress(firstText(profile != null ? normalizeText(profile.getCurrentAddress()) : null,
+                employee != null ? normalizeText(employee.getAddress()) : null));
+        dto.setPermanentAddress(profile != null ? normalizeText(profile.getPermanentAddress()) : "");
+
+        dto.setEmployeeCode(employee != null ? employee.getEmployeeCode() : "-");
+        dto.setRole(resolveRole(user, employee));
+        dto.setDepartment(resolveDepartment(employee, user));
+        dto.setMobileNo(firstText(employee != null ? normalizeText(employee.getMobile()) : null, user.getMobileNo()));
+        dto.setPhotoUrl(hasProfilePhoto(profile, employee) ? "/employee/profile/photo" : "");
+        dto.setCompletionPercentage(calculateCompletionPercentage(dto));
+        return dto;
+    }
+
+    private void syncEmployeeMaster(EmployeeEntity employee, EmployeeProfileDTO profileDTO, EmployeeProfile profile) {
+        LocalDate dob = normalizeDob(profileDTO.getDob());
+        if (dob != null) {
+            employee.setDateOfBirth(dob);
+        }
+        setIfText(profile.getGender(), employee::setGender);
+        setIfText(normalizeText(profileDTO.getMobileNo()), employee::setMobile);
+        setIfText(profile.getPanNo(), employee::setPanNumber);
+        setIfText(profile.getBloodGroup(), employee::setBloodGroup);
+        setIfText(profile.getEmergencyContactName(), employee::setEmergencyContactName);
+        setIfText(profile.getEmergencyContactNo(), employee::setEmergencyContactMobile);
+        setIfText(profile.getAlternateMobileNo(), employee::setEmergencyContactAltMobile);
+        setIfText(profile.getCurrentAddress(), employee::setAddress);
+    }
+
+    private String resolveRole(User user, EmployeeEntity employee) {
+        if (employee != null && employee.getDesignation() != null
+                && StringUtils.hasText(employee.getDesignation().getDesignationName())) {
+            return employee.getDesignation().getDesignationName().trim();
+        }
+        return user.getRoles().stream()
+                .map(Role::getName)
+                .filter(StringUtils::hasText)
+                .map(role -> role.replace("ROLE_", "").replace('_', ' '))
                 .findFirst()
-                .orElse(employeeProfiles.getFirst());
+                .orElse("Employee");
     }
 
-    private EmployeeOnboardingDetailView buildDetailView(EmployeeEntity employee) {
-        AgencyPreOnboardingForm onboardingForm = hrOnboardingPageService
-                .loadOnboardingForm(employee.getPreOnboarding().getPreOnboardingId());
-        applyEmployeeMasterOverrides(onboardingForm, employee);
-        return new EmployeeOnboardingDetailView(
-                employee.getEmployeeId(),
-                employee.getEmployeeCode(),
-                employee.getStatus(),
-                employee.getRecruitmentType(),
-                employee.getResignationDate(),
-                onboardingForm);
+    private String resolveDepartment(EmployeeEntity employee, User user) {
+        if (employee != null && employee.getDepartmentRegistration() != null
+                && StringUtils.hasText(employee.getDepartmentRegistration().getDepartmentName())) {
+            return employee.getDepartmentRegistration().getDepartmentName().trim();
+        }
+        if (user.getDepartmentRegistrationId() != null
+                && StringUtils.hasText(user.getDepartmentRegistrationId().getDepartmentName())) {
+            return user.getDepartmentRegistrationId().getDepartmentName().trim();
+        }
+        return "-";
     }
 
-    private void applyEmployeeMasterOverrides(AgencyPreOnboardingForm form, EmployeeEntity employee) {
-        if (form == null || employee == null) {
-            return;
-        }
-
-        form.setName(preferEmployeeText(employee.getFullName(), form.getName()));
-        form.setEmail(preferEmployeeText(employee.getEmail(), form.getEmail()));
-        form.setMobile(preferEmployeeText(employee.getMobile(), form.getMobile()));
-        form.setAddress(preferEmployeeText(employee.getAddress(), form.getAddress()));
-        form.setAadhaar(preferEmployeeText(employee.getAadhaarNumber(), form.getAadhaar()));
-        form.setPan(preferEmployeeText(employee.getPanNumber(), form.getPan()));
-        form.setRequestId(preferEmployeeText(employee.getRequestId(), form.getRequestId()));
-        form.setLevelCode(preferEmployeeText(employee.getLevelCode(), form.getLevelCode()));
-
-        form.setDob(preferEmployeeDate(employee.getDateOfBirth(), form.getDob()));
-        form.setJoiningDate(preferEmployeeDate(employee.getJoiningDate(), form.getJoiningDate()));
-        form.setOnboardingDate(preferEmployeeDate(employee.getOnboardingDate(), form.getOnboardingDate()));
-
-        if (employee.getDepartmentRegistration() != null) {
-            form.setDepartment(preferEmployeeText(
-                    employee.getDepartmentRegistration().getDepartmentName(),
-                    form.getDepartment()));
-        }
-        if (employee.getSubDepartment() != null) {
-            form.setSubDeptName(preferEmployeeText(
-                    employee.getSubDepartment().getSubDeptName(),
-                    form.getSubDeptName()));
-        }
-        if (employee.getAgency() != null) {
-            form.setAgencyName(preferEmployeeText(
-                    employee.getAgency().getAgencyName(),
-                    form.getAgencyName()));
-        }
-        if (employee.getDesignation() != null) {
-            form.setDesignation(preferEmployeeText(
-                    employee.getDesignation().getDesignationName(),
-                    form.getDesignation()));
-        }
+    private int calculateCompletionPercentage(EmployeeProfileDTO dto) {
+        List<String> values = Stream.of(
+                dto.getFullName(),
+                dto.getDob() != null ? dto.getDob().toString() : null,
+                dto.getGender(),
+                dto.getMobileNo(),
+                dto.getAlternateMobileNo(),
+                dto.getEmail(),
+                dto.getPanNo(),
+                dto.getMaritalStatus(),
+                dto.getBloodGroup(),
+                dto.getEmergencyContactName(),
+                dto.getEmergencyContactNo(),
+                dto.getCurrentAddress(),
+                dto.getPermanentAddress(),
+                dto.getPhotoUrl())
+                .toList();
+        long completed = values.stream().filter(StringUtils::hasText).count();
+        return (int) Math.round((completed * 100.0d) / values.size());
     }
 
-    private String preferEmployeeText(String employeeValue, String fallbackValue) {
-        return StringUtils.hasText(employeeValue) ? employeeValue.trim() : fallbackValue;
+    private boolean hasProfilePhoto(EmployeeProfile profile, EmployeeEntity employee) {
+        return (profile != null && StringUtils.hasText(profile.getPhotoPath()))
+                || (employee != null && StringUtils.hasText(employee.getPhotoPath()));
     }
 
-    private LocalDate preferEmployeeDate(LocalDate employeeValue, LocalDate fallbackValue) {
-        return employeeValue != null ? employeeValue : fallbackValue;
+    private LocalDate firstDate(LocalDate... values) {
+        if (values == null) {
+            return null;
+        }
+        for (LocalDate value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
     }
 
-    private boolean hasOnboardingDetails(EmployeeEntity employee) {
-        return employee != null
-                && employee.getPreOnboarding() != null
-                && employee.getPreOnboarding().getPreOnboardingId() != null;
+    private String firstText(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return "";
+    }
+
+    private String normalizeText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String normalized = value.trim();
+        String upperValue = normalized.toUpperCase(Locale.ROOT);
+        if ("NOT_PROVIDED".equals(upperValue) || "NOT_SPECIFIED".equals(upperValue)) {
+            return null;
+        }
+        return normalized;
+    }
+
+    private LocalDate normalizeDob(LocalDate value) {
+        if (value == null || DEFAULT_DOB.equals(value)) {
+            return null;
+        }
+        return value;
+    }
+
+    private String normalizePan(String value) {
+        String normalizedText = normalizeText(value);
+        if (!StringUtils.hasText(normalizedText)) {
+            return null;
+        }
+        String normalized = normalizedText.toUpperCase(Locale.ROOT);
+        if (!StringUtils.hasText(normalized)) {
+            return null;
+        }
+        if (!normalized.matches("^[A-Z]{5}[0-9]{4}[A-Z]$")) {
+            throw new RecruitmentNotificationException("PAN must match ABCDE1234F format.");
+        }
+        return normalized;
+    }
+
+    private String normalizePanForDisplay(String value) {
+        String normalizedText = normalizeText(value);
+        if (!StringUtils.hasText(normalizedText)) {
+            return null;
+        }
+        String normalized = normalizedText.toUpperCase(Locale.ROOT);
+        return normalized.matches("^[A-Z]{5}[0-9]{4}[A-Z]$") ? normalized : null;
+    }
+
+    private void setIfText(String value, java.util.function.Consumer<String> setter) {
+        if (StringUtils.hasText(value)) {
+            setter.accept(value);
+        }
     }
 }

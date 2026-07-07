@@ -99,6 +99,9 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @Column(name = "company_payroll_more_than_three_months", nullable = false)
     private Boolean companyPayrollMoreThanThreeMonths = false;
 
+    @Column(name = "photo_path", length = 1000)
+    private String photoPath;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pre_onboarding_id")
     private AgencyCandidatePreOnboardingEntity preOnboarding;

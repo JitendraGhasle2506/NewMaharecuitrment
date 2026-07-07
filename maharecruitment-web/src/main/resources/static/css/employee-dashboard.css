@@ -1,0 +1,381 @@
+.employee-dashboard {
+    --ed-primary: #0f5f7a;
+    --ed-primary-dark: #10435f;
+    --ed-accent: #198754;
+    --ed-ink: #142536;
+    --ed-muted: #64748b;
+    --ed-line: #d8e4ec;
+    --ed-surface: #ffffff;
+    --ed-soft: #f3f8fb;
+    color: var(--ed-ink);
+}
+
+.employee-dashboard .dashboard-intro,
+.employee-dashboard .profile-card,
+.employee-dashboard .edit-panel,
+.employee-dashboard .photo-upload-card,
+.employee-dashboard .quick-action {
+    border: 1px solid var(--ed-line);
+    border-radius: 8px;
+    background: var(--ed-surface);
+    box-shadow: 0 12px 30px rgba(15, 67, 95, 0.08);
+}
+
+.employee-dashboard .dashboard-intro {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: center;
+    padding: 24px;
+    margin-bottom: 18px;
+    background: linear-gradient(135deg, #ffffff 0%, #f2f9fb 64%, #edf7f2 100%);
+}
+
+.employee-dashboard .dashboard-kicker,
+.employee-dashboard .panel-heading span {
+    display: block;
+    color: var(--ed-primary);
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0;
+    margin-bottom: 4px;
+}
+
+.employee-dashboard h2,
+.employee-dashboard h3,
+.employee-dashboard p {
+    margin: 0;
+}
+
+.employee-dashboard .dashboard-intro h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--ed-primary-dark);
+}
+
+.employee-dashboard .dashboard-intro p {
+    color: var(--ed-muted);
+    margin-top: 6px;
+}
+
+.employee-dashboard .completion-meter {
+    width: 132px;
+    min-width: 132px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    background:
+        radial-gradient(circle at center, #fff 58%, transparent 59%),
+        conic-gradient(var(--ed-accent) calc(var(--completion, 0) * 1%), #dce8ef 0);
+}
+
+.employee-dashboard .completion-meter span {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: var(--ed-primary-dark);
+}
+
+.employee-dashboard .completion-meter small {
+    color: var(--ed-muted);
+    font-size: 0.75rem;
+}
+
+.employee-dashboard .profile-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.employee-dashboard .profile-card {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: 18px;
+    padding: 20px;
+}
+
+.employee-dashboard .profile-photo-wrap,
+.employee-dashboard .photo-preview {
+    background: var(--ed-soft);
+    border: 1px dashed #b7cdd8;
+    overflow: hidden;
+}
+
+.employee-dashboard .profile-photo-wrap {
+    width: 132px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+}
+
+.employee-dashboard .profile-photo-wrap img,
+.employee-dashboard .photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.employee-dashboard .profile-photo-fallback,
+.employee-dashboard .photo-preview > div {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: #5a7488;
+}
+
+.employee-dashboard .profile-photo-fallback i {
+    font-size: 2.4rem;
+}
+
+.employee-dashboard .profile-main {
+    min-width: 0;
+}
+
+.employee-dashboard .profile-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #eaf7ef;
+    color: #11603a;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.employee-dashboard .profile-main h3 {
+    margin-top: 12px;
+    color: var(--ed-primary-dark);
+    font-size: 1.45rem;
+    font-weight: 800;
+}
+
+.employee-dashboard .profile-code {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: var(--ed-muted);
+    margin-top: 8px;
+}
+
+.employee-dashboard .profile-facts {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+}
+
+.employee-dashboard .profile-facts div {
+    padding: 12px;
+    border-radius: 8px;
+    background: #f7fafc;
+}
+
+.employee-dashboard .profile-facts dt {
+    color: var(--ed-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.employee-dashboard .profile-facts dd {
+    margin: 4px 0 0;
+    color: var(--ed-ink);
+    font-weight: 700;
+    word-break: break-word;
+}
+
+.employee-dashboard .quick-actions {
+    display: grid;
+    gap: 12px;
+}
+
+.employee-dashboard .quick-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 72px;
+    padding: 14px 16px;
+    color: var(--ed-primary-dark);
+    font-weight: 800;
+    text-decoration: none;
+    text-align: left;
+    border-color: #d7e6ed;
+}
+
+.employee-dashboard button.quick-action {
+    width: 100%;
+}
+
+.employee-dashboard .quick-action i {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: inline-grid;
+    place-items: center;
+    background: #e8f4f7;
+    color: var(--ed-primary);
+}
+
+.employee-dashboard .quick-action:hover {
+    border-color: var(--ed-primary);
+}
+
+.employee-dashboard .dashboard-panels {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+    gap: 18px;
+    align-items: start;
+}
+
+.employee-dashboard .edit-panel,
+.employee-dashboard .photo-upload-card {
+    padding: 20px;
+}
+
+.employee-dashboard .panel-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.employee-dashboard .panel-heading h3 {
+    color: var(--ed-primary-dark);
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.employee-dashboard .form-grid,
+.employee-dashboard .address-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.employee-dashboard .read-only-grid {
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--ed-line);
+}
+
+.employee-dashboard label {
+    display: grid;
+    gap: 6px;
+    color: #31485b;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.employee-dashboard label strong {
+    color: #c4322d;
+}
+
+.employee-dashboard input,
+.employee-dashboard select,
+.employee-dashboard textarea {
+    width: 100%;
+    border: 1px solid #cad9e2;
+    border-radius: 8px;
+    min-height: 42px;
+    padding: 9px 11px;
+    background: #fff;
+    color: var(--ed-ink);
+}
+
+.employee-dashboard input:disabled,
+.employee-dashboard input[readonly] {
+    background: #f4f7f9;
+    color: #42576a;
+    opacity: 1;
+}
+
+.employee-dashboard textarea {
+    min-height: 104px;
+    resize: vertical;
+}
+
+.employee-dashboard input:focus,
+.employee-dashboard select:focus,
+.employee-dashboard textarea:focus {
+    outline: 3px solid rgba(15, 95, 122, 0.16);
+    border-color: var(--ed-primary);
+}
+
+.employee-dashboard .is-invalid {
+    border-color: #dc3545;
+}
+
+.employee-dashboard .field-error {
+    min-height: 18px;
+    color: #b42318;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.employee-dashboard .address-grid {
+    margin-top: 14px;
+}
+
+.employee-dashboard .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
+}
+
+.employee-dashboard .photo-preview {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    border-radius: 8px;
+    margin-bottom: 14px;
+}
+
+.employee-dashboard .photo-preview > div {
+    gap: 10px;
+    align-content: center;
+    text-align: center;
+}
+
+.employee-dashboard .photo-preview i {
+    font-size: 2rem;
+}
+
+.employee-dashboard .upload-note {
+    display: block;
+    color: var(--ed-muted);
+    margin: 8px 0;
+}
+
+@media (max-width: 991.98px) {
+    .employee-dashboard .profile-grid,
+    .employee-dashboard .dashboard-panels {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .employee-dashboard .dashboard-intro,
+    .employee-dashboard .profile-card {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .employee-dashboard .dashboard-intro {
+        display: grid;
+    }
+
+    .employee-dashboard .completion-meter {
+        width: 112px;
+        min-width: 112px;
+    }
+
+    .employee-dashboard .profile-facts,
+    .employee-dashboard .form-grid,
+    .employee-dashboard .address-grid {
+        grid-template-columns: 1fr;
+    }
+}
