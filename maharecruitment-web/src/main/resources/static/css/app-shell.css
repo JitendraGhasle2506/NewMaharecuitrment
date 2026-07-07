@@ -440,8 +440,8 @@ video {
 }
 
 .user-avatar {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 35px;
     border-radius: 50%;
     display: grid;
     place-items: center;
