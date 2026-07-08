@@ -1,6 +1,5 @@
 package com.maharecruitment.gov.in.web.service.mobile;
 
-import java.util.List;
 import java.util.Objects;
 
 import org.springframework.http.HttpStatus;
@@ -48,10 +47,8 @@ public class MobileEmployeeAccessService {
                         "UNAUTHENTICATED",
                         "Valid mobile authentication token is required."));
 
-        List<EmployeeEntity> profiles = employeeRepository.findMobileLoginProfilesByEmail(user.getEmail().trim());
-        EmployeeEntity employee = profiles.stream()
+        EmployeeEntity employee = employeeRepository.findMobileLoginProfileByUserId(user.getId())
                 .filter(this::isActiveEmployee)
-                .findFirst()
                 .orElseThrow(() -> new MobileApiException(
                         HttpStatus.FORBIDDEN,
                         "EMPLOYEE_INACTIVE",

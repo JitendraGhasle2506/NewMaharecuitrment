@@ -6,4 +6,6 @@ import com.maharecruitment.gov.in.auth.dto.AgencyUserProvisioningResult;
 public interface AgencyUserProvisioningService {
 
     AgencyUserProvisioningResult createOrSyncAgencyUser(AgencyUserProvisioningRequest request);
+
+    void synchronizeAgencyUserStatus(Long agencyId, boolean enabled);
 }

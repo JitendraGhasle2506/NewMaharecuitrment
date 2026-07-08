@@ -233,7 +233,7 @@ public class AttendanceRegisterInternalEmployeeController {
 
     private EmployeeEntity resolveCurrentEmployee(HttpSession session) {
         SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        return employeeRepository.findByEmail(sessionUser.email())
+        return employeeRepository.findByUser_Id(sessionUser.id())
                 .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
     }
 
@@ -267,9 +267,7 @@ public class AttendanceRegisterInternalEmployeeController {
             HttpSession session, 
             org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttrs) {
         
-        SessionUserDTO user = (SessionUserDTO) session.getAttribute("SESSION_USER");
-        EmployeeEntity employee = employeeRepository.findByEmail(user.email())
-                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+        EmployeeEntity employee = resolveCurrentEmployee(session);
 
         
         try {

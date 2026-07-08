@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,12 +13,10 @@ import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
-import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyPanelAssessmentEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInternalLevelTwoScheduleEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
-import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyPanelAssessmentRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInternalLevelTwoScheduleRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
@@ -38,19 +35,16 @@ public class InternalVacancyAssessmentServiceImpl implements InternalVacancyAsse
     private final InternalVacancyPanelAssessmentRepository assessmentRepository;
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final UserRepository userRepository;
-    private final EmployeeRepository employeeRepository;
     private final RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository;
 
     public InternalVacancyAssessmentServiceImpl(
             InternalVacancyPanelAssessmentRepository assessmentRepository,
             RecruitmentInterviewDetailRepository interviewDetailRepository,
             UserRepository userRepository,
-            EmployeeRepository employeeRepository,
             RecruitmentInternalLevelTwoScheduleRepository levelTwoScheduleRepository) {
         this.assessmentRepository = assessmentRepository;
         this.interviewDetailRepository = interviewDetailRepository;
         this.userRepository = userRepository;
-        this.employeeRepository = employeeRepository;
         this.levelTwoScheduleRepository = levelTwoScheduleRepository;
     }
 
@@ -61,19 +55,10 @@ public class InternalVacancyAssessmentServiceImpl implements InternalVacancyAsse
                 .orElseThrow(() -> new RecruitmentNotificationException("Interview detail not found."));
 
         // Resolve the current panel assessor
-        Long userId = null;
+        User actor = userRepository.findByEmailIgnoreCase(actorEmail)
+                .orElseThrow(() -> new RecruitmentNotificationException("Assessor not found with email: " + actorEmail));
+        Long userId = actor.getId();
         Long employeeId = null;
-        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(actorEmail);
-        if (userOpt.isPresent()) {
-            userId = userOpt.get().getId();
-        } else {
-            Optional<EmployeeEntity> employeeOpt = employeeRepository.findByEmail(actorEmail);
-            if (employeeOpt.isPresent()) {
-                employeeId = employeeOpt.get().getEmployeeId();
-            } else {
-                throw new RecruitmentNotificationException("Assessor not found with email: " + actorEmail);
-            }
-        }
 
         // Upsert: update existing assessment if this panel already submitted, otherwise insert new
         final Long finalUserId = userId;
@@ -84,11 +69,9 @@ public class InternalVacancyAssessmentServiceImpl implements InternalVacancyAsse
                     InternalVacancyPanelAssessmentEntity newAssessment = new InternalVacancyPanelAssessmentEntity();
                     newAssessment.setInterviewDetail(interview);
                     if (finalUserId != null) {
-                        newAssessment.setAssessorUser(userOpt.get());
+                        newAssessment.setAssessorUser(actor);
                     } else {
-                        newAssessment.setAssessorEmployee(
-                                employeeRepository.findByEmail(actorEmail)
-                                        .orElseThrow(() -> new RecruitmentNotificationException("Employee not found.")));
+                        throw new RecruitmentNotificationException("Authenticated assessor user not found.");
                     }
                     return newAssessment;
                 });
@@ -157,11 +140,6 @@ public class InternalVacancyAssessmentServiceImpl implements InternalVacancyAsse
                 .map(User::getId)
                 .orElse(null);
         Long employeeId = null;
-        if (userId == null) {
-            employeeId = employeeRepository.findByEmail(actorEmail.trim())
-                    .map(EmployeeEntity::getEmployeeId)
-                    .orElse(null);
-        }
 
         if (userId == null && employeeId == null) {
             return null;

@@ -31,8 +31,7 @@ public class ApplyTourMasterController {
     public String showApplyTourForm(Model model, HttpSession session) {
         SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
         if (sessionUser != null) {
-            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            EmployeeEntity employee = requireEmployee(sessionUser);
             model.addAttribute("employee", employee);
         }
         model.addAttribute("tourApplication", new TourApplicationEntity());
@@ -43,8 +42,7 @@ public class ApplyTourMasterController {
     public String showTourHistory(Model model, HttpSession session) {
         SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
         if (sessionUser != null) {
-            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            EmployeeEntity employee = requireEmployee(sessionUser);
             model.addAttribute("tourHistory", tourApplicationService.getTourApplicationsByEmployee(employee.getEmployeeId()));
         }
         return "attendance/view-tour";
@@ -60,8 +58,7 @@ public class ApplyTourMasterController {
             return "redirect:/login";
         }
 
-        EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+        EmployeeEntity employee = requireEmployee(sessionUser);
 
         if ("Half Day".equalsIgnoreCase(tourApplication.getTourCategory()) && tourApplication.getEndDate() == null) {
             tourApplication.setEndDate(tourApplication.getStartDate());
@@ -72,5 +69,10 @@ public class ApplyTourMasterController {
         
         redirectAttributes.addFlashAttribute("success", "Tour application submitted successfully.");
         return "redirect:/employee/viewTour";
+    }
+
+    private EmployeeEntity requireEmployee(SessionUserDTO sessionUser) {
+        return employeeRepository.findByUser_Id(sessionUser.id())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
     }
 }

@@ -13,8 +13,6 @@ import com.maharecruitment.gov.in.master.entity.AgencyStatus;
 
 public interface AgencyMasterRepository extends JpaRepository<AgencyMaster, Long> {
 
-        Optional<AgencyMaster> findByOfficialEmailIgnoreCase(String officialEmail);
-
         List<AgencyMaster> findByStatusOrderByAgencyNameAsc(AgencyStatus status);
 
         @EntityGraph(attributePaths = "escalationMatrixEntries")
@@ -55,11 +53,4 @@ public interface AgencyMasterRepository extends JpaRepository<AgencyMaster, Long
                         """)
         boolean existsByGstNumberExcludingId(@Param("gstNumber") String gstNumber, @Param("excludeId") Long excludeId);
 
-        @Query("""
-                        SELECT a
-                        FROM AgencyMaster a
-                        LEFT JOIN FETCH a.escalationMatrixEntries e
-                        WHERE a.officialEmail = :email
-                        """)
-        AgencyMaster getAgencyProfile(@Param("email") String email);
 }

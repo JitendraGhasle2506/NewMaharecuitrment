@@ -48,8 +48,7 @@ public class ManualAttendanceApprovalController {
         if ("HOD".equalsIgnoreCase(roleType)) {
             approverId = sessionUser.id();
         } else {
-            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            EmployeeEntity employee = requireEmployee(sessionUser);
             approverId = employee.getEmployeeId();
         }
 
@@ -92,8 +91,7 @@ public class ManualAttendanceApprovalController {
         if ("HOD".equalsIgnoreCase(roleType)) {
             approverId = sessionUser.id();
         } else {
-            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            EmployeeEntity employee = requireEmployee(sessionUser);
             approverId = employee.getEmployeeId();
         }
         
@@ -124,8 +122,7 @@ public class ManualAttendanceApprovalController {
         if ("HOD".equalsIgnoreCase(roleType)) {
             approverId = sessionUser.id();
         } else {
-            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            EmployeeEntity employee = requireEmployee(sessionUser);
             approverId = employee.getEmployeeId();
         }
 
@@ -156,8 +153,7 @@ public class ManualAttendanceApprovalController {
         if ("HOD".equalsIgnoreCase(roleType)) {
             approverId = sessionUser.id();
         } else {
-            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            EmployeeEntity employee = requireEmployee(sessionUser);
             approverId = employee.getEmployeeId();
         }
 
@@ -169,5 +165,10 @@ public class ManualAttendanceApprovalController {
         }
 
         return "redirect:/hod1/manual-attendance/details?userId=" + targetUserId + "&roleType=" + roleType;
+    }
+
+    private EmployeeEntity requireEmployee(SessionUserDTO sessionUser) {
+        return employeeRepository.findByUser_Id(sessionUser.id())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
     }
 }

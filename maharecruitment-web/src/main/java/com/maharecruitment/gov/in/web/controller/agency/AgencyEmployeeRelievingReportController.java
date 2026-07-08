@@ -6,8 +6,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import com.maharecruitment.gov.in.auth.entity.User;
-import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
+import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
 import com.maharecruitment.gov.in.web.service.hr.EmployeeRelievingService;
 
 import java.security.Principal;
@@ -18,29 +18,25 @@ import java.security.Principal;
 public class AgencyEmployeeRelievingReportController {
 
     private final EmployeeRelievingService relievingService;
-    private final UserAffiliationService userAffiliationService;
+    private final AgencyAccessService agencyAccessService;
     private final com.maharecruitment.gov.in.web.service.hr.impl.AgencyEmployeeRelievingReportPdfGenerator pdfGenerator;
-    private final com.maharecruitment.gov.in.master.repository.AgencyMasterRepository agencyMasterRepository;
 
     public AgencyEmployeeRelievingReportController(EmployeeRelievingService relievingService,
-                                                   UserAffiliationService userAffiliationService,
-                                                   com.maharecruitment.gov.in.web.service.hr.impl.AgencyEmployeeRelievingReportPdfGenerator pdfGenerator,
-                                                   com.maharecruitment.gov.in.master.repository.AgencyMasterRepository agencyMasterRepository) {
+                                                   AgencyAccessService agencyAccessService,
+                                                   com.maharecruitment.gov.in.web.service.hr.impl.AgencyEmployeeRelievingReportPdfGenerator pdfGenerator) {
         this.relievingService = relievingService;
-        this.userAffiliationService = userAffiliationService;
+        this.agencyAccessService = agencyAccessService;
         this.pdfGenerator = pdfGenerator;
-        this.agencyMasterRepository = agencyMasterRepository;
     }
 
     @GetMapping
     public String viewReport(Principal principal, Model model,
                              @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
                              @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int size) {
-        User user = userAffiliationService.loadUserByEmail(principal.getName());
-        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
+        AgencyUserContext context = agencyAccessService.requireActiveAgencyContext(principal.getName());
         
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
-        org.springframework.data.domain.Page<com.maharecruitment.gov.in.recruitment.dto.employee.EmployeeRelievingDto> recordPage = relievingService.getRelievingRecordsByAgency(agencyId, pageable);
+        org.springframework.data.domain.Page<com.maharecruitment.gov.in.recruitment.dto.employee.EmployeeRelievingDto> recordPage = relievingService.getRelievingRecordsByAgency(context.agencyId(), pageable);
         
         model.addAttribute("recordPage", recordPage);
         return "agency/relieving-report";
@@ -48,9 +44,8 @@ public class AgencyEmployeeRelievingReportController {
 
     @GetMapping("/export/excel")
     public void exportExcel(Principal principal, jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
-        User user = userAffiliationService.loadUserByEmail(principal.getName());
-        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
-        java.util.List<com.maharecruitment.gov.in.recruitment.dto.employee.EmployeeRelievingDto> records = relievingService.getRelievingRecordsByAgency(agencyId);
+        AgencyUserContext context = agencyAccessService.requireActiveAgencyContext(principal.getName());
+        java.util.List<com.maharecruitment.gov.in.recruitment.dto.employee.EmployeeRelievingDto> records = relievingService.getRelievingRecordsByAgency(context.agencyId());
 
         response.setContentType("application/octet-stream");
         response.setHeader("Content-Disposition", "attachment; filename=relieving_report.xlsx");
@@ -78,19 +73,10 @@ public class AgencyEmployeeRelievingReportController {
 
     @GetMapping("/export/pdf")
     public void exportPdf(Principal principal, jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
-        User user = userAffiliationService.loadUserByEmail(principal.getName());
-        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
-        
-        String agencyName = "Unknown Agency";
-        if (agencyId != null) {
-            agencyName = agencyMasterRepository.findById(agencyId)
-                .map(com.maharecruitment.gov.in.master.entity.AgencyMaster::getAgencyName)
-                .orElse("Unknown Agency");
-        }
-        
-        java.util.List<com.maharecruitment.gov.in.recruitment.dto.employee.EmployeeRelievingDto> records = relievingService.getRelievingRecordsByAgency(agencyId);
+        AgencyUserContext context = agencyAccessService.requireActiveAgencyContext(principal.getName());
+        java.util.List<com.maharecruitment.gov.in.recruitment.dto.employee.EmployeeRelievingDto> records = relievingService.getRelievingRecordsByAgency(context.agencyId());
 
-        byte[] pdfBytes = pdfGenerator.generate(records, agencyName);
+        byte[] pdfBytes = pdfGenerator.generate(records, context.agencyName());
 
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=relieving_report.pdf");

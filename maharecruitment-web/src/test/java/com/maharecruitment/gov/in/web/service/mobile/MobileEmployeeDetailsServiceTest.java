@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
-import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -72,7 +71,7 @@ class MobileEmployeeDetailsServiceTest {
 
         EmployeeEntity manager = employee(15L, "EMP015", "Mahesh Patil", "mahesh@example.com", "INTERNAL");
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("shiva@gmail.com")).thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(9L)).thenReturn(Optional.of(employee));
         when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(101L))
                 .thenReturn(Optional.of(mapping));
         when(employeeRepository.findById(15L)).thenReturn(Optional.of(manager));
@@ -105,7 +104,7 @@ class MobileEmployeeDetailsServiceTest {
         EmployeeEntity employee = employee(102L, "EMP002", "External User", "external@example.com", "external");
         employee.setDepartmentRegistration(departmentRegistration(25L, 7L, "Finance Department", null));
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("external@example.com")).thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(102L))
                 .thenReturn(Optional.empty());
 
@@ -132,7 +131,7 @@ class MobileEmployeeDetailsServiceTest {
         employee.setDepartmentRegistration(departmentRegistration(30L, 8L, "HR Department", null));
         employee.setPreOnboarding(preOnboarding(null));
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("noextras@example.com")).thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(11L)).thenReturn(Optional.of(employee));
         when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(103L))
                 .thenReturn(Optional.empty());
 
@@ -150,20 +149,18 @@ class MobileEmployeeDetailsServiceTest {
     }
 
     @Test
-    void usesPhotoFromAnotherProfileForSameLoginWhenPrimaryProfileHasNoPhoto() throws Exception {
+    void usesPreOnboardingPhotoForMappedEmployeeProfile() throws Exception {
         MobileEmployeeDetailsService service = service();
         User user = user(13L, "Primary Employee", "shared@example.com", "9555555555");
         EmployeeEntity primaryProfile = employee(201L, "EMP201", "Primary Employee", "shared@example.com", "INTERNAL");
         primaryProfile.setDepartmentRegistration(departmentRegistration(40L, 9L, "Operations", null));
 
         byte[] photoBytes = new byte[] { 9, 8, 7 };
-        Path photoPath = tempDir.resolve("fallback-photo.png");
+        Path photoPath = tempDir.resolve("profile-photo.png");
         Files.write(photoPath, photoBytes);
-        EmployeeEntity photoProfile = employee(202L, "EMP202", "Photo Employee", "shared@example.com", "INTERNAL");
-        photoProfile.setPreOnboarding(preOnboarding(photoPath.toString(), "[0.789,0.321]"));
+        primaryProfile.setPreOnboarding(preOnboarding(photoPath.toString(), "[0.789,0.321]"));
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("shared@example.com"))
-                .thenReturn(List.of(primaryProfile, photoProfile));
+        when(employeeRepository.findMobileLoginProfileByUserId(13L)).thenReturn(Optional.of(primaryProfile));
         when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(201L))
                 .thenReturn(Optional.empty());
         when(fileStorageService.resolveManagedPath(photoPath.toString())).thenReturn(Optional.of(photoPath));
@@ -184,7 +181,7 @@ class MobileEmployeeDetailsServiceTest {
         Files.write(photoPath, new byte[] { 4, 5, 6 });
         employee.setPreOnboarding(preOnboarding(photoPath.toString(), "[0.111,0.222]"));
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("fallback@example.com")).thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(14L)).thenReturn(Optional.of(employee));
         when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(301L))
                 .thenReturn(Optional.empty());
         when(fileStorageService.resolveManagedPath(photoPath.toString())).thenReturn(Optional.of(photoPath));
@@ -199,7 +196,7 @@ class MobileEmployeeDetailsServiceTest {
         MobileEmployeeDetailsService service = service();
         User user = user(12L, "Only User", "onlyuser@example.com", "9666666666");
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("onlyuser@example.com")).thenReturn(List.of());
+        when(employeeRepository.findMobileLoginProfileByUserId(12L)).thenReturn(Optional.empty());
 
         MobileEmployeeDetails details = service.loadForUser(user);
 

@@ -274,7 +274,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         EmployeeEntity employee = resolveEmployee(row);
         boolean newEmployee = employee.getEmployeeId() == null;
 
-        validateEmployeeUniqueness(row, employee.getEmployeeId());
+        validateEmployeeUniqueness(row, employee);
         DepartmentRegistrationEntity departmentRegistration = resolveDepartmentRegistration(row.departmentRegistrationId());
         SubDepartment subDepartment = resolveSubDepartment(row.subDepartmentId(), departmentRegistration);
         ManpowerDesignationMaster designation = resolveDesignation(row.designationId());
@@ -292,6 +292,11 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         }
 
         UserAccountResult userResult = upsertUser(row, savedEmployee, departmentRegistration, employeeRole);
+        if (savedEmployee.getUser() == null
+                || !Objects.equals(savedEmployee.getUser().getId(), userResult.user().getId())) {
+            savedEmployee.setUser(userResult.user());
+            savedEmployee = employeeRepository.save(savedEmployee);
+        }
         saveLocationMappings(savedEmployee, row.locationIds());
 
         String action = newEmployee ? "CREATED" : "UPDATED";
@@ -318,13 +323,13 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
                     .orElseGet(EmployeeEntity::new);
         }
 
-        return employeeRepository.findMobileLoginProfilesByEmail(row.email())
-                .stream()
-                .findFirst()
+        return userRepository.findByEmailIgnoreCase(row.email())
+                .flatMap(user -> employeeRepository.findByUser_Id(user.getId()))
                 .orElseGet(EmployeeEntity::new);
     }
 
-    private void validateEmployeeUniqueness(EmployeeImportRow row, Long employeeId) {
+    private void validateEmployeeUniqueness(EmployeeImportRow row, EmployeeEntity employee) {
+        Long employeeId = employee.getEmployeeId();
         Long excludedEmployeeId = employeeId != null ? employeeId : -1L;
         if (StringUtils.hasText(row.employeeCode())) {
             employeeRepository.findByEmployeeCodeIgnoreCase(row.employeeCode())
@@ -340,7 +345,9 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
             throw new IllegalArgumentException("Mobile number already exists for another employee.");
         }
 
-        Long excludedUserId = userRepository.findByEmailIgnoreCase(row.email())
+        Long excludedUserId = employee.getUser() != null && employee.getUser().getId() != null
+                ? employee.getUser().getId()
+                : userRepository.findByEmailIgnoreCase(row.email())
                 .map(User::getId)
                 .orElse(-1L);
         if (userRepository.existsByMobileNoAndIdNot(row.mobile(), excludedUserId)) {
@@ -353,7 +360,9 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
             EmployeeEntity employee,
             DepartmentRegistrationEntity departmentRegistration,
             Role employeeRole) {
-        User existingUser = userRepository.findByEmailIgnoreCase(row.email()).orElse(null);
+        User existingUser = employee.getUser() != null && employee.getUser().getId() != null
+                ? employee.getUser()
+                : userRepository.findByEmailIgnoreCase(row.email()).orElse(null);
         if (existingUser != null && !Boolean.TRUE.equals(existingUser.getActive())) {
             throw new IllegalArgumentException("Inactive user already exists for this email. Reactivate manually.");
         }

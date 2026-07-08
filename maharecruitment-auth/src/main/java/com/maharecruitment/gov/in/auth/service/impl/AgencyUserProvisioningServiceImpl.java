@@ -13,7 +13,9 @@ import com.maharecruitment.gov.in.auth.dto.AgencyUserProvisioningRequest;
 import com.maharecruitment.gov.in.auth.dto.AgencyUserProvisioningResult;
 import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.entity.UserAgencyMappingEntity;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
+import com.maharecruitment.gov.in.auth.repository.UserAgencyMappingRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.AgencyUserProvisioningService;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
@@ -27,16 +29,19 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final UserAgencyMappingRepository userAgencyMappingRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserAffiliationService userAffiliationService;
 
     public AgencyUserProvisioningServiceImpl(
             UserRepository userRepository,
             RoleRepository roleRepository,
+            UserAgencyMappingRepository userAgencyMappingRepository,
             PasswordEncoder passwordEncoder,
             UserAffiliationService userAffiliationService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.userAgencyMappingRepository = userAgencyMappingRepository;
         this.passwordEncoder = passwordEncoder;
         this.userAffiliationService = userAffiliationService;
     }
@@ -105,6 +110,24 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
                 .temporaryPassword(temporaryPassword)
                 .created(true)
                 .build();
+    }
+
+    @Override
+    public void synchronizeAgencyUserStatus(Long agencyId, boolean enabled) {
+        if (agencyId == null) {
+            return;
+        }
+
+        List<User> users = userAgencyMappingRepository.findByAgencyId(agencyId).stream()
+                .filter(mapping -> Boolean.TRUE.equals(mapping.getActive()))
+                .map(UserAgencyMappingEntity::getUser)
+                .filter(Objects::nonNull)
+                .filter(user -> !Objects.equals(Boolean.TRUE.equals(user.getActive()), enabled))
+                .distinct()
+                .toList();
+
+        users.forEach(user -> user.setActive(enabled));
+        userRepository.saveAll(users);
     }
 
     private Role resolveAgencyRole() {

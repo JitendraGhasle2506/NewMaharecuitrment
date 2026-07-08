@@ -1,19 +1,12 @@
 package com.maharecruitment.gov.in.web.service.dashboard.impl;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import com.maharecruitment.gov.in.auth.entity.User;
-import com.maharecruitment.gov.in.auth.entity.UserAgencyMappingEntity;
-import com.maharecruitment.gov.in.auth.repository.UserAgencyMappingRepository;
-import com.maharecruitment.gov.in.auth.repository.UserRepository;
-import com.maharecruitment.gov.in.master.entity.AgencyMaster;
-import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingStatus;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus;
@@ -21,6 +14,8 @@ import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboa
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
+import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
 import com.maharecruitment.gov.in.web.service.dashboard.AgencyDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.model.AgencyDashboardView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.AgencyTaskView;
@@ -31,9 +26,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AgencyDashboardServiceImpl implements AgencyDashboardService {
 
-    private final UserRepository userRepository;
-    private final UserAgencyMappingRepository userAgencyMappingRepository;
-    private final AgencyMasterRepository agencyMasterRepository;
+    private final AgencyAccessService agencyAccessService;
     private final AgencyNotificationTrackingRepository agencyNotificationTrackingRepository;
     private final AgencyCandidatePreOnboardingRepository agencyCandidatePreOnboardingRepository;
     private final EmployeeRepository employeeRepository;
@@ -46,33 +39,9 @@ public class AgencyDashboardServiceImpl implements AgencyDashboardService {
             return emptyDashboard();
         }
 
-        User user = userRepository.findByEmail(userDetails.getUsername());
-        if (user == null) {
-            return emptyDashboard();
-        }
-
-        Optional<UserAgencyMappingEntity> mapping = userAgencyMappingRepository
-                .findTopByUser_IdAndActiveTrueOrderByPrimaryMappingDescUserAgencyMappingIdAsc(user.getId());
-
-        Long agencyId = null;
-        String agencyName = null;
-
-        if (mapping.isPresent()) {
-            agencyId = mapping.get().getAgencyId();
-            AgencyMaster agency = agencyMasterRepository.findById(agencyId).orElse(null);
-            agencyName = (agency != null) ? agency.getAgencyName() : "Agency User";
-        } else {
-            // Fallback to searching by official email
-            AgencyMaster agency = agencyMasterRepository.getAgencyProfile(userDetails.getUsername());
-            if (agency != null) {
-                agencyId = agency.getAgencyId();
-                agencyName = agency.getAgencyName();
-            }
-        }
-
-        if (agencyId == null) {
-            return emptyDashboard();
-        }
+        AgencyUserContext context = agencyAccessService.requireActiveAgencyContext(userDetails.getUsername());
+        Long agencyId = context.agencyId();
+        String agencyName = context.agencyName();
 
         long totalOpenings = agencyNotificationTrackingRepository.countByAgencyAgencyIdAndStatus(agencyId,
                 AgencyNotificationTrackingStatus.RELEASED);

@@ -57,25 +57,16 @@ public class MobileEmployeeDetailsService {
 
     @Transactional(readOnly = true)
     public MobileEmployeeDetails loadForUser(User user) {
-        if (user == null || !StringUtils.hasText(user.getEmail())) {
+        if (user == null || user.getId() == null) {
             return MobileEmployeeDetails.empty();
         }
 
-        List<EmployeeEntity> profiles = employeeRepository.findMobileLoginProfilesByEmail(user.getEmail().trim());
-        if (profiles.isEmpty()) {
+        EmployeeEntity employee = employeeRepository.findMobileLoginProfileByUserId(user.getId()).orElse(null);
+        if (employee == null) {
             log.debug("Employee profile not found for mobile login userId={}", user.getId());
             return MobileEmployeeDetails.empty();
         }
-        if (profiles.size() > 1) {
-            log.warn("Multiple employee profiles found for mobile login userId={}. Selecting the highest-priority record.",
-                    user.getId());
-        }
-
-        EmployeeEntity employee = profiles.stream()
-                .filter(this::isActiveEmployee)
-                .findFirst()
-                .orElse(null);
-        if (employee == null) {
+        if (!isActiveEmployee(employee)) {
             log.debug("Active employee profile not found for mobile login userId={}", user.getId());
             return MobileEmployeeDetails.empty();
         }
@@ -89,8 +80,8 @@ public class MobileEmployeeDetailsService {
                 employee.getEmployeeId(),
                 textOrNull(employee.getEmployeeCode()),
                 textOrNull(employee.getFullName()),
-                buildPhotoDataUri(profiles),
-                resolveFaceData(profiles),
+                buildPhotoDataUri(List.of(employee)),
+                resolveFaceData(List.of(employee)),
                 designationId(employee),
                 designationName(employee),
                 departmentInfo.id(),

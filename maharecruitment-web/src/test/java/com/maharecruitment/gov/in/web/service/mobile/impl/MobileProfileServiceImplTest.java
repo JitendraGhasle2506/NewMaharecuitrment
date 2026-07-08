@@ -81,7 +81,7 @@ class MobileProfileServiceImplTest {
         EmployeeEntity employee = employee(101L, "EMP101", "old@example.com", "9876543210", preOnboarding);
 
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue("old@example.com")).thenReturn(Optional.of(user));
-        when(employeeRepository.findMobileLoginProfilesByEmail("old@example.com")).thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(userRepository.existsByEmailIgnoreCaseAndIdNot("new@example.com", 10L)).thenReturn(false);
         when(employeeRepository.existsByEmailIgnoreCaseAndEmployeeIdNot("new@example.com", 101L)).thenReturn(false);
         when(userRepository.existsByMobileNoAndIdNot("9123456789", 10L)).thenReturn(false);
@@ -113,7 +113,7 @@ class MobileProfileServiceImplTest {
         User user = user("old@example.com", "9876543210", "encoded-old");
         EmployeeEntity employee = employee(101L, "EMP101", "old@example.com", "9876543210", preOnboarding());
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue("old@example.com")).thenReturn(Optional.of(user));
-        when(employeeRepository.findMobileLoginProfilesByEmail("old@example.com")).thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(userRepository.existsByEmailIgnoreCaseAndIdNot("new@example.com", 10L)).thenReturn(true);
 
         assertThatThrownBy(() -> service().updateContact(
@@ -136,7 +136,7 @@ class MobileProfileServiceImplTest {
         MockMultipartFile photo = new MockMultipartFile("photo", "profile.jpg", "image/jpeg", new byte[] { 1, 2, 3 });
 
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue("employee@example.com")).thenReturn(Optional.of(user));
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com")).thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(fileStorageService.store(photo, "employee-photo"))
                 .thenReturn(new FileUploadResult("profile.jpg", "stored.jpg", "/uploads/profile.jpg", "image/jpeg", 3));
         when(employeeDetailsService.loadForUser(user)).thenReturn(details("updated-photo"));
@@ -162,7 +162,7 @@ class MobileProfileServiceImplTest {
         User user = user("employee@example.com", "9876543210", "encoded-old");
         EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com", "9876543210", preOnboarding());
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue("employee@example.com")).thenReturn(Optional.of(user));
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com")).thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(passwordEncoder.matches("OldPass@123", "encoded-old")).thenReturn(true);
         when(passwordEncoder.matches("NewPass@123", "encoded-old")).thenReturn(false);
         when(passwordEncoder.encode("NewPass@123")).thenReturn("encoded-new");
@@ -182,7 +182,7 @@ class MobileProfileServiceImplTest {
         User user = user("employee@example.com", "9876543210", "encoded-old");
         EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com", "9876543210", preOnboarding());
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue("employee@example.com")).thenReturn(Optional.of(user));
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com")).thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(passwordEncoder.matches("WrongPass@123", "encoded-old")).thenReturn(false);
 
         assertThatThrownBy(() -> service().changePassword(

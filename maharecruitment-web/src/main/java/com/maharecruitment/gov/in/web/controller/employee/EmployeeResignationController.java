@@ -1,8 +1,8 @@
 package com.maharecruitment.gov.in.web.controller.employee;
 
 import java.security.Principal;
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -44,13 +44,13 @@ public class EmployeeResignationController {
     @GetMapping
     public String viewResignationForm(Principal principal, Model model) {
         String email = principal.getName();
-        List<EmployeeEntity> profiles = employeeRepository.findDetailedProfilesByEmail(email);
-        if (profiles.isEmpty()) {
+        Optional<EmployeeEntity> profile = resolveCurrentEmployee(email);
+        if (profile.isEmpty()) {
             model.addAttribute("errorMessage", "Employee profile not found.");
             return "employee/profile-unavailable";
         }
         
-        EmployeeEntity currentEmployee = profiles.get(0);
+        EmployeeEntity currentEmployee = profile.get();
         model.addAttribute("employee", currentEmployee);
         
         List<EmployeeRelievingDto> records = relievingService.getAllRelievingRecords();
@@ -72,12 +72,12 @@ public class EmployeeResignationController {
                                     @org.springframework.web.bind.annotation.ModelAttribute("relievingDto") EmployeeRelievingDto dto,
                                     RedirectAttributes redirectAttributes) {
         String email = principal.getName();
-        List<EmployeeEntity> profiles = employeeRepository.findDetailedProfilesByEmail(email);
-        if (profiles.isEmpty()) {
+        Optional<EmployeeEntity> profile = resolveCurrentEmployee(email);
+        if (profile.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Employee profile not found.");
             return "redirect:/employee/dashboard";
         }
-        EmployeeEntity currentEmployee = profiles.get(0);
+        EmployeeEntity currentEmployee = profile.get();
 
         try {
             dto.setEmployeeId(currentEmployee.getEmployeeId());
@@ -99,5 +99,10 @@ public class EmployeeResignationController {
         }
 
         return "redirect:/employee/resignation";
+    }
+
+    private Optional<EmployeeEntity> resolveCurrentEmployee(String email) {
+        return userRepository.findByEmailIgnoreCaseAndActiveTrue(email)
+                .flatMap(user -> employeeRepository.findDetailedByUserId(user.getId()));
     }
 }

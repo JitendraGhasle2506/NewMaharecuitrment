@@ -91,8 +91,7 @@ class MobileAttendanceServiceImplTest {
         EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
         MockMultipartFile image = image();
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com"))
-                .thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDate(101L, TODAY))
                 .thenReturn(Optional.empty());
         when(fileStorageService.store(image, "mobile-attendance-photo"))
@@ -138,8 +137,7 @@ class MobileAttendanceServiceImplTest {
     void checkInRejectsAnotherEmployeeId() {
         authenticate("employee@example.com");
         EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com"))
-                .thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
 
         assertThatThrownBy(() -> service().checkIn(
                 999L,
@@ -171,8 +169,7 @@ class MobileAttendanceServiceImplTest {
         existing.setCheckInTime(LocalDateTime.of(2026, 7, 6, 9, 0));
         existing.setInTime("09:00");
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com"))
-                .thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDate(101L, TODAY))
                 .thenReturn(Optional.of(existing));
         when(fileStorageService.store(image, "mobile-attendance-photo"))
@@ -220,8 +217,7 @@ class MobileAttendanceServiceImplTest {
                 LocalDateTime.of(2026, 7, 6, 11, 15),
                 null);
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com"))
-                .thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(101L, fromDate, toDate))
                 .thenReturn(List.of(olderAttendance, latestAttendance));
         when(holidayRepository.findByHolidayDateBetween(fromDate, toDate)).thenReturn(List.of());
@@ -274,8 +270,7 @@ class MobileAttendanceServiceImplTest {
                 LocalDateTime.of(2026, 7, 6, 18, 0),
                 null);
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com"))
-                .thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(101L, fromDate, toDate))
                 .thenReturn(List.of(presentAttendance));
         when(holidayRepository.findByHolidayDateBetween(fromDate, toDate))

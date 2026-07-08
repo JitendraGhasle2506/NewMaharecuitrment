@@ -22,6 +22,7 @@ import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.AgencyAccountAccessService;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillListItemView;
 import com.maharecruitment.gov.in.invoice.dto.AgencyMonthlyBillView;
@@ -30,6 +31,8 @@ import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillPdfGenerator;
 import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillQrCodeGenerator;
 import com.maharecruitment.gov.in.invoice.service.AgencyMonthlyBillService;
 import com.maharecruitment.gov.in.invoice.service.model.GeneratedAgencyMonthlyBillDocument;
+import com.maharecruitment.gov.in.master.entity.AgencyMaster;
+import com.maharecruitment.gov.in.master.entity.AgencyStatus;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 
 @Controller
@@ -134,12 +137,17 @@ public class AgencyMonthlyBillController {
         String actorEmail = resolveActorEmail();
         User user = userAffiliationService.loadUserByEmail(actorEmail);
         Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
-        if (agencyId != null) {
-            return agencyId;
+        if (agencyId == null) {
+            throw new TaxInvoiceException(AgencyAccountAccessService.MISSING_AGENCY_MAPPING_MESSAGE);
         }
-        return agencyMasterRepository.findByOfficialEmailIgnoreCase(actorEmail)
-                .map(agency -> agency.getAgencyId())
-                .orElseThrow(() -> new TaxInvoiceException("No agency profile is linked with this login user."));
+
+        AgencyMaster agency = agencyMasterRepository.findById(agencyId)
+                .orElseThrow(() -> new TaxInvoiceException(
+                        AgencyAccountAccessService.MISSING_AGENCY_MAPPING_MESSAGE));
+        if (!Boolean.TRUE.equals(user.getActive()) || AgencyStatus.ACTIVE != agency.getStatus()) {
+            throw new TaxInvoiceException(AgencyAccountAccessService.INACTIVE_AGENCY_MESSAGE);
+        }
+        return agency.getAgencyId();
     }
 
     private String resolveActorEmail() {

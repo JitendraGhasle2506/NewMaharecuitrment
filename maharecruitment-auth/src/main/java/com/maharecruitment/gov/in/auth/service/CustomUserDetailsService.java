@@ -19,14 +19,19 @@ import com.maharecruitment.gov.in.auth.util.UserValidationUtil;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final AgencyAccountAccessService agencyAccountAccessService;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
+    public CustomUserDetailsService(
+            UserRepository userRepository,
+            AgencyAccountAccessService agencyAccountAccessService) {
         this.userRepository = userRepository;
+        this.agencyAccountAccessService = agencyAccountAccessService;
     }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = loadDomainUserByIdentifier(username);
+        agencyAccountAccessService.validateLoginAccess(user);
 
         List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
                 .map(role -> AuthorityUtil.toAuthority(role.getName()))
@@ -38,6 +43,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .withUsername(user.getEmail())
                 .password(user.getPassword())
                 .authorities(authorities)
+                .disabled(!Boolean.TRUE.equals(user.getActive()))
                 .build();
     }
 
@@ -60,9 +66,9 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         String normalized = identifier.trim();
         if (normalized.matches("^[0-9]{10,15}$")) {
-            return userRepository.findByMobileNoAndActiveTrue(normalized);
+            return userRepository.findByMobileNo(normalized);
         }
 
-        return userRepository.findByEmailIgnoreCaseAndActiveTrue(UserValidationUtil.normalizeEmail(normalized));
+        return userRepository.findByEmailIgnoreCase(UserValidationUtil.normalizeEmail(normalized));
     }
 }

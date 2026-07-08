@@ -21,12 +21,9 @@ import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
 import com.maharecruitment.gov.in.attendance.service.InternalEmployeeAttendanceReportService;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportFilter;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceReportRow;
-import com.maharecruitment.gov.in.auth.entity.User;
-import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
-import com.maharecruitment.gov.in.master.entity.AgencyMaster;
-import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
-import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
 import com.maharecruitment.gov.in.web.service.agency.AgencyAttendanceReportPageService;
+import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyAttendanceReportFilter;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyAttendanceReportPageView;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyAttendanceReportRow;
@@ -43,18 +40,15 @@ public class AgencyAttendanceReportPageServiceImpl implements AgencyAttendanceRe
 
     private final AttendanceRegisterService attendanceRegisterService;
     private final InternalEmployeeAttendanceReportService internalAttendanceReportService;
-    private final UserAffiliationService userAffiliationService;
-    private final AgencyMasterRepository agencyMasterRepository;
+    private final AgencyAccessService agencyAccessService;
 
     public AgencyAttendanceReportPageServiceImpl(
             AttendanceRegisterService attendanceRegisterService,
             InternalEmployeeAttendanceReportService internalAttendanceReportService,
-            UserAffiliationService userAffiliationService,
-            AgencyMasterRepository agencyMasterRepository) {
+            AgencyAccessService agencyAccessService) {
         this.attendanceRegisterService = attendanceRegisterService;
         this.internalAttendanceReportService = internalAttendanceReportService;
-        this.userAffiliationService = userAffiliationService;
-        this.agencyMasterRepository = agencyMasterRepository;
+        this.agencyAccessService = agencyAccessService;
     }
 
     @Override
@@ -148,20 +142,7 @@ public class AgencyAttendanceReportPageServiceImpl implements AgencyAttendanceRe
     }
 
     private AgencyUserContext resolveAgencyUserContext(String actorEmail) {
-        if (!StringUtils.hasText(actorEmail)) {
-            throw new RecruitmentNotificationException("Authenticated user is required.");
-        }
-
-        User user = userAffiliationService.loadUserByEmail(actorEmail.trim());
-        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
-        AgencyMaster agency = agencyId == null ? null : agencyMasterRepository.findById(agencyId).orElse(null);
-        if (agency == null) {
-            agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
-                    .orElseThrow(() -> new RecruitmentNotificationException(
-                            "No agency profile is linked with this login user."));
-        }
-
-        return new AgencyUserContext(agency.getAgencyId(), agency.getAgencyName());
+        return agencyAccessService.requireActiveAgencyContext(actorEmail);
     }
 
     private int resolveMonth(Integer month, LocalDate today) {
@@ -296,6 +277,4 @@ public class AgencyAttendanceReportPageServiceImpl implements AgencyAttendanceRe
         return Objects.toString(value, "");
     }
 
-    private record AgencyUserContext(Long agencyId, String agencyName) {
-    }
 }

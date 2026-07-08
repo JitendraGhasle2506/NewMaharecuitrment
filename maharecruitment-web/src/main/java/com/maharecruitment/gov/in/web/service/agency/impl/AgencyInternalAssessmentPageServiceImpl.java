@@ -4,36 +4,28 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
-import com.maharecruitment.gov.in.auth.entity.User;
-import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
-import com.maharecruitment.gov.in.master.entity.AgencyMaster;
-import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
-import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyInternalAssessmentService;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateInterviewScheduleInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyInternalAssessmentCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyInternalAssessmentDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyInternalAssessmentProjectView;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewScheduleForm;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
 import com.maharecruitment.gov.in.web.service.agency.AgencyInternalAssessmentPageService;
+import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
 
 @Service
 @Transactional(readOnly = true)
 public class AgencyInternalAssessmentPageServiceImpl implements AgencyInternalAssessmentPageService {
 
     private final RecruitmentAgencyInternalAssessmentService internalAssessmentService;
-    private final UserAffiliationService userAffiliationService;
-    private final AgencyMasterRepository agencyMasterRepository;
+    private final AgencyAccessService agencyAccessService;
 
     public AgencyInternalAssessmentPageServiceImpl(
             RecruitmentAgencyInternalAssessmentService internalAssessmentService,
-            UserAffiliationService userAffiliationService,
-            AgencyMasterRepository agencyMasterRepository) {
+            AgencyAccessService agencyAccessService) {
         this.internalAssessmentService = internalAssessmentService;
-        this.userAffiliationService = userAffiliationService;
-        this.agencyMasterRepository = agencyMasterRepository;
+        this.agencyAccessService = agencyAccessService;
     }
 
     @Override
@@ -86,22 +78,6 @@ public class AgencyInternalAssessmentPageServiceImpl implements AgencyInternalAs
     }
 
     private AgencyUserContext resolveAgencyUserContext(String actorEmail) {
-        if (!StringUtils.hasText(actorEmail)) {
-            throw new RecruitmentNotificationException("Authenticated user is required.");
-        }
-
-        User user = userAffiliationService.loadUserByEmail(actorEmail);
-        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
-        AgencyMaster agency = agencyId == null ? null : agencyMasterRepository.findById(agencyId).orElse(null);
-        if (agency == null) {
-            agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
-                    .orElseThrow(() -> new RecruitmentNotificationException(
-                            "No agency profile is linked with this login user."));
-        }
-
-        return new AgencyUserContext(user.getId(), agency.getAgencyId());
-    }
-
-    private record AgencyUserContext(Long userId, Long agencyId) {
+        return agencyAccessService.requireActiveAgencyContext(actorEmail);
     }
 }

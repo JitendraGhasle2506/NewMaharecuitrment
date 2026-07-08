@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.util.UserValidationUtil;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeProfile;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
@@ -57,7 +58,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     @Transactional(readOnly = true)
     public EmployeeProfileDTO getCurrentEmployeeProfile(String loginEmail) {
         User user = requireUser(loginEmail);
-        EmployeeEntity employee = requireEmployee(loginEmail);
+        EmployeeEntity employee = requireEmployee(user);
         EmployeeProfile profile = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()).orElse(null);
         return toDto(profile, user, employee);
     }
@@ -66,7 +67,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     @Transactional
     public EmployeeProfileDTO updateCurrentEmployeeProfile(String loginEmail, EmployeeProfileDTO profileDTO) {
         User user = requireUser(loginEmail);
-        EmployeeEntity employee = requireEmployee(loginEmail);
+        EmployeeEntity employee = requireEmployee(user);
         EmployeeProfile profile = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()).orElseGet(() -> {
             EmployeeProfile created = new EmployeeProfile();
             created.setEmployee(employee);
@@ -84,10 +85,14 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         profile.setEmergencyContactNo(normalizeText(profileDTO.getEmergencyContactNo()));
         profile.setCurrentAddress(normalizeText(profileDTO.getCurrentAddress()));
         profile.setPermanentAddress(normalizeText(profileDTO.getPermanentAddress()));
+        boolean userEmailChanged = syncUserAndEmployeeEmail(user, employee, profileDTO.getEmail());
         profile.setUpdatedBy(user.getEmail());
         syncEmployeeMaster(employee, profileDTO, profile);
 
         EmployeeProfile savedProfile = employeeProfileRepository.save(profile);
+        if (userEmailChanged) {
+            userRepository.save(user);
+        }
         EmployeeEntity savedEmployee = employeeRepository.save(employee);
         log.info("Employee profile saved for employeeId={} userId={}", employee.getEmployeeId(), user.getId());
         return toDto(savedProfile, user, savedEmployee);
@@ -97,7 +102,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     @Transactional
     public EmployeeProfileDTO uploadCurrentEmployeePhoto(String loginEmail, MultipartFile file) {
         User user = requireUser(loginEmail);
-        EmployeeEntity employee = requireEmployee(loginEmail);
+        EmployeeEntity employee = requireEmployee(user);
         if (file == null || file.isEmpty()) {
             throw new RecruitmentNotificationException("Photo file is required.");
         }
@@ -135,8 +140,8 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     @Override
     @Transactional(readOnly = true)
     public Optional<Path> resolveCurrentEmployeePhoto(String loginEmail) {
-        requireUser(loginEmail);
-        EmployeeEntity employee = requireEmployee(loginEmail);
+        User user = requireUser(loginEmail);
+        EmployeeEntity employee = requireEmployee(user);
         EmployeeProfile profile = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()).orElse(null);
         String photoPath = resolvePhotoPath(profile, employee);
         if (!StringUtils.hasText(photoPath) || !fileStorageService.isManagedFileAllowed(photoPath, EMPLOYEE_PHOTO_MODULE)) {
@@ -153,19 +158,15 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
                 .orElseThrow(() -> new RecruitmentNotificationException("Logged-in user account is not active."));
     }
 
-    private Optional<EmployeeEntity> resolveEmployee(String loginEmail) {
-        if (!StringUtils.hasText(loginEmail)) {
+    private Optional<EmployeeEntity> resolveEmployee(User user) {
+        if (user == null || user.getId() == null) {
             return Optional.empty();
         }
-        List<EmployeeEntity> employeeProfiles = employeeRepository.findDetailedProfilesByEmail(loginEmail.trim());
-        if (employeeProfiles.size() > 1) {
-            log.warn("Multiple employee master profiles found for loginEmail={}. Selecting first profile.", loginEmail);
-        }
-        return employeeProfiles.stream().findFirst();
+        return employeeRepository.findDetailedByUserId(user.getId());
     }
 
-    private EmployeeEntity requireEmployee(String loginEmail) {
-        return resolveEmployee(loginEmail)
+    private EmployeeEntity requireEmployee(User user) {
+        return resolveEmployee(user)
                 .orElseThrow(() -> new RecruitmentNotificationException("Employee master record was not found for the logged-in user."));
     }
 
@@ -217,6 +218,30 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         setIfText(profile.getEmergencyContactNo(), employee::setEmergencyContactMobile);
         setIfText(profile.getAlternateMobileNo(), employee::setEmergencyContactAltMobile);
         setIfText(profile.getCurrentAddress(), employee::setAddress);
+    }
+
+    private boolean syncUserAndEmployeeEmail(User user, EmployeeEntity employee, String email) {
+        if (!StringUtils.hasText(email)) {
+            return false;
+        }
+        String normalizedEmail = normalizeEmail(email);
+        boolean userEmailChanged = !equalsIgnoreCase(user.getEmail(), normalizedEmail);
+        boolean employeeEmailChanged = !equalsIgnoreCase(employee.getEmail(), normalizedEmail);
+        if (!userEmailChanged && !employeeEmailChanged) {
+            return false;
+        }
+
+        if (userEmailChanged && userRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, user.getId())) {
+            throw new RecruitmentNotificationException("Email address is already registered.");
+        }
+        if (employeeEmailChanged
+                && employeeRepository.existsByEmailIgnoreCaseAndEmployeeIdNot(normalizedEmail, employee.getEmployeeId())) {
+            throw new RecruitmentNotificationException("Email address is already registered.");
+        }
+
+        user.setEmail(normalizedEmail);
+        employee.setEmail(normalizedEmail);
+        return userEmailChanged;
     }
 
     private String resolveRole(User user, EmployeeEntity employee) {
@@ -310,6 +335,21 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
             return null;
         }
         return normalized;
+    }
+
+    private String normalizeEmail(String value) {
+        try {
+            return UserValidationUtil.normalizeEmail(value);
+        } catch (IllegalArgumentException ex) {
+            throw new RecruitmentNotificationException(ex.getMessage());
+        }
+    }
+
+    private boolean equalsIgnoreCase(String first, String second) {
+        if (first == null) {
+            return second == null;
+        }
+        return second != null && first.trim().equalsIgnoreCase(second.trim());
     }
 
     private LocalDate normalizeDob(LocalDate value) {

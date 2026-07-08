@@ -25,11 +25,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
-import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
-import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
-import com.maharecruitment.gov.in.master.entity.AgencyMaster;
-import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEmploymentEntity;
@@ -44,7 +40,9 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDet
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingEmploymentForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
 import com.maharecruitment.gov.in.web.service.agency.AgencyOnboardingPageService;
+import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardedEmployeeView;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.onboarding.CandidateIdentityValidationService;
@@ -60,8 +58,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     private static final String DEFAULT_VALUE = "-";
     private static final List<String> CURRENT_ONBOARDED_STATUSES = List.of("ACTIVE", "RESIGNED");
 
-    private final UserAffiliationService userAffiliationService;
-    private final AgencyMasterRepository agencyMasterRepository;
+    private final AgencyAccessService agencyAccessService;
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
     private final EmployeeRepository employeeRepository;
@@ -73,8 +70,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     private final FileStorageService fileStorageService;
 
     public AgencyOnboardingPageServiceImpl(
-            UserAffiliationService userAffiliationService,
-            AgencyMasterRepository agencyMasterRepository,
+            AgencyAccessService agencyAccessService,
             RecruitmentInterviewDetailRepository interviewDetailRepository,
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
             EmployeeRepository employeeRepository,
@@ -84,8 +80,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             ResourceLevelExperienceRepository resourceLevelExperienceRepository,
             CandidateIdentityValidationService candidateIdentityValidationService,
             FileStorageService fileStorageService) {
-        this.userAffiliationService = userAffiliationService;
-        this.agencyMasterRepository = agencyMasterRepository;
+        this.agencyAccessService = agencyAccessService;
         this.interviewDetailRepository = interviewDetailRepository;
         this.preOnboardingRepository = preOnboardingRepository;
         this.employeeRepository = employeeRepository;
@@ -940,23 +935,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     }
 
     private AgencyUserContext resolveAgencyUserContext(String actorEmail) {
-        if (!StringUtils.hasText(actorEmail)) {
-            throw new RecruitmentNotificationException("Authenticated user is required.");
-        }
-
-        User user = userAffiliationService.loadUserByEmail(actorEmail);
-        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
-        AgencyMaster agency = agencyId == null ? null : agencyMasterRepository.findById(agencyId).orElse(null);
-        if (agency == null) {
-            agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
-                    .orElseThrow(() -> new RecruitmentNotificationException(
-                            "No agency profile is linked with this login user."));
-        }
-
-        return new AgencyUserContext(user.getId(), agency.getAgencyId(), agency.getAgencyName());
-    }
-
-    private record AgencyUserContext(Long userId, Long agencyId, String agencyName) {
+        return agencyAccessService.requireActiveAgencyContext(actorEmail);
     }
 
     private record DepartmentInfo(String departmentName, String subDepartmentName) {

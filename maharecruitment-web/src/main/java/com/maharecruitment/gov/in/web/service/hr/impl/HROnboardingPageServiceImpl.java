@@ -465,6 +465,8 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         request.setRoleIds(List.of(employeeRole.getId()));
 
         User createdUser = userManagementService.create(request);
+        savedEmployee.setUser(createdUser);
+        employeeRepository.save(savedEmployee);
 
         String notificationWarning = null;
         try {

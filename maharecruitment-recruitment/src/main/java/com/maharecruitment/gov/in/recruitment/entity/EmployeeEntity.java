@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.recruitment.entity;
 import java.time.LocalDate;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
+import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
 import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.entity.SubDepartment;
@@ -38,6 +39,10 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "employee_id")
     private Long employeeId;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
+    private User user;
 
     @Column(name = "employee_code", unique = true, nullable = true, length = 50)
     private String employeeCode;

@@ -97,10 +97,11 @@ public class MobileAuthenticationServiceImpl implements MobileAuthenticationServ
         if (employee == null
                 || !StringUtils.hasText(employee.getStatus())
                 || !"ACTIVE".equalsIgnoreCase(employee.getStatus().trim())
-                || !StringUtils.hasText(employee.getEmail())) {
+                || employee.getUser() == null
+                || !StringUtils.hasText(employee.getUser().getEmail())) {
             throw new DisabledException("Active employee profile was not found for mobile login.");
         }
-        return employee.getEmail().trim();
+        return employee.getUser().getEmail().trim();
     }
 
     private String normalizeIdentifier(String username) {

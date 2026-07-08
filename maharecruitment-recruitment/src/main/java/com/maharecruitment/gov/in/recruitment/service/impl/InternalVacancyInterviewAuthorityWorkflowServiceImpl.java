@@ -243,9 +243,11 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                 .map(User::getId)
                 .orElse(null);
 
-        Long employeeId = employeeRepository.findByEmail(actorEmail.trim())
-                .map(EmployeeEntity::getEmployeeId)
-                .orElse(null);
+        Long employeeId = userId == null
+                ? null
+                : employeeRepository.findByUser_Id(userId)
+                        .map(EmployeeEntity::getEmployeeId)
+                        .orElse(null);
 
         if (userId == null && employeeId == null) {
             throw new RecruitmentNotificationException("Authenticated actor not found.");

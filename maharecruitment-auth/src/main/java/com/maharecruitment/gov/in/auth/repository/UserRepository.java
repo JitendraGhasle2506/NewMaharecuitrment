@@ -15,8 +15,6 @@ import com.maharecruitment.gov.in.auth.entity.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-        User findByEmail(String email);
-
         Optional<User> findByEmailIgnoreCase(String email);
 
         Optional<User> findByEmailIgnoreCaseAndActiveTrue(String email);

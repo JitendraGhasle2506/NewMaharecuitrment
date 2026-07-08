@@ -22,12 +22,14 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
+import com.maharecruitment.gov.in.web.filter.AgencyAccountStatusFilter;
 import com.maharecruitment.gov.in.web.filter.CookieAttributeFilter;
 import com.maharecruitment.gov.in.web.filter.MobileBearerTokenAuthenticationFilter;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.security.host.HostHeaderValidationFilter;
 import com.maharecruitment.gov.in.web.security.host.HostProperties;
 import com.maharecruitment.gov.in.web.security.host.HostValidator;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,6 +64,20 @@ public class SecurityConfig {
     @Bean
     HostHeaderValidationFilter hostHeaderValidationFilter(HostValidator hostValidator) {
         return new HostHeaderValidationFilter(hostValidator);
+    }
+
+    @Bean
+    AgencyAccountStatusFilter agencyAccountStatusFilter(AgencyAccessService agencyAccessService) {
+        return new AgencyAccountStatusFilter(agencyAccessService);
+    }
+
+    @Bean
+    FilterRegistrationBean<AgencyAccountStatusFilter> agencyAccountStatusFilterRegistration(
+            AgencyAccountStatusFilter agencyAccountStatusFilter) {
+        FilterRegistrationBean<AgencyAccountStatusFilter> registration = new FilterRegistrationBean<>(
+                agencyAccountStatusFilter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean
@@ -105,6 +121,7 @@ public class SecurityConfig {
             TransportSecurityProperties transportSecurityProperties,
             HostHeaderValidationFilter hostHeaderValidationFilter,
             MobileBearerTokenAuthenticationFilter mobileBearerTokenAuthenticationFilter,
+            AgencyAccountStatusFilter agencyAccountStatusFilter,
             com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler successHandler,
             CustomLoginFailureHandler loginFailureHandler,
             CustomAccessDeniedHandler accessDeniedHandler,
@@ -113,6 +130,7 @@ public class SecurityConfig {
         http.authenticationProvider(authenticationProvider);
         http.addFilterBefore(hostHeaderValidationFilter, ChannelProcessingFilter.class);
         http.addFilterBefore(mobileBearerTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(agencyAccountStatusFilter, UsernamePasswordAuthenticationFilter.class);
 
         http
             // 🔥 (Optional) disable CSRF temporarily if needed

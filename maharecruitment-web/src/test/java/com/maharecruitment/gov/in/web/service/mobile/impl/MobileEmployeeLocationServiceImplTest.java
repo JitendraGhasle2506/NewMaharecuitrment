@@ -58,8 +58,7 @@ class MobileEmployeeLocationServiceImplTest {
                 150,
                 "Y");
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com"))
-                .thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(employeeLocationMappingRepository.findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(101L))
                 .thenReturn(List.of(mapping(employee, location)));
 
@@ -99,8 +98,7 @@ class MobileEmployeeLocationServiceImplTest {
                 100,
                 "N");
 
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com"))
-                .thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(employeeLocationMappingRepository.findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(101L))
                 .thenReturn(List.of(mapping(employee, inactiveLocation), mapping(employee, activeLocation)));
 
@@ -115,8 +113,7 @@ class MobileEmployeeLocationServiceImplTest {
     void getMappedLocationsReturnsEmptyListWhenNoMappingExists() {
         authenticate("employee@example.com");
         EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com"))
-                .thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(employeeLocationMappingRepository.findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(101L))
                 .thenReturn(List.of());
 
@@ -130,8 +127,7 @@ class MobileEmployeeLocationServiceImplTest {
     void getMappedLocationsRejectsAnotherEmployeeId() {
         authenticate("employee@example.com");
         EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
-        when(employeeRepository.findMobileLoginProfilesByEmail("employee@example.com"))
-                .thenReturn(List.of(employee));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
 
         assertThatThrownBy(() -> service().getMappedLocations(999L))
                 .isInstanceOfSatisfying(MobileApiException.class, ex -> {

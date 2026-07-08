@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.recruitment.dto.employee.EmployeeTaskLogDto;
 import com.maharecruitment.gov.in.recruitment.dto.employee.TaskSubmissionForm;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
@@ -26,21 +27,23 @@ public class EmployeeTaskServiceImpl implements EmployeeTaskService {
 
     private final EmployeeTaskLogRepository employeeTaskLogRepository;
     private final EmployeeRepository employeeRepository;
+    private final UserRepository userRepository;
     private final DailyAttendanceInternalRepository dailyAttendanceInternalRepository;
 
     public EmployeeTaskServiceImpl(EmployeeTaskLogRepository employeeTaskLogRepository,
                                    EmployeeRepository employeeRepository,
+                                   UserRepository userRepository,
                                    DailyAttendanceInternalRepository dailyAttendanceInternalRepository) {
         this.employeeTaskLogRepository = employeeTaskLogRepository;
         this.employeeRepository = employeeRepository;
+        this.userRepository = userRepository;
         this.dailyAttendanceInternalRepository = dailyAttendanceInternalRepository;
     }
 
     @Override
     @Transactional
     public void saveTasks(TaskSubmissionForm taskForm, String loginEmail) {
-        EmployeeEntity employee = employeeRepository.findByEmail(loginEmail)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        EmployeeEntity employee = requireEmployee(loginEmail);
 
         if (taskForm != null && taskForm.getTaskList() != null) {
             for (EmployeeTaskLogDto dto : taskForm.getTaskList()) {
@@ -78,8 +81,7 @@ public class EmployeeTaskServiceImpl implements EmployeeTaskService {
 
     @Override
     public Page<EmployeeTaskLogDto> getRecentTasks(String loginEmail, Integer month, Integer year, Pageable pageable) {
-        EmployeeEntity employee = employeeRepository.findByEmail(loginEmail)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        EmployeeEntity employee = requireEmployee(loginEmail);
 
         Page<EmployeeTaskLogEntity> entityPage;
         if (month != null && year != null) {
@@ -113,8 +115,7 @@ public class EmployeeTaskServiceImpl implements EmployeeTaskService {
 
     @Override
     public String fetchInTime(String loginEmail, String dateString) {
-        EmployeeEntity employee = employeeRepository.findByEmail(loginEmail)
-                .orElse(null);
+        EmployeeEntity employee = resolveEmployee(loginEmail).orElse(null);
         if (employee != null && dateString != null && !dateString.isEmpty()) {
             try {
                 LocalDate date = LocalDate.parse(dateString);
@@ -128,5 +129,15 @@ public class EmployeeTaskServiceImpl implements EmployeeTaskService {
             }
         }
         return null;
+    }
+
+    private EmployeeEntity requireEmployee(String loginEmail) {
+        return resolveEmployee(loginEmail)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+    }
+
+    private Optional<EmployeeEntity> resolveEmployee(String loginEmail) {
+        return userRepository.findByEmailIgnoreCase(loginEmail)
+                .flatMap(user -> employeeRepository.findByUser_Id(user.getId()));
     }
 }

@@ -20,7 +20,11 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     Optional<EmployeeEntity> findByEmployeeCodeIgnoreCase(String employeeCode);
 
-    Optional<EmployeeEntity> findByEmail(String email);
+    Optional<EmployeeEntity> findByUser_Id(Long userId);
+
+    Optional<EmployeeEntity> findByUser_IdAndStatusIgnoreCase(Long userId, String status);
+
+    boolean existsByUser_Id(Long userId);
 
     boolean existsByEmailIgnoreCaseAndEmployeeIdNot(String email, Long employeeId);
 
@@ -57,12 +61,8 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             "preOnboarding.interviewDetail.recruitmentNotification",
             "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
     @Query("select employee from EmployeeEntity employee "
-            + "where upper(trim(employee.email)) = upper(trim(:email)) "
-            + "order by case when employee.preOnboarding is not null then 0 else 1 end, "
-            + "case when upper(coalesce(employee.status, '')) = 'ACTIVE' then 0 else 1 end, "
-            + "coalesce(employee.onboardingDate, employee.joiningDate) desc, "
-            + "employee.employeeId desc")
-    List<EmployeeEntity> findDetailedProfilesByEmail(@Param("email") String email);
+            + "where employee.user.id = :userId")
+    Optional<EmployeeEntity> findDetailedByUserId(@Param("userId") Long userId);
 
     @EntityGraph(attributePaths = {
             "departmentRegistration",
@@ -71,12 +71,8 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             "designation",
             "preOnboarding" })
     @Query("select employee from EmployeeEntity employee "
-            + "where upper(trim(employee.email)) = upper(trim(:email)) "
-            + "order by case when upper(coalesce(employee.status, '')) = 'ACTIVE' then 0 else 1 end, "
-            + "case when employee.preOnboarding is not null then 0 else 1 end, "
-            + "coalesce(employee.onboardingDate, employee.joiningDate) desc, "
-            + "employee.employeeId desc")
-    List<EmployeeEntity> findMobileLoginProfilesByEmail(@Param("email") String email);
+            + "where employee.user.id = :userId")
+    Optional<EmployeeEntity> findMobileLoginProfileByUserId(@Param("userId") Long userId);
 
     @EntityGraph(attributePaths = {
             "agency",

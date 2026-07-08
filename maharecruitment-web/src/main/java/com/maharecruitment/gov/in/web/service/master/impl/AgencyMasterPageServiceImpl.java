@@ -12,8 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.maharecruitment.gov.in.auth.entity.User;
-import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.master.dto.AgencyEscalationMatrixRequest;
 import com.maharecruitment.gov.in.master.dto.AgencyEscalationMatrixResponse;
 import com.maharecruitment.gov.in.master.dto.AgencyMasterRequest;
@@ -25,6 +23,8 @@ import com.maharecruitment.gov.in.master.service.AgencyMasterService;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.master.AgencyEscalationMatrixForm;
 import com.maharecruitment.gov.in.web.dto.master.AgencyMasterForm;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
+import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
 import com.maharecruitment.gov.in.web.service.master.AgencyMasterPageService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
@@ -39,17 +39,17 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
     private final AgencyMasterService agencyMasterService;
     private final FileStorageService fileStorageService;
     private final AccountNotificationService accountNotificationService;
-    private final UserAffiliationService userAffiliationService;
+    private final AgencyAccessService agencyAccessService;
 
     public AgencyMasterPageServiceImpl(
             AgencyMasterService agencyMasterService,
             FileStorageService fileStorageService,
             AccountNotificationService accountNotificationService,
-            UserAffiliationService userAffiliationService) {
+            AgencyAccessService agencyAccessService) {
         this.agencyMasterService = agencyMasterService;
         this.fileStorageService = fileStorageService;
         this.accountNotificationService = accountNotificationService;
-        this.userAffiliationService = userAffiliationService;
+        this.agencyAccessService = agencyAccessService;
     }
 
     @Override
@@ -182,15 +182,9 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
     }
 
     public AgencyMasterResponse getAgencyProfile(String email) {
-        User user = userAffiliationService.loadUserByEmail(email);
-        Long agencyId = userAffiliationService.resolvePrimaryAgencyId(user);
-        AgencyMaster agency = agencyId == null
-                ? null
-                : agencyMasterRepository.findDetailedByAgencyId(agencyId).orElse(null);
-        if (agency == null) {
-            agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
-                    .orElseThrow(() -> new IllegalArgumentException("No agency profile is linked with this login user."));
-        }
+        AgencyUserContext context = agencyAccessService.requireActiveAgencyContext(email);
+        AgencyMaster agency = agencyMasterRepository.findDetailedByAgencyId(context.agencyId())
+                .orElseThrow(() -> new IllegalArgumentException("No agency profile is linked with this login user."));
 
         AgencyMasterResponse response = new AgencyMasterResponse();
 

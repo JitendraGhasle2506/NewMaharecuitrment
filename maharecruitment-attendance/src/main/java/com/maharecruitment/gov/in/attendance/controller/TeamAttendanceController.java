@@ -39,8 +39,7 @@ public class TeamAttendanceController {
         if ("HOD".equalsIgnoreCase(roleType)) {
             approverId = sessionUser.id();
         } else {
-            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            EmployeeEntity employee = requireEmployee(sessionUser);
             approverId = employee.getEmployeeId();
         }
         
@@ -90,5 +89,10 @@ public class TeamAttendanceController {
             if (!months[i].isEmpty()) monthMap.put(i + 1, months[i]);
         }
         return monthMap;
+    }
+
+    private EmployeeEntity requireEmployee(SessionUserDTO sessionUser) {
+        return employeeRepository.findByUser_Id(sessionUser.id())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
     }
 }

@@ -56,8 +56,7 @@ public class ApplyLeaveMasterController {
     private void populateApplyLeaveModel(Model model, HttpSession session) {
         SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
         if (sessionUser != null) {
-            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            EmployeeEntity employee = requireEmployee(sessionUser);
             model.addAttribute("employee", employee);
         }
         model.addAttribute("leaveTypes", getLeaveTypesWithCompOff());
@@ -103,8 +102,7 @@ public class ApplyLeaveMasterController {
     public String showLeaveHistory(Model model, HttpSession session) {
         SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
         if (sessionUser != null) {
-            EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+            EmployeeEntity employee = requireEmployee(sessionUser);
             model.addAttribute("leaveHistory", leaveApplicationService.getLeaveApplicationsByEmployee(employee.getEmployeeId()));
         }
         return "attendance/view-leave";
@@ -122,8 +120,7 @@ public class ApplyLeaveMasterController {
                     "message", "Session expired or invalid user.");
         }
 
-        EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+        EmployeeEntity employee = requireEmployee(sessionUser);
         boolean valid = leaveApplicationService.isValidCompOffWorkedDate(employee.getEmployeeId(), workedDate);
         return Map.of(
                 "valid", valid,
@@ -142,8 +139,7 @@ public class ApplyLeaveMasterController {
             return "redirect:/login";
         }
 
-        EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+        EmployeeEntity employee = requireEmployee(sessionUser);
 
         leaveApplication.setEmployeeId(employee.getEmployeeId());
         if (bindingResult.hasErrors()) {
@@ -172,8 +168,7 @@ public class ApplyLeaveMasterController {
             return "redirect:/login";
         }
 
-        EmployeeEntity employee = employeeRepository.findByEmail(sessionUser.email())
-                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+        EmployeeEntity employee = requireEmployee(sessionUser);
         try {
             leaveApplicationService.cancelLeaveApplication(leaveId, employee.getEmployeeId());
             redirectAttributes.addFlashAttribute("success", "Leave application cancelled successfully.");
@@ -181,5 +176,10 @@ public class ApplyLeaveMasterController {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/employee/viewLeave";
+    }
+
+    private EmployeeEntity requireEmployee(SessionUserDTO sessionUser) {
+        return employeeRepository.findByUser_Id(sessionUser.id())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
     }
 }
