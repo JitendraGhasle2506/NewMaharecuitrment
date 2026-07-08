@@ -470,6 +470,20 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     @Query("select e from EmployeeEntity e "
             + "where upper(trim(coalesce(e.status, ''))) = 'ACTIVE' "
             + "and e.designation.designationId = :designationId "
+            + "and (:search is null or "
+            + "     lower(cast(e.fullName as String)) like :search or "
+            + "     lower(cast(e.employeeCode as String)) like :search or "
+            + "     lower(cast(e.email as String)) like :search) "
+            + "order by e.fullName asc, e.employeeId asc")
+    Page<EmployeeEntity> findActiveByDesignationWithSearch(
+            @Param("designationId") Long designationId,
+            @Param("search") String search,
+            Pageable pageable);
+
+    @EntityGraph(attributePaths = "designation")
+    @Query("select e from EmployeeEntity e "
+            + "where upper(trim(coalesce(e.status, ''))) = 'ACTIVE' "
+            + "and e.designation.designationId = :designationId "
             + "and upper(trim(coalesce(e.levelCode, ''))) = upper(trim(:levelCode)) "
             + "and (:search is null or "
             + "     lower(cast(e.fullName as String)) like :search or "

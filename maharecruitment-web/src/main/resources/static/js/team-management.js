@@ -4,6 +4,633 @@
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
 
     const state = {
+        cells: [],
+        selectedCellId: null,
+        positions: [],
+        designations: [],
+        levels: [],
+        employeeRequestId: 0,
+        cellRequestId: 0
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const apiUrl = (path) => `${contextPath}${path}`;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!$('tm2CellSource')) {
+            return;
+        }
+
+        readCells();
+        bindNewScreenEvents();
+        renderWingTree();
+        renderEmptyState();
+        resetPositionForm();
+
+        try {
+            await loadDesignations();
+            if (state.cells.length) {
+                await selectCell(state.cells[0].id);
+            }
+        } catch (error) {
+            showAlert(error.message, 'danger');
+        }
+    });
+
+    function bindNewScreenEvents() {
+        $('tm2WingTree').addEventListener('click', async (event) => {
+            const button = event.target.closest('button[data-cell-id]');
+            if (!button) {
+                return;
+            }
+            await selectCell(Number(button.dataset.cellId));
+        });
+
+        $('tm2SearchInput').addEventListener('input', () => {
+            renderWingTree();
+            renderPositionsTable();
+        });
+
+        $('tm2PositionForm').addEventListener('submit', savePosition);
+        $('tm2PositionResetButton').addEventListener('click', resetPositionForm);
+        $('tm2DesignationId').addEventListener('change', async () => {
+            try {
+                await loadLevels();
+                await loadEmployees();
+                updatePositionName();
+            } catch (error) {
+                showAlert(error.message, 'danger');
+            }
+        });
+        $('tm2PositionLevelCode').addEventListener('change', async () => {
+            updatePositionName();
+            try {
+                await loadEmployees();
+            } catch (error) {
+                showAlert(error.message, 'danger');
+            }
+        });
+        $('tm2PositionsBody').addEventListener('click', handlePositionAction);
+    }
+
+    function readCells() {
+        state.cells = Array.from($('tm2CellSource').options)
+            .filter((option) => option.value)
+            .map((option) => ({
+                id: Number(option.value),
+                cellName: option.dataset.cell || option.textContent.trim(),
+                wingName: option.dataset.wing || 'Unassigned Wing'
+            }))
+            .sort((left, right) => left.wingName.localeCompare(right.wingName, undefined, { sensitivity: 'base' })
+                || left.cellName.localeCompare(right.cellName, undefined, { sensitivity: 'base' }));
+    }
+
+    async function selectCell(cellId) {
+        const cell = state.cells.find((item) => item.id === Number(cellId));
+        if (!cell) {
+            return;
+        }
+
+        state.selectedCellId = cell.id;
+        state.positions = [];
+        const requestId = ++state.cellRequestId;
+
+        $('tm2EmptyState').classList.add('d-none');
+        $('tm2CellWorkspace').classList.remove('d-none');
+        $('tm2SelectedWing').textContent = cell.wingName;
+        $('tm2SelectedCell').textContent = cell.cellName;
+        $('tm2PositionCellId').value = cell.id;
+        $('tm2PositionsBody').innerHTML = loadingRow(6, 'Loading positions...');
+        renderStats();
+        renderWingTree();
+        resetPositionForm();
+
+        try {
+            const positionsPage = await request(`/api/master/positions${query({ cellId: cell.id, size: 500 })}`);
+            if (requestId !== state.cellRequestId) {
+                return;
+            }
+            state.positions = pageItems(positionsPage);
+            renderPositionsTable();
+            renderStats();
+            resetPositionForm();
+            renderWingTree();
+        } catch (error) {
+            if (requestId === state.cellRequestId) {
+                renderTableError($('tm2PositionsBody'), 6, 'Unable to load positions.');
+            }
+            showAlert(error.message, 'danger');
+        }
+    }
+
+    async function loadDesignations() {
+        state.designations = await request('/api/master/organization-hierarchy/options/designations') || [];
+        fillSelect($('tm2DesignationId'), state.designations.map((designation) => ({
+            value: designation.id,
+            label: designation.label
+        })), 'Select Designation');
+    }
+
+    async function loadLevels(selectedLevelCode) {
+        const designationId = valueOrNull($('tm2DesignationId').value);
+        const levelSelect = $('tm2PositionLevelCode');
+        if (!designationId) {
+            state.levels = [];
+            fillSelect(levelSelect, [], 'Select Designation First');
+            levelSelect.disabled = true;
+            resetEmployeeSelect('Select Designation First');
+            return;
+        }
+
+        state.levels = await request(`/api/master/organization-hierarchy/options/levels${query({ designationId })}`) || [];
+        const levelOptions = state.levels.map((level) => ({
+            value: level.code,
+            label: level.code ? `${level.code} - ${level.label}` : level.label
+        }));
+        fillSelect(levelSelect, levelOptions, levelOptions.length ? 'Any Level' : 'No Level Required');
+        levelSelect.disabled = levelOptions.length === 0;
+        if (selectedLevelCode && levelOptions.some((option) => String(option.value) === String(selectedLevelCode))) {
+            levelSelect.value = selectedLevelCode;
+        }
+    }
+
+    async function loadEmployees(selectedEmployeeId) {
+        const designationId = valueOrNull($('tm2DesignationId').value);
+        if (!designationId) {
+            resetEmployeeSelect('Select Designation First');
+            return;
+        }
+
+        const requestId = ++state.employeeRequestId;
+        const employeeSelect = $('tm2EmployeeId');
+        employeeSelect.disabled = true;
+        fillSelect(employeeSelect, [], 'Loading matching employees...');
+
+        const levelCode = $('tm2PositionLevelCode').disabled ? null : $('tm2PositionLevelCode').value || null;
+        const page = await request(`/api/master/organization-hierarchy/options/employees${query({
+            designationId,
+            levelCode,
+            size: 500
+        })}`);
+        if (requestId !== state.employeeRequestId) {
+            return;
+        }
+
+        const employees = pageItems(page).map((employee) => ({
+            value: employee.id,
+            label: employee.code ? `${employee.label} (${employee.code})` : employee.label
+        }));
+        fillSelect(employeeSelect, employees, employees.length ? 'Vacant' : 'Vacant (No matching employees)');
+        employeeSelect.disabled = false;
+        if (selectedEmployeeId && employees.some((employee) => String(employee.value) === String(selectedEmployeeId))) {
+            employeeSelect.value = selectedEmployeeId;
+        }
+    }
+
+    async function savePosition(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const cell = selectedCell();
+        updatePositionName();
+        form.classList.add('was-validated');
+
+        const designationId = valueOrNull($('tm2DesignationId').value);
+        if (!cell) {
+            showAlert('Select a cell before saving the position.', 'warning');
+            return;
+        }
+        if (!designationId || !form.checkValidity()) {
+            showAlert('Select a designation before saving the position.', 'warning');
+            return;
+        }
+
+        const positionId = valueOrNull($('tm2PositionId').value);
+        const payload = {
+            positionName: $('tm2PositionName').value.trim(),
+            cellId: cell.id,
+            teamId: null,
+            designationId,
+            levelCode: $('tm2PositionLevelCode').disabled ? null : $('tm2PositionLevelCode').value || null,
+            reportingPositionId: valueOrNull($('tm2ReportingPositionId').value),
+            employeeId: valueOrNull($('tm2EmployeeId').value),
+            displayOrder: Number($('tm2PositionDisplayOrder').value || 0),
+            status: 'ACTIVE'
+        };
+
+        try {
+            await request(
+                positionId ? `/api/master/positions/${positionId}` : '/api/master/positions',
+                { method: positionId ? 'PUT' : 'POST', body: JSON.stringify(payload) }
+            );
+            showAlert(positionId ? 'Position updated successfully.' : 'Position created successfully.', 'success');
+            await selectCell(cell.id);
+        } catch (error) {
+            showAlert(error.message, 'danger');
+        }
+    }
+
+    async function handlePositionAction(event) {
+        const button = event.target.closest('button[data-action]');
+        if (!button) {
+            return;
+        }
+        const positionId = Number(button.dataset.id);
+        if (button.dataset.action === 'edit-position') {
+            await editPosition(positionId);
+        }
+        if (button.dataset.action === 'deactivate-position') {
+            if (!window.confirm('Deactivate this position?')) {
+                return;
+            }
+            try {
+                await request(`/api/master/positions/${positionId}`, { method: 'DELETE' });
+                showAlert('Position deactivated successfully.', 'success');
+                if (state.selectedCellId) {
+                    await selectCell(state.selectedCellId);
+                }
+            } catch (error) {
+                showAlert(error.message, 'danger');
+            }
+        }
+    }
+
+    async function editPosition(positionId) {
+        try {
+            const position = await request(`/api/master/positions/${positionId}`);
+            $('tm2PositionFormTitle').textContent = 'Edit Position';
+            $('tm2PositionId').value = position.positionId;
+            $('tm2PositionDisplayOrder').value = position.displayOrder || 0;
+            $('tm2PositionName').value = position.positionName || '';
+            $('tm2DesignationId').value = position.designationId || '';
+            await loadLevels(position.levelCode);
+            populateReportingPositionSelect(position.reportingPositionId);
+            await loadEmployees(position.employeeId);
+            updatePositionName();
+            $('tm2PositionForm').classList.remove('was-validated');
+            $('tm2PositionForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (error) {
+            showAlert(error.message, 'danger');
+        }
+    }
+
+    function resetPositionForm() {
+        const form = $('tm2PositionForm');
+        if (!form) {
+            return;
+        }
+        form.reset();
+        form.classList.remove('was-validated');
+        $('tm2PositionFormTitle').textContent = 'Create Position';
+        $('tm2PositionId').value = '';
+        $('tm2PositionCellId').value = state.selectedCellId || '';
+        $('tm2PositionDisplayOrder').value = nextPositionOrder();
+        populateReportingPositionSelect();
+        loadLevels().catch((error) => showAlert(error.message, 'danger'));
+        resetEmployeeSelect('Select Designation First');
+        updatePositionName();
+    }
+
+    function renderWingTree() {
+        const tree = $('tm2WingTree');
+        const search = normalizedSearch();
+        const groups = new Map();
+        state.cells.forEach((cell) => {
+            if (!matchesCellSearch(cell, search)) {
+                return;
+            }
+            if (!groups.has(cell.wingName)) {
+                groups.set(cell.wingName, []);
+            }
+            groups.get(cell.wingName).push(cell);
+        });
+
+        $('tm2TreeSummary').textContent = `${groups.size} ${groups.size === 1 ? 'Wing' : 'Wings'}`;
+        if (!groups.size) {
+            tree.innerHTML = stateBlock('No matching wing or cell found.', false);
+            return;
+        }
+
+        tree.innerHTML = Array.from(groups.entries()).map(([wingName, cells]) => `
+            <details class="tm-wing-node" open>
+                <summary>
+                    <span><i class="fa-solid fa-sitemap" aria-hidden="true"></i>${escapeHtml(wingName)}</span>
+                    <small>${cells.length} ${cells.length === 1 ? 'cell' : 'cells'}</small>
+                </summary>
+                <div class="tm-cell-node-list">
+                    ${cells.map(renderCellNode).join('')}
+                </div>
+            </details>
+        `).join('');
+    }
+
+    function renderCellNode(cell) {
+        const isActive = String(cell.id) === String(state.selectedCellId);
+        const isLoadedCell = isActive;
+        const filled = isLoadedCell ? state.positions.filter((position) => position.positionStatus === 'FILLED').length : 0;
+        const total = isLoadedCell ? state.positions.length : null;
+        const countLabel = total === null ? '' : `<small>${filled}/${total} filled</small>`;
+        return `
+            <button class="tm-cell-node ${isActive ? 'is-active' : ''}" type="button" data-cell-id="${cell.id}">
+                <span>
+                    <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
+                    ${escapeHtml(cell.cellName)}
+                </span>
+                ${countLabel}
+            </button>
+        `;
+    }
+
+    function renderPositionsTable() {
+        const body = $('tm2PositionsBody');
+        const rows = filteredPositions();
+        $('tm2PositionsSummary').textContent = `${rows.length} ${rows.length === 1 ? 'position' : 'positions'}`;
+        if (!rows.length) {
+            body.innerHTML = emptyRow(6);
+            return;
+        }
+        body.innerHTML = rows.map((position, index) => `
+            <tr>
+                <td class="tm-cell-serial">${index + 1}</td>
+                <td>
+                    <span class="tm-cell-primary">${escapeHtml(position.positionName || '-')}</span>
+                    <span class="tm-cell-secondary">${escapeHtml(position.reportingPositionName ? `Reports to ${position.reportingPositionName}` : 'No reporting position')}</span>
+                </td>
+                <td>
+                    <span class="tm-cell-primary">${escapeHtml(position.designationName || '-')}</span>
+                    <span class="tm-cell-secondary">${escapeHtml(position.levelCode || 'Any Level')}</span>
+                </td>
+                <td>
+                    <span class="tm-cell-primary">${escapeHtml(position.employeeName || 'Vacant')}</span>
+                    <span class="tm-cell-secondary">${escapeHtml(position.employeeCode || '')}</span>
+                </td>
+                <td class="text-center">${statusBadge(position.positionStatus)}</td>
+                <td class="tm-cell-actions">
+                    <button type="button" class="btn btn-outline-primary tm-action-btn" data-action="edit-position" data-id="${position.positionId}" title="Edit position">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger tm-action-btn" data-action="deactivate-position" data-id="${position.positionId}" title="Deactivate position">
+                        <i class="fa-solid fa-ban"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function filteredPositions() {
+        const search = normalizedSearch();
+        if (!search) {
+            return state.positions;
+        }
+        return state.positions.filter((position) => [
+            position.positionName,
+            position.designationName,
+            position.levelCode,
+            position.employeeName,
+            position.employeeCode
+        ].some((value) => String(value || '').toLowerCase().includes(search)));
+    }
+
+    function renderStats() {
+        const total = state.positions.length;
+        const filled = state.positions.filter((position) => position.positionStatus === 'FILLED').length;
+        $('tm2TotalPositions').textContent = total;
+        $('tm2FilledPositions').textContent = filled;
+        $('tm2VacantPositions').textContent = Math.max(total - filled, 0);
+    }
+
+    function renderEmptyState() {
+        $('tm2CellWorkspace').classList.add('d-none');
+        $('tm2EmptyState').classList.remove('d-none');
+        if (!state.cells.length) {
+            $('tm2EmptyState').querySelector('strong').textContent = 'No active cells found';
+            $('tm2EmptyState').querySelector('span').textContent = 'Create active wings and cells in master before using cell position management.';
+        }
+    }
+
+    function populateReportingPositionSelect(selectedReportingId) {
+        const currentPositionId = valueOrNull($('tm2PositionId').value);
+        const options = state.positions
+            .filter((position) => !currentPositionId || String(position.positionId) !== String(currentPositionId))
+            .map((position) => ({
+                value: position.positionId,
+                label: `${position.positionName} - ${position.employeeName || position.designationName || 'Vacant'}`
+            }));
+        fillSelect($('tm2ReportingPositionId'), options, 'No Reporting Position');
+        if (selectedReportingId && options.some((option) => String(option.value) === String(selectedReportingId))) {
+            $('tm2ReportingPositionId').value = selectedReportingId;
+        }
+    }
+
+    function updatePositionName() {
+        const designationLabel = selectedOptionLabel($('tm2DesignationId'));
+        if (!designationLabel) {
+            $('tm2PositionName').value = '';
+            return;
+        }
+
+        const cell = selectedCell();
+        const levelCode = $('tm2PositionLevelCode').disabled ? '' : $('tm2PositionLevelCode').value;
+        const sequence = String(nextPositionSequence()).padStart(2, '0');
+        const suffix = ` - ${sequence}`;
+        const base = [cell?.cellName, designationLabel, levelCode].filter(Boolean).join(' - ');
+        $('tm2PositionName').value = `${base.slice(0, 150 - suffix.length).trim()}${suffix}`;
+    }
+
+    function nextPositionOrder() {
+        return state.positions.reduce((max, position) => Math.max(max, Number(position.displayOrder || 0)), 0) + 10;
+    }
+
+    function nextPositionSequence() {
+        const currentPositionId = valueOrNull($('tm2PositionId').value);
+        const designationId = valueOrNull($('tm2DesignationId').value);
+        const levelCode = $('tm2PositionLevelCode').disabled ? null : $('tm2PositionLevelCode').value || null;
+        const current = currentPositionId
+            ? state.positions.find((position) => String(position.positionId) === String(currentPositionId))
+            : null;
+        if (current && positionMatchesContext(current, designationId, levelCode)) {
+            return trailingSequence(current.positionName) || 1;
+        }
+        const matches = state.positions.filter((position) => {
+            if (currentPositionId && String(position.positionId) === String(currentPositionId)) {
+                return false;
+            }
+            return positionMatchesContext(position, designationId, levelCode);
+        });
+        const sequences = matches
+            .map((position) => trailingSequence(position.positionName))
+            .filter((sequence) => sequence !== null);
+        return sequences.length ? Math.max(...sequences) + 1 : matches.length + 1;
+    }
+
+    function positionMatchesContext(position, designationId, levelCode) {
+        return sameOptionalId(position.designationId, designationId)
+            && String(position.levelCode || '') === String(levelCode || '');
+    }
+
+    async function request(path, options = {}) {
+        const headers = {
+            Accept: 'application/json',
+            ...(options.body ? { 'Content-Type': 'application/json' } : {})
+        };
+        if (csrfToken && csrfHeader && options.method && options.method !== 'GET') {
+            headers[csrfHeader] = csrfToken;
+        }
+
+        const response = await fetch(apiUrl(path), {
+            cache: options.method && options.method !== 'GET' ? 'default' : 'no-store',
+            ...options,
+            headers: { ...headers, ...(options.headers || {}) }
+        });
+        const payload = await response.json().catch(() => ({ message: response.statusText }));
+        if (!response.ok) {
+            throw new Error(payload.message || 'Request failed');
+        }
+        return Object.prototype.hasOwnProperty.call(payload, 'data') ? payload.data : payload;
+    }
+
+    function fillSelect(select, options, blankLabel) {
+        const current = select.value;
+        select.innerHTML = `<option value="">${escapeHtml(blankLabel)}</option>` + options
+            .map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`)
+            .join('');
+        if (options.some((option) => String(option.value) === String(current))) {
+            select.value = current;
+        }
+    }
+
+    function query(params) {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== null && value !== undefined && value !== '') {
+                searchParams.set(key, value);
+            }
+        });
+        const value = searchParams.toString();
+        return value ? `?${value}` : '';
+    }
+
+    function pageItems(page) {
+        if (Array.isArray(page)) {
+            return page;
+        }
+        return Array.isArray(page?.content) ? page.content : [];
+    }
+
+    function selectedCell() {
+        return state.cells.find((cell) => String(cell.id) === String(state.selectedCellId));
+    }
+
+    function selectedOptionLabel(select) {
+        if (!select || !select.value) {
+            return '';
+        }
+        return select.options[select.selectedIndex]?.textContent?.trim() || '';
+    }
+
+    function matchesCellSearch(cell, search) {
+        if (!search) {
+            return true;
+        }
+        return cell.wingName.toLowerCase().includes(search)
+            || cell.cellName.toLowerCase().includes(search);
+    }
+
+    function normalizedSearch() {
+        return $('tm2SearchInput').value.trim().toLowerCase();
+    }
+
+    function valueOrNull(value) {
+        return value === null || value === undefined || value === '' ? null : Number(value);
+    }
+
+    function sameOptionalId(left, right) {
+        return (left === null || left === undefined ? '' : String(left))
+            === (right === null || right === undefined ? '' : String(right));
+    }
+
+    function trailingSequence(value) {
+        const match = / - (\d+)$/.exec(value || '');
+        return match ? Number(match[1]) : null;
+    }
+
+    function resetEmployeeSelect(blankLabel) {
+        state.employeeRequestId += 1;
+        fillSelect($('tm2EmployeeId'), [], blankLabel);
+        $('tm2EmployeeId').disabled = true;
+    }
+
+    function statusBadge(status) {
+        const filled = status === 'FILLED';
+        return `<span class="tm-status-badge ${filled ? 'is-filled' : 'is-vacant'}">
+            <i class="fa-solid ${filled ? 'fa-circle-check' : 'fa-circle-exclamation'}" aria-hidden="true"></i>
+            ${filled ? 'Filled' : 'Vacant'}
+        </span>`;
+    }
+
+    function loadingBlock(message) {
+        return `<div class="tm-state-block">
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span>${escapeHtml(message)}</span>
+        </div>`;
+    }
+
+    function stateBlock(message, isError) {
+        return `<div class="tm-state-block ${isError ? 'is-error' : ''}">
+            <i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-circle-info'}" aria-hidden="true"></i>
+            <span>${escapeHtml(message)}</span>
+        </div>`;
+    }
+
+    function emptyRow(colspan) {
+        return `<tr class="tm-state-row"><td colspan="${colspan}">
+            <div class="tm-table-state">
+                <i class="fa-regular fa-folder-open" aria-hidden="true"></i>
+                <span>No positions found</span>
+            </div>
+        </td></tr>`;
+    }
+
+    function loadingRow(colspan, message) {
+        return `<tr class="tm-state-row"><td colspan="${colspan}">
+            <div class="tm-table-state">
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                <span>${escapeHtml(message)}</span>
+            </div>
+        </td></tr>`;
+    }
+
+    function renderTableError(body, colspan, message) {
+        body.innerHTML = `<tr class="tm-state-row"><td colspan="${colspan}">
+            <div class="tm-table-state is-error">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                <span>${escapeHtml(message)}</span>
+            </div>
+        </td></tr>`;
+    }
+
+    function showAlert(message, type) {
+        const alert = $('tm2Alert');
+        alert.textContent = message;
+        alert.className = `alert alert-${type}`;
+        window.setTimeout(() => alert.classList.add('d-none'), 4500);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+})();
+
+if (false) (() => {
+    const contextPath = document.querySelector('meta[name="app-context-path"]')?.content || '';
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+    const state = {
         projects: [],
         projectsLoaded: false,
         cells: [],

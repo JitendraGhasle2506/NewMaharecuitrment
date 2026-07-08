@@ -20,7 +20,6 @@ public class PositionRequest {
     @NotNull(message = "Cell is required")
     private Long cellId;
 
-    @NotNull(message = "Team is required")
     private Long teamId;
 
     @NotNull(message = "Designation is required")

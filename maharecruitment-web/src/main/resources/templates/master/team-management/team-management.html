@@ -3,15 +3,152 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Team Management</title>
+    <title>Cell Position Management</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/team-management.css}">
     <script th:src="@{/js/team-management.js}" defer></script>
 </head>
 
 <body>
-    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Team Management', ~{::section})}">
-        <section class="team-management-page">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Cell Position Management', ~{::section})}">
+        <section class="team-management-page tm-cell-team-page">
+            <select id="tm2CellSource" class="d-none" aria-hidden="true" tabindex="-1">
+                <option th:each="cell : ${cellOptions}"
+                        th:value="${cell.id}"
+                        th:data-cell="${cell.label}"
+                        th:data-wing="${cell.code != null ? cell.code : 'Unassigned Wing'}"
+                        th:text="${cell.label}">
+                </option>
+            </select>
+
+            <div class="tm-page-head">
+                <div>
+                    <h1>Wing / Cell Position Management</h1>
+                    <p>Create cell positions and map employees from Employee Master by position designation.</p>
+                </div>
+                <div class="tm-head-actions">
+                    <div class="input-group input-group-sm tm-search">
+                        <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input id="tm2SearchInput" type="search" class="form-control" placeholder="Search wing, cell, position, employee">
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/wings}">Wing Master</a>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/cell}">Cell Master</a>
+                </div>
+            </div>
+
+            <div id="tm2Alert" class="alert d-none" role="alert"></div>
+
+            <div class="tm-shell">
+                <aside class="tm-panel tm-tree-panel">
+                    <div class="tm-panel-header">
+                        <div>
+                            <h2>Wing / Cell Tree</h2>
+                            <span id="tm2TreeSummary">0 Wings</span>
+                        </div>
+                    </div>
+                    <div id="tm2WingTree" class="tm-wing-tree"></div>
+                </aside>
+
+                <main class="tm-workspace">
+                    <div id="tm2EmptyState" class="tm-empty-state">
+                        <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                        <strong>Select a cell</strong>
+                        <span>Choose a cell from the wing tree to create positions and map employees.</span>
+                    </div>
+
+                    <div id="tm2CellWorkspace" class="d-none">
+                        <div class="tm-cell-header">
+                            <div>
+                                <span id="tm2SelectedWing" class="tm-eyebrow">Wing</span>
+                                <h2 id="tm2SelectedCell">Cell</h2>
+                            </div>
+                            <div class="tm-stat-strip">
+                                <div>
+                                    <span>Positions</span>
+                                    <strong id="tm2TotalPositions">0</strong>
+                                </div>
+                                <div>
+                                    <span>Filled</span>
+                                    <strong id="tm2FilledPositions">0</strong>
+                                </div>
+                                <div>
+                                    <span>Vacant</span>
+                                    <strong id="tm2VacantPositions">0</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tm-editor-grid">
+                            <form id="tm2PositionForm" class="tm-panel tm-form" novalidate>
+                                <input type="hidden" id="tm2PositionId">
+                                <input type="hidden" id="tm2PositionCellId">
+                                <input type="hidden" id="tm2PositionDisplayOrder" value="0">
+                                <div class="tm-panel-header">
+                                    <div>
+                                        <h2 id="tm2PositionFormTitle">Create Position</h2>
+                                        <span>Employee list is filtered from Employee Master.</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="tm2PositionResetButton" title="Reset">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </div>
+
+                                <label class="form-label" for="tm2PositionName">Position Name</label>
+                                <input id="tm2PositionName" class="form-control form-control-sm" maxlength="150" required readonly>
+
+                                <label class="form-label" for="tm2DesignationId">Designation <span class="text-danger">*</span></label>
+                                <select id="tm2DesignationId" class="form-select form-select-sm" required></select>
+                                <div class="invalid-feedback">Designation is required.</div>
+
+                                <label class="form-label" for="tm2PositionLevelCode">Level</label>
+                                <select id="tm2PositionLevelCode" class="form-select form-select-sm"></select>
+
+                                <label class="form-label" for="tm2ReportingPositionId">Reporting Position</label>
+                                <select id="tm2ReportingPositionId" class="form-select form-select-sm"></select>
+
+                                <label class="form-label" for="tm2EmployeeId">Employee</label>
+                                <select id="tm2EmployeeId" class="form-select form-select-sm" disabled>
+                                    <option value="">Select Designation First</option>
+                                </select>
+
+                                <div class="tm-form-actions">
+                                    <button class="btn btn-primary btn-sm" type="submit">
+                                        <i class="fa-solid fa-floppy-disk"></i> Save Position
+                                    </button>
+                                </div>
+                            </form>
+
+                        </div>
+
+                        <div class="tm-panel">
+                            <div class="tm-panel-header">
+                                <div>
+                                    <h2>Cell Positions</h2>
+                                    <span id="tm2PositionsSummary">0 positions</span>
+                                </div>
+                            </div>
+                            <div class="table-responsive tm-table-wrap">
+                                <table class="table table-sm table-bordered table-hover align-middle tm-data-table">
+                                    <caption class="visually-hidden">Positions and mapped employees for selected cell</caption>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" class="tm-col-serial">Sr. No.</th>
+                                            <th scope="col">Position</th>
+                                            <th scope="col">Designation</th>
+                                            <th scope="col">Mapped Employee</th>
+                                            <th scope="col" class="text-center tm-col-status">Status</th>
+                                            <th scope="col" class="text-center tm-col-actions">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tm2PositionsBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+            <!-- Legacy tabbed team screen removed from active DOM.
             <div class="tm-toolbar">
                 <div class="tm-toolbar-left">
                     <label class="form-label" for="tmCellFilter">Cell</label>
@@ -289,6 +426,8 @@
                     </div>
                 </div>
             </div>
+            </div>
+            -->
         </section>
     </th:block>
 </body>

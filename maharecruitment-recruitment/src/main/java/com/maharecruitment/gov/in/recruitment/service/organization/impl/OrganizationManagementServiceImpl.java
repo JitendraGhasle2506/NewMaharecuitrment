@@ -168,7 +168,7 @@ public class OrganizationManagementServiceImpl implements OrganizationManagement
     @Transactional
     public PositionResponse createPosition(PositionRequest request) {
         CellMaster cell = resolveActiveCell(request.getCellId());
-        TeamMasterEntity team = resolveTeamRequired(request.getTeamId(), cell);
+        TeamMasterEntity team = resolveOptionalTeam(request.getTeamId(), cell);
         PositionMasterEntity position = new PositionMasterEntity();
         mapPositionRequest(request, position, cell, team);
         ensureEmployeeAvailable(position.getEmployee(), null);
@@ -187,7 +187,7 @@ public class OrganizationManagementServiceImpl implements OrganizationManagement
         PositionStatus previousStatus = position.getPositionStatus();
 
         CellMaster cell = resolveActiveCell(request.getCellId());
-        TeamMasterEntity team = resolveTeamRequired(request.getTeamId(), cell);
+        TeamMasterEntity team = resolveOptionalTeam(request.getTeamId(), cell);
         mapPositionRequest(request, position, cell, team);
         ensureNoPositionCycle(position);
         ensureEmployeeAvailable(position.getEmployee(), positionId);
@@ -422,16 +422,21 @@ public class OrganizationManagementServiceImpl implements OrganizationManagement
         Page<EmployeeEntity> employees;
         if (positionId != null) {
             PositionMasterEntity position = getPositionEntity(positionId);
-            if (position.getDesignation() == null || position.getResourceLevel() == null) {
+            if (position.getDesignation() == null) {
                 return Page.empty(pageable);
             }
             designationId = position.getDesignation().getDesignationId();
-            levelCode = position.getResourceLevel().getLevelCode();
+            levelCode = position.getResourceLevel() == null ? null : position.getResourceLevel().getLevelCode();
         }
         if (designationId != null && StringUtils.hasText(levelCode)) {
             employees = employeeRepository.findActiveByDesignationAndLevelWithSearch(
                     designationId,
                     normalizeLevelCode(levelCode),
+                    toEmployeeSearchPattern(search),
+                    pageable);
+        } else if (designationId != null) {
+            employees = employeeRepository.findActiveByDesignationWithSearch(
+                    designationId,
                     toEmployeeSearchPattern(search),
                     pageable);
         } else if (designationId == null && !StringUtils.hasText(levelCode)) {
@@ -512,7 +517,7 @@ public class OrganizationManagementServiceImpl implements OrganizationManagement
             TeamMasterEntity team) {
         ManpowerDesignationMaster designation = resolveActiveDesignation(request.getDesignationId());
         position.setPositionName(normalizeRequired(request.getPositionName(), "Position name"));
-        position.setProject(team.getProject());
+        position.setProject(team == null ? null : team.getProject());
         position.setCell(cell);
         position.setTeam(team);
         position.setDesignation(designation);
@@ -628,6 +633,13 @@ public class OrganizationManagementServiceImpl implements OrganizationManagement
         return team;
     }
 
+    private TeamMasterEntity resolveOptionalTeam(Long teamId, CellMaster cell) {
+        if (teamId == null) {
+            return null;
+        }
+        return resolveTeamRequired(teamId, cell);
+    }
+
     private CellMaster resolvePositionCell(PositionMasterEntity position) {
         if (position == null) {
             return null;
@@ -740,10 +752,11 @@ public class OrganizationManagementServiceImpl implements OrganizationManagement
         String positionLevelCode = position.getResourceLevel() == null
                 ? null
                 : normalizeLevelCode(position.getResourceLevel().getLevelCode());
-        if (!equalsLong(employeeDesignationId, positionDesignationId)
-                || !java.util.Objects.equals(employeeLevelCode, positionLevelCode)) {
-            throw new BusinessValidationException(
-                    "Employee designation and level must match the selected position.");
+        if (!equalsLong(employeeDesignationId, positionDesignationId)) {
+            throw new BusinessValidationException("Employee designation must match the selected position.");
+        }
+        if (positionLevelCode != null && !java.util.Objects.equals(employeeLevelCode, positionLevelCode)) {
+            throw new BusinessValidationException("Employee level must match the selected position level.");
         }
     }
 
