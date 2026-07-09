@@ -47,6 +47,10 @@ class MobileLoginResponseMapperTest {
                 Instant.parse("2026-07-03T08:27:45Z"),
                 Instant.parse("2026-07-03T08:57:45Z"),
                 1800);
+        MobileRefreshTokenIssue refreshToken = new MobileRefreshTokenIssue(
+                "refresh-token",
+                Instant.parse("2026-08-02T08:27:45Z"),
+                2_592_000);
         LocalDateTime loginAt = LocalDateTime.parse("2026-07-03T13:57:45");
         LocalDateTime lastLoginAt = LocalDateTime.parse("2026-07-03T13:58:00");
 
@@ -55,6 +59,7 @@ class MobileLoginResponseMapperTest {
                 employeeDetails,
                 List.of("ROLE_EMPLOYEE", "ROLE_PM"),
                 token,
+                refreshToken,
                 loginAt,
                 lastLoginAt);
 
@@ -65,8 +70,11 @@ class MobileLoginResponseMapperTest {
         assertThat(response.roles()).containsExactly("ROLE_EMPLOYEE", "ROLE_PM");
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.accessToken()).isEqualTo("jwt-token");
+        assertThat(response.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.expiresIn()).isEqualTo(1800);
         assertThat(response.expiresAt()).isEqualTo(Instant.parse("2026-07-03T08:57:45Z"));
+        assertThat(response.refreshExpiresIn()).isEqualTo(2_592_000);
+        assertThat(response.refreshExpiresAt()).isEqualTo(Instant.parse("2026-08-02T08:27:45Z"));
         assertThat(response.loginAt()).isEqualTo(loginAt);
         assertThat(response.lastLoginAt()).isEqualTo(lastLoginAt);
 
@@ -114,5 +122,8 @@ class MobileLoginResponseMapperTest {
         assertThat(response.employeeName()).isEqualTo("User Only");
         assertThat(response.empId()).isNull();
         assertThat(response.roles()).isEmpty();
+        assertThat(response.refreshToken()).isNull();
+        assertThat(response.refreshExpiresIn()).isZero();
+        assertThat(response.refreshExpiresAt()).isNull();
     }
 }

@@ -20,6 +20,17 @@ public class MobileLoginResponseMapper {
             MobileTokenIssue token,
             LocalDateTime loginAt,
             LocalDateTime lastLoginAt) {
+        return toResponse(user, employeeDetails, roles, token, null, loginAt, lastLoginAt);
+    }
+
+    public MobileLoginResponse toResponse(
+            User user,
+            MobileEmployeeDetails employeeDetails,
+            List<String> roles,
+            MobileTokenIssue token,
+            MobileRefreshTokenIssue refreshToken,
+            LocalDateTime loginAt,
+            LocalDateTime lastLoginAt) {
         MobileEmployeeDetails details = employeeDetails == null
                 ? MobileEmployeeDetails.empty()
                 : employeeDetails;
@@ -48,8 +59,11 @@ public class MobileLoginResponseMapper {
                 roles,
                 token.tokenType(),
                 token.accessToken(),
+                refreshToken != null ? refreshToken.refreshToken() : null,
                 token.expiresInSeconds(),
                 token.expiresAt(),
+                refreshToken != null ? refreshToken.expiresInSeconds() : 0,
+                refreshToken != null ? refreshToken.expiresAt() : null,
                 loginAt,
                 lastLoginAt);
     }

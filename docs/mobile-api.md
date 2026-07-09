@@ -1,7 +1,7 @@
 # Mobile API Documentation
 
-Version: 1.0  
-Last updated: 2026-07-07
+Version: 1.1  
+Last updated: 2026-07-09
 
 ## 1. Overview
 
@@ -16,6 +16,7 @@ Base path:
 Authentication:
 
 - Login API does not require a token.
+- Refresh API does not require a bearer access token; it uses `refreshToken` in the JSON body.
 - All other mobile APIs require this header:
 
 ```http
@@ -70,7 +71,7 @@ Common HTTP status codes:
 | --- | --- |
 | 200 | Success |
 | 400 | Invalid request or validation failed |
-| 401 | Missing, invalid, or expired token |
+| 401 | Missing, invalid, or expired access/refresh token |
 | 403 | User is not allowed to access the requested employee |
 | 404 | Employee, profile, or mapping not found |
 | 409 | Duplicate email or mobile number |
@@ -81,6 +82,7 @@ Common HTTP status codes:
 | Feature | Method | Endpoint | Auth Required |
 | --- | --- | --- | --- |
 | Login | POST | `/api/mobile/auth/login` | No |
+| Refresh access token | POST | `/api/mobile/auth/refresh` | No, uses refresh token body |
 | Get mapped locations | GET | `/api/mobile/employee-locations?employeeId={employeeId}` | Yes |
 | Get profile | GET | `/api/mobile/profile?employeeId={employeeId}` | Yes |
 | Update email/mobile | PATCH | `/api/mobile/profile/contact` | Yes |
@@ -96,7 +98,7 @@ Common HTTP status codes:
 
 ### POST `/api/mobile/auth/login`
 
-Use this API to authenticate the mobile app user and receive a bearer token.
+Use this API to authenticate the mobile app user and receive a short-lived bearer access token plus a long-lived refresh token.
 
 Request:
 
@@ -144,8 +146,11 @@ Success response:
   ],
   "tokenType": "Bearer",
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "Zkyg7bqkQy6R1iQv9GQ3J_yA6...",
   "expiresIn": 3600,
   "expiresAt": "2026-07-06T13:20:30Z",
+  "refreshExpiresIn": 2592000,
+  "refreshExpiresAt": "2026-08-05T12:20:30Z",
   "loginAt": "2026-07-06T17:50:00",
   "lastLoginAt": "2026-07-05T18:10:00"
 }
@@ -153,10 +158,47 @@ Success response:
 
 Mobile app action:
 
-- Store `accessToken`.
+- Store `accessToken`, `refreshToken`, `expiresAt`, and `refreshExpiresAt` in platform secure storage.
 - Send it in `Authorization: Bearer <accessToken>` for all protected APIs.
+- Refresh the access token before `expiresAt` or after one `401 INVALID_TOKEN` response.
+- Replace both stored tokens after every successful refresh response.
 - Store `empId`; pass it as `employeeId` in protected APIs.
 - Store `faceData` or `embedding` for app-side face verification. This value is read from `employee_master.embedding`.
+
+## 4.1 Refresh Access Token
+
+### POST `/api/mobile/auth/refresh`
+
+Use this API when the access token is close to expiry or when a protected API returns `401 INVALID_TOKEN`.
+
+Request:
+
+```json
+{
+  "refreshToken": "Zkyg7bqkQy6R1iQv9GQ3J_yA6..."
+}
+```
+
+Success response:
+
+```json
+{
+  "tokenType": "Bearer",
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "expiresIn": 3600,
+  "expiresAt": "2026-07-06T14:20:30Z",
+  "refreshToken": "new-refresh-token-value",
+  "refreshExpiresIn": 2592000,
+  "refreshExpiresAt": "2026-08-05T13:20:30Z"
+}
+```
+
+Important rules:
+
+- Refresh tokens are one-time-use and rotated by the backend.
+- The mobile app must replace the old `refreshToken` with the new one from every refresh response.
+- If refresh returns `401 INVALID_REFRESH_TOKEN`, clear the local session and show the login screen.
+- Do not repeatedly retry refresh with the same old token.
 
 ## 5. Employee Mapped Locations
 
@@ -696,8 +738,9 @@ Common attendance errors:
 Android and iOS app should follow these rules:
 
 - Use HTTPS only.
-- Store bearer token securely in platform secure storage.
-- Always send `Authorization: Bearer <accessToken>` after login.
+- Store access and refresh tokens securely in platform secure storage.
+- Always send `Authorization: Bearer <accessToken>` after login or refresh.
+- Refresh proactively 2 to 5 minutes before `expiresAt`; if a protected API still returns `401 INVALID_TOKEN`, call refresh once and retry the original request once.
 - Use `empId` from login response as `employeeId`.
 - After contact update, replace the old token with the new `accessToken` returned by the API.
 - Do not hardcode location radius in the app. Use the radius returned by mapped locations API.

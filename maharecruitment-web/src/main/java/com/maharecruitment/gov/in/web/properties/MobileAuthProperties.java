@@ -11,10 +11,12 @@ import org.springframework.util.StringUtils;
 public class MobileAuthProperties {
 
     private static final Duration DEFAULT_ACCESS_TOKEN_TTL = Duration.ofMinutes(30);
+    private static final Duration DEFAULT_REFRESH_TOKEN_TTL = Duration.ofDays(30);
 
     private String issuer = "maharecruitment-mobile";
 
     private Duration accessTokenTtl = DEFAULT_ACCESS_TOKEN_TTL;
+    private Duration refreshTokenTtl = DEFAULT_REFRESH_TOKEN_TTL;
 
     private String jwtSecret;
 
@@ -34,6 +36,16 @@ public class MobileAuthProperties {
 
     public void setAccessTokenTtl(Duration accessTokenTtl) {
         this.accessTokenTtl = accessTokenTtl;
+    }
+
+    public Duration getRefreshTokenTtl() {
+        return refreshTokenTtl == null || refreshTokenTtl.isNegative() || refreshTokenTtl.isZero()
+                ? DEFAULT_REFRESH_TOKEN_TTL
+                : refreshTokenTtl;
+    }
+
+    public void setRefreshTokenTtl(Duration refreshTokenTtl) {
+        this.refreshTokenTtl = refreshTokenTtl;
     }
 
     public String getJwtSecret() {

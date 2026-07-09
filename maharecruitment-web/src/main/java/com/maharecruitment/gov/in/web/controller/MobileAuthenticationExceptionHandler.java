@@ -20,6 +20,7 @@ import com.maharecruitment.gov.in.web.exception.FileStorageException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileApiException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAttendanceException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileTokenConfigurationException;
+import com.maharecruitment.gov.in.web.service.mobile.MobileTokenValidationException;
 
 import jakarta.validation.ConstraintViolationException;
 
@@ -65,6 +66,13 @@ public class MobileAuthenticationExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(MobileApiError.of(
                 "INVALID_CREDENTIALS",
                 INVALID_CREDENTIALS_MESSAGE));
+    }
+
+    @ExceptionHandler(MobileTokenValidationException.class)
+    public ResponseEntity<MobileApiError> handleTokenValidation() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(MobileApiError.of(
+                "INVALID_REFRESH_TOKEN",
+                "Refresh token is invalid or expired."));
     }
 
     @ExceptionHandler(MobileAttendanceException.class)

@@ -30,8 +30,11 @@ public record MobileLoginResponse(
         List<String> roles,
         String tokenType,
         String accessToken,
+        String refreshToken,
         long expiresIn,
         Instant expiresAt,
+        long refreshExpiresIn,
+        Instant refreshExpiresAt,
         LocalDateTime loginAt,
         LocalDateTime lastLoginAt) {
 
@@ -47,8 +50,11 @@ public record MobileLoginResponse(
             List<String> roles,
             String tokenType,
             String accessToken,
+            String refreshToken,
             long expiresIn,
             Instant expiresAt,
+            long refreshExpiresIn,
+            Instant refreshExpiresAt,
             LocalDateTime loginAt,
             LocalDateTime lastLoginAt) {
         this(
@@ -75,8 +81,11 @@ public record MobileLoginResponse(
                 roles,
                 tokenType,
                 accessToken,
+                refreshToken,
                 expiresIn,
                 expiresAt,
+                refreshExpiresIn,
+                refreshExpiresAt,
                 loginAt,
                 lastLoginAt);
     }
