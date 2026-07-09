@@ -48,6 +48,7 @@
 
         $('tm2SearchInput').addEventListener('input', () => {
             renderWingTree();
+            renderEmployeeTree();
             renderPositionsTable();
         });
 
@@ -117,6 +118,7 @@
             $('tm2BulkCellName').value = cell.cellName;
         }
         $('tm2PositionsBody').innerHTML = loadingRow(6, 'Loading positions...');
+        renderEmployeeTreeLoading();
         renderStats();
         renderWingTree();
         resetPositionForm();
@@ -127,6 +129,7 @@
                 return;
             }
             state.positions = pageItems(positionsPage);
+            renderEmployeeTree();
             renderPositionsTable();
             renderStats();
             resetPositionForm();
@@ -134,6 +137,7 @@
         } catch (error) {
             if (requestId === state.cellRequestId) {
                 renderTableError($('tm2PositionsBody'), 6, 'Unable to load positions.');
+                renderEmployeeTreeError('Unable to load employees for this cell.');
             }
             showAlert(error.message, 'danger');
         }
@@ -521,18 +525,126 @@
         `).join('');
     }
 
+    function renderEmployeeTreeLoading() {
+        const tree = $('tm2EmployeeTree');
+        if (!tree) {
+            return;
+        }
+        $('tm2EmployeeTreeSummary').textContent = 'Loading...';
+        tree.innerHTML = loadingBlock('Loading mapped employees...');
+    }
+
+    function renderEmployeeTreeError(message) {
+        const tree = $('tm2EmployeeTree');
+        if (!tree) {
+            return;
+        }
+        $('tm2EmployeeTreeSummary').textContent = 'Unable to load';
+        tree.innerHTML = stateBlock(message, true);
+    }
+
+    function renderEmployeeTree() {
+        const tree = $('tm2EmployeeTree');
+        if (!tree) {
+            return;
+        }
+
+        const cell = selectedCell();
+        if (!cell) {
+            $('tm2EmployeeTreeSummary').textContent = '0 employees';
+            tree.innerHTML = stateBlock('Select a cell to view mapped employees.', false);
+            return;
+        }
+
+        const rows = filteredPositions();
+        const mappedCount = rows.filter(hasMappedEmployee).length;
+        $('tm2EmployeeTreeSummary').textContent = `${mappedCount} mapped ${mappedCount === 1 ? 'employee' : 'employees'} / ${rows.length} ${rows.length === 1 ? 'position' : 'positions'}`;
+
+        if (!rows.length) {
+            tree.innerHTML = stateBlock('No positions or mapped employees found for this cell.', false);
+            return;
+        }
+
+        tree.innerHTML = `
+            <div class="tm-employee-tree-stage">
+                <article class="tm-employee-tree-root">
+                    <span class="tm-employee-tree-root-icon">${escapeHtml(initials(cell.cellName, 'C'))}</span>
+                    <span class="tm-employee-tree-root-copy">
+                        <strong>${escapeHtml(cell.cellName)}</strong>
+                        <small>${escapeHtml(cell.wingName || 'Unassigned Wing')}</small>
+                    </span>
+                    <span class="tm-employee-tree-root-count">${mappedCount}/${rows.length}</span>
+                </article>
+                <div class="tm-employee-tree-link" aria-hidden="true"></div>
+                <div class="tm-employee-tree-branch">
+                    ${rows.map(renderEmployeeTreeCard).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderEmployeeTreeCard(position) {
+        const mapped = hasMappedEmployee(position);
+        const title = mapped ? employeeDisplayName(position) : 'Vacant Position';
+        const designation = positionDesignation(position);
+        const detail = mapped
+            ? [position.employeeCode, position.positionName].filter(Boolean).join(' | ')
+            : position.positionName || 'Position not named';
+        return `
+            <article class="tm-employee-tree-card ${mapped ? 'is-filled' : 'is-vacant'}">
+                <span class="tm-employee-avatar" aria-hidden="true">${escapeHtml(initials(title, mapped ? 'E' : 'V'))}</span>
+                <span class="tm-employee-tree-copy">
+                    <strong>${escapeHtml(title)}</strong>
+                    <small>${escapeHtml(designation || 'Designation not mapped')}</small>
+                    <em>${escapeHtml(detail || '-')}</em>
+                </span>
+            </article>
+        `;
+    }
+
+    function hasMappedEmployee(position) {
+        return Boolean(position.employeeId || position.employeeName || position.employeeCode || position.positionStatus === 'FILLED');
+    }
+
+    function employeeDisplayName(position) {
+        return position.employeeName || position.displayName || position.employeeCode || 'Mapped Employee';
+    }
+
+    function positionDesignation(position) {
+        return [position.designationName, position.levelCode].filter(Boolean).join(' - ');
+    }
+
+    function initials(value, fallback) {
+        const words = String(value || fallback || '')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+        if (!words.length) {
+            return fallback || '';
+        }
+        if (words.length === 1) {
+            return words[0].slice(0, 2).toUpperCase();
+        }
+        return `${words[0][0] || ''}${words[1][0] || ''}`.toUpperCase();
+    }
+
     function filteredPositions() {
         const search = normalizedSearch();
         if (!search) {
             return state.positions;
         }
-        return state.positions.filter((position) => [
+        return state.positions.filter((position) => positionMatchesSearch(position, search));
+    }
+
+    function positionMatchesSearch(position, search) {
+        return [
             position.positionName,
             position.designationName,
             position.levelCode,
             position.employeeName,
-            position.employeeCode
-        ].some((value) => String(value || '').toLowerCase().includes(search)));
+            position.employeeCode,
+            position.reportingPositionName
+        ].some((value) => String(value || '').toLowerCase().includes(search));
     }
 
     function renderStats() {
@@ -699,8 +811,13 @@
         if (!search) {
             return true;
         }
-        return cell.wingName.toLowerCase().includes(search)
+        const matchesCell = cell.wingName.toLowerCase().includes(search)
             || cell.cellName.toLowerCase().includes(search);
+        if (matchesCell) {
+            return true;
+        }
+        return String(cell.id) === String(state.selectedCellId)
+            && state.positions.some((position) => positionMatchesSearch(position, search));
     }
 
     function normalizedSearch() {
