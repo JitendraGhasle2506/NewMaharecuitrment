@@ -22,6 +22,12 @@ public interface CellMasterRepository extends JpaRepository<CellMaster, Long> {
     Optional<CellMaster> findByCellId(Long cellId);
 
     @EntityGraph(attributePaths = "wing")
+    Optional<CellMaster> findFirstByCellNameIgnoreCaseAndActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCase(
+            String cellName,
+            String activeFlag,
+            String wingActiveFlag);
+
+    @EntityGraph(attributePaths = "wing")
     List<CellMaster> findAllByOrderByCellNameAsc();
 
     @EntityGraph(attributePaths = "wing")

@@ -79,45 +79,32 @@
                         </div>
 
                         <div class="tm-editor-grid">
-                            <form id="tm2PositionForm" class="tm-panel tm-form" novalidate>
-                                <input type="hidden" id="tm2PositionId">
-                                <input type="hidden" id="tm2PositionCellId">
-                                <input type="hidden" id="tm2PositionDisplayOrder" value="0">
+                            <div class="tm-panel tm-csv-panel">
                                 <div class="tm-panel-header">
                                     <div>
-                                        <h2 id="tm2PositionFormTitle">Create Position</h2>
-                                        <span>Employee list is filtered from Employee Master.</span>
+                                        <h2>Create Positions & Map Employees by CSV</h2>
+                                        <span>Upload rows with cell, designation and employee details to create positions under the cell.</span>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="tm2PositionResetButton" title="Reset">
-                                        <i class="fa-solid fa-rotate-left"></i>
-                                    </button>
                                 </div>
-
-                                <label class="form-label" for="tm2PositionName">Position Name</label>
-                                <input id="tm2PositionName" class="form-control form-control-sm" maxlength="150" required readonly>
-
-                                <label class="form-label" for="tm2DesignationId">Designation <span class="text-danger">*</span></label>
-                                <select id="tm2DesignationId" class="form-select form-select-sm" required></select>
-                                <div class="invalid-feedback">Designation is required.</div>
-
-                                <label class="form-label" for="tm2PositionLevelCode">Level</label>
-                                <select id="tm2PositionLevelCode" class="form-select form-select-sm"></select>
-
-                                <label class="form-label" for="tm2ReportingPositionId">Reporting Position</label>
-                                <select id="tm2ReportingPositionId" class="form-select form-select-sm"></select>
-
-                                <label class="form-label" for="tm2EmployeeId">Employee</label>
-                                <select id="tm2EmployeeId" class="form-select form-select-sm" disabled>
-                                    <option value="">Select Designation First</option>
-                                </select>
-
-                                <div class="tm-form-actions">
-                                    <button class="btn btn-primary btn-sm" type="submit">
-                                        <i class="fa-solid fa-floppy-disk"></i> Save Position
-                                    </button>
+                                <form id="tm2CsvForm" class="tm-csv-form" novalidate>
+                                    <label class="form-label" for="tm2CsvFile">Position CSV File</label>
+                                    <input id="tm2CsvFile" class="form-control form-control-sm" type="file" accept=".csv,text/csv" required>
+                                    <div class="tm-csv-actions">
+                                        <button class="btn btn-primary btn-sm" type="submit">
+                                            <i class="fa-solid fa-upload"></i> Upload CSV
+                                        </button>
+                                        <button id="tm2SampleCsvButton" class="btn btn-outline-secondary btn-sm" type="button">
+                                            <i class="fa-solid fa-file-arrow-down"></i> Download Dummy CSV
+                                        </button>
+                                    </div>
+                                </form>
+                                <div class="tm-csv-format">
+                                    <strong>CSV Format</strong>
+                                    <code>cell_id,cell_name,designation_id,designation_name,level_code,reporting_position_name,employee_id,employee_code,display_order</code>
+                                    <span>Position name is generated from cell, designation and level. designation_id is resolved from manpower_designation_master. Use either employee_id or employee_code from Employee Master.</span>
                                 </div>
-                            </form>
-
+                                <div id="tm2CsvResult" class="tm-upload-result d-none"></div>
+                            </div>
                         </div>
 
                         <div class="tm-panel">

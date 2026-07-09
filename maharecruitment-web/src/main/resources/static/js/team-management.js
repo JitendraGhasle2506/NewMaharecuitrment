@@ -51,9 +51,20 @@
             renderPositionsTable();
         });
 
-        $('tm2PositionForm').addEventListener('submit', savePosition);
-        $('tm2PositionResetButton').addEventListener('click', resetPositionForm);
-        $('tm2DesignationId').addEventListener('change', async () => {
+        $('tm2PositionForm')?.addEventListener('submit', savePosition);
+        $('tm2BulkForm')?.addEventListener('submit', createBulkPositions);
+        $('tm2BulkDesignationId')?.addEventListener('change', async () => {
+            updateBulkDesignationName();
+            try {
+                await loadBulkLevels();
+            } catch (error) {
+                showAlert(error.message, 'danger');
+            }
+        });
+        $('tm2CsvForm')?.addEventListener('submit', uploadPositionCsv);
+        $('tm2SampleCsvButton')?.addEventListener('click', downloadSampleCsv);
+        $('tm2PositionResetButton')?.addEventListener('click', resetPositionForm);
+        $('tm2DesignationId')?.addEventListener('change', async () => {
             try {
                 await loadLevels();
                 await loadEmployees();
@@ -62,7 +73,7 @@
                 showAlert(error.message, 'danger');
             }
         });
-        $('tm2PositionLevelCode').addEventListener('change', async () => {
+        $('tm2PositionLevelCode')?.addEventListener('change', async () => {
             updatePositionName();
             try {
                 await loadEmployees();
@@ -99,7 +110,12 @@
         $('tm2CellWorkspace').classList.remove('d-none');
         $('tm2SelectedWing').textContent = cell.wingName;
         $('tm2SelectedCell').textContent = cell.cellName;
-        $('tm2PositionCellId').value = cell.id;
+        if ($('tm2PositionCellId')) {
+            $('tm2PositionCellId').value = cell.id;
+        }
+        if ($('tm2BulkCellName')) {
+            $('tm2BulkCellName').value = cell.cellName;
+        }
         $('tm2PositionsBody').innerHTML = loadingRow(6, 'Loading positions...');
         renderStats();
         renderWingTree();
@@ -123,12 +139,119 @@
         }
     }
 
+    async function uploadPositionCsv(event) {
+        event.preventDefault();
+        const cell = selectedCell();
+        const fileInput = $('tm2CsvFile');
+        const file = fileInput.files[0];
+        if (!file) {
+            showAlert('Select a CSV file before uploading.', 'warning');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const result = await request('/api/master/positions/import', {
+                method: 'POST',
+                body: formData
+            });
+            renderCsvResult(result);
+            fileInput.value = '';
+            showAlert('CSV import completed.', result.failedCount ? 'warning' : 'success');
+            if (cell) {
+                await selectCell(cell.id);
+            }
+        } catch (error) {
+            showAlert(error.message, 'danger');
+        }
+    }
+
+    async function createBulkPositions(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const cell = selectedCell();
+        form.classList.add('was-validated');
+
+        const designationId = valueOrNull($('tm2BulkDesignationId').value);
+        const positionCount = Number($('tm2BulkPositionCount').value || 0);
+        if (!cell) {
+            showAlert('Select a cell before creating positions.', 'warning');
+            return;
+        }
+        if (!designationId || !Number.isInteger(positionCount) || positionCount < 1 || positionCount > 500
+                || !form.checkValidity()) {
+            showAlert('Select designation and enter number of positions between 1 and 500.', 'warning');
+            return;
+        }
+
+        const payload = {
+            cellId: cell.id,
+            cellName: cell.cellName,
+            designationId,
+            designationName: selectedOptionLabel($('tm2BulkDesignationId')),
+            levelCode: $('tm2BulkLevelCode').disabled ? null : $('tm2BulkLevelCode').value || null,
+            positionCount
+        };
+
+        try {
+            const result = await request('/api/master/positions/bulk', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            renderBulkResult(result);
+            form.classList.remove('was-validated');
+            $('tm2BulkPositionCount').value = 1;
+            showAlert(`${result.createdCount || 0} positions created successfully.`, 'success');
+            await selectCell(cell.id);
+        } catch (error) {
+            showAlert(error.message, 'danger');
+        }
+    }
+
+    function downloadSampleCsv() {
+        const cell = selectedCell();
+        if (!cell) {
+            showAlert('Select a cell before downloading dummy CSV.', 'warning');
+            return;
+        }
+
+        const designation = state.designations[0] || {};
+        const designationId = designation.id || '';
+        const designationName = designation.label || 'Project Manager';
+        const managerPosition = `${cell.cellName} - ${designationName} - L1 - 01`;
+        const csv = [
+            ['cell_id', 'cell_name', 'designation_id', 'designation_name', 'level_code', 'reporting_position_name', 'employee_id', 'employee_code', 'display_order'],
+            [cell.id, cell.cellName, designationId, designationName, 'L1', '', '1', '', '10'],
+            [cell.id, cell.cellName, designationId, designationName, 'L2', managerPosition, '', 'EMP002', '20']
+        ].map((row) => row.map(csvEscape).join(',')).join('\r\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${cell.cellName.replace(/[^\w.-]+/g, '_') || 'cell'}-positions-sample.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    }
+
     async function loadDesignations() {
         state.designations = await request('/api/master/organization-hierarchy/options/designations') || [];
-        fillSelect($('tm2DesignationId'), state.designations.map((designation) => ({
+        const designationOptions = state.designations.map((designation) => ({
             value: designation.id,
             label: designation.label
-        })), 'Select Designation');
+        }));
+        if ($('tm2DesignationId')) {
+            fillSelect($('tm2DesignationId'), designationOptions, 'Select Designation');
+        }
+        if ($('tm2BulkDesignationId')) {
+            fillSelect($('tm2BulkDesignationId'), designationOptions, 'Select Designation');
+            updateBulkDesignationName();
+            await loadBulkLevels();
+        }
     }
 
     async function loadLevels(selectedLevelCode) {
@@ -144,6 +267,27 @@
 
         state.levels = await request(`/api/master/organization-hierarchy/options/levels${query({ designationId })}`) || [];
         const levelOptions = state.levels.map((level) => ({
+            value: level.code,
+            label: level.code ? `${level.code} - ${level.label}` : level.label
+        }));
+        fillSelect(levelSelect, levelOptions, levelOptions.length ? 'Any Level' : 'No Level Required');
+        levelSelect.disabled = levelOptions.length === 0;
+        if (selectedLevelCode && levelOptions.some((option) => String(option.value) === String(selectedLevelCode))) {
+            levelSelect.value = selectedLevelCode;
+        }
+    }
+
+    async function loadBulkLevels(selectedLevelCode) {
+        const designationId = valueOrNull($('tm2BulkDesignationId').value);
+        const levelSelect = $('tm2BulkLevelCode');
+        if (!designationId) {
+            fillSelect(levelSelect, [], 'Select Designation First');
+            levelSelect.disabled = true;
+            return;
+        }
+
+        const levels = await request(`/api/master/organization-hierarchy/options/levels${query({ designationId })}`) || [];
+        const levelOptions = levels.map((level) => ({
             value: level.code,
             label: level.code ? `${level.code} - ${level.label}` : level.label
         }));
@@ -343,6 +487,7 @@
     function renderPositionsTable() {
         const body = $('tm2PositionsBody');
         const rows = filteredPositions();
+        const canEditPosition = Boolean($('tm2PositionForm'));
         $('tm2PositionsSummary').textContent = `${rows.length} ${rows.length === 1 ? 'position' : 'positions'}`;
         if (!rows.length) {
             body.innerHTML = emptyRow(6);
@@ -365,9 +510,9 @@
                 </td>
                 <td class="text-center">${statusBadge(position.positionStatus)}</td>
                 <td class="tm-cell-actions">
-                    <button type="button" class="btn btn-outline-primary tm-action-btn" data-action="edit-position" data-id="${position.positionId}" title="Edit position">
+                    ${canEditPosition ? `<button type="button" class="btn btn-outline-primary tm-action-btn" data-action="edit-position" data-id="${position.positionId}" title="Edit position">
                         <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
+                    </button>` : ''}
                     <button type="button" class="btn btn-outline-danger tm-action-btn" data-action="deactivate-position" data-id="${position.positionId}" title="Deactivate position">
                         <i class="fa-solid fa-ban"></i>
                     </button>
@@ -468,9 +613,10 @@
     }
 
     async function request(path, options = {}) {
+        const isFormData = options.body instanceof FormData;
         const headers = {
             Accept: 'application/json',
-            ...(options.body ? { 'Content-Type': 'application/json' } : {})
+            ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {})
         };
         if (csrfToken && csrfHeader && options.method && options.method !== 'GET') {
             headers[csrfHeader] = csrfToken;
@@ -486,6 +632,28 @@
             throw new Error(payload.message || 'Request failed');
         }
         return Object.prototype.hasOwnProperty.call(payload, 'data') ? payload.data : payload;
+    }
+
+    function renderCsvResult(result) {
+        const target = $('tm2CsvResult');
+        const errors = Array.isArray(result?.errors) ? result.errors : [];
+        target.classList.remove('d-none');
+        target.innerHTML = `
+            <strong>${Number(result?.createdCount || 0)} created, ${Number(result?.failedCount || 0)} failed</strong>
+            <span>Total rows processed: ${Number(result?.totalRows || 0)}</span>
+            ${errors.length ? `<ul>${errors.map((error) => `<li>${escapeHtml(error)}</li>`).join('')}</ul>` : ''}
+        `;
+    }
+
+    function renderBulkResult(result) {
+        const target = $('tm2BulkResult');
+        const positions = Array.isArray(result?.positions) ? result.positions : [];
+        target.classList.remove('d-none');
+        target.innerHTML = `
+            <strong>${Number(result?.createdCount || 0)} positions created</strong>
+            <span>${escapeHtml(result?.cellName || '')} / ${escapeHtml(result?.designationName || '')}${result?.levelCode ? ` / ${escapeHtml(result.levelCode)}` : ''}</span>
+            ${positions.length ? `<ul>${positions.slice(0, 8).map((position) => `<li>${escapeHtml(position.positionName)}</li>`).join('')}</ul>` : ''}
+        `;
     }
 
     function fillSelect(select, options, blankLabel) {
@@ -557,6 +725,17 @@
         state.employeeRequestId += 1;
         fillSelect($('tm2EmployeeId'), [], blankLabel);
         $('tm2EmployeeId').disabled = true;
+    }
+
+    function updateBulkDesignationName() {
+        if ($('tm2BulkDesignationName') && $('tm2BulkDesignationId')) {
+            $('tm2BulkDesignationName').value = selectedOptionLabel($('tm2BulkDesignationId'));
+        }
+    }
+
+    function csvEscape(value) {
+        const text = String(value ?? '');
+        return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
     }
 
     function statusBadge(status) {

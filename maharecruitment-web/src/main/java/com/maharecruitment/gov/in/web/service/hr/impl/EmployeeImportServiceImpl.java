@@ -64,6 +64,9 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
     private static final String EMPLOYEE_ROLE_NAME = "ROLE_EMPLOYEE";
     private static final String ACTIVE_FLAG = "Y";
     private static final String ACTIVE_STATUS = "ACTIVE";
+    private static final String AADHAAR_EMPLOYEE_CODE_PREFIX = "MahaI";
+    private static final String LEGACY_EMPLOYEE_CODE_PREFIX = "EMP";
+    private static final String TEMPORARY_EMPLOYEE_CODE_PREFIX = "TMP-";
     private static final List<String> CSV_HEADERS = List.of(
             "employeeCode",
             "recruitmentType",
@@ -281,13 +284,14 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         AgencyMaster agency = resolveAgency(row.agencyId());
 
         applyEmployee(row, employee, departmentRegistration, subDepartment, designation, agency);
+        applyGeneratedEmployeeCode(row, employee, newEmployee);
         if (newEmployee && !StringUtils.hasText(employee.getEmployeeCode())) {
             employee.setEmployeeCode(generateTemporaryEmployeeCode());
         }
 
         EmployeeEntity savedEmployee = employeeRepository.save(employee);
         if (newEmployee && !StringUtils.hasText(row.employeeCode())) {
-            savedEmployee.setEmployeeCode("EMP" + String.format("%06d", savedEmployee.getEmployeeId()));
+            savedEmployee.setEmployeeCode(resolveFinalEmployeeCode(savedEmployee));
             savedEmployee = employeeRepository.save(savedEmployee);
         }
 
@@ -326,6 +330,55 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         return userRepository.findByEmailIgnoreCase(row.email())
                 .flatMap(user -> employeeRepository.findByUser_Id(user.getId()))
                 .orElseGet(EmployeeEntity::new);
+    }
+
+    private void applyGeneratedEmployeeCode(EmployeeImportRow row, EmployeeEntity employee, boolean newEmployee) {
+        if (StringUtils.hasText(row.employeeCode())) {
+            return;
+        }
+        String aadhaarEmployeeCode = generateEmployeeCodeFromAadhaar(row.aadhaarNumber());
+        if (!StringUtils.hasText(aadhaarEmployeeCode) || !canReplaceEmployeeCode(employee, newEmployee)) {
+            return;
+        }
+        validateGeneratedEmployeeCodeAvailable(aadhaarEmployeeCode, employee.getEmployeeId());
+        employee.setEmployeeCode(aadhaarEmployeeCode);
+    }
+
+    private String resolveFinalEmployeeCode(EmployeeEntity employee) {
+        if (StringUtils.hasText(employee.getEmployeeCode())
+                && !employee.getEmployeeCode().startsWith(TEMPORARY_EMPLOYEE_CODE_PREFIX)) {
+            return employee.getEmployeeCode();
+        }
+        return LEGACY_EMPLOYEE_CODE_PREFIX + String.format("%06d", employee.getEmployeeId());
+    }
+
+    private boolean canReplaceEmployeeCode(EmployeeEntity employee, boolean newEmployee) {
+        if (newEmployee) {
+            return true;
+        }
+        String currentCode = employee.getEmployeeCode();
+        return !StringUtils.hasText(currentCode) || currentCode.startsWith(TEMPORARY_EMPLOYEE_CODE_PREFIX);
+    }
+
+    private String generateEmployeeCodeFromAadhaar(String aadhaarNumber) {
+        String aadhaarDigits = digitsOnly(aadhaarNumber);
+        if (aadhaarDigits.length() < 4) {
+            return null;
+        }
+        return AADHAAR_EMPLOYEE_CODE_PREFIX + aadhaarDigits.substring(aadhaarDigits.length() - 4);
+    }
+
+    private String digitsOnly(String value) {
+        return StringUtils.hasText(value) ? value.replaceAll("\\D", "") : "";
+    }
+
+    private void validateGeneratedEmployeeCodeAvailable(String employeeCode, Long employeeId) {
+        employeeRepository.findByEmployeeCodeIgnoreCase(employeeCode)
+                .filter(existing -> !Objects.equals(existing.getEmployeeId(), employeeId))
+                .ifPresent(existing -> {
+                    throw new IllegalArgumentException(
+                            "Generated employee code " + employeeCode + " already exists for another employee.");
+                });
     }
 
     private void validateEmployeeUniqueness(EmployeeImportRow row, EmployeeEntity employee) {

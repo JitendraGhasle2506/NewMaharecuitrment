@@ -718,13 +718,87 @@
 .tm-editor-grid {
     display: grid;
     gap: 1rem;
-    grid-template-columns: minmax(290px, 420px);
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .tm-form-actions {
     display: flex;
     justify-content: flex-end;
     padding-top: 0.25rem;
+}
+
+.tm-bulk-panel {
+    align-self: start;
+}
+
+.tm-bulk-form {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.85rem 1rem 1rem;
+}
+
+.tm-csv-panel {
+    align-self: start;
+}
+
+.tm-csv-form {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.85rem 1rem;
+}
+
+.tm-csv-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tm-csv-format {
+    background: #f7f9fc;
+    border-top: 1px solid #e4e9f2;
+    color: #5e6e84;
+    display: grid;
+    gap: 0.42rem;
+    padding: 0.85rem 1rem;
+}
+
+.tm-csv-format strong {
+    color: #1f2a3d;
+    font-size: 0.82rem;
+}
+
+.tm-csv-format code {
+    background: #ffffff;
+    border: 1px solid #dce4ef;
+    border-radius: 5px;
+    color: #17385f;
+    display: block;
+    font-size: 0.75rem;
+    overflow-x: auto;
+    padding: 0.55rem;
+    white-space: nowrap;
+}
+
+.tm-csv-format span {
+    font-size: 0.76rem;
+}
+
+.tm-upload-result {
+    border-top: 1px solid #e4e9f2;
+    color: #475569;
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.85rem 1rem 1rem;
+}
+
+.tm-upload-result strong {
+    color: #1f2a3d;
+}
+
+.tm-upload-result ul {
+    color: #b42318;
+    margin: 0.35rem 0 0;
+    padding-left: 1.1rem;
 }
 
 .tm-team-panel {

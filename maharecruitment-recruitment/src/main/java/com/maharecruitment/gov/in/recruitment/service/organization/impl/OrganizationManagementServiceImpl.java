@@ -1,9 +1,16 @@
 package com.maharecruitment.gov.in.recruitment.service.organization.impl;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -14,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.master.entity.CellMaster;
 import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
@@ -32,6 +40,9 @@ import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeTeamMappi
 import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeTeamMappingResponse;
 import com.maharecruitment.gov.in.recruitment.dto.organization.OrganizationAuditResponse;
 import com.maharecruitment.gov.in.recruitment.dto.organization.OrganizationLookupOption;
+import com.maharecruitment.gov.in.recruitment.dto.organization.PositionBulkCreateRequest;
+import com.maharecruitment.gov.in.recruitment.dto.organization.PositionBulkCreateResponse;
+import com.maharecruitment.gov.in.recruitment.dto.organization.PositionCsvImportResponse;
 import com.maharecruitment.gov.in.recruitment.dto.organization.PositionRequest;
 import com.maharecruitment.gov.in.recruitment.dto.organization.PositionResponse;
 import com.maharecruitment.gov.in.recruitment.dto.organization.TeamByCellResponse;
@@ -233,6 +244,124 @@ public class OrganizationManagementServiceImpl implements OrganizationManagement
         positionRepository.save(position);
         log(OrganizationAuditAction.POSITION_STATUS_CHANGED, "POSITION", positionId,
                 active ? "Position activated" : "Position deactivated", position.getPositionName());
+    }
+
+    @Override
+    @Transactional
+    public PositionBulkCreateResponse createPositionsInCell(PositionBulkCreateRequest request) {
+        CellMaster cell = resolveBulkCell(request);
+        ManpowerDesignationMaster designation = resolveBulkDesignation(request);
+        ResourceLevelExperience level = resolvePositionLevel(request.getLevelCode(), designation);
+        int positionCount = validatePositionCount(request.getPositionCount());
+
+        List<PositionMasterEntity> existingPositions = positionRepository
+                .findByCellScopeAndStatusOrderByDisplayOrderAscPositionIdAsc(
+                        cell.getCellId(),
+                        OrganizationRecordStatus.ACTIVE);
+        Map<String, Long> existingNames = existingPositions.stream()
+                .filter(position -> StringUtils.hasText(position.getPositionName()))
+                .collect(Collectors.toMap(
+                        position -> normalizeKey(position.getPositionName()),
+                        PositionMasterEntity::getPositionId,
+                        (existing, duplicate) -> existing,
+                        LinkedHashMap::new));
+
+        String baseName = buildBulkPositionBaseName(cell, designation, level);
+        int nextSequence = nextBulkPositionSequence(existingPositions, designation.getDesignationId(), level);
+        int displayOrder = existingPositions.stream()
+                .map(PositionMasterEntity::getDisplayOrder)
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0) + 10;
+
+        List<PositionResponse> createdPositions = new ArrayList<>(positionCount);
+        for (int index = 0; index < positionCount; index++) {
+            String positionName = nextBulkPositionName(baseName, existingNames, nextSequence);
+            nextSequence = trailingSequence(positionName) + 1;
+
+            PositionMasterEntity position = new PositionMasterEntity();
+            position.setPositionName(positionName);
+            position.setProject(null);
+            position.setCell(cell);
+            position.setTeam(null);
+            position.setDesignation(designation);
+            position.setResourceLevel(level);
+            position.setReportingPosition(null);
+            position.setEmployee(null);
+            position.setDisplayOrder(displayOrder);
+            position.setStatus(OrganizationRecordStatus.ACTIVE);
+            position.setPositionStatus(PositionStatus.VACANT);
+
+            PositionMasterEntity saved = positionRepository.save(position);
+            existingNames.put(normalizeKey(saved.getPositionName()), saved.getPositionId());
+            createdPositions.add(toPositionResponse(saved));
+            logPositionCreate(saved);
+            displayOrder += 10;
+        }
+
+        return PositionBulkCreateResponse.builder()
+                .cellId(cell.getCellId())
+                .cellName(cell.getCellName())
+                .designationName(designation.getDesignationName())
+                .levelCode(level == null ? null : level.getLevelCode())
+                .createdCount(createdPositions.size())
+                .positions(createdPositions)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public PositionCsvImportResponse importPositionsFromCsv(Long cellId, MultipartFile file) {
+        CellMaster selectedCell = cellId == null ? null : resolveActiveCell(cellId);
+        if (file == null || file.isEmpty()) {
+            throw new BusinessValidationException("CSV file is required.");
+        }
+
+        PositionCsvImportResponse response = PositionCsvImportResponse.builder()
+                .errors(new ArrayList<>())
+                .build();
+        Map<Long, Map<String, Long>> positionsByCellAndName = new HashMap<>();
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            String headerLine = reader.readLine();
+            if (!StringUtils.hasText(headerLine)) {
+                throw new BusinessValidationException("CSV header is required.");
+            }
+            Map<String, Integer> headers = csvHeaders(parseCsvLine(removeBom(headerLine)));
+            validatePositionCsvHeaders(headers);
+
+            String line;
+            int rowNumber = 1;
+            while ((line = reader.readLine()) != null) {
+                rowNumber++;
+                if (!StringUtils.hasText(line)) {
+                    continue;
+                }
+
+                response.setTotalRows(response.getTotalRows() + 1);
+                try {
+                    List<String> values = parseCsvLine(line);
+                    PositionRequest request = toPositionCsvRequest(values, headers, selectedCell, positionsByCellAndName);
+                    PositionResponse created = createPosition(request);
+                    response.setCreatedCount(response.getCreatedCount() + 1);
+                    positionsByCellAndName
+                            .computeIfAbsent(created.getCellId(), this::activePositionIdsByName)
+                            .put(normalizeKey(created.getPositionName()), created.getPositionId());
+                } catch (RuntimeException ex) {
+                    response.setFailedCount(response.getFailedCount() + 1);
+                    response.getErrors().add("Row " + rowNumber + ": " + ex.getMessage());
+                }
+            }
+        } catch (IOException ex) {
+            throw new BusinessValidationException("Unable to read CSV file.");
+        }
+
+        if (response.getTotalRows() == 0) {
+            throw new BusinessValidationException("CSV file has no position rows.");
+        }
+        return response;
     }
 
     @Override
@@ -508,6 +637,373 @@ public class OrganizationManagementServiceImpl implements OrganizationManagement
         team.setDisplayOrder(request.getDisplayOrder() == null ? 0 : request.getDisplayOrder());
         team.setStatus(request.getStatus() == null ? OrganizationRecordStatus.ACTIVE : request.getStatus());
         team.setParentTeam(resolveParentTeam(request.getParentTeamId(), cell.getCellId(), team.getTeamId()));
+    }
+
+    private Map<String, Long> activePositionIdsByName(Long cellId) {
+        return positionRepository
+                .findByCellScopeAndStatusOrderByDisplayOrderAscPositionIdAsc(cellId, OrganizationRecordStatus.ACTIVE)
+                .stream()
+                .filter(position -> StringUtils.hasText(position.getPositionName()))
+                .collect(Collectors.toMap(
+                        position -> normalizeKey(position.getPositionName()),
+                        PositionMasterEntity::getPositionId,
+                        (existing, duplicate) -> existing,
+                        LinkedHashMap::new));
+    }
+
+    private CellMaster resolveBulkCell(PositionBulkCreateRequest request) {
+        if (request == null) {
+            throw new BusinessValidationException("Position request is required.");
+        }
+        CellMaster cell;
+        if (request.getCellId() != null) {
+            cell = resolveActiveCell(request.getCellId());
+        } else if (StringUtils.hasText(request.getCellName())) {
+            cell = cellMasterRepository
+                    .findFirstByCellNameIgnoreCaseAndActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCase(
+                            request.getCellName().trim(),
+                            ACTIVE_FLAG,
+                            ACTIVE_FLAG)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Active cell not found: " + request.getCellName()));
+        } else {
+            throw new BusinessValidationException("Cell name or cell id is required.");
+        }
+
+        if (StringUtils.hasText(request.getCellName())
+                && !cell.getCellName().equalsIgnoreCase(request.getCellName().trim())) {
+            throw new BusinessValidationException("Cell name does not match selected cell.");
+        }
+        return cell;
+    }
+
+    private ManpowerDesignationMaster resolveBulkDesignation(PositionBulkCreateRequest request) {
+        if (request.getDesignationId() != null) {
+            ManpowerDesignationMaster designation = resolveActiveDesignation(request.getDesignationId());
+            if (StringUtils.hasText(request.getDesignationName())
+                    && !designation.getDesignationName().equalsIgnoreCase(request.getDesignationName().trim())) {
+                throw new BusinessValidationException("Designation name does not match designation id.");
+            }
+            return designation;
+        }
+
+        String designationName = normalizeRequired(request.getDesignationName(), "Designation name");
+        return designationRepository
+                .findFirstByDesignationNameIgnoreCaseAndActiveFlagIgnoreCase(designationName, ACTIVE_FLAG)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Active designation not found: " + designationName));
+    }
+
+    private int validatePositionCount(Integer positionCount) {
+        if (positionCount == null) {
+            throw new BusinessValidationException("Number of positions is required.");
+        }
+        if (positionCount < 1 || positionCount > 500) {
+            throw new BusinessValidationException("Number of positions must be between 1 and 500.");
+        }
+        return positionCount;
+    }
+
+    private String buildBulkPositionBaseName(
+            CellMaster cell,
+            ManpowerDesignationMaster designation,
+            ResourceLevelExperience level) {
+        List<String> parts = new ArrayList<>();
+        parts.add(cell.getCellName());
+        parts.add(designation.getDesignationName());
+        if (level != null && StringUtils.hasText(level.getLevelCode())) {
+            parts.add(level.getLevelCode());
+        }
+        return String.join(" - ", parts);
+    }
+
+    private int nextBulkPositionSequence(
+            List<PositionMasterEntity> positions,
+            Long designationId,
+            ResourceLevelExperience level) {
+        String levelCode = level == null ? "" : level.getLevelCode();
+        return positions.stream()
+                .filter(position -> position.getDesignation() != null
+                        && designationId.equals(position.getDesignation().getDesignationId()))
+                .filter(position -> {
+                    String positionLevelCode = position.getResourceLevel() == null
+                            ? ""
+                            : position.getResourceLevel().getLevelCode();
+                    return positionLevelCode.equalsIgnoreCase(levelCode);
+                })
+                .map(PositionMasterEntity::getPositionName)
+                .map(this::trailingSequence)
+                .filter(sequence -> sequence > 0)
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0) + 1;
+    }
+
+    private String nextBulkPositionName(String baseName, Map<String, Long> existingNames, int startSequence) {
+        int sequence = Math.max(startSequence, 1);
+        while (true) {
+            String suffix = " - " + String.format(Locale.ROOT, "%02d", sequence);
+            String candidate = baseName;
+            if (candidate.length() + suffix.length() > 150) {
+                candidate = candidate.substring(0, 150 - suffix.length()).trim();
+            }
+            candidate = candidate + suffix;
+            if (!existingNames.containsKey(normalizeKey(candidate))) {
+                return candidate;
+            }
+            sequence++;
+        }
+    }
+
+    private int trailingSequence(String value) {
+        if (!StringUtils.hasText(value)) {
+            return 0;
+        }
+        int separatorIndex = value.lastIndexOf(" - ");
+        if (separatorIndex < 0 || separatorIndex + 3 >= value.length()) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(value.substring(separatorIndex + 3));
+        } catch (NumberFormatException ex) {
+            return 0;
+        }
+    }
+
+    private Map<String, Integer> csvHeaders(List<String> headers) {
+        Map<String, Integer> normalizedHeaders = new LinkedHashMap<>();
+        for (int index = 0; index < headers.size(); index++) {
+            String header = normalizeHeader(headers.get(index));
+            if (StringUtils.hasText(header)) {
+                normalizedHeaders.put(header, index);
+            }
+        }
+        return normalizedHeaders;
+    }
+
+    private void validatePositionCsvHeaders(Map<String, Integer> headers) {
+        if (!headers.containsKey("designation_name") && !headers.containsKey("designation_id")) {
+            throw new BusinessValidationException("CSV column designation_name or designation_id is required.");
+        }
+    }
+
+    private PositionRequest toPositionCsvRequest(
+            List<String> values,
+            Map<String, Integer> headers,
+            CellMaster selectedCell,
+            Map<Long, Map<String, Long>> positionsByCellAndName) {
+        CellMaster cell = resolveCsvCell(values, headers, selectedCell);
+        Map<String, Long> positionsByName = positionsByCellAndName
+                .computeIfAbsent(cell.getCellId(), this::activePositionIdsByName);
+
+        ManpowerDesignationMaster designation = resolveCsvDesignation(values, headers);
+        ResourceLevelExperience level = resolvePositionLevel(csvValue(values, headers, "level_code"), designation);
+        String positionName = resolveCsvPositionName(values, headers, cell, designation, level, positionsByName);
+        String positionKey = normalizeKey(positionName);
+        if (positionsByName.containsKey(positionKey)) {
+            throw new BusinessValidationException("Position already exists in this cell: " + positionName);
+        }
+
+        PositionRequest request = new PositionRequest();
+        request.setPositionName(positionName);
+        request.setCellId(cell.getCellId());
+        request.setTeamId(null);
+        request.setDesignationId(designation.getDesignationId());
+        request.setLevelCode(level == null ? null : level.getLevelCode());
+        request.setReportingPositionId(resolveCsvReportingPositionId(values, headers, positionsByName));
+        request.setEmployeeId(resolveCsvEmployeeId(values, headers));
+        request.setDisplayOrder(parseCsvDisplayOrder(values, headers, (positionsByName.size() + 1) * 10));
+        request.setStatus(OrganizationRecordStatus.ACTIVE);
+        return request;
+    }
+
+    private CellMaster resolveCsvCell(List<String> values, Map<String, Integer> headers, CellMaster selectedCell) {
+        String cellIdText = csvValue(values, headers, "cell_id");
+        String cellName = csvValue(values, headers, "cell_name");
+        if (selectedCell != null) {
+            if (StringUtils.hasText(cellIdText) && !selectedCell.getCellId().equals(parseLong(cellIdText, "cell_id"))) {
+                throw new BusinessValidationException("CSV cell_id does not match selected cell.");
+            }
+            if (StringUtils.hasText(cellName) && !selectedCell.getCellName().equalsIgnoreCase(cellName.trim())) {
+                throw new BusinessValidationException("CSV cell_name does not match selected cell.");
+            }
+            return selectedCell;
+        }
+
+        if (StringUtils.hasText(cellIdText)) {
+            CellMaster cell = resolveActiveCell(parseLong(cellIdText, "cell_id"));
+            if (StringUtils.hasText(cellName) && !cell.getCellName().equalsIgnoreCase(cellName.trim())) {
+                throw new BusinessValidationException("CSV cell_name does not match cell_id.");
+            }
+            return cell;
+        }
+        if (StringUtils.hasText(cellName)) {
+            return cellMasterRepository
+                    .findFirstByCellNameIgnoreCaseAndActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCase(
+                            cellName.trim(),
+                            ACTIVE_FLAG,
+                            ACTIVE_FLAG)
+                    .orElseThrow(() -> new ResourceNotFoundException("Active cell not found: " + cellName));
+        }
+        throw new BusinessValidationException("CSV column cell_id or cell_name is required.");
+    }
+
+    private ManpowerDesignationMaster resolveCsvDesignation(List<String> values, Map<String, Integer> headers) {
+        String designationId = csvValue(values, headers, "designation_id");
+        String designationName = csvValue(values, headers, "designation_name");
+        if (StringUtils.hasText(designationId)) {
+            ManpowerDesignationMaster designation = resolveActiveDesignation(parseLong(designationId, "designation_id"));
+            if (StringUtils.hasText(designationName)
+                    && !designation.getDesignationName().equalsIgnoreCase(designationName.trim())) {
+                throw new BusinessValidationException("CSV designation_name does not match designation_id.");
+            }
+            return designation;
+        }
+
+        String normalizedDesignationName = normalizeRequired(designationName, "Designation name");
+        return designationRepository
+                .findFirstByDesignationNameIgnoreCaseAndActiveFlagIgnoreCase(normalizedDesignationName, ACTIVE_FLAG)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Active designation not found: " + normalizedDesignationName));
+    }
+
+    private String resolveCsvPositionName(
+            List<String> values,
+            Map<String, Integer> headers,
+            CellMaster cell,
+            ManpowerDesignationMaster designation,
+            ResourceLevelExperience level,
+            Map<String, Long> positionsByName) {
+        String providedPositionName = csvValue(values, headers, "position_name");
+        if (StringUtils.hasText(providedPositionName)) {
+            return normalizeRequired(providedPositionName, "Position name");
+        }
+        return nextBulkPositionName(
+                buildBulkPositionBaseName(cell, designation, level),
+                positionsByName,
+                1);
+    }
+
+    private Long resolveCsvReportingPositionId(
+            List<String> values,
+            Map<String, Integer> headers,
+            Map<String, Long> positionsByName) {
+        String reportingPositionId = csvValue(values, headers, "reporting_position_id");
+        if (StringUtils.hasText(reportingPositionId)) {
+            return parseLong(reportingPositionId, "reporting_position_id");
+        }
+
+        String reportingPositionName = csvValue(values, headers, "reporting_position_name");
+        if (!StringUtils.hasText(reportingPositionName)) {
+            return null;
+        }
+        Long resolvedId = positionsByName.get(normalizeKey(reportingPositionName));
+        if (resolvedId == null) {
+            throw new ResourceNotFoundException(
+                    "Reporting position not found in selected cell or previous CSV rows: " + reportingPositionName);
+        }
+        return resolvedId;
+    }
+
+    private Long resolveCsvEmployeeId(List<String> values, Map<String, Integer> headers) {
+        String employeeId = csvValue(values, headers, "employee_id");
+        if (!StringUtils.hasText(employeeId)) {
+            employeeId = csvValue(values, headers, "employee_master_id");
+        }
+        String employeeCode = csvValue(values, headers, "employee_code");
+        if (StringUtils.hasText(employeeId)) {
+            Long parsedEmployeeId = parseLong(employeeId, "employee_id");
+            if (StringUtils.hasText(employeeCode)) {
+                Long codeEmployeeId = employeeRepository.findByEmployeeCodeIgnoreCase(employeeCode.trim())
+                        .map(EmployeeEntity::getEmployeeId)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Employee not found for code: " + employeeCode));
+                if (!parsedEmployeeId.equals(codeEmployeeId)) {
+                    throw new BusinessValidationException("CSV employee_id does not match employee_code.");
+                }
+            }
+            return parsedEmployeeId;
+        }
+
+        if (!StringUtils.hasText(employeeCode)) {
+            return null;
+        }
+        return employeeRepository.findByEmployeeCodeIgnoreCase(employeeCode.trim())
+                .map(EmployeeEntity::getEmployeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found for code: " + employeeCode));
+    }
+
+    private Integer parseCsvDisplayOrder(List<String> values, Map<String, Integer> headers, int fallback) {
+        String displayOrder = csvValue(values, headers, "display_order");
+        if (!StringUtils.hasText(displayOrder)) {
+            return fallback;
+        }
+        long parsed = parseLong(displayOrder, "display_order");
+        if (parsed < 0 || parsed > Integer.MAX_VALUE) {
+            throw new BusinessValidationException("display_order must be between 0 and " + Integer.MAX_VALUE + ".");
+        }
+        return (int) parsed;
+    }
+
+    private Long parseLong(String value, String columnName) {
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException ex) {
+            throw new BusinessValidationException(columnName + " must be a number.");
+        }
+    }
+
+    private String csvValue(List<String> values, Map<String, Integer> headers, String header) {
+        Integer index = headers.get(header);
+        if (index == null || index >= values.size()) {
+            return null;
+        }
+        String value = values.get(index);
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private List<String> parseCsvLine(String line) {
+        List<String> values = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean quoted = false;
+
+        for (int index = 0; index < line.length(); index++) {
+            char currentChar = line.charAt(index);
+            if (currentChar == '"') {
+                if (quoted && index + 1 < line.length() && line.charAt(index + 1) == '"') {
+                    current.append('"');
+                    index++;
+                } else {
+                    quoted = !quoted;
+                }
+            } else if (currentChar == ',' && !quoted) {
+                values.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(currentChar);
+            }
+        }
+
+        if (quoted) {
+            throw new BusinessValidationException("CSV row has an unclosed quoted value.");
+        }
+        values.add(current.toString());
+        return values;
+    }
+
+    private String removeBom(String value) {
+        if (value != null && !value.isEmpty() && value.charAt(0) == '\uFEFF') {
+            return value.substring(1);
+        }
+        return value;
+    }
+
+    private String normalizeHeader(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
+    }
+
+    private String normalizeKey(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 
     private void mapPositionRequest(

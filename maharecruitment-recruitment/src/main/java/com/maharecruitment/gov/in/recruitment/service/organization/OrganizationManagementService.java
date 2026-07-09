@@ -4,11 +4,15 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeTeamMappingRequest;
 import com.maharecruitment.gov.in.recruitment.dto.organization.EmployeeTeamMappingResponse;
 import com.maharecruitment.gov.in.recruitment.dto.organization.OrganizationAuditResponse;
 import com.maharecruitment.gov.in.recruitment.dto.organization.OrganizationLookupOption;
+import com.maharecruitment.gov.in.recruitment.dto.organization.PositionBulkCreateRequest;
+import com.maharecruitment.gov.in.recruitment.dto.organization.PositionBulkCreateResponse;
+import com.maharecruitment.gov.in.recruitment.dto.organization.PositionCsvImportResponse;
 import com.maharecruitment.gov.in.recruitment.dto.organization.PositionRequest;
 import com.maharecruitment.gov.in.recruitment.dto.organization.PositionResponse;
 import com.maharecruitment.gov.in.recruitment.dto.organization.TeamRequest;
@@ -47,6 +51,10 @@ public interface OrganizationManagementService {
             Pageable pageable);
 
     void changePositionStatus(Long positionId, boolean active);
+
+    PositionBulkCreateResponse createPositionsInCell(PositionBulkCreateRequest request);
+
+    PositionCsvImportResponse importPositionsFromCsv(Long cellId, MultipartFile file);
 
     EmployeeTeamMappingResponse createMapping(EmployeeTeamMappingRequest request);
 
