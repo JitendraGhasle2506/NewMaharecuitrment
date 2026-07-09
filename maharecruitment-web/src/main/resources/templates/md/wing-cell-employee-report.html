@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Wing Cell Employee Report</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/md-workforce-report.css}">
+    <script th:src="@{/js/md-workforce-report.js}" defer></script>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('MD', 'Wing Cell Employee Report', ~{::section})}">
+        <section class="md-workforce-report">
+            <div class="md-report-head">
+                <div>
+                    <span class="md-report-eyebrow">Managing Director Report</span>
+                    <h1>Wing, Cell & Employee Structure</h1>
+                    <p>Expand a wing to view cells, then expand a cell to view mapped employees.</p>
+                </div>
+                <div class="md-report-summary" aria-label="Report summary">
+                    <div>
+                        <span>Wings</span>
+                        <strong th:text="${report.totalWings}">0</strong>
+                    </div>
+                    <div>
+                        <span>Cells</span>
+                        <strong th:text="${report.totalCells}">0</strong>
+                    </div>
+                    <div>
+                        <span>Employees</span>
+                        <strong th:text="${report.totalEmployees}">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <section class="md-report-panel">
+                <div class="md-report-toolbar">
+                    <div class="md-report-search">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <input id="mdWorkforceSearch" type="search" placeholder="Search wing, cell, employee, code, designation">
+                    </div>
+                    <div class="md-report-actions">
+                        <button id="mdReportExpandAll" class="md-report-action" type="button">
+                            <i class="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true"></i>
+                            <span>Expand All</span>
+                        </button>
+                        <button id="mdReportCollapseAll" class="md-report-action" type="button">
+                            <i class="fa-solid fa-down-left-and-up-right-to-center" aria-hidden="true"></i>
+                            <span>Collapse All</span>
+                        </button>
+                        <span class="md-report-count">
+                            <strong id="mdReportVisibleEmployees" th:text="${report.totalEmployees}">0</strong>
+                            <span>Employees</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="md-report-path" aria-label="Hierarchy order">
+                    <span><i class="fa-solid fa-user-tie" aria-hidden="true"></i> MD</span>
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    <span><i class="fa-solid fa-sitemap" aria-hidden="true"></i> Wing</span>
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    <span><i class="fa-solid fa-table-cells" aria-hidden="true"></i> Cell</span>
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    <span><i class="fa-solid fa-users" aria-hidden="true"></i> Employee</span>
+                </div>
+
+                <div class="md-report-tree" id="mdWorkforceTree">
+                    <details class="md-report-wing md-report-node"
+                             th:each="wing : ${report.wings}"
+                             th:attr="data-employee-count=${wing.employeeCount},
+                                      data-search=${#strings.toLowerCase(wing.wingName)}">
+                        <summary class="md-report-wing-summary">
+                            <span class="md-report-node-icon">
+                                <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                            </span>
+                            <span class="md-report-node-copy">
+                                <small>Wing</small>
+                                <strong th:text="${wing.wingName}">Wing Name</strong>
+                            </span>
+                            <span class="md-report-node-metrics">
+                                <span>
+                                    <strong th:text="${wing.cellCount}">0</strong>
+                                    <em>Cells</em>
+                                </span>
+                                <span>
+                                    <strong th:text="${wing.employeeCount}">0</strong>
+                                    <em>Employees</em>
+                                </span>
+                            </span>
+                            <i class="fa-solid fa-chevron-down md-report-chevron" aria-hidden="true"></i>
+                        </summary>
+
+                        <div class="md-report-wing-body">
+                            <details class="md-report-cell md-report-node"
+                                     th:each="cell : ${wing.cells}"
+                                     th:attr="data-employee-count=${cell.employeeCount},
+                                              data-search=${#strings.toLowerCase(wing.wingName + ' ' + cell.cellName)}">
+                                <summary class="md-report-cell-summary">
+                                    <span class="md-report-node-icon md-report-cell-icon">
+                                        <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="md-report-node-copy">
+                                        <small>Cell</small>
+                                        <strong th:text="${cell.cellName}">Cell Name</strong>
+                                    </span>
+                                    <span class="md-report-cell-count">
+                                        <strong th:text="${cell.employeeCount}">0</strong>
+                                        <em>Employees</em>
+                                    </span>
+                                    <i class="fa-solid fa-chevron-down md-report-chevron" aria-hidden="true"></i>
+                                </summary>
+
+                                <div class="md-report-employee-list">
+                                    <article class="md-report-employee md-report-node"
+                                             th:each="employee : ${cell.employees}"
+                                             th:attr="data-employee-count=1,
+                                                      data-search=${#strings.toLowerCase(wing.wingName + ' ' + cell.cellName + ' ' + employee.employeeName + ' ' + employee.employeeCode + ' ' + employee.designationName + ' ' + employee.levelCode + ' ' + employee.positionName)}">
+                                        <span class="md-report-avatar" th:text="${employee.initials}">EM</span>
+                                        <span class="md-report-employee-main">
+                                            <strong th:text="${employee.employeeName}">Employee Name</strong>
+                                            <small>
+                                                <span th:text="${employee.designationName}">Designation</span>
+                                                <span th:if="${employee.levelCode != '-'}" th:text="${' / ' + employee.levelCode}"> / L1</span>
+                                            </small>
+                                            <em th:text="${employee.positionName}">Position</em>
+                                        </span>
+                                        <span class="md-report-employee-meta">
+                                            <strong th:text="${employee.employeeCode}">EMP001</strong>
+                                            <small th:text="${employee.recruitmentType}">INTERNAL</small>
+                                        </span>
+                                    </article>
+
+                                    <div class="md-report-empty" th:if="${#lists.isEmpty(cell.employees)}">
+                                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                        <span>No employees mapped under this cell.</span>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <div class="md-report-empty" th:if="${#lists.isEmpty(wing.cells)}">
+                                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                <span>No active cells mapped under this wing.</span>
+                            </div>
+                        </div>
+                    </details>
+
+                    <div class="md-report-empty md-report-empty-page" th:if="${#lists.isEmpty(report.wings)}">
+                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                        <span>No active wing, cell or employee data is available.</span>
+                    </div>
+
+                    <div class="md-report-empty md-report-empty-page d-none" id="mdReportNoResults">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <span>No matching wing, cell or employee found.</span>
+                    </div>
+                </div>
+            </section>
+        </section>
+    </th:block>
+</body>
+
+</html>

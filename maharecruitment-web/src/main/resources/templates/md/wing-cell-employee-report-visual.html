@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Wing Cell Employee Report</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/md-workforce-report-visual.css}">
+    <script th:src="@{/js/md-workforce-report-visual.js}" defer></script>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('MD', 'Wing Cell Employee Report', ~{::section})}">
+        <section class="md-workforce-report">
+            <div class="md-report-head">
+                <div>
+                    <span class="md-report-eyebrow">Managing Director Report</span>
+                    <h1>Wing, Cell & Employee Structure</h1>
+                    <p>Open a wing, select a cell, and review mapped employees in an interactive hierarchy view.</p>
+                </div>
+                <div class="md-report-summary" aria-label="Report summary">
+                    <div>
+                        <span>Wings</span>
+                        <strong th:text="${report.totalWings}">0</strong>
+                    </div>
+                    <div>
+                        <span>Cells</span>
+                        <strong th:text="${report.totalCells}">0</strong>
+                    </div>
+                    <div>
+                        <span>Employees</span>
+                        <strong th:text="${report.totalEmployees}">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <section class="md-report-panel">
+                <div class="md-report-toolbar">
+                    <div class="md-report-search">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <input id="mdWorkforceSearch" type="search" placeholder="Search wing, cell, employee, code, designation">
+                    </div>
+                    <div class="md-report-actions">
+                        <button id="mdReportExpandAll" class="md-report-action" type="button">
+                            <i class="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true"></i>
+                            <span>Expand All</span>
+                        </button>
+                        <button id="mdReportCollapseAll" class="md-report-action" type="button">
+                            <i class="fa-solid fa-down-left-and-up-right-to-center" aria-hidden="true"></i>
+                            <span>Collapse All</span>
+                        </button>
+                        <span class="md-report-count">
+                            <strong id="mdReportVisibleEmployees" th:text="${report.totalEmployees}">0</strong>
+                            <span>Employees</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="md-visual-stage" id="mdWorkforceTree">
+                    <section class="md-visual-column md-visual-hierarchy" aria-label="Wing and cell hierarchy">
+                        <div class="md-visual-column-head">
+                            <span>Hierarchy</span>
+                            <strong>Wing / Cell</strong>
+                        </div>
+
+                        <div class="md-visual-wing-stack">
+                            <details class="md-visual-wing md-report-node"
+                                     th:each="wing : ${report.wings}"
+                                     th:attr="data-wing-id=${wing.wingId},
+                                              data-employee-count=${wing.employeeCount},
+                                              data-search=${#strings.toLowerCase(wing.wingName)}">
+                                <summary class="md-visual-wing-summary">
+                                    <span class="md-visual-icon">
+                                        <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="md-visual-node-copy">
+                                        <strong th:text="${wing.wingName}">Wing Name</strong>
+                                        <small th:text="${wing.cellCount} + ' cells'">0 cells</small>
+                                    </span>
+                                    <span class="md-visual-count" th:text="${wing.employeeCount}">0</span>
+                                    <i class="fa-solid fa-chevron-down md-visual-chevron" aria-hidden="true"></i>
+                                </summary>
+
+                                <div class="md-visual-cell-list">
+                                    <button class="md-visual-cell md-report-node"
+                                            type="button"
+                                            th:each="cell : ${wing.cells}"
+                                            th:attr="data-wing-id=${wing.wingId},
+                                                     data-wing-name=${wing.wingName},
+                                                     data-cell-id=${cell.cellId},
+                                                     data-cell-name=${cell.cellName},
+                                                     data-employee-count=${cell.employeeCount},
+                                                     data-search=${#strings.toLowerCase(wing.wingName + ' ' + cell.cellName)}">
+                                        <span class="md-visual-cell-code">
+                                            <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
+                                        </span>
+                                        <span class="md-visual-node-copy">
+                                            <strong th:text="${cell.cellName}">Cell Name</strong>
+                                            <small>Mapped employees</small>
+                                        </span>
+                                        <span class="md-visual-count" th:text="${cell.employeeCount}">0</span>
+                                    </button>
+
+                                    <div class="md-visual-empty" th:if="${#lists.isEmpty(wing.cells)}">
+                                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                        <span>No active cells</span>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <div class="md-visual-empty md-visual-empty-page" th:if="${#lists.isEmpty(report.wings)}">
+                                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                <span>No active wing, cell or employee data is available.</span>
+                            </div>
+
+                            <div class="md-visual-empty md-visual-empty-page d-none" id="mdReportNoResults">
+                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                <span>No matching hierarchy item found.</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="md-visual-connector" aria-hidden="true">
+                        <span class="md-visual-connector-top">
+                            <i class="fa-solid fa-chevron-up"></i>
+                        </span>
+                        <span class="md-visual-line"></span>
+                        <span class="md-visual-connector-count" id="mdReportSelectedCount">0</span>
+                    </div>
+
+                    <section class="md-visual-column md-visual-employees" aria-label="Employees for selected cell">
+                        <div class="md-visual-column-head">
+                            <span id="mdReportSelectionWing">Select Wing / Cell</span>
+                            <strong id="mdReportSelectionTitle">Employees</strong>
+                            <small id="mdReportSelectionMeta">Select a cell to view employees</small>
+                        </div>
+
+                        <div class="md-visual-employee-groups">
+                            <th:block th:each="wing : ${report.wings}">
+                                <div class="md-visual-employee-group"
+                                     hidden
+                                     th:each="cell : ${wing.cells}"
+                                     th:attr="data-wing-id=${wing.wingId},
+                                              data-wing-name=${wing.wingName},
+                                              data-cell-id=${cell.cellId},
+                                              data-cell-name=${cell.cellName},
+                                              data-employee-count=${cell.employeeCount}">
+                                    <article class="md-visual-employee md-report-node"
+                                             th:each="employee : ${cell.employees}"
+                                             th:attr="data-employee-count=1,
+                                                      data-search=${#strings.toLowerCase(wing.wingName + ' ' + cell.cellName + ' ' + employee.employeeName + ' ' + employee.employeeCode + ' ' + employee.designationName + ' ' + employee.levelCode + ' ' + employee.positionName)}">
+                                        <span class="md-visual-avatar">
+                                            <img th:if="${employee.photoPath != null and !#strings.isEmpty(employee.photoPath)}"
+                                                 th:src="@{${employee.photoPath}}"
+                                                 alt="">
+                                            <span th:unless="${employee.photoPath != null and !#strings.isEmpty(employee.photoPath)}"
+                                                  th:text="${employee.initials}">EM</span>
+                                        </span>
+                                        <span class="md-visual-employee-copy">
+                                            <strong th:text="${employee.employeeName}">Employee Name</strong>
+                                            <small>
+                                                <span th:text="${employee.designationName}">Designation</span>
+                                                <span th:if="${employee.levelCode != '-'}" th:text="${' / ' + employee.levelCode}"> / L1</span>
+                                            </small>
+                                            <em th:text="${employee.employeeCode}">EMP001</em>
+                                        </span>
+                                        <span class="md-visual-position" th:text="${employee.positionName}">Position</span>
+                                    </article>
+
+                                    <div class="md-visual-empty" th:if="${#lists.isEmpty(cell.employees)}">
+                                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                        <span>No employees mapped under this cell.</span>
+                                    </div>
+                                </div>
+                            </th:block>
+
+                            <div class="md-visual-empty md-visual-empty-page" id="mdReportSelectionEmpty">
+                                <i class="fa-solid fa-hand-pointer" aria-hidden="true"></i>
+                                <span>Select a cell from the hierarchy to view employees.</span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+        </section>
+    </th:block>
+</body>
+
+</html>
