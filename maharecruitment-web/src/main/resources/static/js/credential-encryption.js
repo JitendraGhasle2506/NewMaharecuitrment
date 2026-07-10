@@ -9,8 +9,16 @@
 
         var credentialKeyPromise = null;
 
+        var isLoopbackHost = function (hostname) {
+            var normalizedHostname = (hostname || "").toLowerCase();
+            return normalizedHostname === "localhost"
+                || normalizedHostname === "127.0.0.1"
+                || normalizedHostname === "::1"
+                || normalizedHostname === "[::1]";
+        };
+
         var isInsecureTransport = function () {
-            return window.location.protocol !== "https:";
+            return window.location.protocol !== "https:" && !isLoopbackHost(window.location.hostname);
         };
 
         var base64ToArrayBuffer = function (base64Value) {
@@ -44,6 +52,23 @@
             statusElement.classList.toggle("d-none", !message);
         };
 
+        var showLoader = function (form) {
+            if (!window.AppLoader || typeof window.AppLoader.show !== "function") {
+                return;
+            }
+
+            window.AppLoader.show({
+                message: form.dataset.appLoaderMessage || "Please wait while we secure your credentials.",
+                status: form.dataset.appLoaderStatus || "Securing credentials"
+            });
+        };
+
+        var resetLoader = function () {
+            if (window.AppLoader && typeof window.AppLoader.reset === "function") {
+                window.AppLoader.reset();
+            }
+        };
+
         var getCredentialEncryptionKey = function (keyUrl) {
             if (!credentialKeyPromise) {
                 credentialKeyPromise = fetch(keyUrl, {
@@ -51,7 +76,8 @@
                     credentials: "same-origin",
                     cache: "no-store",
                     headers: {
-                        "Accept": "application/json"
+                        "Accept": "application/json",
+                        "X-App-Loader": "off"
                     }
                 }).then(function (response) {
                     if (!response.ok) {
@@ -77,6 +103,9 @@
                             encryptedPrefix: keyData.encryptedPrefix || "ENC:v1:"
                         };
                     });
+                }).catch(function (error) {
+                    credentialKeyPromise = null;
+                    throw error;
                 });
             }
             return credentialKeyPromise;
@@ -133,19 +162,29 @@
             form.addEventListener("submit", function (event) {
                 event.preventDefault();
 
+                if (form.dataset.credentialSubmitting === "true") {
+                    return;
+                }
+
                 if (isInsecureTransport()) {
+                    resetLoader();
                     setStatus(form, "HTTPS is required before submitting credentials.");
                     return;
                 }
 
                 if (!form.dataset.credentialKeyUrl) {
+                    resetLoader();
                     setStatus(form, "Secure credential submission is unavailable. Please refresh and try again.");
                     return;
                 }
 
                 if (!form.reportValidity()) {
+                    resetLoader();
                     return;
                 }
+
+                form.dataset.credentialSubmitting = "true";
+                showLoader(form);
 
                 Promise.all(credentialFields.map(function (field) {
                     return encryptCredential(field.visibleInput.value, form.dataset.credentialKeyUrl)
@@ -157,9 +196,11 @@
                     setStatus(form, "");
                     window.HTMLFormElement.prototype.submit.call(form);
                 }).catch(function (error) {
+                    delete form.dataset.credentialSubmitting;
                     credentialFields.forEach(function (field) {
                         field.hiddenInput.value = "";
                     });
+                    resetLoader();
                     setStatus(form, error.message || "Unable to secure credentials. Please refresh and try again.");
                 });
             });

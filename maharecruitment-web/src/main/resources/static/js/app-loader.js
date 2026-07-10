@@ -253,6 +253,10 @@
                 return;
             }
 
+            if (event.defaultPrevented) {
+                return;
+            }
+
             const submitter = event.submitter;
             const behavior = submitter?.dataset.appLoaderBehavior || form.dataset.appLoaderBehavior || "";
             const message = submitter?.dataset.appLoaderMessage || form.dataset.appLoaderMessage || DEFAULT_MESSAGE;
@@ -264,7 +268,7 @@
             }
 
             show({ message, status });
-        }, true);
+        });
     };
 
     const wireDownloadRecovery = () => {

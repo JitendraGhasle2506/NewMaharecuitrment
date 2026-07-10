@@ -17,7 +17,7 @@ class CredentialClientEncryptionTemplateTest {
         String profileTemplate = Files.readString(projectPath("src/main/resources/templates/common/profile.html"));
         String encryptionScript = Files.readString(projectPath("src/main/resources/static/js/credential-encryption.js"));
 
-        assertThat(headerTemplate).contains("@{/js/credential-encryption.js(v='20260625')}");
+        assertThat(headerTemplate).contains("@{/js/credential-encryption.js(v='20260710')}");
         assertThat(adminUserForm)
                 .contains("data-encrypt-credentials=\"true\"")
                 .contains("data-credential-key-url=@{/security/credential-encryption/public-key}");
@@ -25,6 +25,9 @@ class CredentialClientEncryptionTemplateTest {
                 .contains("data-encrypt-credentials=\"true\"")
                 .contains("data-credential-key-url=@{/security/credential-encryption/public-key}");
         assertThat(encryptionScript)
+                .contains("isLoopbackHost(window.location.hostname)")
+                .contains("normalizedHostname === \"localhost\"")
+                .contains("normalizedHostname === \"127.0.0.1\"")
                 .contains("input.removeAttribute(\"name\")")
                 .contains("window.crypto.subtle.encrypt")
                 .contains("window.HTMLFormElement.prototype.submit.call(form)");
