@@ -353,10 +353,13 @@
         }
 
         const positionId = valueOrNull($('tm2PositionId').value);
+        const existingPosition = positionId
+            ? state.positions.find((position) => String(position.positionId) === String(positionId))
+            : null;
         const payload = {
             positionName: $('tm2PositionName').value.trim(),
             cellId: cell.id,
-            teamId: null,
+            teamId: existingPosition?.teamId || null,
             designationId,
             levelCode: $('tm2PositionLevelCode').disabled ? null : $('tm2PositionLevelCode').value || null,
             reportingPositionId: valueOrNull($('tm2ReportingPositionId').value),
@@ -370,7 +373,7 @@
                 positionId ? `/api/master/positions/${positionId}` : '/api/master/positions',
                 { method: positionId ? 'PUT' : 'POST', body: JSON.stringify(payload) }
             );
-            showAlert(positionId ? 'Position updated successfully.' : 'Position created successfully.', 'success');
+            showAlert(positionId ? 'Vacancy updated successfully.' : 'Vacancy created successfully.', 'success');
             await selectCell(cell.id);
         } catch (error) {
             showAlert(error.message, 'danger');
@@ -428,7 +431,7 @@
         }
         form.reset();
         form.classList.remove('was-validated');
-        $('tm2PositionFormTitle').textContent = 'Create Position';
+        $('tm2PositionFormTitle').textContent = 'Create Vacancy';
         $('tm2PositionId').value = '';
         $('tm2PositionCellId').value = state.selectedCellId || '';
         $('tm2PositionDisplayOrder').value = nextPositionOrder();

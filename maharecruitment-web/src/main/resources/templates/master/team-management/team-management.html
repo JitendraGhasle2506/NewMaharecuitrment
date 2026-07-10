@@ -79,6 +79,51 @@
                         </div>
 
                         <div class="tm-editor-grid">
+                            <form id="tm2PositionForm" class="tm-panel tm-form" novalidate>
+                                <input type="hidden" id="tm2PositionId">
+                                <input type="hidden" id="tm2PositionCellId">
+                                <input type="hidden" id="tm2PositionDisplayOrder" value="0">
+                                <div class="tm-panel-header">
+                                    <div>
+                                        <h2 id="tm2PositionFormTitle">Create Vacancy</h2>
+                                        <span>Create a cell position and map an employee when available.</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary tm-action-btn"
+                                            id="tm2PositionResetButton" title="Reset form" aria-label="Reset vacancy form">
+                                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label" for="tm2PositionName">Position Name</label>
+                                <input id="tm2PositionName" class="form-control form-control-sm" maxlength="150" required readonly>
+
+                                <label class="form-label" for="tm2DesignationId">Designation</label>
+                                <select id="tm2DesignationId" class="form-select form-select-sm" required
+                                        aria-describedby="tm2DesignationIdFeedback">
+                                    <option value="">Select Designation</option>
+                                </select>
+                                <div id="tm2DesignationIdFeedback" class="invalid-feedback">Designation is required.</div>
+
+                                <label class="form-label" for="tm2PositionLevelCode">Level</label>
+                                <select id="tm2PositionLevelCode" class="form-select form-select-sm" disabled>
+                                    <option value="">Select Designation First</option>
+                                </select>
+
+                                <label class="form-label" for="tm2ReportingPositionId">Reporting Position</label>
+                                <select id="tm2ReportingPositionId" class="form-select form-select-sm">
+                                    <option value="">No Reporting Position</option>
+                                </select>
+
+                                <label class="form-label" for="tm2EmployeeId">Employee</label>
+                                <select id="tm2EmployeeId" class="form-select form-select-sm" disabled>
+                                    <option value="">Select Designation First</option>
+                                </select>
+
+                                <div class="tm-form-actions">
+                                    <button class="btn btn-primary btn-sm" type="submit">
+                                        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save Vacancy
+                                    </button>
+                                </div>
+                            </form>
                             <div class="tm-panel tm-csv-panel">
                                 <div class="tm-panel-header">
                                     <div>

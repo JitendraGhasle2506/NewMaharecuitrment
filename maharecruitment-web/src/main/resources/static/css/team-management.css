@@ -718,7 +718,7 @@
 .tm-editor-grid {
     display: grid;
     gap: 1rem;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
 }
 
 .tm-form-actions {
