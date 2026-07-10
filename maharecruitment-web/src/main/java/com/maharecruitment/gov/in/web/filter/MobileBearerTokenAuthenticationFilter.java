@@ -29,6 +29,7 @@ public class MobileBearerTokenAuthenticationFilter extends OncePerRequestFilter 
     private static final String MOBILE_API_PREFIX = "/api/mobile/";
     private static final String MOBILE_LOGIN_PATH = "/api/mobile/auth/login";
     private static final String MOBILE_REFRESH_PATH = "/api/mobile/auth/refresh";
+    private static final String MOBILE_LOGOUT_PATH = "/api/mobile/auth/logout";
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final MobileTokenService tokenService;
@@ -46,7 +47,8 @@ public class MobileBearerTokenAuthenticationFilter extends OncePerRequestFilter 
         String servletPath = request.getServletPath();
         return !servletPath.startsWith(MOBILE_API_PREFIX)
                 || MOBILE_LOGIN_PATH.equals(servletPath)
-                || MOBILE_REFRESH_PATH.equals(servletPath);
+                || MOBILE_REFRESH_PATH.equals(servletPath)
+                || MOBILE_LOGOUT_PATH.equals(servletPath);
     }
 
     @Override

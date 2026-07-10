@@ -84,6 +84,27 @@ public class PersistentMobileRefreshTokenService implements MobileRefreshTokenSe
         return new MobileRefreshSession(current.getUser(), replacement);
     }
 
+    @Override
+    @Transactional
+    public void revokeRefreshToken(String refreshToken, boolean revokeAllSessions) {
+        String tokenHash = hash(refreshToken);
+        MobileRefreshTokenEntity current = refreshTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new MobileTokenValidationException("Invalid refresh token."));
+
+        Instant now = clock.instant();
+        if (current.getRevokedAt() != null || !now.isBefore(current.getExpiresAt())) {
+            return;
+        }
+
+        if (revokeAllSessions) {
+            revokeActiveTokens(current.getUser(), now);
+            return;
+        }
+
+        current.setRevokedAt(now);
+        refreshTokenRepository.save(current);
+    }
+
     private MobileRefreshTokenIssue saveNewRefreshToken(User user, Instant issuedAt) {
         Duration ttl = properties.getRefreshTokenTtl();
         Instant expiresAt = issuedAt.plus(ttl);

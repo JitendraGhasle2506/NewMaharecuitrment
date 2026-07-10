@@ -23,6 +23,8 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileEmployeeDetails;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLoginRequest;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLoginResponse;
+import com.maharecruitment.gov.in.web.dto.mobile.MobileLogoutRequest;
+import com.maharecruitment.gov.in.web.dto.mobile.MobileLogoutResponse;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileRefreshTokenRequest;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileRefreshTokenResponse;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAuthenticatedUser;
@@ -126,6 +128,15 @@ public class MobileAuthenticationServiceImpl implements MobileAuthenticationServ
                 refreshToken.refreshToken(),
                 refreshToken.expiresInSeconds(),
                 refreshToken.expiresAt());
+    }
+
+    @Override
+    @Transactional
+    public MobileLogoutResponse logout(MobileLogoutRequest request) {
+        refreshTokenService.revokeRefreshToken(
+                request.refreshToken(),
+                request.shouldLogoutFromAllDevices());
+        return new MobileLogoutResponse(true, "Logged out successfully.");
     }
 
     private String resolveAuthenticationIdentifier(String identifier) {

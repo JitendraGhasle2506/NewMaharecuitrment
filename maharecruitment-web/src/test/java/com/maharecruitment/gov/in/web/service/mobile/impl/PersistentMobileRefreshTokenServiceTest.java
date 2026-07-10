@@ -84,6 +84,36 @@ class PersistentMobileRefreshTokenServiceTest {
         verify(refreshTokenRepository).revokeActiveTokensForUser(10L, NOW);
     }
 
+    @Test
+    void revokeRefreshTokenRevokesOnlyMatchingTokenByDefault() {
+        List<MobileRefreshTokenEntity> savedTokens = captureSavedTokens();
+        PersistentMobileRefreshTokenService service = service();
+        MobileRefreshTokenIssue token = service.issueRefreshToken(user());
+        MobileRefreshTokenEntity current = savedTokens.getFirst();
+        when(refreshTokenRepository.findByTokenHash(current.getTokenHash())).thenReturn(Optional.of(current));
+
+        service.revokeRefreshToken(token.refreshToken(), false);
+
+        assertThat(current.getRevokedAt()).isEqualTo(NOW);
+        assertThat(savedTokens).hasSize(2);
+        assertThat(savedTokens.get(1)).isSameAs(current);
+    }
+
+    @Test
+    void revokeRefreshTokenCanRevokeAllActiveTokensForUser() {
+        List<MobileRefreshTokenEntity> savedTokens = captureSavedTokens();
+        PersistentMobileRefreshTokenService service = service();
+        MobileRefreshTokenIssue token = service.issueRefreshToken(user());
+        MobileRefreshTokenEntity current = savedTokens.getFirst();
+        when(refreshTokenRepository.findByTokenHash(current.getTokenHash())).thenReturn(Optional.of(current));
+
+        service.revokeRefreshToken(token.refreshToken(), true);
+
+        verify(refreshTokenRepository).revokeActiveTokensForUser(10L, NOW);
+        assertThat(current.getRevokedAt()).isNull();
+        assertThat(savedTokens).hasSize(1);
+    }
+
     private List<MobileRefreshTokenEntity> captureSavedTokens() {
         List<MobileRefreshTokenEntity> savedTokens = new ArrayList<>();
         when(refreshTokenRepository.save(any(MobileRefreshTokenEntity.class))).thenAnswer(invocation -> {

@@ -156,6 +156,7 @@ public class SecurityConfig {
                 .requestMatchers("/login", "/doLogin", "/login/otp", "/login/otp/send").permitAll()
                 .requestMatchers("/api/mobile/auth/login").permitAll()
                 .requestMatchers("/api/mobile/auth/refresh").permitAll()
+                .requestMatchers("/api/mobile/auth/logout").permitAll()
                 .requestMatchers("/security/credential-encryption/public-key").permitAll()
                 .requestMatchers("/api/verifications/otp/**").permitAll()
 

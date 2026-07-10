@@ -1,7 +1,7 @@
 # Mobile API Documentation
 
-Version: 1.1  
-Last updated: 2026-07-09
+Version: 1.2  
+Last updated: 2026-07-10
 
 ## 1. Overview
 
@@ -17,6 +17,7 @@ Authentication:
 
 - Login API does not require a token.
 - Refresh API does not require a bearer access token; it uses `refreshToken` in the JSON body.
+- Logout API does not require a bearer access token; it uses `refreshToken` in the JSON body.
 - All other mobile APIs require this header:
 
 ```http
@@ -83,6 +84,7 @@ Common HTTP status codes:
 | --- | --- | --- | --- |
 | Login | POST | `/api/mobile/auth/login` | No |
 | Refresh access token | POST | `/api/mobile/auth/refresh` | No, uses refresh token body |
+| Logout | POST | `/api/mobile/auth/logout` | No, uses refresh token body |
 | Get mapped locations | GET | `/api/mobile/employee-locations?employeeId={employeeId}` | Yes |
 | Get profile | GET | `/api/mobile/profile?employeeId={employeeId}` | Yes |
 | Update email/mobile | PATCH | `/api/mobile/profile/contact` | Yes |
@@ -199,6 +201,43 @@ Important rules:
 - The mobile app must replace the old `refreshToken` with the new one from every refresh response.
 - If refresh returns `401 INVALID_REFRESH_TOKEN`, clear the local session and show the login screen.
 - Do not repeatedly retry refresh with the same old token.
+
+## 4.2 Logout
+
+### POST `/api/mobile/auth/logout`
+
+Use this API to end the mobile app session by revoking the stored refresh token on the backend. The app should clear the locally stored access token and refresh token after a successful logout.
+
+Request:
+
+```json
+{
+  "refreshToken": "Zkyg7bqkQy6R1iQv9GQ3J_yA6...",
+  "logoutFromAllDevices": false
+}
+```
+
+Validation:
+
+| Field | Required | Rule |
+| --- | --- | --- |
+| `refreshToken` | Yes | Max 512 characters |
+| `logoutFromAllDevices` | No | `true` revokes all active mobile refresh tokens for the user |
+
+Success response:
+
+```json
+{
+  "success": true,
+  "message": "Logged out successfully."
+}
+```
+
+Common errors:
+
+| Code | Meaning |
+| --- | --- |
+| `INVALID_REFRESH_TOKEN` | Refresh token is invalid or expired |
 
 ## 5. Employee Mapped Locations
 

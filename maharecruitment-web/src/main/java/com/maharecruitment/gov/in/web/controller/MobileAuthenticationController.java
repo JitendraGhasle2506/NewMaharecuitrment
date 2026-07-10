@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLoginRequest;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileLoginResponse;
+import com.maharecruitment.gov.in.web.dto.mobile.MobileLogoutRequest;
+import com.maharecruitment.gov.in.web.dto.mobile.MobileLogoutResponse;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileRefreshTokenRequest;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileRefreshTokenResponse;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAuthenticationService;
@@ -32,5 +34,10 @@ public class MobileAuthenticationController {
     @PostMapping("/refresh")
     public ResponseEntity<MobileRefreshTokenResponse> refresh(@Valid @RequestBody MobileRefreshTokenRequest request) {
         return ResponseEntity.ok(mobileAuthenticationService.refresh(request));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<MobileLogoutResponse> logout(@Valid @RequestBody MobileLogoutRequest request) {
+        return ResponseEntity.ok(mobileAuthenticationService.logout(request));
     }
 }
