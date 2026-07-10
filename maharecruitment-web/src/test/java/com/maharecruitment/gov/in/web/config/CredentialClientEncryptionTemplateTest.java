@@ -17,7 +17,7 @@ class CredentialClientEncryptionTemplateTest {
         String profileTemplate = Files.readString(projectPath("src/main/resources/templates/common/profile.html"));
         String encryptionScript = Files.readString(projectPath("src/main/resources/static/js/credential-encryption.js"));
 
-        assertThat(headerTemplate).contains("@{/js/credential-encryption.js(v='20260710')}");
+        assertThat(headerTemplate).contains("@{/js/credential-encryption.js(v='20260710-loopback')}");
         assertThat(adminUserForm)
                 .contains("data-encrypt-credentials=\"true\"")
                 .contains("data-credential-key-url=@{/security/credential-encryption/public-key}");
