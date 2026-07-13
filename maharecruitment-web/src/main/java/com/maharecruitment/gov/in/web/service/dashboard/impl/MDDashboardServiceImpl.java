@@ -4,21 +4,16 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
-import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
-import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
-import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
 import com.maharecruitment.gov.in.web.service.dashboard.MDDashboardService;
@@ -61,10 +56,8 @@ public class MDDashboardServiceImpl implements MDDashboardService {
         LocalDate lastDayOfMonth = today.withDayOfMonth(today.lengthOfMonth());
         long onboardingThisMonth = employeeRepository.countByOnboardingDateBetween(firstDayOfMonth, lastDayOfMonth);
 
-        List<DepartmentProjectApplicationEntity> applications = departmentProjectApplicationRepository.findAll();
-        long pendingApprovals = applications.stream()
-                .filter(app -> app.getApplicationStatus() == DepartmentApplicationStatus.SUBMITTED_TO_HR)
-                .count();
+        long pendingApprovals = departmentProjectApplicationRepository
+                .countByApplicationStatus(DepartmentApplicationStatus.SUBMITTED_TO_HR);
 
         long openPositions = recruitmentDesignationVacancyRepository.countTotalOpenPositions();
 
@@ -83,7 +76,7 @@ public class MDDashboardServiceImpl implements MDDashboardService {
                 toInt(openPositions),
                 percent(internalEmployees, totalEmployees),
                 percent(externalEmployees, totalEmployees),
-                buildCellProjectSummary(applications));
+                buildCellProjectSummary());
     }
 
     private long countPresentEmployees(LocalDate date) {
@@ -94,24 +87,31 @@ public class MDDashboardServiceImpl implements MDDashboardService {
                         date.getDayOfMonth());
     }
 
-    private List<CellProjectWorkforceView> buildCellProjectSummary(List<DepartmentProjectApplicationEntity> applications) {
-        List<ProjectMst> masterProjects = projectMstRepository.findAll();
-        Map<Long, DepartmentProjectApplicationEntity> applicationsById = applications.stream()
-                .collect(Collectors.toMap(
-                        DepartmentProjectApplicationEntity::getDepartmentProjectApplicationId,
-                        application -> application,
-                        (first, second) -> first));
-        Map<String, Map<String, Long>> employeeCountsByRequest = countEmployeesByRequestIdAndType();
-
+    private List<CellProjectWorkforceView> buildCellProjectSummary() {
         Map<String, CellProjectAggregate> aggregates = new LinkedHashMap<>();
-        for (ProjectMst project : masterProjects) {
-            DepartmentProjectApplicationEntity app = resolveApplication(project, applicationsById);
-            String cellName = resolveCellName(project);
-            CellProjectAggregate aggregate = aggregates.computeIfAbsent(cellName, ignored -> new CellProjectAggregate());
-            applyProject(aggregate, app, project, employeeCountsByRequest);
-        }
 
-        return aggregates.entrySet().stream()
+        projectMstRepository.summarizeProjectsByCell(ProjectScopeType.INTERNAL, ProjectScopeType.EXTERNAL, UNASSIGNED_CELL)
+                .forEach(summary -> {
+                    CellProjectAggregate aggregate = aggregates.computeIfAbsent(
+                            normalizeCellName(summary.getCellName()),
+                            ignored -> new CellProjectAggregate());
+                    aggregate.totalProjects = toInt(summary.getTotalProjects());
+                    aggregate.internalProjects = toInt(summary.getInternalProjects());
+                    aggregate.externalProjects = toInt(summary.getExternalProjects());
+                });
+
+        departmentProjectApplicationRepository
+                .summarizeEmployeeCountsByProjectCell(INTERNAL, EXTERNAL, UNASSIGNED_CELL)
+                .forEach(summary -> {
+                    CellProjectAggregate aggregate = aggregates.computeIfAbsent(
+                            normalizeCellName(summary.getCellName()),
+                            ignored -> new CellProjectAggregate());
+                    aggregate.internalEmployees = toInt(summary.getInternalEmployees());
+                    aggregate.externalEmployees = toInt(summary.getExternalEmployees());
+                });
+
+        return aggregates.entrySet()
+                .stream()
                 .map(entry -> new CellProjectWorkforceView(
                         entry.getKey(),
                         entry.getValue().totalProjects,
@@ -123,63 +123,8 @@ public class MDDashboardServiceImpl implements MDDashboardService {
                 .toList();
     }
 
-    private Map<String, Map<String, Long>> countEmployeesByRequestIdAndType() {
-        return employeeRepository.findAll().stream()
-                .filter(employee -> hasText(employee.getRequestId()))
-                .collect(Collectors.groupingBy(
-                        EmployeeEntity::getRequestId,
-                        Collectors.groupingBy(
-                                employee -> normalizeRecruitmentType(employee.getRecruitmentType()),
-                                Collectors.counting())));
-    }
-
-    private void applyProject(
-            CellProjectAggregate aggregate,
-            DepartmentProjectApplicationEntity app,
-            ProjectMst project,
-            Map<String, Map<String, Long>> employeeCountsByRequest) {
-        aggregate.totalProjects++;
-        if (project != null && ProjectScopeType.INTERNAL == project.getProjectScopeType()) {
-            aggregate.internalProjects++;
-        } else if (project != null && ProjectScopeType.EXTERNAL == project.getProjectScopeType()) {
-            aggregate.externalProjects++;
-        }
-
-        Map<String, Long> employeeCounts = app != null && hasText(app.getRequestId())
-                ? employeeCountsByRequest.getOrDefault(app.getRequestId(), Map.of())
-                : Map.of();
-        aggregate.internalEmployees += toInt(employeeCounts.getOrDefault(INTERNAL, 0L));
-        aggregate.externalEmployees += toInt(employeeCounts.getOrDefault(EXTERNAL, 0L));
-    }
-
-    private DepartmentProjectApplicationEntity resolveApplication(
-            ProjectMst project,
-            Map<Long, DepartmentProjectApplicationEntity> applicationsById) {
-        return project != null && project.getApplicationId() != null
-                ? applicationsById.get(project.getApplicationId())
-                : null;
-    }
-
-    private String resolveCellName(ProjectMst project) {
-        if (hasCellName(project)) {
-            return project.getCell().getCellName().trim();
-        }
-
-        return UNASSIGNED_CELL;
-    }
-
-    private boolean hasCellName(ProjectMst project) {
-        return project != null
-                && project.getCell() != null
-                && hasText(project.getCell().getCellName());
-    }
-
-    private String normalizeRecruitmentType(String recruitmentType) {
-        return recruitmentType == null ? "" : recruitmentType.trim().toUpperCase(Locale.ROOT);
-    }
-
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
+    private String normalizeCellName(String cellName) {
+        return cellName != null && !cellName.isBlank() ? cellName.trim() : UNASSIGNED_CELL;
     }
 
     private int percent(long value, long total) {

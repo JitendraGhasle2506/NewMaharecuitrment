@@ -108,6 +108,16 @@ public interface MstMenuRepository extends JpaRepository<MstMenu, Long> {
             select distinct m
             from MstMenu m
             join m.roles r
+            where upper(r.name) in :roleNames
+              and upper(coalesce(m.isActive, 'Y')) = 'Y'
+            order by m.menuId
+            """)
+    List<MstMenu> findMenusByRoleNames(@Param("roleNames") List<String> roleNames);
+
+    @Query("""
+            select distinct m
+            from MstMenu m
+            join m.roles r
             where r.id = :roleId
             order by m.menuId
             """)

@@ -7,4 +7,6 @@ import com.maharecruitment.gov.in.auth.entity.MstMenu;
 public interface MstMenuService {
 
     List<MstMenu> findMenusByRoleIds(List<Long> roleIds);
+
+    List<MstMenu> findMenusByRoleNames(List<String> roleNames);
 }

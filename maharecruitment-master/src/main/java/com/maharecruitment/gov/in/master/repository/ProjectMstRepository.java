@@ -51,6 +51,28 @@ public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
 
     long countByProjectScopeType(ProjectScopeType projectScopeType);
 
+    @Query("""
+            select
+                case
+                    when trim(coalesce(cell.cellName, '')) = '' then :unassignedCell
+                    else trim(cell.cellName)
+                end as cellName,
+                count(project.projectId) as totalProjects,
+                coalesce(sum(case when project.projectScopeType = :internalScope then 1 else 0 end), 0) as internalProjects,
+                coalesce(sum(case when project.projectScopeType = :externalScope then 1 else 0 end), 0) as externalProjects
+            from ProjectMst project
+            left join project.cell cell
+            group by
+                case
+                    when trim(coalesce(cell.cellName, '')) = '' then :unassignedCell
+                    else trim(cell.cellName)
+                end
+            """)
+    List<ProjectCellSummaryProjection> summarizeProjectsByCell(
+            @Param("internalScope") ProjectScopeType internalScope,
+            @Param("externalScope") ProjectScopeType externalScope,
+            @Param("unassignedCell") String unassignedCell);
+
     Optional<ProjectMst> findByProjectIdAndProjectScopeType(Long projectId, ProjectScopeType projectScopeType);
 
     Optional<ProjectMst> findByProjectIdAndProjectScopeTypeAndActiveFlagIgnoreCase(

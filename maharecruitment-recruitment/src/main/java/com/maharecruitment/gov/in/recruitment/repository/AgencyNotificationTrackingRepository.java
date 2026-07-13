@@ -99,6 +99,29 @@ public interface AgencyNotificationTrackingRepository extends JpaRepository<Agen
             @Param("searchPattern") String searchPattern,
             Pageable pageable);
 
+    @Query("select notification.recruitmentNotificationId as recruitmentNotificationId, "
+            + "notification.requestId as requestId, "
+            + "notification.departmentRegistrationId as departmentRegistrationId, "
+            + "notification.departmentProjectApplicationId as departmentProjectApplicationId, "
+            + "project.projectId as projectId, "
+            + "project.projectName as projectName, "
+            + "tracking.releasedRank as releasedRank, "
+            + "tracking.notifiedAt as notifiedAt, "
+            + "tracking.status as trackingStatus, "
+            + "notification.status as notificationStatus "
+            + "from AgencyNotificationTrackingEntity tracking "
+            + "join tracking.recruitmentNotification notification "
+            + "left join notification.projectMst project "
+            + "where tracking.agency.agencyId = :agencyId "
+            + "and tracking.status in :trackingStatuses "
+            + "and notification.status in :notificationStatuses "
+            + "order by tracking.notifiedAt desc")
+    List<AgencyVisibleNotificationProjection> findRecentVisibleNotificationsByAgency(
+            @Param("agencyId") Long agencyId,
+            @Param("trackingStatuses") Collection<AgencyNotificationTrackingStatus> trackingStatuses,
+            @Param("notificationStatuses") Collection<RecruitmentNotificationStatus> notificationStatuses,
+            Pageable pageable);
+
     @Query("select count(tracking) as totalNotifications, "
             + "coalesce(sum(case when tracking.status = "
             + "com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingStatus.RELEASED "

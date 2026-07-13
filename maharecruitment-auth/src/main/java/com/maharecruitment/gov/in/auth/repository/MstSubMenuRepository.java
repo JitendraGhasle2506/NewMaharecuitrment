@@ -105,6 +105,23 @@ public interface MstSubMenuRepository extends JpaRepository<MstSubMenu, Long> {
             @Param("menuIds") List<Long> menuIds,
             @Param("roleIds") List<Long> roleIds);
 
+    @EntityGraph(attributePaths = { "menu" })
+    @Query("""
+            select distinct sm
+            from MstSubMenu sm
+            join sm.menu m
+            left join sm.roles sr
+            left join m.roles mr
+            where m.menuId in :menuIds
+              and (
+                    upper(sr.name) in :roleNames
+                    or (sr.id is null and upper(mr.name) in :roleNames)
+                  )
+            """)
+    List<MstSubMenu> findVisibleSubMenusByMenuIdsAndRoleNames(
+            @Param("menuIds") List<Long> menuIds,
+            @Param("roleNames") List<String> roleNames);
+
     Optional<MstSubMenu> findByMenuMenuIdAndSubMenuNameEnglishIgnoreCase(Long menuId, String subMenuNameEnglish);
 
     boolean existsByMenuMenuIdAndSubMenuNameEnglishIgnoreCase(Long menuId, String subMenuNameEnglish);

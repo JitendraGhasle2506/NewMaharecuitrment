@@ -1,9 +1,5 @@
 package com.maharecruitment.gov.in.auth.service.impl;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,13 +44,10 @@ public class CurrentUserProfileServiceImpl implements CurrentUserProfileService 
     @Override
     public UserProfileView updateProfile(String email, UserProfileUpdateRequest request) {
         User user = userAffiliationService.loadUserByEmail(email);
-        user.setName(UserValidationUtil.normalizeName(request.getName()));
-        user.setMobileNo(UserValidationUtil.normalizeOptionalMobile(request.getMobileNo()));
-
-        User saved = userRepository.save(user);
-        userAffiliationService.synchronizeUserProfile(saved);
-        log.info("Current user profile updated. id={}, email={}", saved.getId(), saved.getEmail());
-        return toView(userAffiliationService.getAffiliation(saved));
+        log.info("Current user profile update ignored because name and mobile are read-only. id={}, email={}",
+                user.getId(),
+                user.getEmail());
+        return toView(userAffiliationService.getAffiliation(user));
     }
 
     @Override

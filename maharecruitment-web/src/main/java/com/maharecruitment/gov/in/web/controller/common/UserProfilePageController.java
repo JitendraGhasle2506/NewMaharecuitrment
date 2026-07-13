@@ -14,7 +14,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.auth.dto.UserPasswordChangeRequest;
-import com.maharecruitment.gov.in.auth.dto.UserProfileUpdateRequest;
 import com.maharecruitment.gov.in.auth.dto.UserProfileView;
 import com.maharecruitment.gov.in.auth.service.CurrentUserProfileService;
 import com.maharecruitment.gov.in.web.dto.profile.PasswordChangeForm;
@@ -51,31 +50,16 @@ public class UserProfilePageController {
     @PostMapping
     public String updateProfile(
             Principal principal,
-            HttpSession session,
-            @Valid @ModelAttribute("profileForm") UserProfileForm profileForm,
-            BindingResult bindingResult,
-            Model model,
             RedirectAttributes redirectAttributes) {
         String actorEmail = resolveActorEmail(principal);
         if (actorEmail == null) {
             return "redirect:/login";
         }
 
-        if (bindingResult.hasErrors()) {
-            populatePage(model, actorEmail, session);
-            return PROFILE_VIEW;
-        }
-
-        try {
-            UserProfileView updatedProfile = currentUserProfileService.updateProfile(actorEmail, toProfileUpdateRequest(profileForm));
-            refreshSessionUser(session, updatedProfile);
-            redirectAttributes.addFlashAttribute("profileSuccessMessage", "Profile updated successfully.");
-            return PROFILE_REDIRECT;
-        } catch (RuntimeException ex) {
-            model.addAttribute("profileErrorMessage", ex.getMessage());
-            populatePage(model, actorEmail, session);
-            return PROFILE_VIEW;
-        }
+        currentUserProfileService.updateProfile(actorEmail, null);
+        redirectAttributes.addFlashAttribute("profileSuccessMessage",
+                "Profile name and mobile number are read-only. Please contact administrator support for changes.");
+        return PROFILE_REDIRECT;
     }
 
     @PostMapping("/password")
@@ -136,13 +120,6 @@ public class UserProfilePageController {
         return form;
     }
 
-    private UserProfileUpdateRequest toProfileUpdateRequest(UserProfileForm form) {
-        UserProfileUpdateRequest request = new UserProfileUpdateRequest();
-        request.setName(form.getName());
-        request.setMobileNo(form.getMobileNo());
-        return request;
-    }
-
     private UserPasswordChangeRequest toPasswordChangeRequest(PasswordChangeForm form) {
         UserPasswordChangeRequest request = new UserPasswordChangeRequest();
         request.setCurrentPassword(form.getCurrentPassword());
@@ -155,24 +132,6 @@ public class UserProfilePageController {
             return null;
         }
         return principal.getName();
-    }
-
-    private void refreshSessionUser(HttpSession session, UserProfileView updatedProfile) {
-        SessionUserDTO sessionUser = extractSessionUser(session);
-        if (sessionUser == null) {
-            return;
-        }
-
-        session.setAttribute(SESSION_USER_KEY, new SessionUserDTO(
-                sessionUser.id(),
-                updatedProfile.getName(),
-                updatedProfile.getEmail(),
-                sessionUser.roles(),
-                sessionUser.departmentId(),
-                updatedProfile.getMobileNo(),
-                sessionUser.photoPath(),
-                sessionUser.loginTime(),
-                sessionUser.lastLoginTime()));
     }
 
     private SessionUserDTO extractSessionUser(HttpSession session) {

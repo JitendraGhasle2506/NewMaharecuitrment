@@ -39,6 +39,7 @@ import jakarta.validation.Valid;
 public class EmployeeDashboardController {
 
     private static final String SESSION_USER_KEY = "SESSION_USER";
+    private static final String EMPLOYEE_PROFILE_REFRESHED_KEY = "employeeProfileSessionRefreshed";
 
     private final EmployeeProfileService employeeProfileService;
 
@@ -70,6 +71,7 @@ public class EmployeeDashboardController {
     @ResponseBody
     public ResponseEntity<EmployeeProfileUpdateResponse> updateProfile(
             Principal principal,
+            HttpSession session,
             @Valid @ModelAttribute EmployeeProfileDTO profileDTO,
             BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -84,6 +86,7 @@ public class EmployeeDashboardController {
             EmployeeProfileDTO savedProfile = employeeProfileService.updateCurrentEmployeeProfile(
                     resolveLoginEmail(principal),
                     profileDTO);
+            refreshSessionUser(session, savedProfile);
             return ResponseEntity.ok(new EmployeeProfileUpdateResponse(
                     true,
                     "Profile updated successfully",
@@ -192,6 +195,7 @@ public class EmployeeDashboardController {
                 sessionUser.loginTime(),
                 sessionUser.lastLoginTime());
         session.setAttribute(SESSION_USER_KEY, refreshedUser);
+        session.setAttribute(EMPLOYEE_PROFILE_REFRESHED_KEY, Boolean.TRUE);
         return refreshedUser;
     }
 

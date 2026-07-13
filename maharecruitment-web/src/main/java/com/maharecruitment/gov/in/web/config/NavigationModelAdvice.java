@@ -19,6 +19,7 @@ public class NavigationModelAdvice {
 
     private static final String SESSION_USER_KEY = "SESSION_USER";
     private static final String HOMEPAGE_URL_KEY = "homepageUrl";
+    private static final String EMPLOYEE_PROFILE_REFRESHED_KEY = "employeeProfileSessionRefreshed";
 
     private final NavigationService navigationService;
     private final ContextPathUrlResolver contextPathUrlResolver;
@@ -41,7 +42,7 @@ public class NavigationModelAdvice {
         List<String> roles = sessionUser != null && sessionUser.roles() != null
                 ? sessionUser.roles()
                 : List.of();
-        sessionUser = refreshEmployeePhotoSessionUser(session, sessionUser, roles);
+        sessionUser = refreshEmployeePhotoSessionUser(session, sessionUser, roles, request);
 
         String homeUrl = contextPathUrlResolver.resolve(contextPath, resolveHomeUrl(session, roles), "/home");
         List<String> resolvedRoles = List.copyOf(roles);
@@ -54,8 +55,16 @@ public class NavigationModelAdvice {
         model.addAttribute("primaryRoleLabel", navigationService.resolvePrimaryRoleLabel(resolvedRoles));
     }
 
-    private SessionUserDTO refreshEmployeePhotoSessionUser(HttpSession session, SessionUserDTO sessionUser, List<String> roles) {
+    private SessionUserDTO refreshEmployeePhotoSessionUser(
+            HttpSession session,
+            SessionUserDTO sessionUser,
+            List<String> roles,
+            HttpServletRequest request) {
         if (session == null || sessionUser == null || roles == null || !roles.contains("ROLE_EMPLOYEE")) {
+            return sessionUser;
+        }
+        if (Boolean.TRUE.equals(session.getAttribute(EMPLOYEE_PROFILE_REFRESHED_KEY))
+                || isEmployeeProfileHandledByController(request)) {
             return sessionUser;
         }
 
@@ -63,6 +72,7 @@ public class NavigationModelAdvice {
             EmployeeProfileDTO profile = employeeProfileService.getCurrentEmployeeProfile(sessionUser.email());
             return storeSessionUser(session, sessionUser, profile);
         } catch (RuntimeException ex) {
+            session.setAttribute(EMPLOYEE_PROFILE_REFRESHED_KEY, Boolean.TRUE);
             return sessionUser;
         }
     }
@@ -79,7 +89,22 @@ public class NavigationModelAdvice {
                 sessionUser.loginTime(),
                 sessionUser.lastLoginTime());
         session.setAttribute(SESSION_USER_KEY, refreshedUser);
+        session.setAttribute(EMPLOYEE_PROFILE_REFRESHED_KEY, Boolean.TRUE);
         return refreshedUser;
+    }
+
+    private boolean isEmployeeProfileHandledByController(HttpServletRequest request) {
+        if (request == null) {
+            return false;
+        }
+
+        String path = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        if (contextPath != null && !contextPath.isBlank() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
+
+        return path.startsWith("/employee/dashboard") || path.startsWith("/employee/profile");
     }
 
     private SessionUserDTO extractSessionUser(HttpSession session) {
