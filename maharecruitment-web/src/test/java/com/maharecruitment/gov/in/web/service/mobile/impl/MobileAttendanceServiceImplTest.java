@@ -216,6 +216,12 @@ class MobileAttendanceServiceImplTest {
                 LocalDateTime.of(2026, 7, 6, 9, 30),
                 LocalDateTime.of(2026, 7, 6, 11, 15),
                 null);
+        latestAttendance.setCheckInLatitude(new BigDecimal("19.0760000"));
+        latestAttendance.setCheckInLongitude(new BigDecimal("72.8777000"));
+        latestAttendance.setCheckInLocationAddress("Mumbai Office Gate 1");
+        latestAttendance.setCheckOutLatitude(new BigDecimal("19.0781000"));
+        latestAttendance.setCheckOutLongitude(new BigDecimal("72.8799000"));
+        latestAttendance.setCheckOutLocationAddress("Mumbai Office Gate 2");
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(101L, fromDate, toDate))
@@ -250,6 +256,12 @@ class MobileAttendanceServiceImplTest {
         assertThat(latestRecord.attendanceDate()).isEqualTo(toDate);
         assertThat(latestRecord.checkInTime()).isEqualTo(LocalDateTime.of(2026, 7, 6, 9, 30));
         assertThat(latestRecord.checkOutTime()).isEqualTo(LocalDateTime.of(2026, 7, 6, 11, 15));
+        assertThat(latestRecord.checkInLatitude()).isEqualByComparingTo("19.0760000");
+        assertThat(latestRecord.checkInLongitude()).isEqualByComparingTo("72.8777000");
+        assertThat(latestRecord.checkInLocationAddress()).isEqualTo("Mumbai Office Gate 1");
+        assertThat(latestRecord.checkOutLatitude()).isEqualByComparingTo("19.0781000");
+        assertThat(latestRecord.checkOutLongitude()).isEqualByComparingTo("72.8799000");
+        assertThat(latestRecord.checkOutLocationAddress()).isEqualTo("Mumbai Office Gate 2");
         assertThat(latestRecord.totalHours()).isEqualTo("01:45");
         assertThat(latestRecord.checkedIn()).isTrue();
         assertThat(latestRecord.checkedOut()).isTrue();
