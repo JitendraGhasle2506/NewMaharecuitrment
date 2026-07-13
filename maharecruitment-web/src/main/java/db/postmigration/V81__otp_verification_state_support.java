@@ -34,6 +34,7 @@ public class V81__otp_verification_state_support extends BaseJavaMigration {
                     otp_expiry_time timestamp,
                     otp_resend_count integer not null default 0,
                     otp_resend_window_start timestamp,
+                    otp_last_sent_at timestamp,
                     captcha_id varchar(64),
                     captcha_answer_hash varchar(64),
                     captcha_question varchar(120),

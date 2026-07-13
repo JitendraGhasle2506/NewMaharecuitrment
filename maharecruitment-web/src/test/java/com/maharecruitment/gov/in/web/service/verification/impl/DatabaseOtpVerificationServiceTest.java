@@ -28,6 +28,7 @@ import com.maharecruitment.gov.in.web.entity.verification.OtpVerificationStateEn
 import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.repository.verification.OtpVerificationStateRepository;
 import com.maharecruitment.gov.in.web.service.verification.OtpChannelHandler;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryReferences;
 import com.maharecruitment.gov.in.web.service.verification.OtpFailureReason;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimiter;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
@@ -45,12 +46,15 @@ class DatabaseOtpVerificationServiceTest {
     private final Map<String, OtpVerificationStateEntity> stateStore = new ConcurrentHashMap<>();
 
     private CapturingEmailHandler emailHandler;
+    private CapturingBothHandler bothHandler;
+    private OtpVerificationProperties properties;
+    private OtpVerificationStateRepository repository;
     private DatabaseOtpVerificationService service;
     private MockHttpSession session;
 
     @BeforeEach
     void setUp() {
-        OtpVerificationProperties properties = new OtpVerificationProperties();
+        properties = new OtpVerificationProperties();
         properties.setExpiryMinutes(5);
         properties.setMaxAttempts(5);
         properties.setLockDurationMinutes(15);
@@ -60,8 +64,9 @@ class DatabaseOtpVerificationServiceTest {
         properties.setVerifyRateWindowSeconds(60);
         properties.setCaptchaThreshold(3);
         properties.setOtpLength(6);
+        properties.setResendCooldownSeconds(60);
 
-        OtpVerificationStateRepository repository = mock(OtpVerificationStateRepository.class);
+        repository = mock(OtpVerificationStateRepository.class);
         when(repository.findBySessionIdAndPurposeAndChannel(any(), any(), any()))
                 .thenAnswer(invocation -> Optional.ofNullable(stateStore.get(key(
                         invocation.getArgument(0),
@@ -87,8 +92,9 @@ class DatabaseOtpVerificationServiceTest {
         }).when(repository).deleteBySessionIdAndPurposeAndChannel(any(), any(), any());
 
         emailHandler = new CapturingEmailHandler();
+        bothHandler = new CapturingBothHandler();
         service = new DatabaseOtpVerificationService(
-                List.of(emailHandler),
+                List.of(emailHandler, bothHandler),
                 properties,
                 repository,
                 new OtpRateLimiter(properties),
@@ -201,6 +207,41 @@ class DatabaseOtpVerificationServiceTest {
     }
 
     @Test
+    void smsOnlyDispatchFailureDoesNotPersistOtpHash() {
+        DatabaseOtpVerificationService failingSmsService = new DatabaseOtpVerificationService(
+                List.of(new FailingSmsHandler()),
+                properties,
+                repository,
+                new OtpRateLimiter(properties),
+                mock(OtpSecurityAuditService.class));
+
+        assertThrows(IllegalStateException.class, () -> failingSmsService.sendOtp(
+                session,
+                PURPOSE,
+                VerificationChannel.SMS,
+                "7020186501",
+                CONTEXT));
+
+        assertNull(stateStore.get(key(session.getId(), PURPOSE, VerificationChannel.SMS.name())));
+    }
+
+    @Test
+    void bothChannelDispatchesSameOtpToEmailAndSms() {
+        service.sendOtp(
+                session,
+                VerificationPurposes.LOGIN_AUTHENTICATION,
+                VerificationChannel.BOTH,
+                OtpDeliveryReferences.both("user@example.com", "7020186501"),
+                CONTEXT);
+
+        assertNotNull(bothHandler.emailOtp);
+        assertEquals(bothHandler.emailOtp, bothHandler.smsOtp);
+        assertEquals(VerificationChannel.BOTH.name(), stateStore
+                .get(key(session.getId(), VerificationPurposes.LOGIN_AUTHENTICATION, VerificationChannel.BOTH.name()))
+                .getChannel());
+    }
+
+    @Test
     void expiredOtpFails() {
         service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
         String otp = emailHandler.lastOtp;
@@ -298,6 +339,53 @@ class DatabaseOtpVerificationServiceTest {
         public void dispatchOtp(String purpose, String reference, String otp, String otpReferenceId) {
             lastOtp = otp;
             lastOtpReferenceId = otpReferenceId;
+        }
+    }
+
+    private static final class CapturingBothHandler implements OtpChannelHandler {
+
+        private String emailOtp;
+        private String smsOtp;
+
+        @Override
+        public VerificationChannel getChannel() {
+            return VerificationChannel.BOTH;
+        }
+
+        @Override
+        public String normalizeReference(String reference) {
+            return OtpDeliveryReferences.both(
+                    OtpDeliveryReferences.parseBoth(reference).email(),
+                    OtpDeliveryReferences.parseBoth(reference).mobileNumber());
+        }
+
+        @Override
+        public void dispatchOtp(String purpose, String reference, String otp) {
+            dispatchOtp(purpose, reference, otp, null);
+        }
+
+        @Override
+        public void dispatchOtp(String purpose, String reference, String otp, String otpReferenceId) {
+            emailOtp = otp;
+            smsOtp = otp;
+        }
+    }
+
+    private static final class FailingSmsHandler implements OtpChannelHandler {
+
+        @Override
+        public VerificationChannel getChannel() {
+            return VerificationChannel.SMS;
+        }
+
+        @Override
+        public String normalizeReference(String reference) {
+            return reference.trim();
+        }
+
+        @Override
+        public void dispatchOtp(String purpose, String reference, String otp) {
+            throw new IllegalStateException("SMS failed");
         }
     }
 }

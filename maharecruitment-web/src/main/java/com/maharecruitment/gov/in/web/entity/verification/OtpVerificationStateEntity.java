@@ -69,6 +69,9 @@ public class OtpVerificationStateEntity {
     @Column(name = "otp_resend_window_start")
     private Instant otpResendWindowStart;
 
+    @Column(name = "otp_last_sent_at")
+    private Instant otpLastSentAt;
+
     @Column(name = "captcha_id", length = 64)
     private String captchaId;
 
@@ -200,6 +203,14 @@ public class OtpVerificationStateEntity {
 
     public void setOtpResendWindowStart(Instant otpResendWindowStart) {
         this.otpResendWindowStart = otpResendWindowStart;
+    }
+
+    public Instant getOtpLastSentAt() {
+        return otpLastSentAt;
+    }
+
+    public void setOtpLastSentAt(Instant otpLastSentAt) {
+        this.otpLastSentAt = otpLastSentAt;
     }
 
     public String getCaptchaId() {

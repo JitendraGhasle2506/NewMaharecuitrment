@@ -55,6 +55,7 @@ public class HomeController {
         model.addAttribute("otpResendCooldownSeconds", otpVerificationProperties.getResendCooldownSeconds());
         model.addAttribute("otpEmailEnabled", otpEmailEnabled);
         model.addAttribute("otpSmsEnabled", otpSmsEnabled);
+        model.addAttribute("otpBothEnabled", otpEmailEnabled && otpSmsEnabled);
         model.addAttribute("otpLoginEnabled", otpEmailEnabled || otpSmsEnabled);
         return "login";
     }

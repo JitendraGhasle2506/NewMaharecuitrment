@@ -40,6 +40,7 @@ import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.security.host.HostProperties;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
 import com.maharecruitment.gov.in.web.service.mobile.MobileTokenService;
 import com.maharecruitment.gov.in.web.util.ContextPathUrlResolver;
 
@@ -150,6 +151,11 @@ class SecurityHttpsEnforcementMvcTest {
         @Bean
         MobileTokenService mobileTokenService() {
             return mock(MobileTokenService.class);
+        }
+
+        @Bean
+        AgencyAccessService agencyAccessService() {
+            return mock(AgencyAccessService.class);
         }
 
         @Bean

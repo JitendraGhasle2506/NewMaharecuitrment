@@ -23,8 +23,9 @@ class LoginClientTransportGuardTest {
                 .contains("HTTPS is required before submitting credentials.")
                 .contains("passwordLoginForm.addEventListener(\"submit\"")
                 .contains("event.preventDefault();")
-                .contains("Select Email OTP or Mobile OTP.")
-                .contains("Math.max(otpExpirySeconds, otpResendCooldownSeconds)")
+                .contains("Select Email OTP, Mobile OTP, or Both.")
+                .contains("Math.max(0, otpResendCooldownSeconds)")
+                .contains("data.resendAvailableInSeconds")
                 .contains("response.status === 429")
                 .contains("Please enter the latest valid OTP")
                 .contains("window.crypto.subtle.encrypt")
@@ -32,6 +33,8 @@ class LoginClientTransportGuardTest {
                 .contains("window.HTMLFormElement.prototype.submit.call(passwordLoginForm)");
         assertThat(loginTemplate)
                 .contains("id=\"encryptedPassword\" name=\"password\"")
+                .contains(">Mobile OTP</option>")
+                .contains(">Email + Mobile OTP</option>")
                 .contains("data-credential-key-url=@{/security/credential-encryption/public-key}")
                 .contains("@{/js/login-otp.js(v='20260625-credential-encryption')}")
                 .doesNotContain("id=\"password\" name=\"password\"");

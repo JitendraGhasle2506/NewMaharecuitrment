@@ -85,7 +85,7 @@ class OtpLoginControllerTest {
         bindingResult.addError(new FieldError(
                 "request",
                 "channel",
-                "Select Email OTP or Mobile OTP"));
+                "Select Email OTP, Mobile OTP, or Both"));
 
         ResponseEntity<VerificationResponse> response = controller.sendOtp(
                 request,
@@ -95,7 +95,7 @@ class OtpLoginControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Select Email OTP or Mobile OTP");
+        assertThat(response.getBody().message()).isEqualTo("Select Email OTP, Mobile OTP, or Both");
         verify(otpLoginService, never()).sendOtp(any(), any(), any(), any());
     }
 

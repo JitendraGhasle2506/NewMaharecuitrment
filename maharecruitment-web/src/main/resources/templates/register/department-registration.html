@@ -224,16 +224,16 @@
 											th:errors="*{primaryEmail}"></div>
 									</div>
 									<div class="col-12">
-										<p class="document-note mb-0" th:if="${mobileOtpEnabled and emailOtpEnabled}">
+										<p class="document-note mb-0" th:if="${!otpBypassEnabled and mobileOtpEnabled and emailOtpEnabled}">
 											Primary mobile and primary email must be verified before registration can be
 											submitted.
 										</p>
-										<p class="document-note mb-0" th:if="${!mobileOtpEnabled and emailOtpEnabled}">
+										<p class="document-note mb-0" th:if="${!otpBypassEnabled and !mobileOtpEnabled and emailOtpEnabled}">
 											Primary email must be verified before registration can be submitted. Mobile
 											OTP
 											is disabled in this environment.
 										</p>
-										<p class="document-note mb-0" th:if="${mobileOtpEnabled and !emailOtpEnabled}">
+										<p class="document-note mb-0" th:if="${!otpBypassEnabled and mobileOtpEnabled and !emailOtpEnabled}">
 											Primary mobile must be verified before registration can be submitted. Email
 											OTP
 											is disabled in this environment.

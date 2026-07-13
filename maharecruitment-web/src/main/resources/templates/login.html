@@ -115,7 +115,8 @@
                                 <select id="otpChannel" name="channel" class="form-select channel-select" required>
                                     <option value="" th:selected="${otpChannel == null}" disabled hidden>Select</option>
                                     <option value="EMAIL" th:if="${otpEmailEnabled == true}" th:selected="${otpChannel == 'EMAIL'}">Email OTP</option>
-                                    <option value="MOBILE" th:if="${otpSmsEnabled == true}" th:selected="${otpChannel == 'MOBILE'}">Mobile OTP</option>
+                                    <option value="SMS" th:if="${otpLoginEnabled == true}" th:selected="${otpChannel == 'SMS' or otpChannel == 'MOBILE'}">Mobile OTP</option>
+                                    <option value="BOTH" th:if="${otpBothEnabled == true}" th:selected="${otpChannel == 'BOTH'}">Email + Mobile OTP</option>
                                 </select>
                             </div>
                             <div class="form-group mb-3">

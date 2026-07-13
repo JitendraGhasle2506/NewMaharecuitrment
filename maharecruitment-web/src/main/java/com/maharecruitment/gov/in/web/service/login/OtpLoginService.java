@@ -11,6 +11,7 @@ import com.maharecruitment.gov.in.auth.service.CustomUserDetailsService;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryReferences;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
@@ -72,13 +73,22 @@ public class OtpLoginService {
             return false;
         }
 
-        return channel == VerificationChannel.EMAIL
-                ? notificationChannelProperties.isEmailEnabled()
-                : notificationChannelProperties.isSmsEnabled();
+        VerificationChannel effectiveChannel = channel.canonical();
+        return switch (effectiveChannel) {
+            case EMAIL -> notificationChannelProperties.isEmailEnabled();
+            case SMS -> isSmsEnabled();
+            case BOTH -> notificationChannelProperties.isEmailEnabled() && isSmsEnabled();
+            case MOBILE -> isSmsEnabled();
+        };
     }
 
     public String disabledChannelMessage(VerificationChannel channel) {
-        String channelLabel = channel == VerificationChannel.MOBILE ? "Mobile" : "Email";
+        String channelLabel = switch (channel == null ? VerificationChannel.EMAIL : channel.canonical()) {
+            case EMAIL -> "Email";
+            case SMS -> "Mobile";
+            case BOTH -> "Email and Mobile";
+            case MOBILE -> "Mobile";
+        };
         return channelLabel + " OTP login is not enabled in this environment.";
     }
 
@@ -121,13 +131,18 @@ public class OtpLoginService {
     }
 
     private String resolveReference(User user, VerificationChannel channel) {
-        if (channel == VerificationChannel.EMAIL) {
+        VerificationChannel effectiveChannel = channel.canonical();
+        if (effectiveChannel == VerificationChannel.EMAIL) {
             return user.getEmail();
         }
 
         String mobileNo = userAffiliationService.getAffiliation(user).getMobileNo();
         if (!StringUtils.hasText(mobileNo)) {
             throw new IllegalStateException("No mobile number is registered for this user.");
+        }
+
+        if (effectiveChannel == VerificationChannel.BOTH) {
+            return OtpDeliveryReferences.both(user.getEmail(), mobileNo);
         }
         return mobileNo.trim();
     }
@@ -136,5 +151,9 @@ public class OtpLoginService {
         if (!isChannelEnabled(channel)) {
             throw new IllegalStateException(disabledChannelMessage(channel));
         }
+    }
+
+    private boolean isSmsEnabled() {
+        return notificationChannelProperties.isSmsEnabled();
     }
 }

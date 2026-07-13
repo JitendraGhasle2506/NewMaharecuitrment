@@ -3,13 +3,10 @@ package com.maharecruitment.gov.in.web.service.verification;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
@@ -33,11 +30,18 @@ public class OtpRateLimiter {
             VerificationChannel channel,
             String reference,
             OtpRequestContext context) {
+        Duration sendWindow = Duration.ofMinutes(Math.max(1, properties.getResendWindowMinutes()));
         checkAllowed(
                 "send",
-                buildKeys("send", purpose, channel, reference, context),
-                Math.max(1, properties.getResendLimit()),
-                Duration.ofMinutes(Math.max(1, properties.getResendWindowMinutes())));
+                List.of(
+                        new RateLimitRule(
+                                buildReferenceKey("send", purpose, channel, reference),
+                                Math.max(1, properties.getResendLimit()),
+                                sendWindow),
+                        new RateLimitRule(
+                                buildIpKey("send", context),
+                                Math.max(properties.getSendIpLimit(), properties.getResendLimit()),
+                                sendWindow)));
     }
 
     public void checkVerifyAllowed(
@@ -47,26 +51,36 @@ public class OtpRateLimiter {
             OtpRequestContext context) {
         checkAllowed(
                 "verify",
-                buildKeys("verify", purpose, channel, reference, context),
-                Math.max(1, properties.getVerifyRateLimit()),
-                Duration.ofSeconds(Math.max(1, properties.getVerifyRateWindowSeconds())));
+                List.of(
+                        new RateLimitRule(
+                                buildReferenceKey("verify", purpose, channel, reference),
+                                Math.max(1, properties.getVerifyRateLimit()),
+                                Duration.ofSeconds(Math.max(1, properties.getVerifyRateWindowSeconds()))),
+                        new RateLimitRule(
+                                buildIpKey("verify", context),
+                                Math.max(1, properties.getVerifyRateLimit()),
+                                Duration.ofSeconds(Math.max(1, properties.getVerifyRateWindowSeconds())))));
     }
 
-    private void checkAllowed(String action, List<String> keys, int limit, Duration window) {
+    private void checkAllowed(String action, List<RateLimitRule> rules) {
         Instant now = Instant.now();
-        List<RateLimitState> states = keys.stream()
-                .map(key -> requestStore.computeIfAbsent(key, ignored -> new RateLimitState()))
+        List<RateLimitCheck> checks = rules.stream()
+                .map(rule -> new RateLimitCheck(
+                        rule,
+                        requestStore.computeIfAbsent(rule.key(), ignored -> new RateLimitState())))
                 .toList();
 
         long retryAfterSeconds = 0;
-        for (RateLimitState state : states) {
+        for (RateLimitCheck check : checks) {
+            RateLimitRule rule = check.rule();
+            RateLimitState state = check.state();
             synchronized (state) {
-                prune(state, now, window);
-                if (state.requestTimes.size() >= limit) {
+                prune(state, now, rule.window());
+                if (state.requestTimes.size() >= rule.limit()) {
                     Instant oldestRequest = state.requestTimes.peekFirst();
                     retryAfterSeconds = Math.max(
                             retryAfterSeconds,
-                            secondsUntil(now, oldestRequest.plus(window)));
+                            secondsUntil(now, oldestRequest.plus(rule.window())));
                 }
             }
         }
@@ -77,29 +91,30 @@ public class OtpRateLimiter {
                     retryAfterSeconds);
         }
 
-        for (RateLimitState state : states) {
+        for (RateLimitCheck check : checks) {
+            RateLimitRule rule = check.rule();
+            RateLimitState state = check.state();
             synchronized (state) {
-                prune(state, now, window);
+                prune(state, now, rule.window());
                 state.requestTimes.addLast(now);
             }
         }
     }
 
-    private List<String> buildKeys(
+    private String buildReferenceKey(
             String action,
             String purpose,
             VerificationChannel channel,
-            String reference,
-            OtpRequestContext context) {
-        Set<String> keys = new LinkedHashSet<>();
+            String reference) {
         String normalizedPurpose = normalize(purpose);
         String normalizedChannel = channel == null ? "unknown" : channel.name().toLowerCase(Locale.ROOT);
         String normalizedReference = normalize(reference);
-        String clientIp = context == null ? "unknown" : normalize(context.normalizedClientIp());
+        return action + ":ref:" + normalizedPurpose + ":" + normalizedChannel + ":" + normalizedReference;
+    }
 
-        keys.add(action + ":ip:" + clientIp);
-        keys.add(action + ":ref:" + normalizedPurpose + ":" + normalizedChannel + ":" + normalizedReference);
-        return new ArrayList<>(keys);
+    private String buildIpKey(String action, OtpRequestContext context) {
+        String clientIp = context == null ? "unknown" : normalize(context.normalizedClientIp());
+        return action + ":ip:" + clientIp;
     }
 
     private void prune(RateLimitState state, Instant now, Duration window) {
@@ -121,5 +136,11 @@ public class OtpRateLimiter {
 
     private static final class RateLimitState {
         private final Deque<Instant> requestTimes = new ArrayDeque<>();
+    }
+
+    private record RateLimitRule(String key, int limit, Duration window) {
+    }
+
+    private record RateLimitCheck(RateLimitRule rule, RateLimitState state) {
     }
 }

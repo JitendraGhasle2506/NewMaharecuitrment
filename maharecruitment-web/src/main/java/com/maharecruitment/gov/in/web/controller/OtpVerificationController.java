@@ -9,9 +9,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.maharecruitment.gov.in.common.sms.exception.SmsGatewayException;
 import com.maharecruitment.gov.in.web.dto.verification.OtpSendRequest;
 import com.maharecruitment.gov.in.web.dto.verification.OtpVerifyRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
+import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
@@ -30,24 +32,22 @@ public class OtpVerificationController {
 
     private static final String GENERIC_VERIFY_FAILURE = "OTP verification failed. Please try again.";
     private static final String GENERIC_SEND_FAILURE = "Unable to process OTP request. Please try again.";
+    private static final String SMS_SEND_FAILURE = "Unable to send OTP at this time. Please try again later.";
     private static final String RATE_LIMIT_MESSAGE = "Too many OTP requests. Please try again later.";
 
     private final OtpVerificationService otpVerificationService;
     private final boolean departmentRegistrationOtpBypassEnabled;
-    private final boolean departmentRegistrationMobileOtpEnabled;
-    private final boolean departmentRegistrationEmailOtpEnabled;
+    private final NotificationChannelProperties notificationChannelProperties;
     private final TransportSecurityProperties transportSecurityProperties;
 
     public OtpVerificationController(
             OtpVerificationService otpVerificationService,
             @Value("${registration.department.otp-bypass-enabled:false}") boolean departmentRegistrationOtpBypassEnabled,
-            @Value("${registration.department.mobile-otp-enabled:true}") boolean departmentRegistrationMobileOtpEnabled,
-            @Value("${registration.department.email-otp-enabled:true}") boolean departmentRegistrationEmailOtpEnabled,
+            NotificationChannelProperties notificationChannelProperties,
             TransportSecurityProperties transportSecurityProperties) {
         this.otpVerificationService = otpVerificationService;
         this.departmentRegistrationOtpBypassEnabled = departmentRegistrationOtpBypassEnabled;
-        this.departmentRegistrationMobileOtpEnabled = departmentRegistrationMobileOtpEnabled;
-        this.departmentRegistrationEmailOtpEnabled = departmentRegistrationEmailOtpEnabled;
+        this.notificationChannelProperties = notificationChannelProperties;
         this.transportSecurityProperties = transportSecurityProperties;
     }
 
@@ -99,6 +99,12 @@ public class OtpVerificationController {
                     request.getPurpose(),
                     request.getChannel(),
                     ex.getResult()));
+        } catch (SmsGatewayException ex) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new VerificationResponse(
+                    SMS_SEND_FAILURE,
+                    false,
+                    request.getPurpose(),
+                    request.getChannel()));
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(new VerificationResponse(
                     GENERIC_SEND_FAILURE,
@@ -202,7 +208,11 @@ public class OtpVerificationController {
                 result.lockSecondsRemaining(),
                 result.remainingResends(),
                 result.retryAfterSeconds(),
-                result.expirySeconds());
+                result.expirySeconds(),
+                result.deliveryChannel() == null ? channel.name() : result.deliveryChannel().name(),
+                result.maskedDestination(),
+                result.expirySeconds(),
+                result.resendAvailableInSeconds());
     }
 
     private boolean isDepartmentRegistrationOtpBypassed(String purpose) {
@@ -217,12 +227,12 @@ public class OtpVerificationController {
             return false;
         }
 
-        if (channel == com.maharecruitment.gov.in.web.dto.verification.VerificationChannel.MOBILE) {
-            return !departmentRegistrationOtpBypassEnabled && !departmentRegistrationMobileOtpEnabled;
+        if (channel != null && channel.isSmsDelivery()) {
+            return !departmentRegistrationOtpBypassEnabled && !notificationChannelProperties.isSmsEnabled();
         }
 
         if (channel == com.maharecruitment.gov.in.web.dto.verification.VerificationChannel.EMAIL) {
-            return !departmentRegistrationOtpBypassEnabled && !departmentRegistrationEmailOtpEnabled;
+            return !departmentRegistrationOtpBypassEnabled && !notificationChannelProperties.isEmailEnabled();
         }
 
         return false;
@@ -230,7 +240,7 @@ public class OtpVerificationController {
 
     private String buildDepartmentRegistrationOtpDisabledMessage(
             com.maharecruitment.gov.in.web.dto.verification.VerificationChannel channel) {
-        return channel == com.maharecruitment.gov.in.web.dto.verification.VerificationChannel.MOBILE
+        return channel != null && channel.isSmsDelivery()
                 ? "Mobile OTP is disabled for department registration in this environment."
                 : "Email OTP is disabled for department registration in this environment.";
     }

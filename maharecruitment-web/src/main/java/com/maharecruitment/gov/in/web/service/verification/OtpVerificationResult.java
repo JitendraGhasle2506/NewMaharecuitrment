@@ -2,6 +2,8 @@ package com.maharecruitment.gov.in.web.service.verification;
 
 import java.time.Instant;
 
+import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
+
 public record OtpVerificationResult(
         boolean verified,
         int remainingAttempts,
@@ -12,9 +14,21 @@ public record OtpVerificationResult(
         long lockSecondsRemaining,
         int remainingResends,
         long retryAfterSeconds,
-        int expirySeconds) {
+        int expirySeconds,
+        VerificationChannel deliveryChannel,
+        String maskedDestination,
+        int resendAvailableInSeconds) {
 
     public static OtpVerificationResult sent(int remainingResends, int expirySeconds) {
+        return sent(null, null, remainingResends, expirySeconds, 0);
+    }
+
+    public static OtpVerificationResult sent(
+            VerificationChannel deliveryChannel,
+            String maskedDestination,
+            int remainingResends,
+            int expirySeconds,
+            int resendAvailableInSeconds) {
         return new OtpVerificationResult(
                 false,
                 0,
@@ -25,7 +39,10 @@ public record OtpVerificationResult(
                 0,
                 Math.max(0, remainingResends),
                 0,
-                Math.max(1, expirySeconds));
+                Math.max(1, expirySeconds),
+                deliveryChannel,
+                maskedDestination,
+                Math.max(0, resendAvailableInSeconds));
     }
 
     public static OtpVerificationResult verified(int maxAttempts) {
@@ -39,6 +56,9 @@ public record OtpVerificationResult(
                 0,
                 0,
                 0,
+                0,
+                null,
+                null,
                 0);
     }
 
@@ -57,6 +77,9 @@ public record OtpVerificationResult(
                 0,
                 0,
                 0,
+                0,
+                null,
+                null,
                 0);
     }
 
@@ -76,6 +99,9 @@ public record OtpVerificationResult(
                 Math.max(1, lockSecondsRemaining),
                 0,
                 0,
+                0,
+                null,
+                null,
                 0);
     }
 
@@ -90,6 +116,9 @@ public record OtpVerificationResult(
                 0,
                 0,
                 Math.max(1, retryAfterSeconds),
+                0,
+                null,
+                null,
                 0);
     }
 }

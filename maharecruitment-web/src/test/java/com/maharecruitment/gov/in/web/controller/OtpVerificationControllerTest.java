@@ -15,6 +15,7 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import com.maharecruitment.gov.in.web.dto.verification.OtpVerifyRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
+import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
@@ -25,11 +26,11 @@ class OtpVerificationControllerTest {
     @Test
     void verifyOtpReturns429WhenRateLimitExceeded() {
         OtpVerificationService service = mock(OtpVerificationService.class);
+        NotificationChannelProperties notificationProperties = new NotificationChannelProperties();
         OtpVerificationController controller = new OtpVerificationController(
                 service,
                 false,
-                true,
-                true,
+                notificationProperties,
                 new TransportSecurityProperties());
 
         OtpVerifyRequest request = new OtpVerifyRequest();

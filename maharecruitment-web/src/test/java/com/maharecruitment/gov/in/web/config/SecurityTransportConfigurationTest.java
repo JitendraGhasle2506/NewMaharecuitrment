@@ -47,6 +47,7 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("security.allowed-ports[4]"))
                 .isEqualTo("${SECURITY_ALLOWED_PORT_WILDFLY_HTTP:8080}");
         assertThat(properties.getProperty("otp.resend-limit")).isEqualTo("3");
+        assertThat(properties.getProperty("otp.send-ip-limit")).isEqualTo("100");
         assertThat(properties.getProperty("otp.resend-window-minutes")).isEqualTo("5");
         assertThat(properties.getProperty("spring.profiles.active")).isNull();
         assertThat(properties.getProperty("spring.profiles.default")).isEqualTo("local");

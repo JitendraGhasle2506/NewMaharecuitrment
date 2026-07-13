@@ -15,6 +15,7 @@ import org.springframework.web.servlet.FlashMap;
 import org.springframework.web.servlet.support.RequestContextUtils;
 
 import com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler;
+import com.maharecruitment.gov.in.common.sms.exception.SmsGatewayException;
 import com.maharecruitment.gov.in.web.dto.login.OtpLoginForm;
 import com.maharecruitment.gov.in.web.dto.login.OtpLoginSendRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
@@ -41,6 +42,8 @@ public class OtpLoginController {
     private static final String GENERIC_SEND_VALIDATION_FAILURE = "Please enter required OTP login details.";
     private static final String RATE_LIMIT_MESSAGE =
             "OTP already sent. Please enter the latest valid OTP. Resend is available after the timer ends.";
+    private static final String SMS_SEND_FAILURE =
+            "Unable to send OTP at this time. Please try again later.";
 
     private final OtpLoginService otpLoginService;
     private final MySimpleUrlAuthenticationSuccessHandler successHandler;
@@ -100,6 +103,12 @@ public class OtpLoginController {
         } catch (UnknownLoginIdentifierException ex) {
             return ResponseEntity.ok(new VerificationResponse(
                     ex.getMessage(),
+                    false,
+                    VerificationPurposes.LOGIN_AUTHENTICATION,
+                    request.getChannel()));
+        } catch (SmsGatewayException ex) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new VerificationResponse(
+                    SMS_SEND_FAILURE,
                     false,
                     VerificationPurposes.LOGIN_AUTHENTICATION,
                     request.getChannel()));
@@ -192,7 +201,11 @@ public class OtpLoginController {
                 result.lockSecondsRemaining(),
                 result.remainingResends(),
                 result.retryAfterSeconds(),
-                result.expirySeconds());
+                result.expirySeconds(),
+                result.deliveryChannel() == null ? channel.name() : result.deliveryChannel().name(),
+                result.maskedDestination(),
+                result.expirySeconds(),
+                result.resendAvailableInSeconds());
     }
 
     private String validationMessage(BindingResult bindingResult) {

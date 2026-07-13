@@ -237,7 +237,7 @@
             clearTimers();
 
             var expiryRemaining = otpExpirySeconds;
-            var resendRemaining = Math.max(otpExpirySeconds, otpResendCooldownSeconds);
+            var resendRemaining = Math.max(0, otpResendCooldownSeconds);
             sendButton.disabled = resendRemaining > 0;
             updateTimingMessage(expiryRemaining, resendRemaining);
 
@@ -295,7 +295,7 @@
         };
 
         var validateChannel = function (value) {
-            return value === "EMAIL" || value === "MOBILE";
+            return value === "EMAIL" || value === "SMS" || value === "BOTH" || value === "MOBILE";
         };
 
         identifierInput.addEventListener("input", resetStatus);
@@ -317,7 +317,7 @@
             }
 
             if (!validateChannel(channel)) {
-                setStatus("Select Email OTP or Mobile OTP.", "is-error");
+                setStatus("Select Email OTP, Mobile OTP, or Both.", "is-error");
                 channelSelect.focus();
                 return;
             }
@@ -334,6 +334,8 @@
                     },
                     body: JSON.stringify({
                         identifier: identifier,
+                        purpose: "LOGIN",
+                        deliveryChannel: channel,
                         channel: channel
                     })
                 });
@@ -345,7 +347,10 @@
                 });
 
                 if (response.status === 429 && data.retryAfterSeconds && data.retryAfterSeconds > 0) {
-                    otpExpirySeconds = data.retryAfterSeconds;
+                    otpExpirySeconds = data.expirySeconds && data.expirySeconds > 0
+                        ? data.expirySeconds
+                        : otpExpirySeconds;
+                    otpResendCooldownSeconds = data.retryAfterSeconds;
                     hasSentOtpOnce = true;
                     updateSendButtonLabel();
                     setOtpSectionVisible(true);
@@ -366,7 +371,12 @@
                     return;
                 }
 
-                otpExpirySeconds = data.expirySeconds;
+                otpExpirySeconds = data.expiresInSeconds && data.expiresInSeconds > 0
+                    ? data.expiresInSeconds
+                    : data.expirySeconds;
+                otpResendCooldownSeconds = data.resendAvailableInSeconds && data.resendAvailableInSeconds > 0
+                    ? data.resendAvailableInSeconds
+                    : otpResendCooldownSeconds;
                 hasSentOtpOnce = true;
                 updateSendButtonLabel();
                 setStatus(data.message || "OTP sent successfully.", "is-success");

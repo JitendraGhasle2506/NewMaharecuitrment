@@ -42,3 +42,12 @@ build/
 .vscode/
 uploads/
 /.metadata/
+
+### Local secrets ###
+.env
+.env.*
+*.env
+secrets/
+secret/
+*-secret.*
+*-secrets.*

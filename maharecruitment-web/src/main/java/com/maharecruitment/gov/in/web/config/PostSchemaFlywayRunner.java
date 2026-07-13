@@ -74,6 +74,7 @@ import db.postmigration.V89__employee_profile_support;
 import db.postmigration.V90__employee_master_embedded_support;
 import db.postmigration.V91__employee_fcm_token_support;
 import db.postmigration.V92__auth_employee_user_mapping_hardening;
+import db.postmigration.V94__acl_sms_transaction_log_support;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -174,7 +175,8 @@ public class PostSchemaFlywayRunner {
                 new V89__employee_profile_support(),
                 new V90__employee_master_embedded_support(),
                 new V91__employee_fcm_token_support(),
-                new V92__auth_employee_user_mapping_hardening());
+                new V92__auth_employee_user_mapping_hardening(),
+                new V94__acl_sms_transaction_log_support());
     }
 
     private boolean hasFailedPostSchemaMigration() {

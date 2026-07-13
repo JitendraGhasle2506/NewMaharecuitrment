@@ -26,6 +26,7 @@ import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationResult;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
+import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
@@ -43,9 +44,8 @@ public class DepartmentRegistrationPageController {
     private final DepartmentRegistrationPageService registrationPageService;
     private final OtpVerificationService otpVerificationService;
     private final FileStorageService fileStorageService;
+    private final NotificationChannelProperties notificationChannelProperties;
     private final boolean otpBypassEnabled;
-    private final boolean mobileOtpEnabled;
-    private final boolean emailOtpEnabled;
 
     public DepartmentRegistrationPageController(
             DepartmentMstService departmentService,
@@ -53,17 +53,15 @@ public class DepartmentRegistrationPageController {
             DepartmentRegistrationPageService registrationPageService,
             OtpVerificationService otpVerificationService,
             FileStorageService fileStorageService,
-            @Value("${registration.department.otp-bypass-enabled:false}") boolean otpBypassEnabled,
-            @Value("${registration.department.mobile-otp-enabled:true}") boolean mobileOtpEnabled,
-            @Value("${registration.department.email-otp-enabled:true}") boolean emailOtpEnabled) {
+            NotificationChannelProperties notificationChannelProperties,
+            @Value("${registration.department.otp-bypass-enabled:false}") boolean otpBypassEnabled) {
         this.departmentService = departmentService;
         this.subDepartmentService = subDepartmentService;
         this.registrationPageService = registrationPageService;
         this.otpVerificationService = otpVerificationService;
         this.fileStorageService = fileStorageService;
+        this.notificationChannelProperties = notificationChannelProperties;
         this.otpBypassEnabled = otpBypassEnabled;
-        this.mobileOtpEnabled = mobileOtpEnabled;
-        this.emailOtpEnabled = emailOtpEnabled;
     }
 
     @GetMapping("/department-registration")
@@ -128,8 +126,8 @@ public class DepartmentRegistrationPageController {
                                 VerificationChannel.EMAIL,
                                 form.getPrimaryEmail()));
         model.addAttribute("otpBypassEnabled", otpBypassEnabled);
-        model.addAttribute("mobileOtpEnabled", isMobileOtpRequired());
-        model.addAttribute("emailOtpEnabled", isEmailOtpRequired());
+        model.addAttribute("mobileOtpEnabled", notificationChannelProperties.isSmsEnabled());
+        model.addAttribute("emailOtpEnabled", notificationChannelProperties.isEmailEnabled());
         model.addAttribute("verificationPurpose", VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
     }
 
@@ -236,11 +234,11 @@ public class DepartmentRegistrationPageController {
     }
 
     private boolean isMobileOtpRequired() {
-        return !otpBypassEnabled && mobileOtpEnabled;
+        return !otpBypassEnabled && notificationChannelProperties.isSmsEnabled();
     }
 
     private boolean isEmailOtpRequired() {
-        return !otpBypassEnabled && emailOtpEnabled;
+        return !otpBypassEnabled && notificationChannelProperties.isEmailEnabled();
     }
 
     private boolean applyRegistrationError(

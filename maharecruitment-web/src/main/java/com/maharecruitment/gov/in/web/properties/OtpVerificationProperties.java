@@ -7,13 +7,15 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "otp")
 public class OtpVerificationProperties {
 
-    private int expiryMinutes = 5;
+    private int expiryMinutes = 10;
 
     private int maxAttempts = 5;
 
     private int lockDurationMinutes = 15;
 
     private int resendLimit = 3;
+
+    private int sendIpLimit = 100;
 
     private int resendWindowMinutes = 15;
 
@@ -25,7 +27,7 @@ public class OtpVerificationProperties {
 
     private int otpLength = 6;
 
-    private int resendCooldownSeconds = 0;
+    private int resendCooldownSeconds = 60;
 
     public int getExpirySeconds() {
         return Math.max(1, expiryMinutes) * 60;
@@ -61,6 +63,14 @@ public class OtpVerificationProperties {
 
     public void setResendLimit(int resendLimit) {
         this.resendLimit = resendLimit;
+    }
+
+    public int getSendIpLimit() {
+        return sendIpLimit;
+    }
+
+    public void setSendIpLimit(int sendIpLimit) {
+        this.sendIpLimit = sendIpLimit;
     }
 
     public int getResendWindowMinutes() {

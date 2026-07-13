@@ -17,11 +17,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.maharecruitment.gov.in.common.sms.util.MobileNumberUtil;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.entity.verification.OtpVerificationStateEntity;
 import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.repository.verification.OtpVerificationStateRepository;
 import com.maharecruitment.gov.in.web.service.verification.OtpChannelHandler;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryReferences;
 import com.maharecruitment.gov.in.web.service.verification.OtpFailureReason;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimiter;
@@ -52,7 +54,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             OtpRateLimiter rateLimiter,
             OtpSecurityAuditService auditService) {
         this.handlers = new java.util.EnumMap<>(VerificationChannel.class);
-        handlers.forEach(handler -> this.handlers.put(handler.getChannel(), handler));
+        handlers.forEach(handler -> this.handlers.put(handler.getChannel().canonical(), handler));
         this.properties = properties;
         this.stateRepository = stateRepository;
         this.rateLimiter = rateLimiter;
@@ -66,50 +68,59 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             VerificationChannel channel,
             String reference,
             OtpRequestContext context) {
-        OtpChannelHandler handler = getHandler(channel);
+        VerificationChannel effectiveChannel = canonicalChannel(channel);
+        OtpChannelHandler handler = getHandler(effectiveChannel);
         String normalizedPurpose = normalizePurpose(purpose);
         String normalizedReference = handler.normalizeReference(reference);
         OtpRequestContext requestContext = normalizeContext(context);
 
         Instant now = Instant.now();
-        OtpVerificationStateEntity state = findState(session, normalizedPurpose, channel)
-                .orElseGet(() -> newState(session, normalizedPurpose, channel));
-        rejectResendWhileOtpIsActive(state, normalizedReference, now);
+        OtpVerificationStateEntity state = findState(session, normalizedPurpose, effectiveChannel)
+                .orElseGet(() -> newState(session, normalizedPurpose, effectiveChannel));
+        rejectResendDuringCooldown(state, normalizedReference, now);
 
-        rateLimiter.checkSendAllowed(normalizedPurpose, channel, normalizedReference, requestContext);
+        rateLimiter.checkSendAllowed(normalizedPurpose, effectiveChannel, normalizedReference, requestContext);
 
-        boolean resend = state.getOtpStateId() != null && state.getOtpExpiryTime() != null;
-        int resendCount = nextResendCount(state, now);
+        boolean resend = state.getOtpStateId() != null && state.getOtpLastSentAt() != null;
+        ResendCounter resendCounter = nextResendCounter(state, now);
 
         String otp = generateOtp();
         String otpReferenceId = generateOtpReferenceId();
-        state.setReferenceHash(hash(normalizedReference));
-        state.setReferenceMasked(maskReference(channel, normalizedReference));
+        String referenceHash = hash(normalizedReference);
+        String maskedReference = maskReference(effectiveChannel, normalizedReference);
+
+        handler.dispatchOtp(normalizedPurpose, normalizedReference, otp, otpReferenceId);
+
+        state.setReferenceHash(referenceHash);
+        state.setReferenceMasked(maskedReference);
         state.setOtpHash(hash(otp));
         state.setOtpAttemptCount(0);
         state.setOtpLockedUntil(null);
         state.setOtpVerified(false);
         state.setOtpExpiryTime(now.plusSeconds(properties.getExpirySeconds()));
-        state.setOtpResendCount(resendCount);
+        state.setOtpResendCount(resendCounter.count());
+        state.setOtpResendWindowStart(resendCounter.windowStart());
+        state.setOtpLastSentAt(now);
         clearCaptcha(state);
-
-        handler.dispatchOtp(normalizedPurpose, normalizedReference, otp, otpReferenceId);
         stateRepository.save(state);
 
         auditService.record(
                 resend ? "OTP_RESEND" : "OTP_SENT",
                 normalizedPurpose,
-                channel,
+                effectiveChannel,
                 state.getReferenceMasked(),
                 requestContext,
                 null,
                 Map.of(
-                        "remainingResends", Math.max(0, properties.getResendLimit() - resendCount),
+                        "remainingResends", Math.max(0, properties.getResendLimit() - resendCounter.count()),
                         "otpReferenceId", otpReferenceId));
 
         return OtpVerificationResult.sent(
-                properties.getResendLimit() - resendCount,
-                properties.getExpirySeconds());
+                effectiveChannel,
+                maskedReference,
+                properties.getResendLimit() - resendCounter.count(),
+                properties.getExpirySeconds(),
+                properties.getResendCooldownSeconds());
     }
 
     @Override
@@ -122,21 +133,22 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             String captchaId,
             String captchaAnswer,
             OtpRequestContext context) {
-        OtpChannelHandler handler = getHandler(channel);
+        VerificationChannel effectiveChannel = canonicalChannel(channel);
+        OtpChannelHandler handler = getHandler(effectiveChannel);
         String normalizedPurpose = normalizePurpose(purpose);
         String normalizedReference = handler.normalizeReference(reference);
         OtpRequestContext requestContext = normalizeContext(context);
 
-        rateLimiter.checkVerifyAllowed(normalizedPurpose, channel, normalizedReference, requestContext);
+        rateLimiter.checkVerifyAllowed(normalizedPurpose, effectiveChannel, normalizedReference, requestContext);
 
-        OtpVerificationStateEntity state = findState(session, normalizedPurpose, channel).orElse(null);
+        OtpVerificationStateEntity state = findState(session, normalizedPurpose, effectiveChannel).orElse(null);
         if (state == null) {
             throw failure(
                     OtpFailureReason.NOT_REQUESTED,
                     "OTP not requested.",
                     normalizedPurpose,
-                    channel,
-                    maskReference(channel, normalizedReference),
+                    effectiveChannel,
+                    maskReference(effectiveChannel, normalizedReference),
                     requestContext,
                     OtpVerificationResult.failed(properties.getMaxAttempts(), false, null, null));
         }
@@ -149,7 +161,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                     OtpFailureReason.LOCKED,
                     "OTP verification locked until " + state.getOtpLockedUntil() + ".",
                     normalizedPurpose,
-                    channel,
+                    effectiveChannel,
                     maskedReference,
                     requestContext,
                     lockedResult(state, now));
@@ -167,7 +179,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                     OtpFailureReason.EXPIRED,
                     "OTP expired at " + state.getOtpExpiryTime() + ".",
                     normalizedPurpose,
-                    channel,
+                    effectiveChannel,
                     maskedReference,
                     requestContext,
                     OtpVerificationResult.failed(0, false, null, null),
@@ -179,7 +191,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                     OtpFailureReason.REFERENCE_MISMATCH,
                     "OTP reference mismatch.",
                     normalizedPurpose,
-                    channel,
+                    effectiveChannel,
                     maskedReference,
                     requestContext,
                     failedResult(state));
@@ -190,7 +202,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                     OtpFailureReason.INVALID_OTP,
                     "OTP value missing.",
                     normalizedPurpose,
-                    channel,
+                    effectiveChannel,
                     maskedReference,
                     requestContext,
                     failedResult(state));
@@ -206,7 +218,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                     reason,
                     "CAPTCHA validation failed before OTP verification.",
                     normalizedPurpose,
-                    channel,
+                    effectiveChannel,
                     maskedReference,
                     requestContext,
                     failedResult(state));
@@ -217,7 +229,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                     OtpFailureReason.INVALIDATED,
                     "OTP has already been invalidated.",
                     normalizedPurpose,
-                    channel,
+                    effectiveChannel,
                     maskedReference,
                     requestContext,
                     failedResult(state));
@@ -234,7 +246,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             auditService.record(
                     "OTP_VERIFICATION_SUCCESS",
                     normalizedPurpose,
-                    channel,
+                    effectiveChannel,
                     maskedReference,
                     requestContext,
                     null,
@@ -254,7 +266,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             auditService.record(
                     "OTP_VERIFICATION_FAILED",
                     normalizedPurpose,
-                    channel,
+                    effectiveChannel,
                     maskedReference,
                     requestContext,
                     "Invalid OTP. Maximum attempts reached.",
@@ -262,7 +274,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             auditService.record(
                     "OTP_LOCKED",
                     normalizedPurpose,
-                    channel,
+                    effectiveChannel,
                     maskedReference,
                     requestContext,
                     "OTP locked after maximum failed attempts.",
@@ -282,7 +294,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                 OtpFailureReason.INVALID_OTP,
                 "Invalid OTP.",
                 normalizedPurpose,
-                channel,
+                effectiveChannel,
                 maskedReference,
                 requestContext,
                 failedResult(state));
@@ -295,13 +307,14 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             String reference,
             OtpRequestContext context) {
         String normalizedPurpose = normalizePurpose(purpose);
+        VerificationChannel effectiveChannel = canonicalChannel(channel);
         OtpRequestContext requestContext = normalizeContext(context);
         String normalizedReference = normalizeGenericReference(reference);
-        rateLimiter.checkSendAllowed(normalizedPurpose, channel, normalizedReference, requestContext);
+        rateLimiter.checkSendAllowed(normalizedPurpose, effectiveChannel, normalizedReference, requestContext);
         auditService.record(
                 "OTP_SEND_SUPPRESSED",
                 normalizedPurpose,
-                channel,
+                effectiveChannel,
                 maskGenericReference(normalizedReference),
                 requestContext,
                 "No active account found for OTP send request.",
@@ -315,14 +328,15 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             String reference,
             OtpRequestContext context) {
         String normalizedPurpose = normalizePurpose(purpose);
+        VerificationChannel effectiveChannel = canonicalChannel(channel);
         OtpRequestContext requestContext = normalizeContext(context);
         String normalizedReference = normalizeGenericReference(reference);
-        rateLimiter.checkVerifyAllowed(normalizedPurpose, channel, normalizedReference, requestContext);
+        rateLimiter.checkVerifyAllowed(normalizedPurpose, effectiveChannel, normalizedReference, requestContext);
         throw failure(
                 OtpFailureReason.NOT_REQUESTED,
                 "No active account found for OTP verification request.",
                 normalizedPurpose,
-                channel,
+                effectiveChannel,
                 maskGenericReference(normalizedReference),
                 requestContext,
                 OtpVerificationResult.failed(properties.getMaxAttempts(), false, null, null));
@@ -336,10 +350,11 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         }
 
         try {
-            OtpChannelHandler handler = getHandler(channel);
+            VerificationChannel effectiveChannel = canonicalChannel(channel);
+            OtpChannelHandler handler = getHandler(effectiveChannel);
             String normalizedReference = handler.normalizeReference(reference);
             Instant now = Instant.now();
-            return findState(session, normalizePurpose(purpose), channel)
+            return findState(session, normalizePurpose(purpose), effectiveChannel)
                     .filter(state -> state.isOtpVerified())
                     .filter(state -> !isExpired(state, now))
                     .filter(state -> hash(normalizedReference).equals(state.getReferenceHash()))
@@ -365,7 +380,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         stateRepository.deleteBySessionIdAndPurposeAndChannel(
                 session.getId(),
                 normalizePurpose(purpose),
-                channel.name());
+                canonicalChannel(channel).name());
     }
 
     private OtpChannelHandler getHandler(VerificationChannel channel) {
@@ -373,7 +388,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             throw new IllegalArgumentException("Verification channel is required.");
         }
 
-        OtpChannelHandler handler = handlers.get(channel);
+        OtpChannelHandler handler = handlers.get(channel.canonical());
         if (handler == null) {
             throw new IllegalArgumentException("Unsupported verification channel.");
         }
@@ -398,12 +413,11 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         return state;
     }
 
-    private int nextResendCount(OtpVerificationStateEntity state, Instant now) {
+    private ResendCounter nextResendCounter(OtpVerificationStateEntity state, Instant now) {
         Instant windowStart = state.getOtpResendWindowStart();
         Duration resendWindow = Duration.ofMinutes(Math.max(1, properties.getResendWindowMinutes()));
         if (windowStart == null || !now.isBefore(windowStart.plus(resendWindow))) {
-            state.setOtpResendWindowStart(now);
-            return 1;
+            return new ResendCounter(1, now);
         }
 
         if (state.getOtpResendCount() >= properties.getResendLimit()) {
@@ -411,10 +425,10 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             throw new OtpRateLimitException("OTP resend limit exceeded.", retryAfterSeconds);
         }
 
-        return state.getOtpResendCount() + 1;
+        return new ResendCounter(state.getOtpResendCount() + 1, windowStart);
     }
 
-    private void rejectResendWhileOtpIsActive(
+    private void rejectResendDuringCooldown(
             OtpVerificationStateEntity state,
             String normalizedReference,
             Instant now) {
@@ -428,9 +442,25 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
             return;
         }
 
-        throw new OtpRateLimitException(
-                "OTP is already valid. Resend is allowed after it expires.",
-                secondsUntil(now, state.getOtpExpiryTime()));
+        int cooldownSeconds = Math.max(0, properties.getResendCooldownSeconds());
+        if (cooldownSeconds <= 0) {
+            return;
+        }
+
+        Instant lastSentAt = state.getOtpLastSentAt();
+        if (lastSentAt == null) {
+            lastSentAt = state.getUpdatedAt() == null ? state.getCreatedAt() : state.getUpdatedAt();
+        }
+        if (lastSentAt == null) {
+            return;
+        }
+
+        Instant resendAllowedAt = lastSentAt.plusSeconds(cooldownSeconds);
+        if (now.isBefore(resendAllowedAt)) {
+            throw new OtpRateLimitException(
+                    "OTP is already valid. Resend is allowed after the cooldown.",
+                    secondsUntil(now, resendAllowedAt));
+        }
     }
 
     private void invalidateOtp(OtpVerificationStateEntity state) {
@@ -594,11 +624,21 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         if (!StringUtils.hasText(reference)) {
             return "unknown";
         }
-        if (channel == VerificationChannel.MOBILE) {
+        if (channel.isSmsDelivery()) {
             String trimmed = reference.trim();
             return trimmed.length() <= 4
                     ? "****"
                     : "******" + trimmed.substring(trimmed.length() - 4);
+        }
+        if (channel == VerificationChannel.BOTH) {
+            try {
+                OtpDeliveryReferences.BothReference bothReference = OtpDeliveryReferences.parseBoth(reference);
+                return OtpDeliveryReferences.maskEmail(bothReference.email())
+                        + " / "
+                        + MobileNumberUtil.mask(bothReference.mobileNumber());
+            } catch (RuntimeException ex) {
+                return maskGenericReference(reference);
+            }
         }
         return maskGenericReference(reference);
     }
@@ -641,5 +681,15 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         return MessageDigest.isEqual(
                 expected.getBytes(StandardCharsets.UTF_8),
                 submitted.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private VerificationChannel canonicalChannel(VerificationChannel channel) {
+        if (channel == null) {
+            throw new IllegalArgumentException("Verification channel is required.");
+        }
+        return channel.canonical();
+    }
+
+    private record ResendCounter(int count, Instant windowStart) {
     }
 }

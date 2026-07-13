@@ -217,10 +217,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    const mobileVerification = !mobileOtpEnabled
-        ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP is disabled in this environment.")
-        : otpBypassEnabled
+    const mobileVerification = otpBypassEnabled
         ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP bypass enabled for testing.")
+        : !mobileOtpEnabled
+        ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP is disabled in this environment.")
         : initializeOtpVerification({
             purpose: verificationPurpose,
             channel: "MOBILE",
@@ -237,10 +237,10 @@ document.addEventListener("DOMContentLoaded", () => {
             initialVerifiedMessage: "Primary mobile number already verified."
         }, mobileOtpElements.statusElement, "Mobile");
 
-    const emailVerification = !emailOtpEnabled
-        ? createBypassVerification(emailOtpElements.statusElement, "Email OTP is disabled in this environment.")
-        : otpBypassEnabled
+    const emailVerification = otpBypassEnabled
         ? createBypassVerification(emailOtpElements.statusElement, "Email OTP bypass enabled for testing.")
+        : !emailOtpEnabled
+        ? createBypassVerification(emailOtpElements.statusElement, "Email OTP is disabled in this environment.")
         : initializeOtpVerification({
             purpose: verificationPurpose,
             channel: "EMAIL",
