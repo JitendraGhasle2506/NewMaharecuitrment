@@ -23,7 +23,8 @@ class LoginClientTransportGuardTest {
                 .contains("HTTPS is required before submitting credentials.")
                 .contains("passwordLoginForm.addEventListener(\"submit\"")
                 .contains("event.preventDefault();")
-                .contains("Select Email OTP, Mobile OTP, or Both.")
+                .contains("Enter a valid email address or 10 digit mobile number.")
+                .contains("detectIdentifierChannel")
                 .contains("Math.max(0, otpResendCooldownSeconds)")
                 .contains("data.resendAvailableInSeconds")
                 .contains("response.status === 429")
@@ -33,10 +34,12 @@ class LoginClientTransportGuardTest {
                 .contains("window.HTMLFormElement.prototype.submit.call(passwordLoginForm)");
         assertThat(loginTemplate)
                 .contains("id=\"encryptedPassword\" name=\"password\"")
-                .contains(">Mobile OTP</option>")
-                .contains(">Email + Mobile OTP</option>")
+                .contains("id=\"otpChannel\" name=\"channel\"")
+                .contains("id=\"otpChannelDisplay\"")
+                .contains("data-email-otp-enabled=${otpEmailEnabled}")
+                .contains("data-sms-otp-enabled=${otpSmsEnabled}")
                 .contains("data-credential-key-url=@{/security/credential-encryption/public-key}")
-                .contains("@{/js/login-otp.js(v='20260625-credential-encryption')}")
+                .contains("@{/js/login-otp.js(v='20260713-auto-otp-channel')}")
                 .doesNotContain("id=\"password\" name=\"password\"");
     }
 

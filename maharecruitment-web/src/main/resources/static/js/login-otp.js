@@ -40,6 +40,7 @@
 
         var identifierInput = document.getElementById("otpIdentifier");
         var channelSelect = document.getElementById("otpChannel");
+        var channelDisplay = document.getElementById("otpChannelDisplay");
         var otpInput = document.getElementById("loginOtp");
         var otpSection = document.getElementById("loginOtpSection");
         var sendButton = document.getElementById("sendLoginOtpBtn");
@@ -51,6 +52,8 @@
         var csrfToken = form.dataset.csrfToken || "";
         var otpExpirySeconds = parseInt(form.dataset.otpExpirySeconds || "600", 10);
         var otpResendCooldownSeconds = parseInt(form.dataset.otpResendCooldownSeconds || "60", 10);
+        var isEmailOtpEnabled = form.dataset.emailOtpEnabled === "true";
+        var isSmsOtpEnabled = form.dataset.smsOtpEnabled === "true";
         var expiryTimerId = null;
         var resendTimerId = null;
         var hasSentOtpOnce = false;
@@ -288,18 +291,72 @@
             hasSentOtpOnce = false;
             updateSendButtonLabel();
             setOtpSectionVisible(false);
+            updateDetectedChannel();
         };
 
         var validateIdentifier = function (value) {
             return value.trim().length > 0;
         };
 
-        var validateChannel = function (value) {
-            return value === "EMAIL" || value === "SMS" || value === "BOTH" || value === "MOBILE";
+        var detectIdentifierChannel = function (value) {
+            var identifier = value.trim();
+            if (!identifier) {
+                return "";
+            }
+            if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(identifier)) {
+                return "EMAIL";
+            }
+            if (/^[0-9]{10}$/.test(identifier)) {
+                return "SMS";
+            }
+            return "";
         };
 
+        var otpChannelLabel = function (channel) {
+            return channel === "EMAIL" ? "Email OTP" : "Mobile OTP";
+        };
+
+        var isDetectedChannelEnabled = function (channel) {
+            return channel === "EMAIL" ? isEmailOtpEnabled : isSmsOtpEnabled;
+        };
+
+        var setChannelDisplay = function (message, mode) {
+            if (!channelDisplay) {
+                return;
+            }
+            channelDisplay.textContent = message || "Enter Email / Mobile";
+            channelDisplay.classList.remove("is-selected", "is-error");
+            if (mode) {
+                channelDisplay.classList.add(mode);
+            }
+        };
+
+        function updateDetectedChannel() {
+            var channel = detectIdentifierChannel(identifierInput.value);
+            if (channelSelect) {
+                channelSelect.value = channel;
+            }
+
+            if (!identifierInput.value.trim()) {
+                setChannelDisplay("Enter Email / Mobile", null);
+                return "";
+            }
+
+            if (!channel) {
+                setChannelDisplay("Enter valid email or 10 digit mobile", "is-error");
+                return "";
+            }
+
+            if (!isDetectedChannelEnabled(channel)) {
+                setChannelDisplay(otpChannelLabel(channel) + " disabled", "is-error");
+                return channel;
+            }
+
+            setChannelDisplay(otpChannelLabel(channel), "is-selected");
+            return channel;
+        }
+
         identifierInput.addEventListener("input", resetStatus);
-        channelSelect.addEventListener("change", resetStatus);
 
         sendButton.addEventListener("click", async function () {
             if (isInsecureTransport()) {
@@ -308,17 +365,23 @@
             }
 
             var identifier = identifierInput.value.trim();
-            var channel = channelSelect.value;
+            var channel = updateDetectedChannel();
 
             if (!validateIdentifier(identifier)) {
-                setStatus("Enter your registered username, email, or mobile number first.", "is-error");
+                setStatus("Enter your registered email or mobile number first.", "is-error");
                 identifierInput.focus();
                 return;
             }
 
-            if (!validateChannel(channel)) {
-                setStatus("Select Email OTP, Mobile OTP, or Both.", "is-error");
-                channelSelect.focus();
+            if (!channel) {
+                setStatus("Enter a valid email address or 10 digit mobile number.", "is-error");
+                identifierInput.focus();
+                return;
+            }
+
+            if (!isDetectedChannelEnabled(channel)) {
+                setStatus(otpChannelLabel(channel) + " login is not enabled in this environment.", "is-error");
+                identifierInput.focus();
                 return;
             }
 
@@ -401,6 +464,28 @@
                 return;
             }
 
+            var channel = updateDetectedChannel();
+            if (!identifierInput.value.trim()) {
+                event.preventDefault();
+                setStatus("Enter your registered email or mobile number first.", "is-error");
+                identifierInput.focus();
+                return;
+            }
+
+            if (!channel) {
+                event.preventDefault();
+                setStatus("Enter a valid email address or 10 digit mobile number.", "is-error");
+                identifierInput.focus();
+                return;
+            }
+
+            if (!isDetectedChannelEnabled(channel)) {
+                event.preventDefault();
+                setStatus(otpChannelLabel(channel) + " login is not enabled in this environment.", "is-error");
+                identifierInput.focus();
+                return;
+            }
+
             if (verifyButton) {
                 verifyButton.disabled = true;
                 verifyButton.textContent = "Verifying...";
@@ -416,6 +501,7 @@
         }
         setTiming("");
         updateSendButtonLabel();
+        updateDetectedChannel();
         startLockCountdown();
 
         // Toggle password visibility

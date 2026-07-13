@@ -55,7 +55,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                     } else if (identifier != null && identifier.matches("^[0-9]+$")) {
                         return new UsernameNotFoundException("Incorrect Mobile Number, please enter registered mobile number");
                     }
-                    return new UsernameNotFoundException("Incorrect Username, please enter registered username");
+                    return new UsernameNotFoundException("Enter registered email or mobile number");
                 });
     }
 
@@ -65,10 +65,14 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
 
         String normalized = identifier.trim();
-        if (normalized.matches("^[0-9]{10,15}$")) {
+        if (normalized.matches("^[0-9]{10}$")) {
             return userRepository.findByMobileNo(normalized);
         }
 
-        return userRepository.findByEmailIgnoreCase(UserValidationUtil.normalizeEmail(normalized));
+        if (normalized.contains("@")) {
+            return userRepository.findByEmailIgnoreCase(UserValidationUtil.normalizeEmail(normalized));
+        }
+
+        return java.util.Optional.empty();
     }
 }

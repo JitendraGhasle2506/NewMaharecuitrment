@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 
 public class OtpLoginSendRequest {
 
-    @NotBlank(message = "Username, email, or mobile number is required")
+    @NotBlank(message = "Email or mobile number is required")
     private String identifier;
 
     private String channel;
@@ -23,10 +23,15 @@ public class OtpLoginSendRequest {
     }
 
     public void setIdentifier(String identifier) {
-        this.identifier = identifier;
+        this.identifier = identifier == null ? null : identifier.trim();
     }
 
     public VerificationChannel getChannel() {
+        VerificationChannel inferredChannel = LoginIdentifierSupport.inferChannel(identifier);
+        if (inferredChannel != null) {
+            return inferredChannel;
+        }
+
         String selectedChannel = selectedChannel();
         if (selectedChannel == null || selectedChannel.isBlank()) {
             return null;
@@ -60,12 +65,16 @@ public class OtpLoginSendRequest {
     }
 
     public String getChannelValue() {
-        return selectedChannel();
+        VerificationChannel channel = getChannel();
+        return channel == null ? selectedChannel() : channel.name();
     }
 
-    @AssertTrue(message = "Select Email OTP, Mobile OTP, or Both")
-    public boolean isDeliveryChannelValid() {
-        return getChannel() != null;
+    @AssertTrue(message = "Enter a valid email address or 10 digit mobile number")
+    public boolean isIdentifierFormatValid() {
+        if (identifier == null || identifier.isBlank()) {
+            return true;
+        }
+        return LoginIdentifierSupport.isEmailOrMobile(identifier);
     }
 
     private String selectedChannel() {

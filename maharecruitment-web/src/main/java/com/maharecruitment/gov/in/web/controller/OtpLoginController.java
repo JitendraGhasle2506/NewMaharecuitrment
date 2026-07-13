@@ -209,7 +209,7 @@ public class OtpLoginController {
     }
 
     private String validationMessage(BindingResult bindingResult) {
-        return bindingResult.getFieldErrors().stream()
+        return bindingResult.getAllErrors().stream()
                 .map(error -> error.getDefaultMessage())
                 .filter(message -> message != null && !message.isBlank())
                 .findFirst()

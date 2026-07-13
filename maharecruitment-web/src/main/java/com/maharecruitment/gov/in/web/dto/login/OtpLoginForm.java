@@ -2,16 +2,15 @@ package com.maharecruitment.gov.in.web.dto.login;
 
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 public class OtpLoginForm {
 
-    @NotBlank(message = "Username, email, or mobile number is required")
+    @NotBlank(message = "Email or mobile number is required")
     private String identifier;
 
-    @NotNull(message = "OTP delivery channel is required")
     private VerificationChannel channel;
 
     @NotBlank(message = "OTP is required")
@@ -27,11 +26,12 @@ public class OtpLoginForm {
     }
 
     public void setIdentifier(String identifier) {
-        this.identifier = identifier;
+        this.identifier = identifier == null ? null : identifier.trim();
     }
 
     public VerificationChannel getChannel() {
-        return channel;
+        VerificationChannel inferredChannel = LoginIdentifierSupport.inferChannel(identifier);
+        return inferredChannel == null ? channel : inferredChannel;
     }
 
     public void setChannel(VerificationChannel channel) {
@@ -60,5 +60,13 @@ public class OtpLoginForm {
 
     public void setCaptchaAnswer(String captchaAnswer) {
         this.captchaAnswer = captchaAnswer;
+    }
+
+    @AssertTrue(message = "Enter a valid email address or 10 digit mobile number")
+    public boolean isIdentifierFormatValid() {
+        if (identifier == null || identifier.isBlank()) {
+            return true;
+        }
+        return LoginIdentifierSupport.isEmailOrMobile(identifier);
     }
 }

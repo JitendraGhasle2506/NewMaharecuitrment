@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.web.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -13,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.validation.BeanPropertyBindingResult;
-import org.springframework.validation.FieldError;
 
 import com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler;
 import com.maharecruitment.gov.in.web.dto.login.OtpLoginSendRequest;
@@ -23,6 +23,7 @@ import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.login.OtpLoginService;
 import com.maharecruitment.gov.in.web.service.login.UnknownLoginIdentifierException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
+import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 
 class OtpLoginControllerTest {
 
@@ -62,7 +63,7 @@ class OtpLoginControllerTest {
         when(otpLoginService.isChannelEnabled(VerificationChannel.EMAIL)).thenReturn(true);
         when(otpLoginService.sendOtp(any(), any(), any(), any()))
                 .thenThrow(new UnknownLoginIdentifierException(
-                        "Username, email, or mobile number is not registered."));
+                        "Email or mobile number is not registered."));
 
         ResponseEntity<VerificationResponse> response = controller.sendOtp(
                 request,
@@ -73,30 +74,49 @@ class OtpLoginControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message())
-                .isEqualTo("Username, email, or mobile number is not registered.");
+                .isEqualTo("Email or mobile number is not registered.");
         assertThat(response.getBody().expirySeconds()).isZero();
     }
 
     @Test
-    void missingOtpChannelReturnsRequiredSelectionMessage() {
+    void missingOtpChannelInfersEmailFromIdentifier() {
         OtpLoginSendRequest request = new OtpLoginSendRequest();
         request.setIdentifier("hr@mahait.org");
-        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(request, "request");
-        bindingResult.addError(new FieldError(
-                "request",
-                "channel",
-                "Select Email OTP, Mobile OTP, or Both"));
+        when(otpLoginService.isChannelEnabled(VerificationChannel.EMAIL)).thenReturn(true);
+        when(otpLoginService.sendOtp(any(), any(), any(), any()))
+                .thenReturn(OtpVerificationResult.sent(VerificationChannel.EMAIL, "h***@mahait.org", 2, 600, 60));
 
         ResponseEntity<VerificationResponse> response = controller.sendOtp(
                 request,
-                bindingResult,
+                new BeanPropertyBindingResult(request, "request"),
                 new MockHttpServletRequest(),
                 new MockHttpSession());
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Select Email OTP, Mobile OTP, or Both");
-        verify(otpLoginService, never()).sendOtp(any(), any(), any(), any());
+        assertThat(response.getBody().channel()).isEqualTo(VerificationChannel.EMAIL);
+        verify(otpLoginService).sendOtp(any(), eq("hr@mahait.org"), eq(VerificationChannel.EMAIL), any());
+    }
+
+    @Test
+    void mobileIdentifierInfersSmsChannelEvenWhenPostedChannelIsEmail() {
+        OtpLoginSendRequest request = new OtpLoginSendRequest();
+        request.setIdentifier("9876543210");
+        request.setChannel("EMAIL");
+        when(otpLoginService.isChannelEnabled(VerificationChannel.SMS)).thenReturn(true);
+        when(otpLoginService.sendOtp(any(), any(), any(), any()))
+                .thenReturn(OtpVerificationResult.sent(VerificationChannel.SMS, "******3210", 2, 600, 60));
+
+        ResponseEntity<VerificationResponse> response = controller.sendOtp(
+                request,
+                new BeanPropertyBindingResult(request, "request"),
+                new MockHttpServletRequest(),
+                new MockHttpSession());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().channel()).isEqualTo(VerificationChannel.SMS);
+        verify(otpLoginService).sendOtp(any(), eq("9876543210"), eq(VerificationChannel.SMS), any());
     }
 
     @Test

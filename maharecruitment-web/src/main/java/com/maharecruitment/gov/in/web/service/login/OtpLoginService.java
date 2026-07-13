@@ -23,7 +23,7 @@ import jakarta.servlet.http.HttpSession;
 public class OtpLoginService {
 
     private static final String UNKNOWN_IDENTIFIER_MESSAGE =
-            "Username, email, or mobile number is not registered.";
+            "Email or mobile number is not registered.";
 
     private final CustomUserDetailsService userDetailsService;
     private final UserAffiliationService userAffiliationService;
