@@ -1,7 +1,7 @@
 # Mobile API Documentation
 
-Version: 1.2  
-Last updated: 2026-07-10
+Version: 1.3  
+Last updated: 2026-07-16
 
 ## 1. Overview
 
