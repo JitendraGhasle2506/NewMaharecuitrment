@@ -17,6 +17,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
+import org.springframework.security.web.header.writers.ContentSecurityPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
+import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter.XFrameOptionsMode;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import com.maharecruitment.gov.in.security.handler.CustomAccessDeniedHandler;
@@ -26,6 +32,7 @@ import com.maharecruitment.gov.in.web.filter.AgencyAccountStatusFilter;
 import com.maharecruitment.gov.in.web.filter.CookieAttributeFilter;
 import com.maharecruitment.gov.in.web.filter.MobileBearerTokenAuthenticationFilter;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
+import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
 import com.maharecruitment.gov.in.web.security.host.HostHeaderValidationFilter;
 import com.maharecruitment.gov.in.web.security.host.HostProperties;
 import com.maharecruitment.gov.in.web.security.host.HostValidator;
@@ -292,9 +299,28 @@ public class SecurityConfig {
                                 .maxAgeInSeconds(31_536_000)
                                 .includeSubDomains(true)
                                 .preload(false))
-                .frameOptions(frame -> frame.sameOrigin())
+                // Frame policies are DENY by default, with a narrow compatibility
+                // exception for the application's same-origin invoice preview frames.
+                .frameOptions(frame -> frame.disable())
+                .referrerPolicy(referrer -> referrer
+                        .policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .permissionsPolicyHeader(permissions -> permissions
+                        .policy(SecurityHeaderPolicy.PERMISSIONS_POLICY))
                 .cacheControl(cache -> {})
                 .addHeaderWriter(new CacheControlHeadersWriter())
+                .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                        SecurityHeaderPolicy::allowsSameOriginFraming,
+                        new XFrameOptionsHeaderWriter(XFrameOptionsMode.SAMEORIGIN)))
+                .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                        new NegatedRequestMatcher(SecurityHeaderPolicy::allowsSameOriginFraming),
+                        new XFrameOptionsHeaderWriter(XFrameOptionsMode.DENY)))
+                .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                        SecurityHeaderPolicy::allowsSameOriginFraming,
+                        new ContentSecurityPolicyHeaderWriter(
+                                SecurityHeaderPolicy.SAME_ORIGIN_FRAME_CONTENT_SECURITY_POLICY)))
+                .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                        new NegatedRequestMatcher(SecurityHeaderPolicy::allowsSameOriginFraming),
+                        new ContentSecurityPolicyHeaderWriter(SecurityHeaderPolicy.CONTENT_SECURITY_POLICY)))
             );
 
         return http.build();

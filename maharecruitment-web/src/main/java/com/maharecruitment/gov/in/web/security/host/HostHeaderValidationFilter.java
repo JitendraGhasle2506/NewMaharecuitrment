@@ -11,6 +11,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +35,10 @@ public class HostHeaderValidationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
+        // This filter precedes channel redirects and HeaderWriterFilter. Writing
+        // missing policy headers eagerly also protects those early responses.
+        SecurityHeaderPolicy.writeEarlyResponseHeaders(request, response);
+
         List<String> hostHeaders = Collections.list(request.getHeaders(HttpHeaders.HOST));
         HostValidationResult validationResult = hostValidator.validate(hostHeaders);
         if (validationResult.valid()) {
@@ -52,7 +58,6 @@ public class HostHeaderValidationFilter extends OncePerRequestFilter {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("text/html;charset=UTF-8");
         response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
-        response.setHeader("X-Content-Type-Options", "nosniff");
         response.getWriter().write("""
                 <!DOCTYPE html>
                 <html lang="en">

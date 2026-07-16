@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +31,7 @@ public class DuplicateContextPathRedirectFilter extends OncePerRequestFilter {
             return;
         }
 
+        SecurityHeaderPolicy.writeEarlyResponseHeaders(request, response);
         response.sendRedirect(response.encodeRedirectURL(withQueryString(normalizedPath, request.getQueryString())));
     }
 
