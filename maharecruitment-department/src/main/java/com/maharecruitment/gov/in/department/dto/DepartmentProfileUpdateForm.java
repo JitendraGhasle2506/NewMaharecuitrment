@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Getter
 @Setter
@@ -21,14 +22,10 @@ public class DepartmentProfileUpdateForm {
     @Size(max = 200, message = "Department name for bill must not exceed 200 characters.")
     private String billDepartmentName;
 
-    @NotBlank(message = "GST number is required.")
-    @Pattern(
-            regexp = "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$",
-            message = "GST number must be valid.")
+    @JsonIgnore
     private String gstNumber;
 
-    @NotBlank(message = "PAN number is required.")
-    @Pattern(regexp = "^[A-Z]{5}[0-9]{4}[A-Z]$", message = "PAN number must be valid.")
+    @JsonIgnore
     private String panNumber;
 
     @NotBlank(message = "TAN number is required.")

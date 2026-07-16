@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.maharecruitment.gov.in.common.entity.Auditable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -20,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "department_registration_master")
@@ -57,8 +59,16 @@ public class DepartmentRegistrationEntity extends Auditable {
 
     private String billDepartmentName;
 
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @Column(name = "gst_no")
     private String gstNo;
 
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @Column(name = "pan_no")
     private String panNo;
 
     @Column(name = "tan_no")

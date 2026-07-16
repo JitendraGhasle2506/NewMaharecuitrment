@@ -107,13 +107,15 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">GST Number <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control text-uppercase" th:field="*{gstNumber}" maxlength="15">
-                                    <div class="text-danger small" th:errors="*{gstNumber}"></div>
+                                    <input type="text" class="form-control" th:value="${profileForm.gstNumber}"
+                                           autocomplete="off" disabled aria-label="Masked GST number">
+                                    <div class="form-text">GST is masked. Use the secured identity-update process to replace it.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">PAN Number <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control text-uppercase" th:field="*{panNumber}" maxlength="10">
-                                    <div class="text-danger small" th:errors="*{panNumber}"></div>
+                                    <input type="text" class="form-control" th:value="${profileForm.panNumber}"
+                                           autocomplete="off" disabled aria-label="Masked PAN number">
+                                    <div class="form-text">PAN is masked. Use the secured identity-update process to replace it.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">TAN Number <span class="text-danger">*</span></label>

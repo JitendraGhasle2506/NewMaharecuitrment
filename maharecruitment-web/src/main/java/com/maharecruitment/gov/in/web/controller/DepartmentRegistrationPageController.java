@@ -2,7 +2,6 @@ package com.maharecruitment.gov.in.web.controller;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
@@ -22,17 +21,16 @@ import com.maharecruitment.gov.in.master.dto.DepartmentResponse;
 import com.maharecruitment.gov.in.master.dto.SubDepartmentResponse;
 import com.maharecruitment.gov.in.master.service.DepartmentMstService;
 import com.maharecruitment.gov.in.master.service.SubDepartmentService;
-import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationResult;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
-import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @Controller
@@ -43,7 +41,6 @@ public class DepartmentRegistrationPageController {
     private final SubDepartmentService subDepartmentService;
     private final DepartmentRegistrationPageService registrationPageService;
     private final OtpVerificationService otpVerificationService;
-    private final FileStorageService fileStorageService;
     private final NotificationChannelProperties notificationChannelProperties;
     private final boolean otpBypassEnabled;
 
@@ -52,14 +49,12 @@ public class DepartmentRegistrationPageController {
             SubDepartmentService subDepartmentService,
             DepartmentRegistrationPageService registrationPageService,
             OtpVerificationService otpVerificationService,
-            FileStorageService fileStorageService,
             NotificationChannelProperties notificationChannelProperties,
             @Value("${registration.department.otp-bypass-enabled:false}") boolean otpBypassEnabled) {
         this.departmentService = departmentService;
         this.subDepartmentService = subDepartmentService;
         this.registrationPageService = registrationPageService;
         this.otpVerificationService = otpVerificationService;
-        this.fileStorageService = fileStorageService;
         this.notificationChannelProperties = notificationChannelProperties;
         this.otpBypassEnabled = otpBypassEnabled;
     }
@@ -76,9 +71,11 @@ public class DepartmentRegistrationPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes,
-            HttpSession session) {
-        stageUploadedFiles(form, bindingResult);
+            HttpSession session,
+            HttpServletRequest request) {
+        rejectPlaintextIdentityParameters(request, bindingResult);
         validateDynamicSelections(form, bindingResult, session);
+        addGenericSensitiveTransportError(bindingResult);
 
         if (bindingResult.hasErrors()) {
             populateForm(model, form, session);
@@ -94,7 +91,7 @@ public class DepartmentRegistrationPageController {
             return "redirect:/login";
         } catch (RuntimeException ex) {
             if (!applyRegistrationError(bindingResult, form, ex)) {
-                model.addAttribute("errorMessage", ex.getMessage());
+                model.addAttribute("errorMessage", "Unable to complete department registration. Please try again.");
             }
             populateForm(model, form, session);
             return "register/department-registration";
@@ -108,6 +105,8 @@ public class DepartmentRegistrationPageController {
     }
 
     private void populateForm(Model model, DepartmentRegistrationForm form, HttpSession session) {
+        // Ciphertext is single-use request material and must never be reflected into HTML.
+        form.clearEncryptedSubmission();
         model.addAttribute("registrationForm", form);
         model.addAttribute("departments", getDepartments());
         model.addAttribute("subDepartments", getSubDepartmentsForForm(form));
@@ -158,40 +157,15 @@ public class DepartmentRegistrationPageController {
             }
         }
 
-        if (form.getPanFile() == null || form.getPanFile().isEmpty()) {
-            if (!StringUtils.hasText(form.getUploadedPanFilePath())) {
-                bindingResult.rejectValue("panFile", "registration.panFile", "PAN document is required.");
-            }
+        if (!hasFile(form.getPanFile())) {
+            bindingResult.rejectValue("panFile", "registration.panFile", "PAN document is required.");
         }
-        if (form.getUploadedGstFilePath() == null || form.getUploadedGstFilePath().isEmpty()) {
-        	if (!StringUtils.hasText(form.getUploadedGstFilePath())) {
-        		bindingResult.rejectValue("gstFile", "registration.gstFile", "GST document is required.");
-        	}
+        if (!hasFile(form.getGstFile())) {
+            bindingResult.rejectValue("gstFile", "registration.gstFile", "GST document is required.");
         }
-        if (form.getUploadedTanFilePath() == null || form.getUploadedTanFilePath().isEmpty()) {
-        	if (!StringUtils.hasText(form.getUploadedTanFilePath())) {
-        		bindingResult.rejectValue("tanFile", "registration.tanFile", "TAN document is required.");
-        	}
+        if (!hasFile(form.getTanFile())) {
+            bindingResult.rejectValue("tanFile", "registration.tanFile", "TAN document is required.");
         }
-
-        validateUploadedDocumentReference(
-                form.getUploadedGstFilePath(),
-                "department-registration/gst",
-                "gstFile",
-                "GST document",
-                bindingResult);
-        validateUploadedDocumentReference(
-                form.getUploadedPanFilePath(),
-                "department-registration/pan",
-                "panFile",
-                "PAN document",
-                bindingResult);
-        validateUploadedDocumentReference(
-                form.getUploadedTanFilePath(),
-                "department-registration/tan",
-                "tanFile",
-                "TAN document",
-                bindingResult);
 
         if (!isBlank(form.getPrimaryEmail())
                 && form.getPrimaryEmail().trim().equalsIgnoreCase(form.getSecondaryEmail())) {
@@ -257,12 +231,17 @@ public class DepartmentRegistrationPageController {
         }
 
         if ("A registration already exists for the provided GST number.".equals(message)) {
-            bindingResult.rejectValue("gstNo", "registration.gstDuplicate", message);
+            bindingResult.reject("registration.gstDuplicate", message);
             return true;
         }
 
         if ("A registration already exists for the provided PAN number.".equals(message)) {
-            bindingResult.rejectValue("panNo", "registration.panDuplicate", message);
+            bindingResult.reject("registration.panDuplicate", message);
+            return true;
+        }
+
+        if ("Unable to process the submitted identity information.".equals(message)) {
+            bindingResult.reject("registration.sensitiveIdentity", message);
             return true;
         }
 
@@ -279,93 +258,31 @@ public class DepartmentRegistrationPageController {
         return false;
     }
 
-    private void stageUploadedFiles(DepartmentRegistrationForm form, BindingResult bindingResult) {
-        stageDocument(
-                form.getGstFile(),
-                "department-registration/gst",
-                "gstFile",
-                "GST document",
-                form.getUploadedGstFilePath(),
-                form::setUploadedGstFilePath,
-                form::setUploadedGstFileName,
-                bindingResult);
-        if (hasFile(form.getGstFile())) {
-            form.setGstFile(null);
-        }
-
-        stageDocument(
-                form.getPanFile(),
-                "department-registration/pan",
-                "panFile",
-                "PAN document",
-                form.getUploadedPanFilePath(),
-                form::setUploadedPanFilePath,
-                form::setUploadedPanFileName,
-                bindingResult);
-        if (hasFile(form.getPanFile())) {
-            form.setPanFile(null);
-        }
-
-        stageDocument(
-                form.getTanFile(),
-                "department-registration/tan",
-                "tanFile",
-                "TAN document",
-                form.getUploadedTanFilePath(),
-                form::setUploadedTanFilePath,
-                form::setUploadedTanFileName,
-                bindingResult);
-        if (hasFile(form.getTanFile())) {
-            form.setTanFile(null);
-        }
-    }
-
-    private void stageDocument(
-            org.springframework.web.multipart.MultipartFile file,
-            String modulePath,
-            String fieldName,
-            String label,
-            String existingPath,
-            Consumer<String> pathSetter,
-            Consumer<String> nameSetter,
-            BindingResult bindingResult) {
-        if (!hasFile(file)) {
-            return;
-        }
-
-        try {
-            FileUploadResult result = fileStorageService.store(file, modulePath);
-            if (fileStorageService.isManagedPath(existingPath) && !existingPath.equals(result.fullPath())) {
-                fileStorageService.deleteQuietly(existingPath);
-            }
-
-            pathSetter.accept(result.fullPath());
-            nameSetter.accept(result.originalFileName());
-        } catch (RuntimeException ex) {
-            String message = ex.getMessage() == null ? "Upload failed." : ex.getMessage();
-            bindingResult.rejectValue(fieldName, "registration." + fieldName, label + " upload failed: " + message);
-        }
-    }
-
     private boolean hasFile(org.springframework.web.multipart.MultipartFile file) {
         return file != null && !file.isEmpty();
     }
 
-    private void validateUploadedDocumentReference(
-            String uploadedPath,
-            String modulePath,
-            String fieldName,
-            String label,
-            BindingResult bindingResult) {
-        if (!StringUtils.hasText(uploadedPath)) {
-            return;
+    private void addGenericSensitiveTransportError(BindingResult bindingResult) {
+        if (bindingResult.hasFieldErrors("gstNumberEncrypted")
+                || bindingResult.hasFieldErrors("panNumberEncrypted")
+                || bindingResult.hasFieldErrors("encryptionKeyId")
+                || bindingResult.hasFieldErrors("timestamp")
+                || bindingResult.hasFieldErrors("nonce")) {
+            bindingResult.reject(
+                    "registration.sensitiveIdentity",
+                    "Unable to process the submitted identity information.");
         }
+    }
 
-        if (!fileStorageService.isManagedFileAllowed(uploadedPath, modulePath)) {
-            bindingResult.rejectValue(
-                    fieldName,
-                    "registration." + fieldName,
-                    label + " upload reference is invalid.");
+    private void rejectPlaintextIdentityParameters(HttpServletRequest request, BindingResult bindingResult) {
+        if (request.getParameterMap().containsKey("gstNo")
+                || request.getParameterMap().containsKey("panNo")
+                || request.getParameterMap().containsKey("gstNumber")
+                || request.getParameterMap().containsKey("panNumber")
+                || request.getParameterMap().containsKey("aadhaarNumber")) {
+            bindingResult.reject(
+                    "registration.plaintextSensitiveIdentity",
+                    "Unable to process the submitted identity information.");
         }
     }
 }

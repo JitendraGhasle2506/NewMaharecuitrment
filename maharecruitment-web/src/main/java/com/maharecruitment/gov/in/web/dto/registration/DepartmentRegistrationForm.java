@@ -68,15 +68,24 @@ public class DepartmentRegistrationForm {
     @Size(max = 200, message = "Department name for bill must not exceed 200 characters")
     private String billDepartmentName;
 
-    @NotBlank(message = "GST number is required")
-    @Pattern(
-            regexp = "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$",
-            message = "GST number must be valid")
-    private String gstNo;
+    @NotBlank(message = "Encrypted GST number is required")
+    @Size(max = 800, message = "Encrypted GST number is invalid")
+    private String gstNumberEncrypted;
 
-    @NotBlank(message = "PAN number is required")
-    @Pattern(regexp = "^[A-Z]{5}[0-9]{4}[A-Z]$", message = "PAN number must be valid")
-    private String panNo;
+    @NotBlank(message = "Encrypted PAN number is required")
+    @Size(max = 800, message = "Encrypted PAN number is invalid")
+    private String panNumberEncrypted;
+
+    @NotBlank(message = "Encryption key identifier is required")
+    @Size(max = 100, message = "Encryption key identifier is invalid")
+    private String encryptionKeyId;
+
+    @NotNull(message = "Encrypted request timestamp is required")
+    private Long timestamp;
+
+    @NotBlank(message = "Encrypted request nonce is required")
+    @Pattern(regexp = "^[A-Za-z0-9_-]{22,128}$", message = "Encrypted request nonce is invalid")
+    private String nonce;
 
     @NotBlank(message = "TAN number is required")
     @Pattern(regexp = "^[A-Z]{4}[0-9]{5}[A-Z]$", message = "TAN number must be valid")
@@ -91,21 +100,6 @@ public class DepartmentRegistrationForm {
     private MultipartFile panFile;
 
     private MultipartFile tanFile;
-
-    /**
-     * Persisted between validation round-trips because browsers cannot refill file inputs.
-     */
-    private String uploadedGstFilePath;
-
-    private String uploadedGstFileName;
-
-    private String uploadedPanFilePath;
-
-    private String uploadedPanFileName;
-
-    private String uploadedTanFilePath;
-
-    private String uploadedTanFileName;
 
     @NotNull(message = "Terms acceptance is required")
     @AssertTrue(message = "You must accept the declaration")
@@ -231,20 +225,52 @@ public class DepartmentRegistrationForm {
         this.billDepartmentName = billDepartmentName;
     }
 
-    public String getGstNo() {
-        return gstNo;
+    public String getGstNumberEncrypted() {
+        return gstNumberEncrypted;
     }
 
-    public void setGstNo(String gstNo) {
-        this.gstNo = gstNo;
+    public void setGstNumberEncrypted(String gstNumberEncrypted) {
+        this.gstNumberEncrypted = gstNumberEncrypted;
     }
 
-    public String getPanNo() {
-        return panNo;
+    public String getPanNumberEncrypted() {
+        return panNumberEncrypted;
     }
 
-    public void setPanNo(String panNo) {
-        this.panNo = panNo;
+    public void setPanNumberEncrypted(String panNumberEncrypted) {
+        this.panNumberEncrypted = panNumberEncrypted;
+    }
+
+    public String getEncryptionKeyId() {
+        return encryptionKeyId;
+    }
+
+    public void setEncryptionKeyId(String encryptionKeyId) {
+        this.encryptionKeyId = encryptionKeyId;
+    }
+
+    public Long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getNonce() {
+        return nonce;
+    }
+
+    public void setNonce(String nonce) {
+        this.nonce = nonce;
+    }
+
+    public void clearEncryptedSubmission() {
+        gstNumberEncrypted = null;
+        panNumberEncrypted = null;
+        encryptionKeyId = null;
+        timestamp = null;
+        nonce = null;
     }
 
     public String getTanNo() {
@@ -285,54 +311,6 @@ public class DepartmentRegistrationForm {
 
     public void setTanFile(MultipartFile tanFile) {
         this.tanFile = tanFile;
-    }
-
-    public String getUploadedGstFilePath() {
-        return uploadedGstFilePath;
-    }
-
-    public void setUploadedGstFilePath(String uploadedGstFilePath) {
-        this.uploadedGstFilePath = uploadedGstFilePath;
-    }
-
-    public String getUploadedGstFileName() {
-        return uploadedGstFileName;
-    }
-
-    public void setUploadedGstFileName(String uploadedGstFileName) {
-        this.uploadedGstFileName = uploadedGstFileName;
-    }
-
-    public String getUploadedPanFilePath() {
-        return uploadedPanFilePath;
-    }
-
-    public void setUploadedPanFilePath(String uploadedPanFilePath) {
-        this.uploadedPanFilePath = uploadedPanFilePath;
-    }
-
-    public String getUploadedPanFileName() {
-        return uploadedPanFileName;
-    }
-
-    public void setUploadedPanFileName(String uploadedPanFileName) {
-        this.uploadedPanFileName = uploadedPanFileName;
-    }
-
-    public String getUploadedTanFilePath() {
-        return uploadedTanFilePath;
-    }
-
-    public void setUploadedTanFilePath(String uploadedTanFilePath) {
-        this.uploadedTanFilePath = uploadedTanFilePath;
-    }
-
-    public String getUploadedTanFileName() {
-        return uploadedTanFileName;
-    }
-
-    public void setUploadedTanFileName(String uploadedTanFileName) {
-        this.uploadedTanFileName = uploadedTanFileName;
     }
 
     public Boolean getIsTermsConditionAccepted() {
