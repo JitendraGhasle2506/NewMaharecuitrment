@@ -30,6 +30,7 @@ import com.maharecruitment.gov.in.security.handler.CustomLoginFailureHandler;
 import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
 import com.maharecruitment.gov.in.web.filter.AgencyAccountStatusFilter;
 import com.maharecruitment.gov.in.web.filter.CookieAttributeFilter;
+import com.maharecruitment.gov.in.web.filter.HttpMethodPolicyFilter;
 import com.maharecruitment.gov.in.web.filter.MobileBearerTokenAuthenticationFilter;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
@@ -71,6 +72,22 @@ public class SecurityConfig {
     @Bean
     HostHeaderValidationFilter hostHeaderValidationFilter(HostValidator hostValidator) {
         return new HostHeaderValidationFilter(hostValidator);
+    }
+
+    @Bean
+    HttpMethodPolicyFilter httpMethodPolicyFilter(
+            @org.springframework.beans.factory.annotation.Value(
+                    "${app.security.http-methods.allow-options:false}") boolean allowOptions) {
+        return new HttpMethodPolicyFilter(allowOptions);
+    }
+
+    @Bean
+    FilterRegistrationBean<HttpMethodPolicyFilter> httpMethodPolicyFilterRegistration(
+            HttpMethodPolicyFilter httpMethodPolicyFilter) {
+        FilterRegistrationBean<HttpMethodPolicyFilter> registration = new FilterRegistrationBean<>(httpMethodPolicyFilter);
+        // Spring Security owns ordering; prevent servlet-container double registration.
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean
@@ -127,6 +144,7 @@ public class SecurityConfig {
             DaoAuthenticationProvider authenticationProvider,
             TransportSecurityProperties transportSecurityProperties,
             HostHeaderValidationFilter hostHeaderValidationFilter,
+            HttpMethodPolicyFilter httpMethodPolicyFilter,
             MobileBearerTokenAuthenticationFilter mobileBearerTokenAuthenticationFilter,
             AgencyAccountStatusFilter agencyAccountStatusFilter,
             com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler successHandler,
@@ -135,6 +153,8 @@ public class SecurityConfig {
             CustomLogoutSuccessHandler logoutSuccessHandler) throws Exception {
 
         http.authenticationProvider(authenticationProvider);
+        // Run the method allowlist before redirects, authentication and authorization.
+        http.addFilterBefore(httpMethodPolicyFilter, ChannelProcessingFilter.class);
         http.addFilterBefore(hostHeaderValidationFilter, ChannelProcessingFilter.class);
         http.addFilterBefore(mobileBearerTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterAfter(agencyAccountStatusFilter, UsernamePasswordAuthenticationFilter.class);

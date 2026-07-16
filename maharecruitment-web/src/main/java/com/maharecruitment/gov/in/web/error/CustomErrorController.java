@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.maharecruitment.gov.in.web.dto.mobile.MobileApiError;
 
@@ -16,7 +17,10 @@ import jakarta.servlet.http.HttpServletResponse;
 @Controller
 public class CustomErrorController implements ErrorController {
 
-    @RequestMapping("/error")
+    @RequestMapping(path = "/error", method = {
+            RequestMethod.GET, RequestMethod.HEAD, RequestMethod.POST, RequestMethod.PUT,
+            RequestMethod.DELETE, RequestMethod.PATCH
+    })
     public Object handleError(HttpServletRequest request, HttpServletResponse response, Model model) {
 
         int status = resolveStatus(request);
