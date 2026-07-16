@@ -79,7 +79,7 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
 
     @Override
     public EmployeeLocationMappingEditView loadMapping(Long employeeId) {
-        EmployeeEntity employee = loadActiveOnboardedEmployee(employeeId);
+        EmployeeEntity employee = loadEligibleEmployee(employeeId);
         List<EmployeeLocationMappingEntity> mappings = employeeLocationMappingRepository
                 .findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(employee.getEmployeeId());
         List<EmployeeLocationOptionView> selectedLocations = mappings.stream()
@@ -116,7 +116,7 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
     @Override
     @Transactional
     public boolean updateMapping(Long employeeId, List<Long> selectedLocationIds, String actorLoginId) {
-        EmployeeEntity employee = loadActiveOnboardedEmployee(employeeId);
+        EmployeeEntity employee = loadEligibleEmployee(employeeId);
         List<LocationMaster> selectedLocations = resolveSelectedActiveLocations(selectedLocationIds);
         List<EmployeeLocationMappingEntity> existingMappings = employeeLocationMappingRepository
                 .findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(employee.getEmployeeId());
@@ -184,7 +184,7 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
         return true;
     }
 
-    private EmployeeEntity loadActiveOnboardedEmployee(Long employeeId) {
+    private EmployeeEntity loadEligibleEmployee(Long employeeId) {
         if (employeeId == null || employeeId < 1) {
             throw new RecruitmentNotificationException("Valid employee id is required.");
         }
@@ -192,9 +192,6 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
                 .orElseThrow(() -> new RecruitmentNotificationException("Employee not found."));
         if (!ACTIVE_STATUS.equalsIgnoreCase(employee.getStatus())) {
             throw new RecruitmentNotificationException("Location can be mapped only for active onboarded employees.");
-        }
-        if (employee.getPreOnboarding() == null || employee.getPreOnboarding().getOnboardedAt() == null) {
-            throw new RecruitmentNotificationException("Employee onboarding is not completed.");
         }
         if (!StringUtils.hasText(employee.getEmployeeCode())
                 || "PENDING".equalsIgnoreCase(employee.getEmployeeCode().trim())
