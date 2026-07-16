@@ -2,7 +2,7 @@ package com.maharecruitment.gov.in.attendance.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -60,10 +60,10 @@ public class DailyAttendanceInternalEntity extends AttendanceAuditable {
     private Integer year;
 
     @Column(name = "check_in_time")
-    private LocalDateTime checkInTime;
+    private LocalTime checkInTime;
 
     @Column(name = "check_out_time")
-    private LocalDateTime checkOutTime;
+    private LocalTime checkOutTime;
 
     @Column(name = "check_in_latitude", precision = 10, scale = 7)
     private BigDecimal checkInLatitude;

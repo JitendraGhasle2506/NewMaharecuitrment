@@ -1,7 +1,7 @@
 package com.maharecruitment.gov.in.web.dto.mobile;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public record MobileAttendanceResponse(
         boolean success,
@@ -10,7 +10,7 @@ public record MobileAttendanceResponse(
         Long employeeId,
         String employeeCode,
         LocalDate attendanceDate,
-        LocalDateTime checkInTime,
-        LocalDateTime checkOutTime,
+        LocalTime checkInTime,
+        LocalTime checkOutTime,
         String attendanceSource) {
 }

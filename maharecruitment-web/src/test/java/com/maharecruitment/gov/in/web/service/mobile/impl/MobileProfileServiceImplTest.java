@@ -148,12 +148,34 @@ class MobileProfileServiceImplTest {
         assertThat(preOnboarding.getPhotoFileType()).isEqualTo("image/jpeg");
         assertThat(preOnboarding.getPhotoFileSize()).isEqualTo(3);
         assertThat(preOnboarding.getEmbedding()).isEqualTo("[0.123, 0.456]");
+        assertThat(employee.getPhotoPath()).isEqualTo("/uploads/profile.jpg");
         assertThat(employee.getEmbedding()).isEqualTo("[0.123, 0.456]");
         assertThat(response.photoUrl()).isEqualTo("updated-photo");
         assertThat(response.faceData()).isEqualTo("[0.123, 0.456]");
         assertThat(response.embedding()).isEqualTo("[0.123, 0.456]");
         verify(employeeRepository).save(employee);
         verify(preOnboardingRepository).save(preOnboarding);
+    }
+
+    @Test
+    void updatePhotoSupportsEmployeeWithoutPreOnboardingProfile() {
+        authenticate("employee@example.com");
+        User user = user("employee@example.com", "9876543210", "encoded-old");
+        EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com", "9876543210", null);
+        MockMultipartFile photo = new MockMultipartFile("photo", "profile.jpg", "image/jpeg", new byte[] { 1, 2, 3 });
+
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue("employee@example.com")).thenReturn(Optional.of(user));
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
+        when(fileStorageService.store(photo, "employee-photo"))
+                .thenReturn(new FileUploadResult("profile.jpg", "stored.jpg", "/uploads/profile.jpg", "image/jpeg", 3));
+        when(employeeDetailsService.loadForUser(user)).thenReturn(details("updated-photo"));
+
+        MobileProfileResponse response = service().updatePhoto(101L, photo, null);
+
+        assertThat(employee.getPhotoPath()).isEqualTo("/uploads/profile.jpg");
+        assertThat(response.photoUrl()).isEqualTo("updated-photo");
+        verify(employeeRepository).save(employee);
+        verify(preOnboardingRepository, never()).save(any());
     }
 
     @Test

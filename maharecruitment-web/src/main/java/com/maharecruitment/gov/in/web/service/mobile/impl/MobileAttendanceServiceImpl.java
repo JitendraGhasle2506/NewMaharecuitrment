@@ -7,7 +7,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,7 +50,6 @@ import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 @Service
 public class MobileAttendanceServiceImpl implements MobileAttendanceService {
 
-    private static final DateTimeFormatter LEGACY_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final BigDecimal MIN_LATITUDE = BigDecimal.valueOf(-90);
     private static final BigDecimal MAX_LATITUDE = BigDecimal.valueOf(90);
     private static final BigDecimal MIN_LONGITUDE = BigDecimal.valueOf(-180);
@@ -136,8 +135,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         FileUploadResult uploadResult = fileStorageService.store(image, MOBILE_ATTENDANCE_PHOTO_MODULE);
 
         applyBaseAttendance(attendance, employee, attendanceDate);
-        attendance.setCheckInTime(now);
-        attendance.setInTime(now.format(LEGACY_TIME_FORMATTER));
+        attendance.setCheckInTime(now.toLocalTime());
         attendance.setStatus(PRESENT_STATUS);
         attendance.setCheckInLatitude(normalizedLatitude);
         attendance.setCheckInLongitude(normalizedLongitude);
@@ -175,16 +173,16 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         if (hasCheckOut(attendance)) {
             throw conflict("ALREADY_CHECKED_OUT", "Attendance is already checked out for today.");
         }
-        if (now.isBefore(attendance.getCheckInTime())) {
+        LocalTime checkOutTime = now.toLocalTime();
+        if (checkOutTime.isBefore(attendance.getCheckInTime())) {
             throw badRequest("INVALID_CHECK_OUT_TIME", "Check-out time cannot be before check-in time.");
         }
 
         FileUploadResult uploadResult = fileStorageService.store(image, MOBILE_ATTENDANCE_PHOTO_MODULE);
 
         applyBaseAttendance(attendance, employee, attendanceDate);
-        attendance.setCheckOutTime(now);
-        attendance.setOutTime(now.format(LEGACY_TIME_FORMATTER));
-        attendance.setTotalHours(calculateTotalHours(attendance.getCheckInTime(), now));
+        attendance.setCheckOutTime(checkOutTime);
+        attendance.setTotalHours(calculateTotalHours(attendance.getCheckInTime(), checkOutTime));
         attendance.setCheckOutLatitude(normalizedLatitude);
         attendance.setCheckOutLongitude(normalizedLongitude);
         attendance.setCheckOutLocationAddress(normalizedAddress);
@@ -552,7 +550,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         return normalized;
     }
 
-    private String calculateTotalHours(LocalDateTime checkInTime, LocalDateTime checkOutTime) {
+    private String calculateTotalHours(LocalTime checkInTime, LocalTime checkOutTime) {
         if (checkInTime == null || checkOutTime == null || checkOutTime.isBefore(checkInTime)) {
             return null;
         }

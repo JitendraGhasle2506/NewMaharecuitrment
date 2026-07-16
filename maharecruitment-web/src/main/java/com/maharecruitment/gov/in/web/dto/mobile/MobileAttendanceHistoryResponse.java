@@ -2,7 +2,7 @@ package com.maharecruitment.gov.in.web.dto.mobile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 public record MobileAttendanceHistoryResponse(
@@ -20,8 +20,8 @@ public record MobileAttendanceHistoryResponse(
     public record AttendanceEntry(
             Long attendanceId,
             LocalDate attendanceDate,
-            LocalDateTime checkInTime,
-            LocalDateTime checkOutTime,
+            LocalTime checkInTime,
+            LocalTime checkOutTime,
             BigDecimal checkInLatitude,
             BigDecimal checkInLongitude,
             String checkInLocationAddress,
