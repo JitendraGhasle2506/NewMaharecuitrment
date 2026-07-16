@@ -12,5 +12,7 @@ public record MobileAttendanceResponse(
         LocalDate attendanceDate,
         LocalTime checkInTime,
         LocalTime checkOutTime,
-        String attendanceSource) {
+        String attendanceSource,
+        String mobileAppStatus,
+        String apiStatus) {
 }

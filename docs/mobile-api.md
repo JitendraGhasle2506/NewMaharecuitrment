@@ -608,9 +608,11 @@ Success response:
   "employeeId": 20,
   "employeeCode": "EMP-020",
   "attendanceDate": "2026-07-06",
-  "checkInTime": "2026-07-06T09:35:00",
+  "checkInTime": "09:35:00",
   "checkOutTime": null,
-  "attendanceSource": "MOBILE_APP"
+  "attendanceSource": "MOBILE_APP",
+  "mobileAppStatus": "Y",
+  "apiStatus": "N"
 }
 ```
 
@@ -650,9 +652,11 @@ Success response:
   "employeeId": 20,
   "employeeCode": "EMP-020",
   "attendanceDate": "2026-07-06",
-  "checkInTime": "2026-07-06T09:35:00",
-  "checkOutTime": "2026-07-06T18:10:00",
-  "attendanceSource": "MOBILE_APP"
+  "checkInTime": "09:35:00",
+  "checkOutTime": "18:10:00",
+  "attendanceSource": "MOBILE_APP",
+  "mobileAppStatus": "Y",
+  "apiStatus": "N"
 }
 ```
 
@@ -745,8 +749,8 @@ Success response:
     {
       "attendanceId": 501,
       "attendanceDate": "2026-07-06",
-      "checkInTime": "2026-07-06T09:35:00",
-      "checkOutTime": "2026-07-06T18:10:00",
+      "checkInTime": "09:35:00",
+      "checkOutTime": "18:10:00",
       "checkInLatitude": 19.0760000,
       "checkInLongitude": 72.8777000,
       "checkInLocationAddress": "Mumbai Office Gate 1",
@@ -758,12 +762,24 @@ Success response:
       "totalHours": "08:35",
       "status": "PRESENT",
       "attendanceSource": "MOBILE_APP",
+      "mobileAppStatus": "Y",
+      "apiStatus": "N",
       "checkedIn": true,
       "checkedOut": true
     }
   ]
 }
 ```
+
+Attendance source flags:
+
+| Record source | `mobileAppStatus` | `apiStatus` |
+| --- | --- | --- |
+| Mobile app | `Y` | `N` |
+| External attendance API | `N` | `Y` |
+| No attendance, leave, holiday, week off, tour, or web/manual | `N` | `N` |
+
+The history endpoint returns one entry per requested date. It uses `LEAVE`, `COMP_OFF`, `TOUR`, `HOLIDAY`, or `WEEK_OFF` when applicable; otherwise a working date without mobile attendance is returned as `ABSENT`.
 
 Common attendance errors:
 

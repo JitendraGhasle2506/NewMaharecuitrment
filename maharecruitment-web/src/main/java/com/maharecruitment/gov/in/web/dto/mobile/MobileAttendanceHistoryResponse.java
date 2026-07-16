@@ -33,6 +33,8 @@ public record MobileAttendanceHistoryResponse(
             String totalHours,
             String status,
             String attendanceSource,
+            String mobileAppStatus,
+            String apiStatus,
             boolean checkedIn,
             boolean checkedOut) {
     }

@@ -118,6 +118,8 @@ class MobileAttendanceServiceImplTest {
         assertThat(saved.getEmployeeId()).isEqualTo(101L);
         assertThat(saved.getEmployeeCode()).isEqualTo("EMP101");
         assertThat(saved.getAttendanceSource()).isEqualTo(AttendanceSource.MOBILE_APP);
+        assertThat(saved.getMobileAppStatus()).isEqualTo("Y");
+        assertThat(saved.getApiStatus()).isEqualTo("N");
         assertThat(saved.getAttendanceDate()).isEqualTo(TODAY);
         assertThat(saved.getCheckInTime()).isEqualTo(NOW.toLocalTime());
         assertThat(saved.getInTime()).isNull();
@@ -132,6 +134,8 @@ class MobileAttendanceServiceImplTest {
         assertThat(response.success()).isTrue();
         assertThat(response.attendanceId()).isEqualTo(500L);
         assertThat(response.attendanceSource()).isEqualTo("MOBILE_APP");
+        assertThat(response.mobileAppStatus()).isEqualTo("Y");
+        assertThat(response.apiStatus()).isEqualTo("N");
     }
 
     @Test
@@ -226,7 +230,8 @@ class MobileAttendanceServiceImplTest {
         latestAttendance.setCheckOutLocationAddress("Mumbai Office Gate 2");
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(101L, fromDate, toDate))
+        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetweenAndAttendanceSource(
+                101L, fromDate, toDate, AttendanceSource.MOBILE_APP))
                 .thenReturn(List.of(olderAttendance, latestAttendance));
         when(holidayRepository.findByHolidayDateBetween(fromDate, toDate)).thenReturn(List.of());
         when(weekOffWorkingDayRepository.findByWorkingDateBetween(fromDate, toDate)).thenReturn(List.of());
@@ -285,7 +290,8 @@ class MobileAttendanceServiceImplTest {
                 null);
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(101L, fromDate, toDate))
+        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetweenAndAttendanceSource(
+                101L, fromDate, toDate, AttendanceSource.MOBILE_APP))
                 .thenReturn(List.of(presentAttendance));
         when(holidayRepository.findByHolidayDateBetween(fromDate, toDate))
                 .thenReturn(List.of(holiday(LocalDate.of(2026, 7, 3), "Public Holiday")));
@@ -360,6 +366,8 @@ class MobileAttendanceServiceImplTest {
         attendance.setEmployeeCode("EMP101");
         attendance.setAttendanceDate(attendanceDate);
         attendance.setAttendanceSource(AttendanceSource.MOBILE_APP);
+        attendance.setMobileAppStatus("Y");
+        attendance.setApiStatus("N");
         attendance.setCheckInTime(checkInDateTime != null ? checkInDateTime.toLocalTime() : null);
         attendance.setCheckOutTime(checkOutDateTime != null ? checkOutDateTime.toLocalTime() : null);
         attendance.setInTime(checkInDateTime != null ? checkInDateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) : null);

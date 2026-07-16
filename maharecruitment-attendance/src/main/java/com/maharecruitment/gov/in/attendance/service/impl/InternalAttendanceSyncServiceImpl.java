@@ -379,6 +379,8 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         entity.setEmployeeCode(normalizeText(apiRecord.getUniqueCode()));
         entity.setAttendanceDate(apiRecord.getAttendanceDate());
         entity.setAttendanceSource(AttendanceSource.API);
+        entity.setApiStatus("Y");
+        entity.setMobileAppStatus("N");
         entity.setInTime(normalizeText(apiRecord.getInTime()));
         entity.setOutTime(normalizeText(apiRecord.getOutTime()));
         entity.setTotalHours(calculateTotalHours(apiRecord.getInTime(), apiRecord.getOutTime()));

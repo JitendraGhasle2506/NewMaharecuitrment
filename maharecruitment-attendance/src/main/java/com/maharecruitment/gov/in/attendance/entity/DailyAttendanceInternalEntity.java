@@ -41,6 +41,12 @@ public class DailyAttendanceInternalEntity extends AttendanceAuditable {
     @Column(name = "attendance_source", length = 30)
     private AttendanceSource attendanceSource = AttendanceSource.API;
 
+    @Column(name = "mobile_app_status", nullable = false, length = 1)
+    private String mobileAppStatus = "N";
+
+    @Column(name = "api_status", nullable = false, length = 1)
+    private String apiStatus = "N";
+
     @Column(name = "in_time")
     private String inTime;
 

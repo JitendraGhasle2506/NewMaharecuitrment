@@ -21,6 +21,12 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
             LocalDate startDate,
             LocalDate endDate);
 
+    List<DailyAttendanceInternalEntity> findByEmployeeIdAndAttendanceDateBetweenAndAttendanceSource(
+            Long employeeId,
+            LocalDate startDate,
+            LocalDate endDate,
+            AttendanceSource attendanceSource);
+
     List<DailyAttendanceInternalEntity> findByEmployeeIdInAndAttendanceDateBetween(
             Collection<Long> employeeIds,
             LocalDate startDate,
