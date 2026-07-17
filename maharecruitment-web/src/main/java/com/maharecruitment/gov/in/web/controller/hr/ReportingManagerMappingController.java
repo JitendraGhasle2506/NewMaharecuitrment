@@ -66,7 +66,7 @@ public class ReportingManagerMappingController {
             @RequestParam Long hodUserId,
             @RequestParam String managerType,
             @RequestParam Long managerEmployeeId,
-            @RequestParam Long projectId,
+            @RequestParam(required = false) Long projectId,
             @RequestParam List<Long> employeeIds,
             RedirectAttributes redirectAttributes) {
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -89,7 +89,6 @@
                                     <thead>
                                         <tr>
                                             <th>Employee</th>
-                                            <th>Project</th>
                                             <th>Manager</th>
                                             <th>HOD</th>
                                             <th style="width: 100px;">Action</th>
@@ -139,17 +138,9 @@
                                     </select>
                                 </div>
 
-                                <!-- Step 4: Project -->
-                                <div class="mb-4 hidden" id="projectSection">
-                                    <label class="form-label" for="projectSelect">4. Select Project <span class="text-danger">*</span></label>
-                                    <select class="form-select w-50" id="projectSelect" name="projectId" required>
-                                        <option value="">-- Select Project --</option>
-                                    </select>
-                                </div>
-
-                                <!-- Step 5: Internal Employees -->
+                                <!-- Step 4: Internal Employees -->
                                 <div class="mb-4 hidden" id="employeeSection">
-                                    <label class="form-label">5. Select Internal Employees to Map <span class="text-danger">*</span></label>
+                                    <label class="form-label">4. Select Internal Employees to Map <span class="text-danger">*</span></label>
                                     
                                     <div class="input-group mb-2 w-50">
                                         <span class="input-group-text"><i class="fa fa-search"></i></span>
@@ -227,7 +218,6 @@
                 },
                 columns: [
                     { data: 'employeeName' },
-                    { data: 'projectName' },
                     { data: 'managerType', render: function(data, type, row) {
                         return data + ' - ' + row.managerName;
                     }},
@@ -238,7 +228,7 @@
                         render: function(data, type, row) {
                             return '<button type="button" class="btn btn-sm btn-primary edit-mapping-btn" ' +
                                 'data-id="'+row.mappingId+'" data-emp="'+row.employeeId+'" ' + 
-                                'data-proj="'+row.projectId+'" data-mgr="'+row.managerEmployeeId+'" ' +
+                                'data-mgr="'+row.managerEmployeeId+'" ' +
                                 'data-mgrtype="'+row.managerType+'" data-hod="'+row.hodUserId+'">' +
                                 '<i class="fa fa-edit"></i> Edit' +
                                 '</button>';
@@ -263,18 +253,7 @@
                 return $.ajax({ url: contextPath + 'hr/api/managers?type=' + type });
             }
             
-            function loadProjectsDeferred() {
-                if ($('#projectSelect option').length > 1) {
-                    var simulatedResponse = [];
-                    $('#projectSelect option').each(function() {
-                        if($(this).val()) {
-                            simulatedResponse.push({id: $(this).val(), name: $(this).text()});
-                        }
-                    });
-                    return $.Deferred().resolve(simulatedResponse).promise();
-                }
-                return $.ajax({ url: contextPath + 'hr/api/projects' });
-            }
+
 
             // 2. On clicking STM / PM Radio
             $('.managerTypeOption').change(function() {
@@ -314,38 +293,8 @@
                 });
             });
 
-            // 3. On selecting Manager -> Show Project
+            // 3. On selecting Manager -> Show Employees
             $('#managerSelect').change(function() {
-                if($(this).val()) {
-                    $('#projectSection').removeClass('hidden');
-                    
-                    // Hide lower
-                    $('#employeeSection').addClass('hidden');
-                    $('#submitSection').addClass('hidden');
-
-                    if($('#projectSelect option').length <= 1) { // If not loaded yet
-                        $('#projectSelect').html('<option value="">-- Loading... --</option>');
-                        $.ajax({
-                            url: contextPath + 'hr/api/projects',
-                            method: 'GET',
-                            success: function(data) {
-                                var select = $('#projectSelect');
-                                select.html('<option value="">-- Select Project --</option>');
-                                data.forEach(function(proj) {
-                                    select.append('<option value="'+proj.id+'">'+proj.name+'</option>');
-                                });
-                            }
-                        });
-                    }
-                } else {
-                    $('#projectSection').addClass('hidden');
-                    $('#employeeSection').addClass('hidden');
-                    $('#submitSection').addClass('hidden');
-                }
-            });
-
-            // 4. On selecting Project -> Show Employees
-            $('#projectSelect').change(function() {
                 if($(this).val()) {
                     $('#employeeSection').removeClass('hidden');
                     $('#submitSection').removeClass('hidden');
@@ -378,7 +327,6 @@
                 var hod = $(this).data('hod');
                 var mgrType = $(this).data('mgrtype');
                 var mgr = $(this).data('mgr');
-                var proj = $(this).data('proj');
                 editingEmployeeId = $(this).data('emp');
 
                 showForm();
@@ -389,27 +337,18 @@
                 
                 // Show sections
                 $('#managerSection').removeClass('hidden');
-                $('#projectSection').removeClass('hidden');
                 $('#managerLabel').text('3. Select ' + mgrType + ' Manager *');
                 
-                $.when(loadManagersDeferred(mgrType), loadProjectsDeferred()).done(function(mgrRes, projRes) {
+                $.when(loadManagersDeferred(mgrType)).done(function(mgrRes) {
                     var managers = mgrRes[0] || mgrRes;
-                    var projects = projRes ? (projRes[0] || projRes) : null;
                     
                     var selectMgr = $('#managerSelect');
                     selectMgr.html('<option value="">-- Select Manager --</option>');
                     managers.forEach(function(m) { selectMgr.append('<option value="'+m.id+'">'+m.name+'</option>'); });
                     selectMgr.val(mgr);
 
-                    if (projects && Array.isArray(projects)) {
-                        var selectProj = $('#projectSelect');
-                        selectProj.html('<option value="">-- Select Project --</option>');
-                        projects.forEach(function(p) { selectProj.append('<option value="'+p.id+'">'+p.name+'</option>'); });
-                    }
-                    $('#projectSelect').val(proj);
-
-                    // Trigger project select change to load employees
-                    $('#projectSelect').trigger('change');
+                    // Trigger manager select change to load employees
+                    $('#managerSelect').trigger('change');
                 });
             });
 

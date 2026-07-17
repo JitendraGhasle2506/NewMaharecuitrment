@@ -421,6 +421,11 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     List<EmployeeEntity> findByDesignation_DesignationNameIgnoreCaseAndStatusIgnoreCase(String designationName, String status);
 
+    @Query("select e from EmployeeEntity e join e.user u join u.roles r " +
+           "where upper(trim(r.name)) = upper(trim(:roleName)) " +
+           "and upper(trim(coalesce(e.status, ''))) = 'ACTIVE'")
+    List<EmployeeEntity> findActiveEmployeesByRoleName(@Param("roleName") String roleName);
+
     List<EmployeeEntity> findByFullNameIgnoreCaseAndStatusIgnoreCase(String fullName, String status);
 
     @Query("select employee from EmployeeEntity employee "

@@ -1327,7 +1327,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
 					.findByEmployeeId(req.getUserId());
 			if (mapping != null) {
-				projectRepo.findById(mapping.getProjectId()).ifPresent(p -> dto.setProjectName(p.getProjectName()));
+				if (mapping.getProjectId() != null) {
+					projectRepo.findById(mapping.getProjectId()).ifPresent(p -> dto.setProjectName(p.getProjectName()));
+				}
 				employeeRepository.findById(mapping.getManagerEmployeeId())
 						.ifPresent(m -> dto.setManagerName(m.getFullName()));
 			}
@@ -1380,7 +1382,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
 					.findByEmployeeId(empId);
 			if (mapping != null) {
-				projectRepo.findById(mapping.getProjectId()).ifPresent(p -> summary.setProjectName(p.getProjectName()));
+				if (mapping.getProjectId() != null) {
+					projectRepo.findById(mapping.getProjectId()).ifPresent(p -> summary.setProjectName(p.getProjectName()));
+				}
 			}
 
 			summaries.add(summary);
@@ -1417,8 +1421,10 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 					com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
 							.findByEmployeeId(req.getUserId());
 					if (mapping != null) {
-						projectRepo.findById(mapping.getProjectId())
-								.ifPresent(p -> dto.setProjectName(p.getProjectName()));
+						if (mapping.getProjectId() != null) {
+							projectRepo.findById(mapping.getProjectId())
+									.ifPresent(p -> dto.setProjectName(p.getProjectName()));
+						}
 						employeeRepository.findById(mapping.getManagerEmployeeId())
 								.ifPresent(m -> dto.setManagerName(m.getFullName()));
 					}
@@ -1450,7 +1456,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
 					.findByEmployeeId(req.getUserId());
 			if (mapping != null) {
-				projectRepo.findById(mapping.getProjectId()).ifPresent(p -> dto.setProjectName(p.getProjectName()));
+				if (mapping.getProjectId() != null) {
+					projectRepo.findById(mapping.getProjectId()).ifPresent(p -> dto.setProjectName(p.getProjectName()));
+				}
 				employeeRepository.findById(mapping.getManagerEmployeeId())
 						.ifPresent(m -> dto.setManagerName(m.getFullName()));
 			}
@@ -1478,9 +1486,11 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				map.put("employeeCode", e.getEmployeeCode());
 			});
 
-			projectRepo.findById(m.getProjectId()).ifPresent(p -> {
-				map.put("projectName", p.getProjectName());
-			});
+			if (m.getProjectId() != null) {
+				projectRepo.findById(m.getProjectId()).ifPresent(p -> {
+					map.put("projectName", p.getProjectName());
+				});
+			}
 
 			result.add(map);
 		}

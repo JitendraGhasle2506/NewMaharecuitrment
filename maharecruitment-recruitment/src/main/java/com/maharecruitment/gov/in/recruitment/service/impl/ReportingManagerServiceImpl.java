@@ -55,8 +55,8 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
     @Override
     public List<Map<String, Object>> getManagersByType(String type) {
-        String designationName = "STM".equalsIgnoreCase(type) ? "Senior Technical Manager (STM)" : "Project Manager";
-        List<EmployeeEntity> managers = employeeRepository.findByDesignation_DesignationNameIgnoreCaseAndStatusIgnoreCase(designationName, "ACTIVE");
+        String roleName = "STM".equalsIgnoreCase(type) ? "ROLE_STM" : "ROLE_PM";
+        List<EmployeeEntity> managers = employeeRepository.findActiveEmployeesByRoleName(roleName);
         
         return managers.stream()
                 .map(e -> {
@@ -88,7 +88,12 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 .map(e -> {
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", e.getEmployeeId());
-                    map.put("name", e.getFullName() + " (" + e.getEmployeeCode() + ")");
+                    String designationName = (e.getDesignation() != null) ? e.getDesignation().getDesignationName() : "";
+                    String displayName = e.getFullName() + " (" + e.getEmployeeCode() + ")";
+                    if (!designationName.isEmpty()) {
+                        displayName += " - " + designationName;
+                    }
+                    map.put("name", displayName);
                     return map;
                 }).collect(Collectors.toList());
     }
@@ -113,7 +118,15 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
            map.put("employeeId", m.getEmployeeId());
            
            EmployeeEntity emp = empMap.get(m.getEmployeeId());
-           map.put("employeeName", emp != null ? emp.getFullName() + " (" + emp.getEmployeeCode() + ")" : "");
+           String employeeName = "";
+           if (emp != null) {
+               String designationName = (emp.getDesignation() != null) ? emp.getDesignation().getDesignationName() : "";
+               employeeName = emp.getFullName() + " (" + emp.getEmployeeCode() + ")";
+               if (!designationName.isEmpty()) {
+                   employeeName += " - " + designationName;
+               }
+           }
+           map.put("employeeName", employeeName);
            
            map.put("projectId", m.getProjectId());
            ProjectMst proj = projMap.get(m.getProjectId());
