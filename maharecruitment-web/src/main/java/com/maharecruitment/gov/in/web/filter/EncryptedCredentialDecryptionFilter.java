@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.maharecruitment.gov.in.web.service.security.CredentialEncryptionService;
 import com.maharecruitment.gov.in.web.service.security.CredentialEncryptionService.CredentialDecryptionException;
+import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -77,6 +78,7 @@ public class EncryptedCredentialDecryptionFilter extends OncePerRequestFilter {
         } catch (CredentialDecryptionException ex) {
             log.warn("Rejected invalid encrypted credential payload. method={} path={}",
                     request.getMethod(), normalizeRequestPath(request));
+            SecurityHeaderPolicy.writeEarlyResponseHeaders(request, response);
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.setContentType("text/plain;charset=UTF-8");
             response.getWriter().write(INVALID_CREDENTIAL_MESSAGE);
@@ -127,6 +129,7 @@ public class EncryptedCredentialDecryptionFilter extends OncePerRequestFilter {
     private void rejectPlaintextCredential(HttpServletRequest request, HttpServletResponse response) throws IOException {
         log.warn("Rejected plaintext login credential payload. method={} path={}",
                 request.getMethod(), normalizeRequestPath(request));
+        SecurityHeaderPolicy.writeEarlyResponseHeaders(request, response);
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         response.setContentType("text/plain;charset=UTF-8");
         response.getWriter().write("Encrypted password is required for login.");

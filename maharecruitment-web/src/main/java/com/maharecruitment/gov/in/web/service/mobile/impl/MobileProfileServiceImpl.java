@@ -128,22 +128,27 @@ public class MobileProfileServiceImpl implements MobileProfileService {
 
         EmployeeEntity employee = context.employee();
         AgencyCandidatePreOnboardingEntity preOnboarding = employee.getPreOnboarding();
-        if (preOnboarding == null || preOnboarding.getPreOnboardingId() == null) {
-            throw badRequest("ONBOARDING_PROFILE_NOT_FOUND", "Employee onboarding profile is not available.");
-        }
 
         FileUploadResult uploadResult = fileStorageService.store(photo, EMPLOYEE_PHOTO_MODULE);
-        preOnboarding.setPhotoFilePath(uploadResult.fullPath());
-        preOnboarding.setPhotoOriginalName(uploadResult.originalFileName());
-        preOnboarding.setPhotoFileType(uploadResult.contentType());
-        preOnboarding.setPhotoFileSize(uploadResult.size());
+        employee.setPhotoPath(uploadResult.fullPath());
         if (embedding != null) {
             String normalizedEmbedding = normalizeEmbedding(embedding);
             employee.setEmbedding(normalizedEmbedding);
-            preOnboarding.setEmbedding(normalizedEmbedding);
-            employeeRepository.save(employee);
         }
-        preOnboardingRepository.save(preOnboarding);
+        employeeRepository.save(employee);
+
+        // Older employees may not have a pre-onboarding record. Keep it in sync
+        // when present, but do not prevent a valid employee from updating a photo.
+        if (preOnboarding != null && preOnboarding.getPreOnboardingId() != null) {
+            preOnboarding.setPhotoFilePath(uploadResult.fullPath());
+            preOnboarding.setPhotoOriginalName(uploadResult.originalFileName());
+            preOnboarding.setPhotoFileType(uploadResult.contentType());
+            preOnboarding.setPhotoFileSize(uploadResult.size());
+            if (embedding != null) {
+                preOnboarding.setEmbedding(employee.getEmbedding());
+            }
+            preOnboardingRepository.save(preOnboarding);
+        }
 
         return toProfileResponse(context.user(), "Profile photo updated successfully.", null);
     }

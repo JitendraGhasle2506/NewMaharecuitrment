@@ -39,6 +39,7 @@ import com.maharecruitment.gov.in.web.filter.MobileBearerTokenAuthenticationFilt
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
+import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
 import com.maharecruitment.gov.in.web.security.host.HostProperties;
 import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
 import com.maharecruitment.gov.in.web.service.mobile.MobileTokenService;
@@ -50,6 +51,8 @@ import jakarta.servlet.http.HttpServletResponse;
 @SpringJUnitWebConfig
 @ContextConfiguration(classes = SecurityHttpsEnforcementMvcTest.TestConfig.class)
 class SecurityHttpsEnforcementMvcTest {
+
+    private static final String HOST = "portal.example.gov.in";
 
     @Autowired
     private org.springframework.web.context.WebApplicationContext context;
@@ -65,14 +68,15 @@ class SecurityHttpsEnforcementMvcTest {
 
     @Test
     void httpLoginRequestRedirectsToHttps() throws Exception {
-        mockMvc.perform(get("/login").header("Host", "portal.example.gov.in").secure(false))
+        mockMvc.perform(get("/login").header("Host", HOST).secure(false))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("https://")));
+                .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("https://")))
+                .andExpect(header().doesNotExist("Strict-Transport-Security"));
     }
 
     @Test
     void httpsLoginResponseContainsHstsHeader() throws Exception {
-        MvcResult result = mockMvc.perform(get("/login").header("Host", "portal.example.gov.in").secure(true))
+        MvcResult result = mockMvc.perform(get("/login").header("Host", HOST).secure(true))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -83,9 +87,58 @@ class SecurityHttpsEnforcementMvcTest {
     }
 
     @Test
+    void webResponseContainsRequiredSecurityHeaders() throws Exception {
+        mockMvc.perform(get("/login").header("Host", HOST).secure(true))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"))
+                .andExpect(header().string("Permissions-Policy", SecurityHeaderPolicy.PERMISSIONS_POLICY))
+                .andExpect(header().string(
+                        "Content-Security-Policy",
+                        SecurityHeaderPolicy.CONTENT_SECURITY_POLICY))
+                .andExpect(header().string("X-XSS-Protection", "0"));
+    }
+
+    @Test
+    void apiErrorResponseContainsRequiredSecurityHeaders() throws Exception {
+        mockMvc.perform(get("/api/mobile/profile").header("Host", HOST).secure(true))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"))
+                .andExpect(header().string("Permissions-Policy", SecurityHeaderPolicy.PERMISSIONS_POLICY))
+                .andExpect(header().string(
+                        "Content-Security-Policy",
+                        SecurityHeaderPolicy.CONTENT_SECURITY_POLICY));
+    }
+
+    @Test
+    void invoiceFrameResponseRetainsNarrowSameOriginCompatibilityPolicy() throws Exception {
+        mockMvc.perform(get("/invoice/tax-invoices/application/42/preview/new")
+                        .param("embedded", "true")
+                        .header("Host", HOST)
+                        .secure(true))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("X-Frame-Options", "SAMEORIGIN"))
+                .andExpect(header().string(
+                        "Content-Security-Policy",
+                        SecurityHeaderPolicy.SAME_ORIGIN_FRAME_CONTENT_SECURITY_POLICY));
+    }
+
+    @Test
     void invalidHostIsRejectedBeforeLoginPage() throws Exception {
         mockMvc.perform(get("/login").header("Host", "evil.example.com").secure(true))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"))
+                .andExpect(header().string("Permissions-Policy", SecurityHeaderPolicy.PERMISSIONS_POLICY))
+                .andExpect(header().string(
+                        "Content-Security-Policy",
+                        SecurityHeaderPolicy.CONTENT_SECURITY_POLICY))
+                .andExpect(header().string("Strict-Transport-Security",
+                        org.hamcrest.Matchers.containsString("max-age=31536000")));
     }
 
     @Configuration

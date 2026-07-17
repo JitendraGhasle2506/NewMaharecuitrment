@@ -14,6 +14,7 @@ import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceLineItemView;
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceView;
 import com.maharecruitment.gov.in.invoice.entity.DepartmentTaxInvoiceEntity;
 import com.maharecruitment.gov.in.invoice.entity.DepartmentTaxInvoiceLineItemEntity;
+import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
 
 @Component
 public class TaxInvoiceViewMapper {
@@ -66,7 +67,7 @@ public class TaxInvoiceViewMapper {
                 .billedTo(entity.getBilledTo())
                 .billingAddress(entity.getBillingAddress())
                 .clientGstinAvailable(Boolean.TRUE.equals(entity.getClientGstinAvailable()))
-                .clientGstNumber(entity.getClientGstNumber())
+                .clientGstNumber(SensitiveDataMaskingUtil.maskGst(entity.getClientGstNumber()))
                 .placeOfSupply(entity.getPlaceOfSupply())
                 .baseAmount(entity.getBaseAmount())
                 .agencyCommissionAmount(entity.getAgencyCommissionAmount())
@@ -80,8 +81,8 @@ public class TaxInvoiceViewMapper {
                 .companyName(entity.getCompanyName())
                 .companyAddress(entity.getCompanyAddress())
                 .cinNumber(entity.getCinNumber())
-                .panNumber(entity.getPanNumber())
-                .gstNumber(entity.getGstNumber())
+                .panNumber(SensitiveDataMaskingUtil.maskPan(entity.getPanNumber()))
+                .gstNumber(SensitiveDataMaskingUtil.maskGst(entity.getGstNumber()))
                 .bankName(entity.getBankName())
                 .branchName(entity.getBranchName())
                 .accountHolderName(entity.getAccountHolderName())

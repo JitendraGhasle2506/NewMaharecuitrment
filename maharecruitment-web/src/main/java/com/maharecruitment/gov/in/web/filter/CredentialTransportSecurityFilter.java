@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
+import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -78,6 +79,7 @@ public class CredentialTransportSecurityFilter extends OncePerRequestFilter {
         String requestPath = normalizeRequestPath(request);
         log.warn("Rejected credential submission over insecure transport. method={} path={}",
                 request.getMethod(), requestPath);
+        SecurityHeaderPolicy.writeEarlyResponseHeaders(request, response);
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("text/plain;charset=UTF-8");
         response.getWriter().write(HTTPS_REQUIRED_MESSAGE);

@@ -7,7 +7,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,7 +50,6 @@ import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 @Service
 public class MobileAttendanceServiceImpl implements MobileAttendanceService {
 
-    private static final DateTimeFormatter LEGACY_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final BigDecimal MIN_LATITUDE = BigDecimal.valueOf(-90);
     private static final BigDecimal MAX_LATITUDE = BigDecimal.valueOf(90);
     private static final BigDecimal MIN_LONGITUDE = BigDecimal.valueOf(-180);
@@ -136,8 +135,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         FileUploadResult uploadResult = fileStorageService.store(image, MOBILE_ATTENDANCE_PHOTO_MODULE);
 
         applyBaseAttendance(attendance, employee, attendanceDate);
-        attendance.setCheckInTime(now);
-        attendance.setInTime(now.format(LEGACY_TIME_FORMATTER));
+        attendance.setCheckInTime(now.toLocalTime());
         attendance.setStatus(PRESENT_STATUS);
         attendance.setCheckInLatitude(normalizedLatitude);
         attendance.setCheckInLongitude(normalizedLongitude);
@@ -175,16 +173,16 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         if (hasCheckOut(attendance)) {
             throw conflict("ALREADY_CHECKED_OUT", "Attendance is already checked out for today.");
         }
-        if (now.isBefore(attendance.getCheckInTime())) {
+        LocalTime checkOutTime = now.toLocalTime();
+        if (checkOutTime.isBefore(attendance.getCheckInTime())) {
             throw badRequest("INVALID_CHECK_OUT_TIME", "Check-out time cannot be before check-in time.");
         }
 
         FileUploadResult uploadResult = fileStorageService.store(image, MOBILE_ATTENDANCE_PHOTO_MODULE);
 
         applyBaseAttendance(attendance, employee, attendanceDate);
-        attendance.setCheckOutTime(now);
-        attendance.setOutTime(now.format(LEGACY_TIME_FORMATTER));
-        attendance.setTotalHours(calculateTotalHours(attendance.getCheckInTime(), now));
+        attendance.setCheckOutTime(checkOutTime);
+        attendance.setTotalHours(calculateTotalHours(attendance.getCheckInTime(), checkOutTime));
         attendance.setCheckOutLatitude(normalizedLatitude);
         attendance.setCheckOutLongitude(normalizedLongitude);
         attendance.setCheckOutLocationAddress(normalizedAddress);
@@ -206,10 +204,11 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         }
 
         Map<LocalDate, DailyAttendanceInternalEntity> attendanceByDate = mapAttendanceByDate(
-                dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(
+                dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetweenAndAttendanceSource(
                         employee.getEmployeeId(),
                         startDate,
-                        endDate));
+                        endDate,
+                        AttendanceSource.MOBILE_APP));
         Map<LocalDate, HolidayMasterEntity> holidaysByDate = holidayRepository
                 .findByHolidayDateBetween(startDate, endDate)
                 .stream()
@@ -276,6 +275,8 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         attendance.setEmployeeCode(employee.getEmployeeCode().trim());
         attendance.setAttendanceDate(attendanceDate);
         attendance.setAttendanceSource(AttendanceSource.MOBILE_APP);
+        attendance.setMobileAppStatus("Y");
+        attendance.setApiStatus("N");
         attendance.setStatus(PRESENT_STATUS);
         attendance.setMonth(attendanceDate.getMonthValue());
         attendance.setYear(attendanceDate.getYear());
@@ -300,7 +301,9 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
                 attendance.getAttendanceDate(),
                 attendance.getCheckInTime(),
                 attendance.getCheckOutTime(),
-                source != null ? source.name() : null);
+                source != null ? source.name() : null,
+                normalizeFlag(attendance.getMobileAppStatus()),
+                normalizeFlag(attendance.getApiStatus()));
     }
 
     private MobileAttendanceHistoryResponse.AttendanceEntry toHistoryRecord(
@@ -312,7 +315,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
             List<LeaveApplicationEntity> approvedLeaves,
             List<TourApplicationEntity> approvedTours,
             LocalDate today) {
-        Optional<LeaveApplicationEntity> matchingLeave = hasCompletePunchTime(attendance)
+        Optional<LeaveApplicationEntity> matchingLeave = hasMobilePunch(attendance)
                 ? Optional.empty()
                 : findMatchingLeave(approvedLeaves, date);
 
@@ -331,18 +334,21 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         if (holidaysByDate.containsKey(date)) {
             return toSyntheticHistoryRecord(attendance, date, "HOLIDAY");
         }
+        if (date.isAfter(today)) {
+            return toSyntheticHistoryRecord(date, "FUTURE");
+        }
+        if (isWeekOff(date, workingDayOverrideDates)) {
+            return toSyntheticHistoryRecord(date, "WEEK_OFF");
+        }
+        if (!hasMobilePunch(attendance)) {
+            return toSyntheticHistoryRecord(date, "ABSENT");
+        }
 
         String attendanceStatus = resolveAttendanceDisplayStatus(
                 attendance,
                 workingDayOverrideDates.contains(date));
         if (StringUtils.hasText(attendanceStatus)) {
             return toExistingHistoryRecord(attendance, attendanceStatus);
-        }
-        if (date.isAfter(today)) {
-            return toSyntheticHistoryRecord(date, "FUTURE");
-        }
-        if (isWeekOff(date, workingDayOverrideDates)) {
-            return toSyntheticHistoryRecord(date, "WEEK_OFF");
         }
         return toSyntheticHistoryRecord(date, "ABSENT");
     }
@@ -367,6 +373,8 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
                 resolveTotalHours(attendance),
                 displayStatus,
                 source != null ? source.name() : null,
+                normalizeFlag(attendance.getMobileAppStatus()),
+                normalizeFlag(attendance.getApiStatus()),
                 hasCheckIn(attendance),
                 hasCheckOut(attendance));
     }
@@ -396,6 +404,8 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
                     null,
                     status,
                     null,
+                    "N",
+                    "N",
                     false,
                     false);
         }
@@ -487,12 +497,6 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
                 && (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY);
     }
 
-    private boolean hasCompletePunchTime(DailyAttendanceInternalEntity attendance) {
-        return attendance != null
-                && StringUtils.hasText(attendance.getInTime())
-                && StringUtils.hasText(attendance.getOutTime());
-    }
-
     private LocalDate requireHistoryStartDate(LocalDate fromDate) {
         if (fromDate == null) {
             throw badRequest("ATTENDANCE_DATE_REQUIRED", "Attendance date is required.");
@@ -511,6 +515,16 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
 
     private boolean hasCheckOut(DailyAttendanceInternalEntity attendance) {
         return attendance.getCheckOutTime() != null || StringUtils.hasText(attendance.getOutTime());
+    }
+
+    private boolean hasMobilePunch(DailyAttendanceInternalEntity attendance) {
+        return attendance != null
+                && attendance.getAttendanceSource() == AttendanceSource.MOBILE_APP
+                && (attendance.getCheckInTime() != null || attendance.getCheckOutTime() != null);
+    }
+
+    private String normalizeFlag(String value) {
+        return "Y".equalsIgnoreCase(value) ? "Y" : "N";
     }
 
     private void validateImage(MultipartFile image) {
@@ -552,7 +566,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         return normalized;
     }
 
-    private String calculateTotalHours(LocalDateTime checkInTime, LocalDateTime checkOutTime) {
+    private String calculateTotalHours(LocalTime checkInTime, LocalTime checkOutTime) {
         if (checkInTime == null || checkOutTime == null || checkOutTime.isBefore(checkInTime)) {
             return null;
         }

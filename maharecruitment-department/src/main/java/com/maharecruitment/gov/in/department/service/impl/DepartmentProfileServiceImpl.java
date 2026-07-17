@@ -32,6 +32,7 @@ import com.maharecruitment.gov.in.department.service.model.DepartmentProfileView
 import com.maharecruitment.gov.in.department.service.model.StoredDocument;
 import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
+import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
 
 @Service
 @Transactional(readOnly = true)
@@ -83,8 +84,8 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
                 .subDepartmentMasterId(registration.getSubDeptId())
                 .officeAddress(registration.getAddress())
                 .billDepartmentName(registration.getBillDepartmentName())
-                .gstNumber(registration.getGstNo())
-                .panNumber(registration.getPanNo())
+                .gstNumber(maskedGst(registration))
+                .panNumber(maskedPan(registration))
                 .tanNumber(registration.getTanNo())
                 .billingAddress(registration.getBillAddress())
                 .gstDocumentName(extractFileName(registration.getGstFilePath()))
@@ -123,8 +124,8 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
         form.setSubDepartmentName(resolveSubDepartmentName(registration.getSubDeptId()));
         form.setOfficeAddress(registration.getAddress());
         form.setBillDepartmentName(registration.getBillDepartmentName());
-        form.setGstNumber(registration.getGstNo());
-        form.setPanNumber(registration.getPanNo());
+        form.setGstNumber(maskedGst(registration));
+        form.setPanNumber(maskedPan(registration));
         form.setTanNumber(registration.getTanNo());
         form.setBillingAddress(registration.getBillAddress());
 
@@ -163,8 +164,7 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
 
         registration.setAddress(updateForm.getOfficeAddress());
         registration.setBillDepartmentName(updateForm.getBillDepartmentName());
-        registration.setGstNo(normalizeUpper(updateForm.getGstNumber()));
-        registration.setPanNo(normalizeUpper(updateForm.getPanNumber()));
+        // Sensitive identifiers are preserved here. Replacement uses a dedicated encrypted flow.
         registration.setTanNo(normalizeUpper(updateForm.getTanNumber()));
         registration.setBillAddress(updateForm.getBillingAddress());
 
@@ -419,6 +419,14 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
 
     private String normalizeUpper(String value) {
         return value == null ? null : value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String maskedGst(DepartmentRegistrationEntity registration) {
+        return SensitiveDataMaskingUtil.maskGst(registration.getGstNo());
+    }
+
+    private String maskedPan(DepartmentRegistrationEntity registration) {
+        return SensitiveDataMaskingUtil.maskPan(registration.getPanNo());
     }
 
     private String extractFileName(String filePath) {

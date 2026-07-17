@@ -21,4 +21,16 @@ class SensitiveDataMaskingUtilTest {
         assertThat(SensitiveDataMaskingUtil.maskAadhaar(null)).isNull();
         assertThat(SensitiveDataMaskingUtil.maskAadhaar(" ")).isNull();
     }
+
+    @Test
+    void masksPanAndGstKeepingOnlyLastFour() {
+        assertThat(SensitiveDataMaskingUtil.maskPan("ABCDE2546F")).isEqualTo("XXXXXX546F");
+        assertThat(SensitiveDataMaskingUtil.maskGst("27ABCDE1234F1Z5")).isEqualTo("XXXXXXXXXXXF1Z5");
+    }
+
+    @Test
+    void neverExposesShortValues() {
+        assertThat(SensitiveDataMaskingUtil.maskKeepingLastFour("1234")).isEqualTo("XXXX");
+        assertThat(SensitiveDataMaskingUtil.maskKeepingLastFour("12")).isEqualTo("XX");
+    }
 }

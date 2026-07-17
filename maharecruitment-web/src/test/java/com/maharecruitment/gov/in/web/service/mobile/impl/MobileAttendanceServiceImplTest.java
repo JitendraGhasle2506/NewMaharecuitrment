@@ -14,6 +14,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -117,9 +118,11 @@ class MobileAttendanceServiceImplTest {
         assertThat(saved.getEmployeeId()).isEqualTo(101L);
         assertThat(saved.getEmployeeCode()).isEqualTo("EMP101");
         assertThat(saved.getAttendanceSource()).isEqualTo(AttendanceSource.MOBILE_APP);
+        assertThat(saved.getMobileAppStatus()).isEqualTo("Y");
+        assertThat(saved.getApiStatus()).isEqualTo("N");
         assertThat(saved.getAttendanceDate()).isEqualTo(TODAY);
-        assertThat(saved.getCheckInTime()).isEqualTo(NOW);
-        assertThat(saved.getInTime()).isEqualTo("10:15");
+        assertThat(saved.getCheckInTime()).isEqualTo(NOW.toLocalTime());
+        assertThat(saved.getInTime()).isNull();
         assertThat(saved.getStatus()).isEqualTo("PRESENT");
         assertThat(saved.getCheckInLatitude()).isEqualByComparingTo("19.0760000");
         assertThat(saved.getCheckInLongitude()).isEqualByComparingTo("72.8777000");
@@ -131,6 +134,8 @@ class MobileAttendanceServiceImplTest {
         assertThat(response.success()).isTrue();
         assertThat(response.attendanceId()).isEqualTo(500L);
         assertThat(response.attendanceSource()).isEqualTo("MOBILE_APP");
+        assertThat(response.mobileAppStatus()).isEqualTo("Y");
+        assertThat(response.apiStatus()).isEqualTo("N");
     }
 
     @Test
@@ -166,7 +171,7 @@ class MobileAttendanceServiceImplTest {
         existing.setEmployeeCode("EMP101");
         existing.setAttendanceDate(TODAY);
         existing.setAttendanceSource(AttendanceSource.MOBILE_APP);
-        existing.setCheckInTime(LocalDateTime.of(2026, 7, 6, 9, 0));
+        existing.setCheckInTime(LocalTime.of(9, 0));
         existing.setInTime("09:00");
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
@@ -185,8 +190,9 @@ class MobileAttendanceServiceImplTest {
                 image);
 
         verify(dailyAttendanceInternalRepository).save(existing);
-        assertThat(existing.getCheckOutTime()).isEqualTo(NOW);
-        assertThat(existing.getOutTime()).isEqualTo("10:15");
+        assertThat(existing.getCheckOutTime()).isEqualTo(NOW.toLocalTime());
+        assertThat(existing.getInTime()).isEqualTo("09:00");
+        assertThat(existing.getOutTime()).isNull();
         assertThat(existing.getTotalHours()).isEqualTo("01:15");
         assertThat(existing.getCheckOutLatitude()).isEqualByComparingTo("19.0760000");
         assertThat(existing.getCheckOutLongitude()).isEqualByComparingTo("72.8777000");
@@ -195,7 +201,7 @@ class MobileAttendanceServiceImplTest {
 
         assertThat(response.success()).isTrue();
         assertThat(response.attendanceId()).isEqualTo(700L);
-        assertThat(response.checkOutTime()).isEqualTo(NOW);
+        assertThat(response.checkOutTime()).isEqualTo(NOW.toLocalTime());
     }
 
     @Test
@@ -224,7 +230,8 @@ class MobileAttendanceServiceImplTest {
         latestAttendance.setCheckOutLocationAddress("Mumbai Office Gate 2");
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(101L, fromDate, toDate))
+        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetweenAndAttendanceSource(
+                101L, fromDate, toDate, AttendanceSource.MOBILE_APP))
                 .thenReturn(List.of(olderAttendance, latestAttendance));
         when(holidayRepository.findByHolidayDateBetween(fromDate, toDate)).thenReturn(List.of());
         when(weekOffWorkingDayRepository.findByWorkingDateBetween(fromDate, toDate)).thenReturn(List.of());
@@ -254,8 +261,8 @@ class MobileAttendanceServiceImplTest {
         MobileAttendanceHistoryResponse.AttendanceEntry latestRecord = response.attendanceHistory().getFirst();
         assertThat(latestRecord.attendanceId()).isEqualTo(900L);
         assertThat(latestRecord.attendanceDate()).isEqualTo(toDate);
-        assertThat(latestRecord.checkInTime()).isEqualTo(LocalDateTime.of(2026, 7, 6, 9, 30));
-        assertThat(latestRecord.checkOutTime()).isEqualTo(LocalDateTime.of(2026, 7, 6, 11, 15));
+        assertThat(latestRecord.checkInTime()).isEqualTo(LocalTime.of(9, 30));
+        assertThat(latestRecord.checkOutTime()).isEqualTo(LocalTime.of(11, 15));
         assertThat(latestRecord.checkInLatitude()).isEqualByComparingTo("19.0760000");
         assertThat(latestRecord.checkInLongitude()).isEqualByComparingTo("72.8777000");
         assertThat(latestRecord.checkInLocationAddress()).isEqualTo("Mumbai Office Gate 1");
@@ -283,7 +290,8 @@ class MobileAttendanceServiceImplTest {
                 null);
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(101L, fromDate, toDate))
+        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetweenAndAttendanceSource(
+                101L, fromDate, toDate, AttendanceSource.MOBILE_APP))
                 .thenReturn(List.of(presentAttendance));
         when(holidayRepository.findByHolidayDateBetween(fromDate, toDate))
                 .thenReturn(List.of(holiday(LocalDate.of(2026, 7, 3), "Public Holiday")));
@@ -349,8 +357,8 @@ class MobileAttendanceServiceImplTest {
     private DailyAttendanceInternalEntity attendance(
             Long attendanceId,
             LocalDate attendanceDate,
-            LocalDateTime checkInTime,
-            LocalDateTime checkOutTime,
+            LocalDateTime checkInDateTime,
+            LocalDateTime checkOutDateTime,
             String totalHours) {
         DailyAttendanceInternalEntity attendance = new DailyAttendanceInternalEntity();
         attendance.setId(attendanceId);
@@ -358,10 +366,12 @@ class MobileAttendanceServiceImplTest {
         attendance.setEmployeeCode("EMP101");
         attendance.setAttendanceDate(attendanceDate);
         attendance.setAttendanceSource(AttendanceSource.MOBILE_APP);
-        attendance.setCheckInTime(checkInTime);
-        attendance.setCheckOutTime(checkOutTime);
-        attendance.setInTime(checkInTime != null ? checkInTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) : null);
-        attendance.setOutTime(checkOutTime != null ? checkOutTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) : null);
+        attendance.setMobileAppStatus("Y");
+        attendance.setApiStatus("N");
+        attendance.setCheckInTime(checkInDateTime != null ? checkInDateTime.toLocalTime() : null);
+        attendance.setCheckOutTime(checkOutDateTime != null ? checkOutDateTime.toLocalTime() : null);
+        attendance.setInTime(checkInDateTime != null ? checkInDateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) : null);
+        attendance.setOutTime(checkOutDateTime != null ? checkOutDateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) : null);
         attendance.setTotalHours(totalHours);
         attendance.setStatus("PRESENT");
         return attendance;

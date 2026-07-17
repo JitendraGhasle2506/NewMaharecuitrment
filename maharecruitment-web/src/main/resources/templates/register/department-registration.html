@@ -81,7 +81,10 @@
 
 						<form th:action="@{/register/department-registration}" th:object="${registrationForm}"
 							method="post" enctype="multipart/form-data" class="registration-form"
-							id="departmentRegistrationForm" th:attr="data-subdepartments-url=@{/register/sub-departments},
+							id="departmentRegistrationForm" data-encrypt-sensitive="true"
+							data-sensitive-purpose="DEPARTMENT_REGISTRATION"
+							th:attr="data-sensitive-key-url=@{/security/credential-encryption/public-key},
+									 data-subdepartments-url=@{/register/sub-departments},
                                      data-otp-send-url=@{/api/verifications/otp/send},
                                      data-otp-verify-url=@{/api/verifications/otp/verify},
                                      data-mobile-verified=${primaryMobileVerified},
@@ -92,6 +95,9 @@
                                      data-verification-purpose=${verificationPurpose}">
 
 							<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+							<div class="alert alert-danger" data-sensitive-encryption-status="true"
+								 th:if="${#fields.hasGlobalErrors()}"
+								 th:each="error : ${#fields.globalErrors()}" th:text="${error}"></div>
 
 							<section class="form-section">
 								<div class="form-section-header">
@@ -314,17 +320,17 @@
 										<label class="form-label" for="gstNo">GST Number</label> <span
 											class="required-asterisk">*</span>
 										<input type="text" class="form-control text-uppercase" id="gstNo"
-											th:field="*{gstNo}" maxlength="15" placeholder="Enter GST number">
-										<div class="text-danger small" th:if="${#fields.hasErrors('gstNo')}"
-											th:errors="*{gstNo}"></div>
+											data-sensitive-encrypted-name="gstNumberEncrypted" data-sensitive-field="gstNumber" maxlength="15"
+											pattern="[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"
+											autocomplete="off" required placeholder="Enter GST number">
 									</div>
 									<div class="col-md-6">
 										<label class="form-label" for="panNo">PAN Number</label> <span
 											class="required-asterisk">*</span>
 										<input type="text" class="form-control text-uppercase" id="panNo"
-											th:field="*{panNo}" maxlength="10" placeholder="Enter PAN number">
-										<div class="text-danger small" th:if="${#fields.hasErrors('panNo')}"
-											th:errors="*{panNo}"></div>
+											data-sensitive-encrypted-name="panNumberEncrypted" data-sensitive-field="panNumber" maxlength="10"
+											pattern="[A-Z]{5}[0-9]{4}[A-Z]" autocomplete="off" required
+											placeholder="Enter PAN number">
 									</div>
 									<div class="col-md-6">
 										<label class="form-label" for="tanNo">TAN Number</label> <span
@@ -347,12 +353,6 @@
 											class="required-asterisk">*</span>
 										<input type="file" class="form-control" id="gstFile" th:field="*{gstFile}"
 											accept=".pdf,application/pdf">
-										<input type="hidden" th:field="*{uploadedGstFilePath}">
-										<input type="hidden" th:field="*{uploadedGstFileName}">
-										<div class="small text-success mt-1"
-											th:if="${registrationForm.uploadedGstFileName}">
-											Uploaded: <span th:text="${registrationForm.uploadedGstFileName}"></span>
-										</div>
 										<div class="text-danger small" th:if="${#fields.hasErrors('gstFile')}"
 											th:errors="*{gstFile}"></div>
 									</div>
@@ -361,12 +361,6 @@
 											class="required-asterisk">*</span>
 										<input type="file" class="form-control" id="panFile" th:field="*{panFile}"
 											accept=".pdf,application/pdf">
-										<input type="hidden" th:field="*{uploadedPanFilePath}">
-										<input type="hidden" th:field="*{uploadedPanFileName}">
-										<div class="small text-success mt-1"
-											th:if="${registrationForm.uploadedPanFileName}">
-											Uploaded: <span th:text="${registrationForm.uploadedPanFileName}"></span>
-										</div>
 										<div class="text-danger small" th:if="${#fields.hasErrors('panFile')}"
 											th:errors="*{panFile}"></div>
 									</div>
@@ -375,12 +369,6 @@
 											class="required-asterisk">*</span>
 										<input type="file" class="form-control" id="tanFile" th:field="*{tanFile}"
 											accept=".pdf,application/pdf">
-										<input type="hidden" th:field="*{uploadedTanFilePath}">
-										<input type="hidden" th:field="*{uploadedTanFileName}">
-										<div class="small text-success mt-1"
-											th:if="${registrationForm.uploadedTanFileName}">
-											Uploaded: <span th:text="${registrationForm.uploadedTanFileName}"></span>
-										</div>
 										<div class="text-danger small" th:if="${#fields.hasErrors('tanFile')}"
 											th:errors="*{tanFile}"></div>
 									</div>
@@ -445,6 +433,7 @@
 	<script th:src="@{/assets/vendor/select2/select2.min.js}"></script>
 	<script th:src="@{/js/otp-verification.js}"></script>
 	<script th:src="@{/js/department-registration.js}"></script>
+	<script th:src="@{/js/sensitive-data-encryption.js}"></script>
 	<script>
 		$(document).ready(function () {
 			// Initialize Select2 for Department
@@ -479,16 +468,6 @@
 
 			subDeptObserver.observe(document.getElementById('subDeptId'), { childList: true });
 
-			$('#agreeCheckbox').on('change', function () {
-				if ($(this).is(':checked')) {
-					console.log("checked");
-					$('#registerBtn').prop('disabled', false);
-				} else {
-					console.log("unchecked");
-					$('#registerBtn').prop('disabled', true);
-
-				}
-			});
 		});
 	</script>
 </body>

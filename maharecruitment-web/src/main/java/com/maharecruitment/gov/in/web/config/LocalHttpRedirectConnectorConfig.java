@@ -76,6 +76,7 @@ public class LocalHttpRedirectConnectorConfig {
         connectorClass.getMethod("setPort", int.class).invoke(connector, httpPort);
         connectorClass.getMethod("setSecure", boolean.class).invoke(connector, false);
         connectorClass.getMethod("setRedirectPort", int.class).invoke(connector, httpsPort);
+        connectorClass.getMethod("setAllowTrace", boolean.class).invoke(connector, false);
         return connector;
     }
 }

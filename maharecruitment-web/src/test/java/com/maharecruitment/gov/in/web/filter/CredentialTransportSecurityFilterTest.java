@@ -13,6 +13,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
+import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
 
 import jakarta.servlet.ServletException;
 
@@ -34,6 +35,10 @@ class CredentialTransportSecurityFilterTest {
 
         assertThat(response.getStatus()).isEqualTo(403);
         assertThat(response.getContentAsString()).isEqualTo("HTTPS is required for credential submission.");
+        assertThat(response.getHeader("X-Frame-Options")).isEqualTo("DENY");
+        assertThat(response.getHeader("Content-Security-Policy"))
+                .isEqualTo(SecurityHeaderPolicy.CONTENT_SECURITY_POLICY);
+        assertThat(response.getHeader("Strict-Transport-Security")).isNull();
         assertThat(chainInvoked).isFalse();
     }
 
