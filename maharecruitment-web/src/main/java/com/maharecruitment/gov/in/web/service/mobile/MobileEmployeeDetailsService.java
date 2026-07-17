@@ -80,7 +80,7 @@ public class MobileEmployeeDetailsService {
                 employee.getEmployeeId(),
                 textOrNull(employee.getEmployeeCode()),
                 textOrNull(employee.getFullName()),
-                buildPhotoDataUri(List.of(employee)),
+                buildPhotoDataUri(employee),
                 resolveFaceData(List.of(employee)),
                 designationId(employee),
                 designationName(employee),
@@ -190,16 +190,6 @@ public class MobileEmployeeDetailsService {
                 .orElse(null);
     }
 
-    private String buildPhotoDataUri(List<EmployeeEntity> profiles) {
-        for (EmployeeEntity profile : profiles) {
-            String photoDataUri = buildPhotoDataUri(profile);
-            if (photoDataUri != null) {
-                return photoDataUri;
-            }
-        }
-        return null;
-    }
-
     private String resolveFaceData(List<EmployeeEntity> profiles) {
         for (EmployeeEntity profile : profiles) {
             String faceData = resolveFaceData(profile);
@@ -220,12 +210,11 @@ public class MobileEmployeeDetailsService {
     }
 
     private String buildPhotoDataUri(EmployeeEntity employee) {
-        AgencyCandidatePreOnboardingEntity preOnboarding = employee.getPreOnboarding();
-        if (preOnboarding == null || !StringUtils.hasText(preOnboarding.getPhotoFilePath())) {
+        if (!StringUtils.hasText(employee.getMobilePhotoPath())) {
             return null;
         }
 
-        String photoFilePath = preOnboarding.getPhotoFilePath().trim();
+        String photoFilePath = employee.getMobilePhotoPath().trim();
         Path path = fileStorageService.resolveManagedPath(photoFilePath).orElse(null);
         if (path == null) {
             log.warn("Skipping unmanaged or missing employee photo path for employeeId={}", employee.getEmployeeId());

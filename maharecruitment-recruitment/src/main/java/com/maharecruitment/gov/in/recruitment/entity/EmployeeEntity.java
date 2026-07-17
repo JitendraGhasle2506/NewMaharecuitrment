@@ -107,6 +107,9 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @Column(name = "photo_path", length = 1000)
     private String photoPath;
 
+    @Column(name = "mobile_photo_path", length = 1000)
+    private String mobilePhotoPath;
+
     @Column(name = "embedding", columnDefinition = "text")
     private String embedding;
 

@@ -39,7 +39,7 @@ import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 @Service
 public class MobileProfileServiceImpl implements MobileProfileService {
 
-    private static final String EMPLOYEE_PHOTO_MODULE = "employee-photo";
+    private static final String MOBILE_PROFILE_PHOTO_MODULE = "mobile-profile-photo";
     private static final int MAX_EMBEDDING_LENGTH = 200_000;
 
     private final MobileEmployeeAccessService mobileEmployeeAccessService;
@@ -128,25 +128,24 @@ public class MobileProfileServiceImpl implements MobileProfileService {
 
         EmployeeEntity employee = context.employee();
         AgencyCandidatePreOnboardingEntity preOnboarding = employee.getPreOnboarding();
+        String previousMobilePhotoPath = employee.getMobilePhotoPath();
 
-        FileUploadResult uploadResult = fileStorageService.store(photo, EMPLOYEE_PHOTO_MODULE);
-        employee.setPhotoPath(uploadResult.fullPath());
+        FileUploadResult uploadResult = fileStorageService.store(photo, MOBILE_PROFILE_PHOTO_MODULE);
+        employee.setMobilePhotoPath(uploadResult.fullPath());
         if (embedding != null) {
             String normalizedEmbedding = normalizeEmbedding(embedding);
             employee.setEmbedding(normalizedEmbedding);
         }
         employeeRepository.save(employee);
+        if (StringUtils.hasText(previousMobilePhotoPath)
+                && !Objects.equals(previousMobilePhotoPath, uploadResult.fullPath())) {
+            fileStorageService.deleteQuietly(previousMobilePhotoPath);
+        }
 
-        // Older employees may not have a pre-onboarding record. Keep it in sync
-        // when present, but do not prevent a valid employee from updating a photo.
-        if (preOnboarding != null && preOnboarding.getPreOnboardingId() != null) {
-            preOnboarding.setPhotoFilePath(uploadResult.fullPath());
-            preOnboarding.setPhotoOriginalName(uploadResult.originalFileName());
-            preOnboarding.setPhotoFileType(uploadResult.contentType());
-            preOnboarding.setPhotoFileSize(uploadResult.size());
-            if (embedding != null) {
-                preOnboarding.setEmbedding(employee.getEmbedding());
-            }
+        // The mobile photo is intentionally independent from HR/pre-onboarding
+        // photos. Retain the existing embedding synchronization only.
+        if (embedding != null && preOnboarding != null && preOnboarding.getPreOnboardingId() != null) {
+            preOnboarding.setEmbedding(employee.getEmbedding());
             preOnboardingRepository.save(preOnboarding);
         }
 

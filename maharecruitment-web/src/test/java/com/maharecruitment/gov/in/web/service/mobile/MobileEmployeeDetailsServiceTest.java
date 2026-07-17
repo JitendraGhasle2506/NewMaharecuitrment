@@ -62,7 +62,8 @@ class MobileEmployeeDetailsServiceTest {
         byte[] photoBytes = new byte[] { 1, 2, 3, 4, 5 };
         Path photoPath = tempDir.resolve("photo.jpg");
         Files.write(photoPath, photoBytes);
-        employee.setPreOnboarding(preOnboarding(photoPath.toString(), "[0.123,0.456]"));
+        employee.setMobilePhotoPath(photoPath.toString());
+        employee.setPreOnboarding(preOnboarding(null, "[0.123,0.456]"));
         employee.setEmbedding("[0.987,0.654]");
 
         EmployeeReportingMappingEntity mapping = new EmployeeReportingMappingEntity();
@@ -149,7 +150,7 @@ class MobileEmployeeDetailsServiceTest {
     }
 
     @Test
-    void usesPreOnboardingPhotoForMappedEmployeeProfile() throws Exception {
+    void usesMobilePhotoWithoutExposingSharedPreOnboardingPhoto() throws Exception {
         MobileEmployeeDetailsService service = service();
         User user = user(13L, "Primary Employee", "shared@example.com", "9555555555");
         EmployeeEntity primaryProfile = employee(201L, "EMP201", "Primary Employee", "shared@example.com", "INTERNAL");
@@ -158,7 +159,8 @@ class MobileEmployeeDetailsServiceTest {
         byte[] photoBytes = new byte[] { 9, 8, 7 };
         Path photoPath = tempDir.resolve("profile-photo.png");
         Files.write(photoPath, photoBytes);
-        primaryProfile.setPreOnboarding(preOnboarding(photoPath.toString(), "[0.789,0.321]"));
+        primaryProfile.setMobilePhotoPath(photoPath.toString());
+        primaryProfile.setPreOnboarding(preOnboarding("/shared/hr-photo.jpg", "[0.789,0.321]"));
 
         when(employeeRepository.findMobileLoginProfileByUserId(13L)).thenReturn(Optional.of(primaryProfile));
         when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(201L))
@@ -184,10 +186,10 @@ class MobileEmployeeDetailsServiceTest {
         when(employeeRepository.findMobileLoginProfileByUserId(14L)).thenReturn(Optional.of(employee));
         when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(301L))
                 .thenReturn(Optional.empty());
-        when(fileStorageService.resolveManagedPath(photoPath.toString())).thenReturn(Optional.of(photoPath));
 
         MobileEmployeeDetails details = service.loadForUser(user);
 
+        assertThat(details.photoUrl()).isNull();
         assertThat(details.faceData()).isEqualTo("[0.111,0.222]");
     }
 

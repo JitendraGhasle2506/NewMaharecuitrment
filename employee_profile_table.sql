@@ -1,4 +1,5 @@
 alter table employee_master add column if not exists photo_path varchar(1000);
+alter table employee_master add column if not exists mobile_photo_path varchar(1000);
 
 create table if not exists employee_profile (
     id bigserial primary key,
