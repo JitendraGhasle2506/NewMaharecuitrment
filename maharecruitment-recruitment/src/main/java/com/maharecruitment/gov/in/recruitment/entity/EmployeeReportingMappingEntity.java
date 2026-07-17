@@ -28,10 +28,10 @@ public class EmployeeReportingMappingEntity extends RecruitmentAuditable {
     private Long hodUserId;
 
     @Column(name = "manager_type", nullable = false, length = 10)
-    private String managerType; // STM or PM
+    private String managerType; // STM, PM or OTHER
 
     @Column(name = "manager_employee_id")
-    private Long managerEmployeeId; // The STM or PM's Employee ID
+    private Long managerEmployeeId; // The selected manager's Employee ID
 
     @Column(name = "project_id")
     private Long projectId;

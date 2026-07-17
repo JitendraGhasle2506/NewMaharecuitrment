@@ -55,8 +55,20 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
     @Override
     public List<Map<String, Object>> getManagersByType(String type) {
-        String roleName = "STM".equalsIgnoreCase(type) ? "ROLE_STM" : "ROLE_PM";
-        List<EmployeeEntity> managers = employeeRepository.findActiveEmployeesByRoleName(roleName);
+        if (type == null || type.isBlank()) {
+            throw new IllegalArgumentException("Manager type is required.");
+        }
+
+        List<EmployeeEntity> managers;
+        if ("STM".equalsIgnoreCase(type)) {
+            managers = employeeRepository.findActiveEmployeesByRoleName("ROLE_STM");
+        } else if ("PM".equalsIgnoreCase(type)) {
+            managers = employeeRepository.findActiveEmployeesByRoleName("ROLE_PM");
+        } else if ("OTHER".equalsIgnoreCase(type)) {
+            managers = employeeRepository.findActiveEmployeesNotMappedAsStmOrPmManagers();
+        } else {
+            throw new IllegalArgumentException("Unsupported manager type: " + type);
+        }
         
         return managers.stream()
                 .map(e -> {
@@ -149,6 +161,13 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     @Override
     @Transactional
     public void saveMapping(Long hodUserId, String managerType, Long managerEmployeeId, Long projectId, List<Long> employeeIds) {
+        if (managerType == null || (!"STM".equalsIgnoreCase(managerType)
+                && !"PM".equalsIgnoreCase(managerType) && !"OTHER".equalsIgnoreCase(managerType))) {
+            throw new IllegalArgumentException("A valid manager type is required.");
+        }
+        if (managerEmployeeId == null) {
+            throw new IllegalArgumentException("Manager selection is required.");
+        }
         if (employeeIds == null || employeeIds.isEmpty()) return;
 
         for (Long empId : employeeIds) {

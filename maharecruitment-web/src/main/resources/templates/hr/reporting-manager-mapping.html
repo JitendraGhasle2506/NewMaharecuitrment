@@ -128,6 +128,10 @@
                                         <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typePM" value="PM" required>
                                         <label class="form-check-label" for="typePM">Project Manager (PM)</label>
                                     </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeOther" value="OTHER" required>
+                                        <label class="form-check-label" for="typeOther">Other Employees</label>
+                                    </div>
                                 </div>
 
                                 <!-- Step 3: Specific Manager -->
@@ -255,12 +259,13 @@
             
 
 
-            // 2. On clicking STM / PM Radio
+            // 2. On selecting a manager type
             $('.managerTypeOption').change(function() {
                 var type = $(this).val();
                 
                 $('#managerSection').removeClass('hidden');
-                $('#managerLabel').text('3. Select ' + type + ' Manager *');
+                var managerTypeLabel = type === 'OTHER' ? 'Other Employee' : type + ' Manager';
+                $('#managerLabel').text('3. Select ' + managerTypeLabel + ' *');
                 
                 // Keep the selection if we're editing to avoid wiping it on auto-trigger
                 var currentSelection = $('#managerSelect').val();

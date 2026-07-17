@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -54,5 +55,26 @@ class ReportingManagerServiceImplTest {
         assertEquals(1, result.size());
         assertEquals(20L, result.get(0).get("id"));
         assertEquals("Jane Smith (EMP20)", result.get(0).get("name"));
+    }
+
+    @Test
+    void getManagersByTypeOtherQueriesEligibleActiveEmployees() {
+        EmployeeEntity emp = new EmployeeEntity();
+        emp.setEmployeeId(30L);
+        emp.setFullName("Asha Patil");
+        emp.setEmployeeCode("EMP30");
+
+        when(employeeRepository.findActiveEmployeesNotMappedAsStmOrPmManagers()).thenReturn(List.of(emp));
+
+        List<Map<String, Object>> result = service.getManagersByType("OTHER");
+
+        assertEquals(1, result.size());
+        assertEquals(30L, result.get(0).get("id"));
+        assertEquals("Asha Patil (EMP30)", result.get(0).get("name"));
+    }
+
+    @Test
+    void getManagersByTypeRejectsUnknownType() {
+        assertThrows(IllegalArgumentException.class, () -> service.getManagersByType("UNKNOWN"));
     }
 }

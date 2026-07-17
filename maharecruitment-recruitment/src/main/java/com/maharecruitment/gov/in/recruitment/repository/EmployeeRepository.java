@@ -421,10 +421,19 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     List<EmployeeEntity> findByDesignation_DesignationNameIgnoreCaseAndStatusIgnoreCase(String designationName, String status);
 
-    @Query("select e from EmployeeEntity e join e.user u join u.roles r " +
+    @Query("select distinct e from EmployeeEntity e join e.user u join u.roles r " +
            "where upper(trim(r.name)) = upper(trim(:roleName)) " +
-           "and upper(trim(coalesce(e.status, ''))) = 'ACTIVE'")
+           "and upper(trim(coalesce(e.status, ''))) = 'ACTIVE' " +
+           "order by lower(e.fullName), e.employeeId")
     List<EmployeeEntity> findActiveEmployeesByRoleName(@Param("roleName") String roleName);
+
+    @Query("select e from EmployeeEntity e "
+            + "where upper(trim(coalesce(e.status, ''))) = 'ACTIVE' "
+            + "and not exists (select mapping.mappingId from EmployeeReportingMappingEntity mapping "
+            + "where mapping.managerEmployeeId = e.employeeId "
+            + "and upper(trim(mapping.managerType)) in ('STM', 'PM')) "
+            + "order by lower(e.fullName), e.employeeId")
+    List<EmployeeEntity> findActiveEmployeesNotMappedAsStmOrPmManagers();
 
     List<EmployeeEntity> findByFullNameIgnoreCaseAndStatusIgnoreCase(String fullName, String status);
 
