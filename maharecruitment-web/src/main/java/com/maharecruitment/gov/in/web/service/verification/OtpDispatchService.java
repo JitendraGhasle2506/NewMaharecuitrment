@@ -8,6 +8,10 @@ public interface OtpDispatchService {
         sendMobileOtp(mobileNo, otp);
     }
 
+    default void sendMobileOtp(String mobileNo, String otp, String purpose, String otpReferenceId) {
+        sendMobileOtp(mobileNo, otp, otpReferenceId);
+    }
+
     void sendEmailOtp(String email, String otp);
 
     default void sendEmailOtp(String email, String otp, String purpose) {

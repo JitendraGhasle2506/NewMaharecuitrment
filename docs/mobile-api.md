@@ -85,12 +85,15 @@ Common HTTP status codes:
 | Login | POST | `/api/mobile/auth/login` | No |
 | Refresh access token | POST | `/api/mobile/auth/refresh` | No, uses refresh token body |
 | Logout | POST | `/api/mobile/auth/logout` | No, uses refresh token body |
+| Request password-reset OTP | POST | `/api/mobile/auth/password-reset/request-otp` | No |
+| Verify password-reset OTP | POST | `/api/mobile/auth/password-reset/verify-otp` | No |
+| Reset forgotten password | POST | `/api/mobile/auth/password-reset/reset` | No, uses reset token body |
 | Get mapped locations | GET | `/api/mobile/employee-locations?employeeId={employeeId}` | Yes |
 | Get profile | GET | `/api/mobile/profile?employeeId={employeeId}` | Yes |
 | Update email/mobile | PATCH | `/api/mobile/profile/contact` | Yes |
 | Update photo | POST | `/api/mobile/profile/photo` | Yes |
 | Change password | POST | `/api/mobile/profile/password/change` | Yes |
-| Reset password | POST | `/api/mobile/profile/password/reset` | Yes |
+| Authenticated profile password reset | POST | `/api/mobile/profile/password/reset` | Yes |
 | Check in | POST | `/api/mobile/attendance/check-in` | Yes |
 | Check out | POST | `/api/mobile/attendance/check-out` | Yes |
 | Mark attendance | POST | `/api/mobile/attendance/mark` | Yes |
@@ -514,12 +517,12 @@ Common errors:
 
 ### POST `/api/mobile/profile/password/reset`
 
-Use this API for authenticated password reset from the mobile app.
+Use this API for authenticated profile password reset from the mobile app.
 
 Important:
 
 - This endpoint currently requires `currentPassword`.
-- For "forgot password" without current password, create a separate OTP/token-based API.
+- For "forgot password" without current password, use the OTP/token flow under `/api/mobile/auth/password-reset/**`.
 
 Headers:
 
@@ -550,7 +553,93 @@ Success response:
 }
 ```
 
-## 8. Attendance
+## 8. Forgot Password
+
+The mobile forgot-password flow uses the same `PasswordResetService` as the web application.
+
+### POST `/api/mobile/auth/password-reset/request-otp`
+
+Request:
+
+```json
+{
+  "identifier": "EMP000033"
+}
+```
+
+Success response is generic for both existing and non-existing accounts:
+
+```json
+{
+  "success": true,
+  "message": "If the account information is valid, an OTP has been sent to the registered contact details.",
+  "resetToken": null,
+  "expiresInSeconds": null,
+  "maskedDestination": null
+}
+```
+
+### POST `/api/mobile/auth/password-reset/verify-otp`
+
+Request:
+
+```json
+{
+  "identifier": "EMP000033",
+  "otp": "123456"
+}
+```
+
+Success response:
+
+```json
+{
+  "success": true,
+  "message": "OTP verified successfully. Use the reset token to set a new password.",
+  "resetToken": "secure-single-use-token",
+  "expiresInSeconds": 600,
+  "maskedDestination": null
+}
+```
+
+### POST `/api/mobile/auth/password-reset/reset`
+
+Request:
+
+```json
+{
+  "resetToken": "secure-single-use-token",
+  "newPassword": "NewPass@123",
+  "confirmPassword": "NewPass@123"
+}
+```
+
+Success response:
+
+```json
+{
+  "success": true,
+  "message": "Password reset successfully.",
+  "resetToken": null,
+  "expiresInSeconds": null,
+  "maskedDestination": null
+}
+```
+
+Common errors:
+
+| Code | Meaning |
+| --- | --- |
+| `INVALID_OTP` | OTP is incorrect |
+| `OTP_EXPIRED` | OTP expired |
+| `MAX_ATTEMPTS_EXCEEDED` | Too many invalid OTP attempts |
+| `INVALID_RESET_TOKEN` | Reset token is invalid or already used |
+| `RESET_TOKEN_EXPIRED` | Reset token expired |
+| `PASSWORD_POLICY_FAILED` | New password does not match policy |
+| `PASSWORD_REUSED` | New password matches the current password |
+| `RATE_LIMIT_EXCEEDED` | Too many reset requests |
+
+## 9. Attendance
 
 Attendance APIs support both multipart image upload and JSON Base64 image upload.
 
@@ -852,18 +941,18 @@ updated_at
 
 ### Forgot Password With OTP
 
-Recommended endpoints:
+Implemented endpoints:
 
 ```text
-POST /api/mobile/auth/password/forgot
-POST /api/mobile/auth/password/verify-otp
-POST /api/mobile/auth/password/reset
+POST /api/mobile/auth/password-reset/request-otp
+POST /api/mobile/auth/password-reset/verify-otp
+POST /api/mobile/auth/password-reset/reset
 ```
 
-Recommended table:
+Implemented table:
 
 ```text
-mobile_password_reset_token
+password_reset_request
 ```
 
 Recommended columns:

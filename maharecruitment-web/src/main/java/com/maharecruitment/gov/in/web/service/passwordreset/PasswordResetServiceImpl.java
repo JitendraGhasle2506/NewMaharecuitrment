@@ -410,10 +410,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private void dispatchOtp(DeliveryDestination destination, String otp) {
         switch (destination.channel()) {
             case EMAIL -> otpDispatchService.sendEmailOtp(destination.email(), otp, VerificationPurposes.PASSWORD_RESET, null);
-            case SMS -> otpDispatchService.sendMobileOtp(destination.mobile(), otp, null);
+            case SMS -> otpDispatchService.sendMobileOtp(destination.mobile(), otp, VerificationPurposes.PASSWORD_RESET, null);
             case BOTH -> {
                 otpDispatchService.sendEmailOtp(destination.email(), otp, VerificationPurposes.PASSWORD_RESET, null);
-                otpDispatchService.sendMobileOtp(destination.mobile(), otp, null);
+                otpDispatchService.sendMobileOtp(destination.mobile(), otp, VerificationPurposes.PASSWORD_RESET, null);
             }
         }
     }

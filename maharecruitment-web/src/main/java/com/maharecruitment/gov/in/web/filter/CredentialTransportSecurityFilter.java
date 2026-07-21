@@ -45,6 +45,7 @@ public class CredentialTransportSecurityFilter extends OncePerRequestFilter {
             "/login/otp/send",
             "/change-password",
             "/forgot-password",
+            "/forgot-password/**",
             "/reset-password",
             "/common/profile/password",
             "/register/**",

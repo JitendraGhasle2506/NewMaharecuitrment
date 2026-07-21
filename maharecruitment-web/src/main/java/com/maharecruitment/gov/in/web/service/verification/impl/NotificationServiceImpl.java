@@ -49,13 +49,18 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
     @Override
     public void sendMobileOtp(String mobileNo, String otp, String otpReferenceId) {
+        sendMobileOtp(mobileNo, otp, null, otpReferenceId);
+    }
+
+    @Override
+    public void sendMobileOtp(String mobileNo, String otp, String purpose, String otpReferenceId) {
         if (!notificationChannelProperties.isSmsEnabled()) {
             log.info("SMS dispatch is disabled. Skipping OTP SMS for mobile {}.", mobileNo);
             return;
         }
         String message = "Your MahaIT Recruitment OTP is " + otp
                 + ". OTP ID: " + formatOtpReferenceId(otpReferenceId)
-                + ". It is valid for " + resolveOtpValidityText() + ".";
+                + ". It is valid for " + resolveOtpValidityText(purpose) + ".";
         sendSmsMessage(mobileNo, message, "OTP");
     }
 
@@ -349,7 +354,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
                 Regards,
                 Maha Recruitment Team
-                """.formatted(otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText());
+                """.formatted(otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText(null));
     }
 
     private String buildPasswordResetOtpEmailBody(String otp, String otpReferenceId) {
@@ -368,7 +373,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
                 Regards,
                 Maha Recruitment Team
-                """.formatted(otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText());
+                """.formatted(otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText(VerificationPurposes.PASSWORD_RESET));
     }
 
     private String buildDepartmentRegistrationOtpEmailBody(String otp, String email, String otpReferenceId) {
@@ -391,7 +396,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
                 Regards,
                 Maha Recruitment Team
-                """.formatted(email, otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText());
+                """.formatted(email, otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText(null));
     }
 
     private String buildGenericVerificationOtpEmailBody(String otp, String otpReferenceId) {
@@ -410,7 +415,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
                 Regards,
                 Maha Recruitment Team
-                """.formatted(otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText());
+                """.formatted(otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText(null));
     }
 
     private String formatOtpReferenceId(String otpReferenceId) {
@@ -429,8 +434,10 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         return fallback;
     }
 
-    private String resolveOtpValidityText() {
-        int expiryMinutes = environment.getProperty("otp.expiry-minutes", Integer.class, 5);
+    private String resolveOtpValidityText(String purpose) {
+        int expiryMinutes = VerificationPurposes.PASSWORD_RESET.equalsIgnoreCase(valueOrBlank(purpose))
+                ? environment.getProperty("security.password-reset.otp-validity-minutes", Integer.class, 5)
+                : environment.getProperty("otp.expiry-minutes", Integer.class, 5);
         int expirySeconds = Math.max(1, expiryMinutes) * 60;
         if (expirySeconds % 60 == 0) {
             int minutes = expirySeconds / 60;

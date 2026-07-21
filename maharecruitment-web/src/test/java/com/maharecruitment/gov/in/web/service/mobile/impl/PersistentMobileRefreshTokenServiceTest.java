@@ -114,6 +114,15 @@ class PersistentMobileRefreshTokenServiceTest {
         assertThat(savedTokens).hasSize(1);
     }
 
+    @Test
+    void revokeActiveTokensForUserDelegatesToRepository() {
+        User user = user();
+
+        service().revokeActiveTokensForUser(user);
+
+        verify(refreshTokenRepository).revokeActiveTokensForUser(10L, NOW);
+    }
+
     private List<MobileRefreshTokenEntity> captureSavedTokens() {
         List<MobileRefreshTokenEntity> savedTokens = new ArrayList<>();
         when(refreshTokenRepository.save(any(MobileRefreshTokenEntity.class))).thenAnswer(invocation -> {
