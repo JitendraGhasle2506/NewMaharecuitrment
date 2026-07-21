@@ -21,6 +21,7 @@ import com.maharecruitment.gov.in.web.service.mobile.MobileApiException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAttendanceException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileTokenConfigurationException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileTokenValidationException;
+import com.maharecruitment.gov.in.web.service.passwordreset.PasswordResetException;
 
 import jakarta.validation.ConstraintViolationException;
 
@@ -29,6 +30,7 @@ import jakarta.validation.ConstraintViolationException;
         MobileAttendanceController.class,
         MobileEmployeeLocationController.class,
         MobileNotificationController.class,
+        MobilePasswordResetController.class,
         MobileProfileController.class
 })
 public class MobileAuthenticationExceptionHandler {
@@ -83,6 +85,15 @@ public class MobileAuthenticationExceptionHandler {
     @ExceptionHandler(MobileApiException.class)
     public ResponseEntity<MobileApiError> handleMobileApi(MobileApiException ex) {
         return ResponseEntity.status(ex.getStatus()).body(MobileApiError.of(ex.getCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(PasswordResetException.class)
+    public ResponseEntity<MobileApiError> handlePasswordReset(PasswordResetException ex) {
+        ResponseEntity.BodyBuilder response = ResponseEntity.status(ex.getStatus());
+        if (ex.getRetryAfterSeconds() != null) {
+            response.header("Retry-After", ex.getRetryAfterSeconds().toString());
+        }
+        return response.body(MobileApiError.of(ex.getCode(), ex.getMessage()));
     }
 
     @ExceptionHandler({

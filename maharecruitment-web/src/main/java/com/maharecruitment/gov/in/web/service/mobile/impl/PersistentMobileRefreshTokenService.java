@@ -105,6 +105,12 @@ public class PersistentMobileRefreshTokenService implements MobileRefreshTokenSe
         refreshTokenRepository.save(current);
     }
 
+    @Override
+    @Transactional
+    public void revokeActiveTokensForUser(User user) {
+        revokeActiveTokens(user, clock.instant());
+    }
+
     private MobileRefreshTokenIssue saveNewRefreshToken(User user, Instant issuedAt) {
         Duration ttl = properties.getRefreshTokenTtl();
         Instant expiresAt = issuedAt.plus(ttl);

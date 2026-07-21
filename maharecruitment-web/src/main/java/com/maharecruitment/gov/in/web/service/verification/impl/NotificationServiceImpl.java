@@ -82,6 +82,9 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         if (VerificationPurposes.LOGIN_AUTHENTICATION.equalsIgnoreCase(valueOrBlank(purpose))) {
             message.setSubject("Maha Recruitment Portal Login OTP");
             message.setText(buildLoginOtpEmailBody(otp, otpReferenceId));
+        } else if (VerificationPurposes.PASSWORD_RESET.equalsIgnoreCase(valueOrBlank(purpose))) {
+            message.setSubject("MahaIT Recruitment Password Reset OTP");
+            message.setText(buildPasswordResetOtpEmailBody(otp, otpReferenceId));
         } else if (VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT.equalsIgnoreCase(valueOrBlank(purpose))) {
             message.setSubject("MahaIT Recruitment Department Registration Email Verification OTP");
             message.setText(buildDepartmentRegistrationOtpEmailBody(otp, email, otpReferenceId));
@@ -282,6 +285,44 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         }
     }
 
+    @Override
+    public void sendPasswordResetCompleted(String email, String mobileNo, String name) {
+        if (notificationChannelProperties.isEmailEnabled() && StringUtils.hasText(email)) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(getFromAddress());
+            message.setTo(email);
+            message.setSubject("MahaIT Recruitment Password Changed");
+            message.setText("""
+                    Dear %s,
+
+                    Your MahaIT Recruitment account password was changed successfully.
+
+                    If you did not perform this action, please contact administrator support immediately.
+
+                    Regards,
+                    MahaIT Recruitment
+                    """.formatted(StringUtils.hasText(name) ? name.trim() : "User"));
+
+            try {
+                mailSender.send(message);
+            } catch (Exception ex) {
+                log.warn("Failed to send password reset notification email to {} from {}. Reason: {}",
+                        email, message.getFrom(), extractFailureReason(ex), ex);
+            }
+        }
+
+        if (notificationChannelProperties.isSmsEnabled() && StringUtils.hasText(mobileNo)) {
+            try {
+                sendSmsMessage(
+                        mobileNo,
+                        "MahaIT Recruitment: Your account password was changed successfully. If this was not you, contact support.",
+                        "password reset notification");
+            } catch (Exception ex) {
+                log.warn("Failed to send password reset notification SMS to {}.", mobileNo, ex);
+            }
+        }
+    }
+
     private String buildFailureMessage(String baseMessage, Exception ex) {
         String reason = extractFailureReason(ex);
         if (!StringUtils.hasText(reason) || baseMessage.contains(reason)) {
@@ -305,6 +346,25 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
                 If you did not request this OTP, please ignore this email.
 
                 This is an automated message. Please do not reply to this email.
+
+                Regards,
+                Maha Recruitment Team
+                """.formatted(otp, formatOtpReferenceId(otpReferenceId), resolveOtpValidityText());
+    }
+
+    private String buildPasswordResetOtpEmailBody(String otp, String otpReferenceId) {
+        return """
+                Dear User,
+
+                Your One-Time Password (OTP) to reset your MahaIT Recruitment password is:
+
+                %s
+
+                OTP ID: %s
+
+                This OTP is valid for %s. Please do not share this OTP with anyone.
+
+                If you did not request a password reset, please ignore this email.
 
                 Regards,
                 Maha Recruitment Team

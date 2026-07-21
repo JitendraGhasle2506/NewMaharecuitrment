@@ -19,4 +19,6 @@ public interface AccountNotificationService {
     void sendAgencyCredentials(String email, String contactName, String temporaryPassword);
 
     void sendResignationNotification(String email, String role, String employeeName, String resignDate);
+
+    void sendPasswordResetCompleted(String email, String mobileNo, String name);
 }

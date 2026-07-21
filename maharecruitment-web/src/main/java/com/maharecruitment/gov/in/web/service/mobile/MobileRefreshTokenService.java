@@ -9,4 +9,6 @@ public interface MobileRefreshTokenService {
     MobileRefreshSession rotateRefreshToken(String refreshToken);
 
     void revokeRefreshToken(String refreshToken, boolean revokeAllSessions);
+
+    void revokeActiveTokensForUser(User user);
 }
