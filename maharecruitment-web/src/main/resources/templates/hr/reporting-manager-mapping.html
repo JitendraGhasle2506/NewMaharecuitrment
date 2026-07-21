@@ -106,8 +106,9 @@
                                 <h2>Map Employees to Reporting Managers</h2>
                             </div>
                             <div class="card-body">
-                                <form th:action="@{/hr/saveReportingMapping}" method="post" id="mappingForm">
-                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                 <form th:action="@{/hr/saveReportingMapping}" method="post" id="mappingForm">
+                                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                 <input type="hidden" id="mappingId" name="mappingId" value="">
                                 
                                 <!-- Step 1: HOD -->
                                 <div class="mb-4">
@@ -144,7 +145,7 @@
 
                                 <!-- Step 4: Internal Employees -->
                                 <div class="mb-4 hidden" id="employeeSection">
-                                    <label class="form-label">4. Select Internal Employees to Map <span class="text-danger">*</span></label>
+                                    <label class="form-label" id="employeeLabel">4. Select Internal Employees to Map <span class="text-danger">*</span></label>
                                     
                                     <div class="input-group mb-2 w-50">
                                         <span class="input-group-text"><i class="fa fa-search"></i></span>
@@ -199,6 +200,8 @@
                 $('#gridCard').show();
                 editingEmployeeId = null;
                 $('#mappingForm')[0].reset();
+                $('#mappingId').val('');
+                $('#managerSelect').prop('required', true);
                 $('#managerSection, #projectSection, #employeeSection, #submitSection').addClass('hidden');
                 $('#employeeListContainer').empty();
                 
@@ -207,6 +210,7 @@
             }
 
             $('#addMappingBtn').click(function() {
+                $('#mappingId').val('');
                 showForm();
             });
 
@@ -254,48 +258,82 @@
             });
 
             function loadManagersDeferred(type) {
-                return $.ajax({ url: contextPath + 'hr/api/managers?type=' + type });
+                return $.ajax({
+                    url: contextPath + 'hr/api/managers',
+                    data: { type: type }
+                });
             }
-            
 
+            function resetDependentSelections() {
+                $('input[name="managerType"]').prop('checked', false);
+                $('#managerSelect')
+                    .html('<option value="">-- Select Manager --</option>')
+                    .val('')
+                    .prop('required', true);
+                $('#managerSection, #employeeSection, #submitSection').addClass('hidden');
+                $('#employeeListContainer').empty();
+                $('#employeeSearch').val('');
+                allEmployees = [];
+            }
+
+            $('#hodSelect').change(function() {
+                resetDependentSelections();
+            });
+
+            function loadManagers(type, currentSelection) {
+                $('#managerSelect').html('<option value="">-- Loading... --</option>');
+                return loadManagersDeferred(type).done(function(data) {
+                    var select = $('#managerSelect');
+                    select.html('<option value="">-- Select Manager --</option>');
+                    if(data.length === 0) {
+                        select.append('<option disabled>No managers found</option>');
+                    } else {
+                        data.forEach(function(mgr) {
+                            select.append('<option value="'+mgr.id+'">'+mgr.name+'</option>');
+                        });
+                    }
+                    if(currentSelection) {
+                        select.val(currentSelection);
+                    }
+                }).fail(function() {
+                    $('#managerSelect').html('<option value="">-- Unable to load managers --</option>');
+                    alert('Unable to load managers. Please try again.');
+                });
+            }
 
             // 2. On selecting a manager type
             $('.managerTypeOption').change(function() {
                 var type = $(this).val();
-                
-                $('#managerSection').removeClass('hidden');
-                var managerTypeLabel = type === 'OTHER' ? 'Other Employee' : type + ' Manager';
-                $('#managerLabel').text('3. Select ' + managerTypeLabel + ' *');
-                
-                // Keep the selection if we're editing to avoid wiping it on auto-trigger
-                var currentSelection = $('#managerSelect').val();
-                $('#managerSelect').html('<option value="">-- Loading... --</option>');
-
-                // Hide lower sections
-                $('#projectSection').addClass('hidden');
+                var hodUserId = $('#hodSelect').val();
+                $('#managerSelect').val('');
                 $('#employeeSection').addClass('hidden');
                 $('#submitSection').addClass('hidden');
-                $('#projectSelect').val('');
 
-                $.ajax({
-                    url: contextPath + 'hr/api/managers?type=' + type,
-                    method: 'GET',
-                    success: function(data) {
-                        var select = $('#managerSelect');
-                        select.html('<option value="">-- Select Manager --</option>');
-                        if(data.length === 0) {
-                            select.append('<option disabled>No managers found</option>');
-                        } else {
-                            data.forEach(function(mgr) {
-                                select.append('<option value="'+mgr.id+'">'+mgr.name+'</option>');
-                            });
-                        }
-                        // restore if editing
-                        if(currentSelection) {
-                           select.val(currentSelection);
-                        }
+                if(type === 'OTHER') {
+                    if(!hodUserId) {
+                        alert('Please select Head of Department before selecting Other Employees.');
+                        $(this).prop('checked', false);
+                        return;
                     }
-                });
+
+                    $('#managerSection').addClass('hidden');
+                    $('#managerSelect').val('').prop('required', false);
+                    $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
+                    $('#employeeSection').removeClass('hidden');
+                    $('#submitSection').removeClass('hidden');
+                    loadInternalEmployees({
+                        hodUserId: hodUserId,
+                        managerType: 'OTHER',
+                        includeEmployeeId: editingEmployeeId
+                    });
+                    return;
+                }
+
+                $('#managerSection').removeClass('hidden');
+                $('#managerSelect').prop('required', true);
+                $('#managerLabel').text('3. Select ' + type + ' Manager *');
+                $('#employeeLabel').html('4. Select Internal Employees to Map <span class="text-danger">*</span>');
+                loadManagers(type, null);
             });
 
             // 3. On selecting Manager -> Show Employees
@@ -303,24 +341,7 @@
                 if($(this).val()) {
                     $('#employeeSection').removeClass('hidden');
                     $('#submitSection').removeClass('hidden');
-                    
-                    var url = contextPath + 'hr/api/employees';
-                    if (editingEmployeeId) {
-                        url += '?includeEmployeeId=' + editingEmployeeId;
-                    }
-
-                    $.ajax({
-                        url: url,
-                        method: 'GET',
-                        success: function(data) {
-                            allEmployees = data;
-                            renderEmployees(allEmployees);
-                            
-                            if (editingEmployeeId) {
-                                $('#emp_' + editingEmployeeId).prop('checked', true);
-                            }
-                        }
-                    });
+                    loadInternalEmployees({ includeEmployeeId: editingEmployeeId });
                 } else {
                     $('#employeeSection').addClass('hidden');
                     $('#submitSection').addClass('hidden');
@@ -332,30 +353,69 @@
                 var hod = $(this).data('hod');
                 var mgrType = $(this).data('mgrtype');
                 var mgr = $(this).data('mgr');
+                var mappingId = $(this).data('id');
                 editingEmployeeId = $(this).data('emp');
 
                 showForm();
 
                 // Populate form dynamically
+                $('#mappingId').val(mappingId);
                 $('#hodSelect').val(hod);
                 $('input[name="managerType"][value="'+mgrType+'"]').prop('checked', true);
-                
-                // Show sections
-                $('#managerSection').removeClass('hidden');
-                $('#managerLabel').text('3. Select ' + mgrType + ' Manager *');
-                
-                $.when(loadManagersDeferred(mgrType)).done(function(mgrRes) {
-                    var managers = mgrRes[0] || mgrRes;
-                    
-                    var selectMgr = $('#managerSelect');
-                    selectMgr.html('<option value="">-- Select Manager --</option>');
-                    managers.forEach(function(m) { selectMgr.append('<option value="'+m.id+'">'+m.name+'</option>'); });
-                    selectMgr.val(mgr);
 
-                    // Trigger manager select change to load employees
+                if(mgrType === 'OTHER') {
+                    $('#managerSection').addClass('hidden');
+                    $('#managerSelect').val('').prop('required', false);
+                    $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
+                    $('#employeeSection, #submitSection').removeClass('hidden');
+                    loadInternalEmployees({
+                        includeEmployeeId: editingEmployeeId,
+                        hodUserId: hod,
+                        managerType: 'OTHER'
+                    });
+                    return;
+                }
+
+                $('#managerSection').removeClass('hidden');
+                $('#managerSelect').prop('required', true);
+                $('#managerLabel').text('3. Select ' + mgrType + ' Manager *');
+                $('#employeeLabel').html('4. Select Internal Employees to Map <span class="text-danger">*</span>');
+                loadManagers(mgrType, mgr).done(function() {
                     $('#managerSelect').trigger('change');
                 });
             });
+
+            function loadInternalEmployees(params) {
+                var requestParams = $.extend({}, params || {});
+                Object.keys(requestParams).forEach(function(key) {
+                    if(requestParams[key] === null || requestParams[key] === undefined || requestParams[key] === '') {
+                        delete requestParams[key];
+                    }
+                });
+
+                allEmployees = [];
+                $('#employeeListContainer').html(
+                    '<div class="text-center p-3 text-muted">Loading employees...</div>');
+
+                return $.ajax({
+                    url: contextPath + 'hr/api/employees',
+                    method: 'GET',
+                    data: requestParams
+                }).done(function(data) {
+                    allEmployees = data;
+                    renderEmployees(allEmployees);
+                    if(editingEmployeeId) {
+                        $('#emp_' + editingEmployeeId).prop('checked', true);
+                        $('.emp-checkbox').not('#emp_' + editingEmployeeId).prop('disabled', true);
+                    }
+                }).fail(function(xhr) {
+                    var message = xhr.responseJSON && xhr.responseJSON.message
+                        ? xhr.responseJSON.message
+                        : 'Unable to load internal employees. Please try again.';
+                    $('#employeeListContainer').html(
+                        '<div class="p-3 text-danger text-center">' + message + '</div>');
+                });
+            }
 
             // Render Employee Checkboxes
             function renderEmployees(list) {
@@ -374,19 +434,19 @@
                               '</div>';
                     container.append(row);
                 });
+                if(editingEmployeeId) {
+                    $('#emp_' + editingEmployeeId).prop('checked', true);
+                    $('.emp-checkbox').not('#emp_' + editingEmployeeId).prop('disabled', true);
+                }
             }
 
             // Client side search filter
             $('#employeeSearch').on('keyup', function() {
                 var term = $(this).val().toLowerCase();
-                if(!term) {
-                    renderEmployees(allEmployees);
-                    return;
-                }
-                var filtered = allEmployees.filter(function(e) {
-                    return e.name.toLowerCase().indexOf(term) > -1;
+                $('#employeeListContainer .employee-row').each(function() {
+                    var employeeName = $(this).find('label').text().toLowerCase();
+                    $(this).toggle(employeeName.indexOf(term) > -1);
                 });
-                renderEmployees(filtered);
             });
 
             // Select / Deselect All
@@ -399,6 +459,23 @@
 
             // Form validation
             $('#mappingForm').submit(function(e) {
+                var hodUserId = $('#hodSelect').val();
+                var managerType = $('input[name="managerType"]:checked').val();
+                if(!hodUserId) {
+                    alert('Please select Head of Department.');
+                    e.preventDefault();
+                    return;
+                }
+                if(!managerType) {
+                    alert('Please select a Manager Type.');
+                    e.preventDefault();
+                    return;
+                }
+                if((managerType === 'STM' || managerType === 'PM') && !$('#managerSelect').val()) {
+                    alert('Please select a Manager.');
+                    e.preventDefault();
+                    return;
+                }
                 if($('input[name="employeeIds"]:checked').length === 0) {
                     alert('Please select at least one employee to map.');
                     e.preventDefault();

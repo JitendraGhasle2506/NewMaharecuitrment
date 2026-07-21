@@ -1,7 +1,9 @@
 package com.maharecruitment.gov.in.web.service.employee.impl;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.recruitment.dto.employee.ManagerTaskApprovalDto;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
@@ -38,17 +41,23 @@ public class ManagerTaskServiceImpl implements ManagerTaskService {
 
     @Override
     public List<ManagerTaskApprovalDto> getPendingTasksForManager(String loginEmail) {
-        EmployeeEntity manager = resolveEmployee(loginEmail);
-        if (manager == null) {
+        User reportingUser = resolveUser(loginEmail);
+        if (reportingUser == null) {
             return Collections.emptyList();
         }
 
-        // Find employees reporting to this manager (Assuming managerEmployeeId matches)
-        List<EmployeeReportingMappingEntity> reports = reportingRepository.findByManagerEmployeeId(manager.getEmployeeId());
-        
-        List<Long> employeeIds = reports.stream()
+        List<EmployeeReportingMappingEntity> reports = new ArrayList<>();
+        employeeRepository.findByUser_Id(reportingUser.getId())
+                .map(EmployeeEntity::getEmployeeId)
+                .map(reportingRepository::findByManagerEmployeeId)
+                .ifPresent(reports::addAll);
+        reportingRepository.findByHodUserId(reportingUser.getId()).stream()
+                .filter(mapping -> "OTHER".equalsIgnoreCase(mapping.getManagerType()))
+                .forEach(reports::add);
+
+        List<Long> employeeIds = new ArrayList<>(reports.stream()
                 .map(EmployeeReportingMappingEntity::getEmployeeId)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
 
         if (employeeIds.isEmpty()) {
             return Collections.emptyList();
@@ -104,8 +113,17 @@ public class ManagerTaskServiceImpl implements ManagerTaskService {
     }
 
     private EmployeeEntity resolveEmployee(String loginEmail) {
+        User user = resolveUser(loginEmail);
+        return user == null
+                ? null
+                : employeeRepository.findByUser_Id(user.getId()).orElse(null);
+    }
+
+    private User resolveUser(String loginEmail) {
+        if (loginEmail == null || loginEmail.isBlank()) {
+            return null;
+        }
         return userRepository.findByEmailIgnoreCase(loginEmail)
-                .flatMap(user -> employeeRepository.findByUser_Id(user.getId()))
                 .orElse(null);
     }
 }

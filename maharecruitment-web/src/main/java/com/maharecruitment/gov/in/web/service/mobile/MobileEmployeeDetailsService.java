@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.entity.SubDepartment;
@@ -38,6 +39,7 @@ public class MobileEmployeeDetailsService {
 
     private final EmployeeRepository employeeRepository;
     private final EmployeeReportingMappingRepository reportingMappingRepository;
+    private final UserRepository userRepository;
     private final SubDepartmentRepository subDepartmentRepository;
     private final DepartmentMstRepository departmentRepository;
     private final FileStorageService fileStorageService;
@@ -45,11 +47,13 @@ public class MobileEmployeeDetailsService {
     public MobileEmployeeDetailsService(
             EmployeeRepository employeeRepository,
             EmployeeReportingMappingRepository reportingMappingRepository,
+            UserRepository userRepository,
             SubDepartmentRepository subDepartmentRepository,
             DepartmentMstRepository departmentRepository,
             FileStorageService fileStorageService) {
         this.employeeRepository = employeeRepository;
         this.reportingMappingRepository = reportingMappingRepository;
+        this.userRepository = userRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.departmentRepository = departmentRepository;
         this.fileStorageService = fileStorageService;
@@ -104,9 +108,9 @@ public class MobileEmployeeDetailsService {
                 : reportingMappingRepository
                         .findFirstByEmployeeIdOrderByMappingIdDesc(employee.getEmployeeId())
                         .orElse(null);
-        EmployeeEntity manager = resolveReportingManager(mapping);
-        Long managerId = manager != null ? manager.getEmployeeId() : null;
-        String managerName = manager != null ? textOrNull(manager.getFullName()) : null;
+        ReportingAuthority reportingAuthority = resolveReportingAuthority(mapping);
+        Long managerId = reportingAuthority.id();
+        String managerName = reportingAuthority.name();
 
         if (EMPLOYEE_TYPE_EXTERNAL.equals(employeeType)) {
             return new ReportingInfo(managerId, managerName, departmentInfo.id(), departmentInfo.name());
@@ -115,12 +119,26 @@ public class MobileEmployeeDetailsService {
         return new ReportingInfo(managerId, managerName, null, null);
     }
 
-    private EmployeeEntity resolveReportingManager(EmployeeReportingMappingEntity mapping) {
-        if (mapping == null || mapping.getManagerEmployeeId() == null) {
-            return null;
+    private ReportingAuthority resolveReportingAuthority(EmployeeReportingMappingEntity mapping) {
+        if (mapping == null) {
+            return ReportingAuthority.empty();
+        }
+        if ("OTHER".equalsIgnoreCase(mapping.getManagerType())) {
+            if (mapping.getHodUserId() == null) {
+                return ReportingAuthority.empty();
+            }
+            return userRepository.findById(mapping.getHodUserId())
+                    .map(hod -> new ReportingAuthority(hod.getId(), textOrNull(hod.getName())))
+                    .orElseGet(ReportingAuthority::empty);
+        }
+        if (mapping.getManagerEmployeeId() == null) {
+            return ReportingAuthority.empty();
         }
 
-        return employeeRepository.findById(mapping.getManagerEmployeeId()).orElse(null);
+        return employeeRepository.findById(mapping.getManagerEmployeeId())
+                .map(manager -> new ReportingAuthority(
+                        manager.getEmployeeId(), textOrNull(manager.getFullName())))
+                .orElseGet(ReportingAuthority::empty);
     }
 
     private Long designationId(EmployeeEntity employee) {
@@ -316,5 +334,11 @@ public class MobileEmployeeDetailsService {
             String managerName,
             Long departmentId,
             String departmentName) {
+    }
+
+    private record ReportingAuthority(Long id, String name) {
+        private static ReportingAuthority empty() {
+            return new ReportingAuthority(null, null);
+        }
     }
 }

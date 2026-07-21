@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.entity.SubDepartment;
@@ -38,6 +39,9 @@ class MobileEmployeeDetailsServiceTest {
 
     @Mock
     private EmployeeReportingMappingRepository reportingMappingRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private SubDepartmentRepository subDepartmentRepository;
@@ -122,6 +126,29 @@ class MobileEmployeeDetailsServiceTest {
         assertThat(details.reportingDepartmentName()).isEqualTo("Finance Department");
         assertThat(details.photoUrl()).isNull();
         assertThat(details.faceData()).isNull();
+    }
+
+    @Test
+    void otherMappingReturnsHodAsDirectReportingAuthorityWithNullManagerEmployeeId() {
+        MobileEmployeeDetailsService service = service();
+        User employeeUser = user(15L, "Direct Report", "direct@example.com", "9333333333");
+        EmployeeEntity employee = employee(401L, "EMP401", "Direct Report", "direct@example.com", "INTERNAL");
+        EmployeeReportingMappingEntity mapping = new EmployeeReportingMappingEntity();
+        mapping.setEmployeeId(401L);
+        mapping.setHodUserId(77L);
+        mapping.setManagerType("OTHER");
+        mapping.setManagerEmployeeId(null);
+        User hod = user(77L, "HOD Anita", "hod@example.com", "9222222222");
+
+        when(employeeRepository.findMobileLoginProfileByUserId(15L)).thenReturn(Optional.of(employee));
+        when(reportingMappingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(401L))
+                .thenReturn(Optional.of(mapping));
+        when(userRepository.findById(77L)).thenReturn(Optional.of(hod));
+
+        MobileEmployeeDetails details = service.loadForUser(employeeUser);
+
+        assertThat(details.reportingManagerId()).isEqualTo(77L);
+        assertThat(details.reportingManagerName()).isEqualTo("HOD Anita");
     }
 
     @Test
@@ -210,6 +237,7 @@ class MobileEmployeeDetailsServiceTest {
         return new MobileEmployeeDetailsService(
                 employeeRepository,
                 reportingMappingRepository,
+                userRepository,
                 subDepartmentRepository,
                 departmentRepository,
                 fileStorageService);

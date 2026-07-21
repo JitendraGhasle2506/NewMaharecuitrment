@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -445,10 +446,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			if (mapping.getHodUserId() != null) {
 				userRepository.findById(mapping.getHodUserId()).ifPresent(hod -> dto.setReportingHOD(hod.getName()));
 			}
-			if (mapping.getManagerEmployeeId() != null) {
-				employeeRepository.findById(mapping.getManagerEmployeeId())
-						.ifPresent(mgr -> dto.setReportingManager(mgr.getFullName()));
-			}
+			dto.setReportingManager(resolveReportingAuthorityName(mapping));
 		}
 
 		// Today's Activity
@@ -1330,8 +1328,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				if (mapping.getProjectId() != null) {
 					projectRepo.findById(mapping.getProjectId()).ifPresent(p -> dto.setProjectName(p.getProjectName()));
 				}
-				employeeRepository.findById(mapping.getManagerEmployeeId())
-						.ifPresent(m -> dto.setManagerName(m.getFullName()));
+				dto.setManagerName(resolveReportingAuthorityName(mapping));
 			}
 
 			return dto;
@@ -1425,8 +1422,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 							projectRepo.findById(mapping.getProjectId())
 									.ifPresent(p -> dto.setProjectName(p.getProjectName()));
 						}
-						employeeRepository.findById(mapping.getManagerEmployeeId())
-								.ifPresent(m -> dto.setManagerName(m.getFullName()));
+						dto.setManagerName(resolveReportingAuthorityName(mapping));
 					}
 					return dto;
 				}).collect(Collectors.toList());
@@ -1459,8 +1455,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				if (mapping.getProjectId() != null) {
 					projectRepo.findById(mapping.getProjectId()).ifPresent(p -> dto.setProjectName(p.getProjectName()));
 				}
-				employeeRepository.findById(mapping.getManagerEmployeeId())
-						.ifPresent(m -> dto.setManagerName(m.getFullName()));
+				dto.setManagerName(resolveReportingAuthorityName(mapping));
 			}
 
 			return dto;
@@ -1506,7 +1501,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 		if ("MANAGER".equalsIgnoreCase(roleType) || "STM".equalsIgnoreCase(roleType)
 				|| "PM".equalsIgnoreCase(roleType)) {
-			if (!request.getManagerId().equals(approverId)) {
+			if (!Objects.equals(request.getManagerId(), approverId)) {
 				throw new RuntimeException("Unauthorized: You are not the assigned manager for this request.");
 			}
 			request.setManagerStatus(status);
@@ -1582,5 +1577,23 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 			}
 		}
+	}
+
+	private String resolveReportingAuthorityName(EmployeeReportingMappingEntity mapping) {
+		if (mapping == null) {
+			return null;
+		}
+		if ("OTHER".equalsIgnoreCase(mapping.getManagerType())) {
+			return mapping.getHodUserId() == null
+					? null
+					: userRepository.findById(mapping.getHodUserId())
+							.map(com.maharecruitment.gov.in.auth.entity.User::getName)
+							.orElse(null);
+		}
+		return mapping.getManagerEmployeeId() == null
+				? null
+				: employeeRepository.findById(mapping.getManagerEmployeeId())
+						.map(EmployeeEntity::getFullName)
+						.orElse(null);
 	}
 }

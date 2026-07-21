@@ -3,6 +3,8 @@ package com.maharecruitment.gov.in.web.controller.hr;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +23,8 @@ import com.maharecruitment.gov.in.recruitment.service.ReportingManagerService;
 @RequestMapping("/hr")
 @PreAuthorize("hasAuthority('ROLE_HR')")
 public class ReportingManagerMappingController {
+
+    private static final Logger log = LoggerFactory.getLogger(ReportingManagerMappingController.class);
 
     @Autowired
     private ReportingManagerService reportingManagerService;
@@ -51,8 +55,12 @@ public class ReportingManagerMappingController {
 
     @GetMapping("/api/employees")
     @ResponseBody
-    public ResponseEntity<List<Map<String, Object>>> getInternalEmployees(@RequestParam(required = false) Long includeEmployeeId) {
-        return ResponseEntity.ok(reportingManagerService.getInternalEmployees(includeEmployeeId));
+    public ResponseEntity<List<Map<String, Object>>> getInternalEmployees(
+            @RequestParam(required = false) Long includeEmployeeId,
+            @RequestParam(required = false) Long hodUserId,
+            @RequestParam(required = false) String managerType) {
+        return ResponseEntity.ok(
+                reportingManagerService.getInternalEmployees(includeEmployeeId, hodUserId, managerType));
     }
 
     @GetMapping("/api/mappings")
@@ -65,16 +73,36 @@ public class ReportingManagerMappingController {
     public String saveReportingMapping(
             @RequestParam Long hodUserId,
             @RequestParam String managerType,
-            @RequestParam Long managerEmployeeId,
+            @RequestParam(required = false) Long managerEmployeeId,
             @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) Long mappingId,
             @RequestParam List<Long> employeeIds,
             RedirectAttributes redirectAttributes) {
 
         try {
-            reportingManagerService.saveMapping(hodUserId, managerType, managerEmployeeId, projectId, employeeIds);
-            redirectAttributes.addFlashAttribute("successMessage", "Reporting managers mapped successfully.");
-        } catch (Exception e) {
+            if (mappingId == null) {
+                reportingManagerService.saveMapping(
+                        hodUserId, managerType, managerEmployeeId, projectId, employeeIds);
+                redirectAttributes.addFlashAttribute(
+                        "successMessage", "Reporting managers mapped successfully.");
+            } else {
+                if (employeeIds.size() != 1) {
+                    throw new IllegalArgumentException("Select exactly one employee when editing a mapping.");
+                }
+                reportingManagerService.updateMapping(
+                        mappingId, hodUserId, managerType, managerEmployeeId, projectId, employeeIds.get(0));
+                redirectAttributes.addFlashAttribute(
+                        "successMessage", "Reporting manager mapping updated successfully.");
+            }
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("Reporting mapping validation failed for hodUserId={} and managerType={}: {}",
+                    hodUserId, managerType, e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", "Error mapping reporting managers: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected reporting mapping failure for hodUserId={} and managerType={}",
+                    hodUserId, managerType, e);
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage", "Unable to save reporting manager mapping. Please try again.");
         }
 
         return "redirect:/hr/reportingManager";
