@@ -27,7 +27,6 @@ import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClie
 import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClientUnavailableException;
 import com.maharecruitment.gov.in.attendance.client.model.InternalAttendanceDayRecord;
 import com.maharecruitment.gov.in.attendance.config.InternalAttendanceSyncProperties;
-import com.maharecruitment.gov.in.attendance.entity.AttendanceSource;
 import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 import com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
@@ -276,7 +275,11 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         }
 
         List<DailyAttendanceInternalEntity> existingRows = dailyAttendanceInternalRepository
-                .findByEmployeeIdAndAttendanceDateBetween(employee.getEmployeeId(), startDate, endDate)
+                .findByEmployeeIdentityAndAttendanceDateBetweenForUpdate(
+                        employee.getEmployeeId(),
+                        normalizeText(employee.getEmployeeCode()),
+                        startDate,
+                        endDate)
                 .stream().toList();
         int duplicateRows = Math.max(existingRows.size()
                 - (int) existingRows.stream()
@@ -318,6 +321,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                         LinkedHashMap::new));
 
         List<DailyAttendanceInternalEntity> entitiesToSave = new ArrayList<>();
+        List<AttendanceUpdateLogEntry> updateLogEntries = new ArrayList<>();
         LocalDateTime syncTimestamp = LocalDateTime.now(resolveZoneId());
         int insertedRows = 0;
         int updatedRows = 0;
@@ -343,24 +347,47 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
             }
 
             DailyAttendanceInternalEntity existingRow = existingRowsByDate.get(attendanceDate);
-            if (isUserManagedAttendance(existingRow)) {
-                log.debug("Skipping API overwrite for user-managed attendance. employeeId={}, date={}, source={}",
-                        employee.getEmployeeId(),
+            if (!hasValidApiAttendanceData(apiRecord)) {
+                if (existingRow == null) {
+                    log.info(
+                            "Attendance update skipped. employeeId={}, employeeCode={}, attendanceDate={}, sourceType=API, updatedFields=[], result=NO_VALID_API_DATA",
+                            employee.getEmployeeId(),
+                            employee.getEmployeeCode(),
+                            attendanceDate);
+                    skippedRows++;
+                    continue;
+                }
+                existingRow.setApiStatus("N");
+                stampAuditFields(existingRow, syncTimestamp);
+                entitiesToSave.add(existingRow);
+                updateLogEntries.add(new AttendanceUpdateLogEntry(
+                        existingRow.getEmployeeId(),
+                        existingRow.getEmployeeCode(),
                         attendanceDate,
-                        existingRow.getAttendanceSource());
-                skippedRows++;
+                        "API",
+                        List.of("api_status"),
+                        "UPDATED_NO_VALID_API_DATA"));
+                updatedRows++;
                 continue;
             }
 
             DailyAttendanceInternalEntity entity = existingRow != null ? existingRow : new DailyAttendanceInternalEntity();
+            String result = existingRow == null ? "INSERTED" : "UPDATED";
             if (existingRow == null) {
                 insertedRows++;
             } else {
                 updatedRows++;
             }
-            applyApiRecord(entity, employee, apiRecord);
+            List<String> updatedFields = applyApiRecord(entity, employee, apiRecord);
             stampAuditFields(entity, syncTimestamp);
             entitiesToSave.add(entity);
+            updateLogEntries.add(new AttendanceUpdateLogEntry(
+                    entity.getEmployeeId(),
+                    entity.getEmployeeCode(),
+                    attendanceDate,
+                    "API",
+                    updatedFields,
+                    result));
         }
 
         if (entitiesToSave.isEmpty()) {
@@ -368,33 +395,68 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         }
 
         dailyAttendanceInternalRepository.saveAll(entitiesToSave);
+        updateLogEntries.forEach(entry -> log.info(
+                "Attendance update completed. employeeId={}, employeeCode={}, attendanceDate={}, sourceType={}, updatedFields={}, result={}",
+                entry.employeeId(),
+                entry.employeeCode(),
+                entry.attendanceDate(),
+                entry.sourceType(),
+                entry.updatedFields(),
+                entry.result()));
         return new AttendancePersistenceResult(insertedRows, updatedRows, skippedRows, duplicateRows);
     }
 
-    private void applyApiRecord(
+    private List<String> applyApiRecord(
             DailyAttendanceInternalEntity entity,
             EmployeeEntity employee,
             InternalAttendanceDayRecord apiRecord) {
+        List<String> updatedFields = new ArrayList<>();
+        String employeeCode = normalizeText(apiRecord.getUniqueCode());
+        String inTime = normalizeText(apiRecord.getInTime());
+        String outTime = normalizeText(apiRecord.getOutTime());
+        String mappedStatus = mapApiStatus(apiRecord.getStatus());
+
         entity.setEmployeeId(employee.getEmployeeId());
-        entity.setEmployeeCode(normalizeText(apiRecord.getUniqueCode()));
+        if (StringUtils.hasText(employeeCode)) {
+            entity.setEmployeeCode(employeeCode);
+            updatedFields.add("employee_code");
+        } else if (!StringUtils.hasText(entity.getEmployeeCode()) && StringUtils.hasText(employee.getEmployeeCode())) {
+            entity.setEmployeeCode(employee.getEmployeeCode().trim());
+            updatedFields.add("employee_code");
+        }
         entity.setAttendanceDate(apiRecord.getAttendanceDate());
-        entity.setAttendanceSource(AttendanceSource.API);
         entity.setApiStatus("Y");
-        entity.setMobileAppStatus("N");
-        entity.setInTime(normalizeText(apiRecord.getInTime()));
-        entity.setOutTime(normalizeText(apiRecord.getOutTime()));
-        entity.setTotalHours(calculateTotalHours(apiRecord.getInTime(), apiRecord.getOutTime()));
-        entity.setStatus(mapApiStatus(apiRecord.getStatus()));
+        updatedFields.add("api_status");
+        if (StringUtils.hasText(inTime)) {
+            entity.setInTime(inTime);
+            updatedFields.add("in_time");
+        }
+        if (StringUtils.hasText(outTime)) {
+            entity.setOutTime(outTime);
+            updatedFields.add("out_time");
+        }
+        String totalHours = calculateTotalHours(entity.getInTime(), entity.getOutTime());
+        if (StringUtils.hasText(totalHours)) {
+            entity.setTotalHours(totalHours);
+            updatedFields.add("total_hours");
+        }
+        if (StringUtils.hasText(mappedStatus)) {
+            entity.setStatus(mappedStatus);
+            updatedFields.add("status");
+        }
         entity.setMonth(apiRecord.getAttendanceDate().getMonthValue());
         entity.setYear(apiRecord.getAttendanceDate().getYear());
+        updatedFields.add("month_val");
+        updatedFields.add("year_val");
+        return List.copyOf(updatedFields);
     }
 
-    private boolean isUserManagedAttendance(DailyAttendanceInternalEntity entity) {
-        if (entity == null || entity.getAttendanceSource() == null) {
-            return false;
-        }
-        return entity.getAttendanceSource() == AttendanceSource.MOBILE_APP
-                || entity.getAttendanceSource() == AttendanceSource.WEB;
+    private boolean hasValidApiAttendanceData(InternalAttendanceDayRecord apiRecord) {
+        return apiRecord != null
+                && apiRecord.getAttendanceDate() != null
+                && (StringUtils.hasText(apiRecord.getInTime())
+                        || StringUtils.hasText(apiRecord.getOutTime())
+                        || StringUtils.hasText(apiRecord.getStatus()));
     }
 
     private void stampAuditFields(DailyAttendanceInternalEntity entity, LocalDateTime syncTimestamp) {
@@ -570,6 +632,15 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
     }
 
     private record EmployeeSyncTarget(String employeeCode, EmployeeEntity employee) {
+    }
+
+    private record AttendanceUpdateLogEntry(
+            Long employeeId,
+            String employeeCode,
+            LocalDate attendanceDate,
+            String sourceType,
+            List<String> updatedFields,
+            String result) {
     }
 
     protected record AttendancePersistenceResult(

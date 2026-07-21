@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,6 +25,7 @@ import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClie
 import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClientUnavailableException;
 import com.maharecruitment.gov.in.attendance.client.model.InternalAttendanceDayRecord;
 import com.maharecruitment.gov.in.attendance.config.InternalAttendanceSyncProperties;
+import com.maharecruitment.gov.in.attendance.entity.AttendanceSource;
 import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.attendance.repository.ManualAttendanceRequestRepository;
@@ -43,6 +45,7 @@ class InternalAttendanceSyncServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        savedEntities.set(null);
         InternalAttendanceSyncProperties properties = new InternalAttendanceSyncProperties();
         properties.setEnabled(true);
         properties.setUniqueCodePrefix("MahaIT");
@@ -70,7 +73,7 @@ class InternalAttendanceSyncServiceImplTest {
         DailyAttendanceInternalRepository dailyAttendanceInternalRepository = proxyWithDefaults(
                 DailyAttendanceInternalRepository.class,
                 (proxy, method, args) -> {
-                    if ("findByEmployeeIdAndAttendanceDateBetween".equals(method.getName())) {
+                    if ("findByEmployeeIdentityAndAttendanceDateBetweenForUpdate".equals(method.getName())) {
                         return existingRows;
                     }
                     if ("saveAll".equals(method.getName())) {
@@ -141,6 +144,8 @@ class InternalAttendanceSyncServiceImplTest {
         assertNotNull(savedEntity.getCreatedDate());
         assertNotNull(savedEntity.getUpdatedDate());
         assertEquals(savedEntity.getCreatedDate(), savedEntity.getUpdatedDate());
+        assertEquals("Y", savedEntity.getApiStatus());
+        assertEquals("N", savedEntity.getMobileAppStatus());
         assertEquals("PRESENT", savedEntity.getStatus());
         assertEquals("MahaIT1234", savedEntity.getEmployeeCode());
     }
@@ -184,6 +189,54 @@ class InternalAttendanceSyncServiceImplTest {
         assertEquals(createdDate, savedEntity.getCreatedDate());
         assertNotNull(savedEntity.getUpdatedDate());
         assertTrue(savedEntity.getUpdatedDate().isAfter(previousUpdatedDate));
+    }
+
+    @Test
+    void syncEmployeeAttendancePreservesMobileFieldsAndExistingApiOutTimeForPartialApiRecord() {
+        LocalDate attendanceDate = LocalDate.of(2026, 5, 4);
+        EmployeeEntity employee = buildEmployee(202L);
+
+        DailyAttendanceInternalEntity existingEntity = new DailyAttendanceInternalEntity();
+        existingEntity.setId(77L);
+        existingEntity.setEmployeeId(employee.getEmployeeId());
+        existingEntity.setEmployeeCode("MahaIT1234");
+        existingEntity.setAttendanceDate(attendanceDate);
+        existingEntity.setAttendanceSource(AttendanceSource.MOBILE_APP);
+        existingEntity.setMobileAppStatus("Y");
+        existingEntity.setApiStatus("N");
+        existingEntity.setCheckInTime(LocalTime.of(9, 5));
+        existingEntity.setCheckOutTime(LocalTime.of(18, 10));
+        existingEntity.setInTime("09:00");
+        existingEntity.setOutTime("18:00");
+        existingEntity.setTotalHours("09:00");
+        existingEntity.setStatus("PRESENT");
+        existingEntity.setMonth(attendanceDate.getMonthValue());
+        existingEntity.setYear(attendanceDate.getYear());
+
+        apiResponse = List.of(new InternalAttendanceDayRecord(
+                "Test Employee",
+                "MahaIT1234",
+                attendanceDate,
+                "10:00",
+                null,
+                "P"));
+        existingRows = List.of(existingEntity);
+
+        InternalAttendanceSyncServiceImpl.AttendancePersistenceResult persistenceResult =
+                service.syncEmployeeAttendance(employee, apiResponse, attendanceDate, attendanceDate);
+
+        assertEquals(1, persistenceResult.upsertedRows());
+        assertEquals(0, persistenceResult.insertedRows());
+        assertEquals(1, persistenceResult.updatedRows());
+        DailyAttendanceInternalEntity savedEntity = savedEntities.get().get(0);
+        assertEquals(AttendanceSource.MOBILE_APP, savedEntity.getAttendanceSource());
+        assertEquals("Y", savedEntity.getMobileAppStatus());
+        assertEquals("Y", savedEntity.getApiStatus());
+        assertEquals(LocalTime.of(9, 5), savedEntity.getCheckInTime());
+        assertEquals(LocalTime.of(18, 10), savedEntity.getCheckOutTime());
+        assertEquals("10:00", savedEntity.getInTime());
+        assertEquals("18:00", savedEntity.getOutTime());
+        assertEquals("08:00", savedEntity.getTotalHours());
     }
 
     @Test

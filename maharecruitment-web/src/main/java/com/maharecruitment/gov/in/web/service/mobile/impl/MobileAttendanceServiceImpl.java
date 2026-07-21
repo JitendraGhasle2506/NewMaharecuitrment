@@ -18,6 +18,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -27,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.maharecruitment.gov.in.attendance.entity.AttendanceSource;
 import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
 import com.maharecruitment.gov.in.attendance.entity.LeaveApplicationEntity;
@@ -50,6 +51,7 @@ import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 @Service
 public class MobileAttendanceServiceImpl implements MobileAttendanceService {
 
+    private static final Logger log = LoggerFactory.getLogger(MobileAttendanceServiceImpl.class);
     private static final BigDecimal MIN_LATITUDE = BigDecimal.valueOf(-90);
     private static final BigDecimal MAX_LATITUDE = BigDecimal.valueOf(90);
     private static final BigDecimal MIN_LONGITUDE = BigDecimal.valueOf(-180);
@@ -124,11 +126,10 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
 
         LocalDateTime now = LocalDateTime.now(clock);
         LocalDate attendanceDate = now.toLocalDate();
-        DailyAttendanceInternalEntity attendance = dailyAttendanceInternalRepository
-                .findByEmployeeIdAndAttendanceDate(employee.getEmployeeId(), attendanceDate)
+        DailyAttendanceInternalEntity attendance = findAttendanceForUpdate(employee, attendanceDate)
                 .orElseGet(DailyAttendanceInternalEntity::new);
 
-        if (hasCheckIn(attendance)) {
+        if (hasMobileCheckIn(attendance)) {
             throw conflict("ALREADY_CHECKED_IN", "Attendance is already checked in for today.");
         }
 
@@ -144,6 +145,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         stampUpdatedBy(attendance);
 
         DailyAttendanceInternalEntity savedAttendance = dailyAttendanceInternalRepository.save(attendance);
+        logAttendanceUpdate(savedAttendance, "MOBILE_APP", checkInUpdatedFields(), "CHECK_IN_RECORDED");
         return toResponse(savedAttendance, "Check-in recorded successfully.");
     }
 
@@ -163,14 +165,13 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
 
         LocalDateTime now = LocalDateTime.now(clock);
         LocalDate attendanceDate = now.toLocalDate();
-        DailyAttendanceInternalEntity attendance = dailyAttendanceInternalRepository
-                .findByEmployeeIdAndAttendanceDate(employee.getEmployeeId(), attendanceDate)
+        DailyAttendanceInternalEntity attendance = findAttendanceForUpdate(employee, attendanceDate)
                 .orElseThrow(() -> badRequest("CHECK_IN_REQUIRED", "Check-in is required before check-out."));
 
-        if (attendance.getCheckInTime() == null) {
+        if (!hasMobileCheckIn(attendance)) {
             throw badRequest("CHECK_IN_REQUIRED", "Check-in is required before check-out.");
         }
-        if (hasCheckOut(attendance)) {
+        if (hasMobileCheckOut(attendance)) {
             throw conflict("ALREADY_CHECKED_OUT", "Attendance is already checked out for today.");
         }
         LocalTime checkOutTime = now.toLocalTime();
@@ -190,6 +191,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         stampUpdatedBy(attendance);
 
         DailyAttendanceInternalEntity savedAttendance = dailyAttendanceInternalRepository.save(attendance);
+        logAttendanceUpdate(savedAttendance, "MOBILE_APP", checkOutUpdatedFields(), "CHECK_OUT_RECORDED");
         return toResponse(savedAttendance, "Check-out recorded successfully.");
     }
 
@@ -204,11 +206,10 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         }
 
         Map<LocalDate, DailyAttendanceInternalEntity> attendanceByDate = mapAttendanceByDate(
-                dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetweenAndAttendanceSource(
+                dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(
                         employee.getEmployeeId(),
                         startDate,
-                        endDate,
-                        AttendanceSource.MOBILE_APP));
+                        endDate));
         Map<LocalDate, HolidayMasterEntity> holidaysByDate = holidayRepository
                 .findByHolidayDateBetween(startDate, endDate)
                 .stream()
@@ -274,9 +275,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         attendance.setEmployeeId(employee.getEmployeeId());
         attendance.setEmployeeCode(employee.getEmployeeCode().trim());
         attendance.setAttendanceDate(attendanceDate);
-        attendance.setAttendanceSource(AttendanceSource.MOBILE_APP);
         attendance.setMobileAppStatus("Y");
-        attendance.setApiStatus("N");
         attendance.setStatus(PRESENT_STATUS);
         attendance.setMonth(attendanceDate.getMonthValue());
         attendance.setYear(attendanceDate.getYear());
@@ -291,7 +290,6 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
     }
 
     private MobileAttendanceResponse toResponse(DailyAttendanceInternalEntity attendance, String message) {
-        AttendanceSource source = attendance.getAttendanceSource();
         return new MobileAttendanceResponse(
                 true,
                 message,
@@ -301,7 +299,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
                 attendance.getAttendanceDate(),
                 attendance.getCheckInTime(),
                 attendance.getCheckOutTime(),
-                source != null ? source.name() : null,
+                resolveSourceLabel(attendance),
                 normalizeFlag(attendance.getMobileAppStatus()),
                 normalizeFlag(attendance.getApiStatus()));
     }
@@ -356,7 +354,6 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
     private MobileAttendanceHistoryResponse.AttendanceEntry toExistingHistoryRecord(
             DailyAttendanceInternalEntity attendance,
             String displayStatus) {
-        AttendanceSource source = attendance.getAttendanceSource();
         return new MobileAttendanceHistoryResponse.AttendanceEntry(
                 attendance.getId(),
                 attendance.getAttendanceDate(),
@@ -372,11 +369,11 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
                 attendance.getOutTime(),
                 resolveTotalHours(attendance),
                 displayStatus,
-                source != null ? source.name() : null,
+                resolveSourceLabel(attendance),
                 normalizeFlag(attendance.getMobileAppStatus()),
                 normalizeFlag(attendance.getApiStatus()),
-                hasCheckIn(attendance),
-                hasCheckOut(attendance));
+                hasMobileCheckIn(attendance),
+                hasMobileCheckOut(attendance));
     }
 
     private MobileAttendanceHistoryResponse.AttendanceEntry toSyntheticHistoryRecord(LocalDate date, String status) {
@@ -509,18 +506,104 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         return calculatedTotalHours != null ? calculatedTotalHours : attendance.getTotalHours();
     }
 
-    private boolean hasCheckIn(DailyAttendanceInternalEntity attendance) {
-        return attendance.getCheckInTime() != null || StringUtils.hasText(attendance.getInTime());
+    private Optional<DailyAttendanceInternalEntity> findAttendanceForUpdate(
+            EmployeeEntity employee,
+            LocalDate attendanceDate) {
+        List<DailyAttendanceInternalEntity> rows =
+                dailyAttendanceInternalRepository.findByEmployeeIdentityAndAttendanceDateForUpdate(
+                        employee.getEmployeeId(),
+                        employee.getEmployeeCode().trim(),
+                        attendanceDate);
+        if (rows.size() > 1) {
+            Long keptId = rows.getFirst().getId();
+            List<Long> duplicateIds = rows.stream()
+                    .skip(1)
+                    .map(DailyAttendanceInternalEntity::getId)
+                    .toList();
+            log.warn(
+                    "Duplicate attendance rows found during mobile update. employeeId={}, employeeCode={}, attendanceDate={}, keptAttendanceId={}, duplicateAttendanceIds={}",
+                    employee.getEmployeeId(),
+                    employee.getEmployeeCode(),
+                    attendanceDate,
+                    keptId,
+                    duplicateIds);
+        }
+        return rows.stream().findFirst();
     }
 
-    private boolean hasCheckOut(DailyAttendanceInternalEntity attendance) {
-        return attendance.getCheckOutTime() != null || StringUtils.hasText(attendance.getOutTime());
+    private boolean hasMobileCheckIn(DailyAttendanceInternalEntity attendance) {
+        return attendance != null && attendance.getCheckInTime() != null;
+    }
+
+    private boolean hasMobileCheckOut(DailyAttendanceInternalEntity attendance) {
+        return attendance != null && attendance.getCheckOutTime() != null;
     }
 
     private boolean hasMobilePunch(DailyAttendanceInternalEntity attendance) {
         return attendance != null
-                && attendance.getAttendanceSource() == AttendanceSource.MOBILE_APP
+                && isMobileAttendanceMarked(attendance)
                 && (attendance.getCheckInTime() != null || attendance.getCheckOutTime() != null);
+    }
+
+    private boolean isMobileAttendanceMarked(DailyAttendanceInternalEntity attendance) {
+        return attendance != null
+                && ("Y".equalsIgnoreCase(attendance.getMobileAppStatus())
+                        || attendance.getCheckInTime() != null
+                        || attendance.getCheckOutTime() != null);
+    }
+
+    private boolean isApiAttendanceMarked(DailyAttendanceInternalEntity attendance) {
+        return attendance != null
+                && ("Y".equalsIgnoreCase(attendance.getApiStatus())
+                        || StringUtils.hasText(attendance.getInTime())
+                        || StringUtils.hasText(attendance.getOutTime()));
+    }
+
+    private String resolveSourceLabel(DailyAttendanceInternalEntity attendance) {
+        if (isMobileAttendanceMarked(attendance)) {
+            return "MOBILE_APP";
+        }
+        if (isApiAttendanceMarked(attendance)) {
+            return "API";
+        }
+        return null;
+    }
+
+    private List<String> checkInUpdatedFields() {
+        return List.of(
+                "mobile_app_status",
+                "check_in_time",
+                "status",
+                "check_in_latitude",
+                "check_in_longitude",
+                "check_in_location_address",
+                "check_in_image_path");
+    }
+
+    private List<String> checkOutUpdatedFields() {
+        return List.of(
+                "mobile_app_status",
+                "check_out_time",
+                "total_hours",
+                "check_out_latitude",
+                "check_out_longitude",
+                "check_out_location_address",
+                "check_out_image_path");
+    }
+
+    private void logAttendanceUpdate(
+            DailyAttendanceInternalEntity attendance,
+            String sourceType,
+            List<String> updatedFields,
+            String result) {
+        log.info(
+                "Attendance update completed. employeeId={}, employeeCode={}, attendanceDate={}, sourceType={}, updatedFields={}, result={}",
+                attendance.getEmployeeId(),
+                attendance.getEmployeeCode(),
+                attendance.getAttendanceDate(),
+                sourceType,
+                updatedFields,
+                result);
     }
 
     private String normalizeFlag(String value) {

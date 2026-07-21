@@ -11,7 +11,7 @@ import org.flywaydb.core.api.migration.Context;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
-public class V96__attendance_source_status_flags extends BaseJavaMigration {
+public class V98__attendance_status_flags_from_source_columns extends BaseJavaMigration {
 
     private static final String TABLE_NAME = "daily_attendance_internal_employee";
 
@@ -23,14 +23,6 @@ public class V96__attendance_source_status_flags extends BaseJavaMigration {
         }
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(new SingleConnectionDataSource(connection, true));
-        jdbcTemplate.execute("""
-                alter table daily_attendance_internal_employee
-                add column if not exists mobile_app_status varchar(1) not null default 'N'
-                """);
-        jdbcTemplate.execute("""
-                alter table daily_attendance_internal_employee
-                add column if not exists api_status varchar(1) not null default 'N'
-                """);
         jdbcTemplate.execute("""
                 update daily_attendance_internal_employee
                 set mobile_app_status = case

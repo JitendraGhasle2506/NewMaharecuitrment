@@ -93,8 +93,11 @@ class MobileAttendanceServiceImplTest {
         MockMultipartFile image = image();
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDate(101L, TODAY))
-                .thenReturn(Optional.empty());
+        when(dailyAttendanceInternalRepository.findByEmployeeIdentityAndAttendanceDateForUpdate(
+                101L,
+                "EMP101",
+                TODAY))
+                .thenReturn(List.of());
         when(fileStorageService.store(image, "mobile-attendance-photo"))
                 .thenReturn(uploadResult("check-in.jpg", "/uploads/check-in.jpg"));
         when(dailyAttendanceInternalRepository.save(any(DailyAttendanceInternalEntity.class)))
@@ -117,7 +120,6 @@ class MobileAttendanceServiceImplTest {
         DailyAttendanceInternalEntity saved = captor.getValue();
         assertThat(saved.getEmployeeId()).isEqualTo(101L);
         assertThat(saved.getEmployeeCode()).isEqualTo("EMP101");
-        assertThat(saved.getAttendanceSource()).isEqualTo(AttendanceSource.MOBILE_APP);
         assertThat(saved.getMobileAppStatus()).isEqualTo("Y");
         assertThat(saved.getApiStatus()).isEqualTo("N");
         assertThat(saved.getAttendanceDate()).isEqualTo(TODAY);
@@ -136,6 +138,52 @@ class MobileAttendanceServiceImplTest {
         assertThat(response.attendanceSource()).isEqualTo("MOBILE_APP");
         assertThat(response.mobileAppStatus()).isEqualTo("Y");
         assertThat(response.apiStatus()).isEqualTo("N");
+    }
+
+    @Test
+    void checkInPreservesApiAttendanceColumnsOnExistingApiRow() {
+        authenticate("employee@example.com");
+        EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
+        MockMultipartFile image = image();
+
+        DailyAttendanceInternalEntity existing = new DailyAttendanceInternalEntity();
+        existing.setId(700L);
+        existing.setEmployeeId(101L);
+        existing.setEmployeeCode("EMP101");
+        existing.setAttendanceDate(TODAY);
+        existing.setAttendanceSource(AttendanceSource.API);
+        existing.setApiStatus("Y");
+        existing.setMobileAppStatus("N");
+        existing.setInTime("09:00");
+        existing.setOutTime("18:00");
+        existing.setTotalHours("09:00");
+
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
+        when(dailyAttendanceInternalRepository.findByEmployeeIdentityAndAttendanceDateForUpdate(
+                101L,
+                "EMP101",
+                TODAY))
+                .thenReturn(List.of(existing));
+        when(fileStorageService.store(image, "mobile-attendance-photo"))
+                .thenReturn(uploadResult("check-in.jpg", "/uploads/check-in.jpg"));
+        when(dailyAttendanceInternalRepository.save(any(DailyAttendanceInternalEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        MobileAttendanceResponse response = service().checkIn(
+                101L,
+                new BigDecimal("19.0760000"),
+                new BigDecimal("72.8777000"),
+                "Mumbai Office",
+                image);
+
+        verify(dailyAttendanceInternalRepository).save(existing);
+        assertThat(existing.getMobileAppStatus()).isEqualTo("Y");
+        assertThat(existing.getApiStatus()).isEqualTo("Y");
+        assertThat(existing.getInTime()).isEqualTo("09:00");
+        assertThat(existing.getOutTime()).isEqualTo("18:00");
+        assertThat(existing.getCheckInTime()).isEqualTo(NOW.toLocalTime());
+        assertThat(response.attendanceSource()).isEqualTo("MOBILE_APP");
+        assertThat(response.apiStatus()).isEqualTo("Y");
     }
 
     @Test
@@ -175,8 +223,11 @@ class MobileAttendanceServiceImplTest {
         existing.setInTime("09:00");
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDate(101L, TODAY))
-                .thenReturn(Optional.of(existing));
+        when(dailyAttendanceInternalRepository.findByEmployeeIdentityAndAttendanceDateForUpdate(
+                101L,
+                "EMP101",
+                TODAY))
+                .thenReturn(List.of(existing));
         when(fileStorageService.store(image, "mobile-attendance-photo"))
                 .thenReturn(uploadResult("check-out.jpg", "/uploads/check-out.jpg"));
         when(dailyAttendanceInternalRepository.save(any(DailyAttendanceInternalEntity.class)))
@@ -230,8 +281,8 @@ class MobileAttendanceServiceImplTest {
         latestAttendance.setCheckOutLocationAddress("Mumbai Office Gate 2");
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetweenAndAttendanceSource(
-                101L, fromDate, toDate, AttendanceSource.MOBILE_APP))
+        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(
+                101L, fromDate, toDate))
                 .thenReturn(List.of(olderAttendance, latestAttendance));
         when(holidayRepository.findByHolidayDateBetween(fromDate, toDate)).thenReturn(List.of());
         when(weekOffWorkingDayRepository.findByWorkingDateBetween(fromDate, toDate)).thenReturn(List.of());
@@ -290,8 +341,8 @@ class MobileAttendanceServiceImplTest {
                 null);
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetweenAndAttendanceSource(
-                101L, fromDate, toDate, AttendanceSource.MOBILE_APP))
+        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(
+                101L, fromDate, toDate))
                 .thenReturn(List.of(presentAttendance));
         when(holidayRepository.findByHolidayDateBetween(fromDate, toDate))
                 .thenReturn(List.of(holiday(LocalDate.of(2026, 7, 3), "Public Holiday")));
