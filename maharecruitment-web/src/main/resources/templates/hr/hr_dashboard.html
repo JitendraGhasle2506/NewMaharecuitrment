@@ -41,6 +41,32 @@
                             <p>Total Projects</p>
                             <h3 th:text="${totalProjects}">0</h3>
                         </article>
+                        <article class="kpi-card kpi-success">
+                            <p>Total Wings</p>
+                            <h3 th:text="${totalWings}">0</h3>
+                        </article>
+                        <button type="button" class="kpi-card kpi-brand kpi-clickable"
+                            data-project-scope="internal"
+                            data-project-title="Internal Projects"
+                            aria-label="View internal project names"
+                            th:attr="data-project-count=${internalProjects}"
+                            aria-controls="hrProjectScopePanel"
+                            aria-expanded="false">
+                            <p>Internal Projects</p>
+                            <h3 th:text="${internalProjects}">0</h3>
+                            <span class="kpi-action">Project Names</span>
+                        </button>
+                        <button type="button" class="kpi-card kpi-accent kpi-clickable"
+                            data-project-scope="external"
+                            data-project-title="External Projects"
+                            aria-label="View external project names"
+                            th:attr="data-project-count=${externalProjects}"
+                            aria-controls="hrProjectScopePanel"
+                            aria-expanded="false">
+                            <p>External Projects</p>
+                            <h3 th:text="${externalProjects}">0</h3>
+                            <span class="kpi-action">Project Names</span>
+                        </button>
                         <article class="kpi-card kpi-accent">
                             <p>Onboarding This Month</p>
                             <h3 th:text="${onboardingThisMonth}">0</h3>
@@ -60,18 +86,85 @@
                             <p>Pending Department Requests</p>
                             <h3 th:text="${pendingApprovals}">0</h3>
                         </article>
-                        <article class="kpi-card kpi-accent">
-                            <p>Open Positions</p>
-                            <h3 th:text="${openPositions}">0</h3>
-                        </article>
-                        <article class="kpi-card kpi-warning">
-                            <p>Attrition Rate</p>
-                            <h3 th:text="${attritionRate}">0%</h3>
-                        </article>
+                    </section>
+
+                    <section class="panel project-scope-panel d-none" id="hrProjectScopePanel" aria-live="polite">
+                        <div class="panel-title">
+                            <div>
+                                <h4 id="hrProjectScopeTitle">Project Names</h4>
+                                <span class="panel-subtitle" id="hrProjectScopeCount">0 projects</span>
+                            </div>
+                            <button type="button" class="project-panel-close" id="hrProjectScopeClose"
+                                aria-label="Close project names">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <div class="project-list" data-project-list="internal">
+                            <div class="project-list-item" th:each="project : ${internalProjectList}">
+                                <strong th:text="${project.name}">Project Name</strong>
+                                <span class="project-code" th:if="${project.code != null}" th:text="${project.code}">CODE</span>
+                            </div>
+                            <p class="project-empty" th:if="${#lists.isEmpty(internalProjectList)}">No internal projects found.</p>
+                        </div>
+
+                        <div class="project-list d-none" data-project-list="external">
+                            <div class="project-list-item" th:each="project : ${externalProjectList}">
+                                <strong th:text="${project.name}">Project Name</strong>
+                                <span class="project-code" th:if="${project.code != null}" th:text="${project.code}">CODE</span>
+                            </div>
+                            <p class="project-empty" th:if="${#lists.isEmpty(externalProjectList)}">No external projects found.</p>
+                        </div>
+                    </section>
+
+                    <section class="panel wing-report-panel">
+                        <div class="panel-title">
+                            <div>
+                                <h4>Wing Reports</h4>
+                                <span class="panel-subtitle">Wing and cell overview</span>
+                            </div>
+                            <button type="button" class="wing-load-btn" id="hrWingReportLoad"
+                                aria-controls="hrWingReportDetails"
+                                aria-expanded="false">
+                                <i class="fa-solid fa-chart-simple" aria-hidden="true"></i>
+                                <span data-wing-load-label>Load Wing Details</span>
+                            </button>
+                        </div>
+
+                        <div class="wing-summary-grid">
+                            <div>
+                                <span>Total Wings</span>
+                                <strong th:text="${totalWings}">0</strong>
+                            </div>
+                            <div>
+                                <span>Total Cells</span>
+                                <strong th:text="${totalCells}">0</strong>
+                            </div>
+                        </div>
+
+                        <div class="wing-report-details d-none" id="hrWingReportDetails">
+                            <div class="wing-directory-grid">
+                                <a class="wing-directory-card" th:each="wing : ${wingReports}"
+                                    th:href="@{/hr/wing-report/{wingId}(wingId=${wing.wingId})}">
+                                    <span class="wing-directory-icon">
+                                        <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="wing-directory-copy">
+                                        <strong th:text="${wing.wingName}">Wing Name</strong>
+                                        <small th:text="${wing.cellCount} + ' cells'">0 cells</small>
+                                    </span>
+                                    <span class="wing-directory-action">
+                                        <span>Open</span>
+                                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                                    </span>
+                                </a>
+                                <p class="project-empty" th:if="${#lists.isEmpty(wingReports)}">No active wing reports found.</p>
+                            </div>
+                        </div>
                     </section>
 
                     <div class="row g-4 mt-1">
-                        <div class="col-lg-5">
+                        <div class="col-lg-6">
                             <section class="panel">
                                 <div class="panel-title">
                                     <h4>Attendance Today</h4>
@@ -113,7 +206,10 @@
                                 </div>
                             </section>
 
-                            <section class="panel mt-4">
+                        </div>
+
+                        <div class="col-lg-6">
+                            <section class="panel h-100">
                                 <h4>Department Onboarding</h4>
                                 <div class="dept-list">
                                     <div class="dept-row" th:each="dept : ${departmentOnboarding}">
@@ -131,80 +227,6 @@
                                 </div>
                             </section>
                         </div>
-
-                        <div class="col-lg-7">
-                            <section class="panel">
-                                <div class="panel-title">
-                                    <div>
-                                        <h4>Project Workforce Snapshot</h4>
-                                        <span class="panel-subtitle">Showing limited project records for quick review</span>
-                                    </div>
-                                    <div class="hr-table-tools">
-                                        <div class="hr-search">
-                                            <i class="fa-solid fa-magnifying-glass"></i>
-                                            <input type="search" id="hrProjectSearch" placeholder="Search project or cell">
-                                        </div>
-                                        <div class="hr-select">
-                                            <i class="fa-solid fa-layer-group"></i>
-                                            <select id="hrCellFilter" aria-label="Filter by cell">
-                                                <option value="all">All Cells</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>Project Name</th>
-                                                <th>Cell</th>
-                                                <th class="text-center">Internal Employees</th>
-                                                <th class="text-center">External Employees</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr class="hr-project-row" th:each="project : ${projects}"
-                                                th:with="projectWorkforce=${project.internal + project.external},
-                                                    internalPercent=${projectWorkforce > 0 ? (project.internal * 100) / projectWorkforce : 0},
-                                                    externalPercent=${projectWorkforce > 0 ? (project.external * 100) / projectWorkforce : 0}"
-                                                th:attr="data-project=${project.name},data-cell=${project.cellName}">
-                                                <td th:text="${project.name}">Project Name</td>
-                                                <td><span class="cell-chip" th:text="${project.cellName}">Cell</span></td>
-                                                <td>
-                                                    <div class="workforce-meter">
-                                                        <strong th:text="${project.internal}">0</strong>
-                                                            <span class="meter-track">
-                                                                <span class="meter-fill meter-internal"
-                                                                th:style="'width:' + ${internalPercent} + '%'"></span>
-                                                            </span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div class="workforce-meter">
-                                                        <strong th:text="${project.external}">0</strong>
-                                                            <span class="meter-track">
-                                                                <span class="meter-fill meter-external"
-                                                                th:style="'width:' + ${externalPercent} + '%'"></span>
-                                                            </span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span class="badge"
-                                                        th:classappend="${project.status == 'In Progress'} ? ' text-bg-primary' :
-                                                              (${project.status == 'Planning'} ? ' text-bg-secondary' :
-                                                              (${project.status == 'UAT'} ? ' text-bg-success' : ' text-bg-warning'))"
-                                                        th:text="${project.status}">Status</span>
-                                                </td>
-                                            </tr>
-                                            <tr id="hrProjectNoResults" class="d-none">
-                                                <td colspan="5" class="text-center text-muted py-4">No matching project found.</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </section>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -212,51 +234,75 @@
     </th:block>
     <script>
         (function () {
-            const searchInput = document.getElementById('hrProjectSearch');
-            const cellFilter = document.getElementById('hrCellFilter');
-            const rows = Array.from(document.querySelectorAll('.hr-project-row'));
-            const noResults = document.getElementById('hrProjectNoResults');
+            const buttons = Array.from(document.querySelectorAll('[data-project-scope]'));
+            const panel = document.getElementById('hrProjectScopePanel');
+            const title = document.getElementById('hrProjectScopeTitle');
+            const count = document.getElementById('hrProjectScopeCount');
+            const close = document.getElementById('hrProjectScopeClose');
+            const lists = Array.from(document.querySelectorAll('[data-project-list]'));
+            const wingLoad = document.getElementById('hrWingReportLoad');
+            const wingDetails = document.getElementById('hrWingReportDetails');
+            const wingLoadLabel = wingLoad ? wingLoad.querySelector('[data-wing-load-label]') : null;
 
-            if (cellFilter) {
-                Array.from(new Set(rows.map((row) => row.dataset.cell).filter(Boolean)))
-                    .sort((first, second) => first.localeCompare(second))
-                    .forEach((cell) => {
-                        const option = document.createElement('option');
-                        option.value = cell;
-                        option.textContent = cell;
-                        cellFilter.appendChild(option);
-                    });
+            function pluralizeProjects(value) {
+                return value === '1' ? '1 project' : `${value} projects`;
             }
 
-            function filterProjects() {
-                const search = (searchInput ? searchInput.value : '').trim().toLowerCase();
-                const selectedCell = cellFilter ? cellFilter.value : 'all';
-                let visible = 0;
+            function showProjectList(button) {
+                const scope = button.dataset.projectScope;
+                const projectCount = button.dataset.projectCount || '0';
 
-                rows.forEach((row) => {
-                    const projectName = (row.dataset.project || '').toLowerCase();
-                    const cellName = row.dataset.cell || '';
-                    const matchesSearch = !search || projectName.includes(search) || cellName.toLowerCase().includes(search);
-                    const matchesCell = selectedCell === 'all' || cellName === selectedCell;
-                    const show = matchesSearch && matchesCell;
-                    row.classList.toggle('d-none', !show);
-                    if (show) {
-                        visible += 1;
-                    }
+                buttons.forEach((item) => {
+                    const selected = item === button;
+                    item.classList.toggle('is-active', selected);
+                    item.setAttribute('aria-expanded', String(selected));
                 });
 
-                if (noResults) {
-                    noResults.classList.toggle('d-none', visible > 0 || rows.length === 0);
+                lists.forEach((list) => {
+                    list.classList.toggle('d-none', list.dataset.projectList !== scope);
+                });
+
+                if (title) {
+                    title.textContent = button.dataset.projectTitle || 'Project Names';
+                }
+                if (count) {
+                    count.textContent = pluralizeProjects(projectCount);
+                }
+                if (panel) {
+                    panel.classList.remove('d-none');
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
             }
 
-            if (searchInput) {
-                searchInput.addEventListener('input', filterProjects);
+            buttons.forEach((button) => {
+                button.addEventListener('click', () => showProjectList(button));
+            });
+
+            if (close && panel) {
+                close.addEventListener('click', () => {
+                    panel.classList.add('d-none');
+                    buttons.forEach((button) => {
+                        button.classList.remove('is-active');
+                        button.setAttribute('aria-expanded', 'false');
+                    });
+                });
             }
-            if (cellFilter) {
-                cellFilter.addEventListener('change', filterProjects);
+
+            if (wingLoad && wingDetails) {
+                wingLoad.addEventListener('click', () => {
+                    const show = wingDetails.classList.contains('d-none');
+                    wingDetails.classList.toggle('d-none', !show);
+                    wingLoad.classList.toggle('is-active', show);
+                    wingLoad.setAttribute('aria-expanded', String(show));
+                    if (wingLoadLabel) {
+                        wingLoadLabel.textContent = show ? 'Hide Wing Details' : 'Load Wing Details';
+                    }
+                    if (show) {
+                        wingDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                });
             }
-            filterProjects();
+
         })();
     </script>
 

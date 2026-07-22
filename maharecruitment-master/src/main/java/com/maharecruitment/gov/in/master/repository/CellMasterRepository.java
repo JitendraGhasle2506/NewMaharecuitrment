@@ -39,6 +39,12 @@ public interface CellMasterRepository extends JpaRepository<CellMaster, Long> {
             String wingActiveFlag);
 
     @EntityGraph(attributePaths = "wing")
+    List<CellMaster> findByWing_WingIdAndActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCaseOrderByCellNameAsc(
+            Long wingId,
+            String activeFlag,
+            String wingActiveFlag);
+
+    @EntityGraph(attributePaths = "wing")
     Page<CellMaster> findByActiveFlagIgnoreCase(String activeFlag, Pageable pageable);
 
     @EntityGraph(attributePaths = "wing")

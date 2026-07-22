@@ -19,6 +19,8 @@ public interface WingMasterRepository extends JpaRepository<WingMaster, Long> {
 
     Optional<WingMaster> findByWingId(Long wingId);
 
+    Optional<WingMaster> findByWingIdAndActiveFlagIgnoreCase(Long wingId, String activeFlag);
+
     List<WingMaster> findAllByOrderByWingNameAsc();
 
     List<WingMaster> findByActiveFlagIgnoreCaseOrderByWingNameAsc(String activeFlag);

@@ -14,11 +14,15 @@ public record HRDashboardView(
         int absentEmployees,
         int presentPercent,
         int pendingApprovals,
-        int openPositions,
-        String attritionRate,
+        int totalWings,
+        int totalCells,
+        int wingProjectCount,
+        int wingEmployeeCount,
         int internalPercent,
         int externalPercent,
         List<DepartmentOnboardingView> departmentOnboarding,
-        List<ProjectWorkforceView> projects
+        List<ProjectScopeListItemView> internalProjectList,
+        List<ProjectScopeListItemView> externalProjectList,
+        List<HRWingReportView> wingReports
 ) {
 }

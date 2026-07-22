@@ -76,6 +76,41 @@ public interface PositionMasterRepository extends JpaRepository<PositionMasterEn
     List<PositionMasterEntity> findByStatusOrderByCell_CellNameAscDisplayOrderAscPositionIdAsc(
             @Param("status") OrganizationRecordStatus status);
 
+    @Query("""
+            select cell.cellId as cellId,
+                   count(distinct employee.employeeId) as employeeCount
+            from PositionMasterEntity p
+            join p.cell cell
+            join p.employee employee
+            where p.status = :activeStatus
+              and p.positionStatus = :filledStatus
+              and upper(trim(coalesce(employee.status, ''))) = :employeeStatus
+            group by cell.cellId
+            """)
+    List<PositionCellEmployeeCountProjection> summarizeFilledActiveEmployeesByCell(
+            @Param("activeStatus") OrganizationRecordStatus activeStatus,
+            @Param("filledStatus") PositionStatus filledStatus,
+            @Param("employeeStatus") String employeeStatus);
+
+    @Query("""
+            select cell.cellId as cellId,
+                   count(distinct employee.employeeId) as employeeCount
+            from PositionMasterEntity p
+            join p.cell cell
+            join cell.wing wing
+            join p.employee employee
+            where wing.wingId = :wingId
+              and p.status = :activeStatus
+              and p.positionStatus = :filledStatus
+              and upper(trim(coalesce(employee.status, ''))) = :employeeStatus
+            group by cell.cellId
+            """)
+    List<PositionCellEmployeeCountProjection> summarizeFilledActiveEmployeesByCellAndWingId(
+            @Param("wingId") Long wingId,
+            @Param("activeStatus") OrganizationRecordStatus activeStatus,
+            @Param("filledStatus") PositionStatus filledStatus,
+            @Param("employeeStatus") String employeeStatus);
+
     @EntityGraph(attributePaths = { "project", "cell", "team", "designation", "employee", "resourceLevel", "reportingPosition" })
     @Query("select p from PositionMasterEntity p "
             + "left join p.project project "

@@ -52,6 +52,26 @@ public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
     long countByProjectScopeType(ProjectScopeType projectScopeType);
 
     @Query("""
+            select cell.cellId as cellId,
+                   count(project.projectId) as projectCount
+            from ProjectMst project
+            join project.cell cell
+            group by cell.cellId
+            """)
+    List<ProjectCellCountProjection> summarizeProjectCountsByCell();
+
+    @Query("""
+            select cell.cellId as cellId,
+                   count(project.projectId) as projectCount
+            from ProjectMst project
+            join project.cell cell
+            join cell.wing wing
+            where wing.wingId = :wingId
+            group by cell.cellId
+            """)
+    List<ProjectCellCountProjection> summarizeProjectCountsByCellAndWingId(@Param("wingId") Long wingId);
+
+    @Query("""
             select
                 case
                     when trim(coalesce(cell.cellName, '')) = '' then :unassignedCell

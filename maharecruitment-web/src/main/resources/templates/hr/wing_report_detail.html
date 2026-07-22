@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${wing.wingName} + ' - Wing Report'">Wing Report</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
+</head>
+
+<body class="hr-shell">
+
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Wing Report', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2>Wing Report</h2>
+                    <a class="wing-back-link" th:href="@{/hr/dashboard}">
+                        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <section class="wing-detail-hero">
+                        <div>
+                            <span class="hero-eyebrow">Wing Detail</span>
+                            <h1 th:text="${wing.wingName}">Wing Name</h1>
+                            <p>Cell-level project and employee strength for this wing.</p>
+                        </div>
+                        <div class="wing-detail-summary" aria-label="Wing summary">
+                            <div>
+                                <span>Total Cells</span>
+                                <strong th:text="${wing.cellCount}">0</strong>
+                            </div>
+                            <div>
+                                <span>Projects</span>
+                                <strong th:text="${wing.projectCount}">0</strong>
+                            </div>
+                            <div>
+                                <span>Employees</span>
+                                <strong th:text="${wing.employeeCount}">0</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="panel wing-cell-detail-panel">
+                        <div class="panel-title">
+                            <div>
+                                <h4>Cell Details</h4>
+                                <span class="panel-subtitle">Employee count by cell</span>
+                            </div>
+                        </div>
+
+                        <div class="wing-cell-table">
+                            <div class="wing-cell-table-head">
+                                <span>Cell Name</span>
+                                <span>Projects</span>
+                                <span>Employees</span>
+                            </div>
+                            <div class="wing-cell-table-row" th:each="cell : ${wing.cells}">
+                                <div class="wing-cell-name">
+                                    <strong th:text="${cell.cellName}">Cell Name</strong>
+                                    <span th:text="${cell.projectCount} + ' mapped projects'">0 mapped projects</span>
+                                </div>
+                                <div class="wing-cell-count">
+                                    <strong th:text="${cell.projectCount}">0</strong>
+                                </div>
+                                <div class="wing-cell-count wing-cell-employee-count">
+                                    <strong th:text="${cell.employeeCount}">0</strong>
+                                </div>
+                                <div class="wing-cell-bars">
+                                    <span class="cell-bar-fill cell-bar-project"
+                                        th:style="'width:' + ${cell.projectPercent} + '%'"></span>
+                                    <span class="cell-bar-fill cell-bar-employee"
+                                        th:style="'width:' + ${cell.employeePercent} + '%'"></span>
+                                </div>
+                            </div>
+                            <p class="project-empty" th:if="${#lists.isEmpty(wing.cells)}">No active cells found for this wing.</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+</body>
+
+</html>
