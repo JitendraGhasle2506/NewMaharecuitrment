@@ -12,7 +12,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -50,7 +49,6 @@ public class AgencyMasterAuditLog {
     @Column(name = "action_timestamp", nullable = false, updatable = false)
     private LocalDateTime actionTimestamp;
 
-    @Lob
-    @Column(name = "details")
+    @Column(name = "details", columnDefinition = "TEXT")
     private String details;
 }

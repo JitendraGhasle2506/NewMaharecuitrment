@@ -198,6 +198,7 @@
 
             return pathname.includes("/download")
                 || pathname.includes("/export")
+                || pathname.endsWith("/template")
                 || pathname.includes("/documents/view");
         } catch (error) {
             return false;

@@ -80,7 +80,11 @@
                         </div>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
-                        <a class="btn btn-outline-primary btn-sm" th:href="@{/hr/employees/import/template}">
+                        <a class="btn btn-outline-primary btn-sm"
+                            th:href="@{/hr/employees/import/template}"
+                            data-app-loader-behavior="download"
+                            data-app-loader-message="Preparing dummy employee CSV template."
+                            data-app-loader-status="Building CSV template">
                             <i class="fa-solid fa-download me-1"></i> Download Dummy CSV
                         </a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/employees}">

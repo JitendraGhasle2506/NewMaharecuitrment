@@ -80,6 +80,7 @@ import db.postmigration.V96__attendance_source_status_flags;
 import db.postmigration.V97__employee_mobile_photo_support;
 import db.postmigration.V98__attendance_status_flags_from_source_columns;
 import db.postmigration.V99__password_reset_request_support;
+import db.postmigration.V100__agency_master_audit_details_text;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -186,7 +187,8 @@ public class PostSchemaFlywayRunner {
                 new V96__attendance_source_status_flags(),
                 new V97__employee_mobile_photo_support(),
                 new V98__attendance_status_flags_from_source_columns(),
-                new V99__password_reset_request_support());
+                new V99__password_reset_request_support(),
+                new V100__agency_master_audit_details_text());
     }
 
     private boolean hasFailedPostSchemaMigration() {
