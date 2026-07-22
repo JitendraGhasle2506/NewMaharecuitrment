@@ -1,7 +1,7 @@
 # Mobile API Documentation
 
-Version: 1.3  
-Last updated: 2026-07-16
+Version: 1.4  
+Last updated: 2026-07-22
 
 ## 1. Overview
 
@@ -18,6 +18,7 @@ Authentication:
 - Login API does not require a token.
 - Refresh API does not require a bearer access token; it uses `refreshToken` in the JSON body.
 - Logout API does not require a bearer access token; it uses `refreshToken` in the JSON body.
+- Forgot-password APIs do not require a bearer access token; the final reset API uses `resetToken` from OTP verification.
 - All other mobile APIs require this header:
 
 ```http
@@ -555,9 +556,42 @@ Success response:
 
 ## 8. Forgot Password
 
-The mobile forgot-password flow uses the same `PasswordResetService` as the web application.
+The mobile forgot-password flow is public and uses OTP verification before allowing a new password to be set.
+
+Default local URL:
+
+```text
+http://localhost:8777/maharecruitment/api/mobile/auth/password-reset
+```
+
+Headers:
+
+```http
+Content-Type: application/json
+```
+
+No `Authorization` header is required for any forgot-password endpoint.
+
+Supported identifier values:
+
+- Email address
+- Mobile number, 10 to 15 digits
+- Employee code or username
+
+Configured limits:
+
+| Setting | Value |
+| --- | --- |
+| OTP validity | 5 minutes |
+| Reset token validity | 10 minutes |
+| OTP max attempts | 5 |
+| OTP resend cooldown | 60 seconds |
+| Max OTP requests | 3 requests per 15 minutes |
+| OTP verify rate limit | 10 attempts per 60 seconds |
 
 ### POST `/api/mobile/auth/password-reset/request-otp`
+
+Use this API to send an OTP to the registered password-reset delivery channel.
 
 Request:
 
@@ -579,7 +613,15 @@ Success response is generic for both existing and non-existing accounts:
 }
 ```
 
+Validation:
+
+| Field | Required | Rule |
+| --- | --- | --- |
+| `identifier` | Yes | Username, email, mobile number, or employee code. Maximum 255 characters. |
+
 ### POST `/api/mobile/auth/password-reset/verify-otp`
+
+Use this API to verify the OTP. On success, the backend returns a single-use reset token.
 
 Request:
 
@@ -602,7 +644,16 @@ Success response:
 }
 ```
 
+Validation:
+
+| Field | Required | Rule |
+| --- | --- | --- |
+| `identifier` | Yes | Same identifier used for request OTP. Maximum 255 characters. |
+| `otp` | Yes | Exactly 6 digits. |
+
 ### POST `/api/mobile/auth/password-reset/reset`
+
+Use this API to set the new password after OTP verification.
 
 Request:
 
@@ -626,18 +677,40 @@ Success response:
 }
 ```
 
+Validation:
+
+| Field | Required | Rule |
+| --- | --- | --- |
+| `resetToken` | Yes | Reset token returned by `/verify-otp`. Maximum 512 characters. |
+| `newPassword` | Yes | 8 to 100 characters. |
+| `confirmPassword` | Yes | Must match `newPassword`. Maximum 100 characters. |
+
+Password policy:
+
+- Must contain at least one uppercase letter.
+- Must contain at least one lowercase letter.
+- Must contain at least one number.
+- Must contain at least one special character.
+- Must not start or end with spaces.
+- Must not contain spaces.
+- Must be different from the current password.
+- Must not contain the username, email local part, display name, or employee code.
+
 Common errors:
 
-| Code | Meaning |
-| --- | --- |
-| `INVALID_OTP` | OTP is incorrect |
-| `OTP_EXPIRED` | OTP expired |
-| `MAX_ATTEMPTS_EXCEEDED` | Too many invalid OTP attempts |
-| `INVALID_RESET_TOKEN` | Reset token is invalid or already used |
-| `RESET_TOKEN_EXPIRED` | Reset token expired |
-| `PASSWORD_POLICY_FAILED` | New password does not match policy |
-| `PASSWORD_REUSED` | New password matches the current password |
-| `RATE_LIMIT_EXCEEDED` | Too many reset requests |
+| HTTP Status | Code | Meaning |
+| --- | --- | --- |
+| 400 | `VALIDATION_FAILED` | Required field is missing or request values are invalid |
+| 400 | `INVALID_IDENTIFIER` | Identifier is blank or invalid |
+| 400 | `INVALID_OTP` | OTP is incorrect |
+| 400 | `OTP_EXPIRED` | OTP expired |
+| 400 | `PASSWORD_CONFIRMATION_MISMATCH` | New password and confirm password do not match |
+| 400 | `PASSWORD_POLICY_FAILED` | New password does not match policy |
+| 400 | `PASSWORD_REUSED` | New password matches the current password |
+| 401 | `INVALID_RESET_TOKEN` | Reset token is invalid or already used |
+| 401 | `RESET_TOKEN_EXPIRED` | Reset token expired |
+| 429 | `MAX_ATTEMPTS_EXCEEDED` | Too many invalid OTP attempts |
+| 429 | `RATE_LIMIT_EXCEEDED` | Too many reset requests; response includes `Retry-After` header |
 
 ## 9. Attendance
 
