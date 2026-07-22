@@ -313,7 +313,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
             List<LeaveApplicationEntity> approvedLeaves,
             List<TourApplicationEntity> approvedTours,
             LocalDate today) {
-        Optional<LeaveApplicationEntity> matchingLeave = hasMobilePunch(attendance)
+        Optional<LeaveApplicationEntity> matchingLeave = hasAttendanceRecord(attendance)
                 ? Optional.empty()
                 : findMatchingLeave(approvedLeaves, date);
 
@@ -336,9 +336,9 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
             return toSyntheticHistoryRecord(date, "FUTURE");
         }
         if (isWeekOff(date, workingDayOverrideDates)) {
-            return toSyntheticHistoryRecord(date, "WEEK_OFF");
+            return toSyntheticHistoryRecord(attendance, date, "WEEK_OFF");
         }
-        if (!hasMobilePunch(attendance)) {
+        if (!hasAttendanceRecord(attendance)) {
             return toSyntheticHistoryRecord(date, "ABSENT");
         }
 
@@ -543,6 +543,10 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         return attendance != null
                 && isMobileAttendanceMarked(attendance)
                 && (attendance.getCheckInTime() != null || attendance.getCheckOutTime() != null);
+    }
+
+    private boolean hasAttendanceRecord(DailyAttendanceInternalEntity attendance) {
+        return hasMobilePunch(attendance) || isApiAttendanceMarked(attendance);
     }
 
     private boolean isMobileAttendanceMarked(DailyAttendanceInternalEntity attendance) {

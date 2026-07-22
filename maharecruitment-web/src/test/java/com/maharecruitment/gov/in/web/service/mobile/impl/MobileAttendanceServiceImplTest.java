@@ -328,6 +328,71 @@ class MobileAttendanceServiceImplTest {
     }
 
     @Test
+    void historyReturnsApiAttendanceTimesSeparatelyFromMobileTimes() {
+        authenticate("employee@example.com");
+        EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
+        LocalDate fromDate = LocalDate.of(2026, 7, 6);
+        LocalDate toDate = LocalDate.of(2026, 7, 6);
+
+        DailyAttendanceInternalEntity apiAttendance = new DailyAttendanceInternalEntity();
+        apiAttendance.setId(1000L);
+        apiAttendance.setEmployeeId(101L);
+        apiAttendance.setEmployeeCode("EMP101");
+        apiAttendance.setAttendanceDate(toDate);
+        apiAttendance.setAttendanceSource(AttendanceSource.API);
+        apiAttendance.setMobileAppStatus("N");
+        apiAttendance.setApiStatus("Y");
+        apiAttendance.setInTime("09:10");
+        apiAttendance.setOutTime("18:20");
+        apiAttendance.setTotalHours("09:10");
+
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
+        when(dailyAttendanceInternalRepository.findByEmployeeIdAndAttendanceDateBetween(
+                101L, fromDate, toDate))
+                .thenReturn(List.of(apiAttendance));
+        when(holidayRepository.findByHolidayDateBetween(fromDate, toDate)).thenReturn(List.of());
+        when(weekOffWorkingDayRepository.findByWorkingDateBetween(fromDate, toDate)).thenReturn(List.of());
+        when(leaveApplicationRepository
+                .findByEmployeeIdAndStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                        101L,
+                        "APPROVED",
+                        toDate,
+                        fromDate))
+                .thenReturn(List.of());
+        when(tourApplicationRepository
+                .findByEmployeeIdAndStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                        101L,
+                        "APPROVED",
+                        toDate,
+                        fromDate))
+                .thenReturn(List.of());
+
+        MobileAttendanceHistoryResponse response = service().getHistory(101L, fromDate, toDate);
+
+        MobileAttendanceHistoryResponse.AttendanceEntry record = response.attendanceHistory().getFirst();
+        assertThat(record.attendanceId()).isEqualTo(1000L);
+        assertThat(record.attendanceDate()).isEqualTo(toDate);
+        assertThat(record.status()).isEqualTo("PRESENT");
+        assertThat(record.attendanceSource()).isEqualTo("API");
+        assertThat(record.mobileAppStatus()).isEqualTo("N");
+        assertThat(record.apiStatus()).isEqualTo("Y");
+        assertThat(record.inTime()).isEqualTo("09:10");
+        assertThat(record.outTime()).isEqualTo("18:20");
+        assertThat(record.totalHours()).isEqualTo("09:10");
+        assertThat(record.checkInTime()).isNull();
+        assertThat(record.checkOutTime()).isNull();
+        assertThat(record.checkInLatitude()).isNull();
+        assertThat(record.checkInLongitude()).isNull();
+        assertThat(record.checkInLocationAddress()).isNull();
+        assertThat(record.checkOutLatitude()).isNull();
+        assertThat(record.checkOutLongitude()).isNull();
+        assertThat(record.checkOutLocationAddress()).isNull();
+        assertThat(record.checkedIn()).isFalse();
+        assertThat(record.checkedOut()).isFalse();
+        verifyNoInteractions(fileStorageService);
+    }
+
+    @Test
     void historyGeneratesAbsentHolidayWeekOffLeaveAndTourRows() {
         authenticate("employee@example.com");
         EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
