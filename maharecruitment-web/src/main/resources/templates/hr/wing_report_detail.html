@@ -11,10 +11,13 @@
 <body class="hr-shell">
 
     <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Wing Report', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header">
-                    <h2>Wing Report</h2>
+        <section class="wing-report-page">
+            <div class="card add-emp-card wing-report-card">
+                <div class="header wing-page-toolbar">
+                    <div class="wing-page-title">
+                        <span>HR Operations</span>
+                        <h2>Wing Report</h2>
+                    </div>
                     <a class="wing-back-link" th:href="@{/hr/dashboard}">
                         <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
                         <span>Back to Dashboard</span>
@@ -23,32 +26,55 @@
 
                 <div class="card-body">
                     <section class="wing-detail-hero">
-                        <div>
+                        <div class="wing-detail-copy">
                             <span class="hero-eyebrow">Wing Detail</span>
                             <h1 th:text="${wing.wingName}">Wing Name</h1>
                             <p>Cell-level project and employee strength for this wing.</p>
+                            <span class="wing-hero-chip">
+                                <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                                <span>Live operational snapshot</span>
+                            </span>
                         </div>
                         <div class="wing-detail-summary" aria-label="Wing summary">
                             <div>
-                                <span>Total Cells</span>
-                                <strong th:text="${wing.cellCount}">0</strong>
+                                <span class="wing-summary-icon">
+                                    <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                                </span>
+                                <span class="wing-summary-copy">
+                                    <small>Total Cells</small>
+                                    <strong th:text="${wing.cellCount}">0</strong>
+                                </span>
                             </div>
                             <div>
-                                <span>Projects</span>
-                                <strong th:text="${wing.projectCount}">0</strong>
+                                <span class="wing-summary-icon wing-summary-icon-projects">
+                                    <i class="fa-solid fa-diagram-project" aria-hidden="true"></i>
+                                </span>
+                                <span class="wing-summary-copy">
+                                    <small>Projects</small>
+                                    <strong th:text="${wing.projectCount}">0</strong>
+                                </span>
                             </div>
                             <div>
-                                <span>Employees</span>
-                                <strong th:text="${wing.employeeCount}">0</strong>
+                                <span class="wing-summary-icon wing-summary-icon-employees">
+                                    <i class="fa-solid fa-users" aria-hidden="true"></i>
+                                </span>
+                                <span class="wing-summary-copy">
+                                    <small>Employees</small>
+                                    <strong th:text="${wing.employeeCount}">0</strong>
+                                </span>
                             </div>
                         </div>
                     </section>
 
                     <section class="panel wing-cell-detail-panel">
-                        <div class="panel-title">
+                        <div class="panel-title wing-report-heading">
                             <div>
                                 <h4>Cell Details</h4>
-                                <span class="panel-subtitle">Employee count by cell</span>
+                                <span class="panel-subtitle">Project and employee distribution by cell</span>
+                            </div>
+                            <div class="wing-report-legend" aria-label="Report legend">
+                                <span><i class="legend-dot legend-project"></i> Projects</span>
+                                <span><i class="legend-dot legend-employee"></i> Employees</span>
                             </div>
                         </div>
 
@@ -57,26 +83,41 @@
                                 <span>Cell Name</span>
                                 <span>Projects</span>
                                 <span>Employees</span>
+                                <span>Distribution</span>
                             </div>
                             <div class="wing-cell-table-row" th:each="cell : ${wing.cells}">
                                 <div class="wing-cell-name">
-                                    <strong th:text="${cell.cellName}">Cell Name</strong>
-                                    <span th:text="${cell.projectCount} + ' mapped projects'">0 mapped projects</span>
+                                    <span class="wing-cell-icon">
+                                        <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="wing-cell-copy">
+                                        <strong th:text="${cell.cellName}">Cell Name</strong>
+                                        <small th:text="${cell.projectCount + ' projects / ' + cell.employeeCount + ' employees'}">0 projects / 0 employees</small>
+                                    </span>
                                 </div>
-                                <div class="wing-cell-count">
+                                <div class="wing-cell-count wing-cell-metric">
+                                    <span>Projects</span>
                                     <strong th:text="${cell.projectCount}">0</strong>
                                 </div>
-                                <div class="wing-cell-count wing-cell-employee-count">
+                                <div class="wing-cell-count wing-cell-metric wing-cell-employee-count">
+                                    <span>Employees</span>
                                     <strong th:text="${cell.employeeCount}">0</strong>
                                 </div>
-                                <div class="wing-cell-bars">
-                                    <span class="cell-bar-fill cell-bar-project"
-                                        th:style="'width:' + ${cell.projectPercent} + '%'"></span>
-                                    <span class="cell-bar-fill cell-bar-employee"
-                                        th:style="'width:' + ${cell.employeePercent} + '%'"></span>
+                                <div class="wing-cell-bars" aria-hidden="true">
+                                    <span class="wing-cell-bar-line">
+                                        <span class="cell-bar-fill cell-bar-project"
+                                            th:style="'width:' + ${cell.projectPercent} + '%'"></span>
+                                    </span>
+                                    <span class="wing-cell-bar-line">
+                                        <span class="cell-bar-fill cell-bar-employee"
+                                            th:style="'width:' + ${cell.employeePercent} + '%'"></span>
+                                    </span>
                                 </div>
                             </div>
-                            <p class="project-empty" th:if="${#lists.isEmpty(wing.cells)}">No active cells found for this wing.</p>
+                            <div class="project-empty wing-empty-state" th:if="${#lists.isEmpty(wing.cells)}">
+                                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                <span>No active cells found for this wing.</span>
+                            </div>
                         </div>
                     </section>
                 </div>
