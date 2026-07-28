@@ -624,7 +624,8 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
             throw new IllegalArgumentException("Aadhaar number must contain at least 4 digits.");
         }
 
-        return properties.getUniqueCodePrefix() + digitsOnly.substring(digitsOnly.length() - 4);
+        // return properties.getUniqueCodePrefix() + digitsOnly.substring(digitsOnly.length() - 4);
+        return employee.getEmployeeCode();
     }
 
     private long elapsedMillis(long startedAtNanos) {
