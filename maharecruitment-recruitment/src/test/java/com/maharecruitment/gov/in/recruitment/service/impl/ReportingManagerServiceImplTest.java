@@ -22,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
@@ -53,6 +54,23 @@ class ReportingManagerServiceImplTest {
 
     @InjectMocks
     private ReportingManagerServiceImpl service;
+
+    @Test
+    void getReportingAuthoritiesReturnsHodsAndCoosWithTheirTypes() {
+        User hod = userWithRole(7L, "Anita Deshmukh", "ROLE_HOD");
+        User coo = userWithRole(8L, "Ravi Shah", "ROLE_COO");
+        when(userRepository.findDistinctUserIdsByRoleName("ROLE_HOD")).thenReturn(List.of(7L));
+        when(userRepository.findDistinctUserIdsByRoleName("ROLE_COO")).thenReturn(List.of(8L));
+        when(userRepository.findAllById(Set.of(7L, 8L))).thenReturn(List.of(hod, coo));
+
+        List<Map<String, Object>> result = service.getReportingAuthorities();
+
+        assertEquals(2, result.size());
+        assertEquals("COO", result.get(0).get("authorityType"));
+        assertEquals(8L, result.get(0).get("id"));
+        assertEquals("HOD", result.get(1).get("authorityType"));
+        assertEquals(7L, result.get(1).get("id"));
+    }
 
     @Test
     void getProjectsReturnsActiveProjectsForSelection() {
@@ -96,6 +114,22 @@ class ReportingManagerServiceImplTest {
         assertEquals(1, result.size());
         assertEquals(20L, result.get(0).get("id"));
         assertEquals("Jane Smith (EMP20)", result.get(0).get("name"));
+    }
+
+    @Test
+    void getManagersByTypeHodQueriesHodRoleOrDesignation() {
+        EmployeeEntity employee = employee(9L, "HOD Manager", "EMP09", "INTERNAL", "ACTIVE");
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_HOD",
+                Set.of("HOD", "HEAD OF DEPARTMENT", "HEAD OF DEPARTMENT (HOD)"),
+                "%HEAD%OF%DEPARTMENT%"))
+                .thenReturn(List.of(employee));
+
+        List<Map<String, Object>> result = service.getManagersByType("HOD");
+
+        assertEquals(1, result.size());
+        assertEquals(9L, result.get(0).get("id"));
+        assertEquals("HOD Manager (EMP09)", result.get(0).get("name"));
     }
 
     @Test
@@ -167,7 +201,7 @@ class ReportingManagerServiceImplTest {
     @Test
     void getManagersByTypeOtherStillReturnsEligibleActiveEmployees() {
         EmployeeEntity employee = employee(30L, "Asha Patil", "EMP30", "INTERNAL", "ACTIVE");
-        when(employeeRepository.findActiveEmployeesNotMappedAsStmOrPmManagers())
+        when(employeeRepository.findActiveEmployeesNotMappedAsReportingManagers())
                 .thenReturn(List.of(employee));
 
         List<Map<String, Object>> result = service.getManagersByType("OTHER");
@@ -249,6 +283,39 @@ class ReportingManagerServiceImplTest {
         verify(mappingRepository).saveAll(captor.capture());
         assertEquals("PM", captor.getValue().get(0).getManagerType());
         assertEquals(60L, captor.getValue().get(0).getManagerEmployeeId());
+    }
+
+    @Test
+    void cooCanMapEmployeesThroughHodManager() {
+        User coo = userWithRole(8L, "COO", "ROLE_COO");
+        EmployeeEntity manager = employee(9L, "HOD Manager", "EMP009", "INTERNAL", "ACTIVE");
+        EmployeeEntity employee = employee(103L, "Neha Patil", "EMP103", "INTERNAL", "ACTIVE");
+        when(userRepository.findById(8L)).thenReturn(Optional.of(coo));
+        when(employeeRepository.findById(9L)).thenReturn(Optional.of(manager));
+        when(employeeRepository.findAllById(any())).thenReturn(List.of(employee));
+        when(mappingRepository.findByEmployeeIdIn(List.of(103L))).thenReturn(List.of());
+
+        service.saveMapping(8L, "HOD", 9L, 12L, List.of(103L));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<EmployeeReportingMappingEntity>> captor = ArgumentCaptor.forClass(List.class);
+        verify(mappingRepository).saveAll(captor.capture());
+        EmployeeReportingMappingEntity mapping = captor.getValue().get(0);
+        assertEquals(8L, mapping.getHodUserId());
+        assertEquals("HOD", mapping.getManagerType());
+        assertEquals(9L, mapping.getManagerEmployeeId());
+        assertNull(mapping.getProjectId());
+    }
+
+    @Test
+    void hodCannotUseHodManagerType() {
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.saveMapping(7L, "HOD", 9L, null, List.of(103L)));
+
+        assertEquals("HOD manager mapping is available only when COO is selected.", exception.getMessage());
+        verify(mappingRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -348,9 +415,16 @@ class ReportingManagerServiceImplTest {
     }
 
     private User user(Long id, String name) {
+        return userWithRole(id, name, "ROLE_HOD");
+    }
+
+    private User userWithRole(Long id, String name, String roleName) {
         User user = new User();
         user.setId(id);
         user.setName(name);
+        Role role = new Role();
+        role.setName(roleName);
+        user.addRole(role);
         return user;
     }
 

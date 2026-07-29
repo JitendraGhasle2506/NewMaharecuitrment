@@ -34,14 +34,22 @@ import com.maharecruitment.gov.in.recruitment.service.ReportingManagerService;
 public class ReportingManagerServiceImpl implements ReportingManagerService {
 
     private static final Logger log = LoggerFactory.getLogger(ReportingManagerServiceImpl.class);
+    private static final String TYPE_COO = "COO";
+    private static final String TYPE_HOD = "HOD";
     private static final String TYPE_STM = "STM";
     private static final String TYPE_PM = "PM";
     private static final String TYPE_OTHER = "OTHER";
+    private static final String ROLE_HOD = "ROLE_HOD";
+    private static final String ROLE_COO = "ROLE_COO";
     private static final String ROLE_STM = "ROLE_STM";
     private static final String ROLE_PM = "ROLE_PM";
     private static final String ACTIVE = "ACTIVE";
     private static final String ACTIVE_FLAG_Y = "Y";
     private static final String INTERNAL = "INTERNAL";
+    private static final Set<String> HOD_DESIGNATION_NAMES = Set.of(
+            "HOD",
+            "HEAD OF DEPARTMENT",
+            "HEAD OF DEPARTMENT (HOD)");
     private static final Set<String> STM_DESIGNATION_NAMES = Set.of(
             "STM",
             "SENIOR TECHNICAL MANAGER",
@@ -50,6 +58,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             "PM",
             "PROJECT MANAGER",
             "PROJECT MANAGER (PM)");
+    private static final String HOD_MANAGER_NAME_PATTERN = "%HEAD%OF%DEPARTMENT%";
     private static final String STM_MANAGER_NAME_PATTERN = "%SENIOR%TECHNICAL%MANAGER%";
     private static final String PM_MANAGER_NAME_PATTERN = "%PROJECT%MANAGER%";
 
@@ -70,19 +79,41 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
     @Override
     public List<Map<String, Object>> getHodUsers() {
-        List<Long> hodUserIds = new ArrayList<>();
-        hodUserIds.addAll(userRepository.findDistinctUserIdsByRoleName("ROLE_HOD"));
-        // Remove duplicates just in case
-        hodUserIds = hodUserIds.stream().distinct().collect(Collectors.toList());
+        Set<Long> hodUserIds = new LinkedHashSet<>(userRepository.findDistinctUserIdsByRoleName(ROLE_HOD));
+        return toAuthorityOptions(hodUserIds, Set.of());
+    }
 
-        List<User> hodUsers = userRepository.findAllById(hodUserIds);
-        
-        return hodUsers.stream().map(u -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", u.getId());
-            map.put("name", u.getName() + " (" + u.getEmail() + ")");
-            return map;
-        }).collect(Collectors.toList());
+    @Override
+    public List<Map<String, Object>> getReportingAuthorities() {
+        Set<Long> hodUserIds = new LinkedHashSet<>(userRepository.findDistinctUserIdsByRoleName(ROLE_HOD));
+        Set<Long> cooUserIds = new LinkedHashSet<>(userRepository.findDistinctUserIdsByRoleName(ROLE_COO));
+        Set<Long> authorityUserIds = new LinkedHashSet<>(cooUserIds);
+        authorityUserIds.addAll(hodUserIds);
+        return toAuthorityOptions(authorityUserIds, cooUserIds);
+    }
+
+    private List<Map<String, Object>> toAuthorityOptions(Set<Long> authorityUserIds, Set<Long> cooUserIds) {
+        return userRepository.findAllById(authorityUserIds).stream()
+                .sorted(Comparator
+                        .comparing((User user) -> cooUserIds.contains(user.getId()) ? TYPE_COO : TYPE_HOD)
+                        .thenComparing(user -> user.getName() == null ? "" : user.getName(),
+                                String.CASE_INSENSITIVE_ORDER))
+                .map(user -> {
+                    String authorityType = cooUserIds.contains(user.getId()) ? TYPE_COO : TYPE_HOD;
+                    Map<String, Object> option = new HashMap<>();
+                    option.put("id", user.getId());
+                    option.put("name", formatAuthorityName(user));
+                    option.put("authorityType", authorityType);
+                    return option;
+                })
+                .toList();
+    }
+
+    private String formatAuthorityName(User user) {
+        String name = user.getName() == null ? "" : user.getName();
+        return user.getEmail() == null || user.getEmail().isBlank()
+                ? name
+                : name + " (" + user.getEmail() + ")";
     }
 
     @Override
@@ -93,12 +124,14 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
         String normalizedType = normalizeManagerType(type);
         List<EmployeeEntity> managers;
-        if (TYPE_STM.equals(normalizedType)) {
+        if (TYPE_HOD.equals(normalizedType)) {
+            managers = getActiveManagers(ROLE_HOD, HOD_DESIGNATION_NAMES, HOD_MANAGER_NAME_PATTERN);
+        } else if (TYPE_STM.equals(normalizedType)) {
             managers = getActiveManagers(ROLE_STM, STM_DESIGNATION_NAMES, STM_MANAGER_NAME_PATTERN);
         } else if (TYPE_PM.equals(normalizedType)) {
             managers = getActiveManagers(ROLE_PM, PM_DESIGNATION_NAMES, PM_MANAGER_NAME_PATTERN);
         } else if (TYPE_OTHER.equals(normalizedType)) {
-            managers = employeeRepository.findActiveEmployeesNotMappedAsStmOrPmManagers();
+            managers = employeeRepository.findActiveEmployeesNotMappedAsReportingManagers();
         } else {
             throw new IllegalArgumentException("Unsupported manager type: " + type);
         }
@@ -281,9 +314,9 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         if (TYPE_OTHER.equalsIgnoreCase(managerType)) {
             if (hodUserId == null) {
                 throw new IllegalArgumentException(
-                        "Please select Head of Department before selecting Other Employees.");
+                        "Please select a reporting authority before selecting Other Employees.");
             }
-            requireHod(hodUserId);
+            requireReportingAuthority(hodUserId);
             hodEmployeeId = employeeRepository.findByUser_Id(hodUserId)
                     .map(EmployeeEntity::getEmployeeId)
                     .orElse(null);
@@ -350,14 +383,18 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
            map.put("managerType", m.getManagerType());
            map.put("hodUserId", m.getHodUserId());
-           User hod = userMap.get(m.getHodUserId());
-           map.put("hodName", hod != null ? hod.getName() : "");
+           User authority = userMap.get(m.getHodUserId());
+           String authorityType = resolveAuthorityType(authority);
+           String displayAuthorityType = authorityType != null ? authorityType : TYPE_HOD;
+           map.put("authorityType", displayAuthorityType);
+           map.put("authorityName", authority != null ? authority.getName() : "");
+           map.put("hodName", authority != null ? authority.getName() : "");
 
            map.put("managerEmployeeId", m.getManagerEmployeeId());
            if (TYPE_OTHER.equalsIgnoreCase(m.getManagerType())) {
-               map.put("managerName", hod != null
-                       ? "Directly Reports to HOD - " + hod.getName()
-                       : "Directly Reports to HOD");
+               map.put("managerName", authority != null
+                       ? "Directly Reports to " + displayAuthorityType + " - " + authority.getName()
+                       : "Directly Reports to Reporting Authority");
            } else {
                EmployeeEntity mgr = empMap.get(m.getManagerEmployeeId());
                map.put("managerName", mgr != null
@@ -386,7 +423,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 .map(employeeId -> toEntity(new EmployeeReportingMappingEntity(), request, employeeId))
                 .toList();
         mappingRepository.saveAll(mappings);
-        log.info("Created {} reporting mapping(s) for HOD userId={} and managerType={}",
+        log.info("Created {} reporting mapping(s) for authority userId={} and managerType={}",
                 mappings.size(), request.hodUserId(), request.managerType());
     }
 
@@ -441,14 +478,20 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             Long projectId,
             List<Long> employeeIds) {
         if (hodUserId == null) {
-            throw new IllegalArgumentException("HOD selection is required.");
+            throw new IllegalArgumentException("Reporting authority selection is required.");
         }
-        requireHod(hodUserId);
+        User authority = requireReportingAuthority(hodUserId);
 
         String normalizedType = normalizeManagerType(managerType);
+        String authorityType = resolveAuthorityType(authority);
+        if (TYPE_HOD.equals(normalizedType) && !TYPE_COO.equals(authorityType)) {
+            throw new IllegalArgumentException("HOD manager mapping is available only when COO is selected.");
+        }
         Long normalizedManagerId = managerEmployeeId;
         Long normalizedProjectId = projectId;
-        if (TYPE_STM.equals(normalizedType) || TYPE_PM.equals(normalizedType)) {
+        if (TYPE_HOD.equals(normalizedType)
+                || TYPE_STM.equals(normalizedType)
+                || TYPE_PM.equals(normalizedType)) {
             if (managerEmployeeId == null) {
                 throw new IllegalArgumentException("Manager selection is required.");
             }
@@ -458,7 +501,11 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 throw new IllegalArgumentException("Selected manager must be active.");
             }
             if (normalizedProjectId != null) {
-                requireActiveProject(normalizedProjectId);
+                if (TYPE_HOD.equals(normalizedType)) {
+                    normalizedProjectId = null;
+                } else {
+                    requireActiveProject(normalizedProjectId);
+                }
             }
         } else {
             normalizedManagerId = null;
@@ -491,7 +538,8 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 throw new IllegalArgumentException("External employees cannot be mapped.");
             }
             if (hodEmployeeId != null && hodEmployeeId.equals(employee.getEmployeeId())) {
-                throw new IllegalArgumentException("The selected HOD cannot be mapped as their own report.");
+                throw new IllegalArgumentException(
+                        "The selected reporting authority cannot be mapped as their own report.");
             }
         }
 
@@ -503,9 +551,27 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 List.copyOf(distinctEmployeeIds));
     }
 
-    private User requireHod(Long hodUserId) {
-        return userRepository.findById(hodUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Selected HOD was not found."));
+    private User requireReportingAuthority(Long userId) {
+        User authority = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Selected reporting authority was not found."));
+        if (resolveAuthorityType(authority) == null) {
+            throw new IllegalArgumentException("Selected user must have the HOD or COO role.");
+        }
+        return authority;
+    }
+
+    private String resolveAuthorityType(User user) {
+        if (hasRole(user, ROLE_COO)) {
+            return TYPE_COO;
+        }
+        return hasRole(user, ROLE_HOD) ? TYPE_HOD : null;
+    }
+
+    private boolean hasRole(User user, String roleName) {
+        return user != null
+                && user.getRoles() != null
+                && user.getRoles().stream()
+                        .anyMatch(role -> role != null && roleName.equalsIgnoreCase(role.getName()));
     }
 
     private ProjectMst requireActiveProject(Long projectId) {
@@ -522,7 +588,10 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             throw new IllegalArgumentException("A valid manager type is required.");
         }
         String normalized = managerType.trim().toUpperCase(Locale.ROOT);
-        if (!TYPE_STM.equals(normalized) && !TYPE_PM.equals(normalized) && !TYPE_OTHER.equals(normalized)) {
+        if (!TYPE_HOD.equals(normalized)
+                && !TYPE_STM.equals(normalized)
+                && !TYPE_PM.equals(normalized)
+                && !TYPE_OTHER.equals(normalized)) {
             throw new IllegalArgumentException("A valid manager type is required.");
         }
         return normalized;

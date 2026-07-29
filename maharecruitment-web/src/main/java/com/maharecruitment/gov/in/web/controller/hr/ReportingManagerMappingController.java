@@ -41,6 +41,12 @@ public class ReportingManagerMappingController {
         return ResponseEntity.ok(reportingManagerService.getHodUsers());
     }
 
+    @GetMapping("/api/reporting-authorities")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getReportingAuthorities() {
+        return ResponseEntity.ok(reportingManagerService.getReportingAuthorities());
+    }
+
     @GetMapping("/api/managers")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> getManagers(@RequestParam String type) {

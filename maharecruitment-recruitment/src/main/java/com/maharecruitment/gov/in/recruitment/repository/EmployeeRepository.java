@@ -446,9 +446,9 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "where upper(trim(coalesce(e.status, ''))) = 'ACTIVE' "
             + "and not exists (select mapping.mappingId from EmployeeReportingMappingEntity mapping "
             + "where mapping.managerEmployeeId = e.employeeId "
-            + "and upper(trim(mapping.managerType)) in ('STM', 'PM')) "
+            + "and upper(trim(mapping.managerType)) in ('HOD', 'STM', 'PM')) "
             + "order by lower(e.fullName), e.employeeId")
-    List<EmployeeEntity> findActiveEmployeesNotMappedAsStmOrPmManagers();
+    List<EmployeeEntity> findActiveEmployeesNotMappedAsReportingManagers();
 
     List<EmployeeEntity> findByFullNameIgnoreCaseAndStatusIgnoreCase(String fullName, String status);
 

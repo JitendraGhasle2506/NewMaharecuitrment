@@ -7,6 +7,8 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEnt
 
 public interface ReportingManagerService {
     List<Map<String, Object>> getHodUsers();
+
+    List<Map<String, Object>> getReportingAuthorities();
     
     List<Map<String, Object>> getManagersByType(String type);
     

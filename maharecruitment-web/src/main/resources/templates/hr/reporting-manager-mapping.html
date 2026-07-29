@@ -91,7 +91,7 @@
                                             <th>Employee</th>
                                             <th>Manager</th>
                                             <th>Project</th>
-                                            <th>HOD</th>
+                                            <th>HOD / COO</th>
                                             <th style="width: 100px;">Action</th>
                                         </tr>
                                     </thead>
@@ -111,17 +111,34 @@
                                  <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                  <input type="hidden" id="mappingId" name="mappingId" value="">
                                 
-                                <!-- Step 1: HOD -->
+                                <!-- Step 1: Reporting Authority -->
                                 <div class="mb-4">
-                                    <label class="form-label" for="hodSelect">1. Select Head of Department (HOD) <span class="text-danger">*</span></label>
-                                    <select class="form-select w-50" id="hodSelect" name="hodUserId" required>
-                                        <option value="">-- Select HOD --</option>
-                                    </select>
+                                    <label class="form-label d-block">1. Select Reporting Authority (HOD or COO) <span class="text-danger">*</span></label>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input authorityTypeOption" type="radio"
+                                               name="authorityType" id="authorityTypeHOD" value="HOD" required>
+                                        <label class="form-check-label" for="authorityTypeHOD">Head of Department (HOD)</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input authorityTypeOption" type="radio"
+                                               name="authorityType" id="authorityTypeCOO" value="COO" required>
+                                        <label class="form-check-label" for="authorityTypeCOO">Chief Operating Officer (COO)</label>
+                                    </div>
+                                    <div class="mt-3 hidden" id="authorityUserSection">
+                                        <label class="form-label" for="authoritySelect" id="authorityUserLabel">Select Reporting Authority <span class="text-danger">*</span></label>
+                                        <select class="form-select w-50" id="authoritySelect" name="hodUserId" required disabled>
+                                            <option value="">-- Select Reporting Authority --</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <!-- Step 2: Manager Type -->
                                 <div class="mb-4">
                                     <label class="form-label d-block">2. Select Manager Type <span class="text-danger">*</span></label>
+                                    <div class="form-check form-check-inline hidden" id="hodManagerTypeOption">
+                                        <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeHOD" value="HOD" required>
+                                        <label class="form-check-label" for="typeHOD">Head of Department (HOD)</label>
+                                    </div>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeSTM" value="STM" required>
                                         <label class="form-check-label" for="typeSTM">Senior Technical Manager (STM)</label>
@@ -210,6 +227,10 @@
                 editingEmployeeId = null;
                 $('#mappingForm')[0].reset();
                 $('#mappingId').val('');
+                $('#authorityUserSection').addClass('hidden');
+                $('#authoritySelect')
+                    .html('<option value="">-- Select Reporting Authority --</option>')
+                    .prop('disabled', true);
                 $('#managerSelect').prop('required', true);
                 $('#projectSelect').prop('required', false).html('<option value="">-- Select Project --</option>');
                 $('#managerSection, #projectSection, #employeeSection, #submitSection').addClass('hidden');
@@ -219,6 +240,7 @@
                 $('#managerLabel').text('3. Select Manager *');
                 $('#projectLabel').text('4. Select Project');
                 $('#employeeLabel').html('4. Select Internal Employees to Map <span class="text-danger">*</span>');
+                updateManagerTypeOptions();
             }
 
             $('#addMappingBtn').click(function() {
@@ -244,7 +266,7 @@
                     { data: 'projectName', render: function(data) {
                         return data || '-';
                     }},
-                    { data: 'hodName' },
+                    { data: 'authorityName' },
                     {
                         data: null,
                         orderable: false,
@@ -253,7 +275,8 @@
                                 'data-id="'+row.mappingId+'" data-emp="'+row.employeeId+'" ' + 
                                 'data-mgr="'+row.managerEmployeeId+'" ' +
                                 'data-project="'+(row.projectId || '')+'" ' +
-                                'data-mgrtype="'+row.managerType+'" data-hod="'+row.hodUserId+'">' +
+                                'data-mgrtype="'+row.managerType+'" data-hod="'+row.hodUserId+'" ' +
+                                'data-authoritytype="'+row.authorityType+'">' +
                                 '<i class="fa fa-edit"></i> Edit' +
                                 '</button>';
                         }
@@ -261,16 +284,13 @@
                 ]
             });
 
-            // 1. Load HODs on init
-            $.ajax({
-                url: contextPath + 'hr/api/hods',
-                method: 'GET',
-                success: function(data) {
-                    var select = $('#hodSelect');
-                    data.forEach(function(hod) {
-                        select.append('<option value="'+hod.id+'">'+hod.name+'</option>');
-                    });
-                }
+            // 1. Load reporting authorities on init
+            var reportingAuthorities = [];
+            var reportingAuthoritiesRequest = $.ajax({
+                url: contextPath + 'hr/api/reporting-authorities',
+                method: 'GET'
+            }).done(function(data) {
+                reportingAuthorities = data;
             });
 
             function loadManagersDeferred(type) {
@@ -326,6 +346,9 @@
             }
 
             function managerTypeLabel(type) {
+                if(type === 'HOD') {
+                    return 'Head of Department';
+                }
                 if(type === 'PM') {
                     return 'Project Manager';
                 }
@@ -335,8 +358,64 @@
                 return 'Manager';
             }
 
-            $('#hodSelect').change(function() {
+            function selectedAuthorityType() {
+                return $('input[name="authorityType"]:checked').val() || '';
+            }
+
+            function populateAuthorityUsers(authorityType, currentSelection) {
+                var authorityLabel = authorityType === 'COO' ? 'COO' : 'HOD';
+                var select = $('#authoritySelect');
+                select
+                    .html('<option value="">-- Select ' + authorityLabel + ' --</option>')
+                    .prop('disabled', false);
+                $('#authorityUserLabel').html(
+                    'Select ' + authorityLabel + ' <span class="text-danger">*</span>');
+
+                reportingAuthorities
+                    .filter(function(authority) {
+                        return authority.authorityType === authorityType;
+                    })
+                    .forEach(function(authority) {
+                        $('<option>', {
+                            value: authority.id,
+                            text: authority.name
+                        }).appendTo(select);
+                    });
+
+                if(select.children('option').length === 1) {
+                    select.append('<option disabled>No ' + authorityLabel + ' users found</option>');
+                }
+                if(currentSelection) {
+                    select.val(String(currentSelection));
+                }
+                $('#authorityUserSection').removeClass('hidden');
+            }
+
+            function updateManagerTypeOptions() {
+                var isCoo = selectedAuthorityType() === 'COO';
+                $('#hodManagerTypeOption').toggleClass('hidden', !isCoo);
+                if(!isCoo && $('#typeHOD').is(':checked')) {
+                    $('#typeHOD').prop('checked', false);
+                }
+            }
+
+            $('.authorityTypeOption').change(function() {
+                var authorityType = $(this).val();
                 resetDependentSelections();
+                reportingAuthoritiesRequest.done(function() {
+                    populateAuthorityUsers(authorityType, null);
+                }).fail(function() {
+                    $('#authorityUserSection').removeClass('hidden');
+                    $('#authoritySelect')
+                        .html('<option value="">-- Unable to load reporting authorities --</option>')
+                        .prop('disabled', true);
+                });
+                updateManagerTypeOptions();
+            });
+
+            $('#authoritySelect').change(function() {
+                resetDependentSelections();
+                updateManagerTypeOptions();
             });
 
             function loadManagers(type, currentSelection) {
@@ -363,27 +442,33 @@
             // 2. On selecting a manager type
             $('.managerTypeOption').change(function() {
                 var type = $(this).val();
-                var hodUserId = $('#hodSelect').val();
+                var authorityUserId = $('#authoritySelect').val();
                 $('#managerSelect').val('');
                 $('#projectSelect').val('').prop('required', false);
                 $('#projectSection').addClass('hidden');
                 $('#employeeSection').addClass('hidden');
                 $('#submitSection').addClass('hidden');
 
-                if(type === 'OTHER') {
-                    if(!hodUserId) {
-                        alert('Please select Head of Department before selecting Other Employees.');
-                        $(this).prop('checked', false);
-                        return;
-                    }
+                if(!authorityUserId) {
+                    alert('Please select a HOD or COO reporting authority first.');
+                    $(this).prop('checked', false);
+                    return;
+                }
 
+                if(type === 'HOD' && selectedAuthorityType() !== 'COO') {
+                    alert('HOD manager mapping is available only when COO is selected.');
+                    $(this).prop('checked', false);
+                    return;
+                }
+
+                if(type === 'OTHER') {
                     $('#managerSection').addClass('hidden');
                     $('#managerSelect').val('').prop('required', false);
                     $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
                     $('#employeeSection').removeClass('hidden');
                     $('#submitSection').removeClass('hidden');
                     loadInternalEmployees({
-                        hodUserId: hodUserId,
+                        hodUserId: authorityUserId,
                         managerType: 'OTHER',
                         includeEmployeeId: editingEmployeeId
                     });
@@ -393,10 +478,16 @@
                 $('#managerSection').removeClass('hidden');
                 $('#managerSelect').prop('required', true);
                 $('#managerLabel').text('3. Select ' + managerTypeLabel(type) + ' *');
-                $('#projectLabel').text('4. Select Project');
-                $('#employeeLabel').html('5. Select Internal Employees to Map <span class="text-danger">*</span>');
-                $('#projectSection').removeClass('hidden');
-                loadProjects(null);
+                if(type === 'HOD') {
+                    $('#projectSection').addClass('hidden');
+                    $('#projectSelect').val('').prop('required', false);
+                    $('#employeeLabel').html('4. Select Internal Employees to Map <span class="text-danger">*</span>');
+                } else {
+                    $('#projectLabel').text('4. Select Project');
+                    $('#employeeLabel').html('5. Select Internal Employees to Map <span class="text-danger">*</span>');
+                    $('#projectSection').removeClass('hidden');
+                    loadProjects(null);
+                }
                 loadManagers(type, null);
             });
 
@@ -419,39 +510,50 @@
                 var mgr = $(this).data('mgr');
                 var project = $(this).data('project');
                 var mappingId = $(this).data('id');
+                var authorityType = $(this).data('authoritytype');
                 editingEmployeeId = $(this).data('emp');
 
                 showForm();
 
-                // Populate form dynamically
-                $('#mappingId').val(mappingId);
-                $('#hodSelect').val(hod);
-                $('input[name="managerType"][value="'+mgrType+'"]').prop('checked', true);
+                reportingAuthoritiesRequest.done(function() {
+                    // Populate form dynamically after authority options are available.
+                    $('#mappingId').val(mappingId);
+                    $('input[name="authorityType"][value="'+authorityType+'"]').prop('checked', true);
+                    populateAuthorityUsers(authorityType, hod);
+                    updateManagerTypeOptions();
+                    $('input[name="managerType"][value="'+mgrType+'"]').prop('checked', true);
 
-                if(mgrType === 'OTHER') {
-                    $('#managerSection').addClass('hidden');
-                    $('#managerSelect').val('').prop('required', false);
-                    $('#projectSection').addClass('hidden');
-                    $('#projectSelect').val('').prop('required', false);
-                    $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
-                    $('#employeeSection, #submitSection').removeClass('hidden');
-                    loadInternalEmployees({
-                        includeEmployeeId: editingEmployeeId,
-                        hodUserId: hod,
-                        managerType: 'OTHER'
+                    if(mgrType === 'OTHER') {
+                        $('#managerSection').addClass('hidden');
+                        $('#managerSelect').val('').prop('required', false);
+                        $('#projectSection').addClass('hidden');
+                        $('#projectSelect').val('').prop('required', false);
+                        $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
+                        $('#employeeSection, #submitSection').removeClass('hidden');
+                        loadInternalEmployees({
+                            includeEmployeeId: editingEmployeeId,
+                            hodUserId: hod,
+                            managerType: 'OTHER'
+                        });
+                        return;
+                    }
+
+                    $('#managerSection').removeClass('hidden');
+                    $('#managerSelect').prop('required', true);
+                    $('#managerLabel').text('3. Select ' + managerTypeLabel(mgrType) + ' *');
+                    if(mgrType === 'HOD') {
+                        $('#projectSection').addClass('hidden');
+                        $('#projectSelect').val('').prop('required', false);
+                        $('#employeeLabel').html('4. Select Internal Employees to Map <span class="text-danger">*</span>');
+                    } else {
+                        $('#projectLabel').text('4. Select Project');
+                        $('#employeeLabel').html('5. Select Internal Employees to Map <span class="text-danger">*</span>');
+                        $('#projectSection').removeClass('hidden');
+                        loadProjects(project);
+                    }
+                    loadManagers(mgrType, mgr).done(function() {
+                        $('#managerSelect').trigger('change');
                     });
-                    return;
-                }
-
-                $('#managerSection').removeClass('hidden');
-                $('#managerSelect').prop('required', true);
-                $('#managerLabel').text('3. Select ' + managerTypeLabel(mgrType) + ' *');
-                $('#projectLabel').text('4. Select Project');
-                $('#employeeLabel').html('5. Select Internal Employees to Map <span class="text-danger">*</span>');
-                $('#projectSection').removeClass('hidden');
-                loadProjects(project);
-                loadManagers(mgrType, mgr).done(function() {
-                    $('#managerSelect').trigger('change');
                 });
             });
 
@@ -529,10 +631,16 @@
 
             // Form validation
             $('#mappingForm').submit(function(e) {
-                var hodUserId = $('#hodSelect').val();
+                var authorityType = selectedAuthorityType();
+                var authorityUserId = $('#authoritySelect').val();
                 var managerType = $('input[name="managerType"]:checked').val();
-                if(!hodUserId) {
-                    alert('Please select Head of Department.');
+                if(!authorityType) {
+                    alert('Please select HOD or COO.');
+                    e.preventDefault();
+                    return;
+                }
+                if(!authorityUserId) {
+                    alert('Please select a ' + authorityType + ' reporting authority.');
                     e.preventDefault();
                     return;
                 }
@@ -541,7 +649,8 @@
                     e.preventDefault();
                     return;
                 }
-                if((managerType === 'STM' || managerType === 'PM') && !$('#managerSelect').val()) {
+                if((managerType === 'HOD' || managerType === 'STM' || managerType === 'PM')
+                        && !$('#managerSelect').val()) {
                     alert('Please select a Manager.');
                     e.preventDefault();
                     return;
