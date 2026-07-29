@@ -154,16 +154,19 @@ public class MobileEmployeeDetailsService {
     private DepartmentInfo resolveDepartmentInfo(EmployeeEntity employee) {
         DepartmentRegistrationEntity registration = employee.getDepartmentRegistration();
         SubDepartment subDepartment = employee.getSubDepartment();
-        DepartmentMst mappedDepartment = subDepartment != null ? subDepartment.getDepartment() : null;
+        DepartmentMst mappedDepartment = employee.getDepartment();
+        if (mappedDepartment == null && subDepartment != null) {
+            mappedDepartment = subDepartment.getDepartment();
+        }
 
         Long departmentId = firstNonNull(
-                registration != null ? registration.getDepartmentId() : null,
                 mappedDepartment != null ? mappedDepartment.getDepartmentId() : null,
+                registration != null ? registration.getDepartmentId() : null,
                 registration != null ? registration.getDepartmentRegistrationId() : null);
 
         String departmentName = firstText(
-                registration != null ? registration.getDepartmentName() : null,
-                mappedDepartment != null ? mappedDepartment.getDepartmentName() : null);
+                mappedDepartment != null ? mappedDepartment.getDepartmentName() : null,
+                registration != null ? registration.getDepartmentName() : null);
         if (departmentName == null) {
             departmentName = lookupDepartmentName(departmentId);
         }

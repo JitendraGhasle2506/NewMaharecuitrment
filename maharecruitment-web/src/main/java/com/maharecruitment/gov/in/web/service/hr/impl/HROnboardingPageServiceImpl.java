@@ -30,9 +30,12 @@ import com.maharecruitment.gov.in.auth.service.UserManagementService;
 import com.maharecruitment.gov.in.auth.util.SecurePasswordGenerator;
 import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
-import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
+import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.LocationMaster;
+import com.maharecruitment.gov.in.master.entity.SubDepartment;
+import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
 import com.maharecruitment.gov.in.master.repository.LocationMasterRepository;
+import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeLocationMappingEntity;
@@ -64,6 +67,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
 
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
+    private final DepartmentMstRepository departmentRepository;
     private final SubDepartmentRepository subDepartmentRepository;
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
@@ -80,6 +84,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     public HROnboardingPageServiceImpl(
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
             DepartmentRegistrationRepository departmentRegistrationRepository,
+            DepartmentMstRepository departmentRepository,
             SubDepartmentRepository subDepartmentRepository,
             UserRepository userRepository,
             EmployeeRepository employeeRepository,
@@ -94,6 +99,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             EmployeeLocationMappingRepository employeeLocationMappingRepository) {
         this.preOnboardingRepository = preOnboardingRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
+        this.departmentRepository = departmentRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.userRepository = userRepository;
         this.employeeRepository = employeeRepository;
@@ -611,15 +617,30 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
     private void applyDepartmentRegistration(EmployeeEntity employee, DepartmentRegistrationEntity departmentRegistration) {
         if (departmentRegistration == null) {
             employee.setDepartmentRegistration(null);
+            employee.setDepartment(null);
             employee.setSubDepartment(null);
             return;
         }
 
         employee.setDepartmentRegistration(departmentRegistration);
+        SubDepartment subDepartment = null;
         if (departmentRegistration.getSubDeptId() != null) {
-            subDepartmentRepository.findById(departmentRegistration.getSubDeptId())
-                    .ifPresent(employee::setSubDepartment);
+            subDepartment = subDepartmentRepository.findById(departmentRegistration.getSubDeptId()).orElse(null);
         }
+        employee.setSubDepartment(subDepartment);
+        employee.setDepartment(resolveDepartment(departmentRegistration, subDepartment));
+    }
+
+    private DepartmentMst resolveDepartment(
+            DepartmentRegistrationEntity departmentRegistration,
+            SubDepartment subDepartment) {
+        if (subDepartment != null && subDepartment.getDepartment() != null) {
+            return subDepartment.getDepartment();
+        }
+        if (departmentRegistration == null || departmentRegistration.getDepartmentId() == null) {
+            return null;
+        }
+        return departmentRepository.findById(departmentRegistration.getDepartmentId()).orElse(null);
     }
 
     private String generateTemporaryEmployeeCode() {

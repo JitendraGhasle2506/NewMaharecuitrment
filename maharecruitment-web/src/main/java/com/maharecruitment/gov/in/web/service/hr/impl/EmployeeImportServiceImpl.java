@@ -42,10 +42,12 @@ import com.maharecruitment.gov.in.auth.util.SecurePasswordGenerator;
 import com.maharecruitment.gov.in.auth.util.UserValidationUtil;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
 import com.maharecruitment.gov.in.master.entity.AgencyStatus;
+import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.LocationMaster;
 import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.entity.SubDepartment;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
+import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
 import com.maharecruitment.gov.in.master.repository.LocationMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ManpowerDesignationMasterRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
@@ -87,6 +89,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
             "aadhaarNumber",
             "departmentRegistrationId",
             "subDepartmentId",
+            "subDepartmentName",
             "designationId",
             "agencyId",
             "levelCode",
@@ -126,6 +129,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
     private final UserAffiliationService userAffiliationService;
     private final RoleRepository roleRepository;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
+    private final DepartmentMstRepository departmentRepository;
     private final SubDepartmentRepository subDepartmentRepository;
     private final ManpowerDesignationMasterRepository designationRepository;
     private final AgencyMasterRepository agencyRepository;
@@ -141,6 +145,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
             UserAffiliationService userAffiliationService,
             RoleRepository roleRepository,
             DepartmentRegistrationRepository departmentRegistrationRepository,
+            DepartmentMstRepository departmentRepository,
             SubDepartmentRepository subDepartmentRepository,
             ManpowerDesignationMasterRepository designationRepository,
             AgencyMasterRepository agencyRepository,
@@ -154,6 +159,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         this.userAffiliationService = userAffiliationService;
         this.roleRepository = roleRepository;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
+        this.departmentRepository = departmentRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.designationRepository = designationRepository;
         this.agencyRepository = agencyRepository;
@@ -225,6 +231,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
                         "123412341234",
                         "1",
                         "1",
+                        "",
                         "1",
                         "1",
                         "L1",
@@ -250,8 +257,9 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
                         "2026-07-01",
                         "PQRST1234L",
                         "567856785678",
-                        "1",
-                        "1",
+                        "",
+                        "",
+                        "Existing Sub Department",
                         "1",
                         "1",
                         "L2",
@@ -279,11 +287,15 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
 
         validateEmployeeUniqueness(row, employee);
         DepartmentRegistrationEntity departmentRegistration = resolveDepartmentRegistration(row.departmentRegistrationId());
-        SubDepartment subDepartment = resolveSubDepartment(row.subDepartmentId(), departmentRegistration);
+        SubDepartment subDepartment = resolveSubDepartment(
+                row.subDepartmentId(),
+                row.subDepartmentName(),
+                departmentRegistration);
+        DepartmentMst department = resolveDepartment(departmentRegistration, subDepartment);
         ManpowerDesignationMaster designation = resolveDesignation(row.designationId());
         AgencyMaster agency = resolveAgency(row.agencyId());
 
-        applyEmployee(row, employee, departmentRegistration, subDepartment, designation, agency);
+        applyEmployee(row, employee, departmentRegistration, department, subDepartment, designation, agency);
         applyGeneratedEmployeeCode(row, employee, newEmployee);
         if (newEmployee && !StringUtils.hasText(employee.getEmployeeCode())) {
             employee.setEmployeeCode(generateTemporaryEmployeeCode());
@@ -460,6 +472,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
             EmployeeImportRow row,
             EmployeeEntity employee,
             DepartmentRegistrationEntity departmentRegistration,
+            DepartmentMst department,
             SubDepartment subDepartment,
             ManpowerDesignationMaster designation,
             AgencyMaster agency) {
@@ -483,6 +496,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         employee.setPanNumber(row.panNumber());
         employee.setAadhaarNumber(row.aadhaarNumber());
         employee.setDepartmentRegistration(departmentRegistration);
+        employee.setDepartment(department);
         employee.setSubDepartment(subDepartment);
         employee.setDesignation(designation);
         employee.setAgency(agency);
@@ -560,6 +574,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
                 normalizeAadhaar(optional(row, "aadhaarNumber")),
                 parseOptionalLong(optional(row, "departmentRegistrationId"), "departmentRegistrationId"),
                 parseOptionalLong(optional(row, "subDepartmentId"), "subDepartmentId"),
+                normalizeOptionalText(optional(row, "subDepartmentName")),
                 parseOptionalLong(optional(row, "designationId"), "designationId"),
                 parseRequiredLong(required(row, "agencyId"), "agencyId"),
                 normalizeOptionalText(optional(row, "levelCode")),
@@ -595,17 +610,59 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
                         "Department registration ID not found: " + departmentRegistrationId));
     }
 
-    private SubDepartment resolveSubDepartment(Long subDepartmentId, DepartmentRegistrationEntity departmentRegistration) {
-        Long selectedSubDepartmentId = subDepartmentId;
-        if (selectedSubDepartmentId == null && departmentRegistration != null) {
-            selectedSubDepartmentId = departmentRegistration.getSubDeptId();
+    private SubDepartment resolveSubDepartment(
+            Long subDepartmentId,
+            String subDepartmentName,
+            DepartmentRegistrationEntity departmentRegistration) {
+        if (subDepartmentId != null) {
+            return subDepartmentRepository.findById(subDepartmentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Sub department ID not found: " + subDepartmentId));
         }
-        if (selectedSubDepartmentId == null) {
+        if (StringUtils.hasText(subDepartmentName)) {
+            return resolveSubDepartmentByName(subDepartmentName, departmentRegistration);
+        }
+        if (departmentRegistration == null || departmentRegistration.getSubDeptId() == null) {
             return null;
         }
-        Long resolvedSubDepartmentId = selectedSubDepartmentId;
-        return subDepartmentRepository.findById(resolvedSubDepartmentId)
-                .orElseThrow(() -> new IllegalArgumentException("Sub department ID not found: " + resolvedSubDepartmentId));
+        Long registrationSubDepartmentId = departmentRegistration.getSubDeptId();
+        return subDepartmentRepository.findById(registrationSubDepartmentId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Sub department ID not found: " + registrationSubDepartmentId));
+    }
+
+    private SubDepartment resolveSubDepartmentByName(
+            String subDepartmentName,
+            DepartmentRegistrationEntity departmentRegistration) {
+        String normalizedSubDepartmentName = normalizeLookupText(subDepartmentName);
+        Long departmentId = departmentRegistration != null ? departmentRegistration.getDepartmentId() : null;
+        List<SubDepartment> matches = departmentId != null
+                ? subDepartmentRepository.findByDepartmentDepartmentIdAndSubDeptNameIgnoreCaseOrderBySubDeptIdAsc(
+                        departmentId,
+                        normalizedSubDepartmentName)
+                : subDepartmentRepository.findBySubDeptNameIgnoreCaseOrderBySubDeptIdAsc(normalizedSubDepartmentName);
+
+        if (matches.isEmpty()) {
+            String scope = departmentId != null ? " for department ID " + departmentId : "";
+            throw new IllegalArgumentException("Sub department name not found" + scope + ": " + subDepartmentName);
+        }
+        if (matches.size() > 1) {
+            throw new IllegalArgumentException(
+                    "Sub department name matches multiple departments. Use subDepartmentId or departmentRegistrationId: "
+                            + subDepartmentName);
+        }
+        return matches.get(0);
+    }
+
+    private DepartmentMst resolveDepartment(
+            DepartmentRegistrationEntity departmentRegistration,
+            SubDepartment subDepartment) {
+        if (subDepartment != null && subDepartment.getDepartment() != null) {
+            return subDepartment.getDepartment();
+        }
+        if (departmentRegistration == null || departmentRegistration.getDepartmentId() == null) {
+            return null;
+        }
+        return departmentRepository.findById(departmentRegistration.getDepartmentId()).orElse(null);
     }
 
     private ManpowerDesignationMaster resolveDesignation(Long designationId) {
@@ -828,6 +885,10 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         return StringUtils.hasText(value) ? value.trim() : null;
     }
 
+    private String normalizeLookupText(String value) {
+        return normalizeRequiredText(value, "subDepartmentName");
+    }
+
     private String normalizeOptionalText(String value, String defaultValue) {
         String normalized = normalizeOptionalText(value);
         return normalized != null ? normalized : defaultValue;
@@ -1033,6 +1094,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
             String aadhaarNumber,
             Long departmentRegistrationId,
             Long subDepartmentId,
+            String subDepartmentName,
             Long designationId,
             Long agencyId,
             String levelCode,

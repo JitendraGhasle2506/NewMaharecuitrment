@@ -44,6 +44,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     @EntityGraph(attributePaths = {
             "agency",
             "departmentRegistration",
+            "department",
             "subDepartment",
             "designation",
             "preOnboarding",
@@ -56,6 +57,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     @EntityGraph(attributePaths = {
             "agency",
             "departmentRegistration",
+            "department",
             "subDepartment",
             "designation",
             "preOnboarding",
@@ -69,6 +71,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     @EntityGraph(attributePaths = {
             "departmentRegistration",
+            "department",
             "subDepartment",
             "subDepartment.department",
             "designation",
@@ -80,6 +83,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     @EntityGraph(attributePaths = {
             "agency",
             "departmentRegistration",
+            "department",
             "subDepartment",
             "designation",
             "preOnboarding",
@@ -424,11 +428,19 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     List<EmployeeEntity> findByDesignation_DesignationNameIgnoreCaseAndStatusIgnoreCase(String designationName, String status);
 
-    @Query("select distinct e from EmployeeEntity e join e.user u join u.roles r " +
-           "where upper(trim(r.name)) = upper(trim(:roleName)) " +
-           "and upper(trim(coalesce(e.status, ''))) = 'ACTIVE' " +
-           "order by lower(e.fullName), e.employeeId")
-    List<EmployeeEntity> findActiveEmployeesByRoleName(@Param("roleName") String roleName);
+    @Query("select distinct e from EmployeeEntity e "
+            + "left join e.user u "
+            + "left join u.roles r "
+            + "left join e.designation d "
+            + "where upper(trim(coalesce(e.status, ''))) = 'ACTIVE' "
+            + "and (upper(trim(coalesce(r.name, ''))) = upper(trim(:roleName)) "
+            + "or upper(trim(coalesce(d.designationName, ''))) in :designationNames "
+            + "or upper(trim(coalesce(d.designationName, ''))) like :designationNamePattern) "
+            + "order by lower(e.fullName), e.employeeId")
+    List<EmployeeEntity> findActiveEmployeesByRoleNameOrDesignationNames(
+            @Param("roleName") String roleName,
+            @Param("designationNames") Collection<String> designationNames,
+            @Param("designationNamePattern") String designationNamePattern);
 
     @Query("select e from EmployeeEntity e "
             + "where upper(trim(coalesce(e.status, ''))) = 'ACTIVE' "

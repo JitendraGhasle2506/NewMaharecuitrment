@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus;
 import com.maharecruitment.gov.in.recruitment.entity.organization.PositionMasterEntity;
 import com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 
 @Repository
 public interface PositionMasterRepository extends JpaRepository<PositionMasterEntity, Long> {
@@ -165,6 +166,29 @@ public interface PositionMasterRepository extends JpaRepository<PositionMasterEn
             Long employeeId,
             OrganizationRecordStatus status,
             PositionStatus positionStatus);
+
+    @Query("""
+            select distinct employee
+            from PositionMasterEntity p
+            join p.employee employee
+            left join p.designation designation
+            where p.status = :activeStatus
+              and p.positionStatus = :filledStatus
+              and upper(trim(coalesce(employee.status, ''))) = :employeeStatus
+              and (
+                   upper(trim(coalesce(p.positionName, ''))) in :managerNames
+                or upper(trim(coalesce(p.positionName, ''))) like :managerNamePattern
+                or upper(trim(coalesce(designation.designationName, ''))) in :managerNames
+                or upper(trim(coalesce(designation.designationName, ''))) like :managerNamePattern
+              )
+            order by lower(employee.fullName), employee.employeeId
+            """)
+    List<EmployeeEntity> findFilledActiveEmployeesByManagerNames(
+            @Param("managerNames") Collection<String> managerNames,
+            @Param("managerNamePattern") String managerNamePattern,
+            @Param("activeStatus") OrganizationRecordStatus activeStatus,
+            @Param("filledStatus") PositionStatus filledStatus,
+            @Param("employeeStatus") String employeeStatus);
 
     @EntityGraph(attributePaths = { "project", "cell", "team", "designation", "employee", "resourceLevel", "reportingPosition" })
     Optional<PositionMasterEntity> findFirstByProject_ProjectIdAndPositionNameIgnoreCase(

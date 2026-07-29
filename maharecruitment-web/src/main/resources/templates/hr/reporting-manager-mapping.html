@@ -90,6 +90,7 @@
                                         <tr>
                                             <th>Employee</th>
                                             <th>Manager</th>
+                                            <th>Project</th>
                                             <th>HOD</th>
                                             <th style="width: 100px;">Action</th>
                                         </tr>
@@ -143,7 +144,15 @@
                                     </select>
                                 </div>
 
-                                <!-- Step 4: Internal Employees -->
+                                <!-- Step 4: Project -->
+                                <div class="mb-4 hidden" id="projectSection">
+                                    <label class="form-label" for="projectSelect" id="projectLabel">4. Select Project</label>
+                                    <select class="form-select w-50" id="projectSelect" name="projectId">
+                                        <option value="">-- Select Project --</option>
+                                    </select>
+                                </div>
+
+                                <!-- Step 5: Internal Employees -->
                                 <div class="mb-4 hidden" id="employeeSection">
                                     <label class="form-label" id="employeeLabel">4. Select Internal Employees to Map <span class="text-danger">*</span></label>
                                     
@@ -202,11 +211,14 @@
                 $('#mappingForm')[0].reset();
                 $('#mappingId').val('');
                 $('#managerSelect').prop('required', true);
+                $('#projectSelect').prop('required', false).html('<option value="">-- Select Project --</option>');
                 $('#managerSection, #projectSection, #employeeSection, #submitSection').addClass('hidden');
                 $('#employeeListContainer').empty();
                 
                 // Also reset standard labels
                 $('#managerLabel').text('3. Select Manager *');
+                $('#projectLabel').text('4. Select Project');
+                $('#employeeLabel').html('4. Select Internal Employees to Map <span class="text-danger">*</span>');
             }
 
             $('#addMappingBtn').click(function() {
@@ -229,6 +241,9 @@
                     { data: 'managerType', render: function(data, type, row) {
                         return data + ' - ' + row.managerName;
                     }},
+                    { data: 'projectName', render: function(data) {
+                        return data || '-';
+                    }},
                     { data: 'hodName' },
                     {
                         data: null,
@@ -237,6 +252,7 @@
                             return '<button type="button" class="btn btn-sm btn-primary edit-mapping-btn" ' +
                                 'data-id="'+row.mappingId+'" data-emp="'+row.employeeId+'" ' + 
                                 'data-mgr="'+row.managerEmployeeId+'" ' +
+                                'data-project="'+(row.projectId || '')+'" ' +
                                 'data-mgrtype="'+row.managerType+'" data-hod="'+row.hodUserId+'">' +
                                 '<i class="fa fa-edit"></i> Edit' +
                                 '</button>';
@@ -270,10 +286,53 @@
                     .html('<option value="">-- Select Manager --</option>')
                     .val('')
                     .prop('required', true);
-                $('#managerSection, #employeeSection, #submitSection').addClass('hidden');
+                $('#projectSelect')
+                    .html('<option value="">-- Select Project --</option>')
+                    .val('')
+                    .prop('required', false);
+                $('#managerSection, #projectSection, #employeeSection, #submitSection').addClass('hidden');
                 $('#employeeListContainer').empty();
                 $('#employeeSearch').val('');
+                $('#projectLabel').text('4. Select Project');
+                $('#employeeLabel').html('4. Select Internal Employees to Map <span class="text-danger">*</span>');
                 allEmployees = [];
+            }
+
+            function loadProjects(currentSelection) {
+                $('#projectSelect').html('<option value="">-- Loading... --</option>');
+                return $.ajax({
+                    url: contextPath + 'hr/api/projects',
+                    method: 'GET'
+                }).done(function(data) {
+                    var select = $('#projectSelect');
+                    select.html('<option value="">-- Select Project --</option>');
+                    if(data.length === 0) {
+                        select.append('<option disabled>No projects found</option>');
+                    } else {
+                        data.forEach(function(project) {
+                            $('<option>', {
+                                value: project.id,
+                                text: project.name
+                            }).appendTo(select);
+                        });
+                    }
+                    if(currentSelection) {
+                        select.val(currentSelection);
+                    }
+                }).fail(function() {
+                    $('#projectSelect').html('<option value="">-- Unable to load projects --</option>');
+                    alert('Unable to load projects. Please try again.');
+                });
+            }
+
+            function managerTypeLabel(type) {
+                if(type === 'PM') {
+                    return 'Project Manager';
+                }
+                if(type === 'STM') {
+                    return 'Senior Technical Manager';
+                }
+                return 'Manager';
             }
 
             $('#hodSelect').change(function() {
@@ -306,6 +365,8 @@
                 var type = $(this).val();
                 var hodUserId = $('#hodSelect').val();
                 $('#managerSelect').val('');
+                $('#projectSelect').val('').prop('required', false);
+                $('#projectSection').addClass('hidden');
                 $('#employeeSection').addClass('hidden');
                 $('#submitSection').addClass('hidden');
 
@@ -331,8 +392,11 @@
 
                 $('#managerSection').removeClass('hidden');
                 $('#managerSelect').prop('required', true);
-                $('#managerLabel').text('3. Select ' + type + ' Manager *');
-                $('#employeeLabel').html('4. Select Internal Employees to Map <span class="text-danger">*</span>');
+                $('#managerLabel').text('3. Select ' + managerTypeLabel(type) + ' *');
+                $('#projectLabel').text('4. Select Project');
+                $('#employeeLabel').html('5. Select Internal Employees to Map <span class="text-danger">*</span>');
+                $('#projectSection').removeClass('hidden');
+                loadProjects(null);
                 loadManagers(type, null);
             });
 
@@ -353,6 +417,7 @@
                 var hod = $(this).data('hod');
                 var mgrType = $(this).data('mgrtype');
                 var mgr = $(this).data('mgr');
+                var project = $(this).data('project');
                 var mappingId = $(this).data('id');
                 editingEmployeeId = $(this).data('emp');
 
@@ -366,6 +431,8 @@
                 if(mgrType === 'OTHER') {
                     $('#managerSection').addClass('hidden');
                     $('#managerSelect').val('').prop('required', false);
+                    $('#projectSection').addClass('hidden');
+                    $('#projectSelect').val('').prop('required', false);
                     $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
                     $('#employeeSection, #submitSection').removeClass('hidden');
                     loadInternalEmployees({
@@ -378,8 +445,11 @@
 
                 $('#managerSection').removeClass('hidden');
                 $('#managerSelect').prop('required', true);
-                $('#managerLabel').text('3. Select ' + mgrType + ' Manager *');
-                $('#employeeLabel').html('4. Select Internal Employees to Map <span class="text-danger">*</span>');
+                $('#managerLabel').text('3. Select ' + managerTypeLabel(mgrType) + ' *');
+                $('#projectLabel').text('4. Select Project');
+                $('#employeeLabel').html('5. Select Internal Employees to Map <span class="text-danger">*</span>');
+                $('#projectSection').removeClass('hidden');
+                loadProjects(project);
                 loadManagers(mgrType, mgr).done(function() {
                     $('#managerSelect').trigger('change');
                 });

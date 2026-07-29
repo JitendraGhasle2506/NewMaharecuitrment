@@ -22,8 +22,11 @@ import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
+import com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus;
+import com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.repository.organization.PositionMasterRepository;
 import com.maharecruitment.gov.in.recruitment.service.ReportingManagerService;
 
 @Service
@@ -33,14 +36,30 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     private static final String TYPE_STM = "STM";
     private static final String TYPE_PM = "PM";
     private static final String TYPE_OTHER = "OTHER";
+    private static final String ROLE_STM = "ROLE_STM";
+    private static final String ROLE_PM = "ROLE_PM";
     private static final String ACTIVE = "ACTIVE";
+    private static final String ACTIVE_FLAG_Y = "Y";
     private static final String INTERNAL = "INTERNAL";
+    private static final Set<String> STM_DESIGNATION_NAMES = Set.of(
+            "STM",
+            "SENIOR TECHNICAL MANAGER",
+            "SENIOR TECHNICAL MANAGER (STM)");
+    private static final Set<String> PM_DESIGNATION_NAMES = Set.of(
+            "PM",
+            "PROJECT MANAGER",
+            "PROJECT MANAGER (PM)");
+    private static final String STM_MANAGER_NAME_PATTERN = "%SENIOR%TECHNICAL%MANAGER%";
+    private static final String PM_MANAGER_NAME_PATTERN = "%PROJECT%MANAGER%";
 
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private PositionMasterRepository positionRepository;
 
     @Autowired
     private ProjectMstRepository projectRepository;
@@ -71,12 +90,13 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             throw new IllegalArgumentException("Manager type is required.");
         }
 
+        String normalizedType = normalizeManagerType(type);
         List<EmployeeEntity> managers;
-        if ("STM".equalsIgnoreCase(type)) {
-            managers = employeeRepository.findActiveEmployeesByRoleName("ROLE_STM");
-        } else if ("PM".equalsIgnoreCase(type)) {
-            managers = employeeRepository.findActiveEmployeesByRoleName("ROLE_PM");
-        } else if ("OTHER".equalsIgnoreCase(type)) {
+        if (TYPE_STM.equals(normalizedType)) {
+            managers = getActiveManagers(ROLE_STM, STM_DESIGNATION_NAMES, STM_MANAGER_NAME_PATTERN);
+        } else if (TYPE_PM.equals(normalizedType)) {
+            managers = getActiveManagers(ROLE_PM, PM_DESIGNATION_NAMES, PM_MANAGER_NAME_PATTERN);
+        } else if (TYPE_OTHER.equals(normalizedType)) {
             managers = employeeRepository.findActiveEmployeesNotMappedAsStmOrPmManagers();
         } else {
             throw new IllegalArgumentException("Unsupported manager type: " + type);
@@ -91,9 +111,47 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 }).collect(Collectors.toList());
     }
 
+    private List<EmployeeEntity> getActiveManagers(
+            String roleName,
+            Set<String> managerNames,
+            String managerNamePattern) {
+        List<EmployeeEntity> roleOrDesignationManagers =
+                employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                        roleName, managerNames, managerNamePattern);
+        List<EmployeeEntity> positionManagers =
+                positionRepository.findFilledActiveEmployeesByManagerNames(
+                        managerNames,
+                        managerNamePattern,
+                        OrganizationRecordStatus.ACTIVE,
+                        PositionStatus.FILLED,
+                        ACTIVE);
+
+        Map<Long, EmployeeEntity> uniqueManagers = new HashMap<>();
+        addManagers(uniqueManagers, roleOrDesignationManagers);
+        addManagers(uniqueManagers, positionManagers);
+        return uniqueManagers.values().stream()
+                .sorted(Comparator
+                        .<EmployeeEntity, String>comparing(
+                                e -> e.getFullName() == null ? "" : e.getFullName(),
+                                String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(EmployeeEntity::getEmployeeId))
+                .toList();
+    }
+
+    private void addManagers(Map<Long, EmployeeEntity> uniqueManagers, List<EmployeeEntity> managers) {
+        if (managers == null) {
+            return;
+        }
+        for (EmployeeEntity manager : managers) {
+            if (manager != null && manager.getEmployeeId() != null) {
+                uniqueManagers.putIfAbsent(manager.getEmployeeId(), manager);
+            }
+        }
+    }
+
     @Override
     public List<Map<String, Object>> getProjects() {
-        List<ProjectMst> projects = projectRepository.findAll();
+        List<ProjectMst> projects = projectRepository.findByActiveFlagIgnoreCaseOrderByProjectNameAsc(ACTIVE_FLAG_Y);
         return projects.stream().map(p -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", p.getProjectId());
@@ -287,6 +345,9 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             if (!ACTIVE.equalsIgnoreCase(manager.getStatus())) {
                 throw new IllegalArgumentException("Selected manager must be active.");
             }
+            if (normalizedProjectId != null) {
+                requireActiveProject(normalizedProjectId);
+            }
         } else {
             normalizedManagerId = null;
             normalizedProjectId = null;
@@ -333,6 +394,15 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     private User requireHod(Long hodUserId) {
         return userRepository.findById(hodUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Selected HOD was not found."));
+    }
+
+    private ProjectMst requireActiveProject(Long projectId) {
+        ProjectMst project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Selected project was not found."));
+        if (!ACTIVE_FLAG_Y.equalsIgnoreCase(project.getActiveFlag())) {
+            throw new IllegalArgumentException("Selected project must be active.");
+        }
+        return project;
     }
 
     private String normalizeManagerType(String managerType) {

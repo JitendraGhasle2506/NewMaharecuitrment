@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
+import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.entity.SubDepartment;
 
@@ -27,7 +28,8 @@ import lombok.Setter;
 @Entity
 @Table(name = "employee_master", indexes = {
         @Index(name = "idx_employee_code", columnList = "employee_code"),
-        @Index(name = "idx_employee_email", columnList = "email")
+        @Index(name = "idx_employee_email", columnList = "email"),
+        @Index(name = "idx_employee_department_id", columnList = "department_id")
 })
 @Getter
 @Setter
@@ -124,6 +126,10 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_registration_id")
     private DepartmentRegistrationEntity departmentRegistration;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private DepartmentMst department;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sub_department_id")

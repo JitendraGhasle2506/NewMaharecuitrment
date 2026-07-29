@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,11 +23,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.repository.organization.PositionMasterRepository;
 
 @ExtendWith(MockitoExtension.class)
 class ReportingManagerServiceImplTest {
@@ -38,6 +41,9 @@ class ReportingManagerServiceImplTest {
     private EmployeeRepository employeeRepository;
 
     @Mock
+    private PositionMasterRepository positionRepository;
+
+    @Mock
     private ProjectMstRepository projectRepository;
 
     @Mock
@@ -47,9 +53,25 @@ class ReportingManagerServiceImplTest {
     private ReportingManagerServiceImpl service;
 
     @Test
-    void getManagersByTypeStmQueriesStmRole() {
+    void getProjectsReturnsActiveProjectsForSelection() {
+        when(projectRepository.findByActiveFlagIgnoreCaseOrderByProjectNameAsc("Y"))
+                .thenReturn(List.of(project(12L, "Citizen Services")));
+
+        List<Map<String, Object>> result = service.getProjects();
+
+        assertEquals(1, result.size());
+        assertEquals(12L, result.get(0).get("id"));
+        assertEquals("Citizen Services", result.get(0).get("name"));
+    }
+
+    @Test
+    void getManagersByTypeStmQueriesStmRoleOrDesignation() {
         EmployeeEntity employee = employee(10L, "John Doe", "EMP10", "INTERNAL", "ACTIVE");
-        when(employeeRepository.findActiveEmployeesByRoleName("ROLE_STM")).thenReturn(List.of(employee));
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_STM",
+                Set.of("STM", "SENIOR TECHNICAL MANAGER", "SENIOR TECHNICAL MANAGER (STM)"),
+                "%SENIOR%TECHNICAL%MANAGER%"))
+                .thenReturn(List.of(employee));
 
         List<Map<String, Object>> result = service.getManagersByType("STM");
 
@@ -59,15 +81,37 @@ class ReportingManagerServiceImplTest {
     }
 
     @Test
-    void getManagersByTypePmQueriesPmRole() {
+    void getManagersByTypePmQueriesPmRoleOrDesignation() {
         EmployeeEntity employee = employee(20L, "Jane Smith", "EMP20", "INTERNAL", "ACTIVE");
-        when(employeeRepository.findActiveEmployeesByRoleName("ROLE_PM")).thenReturn(List.of(employee));
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_PM",
+                Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
+                "%PROJECT%MANAGER%"))
+                .thenReturn(List.of(employee));
 
         List<Map<String, Object>> result = service.getManagersByType("PM");
 
         assertEquals(1, result.size());
         assertEquals(20L, result.get(0).get("id"));
         assertEquals("Jane Smith (EMP20)", result.get(0).get("name"));
+    }
+
+    @Test
+    void getManagersByTypePmIncludesFilledProjectManagerPositionEmployee() {
+        EmployeeEntity employee = employee(21L, "Prakash More", "EMP21", "INTERNAL", "ACTIVE");
+        when(positionRepository.findFilledActiveEmployeesByManagerNames(
+                Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
+                "%PROJECT%MANAGER%",
+                com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus.ACTIVE,
+                com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus.FILLED,
+                "ACTIVE"))
+                .thenReturn(List.of(employee));
+
+        List<Map<String, Object>> result = service.getManagersByType("PM");
+
+        assertEquals(1, result.size());
+        assertEquals(21L, result.get(0).get("id"));
+        assertEquals("Prakash More (EMP21)", result.get(0).get("name"));
     }
 
     @Test
@@ -126,6 +170,7 @@ class ReportingManagerServiceImplTest {
         EmployeeEntity employee = employee(101L, "Rahul Patil", "EMP101", "INTERNAL", "ACTIVE");
         stubValidHodAndEmployees(7L, employee);
         when(employeeRepository.findById(50L)).thenReturn(Optional.of(manager));
+        when(projectRepository.findById(12L)).thenReturn(Optional.of(project(12L, "Internal Project")));
         when(mappingRepository.findByEmployeeIdIn(List.of(101L))).thenReturn(List.of());
 
         service.saveMapping(7L, "STM", 50L, 12L, List.of(101L));
@@ -257,6 +302,14 @@ class ReportingManagerServiceImplTest {
         user.setId(id);
         user.setName(name);
         return user;
+    }
+
+    private ProjectMst project(Long id, String name) {
+        ProjectMst project = new ProjectMst();
+        project.setProjectId(id);
+        project.setProjectName(name);
+        project.setActiveFlag("Y");
+        return project;
     }
 
     private EmployeeEntity employee(

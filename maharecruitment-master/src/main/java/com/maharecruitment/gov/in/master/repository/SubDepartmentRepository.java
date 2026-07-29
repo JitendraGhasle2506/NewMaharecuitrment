@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.master.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -19,6 +20,12 @@ public interface SubDepartmentRepository extends JpaRepository<SubDepartment, Lo
     Optional<SubDepartment> findBySubDeptIdAndDepartmentDepartmentId(Long subDeptId, Long departmentId);
 
     boolean existsByDepartmentDepartmentId(Long departmentId);
+
+    List<SubDepartment> findBySubDeptNameIgnoreCaseOrderBySubDeptIdAsc(String subDeptName);
+
+    List<SubDepartment> findByDepartmentDepartmentIdAndSubDeptNameIgnoreCaseOrderBySubDeptIdAsc(
+            Long departmentId,
+            String subDeptName);
 
     @Query("""
             SELECT COUNT(s) > 0
