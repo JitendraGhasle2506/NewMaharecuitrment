@@ -93,7 +93,7 @@
                                         <tr>
                                             <th>Employee</th>
                                             <th>Manager</th>
-                                            <th>HOD / COO</th>
+                                            <th>COO / HOD</th>
                                             <th style="width: 100px;">Action</th>
                                         </tr>
                                     </thead>
@@ -115,16 +115,16 @@
                                 
                                 <!-- Step 1: Reporting Authority -->
                                 <div class="mb-4">
-                                    <label class="form-label d-block">1. Select Reporting Authority (HOD or COO) <span class="text-danger">*</span></label>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input authorityTypeOption" type="radio"
-                                               name="authorityType" id="authorityTypeHOD" value="HOD" required>
-                                        <label class="form-check-label" for="authorityTypeHOD">Head of Department (HOD)</label>
-                                    </div>
+                                    <label class="form-label d-block">1. Select Reporting Authority (COO or HOD) <span class="text-danger">*</span></label>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input authorityTypeOption" type="radio"
                                                name="authorityType" id="authorityTypeCOO" value="COO" required>
                                         <label class="form-check-label" for="authorityTypeCOO">Chief Operating Officer (COO)</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input authorityTypeOption" type="radio"
+                                               name="authorityType" id="authorityTypeHOD" value="HOD" required>
+                                        <label class="form-check-label" for="authorityTypeHOD">Head of Department (HOD)</label>
                                     </div>
                                     <div class="mt-3 hidden" id="authorityUserSection">
                                         <label class="form-label" for="authoritySelect" id="authorityUserLabel">Select Reporting Authority <span class="text-danger">*</span></label>
@@ -428,7 +428,7 @@
                 $('#submitSection').addClass('hidden');
 
                 if(!authorityUserId) {
-                    alert('Please select a HOD or COO reporting authority first.');
+                    alert('Please select a COO or HOD reporting authority first.');
                     $(this).prop('checked', false);
                     return;
                 }
@@ -615,7 +615,7 @@
                 var authorityUserId = $('#authoritySelect').val();
                 var managerType = $('input[name="managerType"]:checked').val();
                 if(!authorityType) {
-                    alert('Please select HOD or COO.');
+                    alert('Please select COO or HOD.');
                     e.preventDefault();
                     return;
                 }
