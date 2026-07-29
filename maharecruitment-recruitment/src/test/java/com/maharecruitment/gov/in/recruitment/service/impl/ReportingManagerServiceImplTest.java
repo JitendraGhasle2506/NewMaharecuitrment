@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.recruitment.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doThrow;
@@ -98,6 +99,28 @@ class ReportingManagerServiceImplTest {
         assertEquals(1, result.size());
         assertEquals(10L, result.get(0).get("id"));
         assertEquals("John Doe (EMP10)", result.get(0).get("name"));
+    }
+
+    @Test
+    void getManagersByTypeMarksResourcesThatAreAlreadyMapped() {
+        EmployeeEntity employee = employee(10L, "John Doe", "EMP10", "INTERNAL", "ACTIVE");
+        EmployeeReportingMappingEntity mapping = new EmployeeReportingMappingEntity();
+        mapping.setMappingId(3L);
+        mapping.setEmployeeId(10L);
+        mapping.setHodUserId(7L);
+        mapping.setManagerType("STM");
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_STM",
+                Set.of("STM", "SENIOR TECHNICAL MANAGER", "SENIOR TECHNICAL MANAGER (STM)"),
+                "%SENIOR%TECHNICAL%MANAGER%"))
+                .thenReturn(List.of(employee));
+        when(mappingRepository.findByEmployeeIdIn(Set.of(10L))).thenReturn(List.of(mapping));
+
+        Map<String, Object> result = service.getManagersByType("STM").get(0);
+
+        assertEquals(true, result.get("mapped"));
+        assertEquals(7L, result.get("mappedAuthorityUserId"));
+        assertEquals("STM", result.get("mappedManagerType"));
     }
 
     @Test
@@ -231,30 +254,59 @@ class ReportingManagerServiceImplTest {
     }
 
     @Test
-    void stmRequiresManagerEmployeeId() {
-        when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
+    void stmAllowsMultipleManagersToBeMappedDirectlyToAuthority() {
+        EmployeeEntity firstManager = employee(50L, "First STM", "EMP050", "INTERNAL", "ACTIVE");
+        EmployeeEntity secondManager = employee(51L, "Second STM", "EMP051", "INTERNAL", "ACTIVE");
+        stubValidHodAndEmployees(7L, firstManager, secondManager);
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_STM",
+                Set.of("STM", "SENIOR TECHNICAL MANAGER", "SENIOR TECHNICAL MANAGER (STM)"),
+                "%SENIOR%TECHNICAL%MANAGER%"))
+                .thenReturn(List.of(firstManager, secondManager));
+        when(mappingRepository.findByEmployeeIdIn(List.of(50L, 51L))).thenReturn(List.of());
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> service.saveMapping(7L, "STM", null, null, List.of(101L)));
+        service.saveMapping(7L, "STM", null, 12L, List.of(50L, 51L));
 
-        assertEquals("Manager selection is required.", exception.getMessage());
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<EmployeeReportingMappingEntity>> captor = ArgumentCaptor.forClass(List.class);
+        verify(mappingRepository).saveAll(captor.capture());
+        assertEquals(List.of(50L, 51L),
+                captor.getValue().stream().map(EmployeeReportingMappingEntity::getEmployeeId).toList());
+        assertEquals(List.of("STM", "STM"),
+                captor.getValue().stream().map(EmployeeReportingMappingEntity::getManagerType).toList());
+        assertTrue(captor.getValue().stream()
+                .allMatch(mapping -> mapping.getManagerEmployeeId() == null && mapping.getProjectId() == null));
     }
 
     @Test
-    void pmRequiresManagerEmployeeId() {
-        when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
+    void pmAllowsMultipleManagersToBeMappedDirectlyToAuthority() {
+        EmployeeEntity firstManager = employee(60L, "First PM", "EMP060", "INTERNAL", "ACTIVE");
+        EmployeeEntity secondManager = employee(61L, "Second PM", "EMP061", "INTERNAL", "ACTIVE");
+        stubValidHodAndEmployees(7L, firstManager, secondManager);
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_PM",
+                Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
+                "%PROJECT%MANAGER%"))
+                .thenReturn(List.of(firstManager, secondManager));
+        when(mappingRepository.findByEmployeeIdIn(List.of(60L, 61L))).thenReturn(List.of());
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.saveMapping(7L, "PM", null, null, List.of(101L)));
+        service.saveMapping(7L, "PM", null, null, List.of(60L, 61L));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<EmployeeReportingMappingEntity>> captor = ArgumentCaptor.forClass(List.class);
+        verify(mappingRepository).saveAll(captor.capture());
+        assertEquals(List.of(60L, 61L),
+                captor.getValue().stream().map(EmployeeReportingMappingEntity::getEmployeeId).toList());
+        assertTrue(captor.getValue().stream()
+                .allMatch(mapping -> mapping.getManagerEmployeeId() == null && mapping.getProjectId() == null));
     }
 
     @Test
-    void stmFlowContinuesToStoreSelectedManager() {
+    void legacyStmFlowKeepsSelectedManagerButDiscardsProject() {
         EmployeeEntity manager = employee(50L, "STM Manager", "EMP050", "INTERNAL", "ACTIVE");
         EmployeeEntity employee = employee(101L, "Rahul Patil", "EMP101", "INTERNAL", "ACTIVE");
         stubValidHodAndEmployees(7L, employee);
         when(employeeRepository.findById(50L)).thenReturn(Optional.of(manager));
-        when(projectRepository.findById(12L)).thenReturn(Optional.of(project(12L, "Internal Project")));
         when(mappingRepository.findByEmployeeIdIn(List.of(101L))).thenReturn(List.of());
 
         service.saveMapping(7L, "STM", 50L, 12L, List.of(101L));
@@ -265,7 +317,7 @@ class ReportingManagerServiceImplTest {
         EmployeeReportingMappingEntity mapping = captor.getValue().get(0);
         assertEquals("STM", mapping.getManagerType());
         assertEquals(50L, mapping.getManagerEmployeeId());
-        assertEquals(12L, mapping.getProjectId());
+        assertNull(mapping.getProjectId());
     }
 
     @Test
@@ -286,16 +338,19 @@ class ReportingManagerServiceImplTest {
     }
 
     @Test
-    void cooCanMapEmployeesThroughHodManager() {
+    void cooCanMapHodDirectlyWithoutProject() {
         User coo = userWithRole(8L, "COO", "ROLE_COO");
-        EmployeeEntity manager = employee(9L, "HOD Manager", "EMP009", "INTERNAL", "ACTIVE");
-        EmployeeEntity employee = employee(103L, "Neha Patil", "EMP103", "INTERNAL", "ACTIVE");
+        EmployeeEntity hod = employee(9L, "HOD Manager", "EMP009", "INTERNAL", "ACTIVE");
         when(userRepository.findById(8L)).thenReturn(Optional.of(coo));
-        when(employeeRepository.findById(9L)).thenReturn(Optional.of(manager));
-        when(employeeRepository.findAllById(any())).thenReturn(List.of(employee));
-        when(mappingRepository.findByEmployeeIdIn(List.of(103L))).thenReturn(List.of());
+        when(employeeRepository.findAllById(any())).thenReturn(List.of(hod));
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_HOD",
+                Set.of("HOD", "HEAD OF DEPARTMENT", "HEAD OF DEPARTMENT (HOD)"),
+                "%HEAD%OF%DEPARTMENT%"))
+                .thenReturn(List.of(hod));
+        when(mappingRepository.findByEmployeeIdIn(List.of(9L))).thenReturn(List.of());
 
-        service.saveMapping(8L, "HOD", 9L, 12L, List.of(103L));
+        service.saveMapping(8L, "HOD", null, 12L, List.of(9L));
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<EmployeeReportingMappingEntity>> captor = ArgumentCaptor.forClass(List.class);
@@ -303,7 +358,8 @@ class ReportingManagerServiceImplTest {
         EmployeeReportingMappingEntity mapping = captor.getValue().get(0);
         assertEquals(8L, mapping.getHodUserId());
         assertEquals("HOD", mapping.getManagerType());
-        assertEquals(9L, mapping.getManagerEmployeeId());
+        assertEquals(9L, mapping.getEmployeeId());
+        assertNull(mapping.getManagerEmployeeId());
         assertNull(mapping.getProjectId());
     }
 
@@ -380,6 +436,16 @@ class ReportingManagerServiceImplTest {
     void otherDirectReportingResolverReturnsHodUserIdWithNullManager() {
         EmployeeReportingMappingEntity mapping = new EmployeeReportingMappingEntity();
         mapping.setManagerType("OTHER");
+        mapping.setHodUserId(7L);
+        mapping.setManagerEmployeeId(null);
+
+        assertEquals(7L, service.resolveDirectReportingUserId(mapping));
+    }
+
+    @Test
+    void managerCategoryDirectReportingResolverReturnsAuthorityUserId() {
+        EmployeeReportingMappingEntity mapping = new EmployeeReportingMappingEntity();
+        mapping.setManagerType("PM");
         mapping.setHodUserId(7L);
         mapping.setManagerEmployeeId(null);
 
