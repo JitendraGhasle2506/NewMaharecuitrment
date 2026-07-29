@@ -428,7 +428,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     List<EmployeeEntity> findByDesignation_DesignationNameIgnoreCaseAndStatusIgnoreCase(String designationName, String status);
 
-    @Query("select distinct e from EmployeeEntity e "
+    @Query("select e from EmployeeEntity e "
             + "left join e.user u "
             + "left join u.roles r "
             + "left join e.designation d "

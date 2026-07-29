@@ -168,7 +168,7 @@ public interface PositionMasterRepository extends JpaRepository<PositionMasterEn
             PositionStatus positionStatus);
 
     @Query("""
-            select distinct employee
+            select employee
             from PositionMasterEntity p
             join p.employee employee
             left join p.designation designation

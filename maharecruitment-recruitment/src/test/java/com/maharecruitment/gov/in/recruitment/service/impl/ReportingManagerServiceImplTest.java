@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,6 +28,7 @@ import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingHodProjection;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.organization.PositionMasterRepository;
@@ -88,6 +90,54 @@ class ReportingManagerServiceImplTest {
                 Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
                 "%PROJECT%MANAGER%"))
                 .thenReturn(List.of(employee));
+
+        List<Map<String, Object>> result = service.getManagersByType("PM");
+
+        assertEquals(1, result.size());
+        assertEquals(20L, result.get(0).get("id"));
+        assertEquals("Jane Smith (EMP20)", result.get(0).get("name"));
+    }
+
+    @Test
+    void getManagersByTypePmShowsMappedHodAndKeepsUnmappedProjectManagers() {
+        EmployeeEntity mappedManager = employee(20L, "Mapped PM", "EMP20", "INTERNAL", "ACTIVE");
+        EmployeeEntity unmappedManager = employee(21L, "Unmapped PM", "EMP21", "INTERNAL", "ACTIVE");
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_PM",
+                Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
+                "%PROJECT%MANAGER%"))
+                .thenReturn(List.of(mappedManager, unmappedManager));
+        when(mappingRepository.findHodReferencesByEmployeeIdIn(Set.of(20L, 21L)))
+                .thenReturn(List.of(mappingHod(20L, 7L, 1L)));
+        when(userRepository.findAllById(Set.of(7L))).thenReturn(List.of(user(7L, "Anita Deshmukh")));
+
+        List<Map<String, Object>> result = service.getManagersByType("PM");
+
+        assertEquals(2, result.size());
+        assertEquals(20L, result.get(0).get("id"));
+        assertEquals("Mapped PM (EMP20) - Mapped HOD: Anita Deshmukh", result.get(0).get("name"));
+        assertEquals(7L, result.get(0).get("mappedHodUserId"));
+        assertEquals("Anita Deshmukh", result.get(0).get("mappedHodName"));
+        assertEquals(21L, result.get(1).get("id"));
+        assertEquals("Unmapped PM (EMP21)", result.get(1).get("name"));
+        assertNull(result.get(1).get("mappedHodUserId"));
+    }
+
+    @Test
+    void getManagersByTypePmStillLoadsWhenPositionLookupFails() {
+        EmployeeEntity employee = employee(20L, "Jane Smith", "EMP20", "INTERNAL", "ACTIVE");
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_PM",
+                Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
+                "%PROJECT%MANAGER%"))
+                .thenReturn(List.of(employee));
+        doThrow(new IllegalStateException("position source unavailable"))
+                .when(positionRepository).findFilledActiveEmployeesByManagerNames(
+                        Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
+                        "%PROJECT%MANAGER%",
+                        com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus.ACTIVE,
+                        com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus.FILLED,
+                        "ACTIVE");
 
         List<Map<String, Object>> result = service.getManagersByType("PM");
 
@@ -310,6 +360,25 @@ class ReportingManagerServiceImplTest {
         project.setProjectName(name);
         project.setActiveFlag("Y");
         return project;
+    }
+
+    private EmployeeReportingHodProjection mappingHod(Long employeeId, Long hodUserId, Long mappingId) {
+        return new EmployeeReportingHodProjection() {
+            @Override
+            public Long getEmployeeId() {
+                return employeeId;
+            }
+
+            @Override
+            public Long getHodUserId() {
+                return hodUserId;
+            }
+
+            @Override
+            public Long getMappingId() {
+                return mappingId;
+            }
+        };
     }
 
     private EmployeeEntity employee(

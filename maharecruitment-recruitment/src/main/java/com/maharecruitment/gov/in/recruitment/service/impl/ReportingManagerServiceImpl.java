@@ -24,6 +24,7 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus;
 import com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingHodProjection;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.organization.PositionMasterRepository;
@@ -101,14 +102,102 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         } else {
             throw new IllegalArgumentException("Unsupported manager type: " + type);
         }
+
+        Map<Long, User> mappedHodsByEmployeeId = TYPE_PM.equals(normalizedType)
+                ? getMappedHodsByEmployeeId(managers)
+                : Map.of();
         
         return managers.stream()
                 .map(e -> {
+                    User mappedHod = mappedHodsByEmployeeId.get(e.getEmployeeId());
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", e.getEmployeeId());
-                    map.put("name", e.getFullName() + " (" + e.getEmployeeCode() + ")");
+                    map.put("name", buildManagerDisplayName(e, mappedHod));
+                    if (mappedHod != null) {
+                        map.put("mappedHodUserId", mappedHod.getId());
+                        map.put("mappedHodName", mappedHod.getName());
+                    }
                     return map;
                 }).collect(Collectors.toList());
+    }
+
+    private String buildManagerDisplayName(EmployeeEntity employee, User mappedHod) {
+        String displayName = employee.getFullName() + " (" + employee.getEmployeeCode() + ")";
+        if (mappedHod != null) {
+            displayName += " - Mapped HOD: " + mappedHod.getName();
+        }
+        return displayName;
+    }
+
+    private Map<Long, User> getMappedHodsByEmployeeId(List<EmployeeEntity> managers) {
+        try {
+            return loadMappedHodsByEmployeeId(managers);
+        } catch (RuntimeException ex) {
+            log.warn("Unable to enrich PM manager options with mapped HOD details.", ex);
+            return Map.of();
+        }
+    }
+
+    private Map<Long, User> loadMappedHodsByEmployeeId(List<EmployeeEntity> managers) {
+        Set<Long> managerEmployeeIds = managers.stream()
+                .map(EmployeeEntity::getEmployeeId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        if (managerEmployeeIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, EmployeeReportingHodProjection> latestMappingsByEmployeeId =
+                latestMappingsByEmployeeId(mappingRepository.findHodReferencesByEmployeeIdIn(managerEmployeeIds));
+        if (latestMappingsByEmployeeId.isEmpty()) {
+            return Map.of();
+        }
+
+        Set<Long> hodUserIds = latestMappingsByEmployeeId.values().stream()
+                .map(EmployeeReportingHodProjection::getHodUserId)
+                .collect(Collectors.toSet());
+        Map<Long, User> hodUsersById = userRepository.findAllById(hodUserIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+
+        Map<Long, User> mappedHodsByEmployeeId = new HashMap<>();
+        latestMappingsByEmployeeId.forEach((employeeId, mapping) -> {
+            User hod = hodUsersById.get(mapping.getHodUserId());
+            if (hod != null) {
+                mappedHodsByEmployeeId.put(employeeId, hod);
+            }
+        });
+        return mappedHodsByEmployeeId;
+    }
+
+    private Map<Long, EmployeeReportingHodProjection> latestMappingsByEmployeeId(
+            List<EmployeeReportingHodProjection> mappings) {
+        if (mappings == null || mappings.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, EmployeeReportingHodProjection> latestMappingsByEmployeeId = new HashMap<>();
+        for (EmployeeReportingHodProjection mapping : mappings) {
+            if (mapping == null || mapping.getEmployeeId() == null || mapping.getHodUserId() == null) {
+                continue;
+            }
+            latestMappingsByEmployeeId.merge(
+                    mapping.getEmployeeId(),
+                    mapping,
+                    (existing, current) -> isAfter(current, existing) ? current : existing);
+        }
+        return latestMappingsByEmployeeId;
+    }
+
+    private boolean isAfter(EmployeeReportingHodProjection current, EmployeeReportingHodProjection existing) {
+        Long currentId = current.getMappingId();
+        Long existingId = existing.getMappingId();
+        if (currentId == null) {
+            return false;
+        }
+        if (existingId == null) {
+            return true;
+        }
+        return currentId > existingId;
     }
 
     private List<EmployeeEntity> getActiveManagers(
@@ -116,15 +205,9 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             Set<String> managerNames,
             String managerNamePattern) {
         List<EmployeeEntity> roleOrDesignationManagers =
-                employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
-                        roleName, managerNames, managerNamePattern);
+                findActiveRoleOrDesignationManagers(roleName, managerNames, managerNamePattern);
         List<EmployeeEntity> positionManagers =
-                positionRepository.findFilledActiveEmployeesByManagerNames(
-                        managerNames,
-                        managerNamePattern,
-                        OrganizationRecordStatus.ACTIVE,
-                        PositionStatus.FILLED,
-                        ACTIVE);
+                findFilledActivePositionManagers(managerNames, managerNamePattern);
 
         Map<Long, EmployeeEntity> uniqueManagers = new HashMap<>();
         addManagers(uniqueManagers, roleOrDesignationManagers);
@@ -136,6 +219,35 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                                 String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(EmployeeEntity::getEmployeeId))
                 .toList();
+    }
+
+    private List<EmployeeEntity> findActiveRoleOrDesignationManagers(
+            String roleName,
+            Set<String> managerNames,
+            String managerNamePattern) {
+        try {
+            return employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                    roleName, managerNames, managerNamePattern);
+        } catch (RuntimeException ex) {
+            log.warn("Unable to load managers from role/designation source for roleName={}.", roleName, ex);
+            return List.of();
+        }
+    }
+
+    private List<EmployeeEntity> findFilledActivePositionManagers(
+            Set<String> managerNames,
+            String managerNamePattern) {
+        try {
+            return positionRepository.findFilledActiveEmployeesByManagerNames(
+                    managerNames,
+                    managerNamePattern,
+                    OrganizationRecordStatus.ACTIVE,
+                    PositionStatus.FILLED,
+                    ACTIVE);
+        } catch (RuntimeException ex) {
+            log.warn("Unable to load managers from organization position source.", ex);
+            return List.of();
+        }
     }
 
     private void addManagers(Map<Long, EmployeeEntity> uniqueManagers, List<EmployeeEntity> managers) {
