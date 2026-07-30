@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -19,7 +19,7 @@
     <nav class="navbar navbar-expand-lg portal-nav">
         <div class="container justify-content-center">
             <a class="navbar-brand fw-semibold" th:href="@{/index}">
-               <!--  <img th:src="@{/img/mahait_logo.png}" alt="" class="brand-logo"> -->
+                <img th:src="@{/img/mahait_logo.png}" alt="MahaIT" class="brand-logo">
                 <span>MahaIT Recruitment</span>
             </a>
         </div>
@@ -30,7 +30,14 @@
             <div class="row g-4 align-items-stretch">
                 <div class="col-lg-7">
                     <section class="hero-panel">
-                        <p class="hero-chip">Government of Maharashtra</p>
+                        <div class="hero-logo-wrap">
+                            <img th:src="@{/img/mahait_logo.png}" alt="MahaIT Logo" class="hero-logo-img" />
+                            <div class="hero-logo-text">
+                                <span class="hero-logo-org">Maharashtra Information Technology Corporation</span>
+                                <span class="hero-logo-tagline">Empowering Digital Governance</span>
+                            </div>
+                        </div>
+                        <p class="hero-chip"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Government of Maharashtra</p>
                         <h1>MahaIT Digital Recruitment & Workforce Platform</h1>
                         <p class="hero-subtitle">
                             An integrated ecosystem empowering government departments with seamless end-to-end
@@ -39,14 +46,17 @@
                         </p>
                         <div class="hero-stats">
                             <div class="stat-card">
+                                <span class="stat-icon"><i class="fa-solid fa-route"></i></span>
                                 <span class="stat-value">End-to-End</span>
                                 <span class="stat-label">Recruitment Cycle</span>
                             </div>
                             <div class="stat-card">
+                                <span class="stat-icon"><i class="fa-solid fa-gears"></i></span>
                                 <span class="stat-value">Automated</span>
                                 <span class="stat-label">Onboarding Flow</span>
                             </div>
                             <div class="stat-card">
+                                <span class="stat-icon"><i class="fa-solid fa-chart-bar"></i></span>
                                 <span class="stat-value">Transparent</span>
                                 <span class="stat-label">Workforce Ops</span>
                             </div>
@@ -61,6 +71,10 @@
 
                 <div class="col-lg-5">
                     <section class="auth-card">
+                        <div class="auth-card-logo">
+                            <span class="auth-logo-mark"><i class="fa-solid fa-building-columns"></i></span>
+                            <span class="auth-logo-name">MahaIT Portal</span>
+                        </div>
                         <h2>Sign In</h2>
                         <p class="auth-subtext">Use your registered email or mobile number to sign in.</p>
 
@@ -128,7 +142,7 @@
                             <div id="loginOtpSection" class="form-group mb-3 otp-entry-section">
                                 <label for="loginOtp" class="control-label">OTP</label>
                                 <input type="text" id="loginOtp" name="otp" class="form-control"
-                                    placeholder="Enter 6 digit OTP" inputmode="numeric" minlength="6" maxlength="6" 
+                                    placeholder="Enter 6 digit OTP" inputmode="numeric" minlength="6" maxlength="6"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '');" required disabled />
                             </div>
                             <div th:if="${otpRemainingAttempts != null}" class="otp-status"
@@ -165,16 +179,16 @@
                             <div class="form-group mb-3">
                                 <label for="username" class="control-label">Email / Mobile</label>
                                 <input type="text" id="username" name="username" class="form-control"
-                                    placeholder="Enter registered email or mobile number" 
+                                    placeholder="Enter registered email or mobile number"
                                     minlength="3" maxlength="100" oninput="this.value=this.value.replace(/\s/g, '');" required />
                             </div>
                             <div class="form-group mb-3">
                                 <label for="password" class="control-label">Password</label>
                                 <div class="input-group">
                                     <input type="password" id="password" class="form-control"
-                                        placeholder="Enter password" 
-                                        minlength="8" maxlength="20" 
-                                        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,20}" 
+                                        placeholder="Enter password"
+                                        minlength="8" maxlength="20"
+                                        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,20}"
                                         title="Password must be between 8 to 20 characters and contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
                                         oninput="this.value = this.value.replace(/^\s+/, '');" required />
                                     <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center" type="button" id="togglePassword" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-left: 0;">
@@ -183,27 +197,6 @@
                                 </div>
                                 <div id="passwordLoginStatus" class="otp-status" aria-live="polite"></div>
                             </div>
-
-                            <!-- <div class="form-group mb-3">
-                                <div class="cpmain">
-                                    <fieldset class="captchaMain">
-                                        <div class="CaptchaWrap">
-                                            <div id="CaptchaImageCode" class="CaptchaTxtField">
-                                                <canvas id="CapCode" class="capcode" width="300" height="80"></canvas>
-                                            </div>
-                                            <button type="button" class="ReloadBtn" onclick="CreateCaptcha();"
-                                                aria-label="Reload captcha"><i
-                                                    class="fa-solid fa-rotate-right"></i></button>
-                                        </div>
-                                        <input type="text" id="UserCaptchaCode" onkeyup="myFunction();"
-                                            class="CaptchaTxtField form-control mt-3" maxlength="6"
-                                            placeholder="Enter Captcha - Case Sensitive" required>
-                                        <span id="WrongCaptchaError" class="error mt-1 d-block"></span>
-                                        <span id="SuccessMessage" style="display: none;"
-                                            class="success mt-1 d-block"></span>
-                                    </fieldset>
-                                </div>
-                            </div> -->
 
                             <div class="form-group mb-3 d-grid">
                                 <button type="submit" class="btn btn-primary btn-login">Login</button>
@@ -278,4 +271,3 @@
 </body>
 
 </html>
-
