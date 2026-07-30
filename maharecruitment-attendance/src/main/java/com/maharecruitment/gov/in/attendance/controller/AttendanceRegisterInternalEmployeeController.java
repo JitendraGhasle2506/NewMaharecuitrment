@@ -13,6 +13,10 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.maharecruitment.gov.in.attendance.dto.AttendanceCalendarDayDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceDayDTO;
@@ -30,6 +35,7 @@ import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
 import com.maharecruitment.gov.in.attendance.service.HolidayService;
 import com.maharecruitment.gov.in.attendance.service.WeekOffWorkingDayService;
 import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
+import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 
@@ -38,6 +44,8 @@ import jakarta.servlet.http.HttpSession;
 @Controller
 @RequestMapping("/employee")
 public class AttendanceRegisterInternalEmployeeController {
+
+    private static final String SESSION_USER_KEY = "SESSION_USER";
 
     @Autowired
     private AttendanceRegisterService attendanceService;
@@ -104,6 +112,37 @@ public class AttendanceRegisterInternalEmployeeController {
         populateAttendanceView(model, employee, selectedMonth.getMonthValue(), selectedMonth.getYear(), today);
 
         return "attendance/attendance-register-internal";
+    }
+
+    @PostMapping(value = "/intAttendance/aadhaar/reveal", produces = MediaType.TEXT_PLAIN_VALUE)
+    @ResponseBody
+    public ResponseEntity<String> revealMyAadhaar(HttpSession session) {
+        SessionUserDTO sessionUser = session != null
+                ? (SessionUserDTO) session.getAttribute(SESSION_USER_KEY)
+                : null;
+        if (sessionUser == null || sessionUser.id() == null) {
+            return sensitiveResponse(HttpStatus.UNAUTHORIZED, null);
+        }
+
+        EmployeeEntity employee = employeeRepository.findByUser_Id(sessionUser.id()).orElse(null);
+        if (employee == null) {
+            return sensitiveResponse(HttpStatus.FORBIDDEN, null);
+        }
+
+        String normalizedAadhaar = SensitiveDataMaskingUtil.normalizeAadhaar(employee.getAadhaarNumber());
+        if (!StringUtils.hasText(normalizedAadhaar) || !normalizedAadhaar.matches("\\d{12}")) {
+            return sensitiveResponse(HttpStatus.NOT_FOUND, null);
+        }
+
+        return sensitiveResponse(HttpStatus.OK, normalizedAadhaar);
+    }
+
+    private ResponseEntity<String> sensitiveResponse(HttpStatus status, String body) {
+        return ResponseEntity.status(status)
+                .contentType(MediaType.TEXT_PLAIN)
+                .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate")
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .body(body);
     }
 
     private void populateAttendanceView(
@@ -232,7 +271,7 @@ public class AttendanceRegisterInternalEmployeeController {
     }
 
     private EmployeeEntity resolveCurrentEmployee(HttpSession session) {
-        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute(SESSION_USER_KEY);
         return employeeRepository.findByUser_Id(sessionUser.id())
                 .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
     }

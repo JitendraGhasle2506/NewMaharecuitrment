@@ -143,11 +143,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         User user = requireUser(loginEmail);
         EmployeeEntity employee = requireEmployee(user);
         EmployeeProfile profile = employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()).orElse(null);
-        String photoPath = resolvePhotoPath(profile, employee);
-        if (!StringUtils.hasText(photoPath) || !fileStorageService.isManagedFileAllowed(photoPath, EMPLOYEE_PHOTO_MODULE)) {
-            return Optional.empty();
-        }
-        return fileStorageService.resolveManagedPath(photoPath);
+        return resolvePhotoPath(profile, employee);
     }
 
     private User requireUser(String loginEmail) {
@@ -200,7 +196,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         dto.setRole(resolveRole(user, employee));
         dto.setDepartment(resolveDepartment(employee, user));
         dto.setMobileNo(firstText(employee != null ? normalizeText(employee.getMobile()) : null, user.getMobileNo()));
-        dto.setPhotoUrl(StringUtils.hasText(resolvePhotoPath(profile, employee)) ? cacheBustedEmployeePhotoUrl() : "");
+        dto.setPhotoUrl(resolvePhotoPath(profile, employee).isPresent() ? cacheBustedEmployeePhotoUrl() : "");
         dto.setCompletionPercentage(calculateCompletionPercentage(dto));
         return dto;
     }
@@ -290,11 +286,19 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         return (int) Math.round((completed * 100.0d) / values.size());
     }
 
-    private String resolvePhotoPath(EmployeeProfile profile, EmployeeEntity employee) {
-        if (profile != null && StringUtils.hasText(profile.getPhotoPath())) {
-            return profile.getPhotoPath();
-        }
-        return employee != null ? employee.getPhotoPath() : null;
+    private Optional<Path> resolvePhotoPath(EmployeeProfile profile, EmployeeEntity employee) {
+        return Stream.of(
+                        profile != null ? profile.getPhotoPath() : null,
+                        employee != null ? employee.getPhotoPath() : null,
+                        employee != null && employee.getPreOnboarding() != null
+                                ? employee.getPreOnboarding().getPhotoFilePath()
+                                : null)
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .filter(path -> fileStorageService.isManagedFileAllowed(path, EMPLOYEE_PHOTO_MODULE))
+                .map(fileStorageService::resolveManagedPath)
+                .flatMap(Optional::stream)
+                .findFirst();
     }
 
     private String cacheBustedEmployeePhotoUrl() {

@@ -17,6 +17,11 @@ class SensitiveDataMaskingUtilTest {
     }
 
     @Test
+    void normalizesAadhaarToDigitsForSecureReveal() {
+        assertThat(SensitiveDataMaskingUtil.normalizeAadhaar("1234-5678 3181")).isEqualTo("123456783181");
+    }
+
+    @Test
     void returnsNullForBlankAadhaar() {
         assertThat(SensitiveDataMaskingUtil.maskAadhaar(null)).isNull();
         assertThat(SensitiveDataMaskingUtil.maskAadhaar(" ")).isNull();
