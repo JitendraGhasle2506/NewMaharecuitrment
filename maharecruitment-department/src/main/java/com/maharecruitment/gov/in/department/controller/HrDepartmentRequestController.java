@@ -1,10 +1,13 @@
 package com.maharecruitment.gov.in.department.controller;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.util.StringUtils;
 
@@ -42,6 +46,8 @@ import jakarta.validation.Valid;
 public class HrDepartmentRequestController {
 
     private static final Logger log = LoggerFactory.getLogger(HrDepartmentRequestController.class);
+    private static final int DEFAULT_RANK_RELEASE_PAGE = 0;
+    private static final int DEFAULT_RANK_RELEASE_PAGE_SIZE = 10;
 
     private final HrDepartmentRequestService hrDepartmentRequestService;
     private final DepartmentWorkOrderStorageService workOrderStorageService;
@@ -149,21 +155,46 @@ public class HrDepartmentRequestController {
     }
 
     @GetMapping("/rank-release-overview")
-    public String rankReleaseOverview(Model model) {
+    public String rankReleaseOverview(
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "size", required = false) Integer size,
+            Model model) {
+        int resolvedPage = defaultIfNull(page, DEFAULT_RANK_RELEASE_PAGE);
+        int resolvedSize = defaultIfNull(size, DEFAULT_RANK_RELEASE_PAGE_SIZE);
         try {
-            HrAgencyRankMappingListView listView = hrAgencyRankMappingService.getRankReleaseOverviewListView();
+            HrAgencyRankMappingListView listView = hrAgencyRankMappingService.getRankReleaseOverviewListView(
+                    resolvedPage,
+                    resolvedSize);
             model.addAttribute("rankReleaseListView", listView);
         } catch (DepartmentApplicationException ex) {
             log.warn("Unable to load HR rank release overview. reason={}", ex.getMessage());
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("rankReleaseListView", HrAgencyRankMappingListView.builder()
                     .rankMappings(List.of())
+                    .releaseGroups(List.of())
+                    .pageNumber(DEFAULT_RANK_RELEASE_PAGE)
+                    .pageSize(DEFAULT_RANK_RELEASE_PAGE_SIZE)
+                    .totalElements(0)
+                    .totalPages(1)
+                    .hasPrevious(false)
+                    .hasNext(false)
+                    .showingFrom(0)
+                    .showingTo(0)
                     .build());
         } catch (Exception ex) {
             log.error("Unexpected error while loading HR rank release overview.", ex);
             model.addAttribute("errorMessage", "Unable to load rank release overview right now. Please try again.");
             model.addAttribute("rankReleaseListView", HrAgencyRankMappingListView.builder()
                     .rankMappings(List.of())
+                    .releaseGroups(List.of())
+                    .pageNumber(DEFAULT_RANK_RELEASE_PAGE)
+                    .pageSize(DEFAULT_RANK_RELEASE_PAGE_SIZE)
+                    .totalElements(0)
+                    .totalPages(1)
+                    .hasPrevious(false)
+                    .hasNext(false)
+                    .showingFrom(0)
+                    .showingTo(0)
                     .build());
         }
         return "hr/department-request-rank-release-overview";
@@ -228,6 +259,22 @@ public class HrDepartmentRequestController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/hr/department-requests/" + departmentId + "/subdepartments";
         }
+    }
+
+    @GetMapping("/applications")
+    public String allSubmittedApplications(Model model) {
+        try {
+            model.addAttribute("applicationSummaries", hrDepartmentRequestService.getAllSubmittedApplications());
+        } catch (DepartmentApplicationException ex) {
+            log.warn("Unable to load HR submitted applications. reason={}", ex.getMessage());
+            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("applicationSummaries", List.of());
+        } catch (Exception ex) {
+            log.error("Unexpected error while loading HR submitted applications.", ex);
+            model.addAttribute("errorMessage", "Unable to load submitted applications right now. Please try again.");
+            model.addAttribute("applicationSummaries", List.of());
+        }
+        return "hr/department-request-all-applications";
     }
 
     @GetMapping("/{departmentId}/subdepartments/{subDepartmentId}/applications/{applicationId}")
@@ -296,7 +343,7 @@ public class HrDepartmentRequestController {
                     reviewForm.getRemarks(),
                     resolveActorEmail(principal));
 
-            redirectAttributes.addFlashAttribute("successMessage", "HR review decision applied successfully.");
+            redirectAttributes.addFlashAttribute("successMessage", "HR review decision applied successfully and forwarded to the auditor");
             return "redirect:/hr/department-requests/" + departmentId + "/subdepartments/" + subDepartmentId
                     + "/applications/" + applicationId;
         } catch (DepartmentApplicationException ex) {
@@ -399,6 +446,41 @@ public class HrDepartmentRequestController {
         }
     }
 
+    @GetMapping("/advance-payment/authorization")
+    public String advancePaymentAuthorizationList(
+            @RequestParam(defaultValue = "0", required = false) Integer page,
+            @RequestParam(defaultValue = "10", required = false) Integer size,
+            Model model) {
+        if (page == null) page = 0;
+        if (size == null) size = 10;
+        try {
+            Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+            model.addAttribute("authorizationList", hrDepartmentRequestService.getApplicationsForPaymentAuthorization(pageable));
+        } catch (Exception ex) {
+            log.error("Error loading advance payment authorization list", ex);
+            model.addAttribute("errorMessage", "Unable to load authorization list.");
+            model.addAttribute("authorizationList", org.springframework.data.domain.Page.empty());
+        }
+        return "hr/advance-payment-authorization";
+    }
+
+    @PostMapping("/advance-payment/authorize")
+    public String authorizePartialPayment(
+            @RequestParam Long applicationId,
+            @RequestParam boolean allowed,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+        try {
+            hrDepartmentRequestService.authorizePartialPayment(applicationId, allowed, resolveActorEmail(principal));
+            redirectAttributes.addFlashAttribute("successMessage", 
+                    "Partial payment " + (allowed ? "authorized" : "revoked") + " successfully.");
+        } catch (Exception ex) {
+            log.error("Error toggling partial payment authorization", ex);
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/hr/department-requests/advance-payment/authorization";
+    }
+
     private void populateReviewModel(Model model, HrDepartmentApplicationReviewDetailView reviewDetail) {
         model.addAttribute("applicationReviewDetail", reviewDetail);
     }
@@ -416,19 +498,37 @@ public class HrDepartmentRequestController {
 
     private HrAgencyRankMappingForm buildRankMappingForm(HrAgencyRankMappingView rankMappingView) {
         HrAgencyRankMappingForm form = new HrAgencyRankMappingForm();
-        if (rankMappingView == null || rankMappingView.getAssignedAgencyRanks() == null
-                || rankMappingView.getAssignedAgencyRanks().isEmpty()) {
+        if (rankMappingView == null || rankMappingView.getAvailableCategories() == null) {
             form.getRankRows().add(new HrAgencyRankRowForm());
             return form;
         }
 
-        rankMappingView.getAssignedAgencyRanks().forEach(assignedRank -> {
+        // Create one row per Available Category
+        rankMappingView.getAvailableCategories().forEach(category -> {
             HrAgencyRankRowForm row = new HrAgencyRankRowForm();
-            row.setAgencyId(assignedRank.getAgencyId());
-            row.setRankNumber(assignedRank.getRankNumber());
+            row.setCategoryName(category);
+            row.setRankNumber(1); // L1 by default in this view
+            
+            // Look for an agency assigned to this category
+            if (rankMappingView.getAssignedAgencyRanks() != null) {
+                rankMappingView.getAssignedAgencyRanks().stream()
+                        .filter(assigned -> assigned.getMappedCategories() != null && assigned.getMappedCategories().contains(category))
+                        .findFirst()
+                        .ifPresent(assigned -> row.setAgencyId(assigned.getAgencyId()));
+            }
+            
             form.getRankRows().add(row);
         });
+        
+        if (form.getRankRows().isEmpty()) {
+            form.getRankRows().add(new HrAgencyRankRowForm());
+        }
+        
         return form;
+    }
+
+    private int defaultIfNull(Integer value, int defaultValue) {
+        return value != null ? value : defaultValue;
     }
 
 }

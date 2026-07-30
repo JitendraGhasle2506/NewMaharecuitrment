@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Work Order Form</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Work Orders', ~{::section})}">
+        <section>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h2 class="mb-1" th:text="${pageTitle}">Generate Work Order</h2>
+                        <p class="text-muted mb-0" th:text="${pageSubtitle}">Create a new work order.</p>
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{/hr/work-orders}">Back to Work Orders</a>
+                </div>
+                <div class="card-body">
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="alert alert-info" th:if="${extensionMode and parentWorkOrder != null}">
+                        Extending <strong th:text="${parentWorkOrder.workOrderNumber}">WO/2026-27/00001</strong>
+                        for request <strong th:text="${parentWorkOrder.requestId}">REQ-001</strong>.
+                    </div>
+
+                    <div class="border rounded p-3 mb-4" th:if="${!extensionMode}">
+                        <form class="row g-3 align-items-end" method="post" th:action="@{/hr/work-orders/new}">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <div class="col-md-4 col-lg-3">
+                                <label class="form-label" for="recruitmentTypeFilter">Employee Type</label>
+                                <select class="form-select" id="recruitmentTypeFilter" name="recruitmentType"
+                                    onchange="this.form.submit()">
+                                    <option value="EXTERNAL"
+                                        th:selected="${selectedRecruitmentType == null or selectedRecruitmentType == 'EXTERNAL'}">
+                                        External / Agency
+                                    </option>
+                                    <option value="INTERNAL"
+                                        th:selected="${selectedRecruitmentType == 'INTERNAL'}">
+                                        Internal
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 col-lg-5">
+                                <label class="form-label" for="agencyFilter">Select Agency</label>
+                                <select class="form-select" id="agencyFilter" name="agencyId"
+                                    onchange="this.form.submit()">
+                                    <option value="">-- Select agency to load employees --</option>
+                                    <option th:each="agency : ${agencyOptions}"
+                                        th:value="${agency.agencyId}"
+                                        th:selected="${selectedAgencyId != null and selectedAgencyId == agency.agencyId}"
+                                        th:text="${agency.agencyName}">Agency Name</option>
+                                </select>
+                            </div>
+                            <div class="col-md-auto">
+                                <button type="submit" class="btn btn-outline-primary px-4">Load Employees</button>
+                            </div>
+                        </form>
+                        <p class="text-muted small mb-0 mt-2" th:if="${selectedAgencyId == null}">
+                            Select an agency and employee type to view employees eligible for new work-order generation.
+                        </p>
+                        <p class="text-muted small mb-0 mt-2" th:if="${selectedAgencyId != null and selectedRecruitmentType == 'INTERNAL'}">
+                            Showing active internal employees from the selected agency for whom no work order has been generated.
+                        </p>
+                        <p class="text-muted small mb-0 mt-2" th:if="${selectedAgencyId != null and selectedRecruitmentType != 'INTERNAL'}">
+                            Showing active external employees from the selected agency for whom no work order has been generated.
+                        </p>
+                    </div>
+
+                    <form method="post" th:action="@{/hr/work-orders/preview}" th:object="${workOrderForm}">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input type="hidden" th:field="*{parentWorkOrderId}">
+                        <input type="hidden" th:field="*{agencyId}">
+                        <input type="hidden" th:field="*{recruitmentType}">
+                        <input type="hidden" th:field="*{workOrderType}">
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Work-Order Date</label>
+                                <input type="date" class="form-control" id="workOrderDate" name="workOrderDate"
+                                    th:value="${workOrderForm.workOrderDate != null ? #temporals.format(workOrderForm.workOrderDate, 'yyyy-MM-dd') : ''}"
+                                    required>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('workOrderDate')}" th:errors="*{workOrderDate}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Effective From</label>
+                                <input type="date" class="form-control" id="effectiveFrom" name="effectiveFrom"
+                                    th:value="${workOrderForm.effectiveFrom != null ? #temporals.format(workOrderForm.effectiveFrom, 'yyyy-MM-dd') : ''}"
+                                    required>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('effectiveFrom')}" th:errors="*{effectiveFrom}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Effective To</label>
+                                <input type="date" class="form-control" id="effectiveTo" name="effectiveTo"
+                                    th:value="${workOrderForm.effectiveTo != null ? #temporals.format(workOrderForm.effectiveTo, 'yyyy-MM-dd') : ''}"
+                                    required>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('effectiveTo')}" th:errors="*{effectiveTo}"></div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Additional Instructions</label>
+                                <textarea class="form-control" rows="3" th:field="*{purposeSummary}"></textarea>
+                            </div>
+
+                            <div class="col-12" th:if="${extensionMode}">
+                                <label class="form-label">Extension Reason</label>
+                                <textarea class="form-control" rows="3" th:field="*{extensionReason}"></textarea>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <h5 class="mb-1">Employee Mapping</h5>
+                                <p class="text-muted mb-0 small" th:if="${extensionMode}">Select employees from the same request, agency, and department cohort.</p>
+                                <p class="text-muted mb-0 small" th:if="${!extensionMode and selectedRecruitmentType == 'INTERNAL'}">Only active internal employees from the selected agency with no generated work order are shown.</p>
+                                <p class="text-muted mb-0 small" th:if="${!extensionMode and selectedRecruitmentType != 'INTERNAL'}">Only active external employees from the selected agency with no generated work order are shown.</p>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive border rounded">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 56px;">Select</th>
+                                        <th>Employee</th>
+                                        <th>Code</th>
+                                        <th>Request</th>
+                                        <th>Project</th>
+                                        <th>Agency</th>
+                                        <th>Department</th>
+                                        <th>Designation</th>
+                                        <th>Joining</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="employee : ${employeeOptions}">
+                                        <td class="text-center">
+                                            <input class="form-check-input" type="checkbox"
+                                                th:field="*{employeeIds}"
+                                                th:value="${employee.employeeId}">
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold" th:text="${employee.employeeName}">Employee Name</div>
+                                            <div class="small text-muted" th:text="${employee.levelCode != null ? employee.levelCode : '-'}">L1</div>
+                                        </td>
+                                        <td th:text="${employee.employeeCode}">EMP0001</td>
+                                        <td th:text="${employee.requestId}">REQ-001</td>
+                                        <td th:text="${employee.projectName}">Project</td>
+                                        <td th:text="${employee.agencyName}">Agency</td>
+                                        <td th:text="${employee.departmentName}">Department</td>
+                                        <td th:text="${employee.designationName}">Designation</td>
+                                        <td th:text="${employee.joiningDate != null ? #temporals.format(employee.joiningDate, 'dd-MMM-yyyy') : '-'}">01-Apr-2026</td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(employeeOptions)}">
+                                        <td colspan="9" class="text-center py-4 text-muted">
+                                            <span th:text="${!extensionMode and selectedAgencyId == null ? 'Select an agency to load eligible employees.' : 'No eligible employees are available for this selection.'}">
+                                                No eligible employees are available for this selection.
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-danger small mt-2" th:if="${#fields.hasErrors('employeeIds')}" th:errors="*{employeeIds}"></div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a class="btn btn-outline-secondary" th:href="@{/hr/work-orders}">Cancel</a>
+                            <button type="submit" class="btn btn-primary"
+                                th:disabled="${#lists.isEmpty(employeeOptions)}"
+                                th:text="${extensionMode} ? 'Preview Extension' : 'Preview Work Order'">
+                                Preview Work Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

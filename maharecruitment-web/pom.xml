@@ -1,126 +1,196 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <modelVersion>4.0.0</modelVersion>
+	<modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>com.maharecruitment.gov.in</groupId>
-        <artifactId>maharecruitment-parent</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-    </parent>
+	<parent>
+		<groupId>com.maharecruitment.gov.in</groupId>
+		<artifactId>maharecruitment-parent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
 
-    <artifactId>maharecruitment-web</artifactId>
-    <packaging>war</packaging>
-    <name>maharecruitment-web</name>
+	<artifactId>maharecruitment-web</artifactId>
+	<packaging>war</packaging>
+	<name>maharecruitment-web</name>
 
-    <dependencies>
+	<dependencies>
 
-        <!-- Spring Web -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
 
-        <!-- Spring Security -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
 
-        <!-- Thymeleaf templates -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        </dependency>
+		<!-- Spring Web -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		
+		
 
-        <!-- JPA repositories/entities -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
+		<!-- Spring Security -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
 
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-        </dependency>
+		<!-- Thymeleaf templates -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
 
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-database-postgresql</artifactId>
-        </dependency>
+		<!-- JPA repositories/entities -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
 
-        <!-- Tomcat provided (IMPORTANT for WAR) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-tomcat</artifactId>
-            <scope>provided</scope>
-        </dependency>
+		<!--<dependency>
+			<groupId>jakarta.persistence</groupId>
+			<artifactId>jakarta.persistence-api</artifactId>
+			<version>3.1.0</version>
+		</dependency>-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
 
-        <!-- Internal Modules -->
-        <dependency>
-            <groupId>com.maharecruitment.gov.in</groupId>
-            <artifactId>maharecruitment-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>com.maharecruitment.gov.in</groupId>
-            <artifactId>maharecruitment-attendance</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
 
-        <dependency>
-            <groupId>com.maharecruitment.gov.in</groupId>
-            <artifactId>maharecruitment-security</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
 
-        <dependency>
-            <groupId>com.maharecruitment.gov.in</groupId>
-            <artifactId>maharecruitment-auth</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+		<!-- Tomcat provided (IMPORTANT for WAR) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
+			<scope>provided</scope>
+		</dependency>
 
-        <dependency>
-            <groupId>com.maharecruitment.gov.in</groupId>
-            <artifactId>maharecruitment-agency</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+		<!-- Internal Modules -->
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
-        <dependency>
-            <groupId>com.maharecruitment.gov.in</groupId>
-            <artifactId>maharecruitment-master</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-attendance</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
-        <dependency>
-            <groupId>com.maharecruitment.gov.in</groupId>
-            <artifactId>maharecruitment-department</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-scheduler</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
-        <dependency>
-            <groupId>com.maharecruitment.gov.in</groupId>
-            <artifactId>maharecruitment-recruitment</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-security</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
-        <dependency>
-            <groupId>com.maharecruitment.gov.in</groupId>
-            <artifactId>maharecruitment-notification</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-auth</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
-    </dependencies>
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-agency</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-master</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-department</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-invoice</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-recruitment</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-notification</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-workorder</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.maharecruitment.gov.in</groupId>
+			<artifactId>maharecruitment-asset</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>3.5.4</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>javase</artifactId>
+			<version>3.5.4</version>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<finalName>maharecruitment</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<configuration>
+					<webappDirectory>${project.build.directory}/${project.build.finalName}-staging-${maven.build.timestamp}</webappDirectory>
+					<outdatedCheckPath>/</outdatedCheckPath>
+					<packagingExcludes>
+						WEB-INF/lib/logback-*.jar
+					</packagingExcludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>

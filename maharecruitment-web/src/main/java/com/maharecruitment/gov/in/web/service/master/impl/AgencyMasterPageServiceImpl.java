@@ -23,6 +23,8 @@ import com.maharecruitment.gov.in.master.service.AgencyMasterService;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.master.AgencyEscalationMatrixForm;
 import com.maharecruitment.gov.in.web.dto.master.AgencyMasterForm;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
+import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
 import com.maharecruitment.gov.in.web.service.master.AgencyMasterPageService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
@@ -37,14 +39,17 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
     private final AgencyMasterService agencyMasterService;
     private final FileStorageService fileStorageService;
     private final AccountNotificationService accountNotificationService;
+    private final AgencyAccessService agencyAccessService;
 
     public AgencyMasterPageServiceImpl(
             AgencyMasterService agencyMasterService,
             FileStorageService fileStorageService,
-            AccountNotificationService accountNotificationService) {
+            AccountNotificationService accountNotificationService,
+            AgencyAccessService agencyAccessService) {
         this.agencyMasterService = agencyMasterService;
         this.fileStorageService = fileStorageService;
         this.accountNotificationService = accountNotificationService;
+        this.agencyAccessService = agencyAccessService;
     }
 
     @Override
@@ -177,8 +182,9 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
     }
 
     public AgencyMasterResponse getAgencyProfile(String email) {
-
-        AgencyMaster agency = agencyMasterRepository.getAgencyProfile(email);
+        AgencyUserContext context = agencyAccessService.requireActiveAgencyContext(email);
+        AgencyMaster agency = agencyMasterRepository.findDetailedByAgencyId(context.agencyId())
+                .orElseThrow(() -> new IllegalArgumentException("No agency profile is linked with this login user."));
 
         AgencyMasterResponse response = new AgencyMasterResponse();
 

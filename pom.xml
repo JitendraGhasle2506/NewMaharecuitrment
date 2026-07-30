@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.0.3</version>
+		<version>3.5.3</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.maharecruitment.gov.in</groupId>
@@ -30,6 +30,7 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -126,39 +127,39 @@
 			<version>1.5.2.Final</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
+		
+		<!--<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
-			<version>2.13.0</version>
-		</dependency>
+		</dependency>-->
 
 
 		<!-- https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api -->
 
 
 	</dependencies>
-	
-	
+
+
 	<build>
-    <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-                <annotationProcessorPaths>
-                    <path>
-                        <groupId>org.projectlombok</groupId>
-                        <artifactId>lombok</artifactId>
-                    </path>
-                </annotationProcessorPaths>
-            </configuration>
-        </plugin>
-    </plugins>
-</build>
-	
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<release>${java.version}</release>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 
 
-<!--	<build>
+	<!--	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -196,6 +197,7 @@
 		<module>maharecruitment-agency</module>
 		<module>maharecruitment-recruitment</module>
 		<module>maharecruitment-attendance</module>
+		<module>maharecruitment-scheduler</module>
 		<module>maharecruitment-invoice</module>
 		<module>maharecruitment-workorder</module>
 		<module>maharecruitment-dashboard</module>
@@ -204,5 +206,6 @@
 		<module>maharecruitment-audit</module>
 		<module>maharecruitment-security</module>
 		<module>maharecruitment-dms</module>
+		<module>maharecruitment-asset</module>
 	</modules>
 </project>

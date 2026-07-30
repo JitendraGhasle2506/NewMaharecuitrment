@@ -43,6 +43,10 @@ public class DepartmentProjectApplicationForm {
     @Size(max = 100, message = "MahaIT contact must not exceed 100 characters.")
     private String mahaitContact;
 
+    @NotBlank(message = "Work order number is required.")
+    @Size(max = 100, message = "Work order number must not exceed 100 characters.")
+    private String workOrderNumber;
+
     private MultipartFile workOrderFile;
 
     private String existingWorkOrderFilePath;

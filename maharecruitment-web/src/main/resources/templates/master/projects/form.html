@@ -20,6 +20,10 @@
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
                         <a class="btn btn-outline-primary btn-sm" th:href="@{/master/projects}">Projects</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/team-management}">Team Management</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/wings}">Wing Master</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/cell}">Cell Master</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/locations}">Location Master</a>
                     </div>
 
                     <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
@@ -29,6 +33,7 @@
                         method="post"
                         class="row g-3">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input type="hidden" th:field="*{projectType}">
 
                         <div class="col-md-6">
                             <label class="form-label">Project Name <span class="text-danger">*</span></label>
@@ -37,31 +42,37 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Project Type <span class="text-danger">*</span></label>
-                            <select class="form-select" th:field="*{projectType}">
-                                <option value="">Select Project Type</option>
-                                <option th:each="type : ${projectTypes}" th:value="${type}" th:text="${#strings.replace(type.name(), '_', ' ')}"></option>
+                            <label class="form-label">Project Code <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{projectCode}" class="form-control text-uppercase" maxlength="30">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('projectCode')}" th:errors="*{projectCode}"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Project Scope <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{projectScopeType}">
+                                <option value="">Select Project Scope</option>
+                                <option th:each="scopeType : ${projectScopeTypes}"
+                                    th:value="${scopeType}"
+                                    th:text="${#strings.capitalize(#strings.toLowerCase(scopeType.name()))}"></option>
                             </select>
-                            <div class="text-danger small" th:if="${#fields.hasErrors('projectType')}" th:errors="*{projectType}"></div>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('projectScopeType')}" th:errors="*{projectScopeType}"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Cell <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{cellId}">
+                                <option value="">Select Cell</option>
+                                <option th:each="cell : ${availableCells}"
+                                    th:value="${cell.cellId}"
+                                    th:text="${cell.wingName != null ? cell.wingName + ' - ' + cell.cellName : cell.cellName}"></option>
+                            </select>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('cellId')}" th:errors="*{cellId}"></div>
                         </div>
 
                         <div class="col-md-12">
                             <label class="form-label">Project Description</label>
                             <textarea th:field="*{projectDesc}" class="form-control" maxlength="100" rows="3"></textarea>
                             <div class="text-danger small" th:if="${#fields.hasErrors('projectDesc')}" th:errors="*{projectDesc}"></div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Department Registration ID</label>
-                            <input type="number" min="1" th:field="*{departmentRegistrationId}" class="form-control">
-                            <div class="text-danger small" th:if="${#fields.hasErrors('departmentRegistrationId')}"
-                                th:errors="*{departmentRegistrationId}"></div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Application ID</label>
-                            <input type="number" min="1" th:field="*{applicationId}" class="form-control">
-                            <div class="text-danger small" th:if="${#fields.hasErrors('applicationId')}" th:errors="*{applicationId}"></div>
                         </div>
 
                         <div class="col-12 d-flex gap-2">
@@ -76,3 +87,4 @@
 </body>
 
 </html>
+

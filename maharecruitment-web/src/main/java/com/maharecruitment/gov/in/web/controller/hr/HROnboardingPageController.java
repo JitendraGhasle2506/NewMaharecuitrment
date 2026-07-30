@@ -14,18 +14,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
+import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
+import com.maharecruitment.gov.in.master.service.LocationMasterService;
 
 @Controller
 @RequestMapping("/hr/onboarding")
-@PreAuthorize("hasRole('ROLE_HR')")
+@PreAuthorize("hasAuthority('ROLE_HR')")
 public class HROnboardingPageController {
 
     private final HROnboardingPageService hrOnboardingPageService;
+    private final LocationMasterService locationMasterService;
 
-    public HROnboardingPageController(HROnboardingPageService hrOnboardingPageService) {
+    public HROnboardingPageController(
+            HROnboardingPageService hrOnboardingPageService,
+            LocationMasterService locationMasterService) {
         this.hrOnboardingPageService = hrOnboardingPageService;
+        this.locationMasterService = locationMasterService;
     }
 
     @GetMapping
@@ -39,6 +45,7 @@ public class HROnboardingPageController {
     public String onboardingForm(@PathVariable("id") Long preOnboardingId, Model model) {
         AgencyPreOnboardingForm form = hrOnboardingPageService.loadOnboardingForm(preOnboardingId);
         model.addAttribute("preOnboardingForm", form);
+        model.addAttribute("locationOptions", locationMasterService.getAll(false));
         return "agency/pre-onboarding-form"; // REUSING THE SAME FORM
     }
 
@@ -49,11 +56,17 @@ public class HROnboardingPageController {
             Principal principal,
             RedirectAttributes redirectAttributes) {
         try {
-            hrOnboardingPageService.saveOnboarding(preOnboardingId, form, principal.getName());
-            redirectAttributes.addFlashAttribute("successMessage", "Candidate onboarded successfully.");
+            EmployeeOnboardingResult result = hrOnboardingPageService.saveOnboarding(preOnboardingId, form,
+                    principal.getName());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Candidate onboarded successfully. Employee account created.");
+            redirectAttributes.addFlashAttribute("generatedUsername", result.username());
+            redirectAttributes.addFlashAttribute("generatedPassword", result.temporaryPassword());
+            if (result.notificationWarning() != null && !result.notificationWarning().isBlank()) {
+                redirectAttributes.addFlashAttribute("notificationWarning", result.notificationWarning());
+            }
             return "redirect:/hr/onboarding";
         } catch (Exception e) {
-            form.setHrFlow(true);
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/hr/onboarding/process/" + preOnboardingId;
         }

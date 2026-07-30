@@ -15,6 +15,7 @@ import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.DepartmentUserProvisioningService;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.util.SecurePasswordGenerator;
 
 @Service
@@ -26,19 +27,25 @@ public class DepartmentUserProvisioningServiceImpl implements DepartmentUserProv
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserAffiliationService userAffiliationService;
 
     public DepartmentUserProvisioningServiceImpl(
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            UserAffiliationService userAffiliationService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userAffiliationService = userAffiliationService;
     }
 
     @Override
     public DepartmentUserProvisioningResult createDepartmentUser(DepartmentUserProvisioningRequest request) {
         String email = normalizeEmail(request.getEmail());
+        if (email == null) {
+            throw new IllegalArgumentException("Email is required.");
+        }
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new IllegalArgumentException("A user account already exists for the primary email address.");
         }
@@ -57,6 +64,8 @@ public class DepartmentUserProvisioningServiceImpl implements DepartmentUserProv
         user.setRoles(List.of(departmentRole));
 
         User savedUser = userRepository.save(user);
+        userAffiliationService.synchronizeUserProfile(savedUser);
+        userAffiliationService.synchronizePrimaryDepartment(savedUser, request.getDepartmentRegistration());
 
         return DepartmentUserProvisioningResult.builder()
                 .userId(savedUser.getId())

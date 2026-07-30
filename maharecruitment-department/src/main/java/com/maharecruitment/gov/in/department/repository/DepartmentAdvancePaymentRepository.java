@@ -3,6 +3,8 @@ package com.maharecruitment.gov.in.department.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,18 +13,33 @@ import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplication
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 
 @Repository
-public interface DepartmentAdvancePaymentRepository extends JpaRepository<DepartmentAdvancePaymentEntity, Long> {
+public interface DepartmentAdvancePaymentRepository
+        extends JpaRepository<DepartmentAdvancePaymentEntity, Long>, DepartmentAdvancePaymentReportRepository {
 
     List<DepartmentAdvancePaymentEntity> findByDepartmentRegistrationIdOrderByIdDesc(Long departmentRegistrationId);
 
+    Page<DepartmentAdvancePaymentEntity> findByDepartmentRegistrationIdOrderByIdDesc(Long departmentRegistrationId, Pageable pageable);
+
     List<DepartmentAdvancePaymentEntity> findByApplicationStatusInOrderByIdDesc(
             java.util.Collection<DepartmentApplicationStatus> statuses);
+
+    Page<DepartmentAdvancePaymentEntity> findByApplicationStatusInOrderByIdDesc(
+            java.util.Collection<DepartmentApplicationStatus> statuses, Pageable pageable);
 
     Optional<DepartmentAdvancePaymentEntity> findByReceiptNumber(String receiptNumber);
 
     Optional<DepartmentAdvancePaymentEntity> findByApplication(DepartmentProjectApplicationEntity application);
 
+    List<DepartmentAdvancePaymentEntity> findByApplicationAndApplicationStatusNotIn(
+            DepartmentProjectApplicationEntity application,
+            java.util.Collection<DepartmentApplicationStatus> statuses);
+
     boolean existsByApplication(DepartmentProjectApplicationEntity application);
+
+    long countByApplicationAndApplicationStatusNotIn(
+            DepartmentProjectApplicationEntity application,
+            java.util.Collection<DepartmentApplicationStatus> statuses);
+
 
     @org.springframework.data.jpa.repository.Query("SELECT p.application.departmentProjectApplicationId FROM DepartmentAdvancePaymentEntity p WHERE p.departmentRegistrationId = :regId")
     List<Long> findApplicationIdsByDepartmentRegistrationId(

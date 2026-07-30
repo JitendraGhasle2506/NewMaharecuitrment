@@ -8,6 +8,11 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -39,12 +44,34 @@ public class AgencyPreOnboardingForm {
 
     private String email;
 
+    @NotBlank(message = "Mobile number is required")
+    @Pattern(regexp = "^[0-9]{10}$", message = "Mobile number must be exactly 10 digits")
     private String mobile;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate dob;
 
+    @NotBlank(message = "Gender is required")
+    private String gender;
+
+    @NotBlank(message = "Blood group is required")
+    private String bloodGroup;
+
     private String address;
+
+    @NotBlank(message = "Emergency contact name is required")
+    @Pattern(regexp = "^[a-zA-Z\\s]*$", message = "Emergency contact name should not have special characters")
+    private String emergencyContactName;
+
+    @NotBlank(message = "Emergency contact relation is required")
+    private String emergencyContactRelation;
+
+    @NotBlank(message = "Emergency contact mobile is required")
+    @Pattern(regexp = "^[0-9]{10}$", message = "Emergency contact mobile number must be exactly 10 digits")
+    private String emergencyContactMobile;
+
+    @Pattern(regexp = "^$|^[0-9]{10}$", message = "Emergency contact alternate mobile number must be exactly 10 digits")
+    private String emergencyContactAltMobile;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate joiningDate;
@@ -52,6 +79,8 @@ public class AgencyPreOnboardingForm {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate onboardingDate;
 
+    @NotBlank(message = "Aadhaar number is required")
+    @Pattern(regexp = "^[0-9]{12}$", message = "Aadhaar number must be exactly 12 digits")
     private String aadhaar;
 
     private String pan;
@@ -84,11 +113,15 @@ public class AgencyPreOnboardingForm {
 
     private boolean agencyFlag;
 
+    private boolean companyPayrollMoreThanThreeMonths;
+
     private MultipartFile aadhaarFile;
 
     private MultipartFile panFile;
 
     private MultipartFile experienceDoc;
+
+    private MultipartFile companyPayrollProof;
 
     private MultipartFile uploadImage;
 
@@ -104,6 +137,10 @@ public class AgencyPreOnboardingForm {
 
     private String existingExperienceDocFilePath;
 
+    private String existingCompanyPayrollProofFileName;
+
+    private String existingCompanyPayrollProofFilePath;
+
     private String existingPhotoFileName;
 
     private String existingPhotoFilePath;
@@ -117,7 +154,13 @@ public class AgencyPreOnboardingForm {
 
     private String hrOnboardingLocation;
 
+    private List<Long> selectedLocationIds = new ArrayList<>();
+
     private boolean hrVerified;
 
     private List<AgencyPreOnboardingEmploymentForm> previousEmployments = new ArrayList<>();
+
+    public String getMaskedAadhaar() {
+        return SensitiveDataMaskingUtil.maskAadhaar(aadhaar);
+    }
 }

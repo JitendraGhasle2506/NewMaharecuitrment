@@ -29,4 +29,7 @@ public interface RecruitmentDesignationVacancyRepository
     Optional<RecruitmentDesignationVacancyEntity> findByIdForFinalDecisionUpdate(
             @Param("recruitmentDesignationVacancyId") Long recruitmentDesignationVacancyId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+
+    @Query("SELECT COALESCE(SUM(v.numberOfVacancy - v.fillPost), 0) FROM RecruitmentDesignationVacancyEntity v")
+    long countTotalOpenPositions();
 }

@@ -6,6 +6,7 @@ import java.util.List;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,7 +30,11 @@ public class UserForm {
     @Size(max = 100, message = "Password must not exceed 100 characters")
     private String password;
 
+    @Positive(message = "Department selection is invalid")
     private Long departmentRegistrationId;
+
+    @Positive(message = "Agency selection is invalid")
+    private Long agencyId;
 
     private List<Long> roleIds = new ArrayList<>();
 }

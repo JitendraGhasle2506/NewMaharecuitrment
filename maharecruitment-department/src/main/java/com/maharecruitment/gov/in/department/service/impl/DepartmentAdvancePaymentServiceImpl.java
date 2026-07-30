@@ -3,8 +3,12 @@ package com.maharecruitment.gov.in.department.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,6 +23,7 @@ import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.department.dto.AdvancePaymentForm;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
 import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
@@ -38,6 +43,9 @@ import com.maharecruitment.gov.in.department.service.model.DepartmentActorContex
 import com.maharecruitment.gov.in.department.service.model.StoredDocument;
 import com.maharecruitment.gov.in.master.dto.ProformaInvoiceSummary;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 @Service
 @Transactional(readOnly = true)
 public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePaymentService {
@@ -51,18 +59,24 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     private final DepartmentAdvancePaymentActivityRepository activityRepository;
     private final DepartmentProjectApplicationRepository applicationRepository;
     private final UserRepository userRepository;
+    private final UserAffiliationService userAffiliationService;
     private final DepartmentPaymentStorageService storageService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public DepartmentAdvancePaymentServiceImpl(
             DepartmentAdvancePaymentRepository paymentRepository,
             DepartmentAdvancePaymentActivityRepository activityRepository,
             DepartmentProjectApplicationRepository applicationRepository,
             UserRepository userRepository,
+            UserAffiliationService userAffiliationService,
             DepartmentPaymentStorageService storageService) {
         this.paymentRepository = paymentRepository;
         this.activityRepository = activityRepository;
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
+        this.userAffiliationService = userAffiliationService;
         this.storageService = storageService;
     }
 
@@ -71,14 +85,49 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
         DepartmentProjectApplicationEntity app = findOwnedApplication(applicationId, actorContext);
 
-        // Check if payment already exists for this application
-        if (paymentRepository.existsByApplication(app)) {
-            throw new DepartmentApplicationException("An advance payment has already been initiated for this project.");
+        // Check if a payment is already in progress (non-terminal statuses)
+        long pendingCount = paymentRepository.countByApplicationAndApplicationStatusNotIn(app, 
+                List.of(DepartmentApplicationStatus.AUDITOR_APPROVED, DepartmentApplicationStatus.HR_REJECTED));
+        
+        if (pendingCount > 0) {
+            throw new DepartmentApplicationException("A payment record for this project is already being processed.");
         }
 
         AdvancePaymentForm form = new AdvancePaymentForm();
         form.setDepartmentProjectApplicationId(app.getDepartmentProjectApplicationId());
         form.setDepartmentRegistrationId(actorContext.getDepartmentRegistrationId());
+
+        Optional<TaxInvoiceInfo> taxInvoice = findTaxInvoiceInfo(applicationId);
+
+        if (taxInvoice.isPresent()) {
+            TaxInvoiceInfo invoice = taxInvoice.get();
+            form.setProformaInvoiceId(invoice.tiNumber());
+            form.setPiNumber(invoice.tiNumber());
+            form.setTotalPiAmount(invoice.totalAmount());
+            
+            // Calculate previously approved amounts
+            List<DepartmentAdvancePaymentEntity> pastPayments = paymentRepository
+                    .findByApplicationAndApplicationStatusNotIn(app, List.of(DepartmentApplicationStatus.HR_REJECTED));
+            
+            BigDecimal paidAmount = pastPayments.stream()
+                    .map(DepartmentAdvancePaymentEntity::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            BigDecimal balance = invoice.totalAmount().subtract(paidAmount);
+            
+            if (balance.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new DepartmentApplicationException("This project is already fully paid.");
+            }
+
+            form.setPartialAmount(paidAmount);
+            form.setBalanceAmount(balance);
+            form.setTotalAmount(balance); // Default to full remaining balance
+            form.setPaymentType("FULL");
+            form.setPartialPaymentAllowed(Boolean.TRUE.equals(app.getIsPartialPaymentAllowed()));
+        } else {
+            throw new DepartmentApplicationException("No proforma invoice found for this project. Please contact HR.");
+        }
+
         return form;
     }
 
@@ -98,12 +147,10 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     }
 
     @Override
-    public List<ProformaInvoiceSummary> getAvailableInvoices(Long applicationId) {
-        // Placeholder implementation for invoices
-        return List.of(
-                new ProformaInvoiceSummary("PI/2026/001", new BigDecimal("150000.00")),
-                new ProformaInvoiceSummary("PI/2026/002", new BigDecimal("25000.50")),
-                new ProformaInvoiceSummary("PI/2026/003", new BigDecimal("100.00")));
+    public List< ProformaInvoiceSummary> getAvailableInvoices(Long applicationId) {
+        return findTaxInvoiceInfo(applicationId)
+                .map(invoice -> List.of(new ProformaInvoiceSummary(invoice.tiNumber(), invoice.totalAmount())))
+                .orElseGet(List::of);
     }
 
     @Override
@@ -111,6 +158,9 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     public Long savePayment(AdvancePaymentForm form, String actionType, String actorEmail) {
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
         String normalizedAction = actionType != null ? actionType.trim().toUpperCase(Locale.ROOT) : ACTION_SAVE;
+        String receiptReference = StringUtils.hasText(form.getUtrNumber()) ? form.getUtrNumber() : form.getReceiptNumber();
+        form.setReceiptNumber(receiptReference);
+        form.setUtrNumber(receiptReference);
 
         DepartmentAdvancePaymentEntity entity;
         boolean isNew = form.getId() == null;
@@ -119,10 +169,12 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             DepartmentProjectApplicationEntity app = findOwnedApplication(form.getDepartmentProjectApplicationId(),
                     actorContext);
 
-            // Guard against duplicate creation
-            if (paymentRepository.existsByApplication(app)) {
-                throw new DepartmentApplicationException(
-                        "An advance payment record already exists for this project application.");
+            // Allow new record only if no other record is in progress
+            long pendingCount = paymentRepository.countByApplicationAndApplicationStatusNotIn(app, 
+                    List.of(DepartmentApplicationStatus.AUDITOR_APPROVED, DepartmentApplicationStatus.HR_REJECTED));
+            
+            if (pendingCount > 0) {
+                throw new DepartmentApplicationException("A payment record for this project is already being processed.");
             }
 
             entity = new DepartmentAdvancePaymentEntity();
@@ -150,9 +202,12 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         }
 
         entity.setProformaInvoiceId(form.getProformaInvoiceId());
-        entity.setReceiptNumber(form.getReceiptNumber());
+        entity.setReceiptNumber(receiptReference); // Consolidate: Receipt Number = UTR Number
         entity.setTotalAmount(form.getTotalAmount());
         entity.setRemarks(form.getRemarks());
+        entity.setUtrNumber(receiptReference);
+        entity.setPaymentMode(form.getPaymentMode());
+        entity.setChequeNumber(form.getChequeNumber());
         entity.setUpdatedBy(actorEmail);
         entity.setUpdatedDate(LocalDateTime.now());
 
@@ -160,7 +215,7 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
 
         if (ACTION_SEND.equals(normalizedAction)) {
             validateForSubmission(entity);
-            entity.setApplicationStatus(DepartmentApplicationStatus.SUBMITTED_TO_HR);
+            entity.setApplicationStatus(DepartmentApplicationStatus.AUDITOR_REVIEW);
         } else {
             entity.setApplicationStatus(DepartmentApplicationStatus.DRAFT);
         }
@@ -204,16 +259,28 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         form.setReceiptNumber(entity.getReceiptNumber());
         form.setTotalAmount(entity.getTotalAmount());
         form.setRemarks(entity.getRemarks());
+        form.setUtrNumber(entity.getUtrNumber());
+        form.setPaymentMode(entity.getPaymentMode());
+        form.setChequeNumber(entity.getChequeNumber());
         form.setReceiptOriginalName(entity.getReceiptOriginalName());
         form.setReceiptFileType(entity.getReceiptFileType());
+        
+        if (entity.getApplicationStatus() == DepartmentApplicationStatus.HR_SENT_BACK || 
+            entity.getApplicationStatus() == DepartmentApplicationStatus.AUDITOR_SENT_BACK) {
+            form.setRejectionRemarks(entity.getRemarks());
+        }
+        
+        populatePiInfoInForm(form, entity.getApplication());
+        form.setPartialPaymentAllowed(Boolean.TRUE.equals(entity.getApplication().getIsPartialPaymentAllowed()));
+        
         return form;
     }
 
     @Override
-    public List<DepartmentAdvancePaymentEntity> getPaymentSummaries(String actorEmail) {
+    public Page<DepartmentAdvancePaymentEntity> getPaymentSummaries(String actorEmail, Pageable pageable) {
         DepartmentActorContext actorContext = resolveDepartmentActorContext(actorEmail);
         return paymentRepository
-                .findByDepartmentRegistrationIdOrderByIdDesc(actorContext.getDepartmentRegistrationId());
+                .findByDepartmentRegistrationIdOrderByIdDesc(actorContext.getDepartmentRegistrationId(), pageable);
     }
 
     @Override
@@ -224,12 +291,8 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                         actorContext.getDepartmentRegistrationId(),
                         List.of(DepartmentApplicationStatus.COMPLETED));
 
-        // Use explicit ID-based check for robustness
-        List<Long> initiatedAppIds = paymentRepository
-                .findApplicationIdsByDepartmentRegistrationId(actorContext.getDepartmentRegistrationId());
-
         return applications.stream()
-                .filter(entity -> !initiatedAppIds.contains(entity.getDepartmentProjectApplicationId()))
+                .filter(this::isEligibleForNewAdvancePayment)
                 .map(entity -> DepartmentProjectApplicationSummaryView.builder()
                         .departmentProjectApplicationId(entity.getDepartmentProjectApplicationId())
                         .requestId(entity.getRequestId())
@@ -240,6 +303,32 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                         .build())
                 .toList();
     }
+
+    private boolean isEligibleForNewAdvancePayment(DepartmentProjectApplicationEntity application) {
+        // 1. Check if there is already a payment in progress
+        long pendingCount = paymentRepository.countByApplicationAndApplicationStatusNotIn(application, 
+                List.of(DepartmentApplicationStatus.AUDITOR_APPROVED, DepartmentApplicationStatus.HR_REJECTED));
+        if (pendingCount > 0) {
+            return false;
+        }
+
+        // 2. Check if there is still a balance to pay
+        Optional<TaxInvoiceInfo> invoiceOpt = findTaxInvoiceInfo(application.getDepartmentProjectApplicationId());
+        if (invoiceOpt.isEmpty()) {
+            return false;
+        }
+
+        BigDecimal totalPiAmount = invoiceOpt.get().totalAmount();
+        List<DepartmentAdvancePaymentEntity> payments = paymentRepository
+                .findByApplicationAndApplicationStatusNotIn(application, List.of(DepartmentApplicationStatus.HR_REJECTED));
+        
+        BigDecimal paidAmount = payments.stream()
+                .map(DepartmentAdvancePaymentEntity::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return totalPiAmount.subtract(paidAmount).compareTo(BigDecimal.ZERO) > 0;
+    }
+
 
     @Override
     public boolean isReceiptNumberDuplicate(String receiptNumber, Long paymentId) {
@@ -307,10 +396,10 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     }
 
     @Override
-    public List<DepartmentAdvancePaymentEntity> getReviewList(String actorEmail) {
+    public Page<DepartmentAdvancePaymentEntity> getReviewList(String actorEmail, Pageable pageable) {
         User user = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
         if (user == null) {
-            return List.of();
+            return Page.empty(pageable);
         }
 
         Set<String> roles = user.getRoles().stream()
@@ -318,18 +407,21 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                 .collect(Collectors.toSet());
 
         List<DepartmentApplicationStatus> statuses = new ArrayList<>();
-        if (roles.contains("ROLE_HR") || roles.contains("HR")) {
-            statuses.add(DepartmentApplicationStatus.SUBMITTED_TO_HR);
+        if (roles.contains("ROLE_HR")) {
+            // HR can see payments currently under review or already approved by Auditor to track status
+            statuses.add(DepartmentApplicationStatus.AUDITOR_REVIEW);
+            statuses.add(DepartmentApplicationStatus.AUDITOR_APPROVED);
+            statuses.add(DepartmentApplicationStatus.AUDITOR_SENT_BACK);
         }
-        if (roles.contains("ROLE_AUDITOR") || roles.contains("AUDITOR")) {
+        if (roles.contains("ROLE_AUDITOR")) {
             statuses.add(DepartmentApplicationStatus.AUDITOR_REVIEW);
         }
 
         if (statuses.isEmpty()) {
-            return List.of();
+            return Page.empty(pageable);
         }
 
-        return paymentRepository.findByApplicationStatusInOrderByIdDesc(statuses);
+        return paymentRepository.findByApplicationStatusInOrderByIdDesc(statuses, pageable);
     }
 
     @Override
@@ -345,13 +437,11 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                 .collect(Collectors.toSet());
 
         boolean isAuthorized = false;
-        if (roles.contains("ROLE_HR") || roles.contains("HR")) {
+        if (roles.contains("ROLE_HR")) {
             isAuthorized = true;
-        } else if (roles.contains("ROLE_AUDITOR") || roles.contains("AUDITOR")) {
+        } else if (roles.contains("ROLE_AUDITOR")) {
             isAuthorized = true;
-        } else if (user.getDepartmentRegistrationId() != null
-                && entity.getDepartmentRegistrationId()
-                        .equals(user.getDepartmentRegistrationId().getDepartmentRegistrationId())) {
+        } else if (matchesActorDepartment(user, entity.getDepartmentRegistrationId())) {
             isAuthorized = true;
         }
 
@@ -368,8 +458,15 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         form.setReceiptNumber(entity.getReceiptNumber());
         form.setTotalAmount(entity.getTotalAmount());
         form.setRemarks(entity.getRemarks());
+        form.setUtrNumber(entity.getUtrNumber());
+        form.setPaymentMode(entity.getPaymentMode());
+        form.setChequeNumber(entity.getChequeNumber());
         form.setReceiptOriginalName(entity.getReceiptOriginalName());
         form.setReceiptFileType(entity.getReceiptFileType());
+        
+        populatePiInfoInForm(form, entity.getApplication());
+        form.setPartialPaymentAllowed(Boolean.TRUE.equals(entity.getApplication().getIsPartialPaymentAllowed()));
+        
         return form;
     }
 
@@ -386,13 +483,11 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
                 .collect(Collectors.toSet());
 
         boolean isAuthorized = false;
-        if (roles.contains("ROLE_HR") || roles.contains("HR")) {
+        if (roles.contains("ROLE_HR")) {
             isAuthorized = true;
-        } else if (roles.contains("ROLE_AUDITOR") || roles.contains("AUDITOR")) {
+        } else if (roles.contains("ROLE_AUDITOR")) {
             isAuthorized = true;
-        } else if (user.getDepartmentRegistrationId() != null
-                && entity.getDepartmentRegistrationId()
-                        .equals(user.getDepartmentRegistrationId().getDepartmentRegistrationId())) {
+        } else if (matchesActorDepartment(user, entity.getDepartmentRegistrationId())) {
             isAuthorized = true;
         }
 
@@ -440,7 +535,7 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
 
     private void validateForSubmission(DepartmentAdvancePaymentEntity entity) {
         if (!StringUtils.hasText(entity.getProformaInvoiceId())) {
-            throw new DepartmentApplicationException("Proforma Invoice is required for submission.");
+            throw new DepartmentApplicationException("Tax Invoice reference is required for submission.");
         }
         if (!StringUtils.hasText(entity.getReceiptNumber())) {
             throw new DepartmentApplicationException("Receipt number is required for submission.");
@@ -450,6 +545,12 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
         }
         if (!StringUtils.hasText(entity.getReceiptFilePath())) {
             throw new DepartmentApplicationException("Proof of payment document is required for submission.");
+        }
+        if (!StringUtils.hasText(entity.getPaymentMode())) {
+            throw new DepartmentApplicationException("Payment mode is required for submission.");
+        }
+        if ("CHEQUE".equals(entity.getPaymentMode()) && !StringUtils.hasText(entity.getChequeNumber())) {
+            throw new DepartmentApplicationException("Cheque number is required for submission when payment mode is Cheque.");
         }
     }
 
@@ -462,18 +563,15 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
     }
 
     private DepartmentActorContext resolveActorContext(String actorEmail) {
-        User user = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
-        if (user == null) {
-            throw new DepartmentApplicationException("User not found.");
-        }
+        User user = userAffiliationService.loadUserByEmail(actorEmail);
 
         var builder = DepartmentActorContext.builder()
                 .userId(user.getId())
                 .actorName(user.getName())
                 .actorEmail(user.getEmail());
 
-        if (user.getDepartmentRegistrationId() != null) {
-            DepartmentRegistrationEntity reg = user.getDepartmentRegistrationId();
+        DepartmentRegistrationEntity reg = userAffiliationService.resolvePrimaryDepartmentRegistration(user);
+        if (reg != null) {
             builder.departmentId(reg.getDepartmentId())
                     .departmentRegistrationId(reg.getDepartmentRegistrationId());
         }
@@ -487,5 +585,61 @@ public class DepartmentAdvancePaymentServiceImpl implements DepartmentAdvancePay
             throw new DepartmentApplicationException("Department profile not found for user.");
         }
         return context;
+    }
+
+    private void populatePiInfoInForm(AdvancePaymentForm form, DepartmentProjectApplicationEntity app) {
+        Optional<TaxInvoiceInfo> taxInvoice = findTaxInvoiceInfo(app.getDepartmentProjectApplicationId());
+
+        if (taxInvoice.isPresent()) {
+            TaxInvoiceInfo invoice = taxInvoice.get();
+            form.setPiNumber(invoice.tiNumber());
+            form.setTotalPiAmount(invoice.totalAmount());
+            
+            List<DepartmentAdvancePaymentEntity> pastPayments = paymentRepository
+                    .findByApplicationAndApplicationStatusNotIn(app, List.of(DepartmentApplicationStatus.HR_REJECTED));
+            
+            BigDecimal paidAmount = pastPayments.stream()
+                    .filter(p -> form.getId() == null || !p.getId().equals(form.getId()))
+                    .map(DepartmentAdvancePaymentEntity::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            form.setPartialAmount(paidAmount);
+            form.setBalanceAmount(invoice.totalAmount().subtract(paidAmount));
+        }
+    }
+
+    private Optional<TaxInvoiceInfo> findTaxInvoiceInfo(Long applicationId) {
+        List<Object[]> rows = entityManager.createNativeQuery(
+                "select ti_number, total_amount from department_tax_invoice "
+                        + "where department_project_application_id = :applicationId and is_active = true")
+                .setParameter("applicationId", applicationId)
+                .getResultList();
+
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Object[] row = rows.get(0);
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        if (row[1] instanceof BigDecimal amount) {
+            totalAmount = amount;
+        } else if (row[1] instanceof Number amount) {
+            totalAmount = BigDecimal.valueOf(amount.doubleValue());
+        }
+
+        return Optional.of(new TaxInvoiceInfo(
+                row[0] != null ? row[0].toString() : null,
+                totalAmount));
+    }
+
+    private boolean matchesActorDepartment(User user, Long departmentRegistrationId) {
+        DepartmentRegistrationEntity departmentRegistration = userAffiliationService.resolvePrimaryDepartmentRegistration(
+                user);
+        return departmentRegistration != null
+                && departmentRegistration.getDepartmentRegistrationId() != null
+                && departmentRegistration.getDepartmentRegistrationId().equals(departmentRegistrationId);
+    }
+
+    private record TaxInvoiceInfo(String tiNumber, BigDecimal totalAmount) {
     }
 }

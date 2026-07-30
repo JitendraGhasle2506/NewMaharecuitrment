@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -19,43 +19,183 @@
                 <div class="card-body">
                     <section class="hero-strip">
                         <div>
+                            <span class="hero-eyebrow">HR Operations View</span>
                             <h1>Human Resources Dashboard</h1>
-                            <p>Operational overview for projects, onboarding, and workforce mix.</p>
+                            <p>Operational overview for attendance, projects, onboarding, and workforce mix.</p>
                         </div>
-                        <span class="dummy-tag">Dummy Data</span>
+                        <div class="attendance-summary"
+                            th:style="'--present:' + ${presentPercent} + '%'"
+                            aria-label="Today present employees out of total employees">
+                            <span>Present Today</span>
+                            <strong>
+                                <b th:text="${presentEmployees}">0</b>
+                                <small>/</small>
+                                <b th:text="${totalEmployees}">0</b>
+                            </strong>
+                            <em th:text="${presentPercent} + '% marked present'">0% marked present</em>
+                        </div>
                     </section>
 
                     <section class="kpi-grid">
-                        <article class="kpi-card">
+                        <article class="kpi-card kpi-brand">
                             <p>Total Projects</p>
                             <h3 th:text="${totalProjects}">0</h3>
                         </article>
-                        <article class="kpi-card">
+                        <article class="kpi-card kpi-success">
+                            <p>Total Wings</p>
+                            <h3 th:text="${totalWings}">0</h3>
+                        </article>
+                        <button type="button" class="kpi-card kpi-brand kpi-clickable"
+                            data-project-scope="internal"
+                            data-project-title="Internal Projects"
+                            aria-label="View internal project names"
+                            th:attr="data-project-count=${internalProjects}"
+                            aria-controls="hrProjectScopePanel"
+                            aria-expanded="false">
+                            <p>Internal Projects</p>
+                            <h3 th:text="${internalProjects}">0</h3>
+                            <span class="kpi-action">Project Names</span>
+                        </button>
+                        <button type="button" class="kpi-card kpi-accent kpi-clickable"
+                            data-project-scope="external"
+                            data-project-title="External Projects"
+                            aria-label="View external project names"
+                            th:attr="data-project-count=${externalProjects}"
+                            aria-controls="hrProjectScopePanel"
+                            aria-expanded="false">
+                            <p>External Projects</p>
+                            <h3 th:text="${externalProjects}">0</h3>
+                            <span class="kpi-action">Project Names</span>
+                        </button>
+                        <article class="kpi-card kpi-accent">
                             <p>Onboarding This Month</p>
                             <h3 th:text="${onboardingThisMonth}">0</h3>
                         </article>
-                        <article class="kpi-card">
+                        <article class="kpi-card kpi-brand">
                             <p>Total Employees</p>
                             <h3 th:text="${totalEmployees}">0</h3>
                         </article>
-                        <article class="kpi-card">
-                            <p>Pending Approvals</p>
+                        <article class="kpi-card kpi-success">
+                            <p>Present Today</p>
+                            <h3>
+                                <span th:text="${presentEmployees}">0</span>
+                                <small th:text="'/ ' + ${totalEmployees}">/ 0</small>
+                            </h3>
+                        </article>
+                        <article class="kpi-card kpi-warning">
+                            <p>Pending Department Requests</p>
                             <h3 th:text="${pendingApprovals}">0</h3>
-                        </article>
-                        <article class="kpi-card">
-                            <p>Open Positions</p>
-                            <h3 th:text="${openPositions}">0</h3>
-                        </article>
-                        <article class="kpi-card">
-                            <p>Attrition Rate</p>
-                            <h3 th:text="${attritionRate}">0%</h3>
                         </article>
                     </section>
 
+                    <section class="panel project-scope-panel d-none" id="hrProjectScopePanel" aria-live="polite">
+                        <div class="panel-title">
+                            <div>
+                                <h4 id="hrProjectScopeTitle">Project Names</h4>
+                                <span class="panel-subtitle" id="hrProjectScopeCount">0 projects</span>
+                            </div>
+                            <button type="button" class="project-panel-close" id="hrProjectScopeClose"
+                                aria-label="Close project names">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <div class="project-list" data-project-list="internal">
+                            <div class="project-list-item" th:each="project : ${internalProjectList}">
+                                <strong th:text="${project.name}">Project Name</strong>
+                                <span class="project-code" th:if="${project.code != null}" th:text="${project.code}">CODE</span>
+                            </div>
+                            <p class="project-empty" th:if="${#lists.isEmpty(internalProjectList)}">No internal projects found.</p>
+                        </div>
+
+                        <div class="project-list d-none" data-project-list="external">
+                            <div class="project-list-item" th:each="project : ${externalProjectList}">
+                                <strong th:text="${project.name}">Project Name</strong>
+                                <span class="project-code" th:if="${project.code != null}" th:text="${project.code}">CODE</span>
+                            </div>
+                            <p class="project-empty" th:if="${#lists.isEmpty(externalProjectList)}">No external projects found.</p>
+                        </div>
+                    </section>
+
+                    <section class="panel wing-report-panel">
+                        <div class="panel-title">
+                            <div>
+                                <h4>Wing Reports</h4>
+                                <span class="panel-subtitle">Wing and cell overview</span>
+                            </div>
+                            <button type="button" class="wing-load-btn" id="hrWingReportLoad"
+                                aria-controls="hrWingReportDetails"
+                                aria-expanded="false">
+                                <i class="fa-solid fa-chart-simple" aria-hidden="true"></i>
+                                <span data-wing-load-label>Load Wing Details</span>
+                            </button>
+                        </div>
+
+                        <div class="wing-summary-grid">
+                            <div>
+                                <span>Total Wings</span>
+                                <strong th:text="${totalWings}">0</strong>
+                            </div>
+                            <div>
+                                <span>Total Cells</span>
+                                <strong th:text="${totalCells}">0</strong>
+                            </div>
+                        </div>
+
+                        <div class="wing-report-details d-none" id="hrWingReportDetails">
+                            <div class="wing-directory-grid">
+                                <a class="wing-directory-card" th:each="wing : ${wingReports}"
+                                    th:href="@{/hr/wing-report/{wingId}(wingId=${wing.wingId})}">
+                                    <span class="wing-directory-icon">
+                                        <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="wing-directory-copy">
+                                        <strong th:text="${wing.wingName}">Wing Name</strong>
+                                        <small th:text="${wing.cellCount} + ' cells'">0 cells</small>
+                                    </span>
+                                    <span class="wing-directory-action">
+                                        <span>Open</span>
+                                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                                    </span>
+                                </a>
+                                <p class="project-empty" th:if="${#lists.isEmpty(wingReports)}">No active wing reports found.</p>
+                            </div>
+                        </div>
+                    </section>
+
                     <div class="row g-4 mt-1">
-                        <div class="col-lg-5">
+                        <div class="col-lg-6">
                             <section class="panel">
-                                <h4>Employee Mix</h4>
+                                <div class="panel-title">
+                                    <h4>Attendance Today</h4>
+                                    <span th:text="${presentPercent} + '%'">0%</span>
+                                </div>
+                                <div class="attendance-panel-grid">
+                                    <div>
+                                        <strong th:text="${presentEmployees}">0</strong>
+                                        <span>Present Employees</span>
+                                    </div>
+                                    <div>
+                                        <strong th:text="${absentEmployees}">0</strong>
+                                        <span>Not Marked / Absent</span>
+                                    </div>
+                                </div>
+                                <div class="attendance-track">
+                                    <span th:style="'width:' + ${presentPercent} + '%'"></span>
+                                </div>
+                                <p class="attendance-note">
+                                    <strong th:text="${presentEmployees}">0</strong>
+                                    <span th:text="' out of ' + ${totalEmployees} + ' employees are present today.'">
+                                        out of 0 employees are present today.
+                                    </span>
+                                </p>
+                            </section>
+
+                            <section class="panel mt-4">
+                                <div class="panel-title">
+                                    <h4>Employee Mix</h4>
+                                    <span th:text="${totalEmployees} + ' employees'">0 employees</span>
+                                </div>
                                 <div class="mix-bar">
                                     <span class="mix-internal" th:style="'width:' + ${internalPercent} + '%'"></span>
                                     <span class="mix-external" th:style="'width:' + ${externalPercent} + '%'"></span>
@@ -66,7 +206,10 @@
                                 </div>
                             </section>
 
-                            <section class="panel mt-4">
+                        </div>
+
+                        <div class="col-lg-6">
+                            <section class="panel h-100">
                                 <h4>Department Onboarding</h4>
                                 <div class="dept-list">
                                     <div class="dept-row" th:each="dept : ${departmentOnboarding}">
@@ -84,42 +227,84 @@
                                 </div>
                             </section>
                         </div>
-
-                        <div class="col-lg-7">
-                            <section class="panel">
-                                <h4>Project Workforce Snapshot</h4>
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>Project Name</th>
-                                                <th class="text-center">Internal</th>
-                                                <th class="text-center">External</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr th:each="project : ${projects}">
-                                                <td th:text="${project.name}">Project Name</td>
-                                                <td class="text-center" th:text="${project.internal}">0</td>
-                                                <td class="text-center" th:text="${project.external}">0</td>
-                                                <td>
-                                                    <span class="badge" th:classappend="${project.status == 'In Progress'} ? ' text-bg-primary' :
-                                                              (${project.status == 'Planning'} ? ' text-bg-secondary' :
-                                                              (${project.status == 'UAT'} ? ' text-bg-success' : ' text-bg-warning'))"
-                                                        th:text="${project.status}">Status</span>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </section>
-                        </div>
                     </div>
                 </div>
             </div>
         </section>
     </th:block>
+    <script>
+        (function () {
+            const buttons = Array.from(document.querySelectorAll('[data-project-scope]'));
+            const panel = document.getElementById('hrProjectScopePanel');
+            const title = document.getElementById('hrProjectScopeTitle');
+            const count = document.getElementById('hrProjectScopeCount');
+            const close = document.getElementById('hrProjectScopeClose');
+            const lists = Array.from(document.querySelectorAll('[data-project-list]'));
+            const wingLoad = document.getElementById('hrWingReportLoad');
+            const wingDetails = document.getElementById('hrWingReportDetails');
+            const wingLoadLabel = wingLoad ? wingLoad.querySelector('[data-wing-load-label]') : null;
+
+            function pluralizeProjects(value) {
+                return value === '1' ? '1 project' : `${value} projects`;
+            }
+
+            function showProjectList(button) {
+                const scope = button.dataset.projectScope;
+                const projectCount = button.dataset.projectCount || '0';
+
+                buttons.forEach((item) => {
+                    const selected = item === button;
+                    item.classList.toggle('is-active', selected);
+                    item.setAttribute('aria-expanded', String(selected));
+                });
+
+                lists.forEach((list) => {
+                    list.classList.toggle('d-none', list.dataset.projectList !== scope);
+                });
+
+                if (title) {
+                    title.textContent = button.dataset.projectTitle || 'Project Names';
+                }
+                if (count) {
+                    count.textContent = pluralizeProjects(projectCount);
+                }
+                if (panel) {
+                    panel.classList.remove('d-none');
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+
+            buttons.forEach((button) => {
+                button.addEventListener('click', () => showProjectList(button));
+            });
+
+            if (close && panel) {
+                close.addEventListener('click', () => {
+                    panel.classList.add('d-none');
+                    buttons.forEach((button) => {
+                        button.classList.remove('is-active');
+                        button.setAttribute('aria-expanded', 'false');
+                    });
+                });
+            }
+
+            if (wingLoad && wingDetails) {
+                wingLoad.addEventListener('click', () => {
+                    const show = wingDetails.classList.contains('d-none');
+                    wingDetails.classList.toggle('d-none', !show);
+                    wingLoad.classList.toggle('is-active', show);
+                    wingLoad.setAttribute('aria-expanded', String(show));
+                    if (wingLoadLabel) {
+                        wingLoadLabel.textContent = show ? 'Hide Wing Details' : 'Load Wing Details';
+                    }
+                    if (show) {
+                        wingDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                });
+            }
+
+        })();
+    </script>
 
 </body>
 

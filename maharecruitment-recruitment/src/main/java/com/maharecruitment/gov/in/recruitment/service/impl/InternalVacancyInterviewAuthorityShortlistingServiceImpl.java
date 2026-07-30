@@ -1,0 +1,418 @@
+package com.maharecruitment.gov.in.recruitment.service.impl;
+
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
+import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyInterviewAuthorityShortlistingService;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateFilterType;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateRequestSummaryView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancySubmittedCandidateView;
+
+@Service
+@Transactional(readOnly = true)
+public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
+        implements InternalVacancyInterviewAuthorityShortlistingService {
+
+    private static final Logger log = LoggerFactory.getLogger(
+            InternalVacancyInterviewAuthorityShortlistingServiceImpl.class);
+
+    private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
+    private final RecruitmentNotificationRepository notificationRepository;
+    private final RecruitmentInterviewDetailRepository interviewDetailRepository;
+
+    public InternalVacancyInterviewAuthorityShortlistingServiceImpl(
+            UserRepository userRepository,
+            EmployeeRepository employeeRepository,
+            RecruitmentNotificationRepository notificationRepository,
+            RecruitmentInterviewDetailRepository interviewDetailRepository) {
+        this.userRepository = userRepository;
+        this.employeeRepository = employeeRepository;
+        this.notificationRepository = notificationRepository;
+        this.interviewDetailRepository = interviewDetailRepository;
+    }
+
+    @Override
+    public List<InternalVacancyCandidateRequestSummaryView> getAssignedRequestSummaries(String actorEmail) {
+        ActorContext actor = resolveActorContext(actorEmail);
+
+        List<InternalVacancySubmittedCandidateView> candidates = interviewDetailRepository
+                .findActiveCandidatesForInternalVacanciesByInterviewAuthority(actor.userId(), actor.employeeId())
+                .stream()
+                .map(this::toCandidateView)
+                .toList();
+
+        Map<String, SummaryAccumulator> summaryByRequestId = new LinkedHashMap<>();
+        for (InternalVacancySubmittedCandidateView candidate : candidates) {
+            if (!StringUtils.hasText(candidate.getRequestId())) {
+                continue;
+            }
+
+            SummaryAccumulator accumulator = summaryByRequestId.computeIfAbsent(
+                    candidate.getRequestId(),
+                    ignored -> new SummaryAccumulator(
+                            candidate.getRequestId(),
+                            candidate.getProjectName(),
+                            0L,
+                            0L,
+                            0L,
+                            0L,
+                            0L,
+                            0L,
+                            candidate.getSubmittedAt()));
+            accumulator.totalCandidates++;
+            if (candidate.getCandidateStatus() == null) {
+                accumulator.pendingReviewCandidates++;
+            }
+            if (candidate.getCandidateStatus() == RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT) {
+                accumulator.shortlistedCandidates++;
+            }
+            if (candidate.getCandidateStatus() == RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT) {
+                accumulator.rejectedCandidates++;
+            }
+            if (isAwaitingInterviewFeedback(candidate)) {
+                accumulator.interviewScheduledCandidates++;
+            }
+            if (Boolean.TRUE.equals(candidate.getAssessmentSubmitted())) {
+                accumulator.feedbackSubmittedCandidates++;
+            }
+            if (candidate.getSubmittedAt() != null
+                    && (accumulator.latestSubmittedAt == null
+                            || candidate.getSubmittedAt().isAfter(accumulator.latestSubmittedAt))) {
+                accumulator.latestSubmittedAt = candidate.getSubmittedAt();
+            }
+        }
+
+        List<InternalVacancyCandidateRequestSummaryView> summaries = summaryByRequestId.values().stream()
+                .map(accumulator -> InternalVacancyCandidateRequestSummaryView.builder()
+                        .requestId(accumulator.requestId)
+                        .projectName(accumulator.projectName)
+                        .totalCandidates(accumulator.totalCandidates)
+                        .pendingReviewCandidates(accumulator.pendingReviewCandidates)
+                        .shortlistedCandidates(accumulator.shortlistedCandidates)
+                        .rejectedCandidates(accumulator.rejectedCandidates)
+                        .interviewScheduledCandidates(accumulator.interviewScheduledCandidates)
+                        .feedbackSubmittedCandidates(accumulator.feedbackSubmittedCandidates)
+                        .latestSubmittedAt(accumulator.latestSubmittedAt)
+                        .build())
+                .toList();
+
+        log.info("Loaded interview-authority internal vacancy request summaries. userId={}, requestCount={}",
+                actor.userId(), summaries.size());
+        return summaries;
+    }
+
+    @Override
+    public InternalVacancyCandidateListView getAssignedCandidatesByRequestId(
+            String actorEmail,
+            String requestId,
+            InternalVacancyCandidateFilterType filterType) {
+        ActorContext actor = resolveActorContext(actorEmail);
+        String normalizedRequestId = normalizeRequestId(requestId);
+        InternalVacancyCandidateFilterType resolvedFilter =
+                filterType != null ? filterType : InternalVacancyCandidateFilterType.ALL;
+
+        RecruitmentNotificationEntity notification = notificationRepository
+                .findInternalVacancyForInterviewAuthorityReview(normalizedRequestId, actor.userId(), actor.employeeId())
+                .orElseThrow(() -> new RecruitmentNotificationException(
+                        "This internal vacancy request is not assigned to the logged-in interview authority."));
+
+        List<InternalVacancySubmittedCandidateView> candidates = interviewDetailRepository
+                .findActiveCandidatesForInternalVacancyByRequestIdAndInterviewAuthority(
+                        normalizedRequestId,
+                        actor.userId(),
+                        actor.employeeId())
+                .stream()
+                .map(this::toCandidateView)
+                .toList();
+        CandidateListMetrics metrics = summarizeCandidates(candidates);
+        List<InternalVacancySubmittedCandidateView> filteredCandidates = candidates.stream()
+                .filter(candidate -> matchesFilter(candidate, resolvedFilter))
+                .toList();
+
+        log.info(
+                "Loaded interview-authority internal vacancy candidates. userId={}, requestId={}, candidateCount={}, filter={}",
+                actor.userId(),
+                notification.getRequestId(),
+                filteredCandidates.size(),
+                resolvedFilter.name());
+
+        return InternalVacancyCandidateListView.builder()
+                .recruitmentNotificationId(notification.getRecruitmentNotificationId())
+                .requestId(notification.getRequestId())
+                .projectName(notification.getProjectMst() != null ? notification.getProjectMst().getProjectName() : "-")
+                .notificationStatus(notification.getStatus())
+                .activeFilter(resolvedFilter)
+                .totalCandidates(metrics.totalCandidates)
+                .pendingReviewCandidates(metrics.pendingReviewCandidates)
+                .shortlistedCandidates(metrics.shortlistedCandidates)
+                .rejectedCandidates(metrics.rejectedCandidates)
+                .interviewScheduledCandidates(metrics.interviewScheduledCandidates)
+                .feedbackSubmittedCandidates(metrics.feedbackSubmittedCandidates)
+                .candidates(filteredCandidates)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void reviewCandidate(
+            String actorEmail,
+            String requestId,
+            Long recruitmentInterviewDetailId,
+            DepartmentCandidateReviewDecision reviewDecision,
+            String reviewRemarks) {
+        ActorContext actor = resolveActorContext(actorEmail);
+        String normalizedRequestId = normalizeRequestId(requestId);
+        requirePositiveId(recruitmentInterviewDetailId, "Candidate id is required.");
+
+        if (reviewDecision == null) {
+            throw new RecruitmentNotificationException("Candidate review decision is required.");
+        }
+
+        RecruitmentInterviewDetailEntity candidate = interviewDetailRepository
+                .findByIdForInternalVacancyInterviewAuthorityReviewUpdate(
+                        normalizedRequestId,
+                        recruitmentInterviewDetailId,
+                        actor.userId(),
+                        actor.employeeId())
+                .orElseThrow(() -> new RecruitmentNotificationException(
+                        "Candidate not found for the assigned internal vacancy interview authority."));
+
+        if (candidate.getCandidateStatus() == RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY) {
+            throw new RecruitmentNotificationException("Candidate cannot be reviewed after interview scheduling.");
+        }
+
+        String normalizedRemarks = normalizeRemarks(reviewRemarks);
+        if (reviewDecision == DepartmentCandidateReviewDecision.REJECT && !StringUtils.hasText(normalizedRemarks)) {
+            throw new RecruitmentNotificationException("Remarks are required when rejecting a candidate.");
+        }
+
+        RecruitmentCandidateStatus nextStatus = reviewDecision == DepartmentCandidateReviewDecision.SHORTLIST
+                ? RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT
+                : RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT;
+
+        candidate.setCandidateStatus(nextStatus);
+        candidate.setDepartmentShortlistedAt(LocalDateTime.now());
+        candidate.setDepartmentShortlistedByUserId(actor.userId());
+        candidate.setDepartmentShortlistRemarks(normalizedRemarks);
+
+        interviewDetailRepository.save(candidate);
+
+        log.info(
+                "Interview-authority candidate review applied. requestId={}, candidateId={}, decision={}, userId={}",
+                normalizedRequestId,
+                recruitmentInterviewDetailId,
+                reviewDecision,
+                actor.userId());
+    }
+
+    private ActorContext resolveActorContext(String actorEmail) {
+        if (!StringUtils.hasText(actorEmail)) {
+            throw new RecruitmentNotificationException("Authenticated user is required.");
+        }
+
+        Long userId = userRepository.findByEmailIgnoreCase(actorEmail.trim())
+                .map(User::getId)
+                .orElse(null);
+
+        Long employeeId = userId == null
+                ? null
+                : employeeRepository.findByUser_Id(userId)
+                        .map(EmployeeEntity::getEmployeeId)
+                        .orElse(null);
+
+        if (userId == null && employeeId == null) {
+            throw new RecruitmentNotificationException("Authenticated actor not found.");
+        }
+
+        return new ActorContext(userId, employeeId);
+    }
+
+    private record ActorContext(Long userId, Long employeeId) {
+    }
+
+    private InternalVacancySubmittedCandidateView toCandidateView(RecruitmentInterviewDetailEntity candidate) {
+        String designationName = candidate.getDesignationVacancy() != null
+                && candidate.getDesignationVacancy().getDesignationMst() != null
+                        ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
+                        : "-";
+
+        return InternalVacancySubmittedCandidateView.builder()
+                .recruitmentNotificationId(candidate.getRecruitmentNotification() != null
+                        ? candidate.getRecruitmentNotification().getRecruitmentNotificationId()
+                        : null)
+                .requestId(candidate.getRecruitmentNotification() != null
+                        ? candidate.getRecruitmentNotification().getRequestId()
+                        : null)
+                .projectName(candidate.getRecruitmentNotification() != null
+                        && candidate.getRecruitmentNotification().getProjectMst() != null
+                                ? candidate.getRecruitmentNotification().getProjectMst().getProjectName()
+                                : "-")
+                .recruitmentInterviewDetailId(candidate.getRecruitmentInterviewDetailId())
+                .agencyId(candidate.getAgency() != null ? candidate.getAgency().getAgencyId() : null)
+                .agencyName(candidate.getAgency() != null ? candidate.getAgency().getAgencyName() : "-")
+                .designationVacancyId(candidate.getDesignationVacancy() != null
+                        ? candidate.getDesignationVacancy().getRecruitmentDesignationVacancyId()
+                        : null)
+                .designationName(designationName)
+                .levelCode(candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null)
+                .candidateName(candidate.getCandidateName())
+                .candidateEmail(candidate.getCandidateEmail())
+                .candidateMobile(candidate.getCandidateMobile())
+                .candidateEducation(candidate.getCandidateEducation())
+                .totalExperience(candidate.getTotalExperience())
+                .relevantExperience(candidate.getRelevantExperience())
+                .joiningTime(candidate.getJoiningTime())
+                .resumeOriginalName(candidate.getResumeOriginalName())
+                .resumeFilePath(candidate.getResumeFilePath())
+                .candidateStatus(candidate.getCandidateStatus())
+                .departmentShortlistRemarks(candidate.getDepartmentShortlistRemarks())
+                .submittedAt(candidate.getCreatedDateTime())
+                .interviewDateTime(candidate.getInterviewDateTime())
+                .interviewTimeSlot(candidate.getInterviewTimeSlot())
+                .interviewLink(candidate.getInterviewLink())
+                .interviewChangeRequested(candidate.getDepartmentInterviewChangeRequested())
+                .interviewChangeRequestedAt(candidate.getDepartmentInterviewChangeRequestedAt())
+                .assessmentSubmitted(candidate.getAssessmentSubmitted())
+                .finalDecisionStatus(candidate.getFinalDecisionStatus())
+                .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
+                .finalDecisionAt(candidate.getFinalDecisionAt())
+                .build();
+    }
+
+    private String normalizeRequestId(String requestId) {
+        if (!StringUtils.hasText(requestId)) {
+            throw new RecruitmentNotificationException("Request id is required.");
+        }
+        return requestId.trim().toUpperCase();
+    }
+
+    private void requirePositiveId(Long value, String message) {
+        if (value == null || value < 1) {
+            throw new RecruitmentNotificationException(message);
+        }
+    }
+
+    private String normalizeRemarks(String remarks) {
+        return StringUtils.hasText(remarks) ? remarks.trim() : null;
+    }
+
+    private CandidateListMetrics summarizeCandidates(List<InternalVacancySubmittedCandidateView> candidates) {
+        CandidateListMetrics metrics = new CandidateListMetrics();
+        if (candidates == null || candidates.isEmpty()) {
+            return metrics;
+        }
+
+        for (InternalVacancySubmittedCandidateView candidate : candidates) {
+            metrics.totalCandidates++;
+            if (candidate.getCandidateStatus() == null) {
+                metrics.pendingReviewCandidates++;
+            }
+            if (candidate.getCandidateStatus() == RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT) {
+                metrics.shortlistedCandidates++;
+            }
+            if (candidate.getCandidateStatus() == RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT) {
+                metrics.rejectedCandidates++;
+            }
+            if (isAwaitingInterviewFeedback(candidate)) {
+                metrics.interviewScheduledCandidates++;
+            }
+            if (Boolean.TRUE.equals(candidate.getAssessmentSubmitted())) {
+                metrics.feedbackSubmittedCandidates++;
+            }
+        }
+        return metrics;
+    }
+
+    private boolean matchesFilter(
+            InternalVacancySubmittedCandidateView candidate,
+            InternalVacancyCandidateFilterType filterType) {
+        if (candidate == null || filterType == null) {
+            return true;
+        }
+
+        switch (filterType) {
+            case PENDING_REVIEW:
+                return candidate.getCandidateStatus() == null;
+            case SHORTLISTED:
+                return candidate.getCandidateStatus() == RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT;
+            case REJECTED:
+                return candidate.getCandidateStatus() == RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT;
+            case INTERVIEW_SCHEDULED:
+                return isAwaitingInterviewFeedback(candidate);
+            case FEEDBACK_SUBMITTED:
+                return Boolean.TRUE.equals(candidate.getAssessmentSubmitted());
+            case ALL:
+            default:
+                return true;
+        }
+    }
+
+    private boolean isAwaitingInterviewFeedback(InternalVacancySubmittedCandidateView candidate) {
+        return candidate != null
+                && candidate.getCandidateStatus() == RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY
+                && !Boolean.TRUE.equals(candidate.getAssessmentSubmitted());
+    }
+
+    private static final class SummaryAccumulator {
+        private final String requestId;
+        private final String projectName;
+        private long totalCandidates;
+        private long pendingReviewCandidates;
+        private long shortlistedCandidates;
+        private long rejectedCandidates;
+        private long interviewScheduledCandidates;
+        private long feedbackSubmittedCandidates;
+        private LocalDateTime latestSubmittedAt;
+
+        private SummaryAccumulator(
+                String requestId,
+                String projectName,
+                long totalCandidates,
+                long pendingReviewCandidates,
+                long shortlistedCandidates,
+                long rejectedCandidates,
+                long interviewScheduledCandidates,
+                long feedbackSubmittedCandidates,
+                LocalDateTime latestSubmittedAt) {
+            this.requestId = requestId;
+            this.projectName = projectName;
+            this.totalCandidates = totalCandidates;
+            this.pendingReviewCandidates = pendingReviewCandidates;
+            this.shortlistedCandidates = shortlistedCandidates;
+            this.rejectedCandidates = rejectedCandidates;
+            this.interviewScheduledCandidates = interviewScheduledCandidates;
+            this.feedbackSubmittedCandidates = feedbackSubmittedCandidates;
+            this.latestSubmittedAt = latestSubmittedAt;
+        }
+    }
+
+    private static final class CandidateListMetrics {
+        private long totalCandidates;
+        private long pendingReviewCandidates;
+        private long shortlistedCandidates;
+        private long rejectedCandidates;
+        private long interviewScheduledCandidates;
+        private long feedbackSubmittedCandidates;
+    }
+}

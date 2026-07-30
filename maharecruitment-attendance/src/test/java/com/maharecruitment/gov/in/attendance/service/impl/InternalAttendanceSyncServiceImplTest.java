@@ -1,0 +1,364 @@
+package com.maharecruitment.gov.in.attendance.service.impl;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClient;
+import com.maharecruitment.gov.in.attendance.client.InternalAttendanceReportClientUnavailableException;
+import com.maharecruitment.gov.in.attendance.client.model.InternalAttendanceDayRecord;
+import com.maharecruitment.gov.in.attendance.config.InternalAttendanceSyncProperties;
+import com.maharecruitment.gov.in.attendance.entity.AttendanceSource;
+import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
+import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
+import com.maharecruitment.gov.in.attendance.repository.ManualAttendanceRequestRepository;
+import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceSyncResult;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+
+class InternalAttendanceSyncServiceImplTest {
+
+    private InternalAttendanceSyncServiceImpl service;
+    private final AtomicReference<List<DailyAttendanceInternalEntity>> savedEntities = new AtomicReference<>();
+
+    private List<InternalAttendanceDayRecord> apiResponse = Collections.emptyList();
+    private List<DailyAttendanceInternalEntity> existingRows = Collections.emptyList();
+    private List<EmployeeEntity> candidateEmployees = Collections.emptyList();
+    private RuntimeException fetchFailure;
+
+    @BeforeEach
+    void setUp() {
+        savedEntities.set(null);
+        InternalAttendanceSyncProperties properties = new InternalAttendanceSyncProperties();
+        properties.setEnabled(true);
+        properties.setUniqueCodePrefix("MahaIT");
+        properties.setSchedulerZone("Asia/Kolkata");
+        properties.setStopOnUpstreamUnavailable(true);
+        properties.setMinRequestIntervalMillis(0);
+
+        EmployeeRepository employeeRepository = proxyWithDefaults(EmployeeRepository.class, (proxy, method, args) -> {
+            if ("findInternalAttendanceSyncCandidates".equals(method.getName())) {
+                return candidateEmployees;
+            }
+            if ("findByEmployeeCodeIgnoreCase".equals(method.getName())) {
+                String employeeCode = (String) args[0];
+                return candidateEmployees.stream()
+                        .filter(employee -> employee.getEmployeeCode() != null
+                                && employeeCode.equalsIgnoreCase(employee.getEmployeeCode()))
+                        .findFirst();
+            }
+            if ("saveAll".equals(method.getName())) {
+                return args[0];
+            }
+            throw new UnsupportedOperationException("Unexpected EmployeeRepository call: " + method.getName());
+        });
+
+        DailyAttendanceInternalRepository dailyAttendanceInternalRepository = proxyWithDefaults(
+                DailyAttendanceInternalRepository.class,
+                (proxy, method, args) -> {
+                    if ("findByEmployeeIdentityAndAttendanceDateBetweenForUpdate".equals(method.getName())) {
+                        return existingRows;
+                    }
+                    if ("saveAll".equals(method.getName())) {
+                        List<DailyAttendanceInternalEntity> entities = new ArrayList<>();
+                        @SuppressWarnings("unchecked")
+                        Iterable<DailyAttendanceInternalEntity> iterable = (Iterable<DailyAttendanceInternalEntity>) args[0];
+                        iterable.forEach(entities::add);
+                        savedEntities.set(entities);
+                        return entities;
+                    }
+                    throw new UnsupportedOperationException(
+                            "Unexpected DailyAttendanceInternalRepository call: " + method.getName());
+                });
+
+        ManualAttendanceRequestRepository manualAttendanceRequestRepository = proxyWithDefaults(
+                ManualAttendanceRequestRepository.class,
+                (proxy, method, args) -> {
+                    if ("findByUserIdAndAttendanceDateBetweenAndHodStatusIgnoreCase".equals(method.getName())) {
+                        return Collections.emptyList();
+                    }
+                    throw new UnsupportedOperationException(
+                            "Unexpected ManualAttendanceRequestRepository call: " + method.getName());
+                });
+
+        InternalAttendanceReportClient attendanceReportClient = (startDate, endDate) -> {
+            if (fetchFailure != null) {
+                throw fetchFailure;
+            }
+            return apiResponse;
+        };
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate() {
+            @Override
+            public <T> T execute(TransactionCallback<T> action) {
+                return action.doInTransaction(new NoOpTransactionStatus());
+            }
+        };
+
+        service = new InternalAttendanceSyncServiceImpl(
+                employeeRepository,
+                dailyAttendanceInternalRepository,
+                manualAttendanceRequestRepository,
+                attendanceReportClient,
+                properties,
+                transactionTemplate);
+    }
+
+    @Test
+    void syncEmployeeAttendanceSetsAuditDatesForNewRows() {
+        LocalDate attendanceDate = LocalDate.of(2026, 5, 4);
+        EmployeeEntity employee = buildEmployee(101L);
+        apiResponse = List.of(new InternalAttendanceDayRecord(
+                "Test Employee",
+                "MahaIT1234",
+                attendanceDate,
+                "09:00",
+                "18:00",
+                "P"));
+        existingRows = Collections.emptyList();
+
+        InternalAttendanceSyncServiceImpl.AttendancePersistenceResult persistenceResult =
+                service.syncEmployeeAttendance(employee, apiResponse, attendanceDate, attendanceDate);
+
+        assertEquals(1, persistenceResult.upsertedRows());
+        assertEquals(1, persistenceResult.insertedRows());
+        assertEquals(0, persistenceResult.updatedRows());
+        DailyAttendanceInternalEntity savedEntity = savedEntities.get().get(0);
+        assertNotNull(savedEntity.getCreatedDate());
+        assertNotNull(savedEntity.getUpdatedDate());
+        assertEquals(savedEntity.getCreatedDate(), savedEntity.getUpdatedDate());
+        assertEquals("Y", savedEntity.getApiStatus());
+        assertEquals("N", savedEntity.getMobileAppStatus());
+        assertEquals("PRESENT", savedEntity.getStatus());
+        assertEquals("MahaIT1234", savedEntity.getEmployeeCode());
+    }
+
+    @Test
+    void syncEmployeeAttendancePreservesCreatedDateAndRefreshesUpdatedDateForExistingRows() {
+        LocalDate attendanceDate = LocalDate.of(2026, 5, 4);
+        EmployeeEntity employee = buildEmployee(202L);
+        LocalDateTime createdDate = LocalDateTime.of(2026, 4, 1, 9, 0);
+        LocalDateTime previousUpdatedDate = LocalDateTime.of(2026, 4, 15, 18, 0);
+
+        DailyAttendanceInternalEntity existingEntity = new DailyAttendanceInternalEntity();
+        existingEntity.setId(77L);
+        existingEntity.setEmployeeId(employee.getEmployeeId());
+        existingEntity.setAttendanceDate(attendanceDate);
+        existingEntity.setInTime("09:00");
+        existingEntity.setOutTime("18:00");
+        existingEntity.setTotalHours("09:00");
+        existingEntity.setStatus("PRESENT");
+        existingEntity.setMonth(attendanceDate.getMonthValue());
+        existingEntity.setYear(attendanceDate.getYear());
+        existingEntity.setCreatedDate(createdDate);
+        existingEntity.setUpdatedDate(previousUpdatedDate);
+
+        apiResponse = List.of(new InternalAttendanceDayRecord(
+                "Test Employee",
+                "MahaIT1234",
+                attendanceDate,
+                "09:00",
+                "18:00",
+                "P"));
+        existingRows = List.of(existingEntity);
+
+        InternalAttendanceSyncServiceImpl.AttendancePersistenceResult persistenceResult =
+                service.syncEmployeeAttendance(employee, apiResponse, attendanceDate, attendanceDate);
+
+        assertEquals(1, persistenceResult.upsertedRows());
+        assertEquals(0, persistenceResult.insertedRows());
+        assertEquals(1, persistenceResult.updatedRows());
+        DailyAttendanceInternalEntity savedEntity = savedEntities.get().get(0);
+        assertEquals(createdDate, savedEntity.getCreatedDate());
+        assertNotNull(savedEntity.getUpdatedDate());
+        assertTrue(savedEntity.getUpdatedDate().isAfter(previousUpdatedDate));
+    }
+
+    @Test
+    void syncEmployeeAttendancePreservesMobileFieldsAndExistingApiOutTimeForPartialApiRecord() {
+        LocalDate attendanceDate = LocalDate.of(2026, 5, 4);
+        EmployeeEntity employee = buildEmployee(202L);
+
+        DailyAttendanceInternalEntity existingEntity = new DailyAttendanceInternalEntity();
+        existingEntity.setId(77L);
+        existingEntity.setEmployeeId(employee.getEmployeeId());
+        existingEntity.setEmployeeCode("MahaIT1234");
+        existingEntity.setAttendanceDate(attendanceDate);
+        existingEntity.setAttendanceSource(AttendanceSource.MOBILE_APP);
+        existingEntity.setMobileAppStatus("Y");
+        existingEntity.setApiStatus("N");
+        existingEntity.setCheckInTime(LocalTime.of(9, 5));
+        existingEntity.setCheckOutTime(LocalTime.of(18, 10));
+        existingEntity.setInTime("09:00");
+        existingEntity.setOutTime("18:00");
+        existingEntity.setTotalHours("09:00");
+        existingEntity.setStatus("PRESENT");
+        existingEntity.setMonth(attendanceDate.getMonthValue());
+        existingEntity.setYear(attendanceDate.getYear());
+
+        apiResponse = List.of(new InternalAttendanceDayRecord(
+                "Test Employee",
+                "MahaIT1234",
+                attendanceDate,
+                "10:00",
+                null,
+                "P"));
+        existingRows = List.of(existingEntity);
+
+        InternalAttendanceSyncServiceImpl.AttendancePersistenceResult persistenceResult =
+                service.syncEmployeeAttendance(employee, apiResponse, attendanceDate, attendanceDate);
+
+        assertEquals(1, persistenceResult.upsertedRows());
+        assertEquals(0, persistenceResult.insertedRows());
+        assertEquals(1, persistenceResult.updatedRows());
+        DailyAttendanceInternalEntity savedEntity = savedEntities.get().get(0);
+        assertEquals(AttendanceSource.MOBILE_APP, savedEntity.getAttendanceSource());
+        assertEquals("Y", savedEntity.getMobileAppStatus());
+        assertEquals("Y", savedEntity.getApiStatus());
+        assertEquals(LocalTime.of(9, 5), savedEntity.getCheckInTime());
+        assertEquals(LocalTime.of(18, 10), savedEntity.getCheckOutTime());
+        assertEquals("10:00", savedEntity.getInTime());
+        assertEquals("18:00", savedEntity.getOutTime());
+        assertEquals("08:00", savedEntity.getTotalHours());
+    }
+
+    @Test
+    void syncAttendanceMatchesApiRowsByEmployeeCode() {
+        LocalDate attendanceDate = LocalDate.of(2026, 7, 7);
+        EmployeeEntity employee = buildEmployee(7281L, "111122227281");
+        employee.setEmployeeCode(null);
+        candidateEmployees = List.of(employee);
+        apiResponse = List.of(new InternalAttendanceDayRecord(
+                "Roshan Namdev Gondhali",
+                "MahaIT7281",
+                attendanceDate,
+                "09:56",
+                "09:56",
+                "P"));
+
+        InternalAttendanceSyncResult result = service.syncAttendance(attendanceDate, attendanceDate);
+
+        assertEquals(1, result.getEmployeesAttempted());
+        assertEquals(1, result.getEmployeesSynced());
+        assertEquals(1, result.getAttendanceRowsUpserted());
+        assertEquals(1, result.getAttendanceRowsInserted());
+        assertEquals(0, result.getAttendanceRowsUpdated());
+        DailyAttendanceInternalEntity savedEntity = savedEntities.get().get(0);
+        assertEquals(7281L, savedEntity.getEmployeeId());
+        assertEquals("MahaIT7281", employee.getEmployeeCode());
+        assertEquals("MahaIT7281", savedEntity.getEmployeeCode());
+        assertEquals("PRESENT", savedEntity.getStatus());
+    }
+
+    @Test
+    void syncAttendanceReportsUpstreamUnavailabilityForAllTargets() {
+        LocalDate attendanceDate = LocalDate.of(2026, 5, 4);
+        candidateEmployees = List.of(buildEmployee(301L, "123412341234"), buildEmployee(302L, "567856785678"));
+        fetchFailure = new InternalAttendanceReportClientUnavailableException(
+                "Upstream attendance API is unreachable.",
+                new RuntimeException("Connection refused"));
+
+        InternalAttendanceSyncResult result = service.syncAttendance(attendanceDate, attendanceDate);
+
+        assertEquals(2, result.getEmployeesAttempted());
+        assertEquals(0, result.getEmployeesSynced());
+        assertEquals(2, result.getEmployeesFailed());
+        assertEquals(0, result.getEmployeesSkipped());
+        assertEquals("Upstream attendance API is unreachable.", result.getFailureMessage());
+    }
+
+    private EmployeeEntity buildEmployee(Long employeeId) {
+        return buildEmployee(employeeId, "123412341234");
+    }
+
+    private EmployeeEntity buildEmployee(Long employeeId, String aadhaarNumber) {
+        EmployeeEntity employee = new EmployeeEntity();
+        employee.setEmployeeId(employeeId);
+        employee.setJoiningDate(LocalDate.of(2026, 1, 1));
+        employee.setAadhaarNumber(aadhaarNumber);
+        employee.setEmployeeCode("MahaIT" + aadhaarNumber.substring(aadhaarNumber.length() - 4));
+        return employee;
+    }
+
+    private static <T> T proxyWithDefaults(Class<T> type, InvocationHandler handler) {
+        return type.cast(Proxy.newProxyInstance(
+                type.getClassLoader(),
+                new Class<?>[] { type },
+                (proxy, method, args) -> {
+                    if (method.getDeclaringClass() == Object.class) {
+                        switch (method.getName()) {
+                            case "toString":
+                                return type.getSimpleName() + "Stub";
+                            case "hashCode":
+                                return System.identityHashCode(proxy);
+                            case "equals":
+                                return proxy == args[0];
+                            default:
+                                return null;
+                        }
+                    }
+                    return handler.invoke(proxy, method, args);
+                }));
+    }
+
+    private static final class NoOpTransactionStatus implements TransactionStatus {
+
+        @Override
+        public boolean isNewTransaction() {
+            return false;
+        }
+
+        @Override
+        public boolean hasSavepoint() {
+            return false;
+        }
+
+        @Override
+        public void setRollbackOnly() {
+        }
+
+        @Override
+        public boolean isRollbackOnly() {
+            return false;
+        }
+
+        @Override
+        public void flush() {
+        }
+
+        @Override
+        public boolean isCompleted() {
+            return false;
+        }
+
+        @Override
+        public Object createSavepoint() {
+            return null;
+        }
+
+        @Override
+        public void rollbackToSavepoint(Object savepoint) {
+        }
+
+        @Override
+        public void releaseSavepoint(Object savepoint) {
+        }
+    }
+}

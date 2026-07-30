@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${isEdit} ? 'Edit Commission Rate' : 'Create Commission Rate'">Commission Rate Form</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Commission Rates', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header">
+                    <h2 th:text="${isEdit} ? 'Edit Commission Rate' : 'Create Commission Rate'"></h2>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/resource-levels}">Resource Levels</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/commission-rates}">Commission Rates</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/projects}">Projects</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/wings}">Wing Master</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/cell}">Cell Master</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/locations}">Location Master</a>
+                    </div>
+
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <form th:object="${commissionRateForm}"
+                        th:action="${isEdit} ? @{/master/commission-rates/{id}(id=${commissionRateId})} : @{/master/commission-rates}"
+                        method="post" class="row g-3">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                        <div class="col-md-4">
+                            <label class="form-label">Commission Code</label>
+                            <select class="form-select" th:field="*{commissionCode}">
+                                <option value="">Select commission code</option>
+                                <option th:each="code : ${commissionCodes}" th:value="${code.name()}"
+                                    th:text="${code.name() == 'AGENCY' ? 'Agency' : 'MahaIT'}"></option>
+                            </select>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('commissionCode')}"
+                                th:errors="*{commissionCode}"></div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Commission Percentage</label>
+                            <input type="number" th:field="*{commissionPercentage}" class="form-control"
+                                step="0.01" min="0.01" max="100">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('commissionPercentage')}"
+                                th:errors="*{commissionPercentage}"></div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Effective Date</label>
+                            <input type="date" th:field="*{effectiveDate}" class="form-control"
+                                th:value="${commissionRateForm.effectiveDate != null ? #temporals.format(commissionRateForm.effectiveDate, 'yyyy-MM-dd') : ''}">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('effectiveDate')}"
+                                th:errors="*{effectiveDate}"></div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" th:field="*{activeFlag}">
+                                <option value="Y">Active</option>
+                                <option value="N">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" th:text="${isEdit} ? 'Update' : 'Save'"></button>
+                            <a th:href="@{/master/commission-rates}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

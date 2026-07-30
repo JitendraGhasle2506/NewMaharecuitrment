@@ -13,9 +13,12 @@ import com.maharecruitment.gov.in.auth.dto.AgencyUserProvisioningRequest;
 import com.maharecruitment.gov.in.auth.dto.AgencyUserProvisioningResult;
 import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.entity.UserAgencyMappingEntity;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
+import com.maharecruitment.gov.in.auth.repository.UserAgencyMappingRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.AgencyUserProvisioningService;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.util.SecurePasswordGenerator;
 
 @Service
@@ -26,20 +29,29 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final UserAgencyMappingRepository userAgencyMappingRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserAffiliationService userAffiliationService;
 
     public AgencyUserProvisioningServiceImpl(
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
+            UserAgencyMappingRepository userAgencyMappingRepository,
+            PasswordEncoder passwordEncoder,
+            UserAffiliationService userAffiliationService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.userAgencyMappingRepository = userAgencyMappingRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userAffiliationService = userAffiliationService;
     }
 
     @Override
     public AgencyUserProvisioningResult createOrSyncAgencyUser(AgencyUserProvisioningRequest request) {
         String email = normalizeEmail(request.getEmail());
+        if (email == null) {
+            throw new IllegalArgumentException("Email is required.");
+        }
         String previousEmail = normalizeEmail(request.getPreviousEmail());
         Role agencyRole = resolveAgencyRole();
 
@@ -51,8 +63,9 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
             return createAgencyUser(request, email, agencyRole);
         }
 
-        if (!Objects.equals(previousEmail, email) && userRepository.existsByEmailIgnoreCase(email)) {
-            throw new IllegalArgumentException("A user account already exists for the updated agency official email.");
+        if (!Objects.equals(previousEmail, email) && isIdentityInUse(email, existingUser.getId())) {
+            throw new IllegalArgumentException(
+                    "A user account already exists for the updated agency official email.");
         }
 
         existingUser.setName(request.getName().trim());
@@ -61,6 +74,8 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
         ensureRole(existingUser, agencyRole);
 
         User savedUser = userRepository.save(existingUser);
+        userAffiliationService.synchronizeUserProfile(savedUser);
+        userAffiliationService.synchronizePrimaryAgency(savedUser, request.getAgencyId());
         return AgencyUserProvisioningResult.builder()
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())
@@ -72,7 +87,7 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
             AgencyUserProvisioningRequest request,
             String email,
             Role agencyRole) {
-        if (userRepository.existsByEmailIgnoreCase(email)) {
+        if (isIdentityInUse(email, null)) {
             throw new IllegalArgumentException("A user account already exists for the agency official email.");
         }
 
@@ -86,6 +101,8 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
         user.setRoles(List.of(agencyRole));
 
         User savedUser = userRepository.save(user);
+        userAffiliationService.synchronizeUserProfile(savedUser);
+        userAffiliationService.synchronizePrimaryAgency(savedUser, request.getAgencyId());
 
         return AgencyUserProvisioningResult.builder()
                 .userId(savedUser.getId())
@@ -93,6 +110,24 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
                 .temporaryPassword(temporaryPassword)
                 .created(true)
                 .build();
+    }
+
+    @Override
+    public void synchronizeAgencyUserStatus(Long agencyId, boolean enabled) {
+        if (agencyId == null) {
+            return;
+        }
+
+        List<User> users = userAgencyMappingRepository.findByAgencyId(agencyId).stream()
+                .filter(mapping -> Boolean.TRUE.equals(mapping.getActive()))
+                .map(UserAgencyMappingEntity::getUser)
+                .filter(Objects::nonNull)
+                .filter(user -> !Objects.equals(Boolean.TRUE.equals(user.getActive()), enabled))
+                .distinct()
+                .toList();
+
+        users.forEach(user -> user.setActive(enabled));
+        userRepository.saveAll(users);
     }
 
     private Role resolveAgencyRole() {
@@ -115,5 +150,11 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
             return null;
         }
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isIdentityInUse(String value, Long excludedUserId) {
+        return excludedUserId == null
+                ? userRepository.existsByEmailIgnoreCase(value)
+                : userRepository.existsByEmailIgnoreCaseAndIdNot(value, excludedUserId);
     }
 }

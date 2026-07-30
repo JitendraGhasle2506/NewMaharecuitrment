@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.dto.MenuUpsertRequest;
 import com.maharecruitment.gov.in.auth.entity.MstMenu;
@@ -18,6 +19,7 @@ import com.maharecruitment.gov.in.auth.repository.MstMenuRepository;
 import com.maharecruitment.gov.in.auth.repository.MstSubMenuRepository;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.service.MenuManagementService;
+import com.maharecruitment.gov.in.auth.util.InternalNavigationUrlValidator;
 
 @Service
 @Transactional
@@ -31,20 +33,33 @@ public class MenuManagementServiceImpl implements MenuManagementService {
     private final MstMenuRepository mstMenuRepository;
     private final MstSubMenuRepository mstSubMenuRepository;
     private final RoleRepository roleRepository;
+    private final InternalNavigationUrlValidator navigationUrlValidator;
 
     public MenuManagementServiceImpl(
             MstMenuRepository mstMenuRepository,
             MstSubMenuRepository mstSubMenuRepository,
-            RoleRepository roleRepository) {
+            RoleRepository roleRepository,
+            InternalNavigationUrlValidator navigationUrlValidator) {
         this.mstMenuRepository = mstMenuRepository;
         this.mstSubMenuRepository = mstSubMenuRepository;
         this.roleRepository = roleRepository;
+        this.navigationUrlValidator = navigationUrlValidator;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<MstMenu> getAll(Pageable pageable) {
-        return mstMenuRepository.findAllWithRoles(pageable);
+        return getAll(null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MstMenu> getAll(String searchTerm, Pageable pageable) {
+        String normalizedSearch = normalizeOptional(searchTerm);
+        if (!StringUtils.hasText(normalizedSearch)) {
+            return mstMenuRepository.findAllWithRoles(pageable);
+        }
+        return mstMenuRepository.searchAllWithRoles(normalizedSearch, normalizedSearch.toUpperCase(), pageable);
     }
 
     @Override
@@ -214,7 +229,7 @@ public class MenuManagementServiceImpl implements MenuManagementService {
         if (normalizedUrl == null) {
             throw new IllegalArgumentException("URL is required for direct-link menu.");
         }
-        return normalizedUrl;
+        return navigationUrlValidator.normalizeRequiredApplicationPath(normalizedUrl, "Menu URL");
     }
 
     private String normalizeRequired(String value, String label) {

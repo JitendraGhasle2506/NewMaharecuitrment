@@ -4,5 +4,5 @@ import com.maharecruitment.gov.in.department.service.model.DepartmentDashboardVi
 
 public interface DepartmentDashboardPageService {
 
-    DepartmentDashboardView getDashboard(Long departmentRegistrationId, String departmentDisplayName);
+    DepartmentDashboardView getDashboard(Long departmentRegistrationId, Long userId);
 }

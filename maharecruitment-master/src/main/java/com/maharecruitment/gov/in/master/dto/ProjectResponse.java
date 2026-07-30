@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.master.dto;
 
 import java.time.LocalDateTime;
 
+import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 import com.maharecruitment.gov.in.master.entity.ProjectType;
 
 import lombok.Builder;
@@ -13,10 +14,16 @@ public class ProjectResponse {
 
     private Long projectId;
     private String projectName;
+    private String projectCode;
     private String projectDesc;
     private ProjectType projectType;
+    private ProjectScopeType projectScopeType;
     private Long departmentRegistrationId;
     private Long applicationId;
+    private Long cellId;
+    private String wingName;
+    private String cellName;
+    private String activeFlag;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

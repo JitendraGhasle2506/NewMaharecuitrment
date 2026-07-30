@@ -5,6 +5,9 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -20,6 +23,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.department.dto.AdvancePaymentForm;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
@@ -66,6 +70,9 @@ public class DepartmentPaymentController {
             RedirectAttributes redirectAttributes) {
 
         String actorEmail = principal.getName();
+        String receiptReference = StringUtils.hasText(form.getUtrNumber()) ? form.getUtrNumber() : form.getReceiptNumber();
+        form.setReceiptNumber(receiptReference);
+        form.setUtrNumber(receiptReference);
 
         if (bindingResult.hasErrors()) {
             populateModel(model, form, form.getDepartmentProjectApplicationId());
@@ -73,7 +80,7 @@ public class DepartmentPaymentController {
         }
 
         if (paymentService.isReceiptNumberDuplicate(form.getReceiptNumber(), form.getId())) {
-            bindingResult.rejectValue("receiptNumber", "duplicate", "Receipt number already exists.");
+            bindingResult.rejectValue("utrNumber", "duplicate", "UTR / Transaction ID already exists.");
             populateModel(model, form, form.getDepartmentProjectApplicationId());
             return "department/advance-payment";
         }
@@ -100,9 +107,14 @@ public class DepartmentPaymentController {
     }
 
     @GetMapping("/list")
-    public String list(Model model, Principal principal) {
+    public String list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Model model, 
+            Principal principal) {
         String actorEmail = principal.getName();
-        List<DepartmentAdvancePaymentEntity> payments = paymentService.getPaymentSummaries(actorEmail);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        Page<DepartmentAdvancePaymentEntity> payments = paymentService.getPaymentSummaries(actorEmail, pageable);
         List<DepartmentProjectApplicationSummaryView> eligibleProjects = paymentService
                 .getEligibleProjectsForAdvancePayment(actorEmail);
 

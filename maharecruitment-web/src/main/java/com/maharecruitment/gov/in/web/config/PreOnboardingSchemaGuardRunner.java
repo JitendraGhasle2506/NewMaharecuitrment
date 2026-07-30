@@ -46,12 +46,55 @@ public class PreOnboardingSchemaGuardRunner {
                         "alter table " + TABLE_NAME + " add column if not exists hr_user_id bigint");
                 statement.execute(
                         "alter table " + TABLE_NAME + " add column if not exists onboarded_at timestamp");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists gender varchar(20)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists blood_group varchar(20)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists emergency_contact_name varchar(100)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists emergency_contact_relation varchar(50)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists emergency_contact_mobile varchar(15)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists emergency_contact_alt_mobile varchar(15)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists company_payroll_more_than_three_months boolean not null default false");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists company_payroll_proof_original_name varchar(255)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists company_payroll_proof_file_path varchar(700)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists company_payroll_proof_file_type varchar(120)");
+                statement.execute(
+                        "alter table " + TABLE_NAME + " add column if not exists company_payroll_proof_file_size bigint");
+
+                if (tableExists(connection, "employee_master")) {
+                    statement.execute(
+                            "alter table employee_master add column if not exists gender varchar(20)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists blood_group varchar(20)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists emergency_contact_name varchar(100)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists emergency_contact_relation varchar(50)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists emergency_contact_mobile varchar(15)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists emergency_contact_alt_mobile varchar(15)");
+                    statement.execute(
+                            "alter table employee_master add column if not exists company_payroll_more_than_three_months boolean not null default false");
+                }
 
                 if (columnExists(connection, TABLE_NAME, "submitted_at")) {
                     statement.execute(
                             "update " + TABLE_NAME + " set submitted_at = now() where submitted_at is null");
                     statement.execute(
                             "alter table " + TABLE_NAME + " alter column submitted_at set not null");
+                }
+                if (columnExists(connection, TABLE_NAME, "onboarding_date")) {
+                    statement.execute(
+                            "alter table " + TABLE_NAME + " alter column onboarding_date drop not null");
                 }
             }
 

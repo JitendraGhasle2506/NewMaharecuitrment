@@ -2,68 +2,77 @@ package com.maharecruitment.gov.in.web.service.agency.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.maharecruitment.gov.in.auth.entity.User;
-import com.maharecruitment.gov.in.auth.repository.UserRepository;
-import com.maharecruitment.gov.in.master.entity.AgencyMaster;
-import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
-import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboardingRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyCandidateService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationActionService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationQueryService;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateInterviewScheduleInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateBatchForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateRowForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewScheduleForm;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
 import com.maharecruitment.gov.in.web.service.agency.AgencyRecruitmentNotificationPageService;
+import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 
 @Service
 @Transactional(readOnly = true)
 public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecruitmentNotificationPageService {
 
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    private static final Pattern MOBILE_PATTERN = Pattern.compile("^[0-9]{10}$");
+
     private final RecruitmentAgencyNotificationQueryService queryService;
     private final RecruitmentAgencyNotificationActionService actionService;
     private final RecruitmentAgencyCandidateService candidateService;
-    private final UserRepository userRepository;
-    private final AgencyMasterRepository agencyMasterRepository;
+    private final AgencyAccessService agencyAccessService;
     private final FileStorageService fileStorageService;
-    private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
 
     public AgencyRecruitmentNotificationPageServiceImpl(
             RecruitmentAgencyNotificationQueryService queryService,
             RecruitmentAgencyNotificationActionService actionService,
             RecruitmentAgencyCandidateService candidateService,
-            UserRepository userRepository,
-            AgencyMasterRepository agencyMasterRepository,
-            FileStorageService fileStorageService,
-            AgencyCandidatePreOnboardingRepository preOnboardingRepository) {
+            AgencyAccessService agencyAccessService,
+            FileStorageService fileStorageService) {
         this.queryService = queryService;
         this.actionService = actionService;
         this.candidateService = candidateService;
-        this.userRepository = userRepository;
-        this.agencyMasterRepository = agencyMasterRepository;
+        this.agencyAccessService = agencyAccessService;
         this.fileStorageService = fileStorageService;
-        this.preOnboardingRepository = preOnboardingRepository;
     }
 
     @Override
-    public List<AgencyVisibleNotificationView> getVisibleNotifications(String actorEmail) {
+    public Page<AgencyVisibleNotificationView> getVisibleNotifications(
+            String actorEmail,
+            String searchText,
+            Pageable pageable) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        return queryService.getVisibleNotifications(context.agencyId());
+        return queryService.getVisibleNotifications(context.agencyId(), searchText, pageable);
+    }
+
+    @Override
+    public AgencyVisibleNotificationListMetricsView getVisibleNotificationMetrics(String actorEmail, String searchText) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return queryService.getVisibleNotificationMetrics(context.agencyId(), searchText);
     }
 
     @Override
@@ -93,15 +102,37 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     }
 
     @Override
+    public List<AgencyShortlistedCandidateProjectView> getShortlistedCandidateProjects(String actorEmail) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return candidateService.getShortlistedCandidateProjects(context.agencyId());
+    }
+
+    @Override
+    public List<AgencyShortlistedCandidateView> getShortlistedCandidates(String actorEmail) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return candidateService.getShortlistedCandidates(context.agencyId());
+    }
+
+    @Override
+    public Page<AgencyShortlistedCandidateView> getShortlistedCandidates(
+            String actorEmail,
+            Long recruitmentNotificationId,
+            String search,
+            Pageable pageable) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        return candidateService.getShortlistedCandidates(context.agencyId(), recruitmentNotificationId, search, pageable);
+    }
+
+    @Override
     public List<AgencySelectedCandidateProjectView> getSelectedCandidateProjects(String actorEmail) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         return candidateService.getSelectedCandidateProjects(context.agencyId());
     }
 
     @Override
-    public List<AgencySelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId) {
+    public Page<AgencySelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId, String search, Pageable pageable) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        return candidateService.getSelectedCandidates(context.agencyId(), recruitmentNotificationId);
+        return candidateService.getSelectedCandidates(context.agencyId(), recruitmentNotificationId, search, pageable);
     }
 
     @Override
@@ -121,19 +152,24 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
                 AgencyCandidateRowForm candidateRow = candidateBatchForm.getCandidates().get(index);
                 int rowNumber = index + 1;
                 validateRowForm(candidateRow, rowNumber);
+                String normalizedCandidateName = trim(candidateRow.getCandidateName());
+                String normalizedEmail = trim(candidateRow.getEmail());
+                String normalizedMobile = trim(candidateRow.getMobile());
+                String normalizedEducation = trim(candidateRow.getCandidateEducation());
+                String normalizedJoiningTime = trim(candidateRow.getJoiningTime());
 
                 MultipartFile resumeFile = candidateRow.getResumeFile();
                 FileUploadResult uploadResult = fileStorageService.store(resumeFile, "recruitment/agency-candidate-resume");
                 uploadedFilePaths.add(uploadResult.fullPath());
 
                 candidateInputs.add(AgencyCandidateSubmissionInput.builder()
-                        .candidateName(candidateRow.getCandidateName())
-                        .email(candidateRow.getEmail())
-                        .mobile(candidateRow.getMobile())
-                        .candidateEducation(candidateRow.getCandidateEducation())
+                        .candidateName(normalizedCandidateName)
+                        .email(normalizedEmail)
+                        .mobile(normalizedMobile)
+                        .candidateEducation(normalizedEducation)
                         .totalExperience(candidateRow.getTotalExp())
                         .relevantExperience(candidateRow.getRelevantExp())
-                        .joiningTime(candidateRow.getJoiningTime())
+                        .joiningTime(normalizedJoiningTime)
                         .resumeOriginalName(uploadResult.originalFileName())
                         .resumeFilePath(uploadResult.fullPath())
                         .resumeFileType(uploadResult.contentType())
@@ -167,8 +203,7 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
                 context.agencyId(),
                 context.userId(),
                 AgencyCandidateInterviewScheduleInput.builder()
-                        .interviewDateTime(
-                                interviewScheduleForm != null ? interviewScheduleForm.getInterviewDateTime() : null)
+                        .interviewDateTime(resolveInterviewDateTime(interviewScheduleForm))
                         .interviewTimeSlot(
                                 interviewScheduleForm != null ? interviewScheduleForm.getInterviewTimeSlot() : null)
                         .interviewLink(interviewScheduleForm != null ? interviewScheduleForm.getInterviewLink() : null)
@@ -184,25 +219,20 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
             Long recruitmentNotificationId,
             Long recruitmentInterviewDetailId) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        var preOnboarding = preOnboardingRepository.findByInterviewDetailIdAndAgencyIdForForm(
-                recruitmentInterviewDetailId,
-                context.agencyId()).orElse(null);
-        String resumeFilePath = candidateService.getSubmittedCandidates(recruitmentNotificationId, context.agencyId())
-                .stream()
-                .filter(candidate -> recruitmentInterviewDetailId.equals(candidate.getRecruitmentInterviewDetailId()))
-                .map(AgencySubmittedCandidateView::getResumeFilePath)
-                .findFirst()
-                .orElse(null);
         candidateService.withdrawCandidate(recruitmentNotificationId, recruitmentInterviewDetailId, context.agencyId());
-        if (StringUtils.hasText(resumeFilePath)) {
-            fileStorageService.deleteQuietly(resumeFilePath);
-        }
-        if (preOnboarding != null) {
-            fileStorageService.deleteQuietly(preOnboarding.getAadhaarFilePath());
-            fileStorageService.deleteQuietly(preOnboarding.getPanFilePath());
-            fileStorageService.deleteQuietly(preOnboarding.getExperienceDocFilePath());
-            fileStorageService.deleteQuietly(preOnboarding.getPhotoFilePath());
-        }
+    }
+
+    @Override
+    @Transactional
+    public void forwardInterviewRequest(
+            String actorEmail,
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        candidateService.forwardInterviewRequest(
+                recruitmentNotificationId,
+                recruitmentInterviewDetailId,
+                context.agencyId());
     }
 
     private void validateBatchForm(AgencyCandidateBatchForm candidateBatchForm) {
@@ -224,11 +254,26 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
         if (!StringUtils.hasText(rowForm.getCandidateName())) {
             throw new RecruitmentNotificationException("Candidate name is required at row " + rowNumber + ".");
         }
+        if (rowForm.getCandidateName().startsWith(" ")) {
+            throw new RecruitmentNotificationException("Candidate name must not start with a space at row " + rowNumber + ".");
+        }
+        if (Pattern.compile("[0-9]").matcher(rowForm.getCandidateName()).find()) {
+            throw new RecruitmentNotificationException("Candidate name must not contain numbers at row " + rowNumber + ".");
+        }
+        if (rowForm.getCandidateName().length() < 2 || rowForm.getCandidateName().length() > 100) {
+            throw new RecruitmentNotificationException("Candidate name must be between 2 and 100 characters at row " + rowNumber + ".");
+        }
         if (!StringUtils.hasText(rowForm.getEmail())) {
             throw new RecruitmentNotificationException("Candidate email is required at row " + rowNumber + ".");
         }
+        if (!EMAIL_PATTERN.matcher(trim(rowForm.getEmail())).matches()) {
+            throw new RecruitmentNotificationException("Candidate email must be valid at row " + rowNumber + ".");
+        }
         if (!StringUtils.hasText(rowForm.getMobile())) {
             throw new RecruitmentNotificationException("Candidate mobile is required at row " + rowNumber + ".");
+        }
+        if (!MOBILE_PATTERN.matcher(trim(rowForm.getMobile())).matches()) {
+            throw new RecruitmentNotificationException("Candidate mobile must be 10 digits at row " + rowNumber + ".");
         }
         if (!StringUtils.hasText(rowForm.getCandidateEducation())) {
             throw new RecruitmentNotificationException("Candidate qualification is required at row " + rowNumber + ".");
@@ -248,20 +293,22 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
     }
 
     private AgencyUserContext resolveAgencyUserContext(String actorEmail) {
-        if (!StringUtils.hasText(actorEmail)) {
-            throw new RecruitmentNotificationException("Authenticated user is required.");
-        }
-
-        User user = userRepository.findByEmailIgnoreCase(actorEmail)
-                .orElseThrow(() -> new RecruitmentNotificationException("Authenticated user not found."));
-
-        AgencyMaster agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
-                .orElseThrow(() -> new RecruitmentNotificationException(
-                        "No agency profile is linked with this login user."));
-
-        return new AgencyUserContext(user.getId(), agency.getAgencyId());
+        return agencyAccessService.requireActiveAgencyContext(actorEmail);
     }
 
-    private record AgencyUserContext(Long userId, Long agencyId) {
+    private String trim(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    private java.time.LocalDateTime resolveInterviewDateTime(AgencyInterviewScheduleForm interviewScheduleForm) {
+        if (interviewScheduleForm == null) {
+            return null;
+        }
+        if (interviewScheduleForm.getInterviewDateTime() != null) {
+            return interviewScheduleForm.getInterviewDateTime();
+        }
+        return interviewScheduleForm.getInterviewDate() != null
+                ? interviewScheduleForm.getInterviewDate().atStartOfDay()
+                : null;
     }
 }

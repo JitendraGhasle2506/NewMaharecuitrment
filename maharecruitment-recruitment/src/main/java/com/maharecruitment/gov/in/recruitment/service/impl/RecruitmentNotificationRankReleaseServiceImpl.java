@@ -167,12 +167,42 @@ public class RecruitmentNotificationRankReleaseServiceImpl implements Recruitmen
             return 0;
         }
 
+        // Collect categories allowed in this notification
+        Set<String> notificationCategories = notification.getDesignationVacancies().stream()
+                .map(v -> v.getDesignationMst().getCategory())
+                .filter(java.util.Objects::nonNull)
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .collect(java.util.stream.Collectors.toSet());
+
         int releasedAgencyCount = 0;
         for (AgencyGlobalRankEntity mapping : mappings) {
             Long agencyId = mapping.getAgency().getAgencyId();
             if (trackingRepository.existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId(
                     recruitmentNotificationId,
                     agencyId)) {
+                continue;
+            }
+
+            // Category Matching Logic
+            String agencyCategoriesStr = mapping.getMappedCategories();
+            if (org.springframework.util.StringUtils.hasText(agencyCategoriesStr)) {
+                Set<String> agencyCategories = java.util.Arrays.stream(agencyCategoriesStr.split(","))
+                        .map(String::trim)
+                        .map(String::toUpperCase)
+                        .collect(java.util.stream.Collectors.toSet());
+                
+                // Check for overlap between notification categories and agency specializations
+                boolean matches = notificationCategories.stream().anyMatch(agencyCategories::contains);
+                if (!matches) {
+                    log.debug("Skipping agency {} for notification {} due to category mismatch. Agency={}, Notification={}", 
+                        agencyId, recruitmentNotificationId, agencyCategories, notificationCategories);
+                    continue; 
+                }
+            } else {
+                // If no categories are mapped, we skip this agency by default in the new specialized model
+                log.debug("Skipping agency {} for notification {} because no specialization categories are mapped.", 
+                    agencyId, recruitmentNotificationId);
                 continue;
             }
 

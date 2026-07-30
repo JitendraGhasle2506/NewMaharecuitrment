@@ -2,7 +2,6 @@ package com.maharecruitment.gov.in.web.controller;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
@@ -22,16 +21,16 @@ import com.maharecruitment.gov.in.master.dto.DepartmentResponse;
 import com.maharecruitment.gov.in.master.dto.SubDepartmentResponse;
 import com.maharecruitment.gov.in.master.service.DepartmentMstService;
 import com.maharecruitment.gov.in.master.service.SubDepartmentService;
-import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationResult;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
+import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
-import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @Controller
@@ -42,7 +41,7 @@ public class DepartmentRegistrationPageController {
     private final SubDepartmentService subDepartmentService;
     private final DepartmentRegistrationPageService registrationPageService;
     private final OtpVerificationService otpVerificationService;
-    private final FileStorageService fileStorageService;
+    private final NotificationChannelProperties notificationChannelProperties;
     private final boolean otpBypassEnabled;
 
     public DepartmentRegistrationPageController(
@@ -50,13 +49,13 @@ public class DepartmentRegistrationPageController {
             SubDepartmentService subDepartmentService,
             DepartmentRegistrationPageService registrationPageService,
             OtpVerificationService otpVerificationService,
-            FileStorageService fileStorageService,
+            NotificationChannelProperties notificationChannelProperties,
             @Value("${registration.department.otp-bypass-enabled:false}") boolean otpBypassEnabled) {
         this.departmentService = departmentService;
         this.subDepartmentService = subDepartmentService;
         this.registrationPageService = registrationPageService;
         this.otpVerificationService = otpVerificationService;
-        this.fileStorageService = fileStorageService;
+        this.notificationChannelProperties = notificationChannelProperties;
         this.otpBypassEnabled = otpBypassEnabled;
     }
 
@@ -72,9 +71,11 @@ public class DepartmentRegistrationPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes,
-            HttpSession session) {
-        stageUploadedFiles(form, bindingResult);
+            HttpSession session,
+            HttpServletRequest request) {
+        rejectPlaintextIdentityParameters(request, bindingResult);
         validateDynamicSelections(form, bindingResult, session);
+        addGenericSensitiveTransportError(bindingResult);
 
         if (bindingResult.hasErrors()) {
             populateForm(model, form, session);
@@ -89,7 +90,9 @@ public class DepartmentRegistrationPageController {
             redirectAttributes.addFlashAttribute("generatedPassword", result.temporaryPassword());
             return "redirect:/login";
         } catch (RuntimeException ex) {
-            model.addAttribute("errorMessage", ex.getMessage());
+            if (!applyRegistrationError(bindingResult, form, ex)) {
+                model.addAttribute("errorMessage", "Unable to complete department registration. Please try again.");
+            }
             populateForm(model, form, session);
             return "register/department-registration";
         }
@@ -102,24 +105,28 @@ public class DepartmentRegistrationPageController {
     }
 
     private void populateForm(Model model, DepartmentRegistrationForm form, HttpSession session) {
+        // Ciphertext is single-use request material and must never be reflected into HTML.
+        form.clearEncryptedSubmission();
         model.addAttribute("registrationForm", form);
         model.addAttribute("departments", getDepartments());
         model.addAttribute("subDepartments", getSubDepartmentsForForm(form));
         model.addAttribute("primaryMobileVerified",
-                otpBypassEnabled
+                !isMobileOtpRequired()
                         || otpVerificationService.isVerified(
                                 session,
                                 VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
                                 VerificationChannel.MOBILE,
                                 form.getPrimaryMobile()));
         model.addAttribute("primaryEmailVerified",
-                otpBypassEnabled
+                !isEmailOtpRequired()
                         || otpVerificationService.isVerified(
                                 session,
                                 VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
                                 VerificationChannel.EMAIL,
                                 form.getPrimaryEmail()));
         model.addAttribute("otpBypassEnabled", otpBypassEnabled);
+        model.addAttribute("mobileOtpEnabled", notificationChannelProperties.isSmsEnabled());
+        model.addAttribute("emailOtpEnabled", notificationChannelProperties.isEmailEnabled());
         model.addAttribute("verificationPurpose", VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
     }
 
@@ -143,24 +150,21 @@ public class DepartmentRegistrationPageController {
                 bindingResult.rejectValue("newDepartmentName", "registration.newDepartmentName",
                         "New department name is required.");
             }
-            if (isBlank(form.getNewSubDeptName())) {
-                bindingResult.rejectValue("newSubDeptName", "registration.newSubDeptName",
-                        "New sub-department name is required.");
-            }
         } else {
-            if (form.getSubDeptId() == null) {
-                bindingResult.rejectValue("subDeptId", "registration.subDeptId",
-                        "Sub-department selection is required.");
-            } else if (form.isOtherSubDepartmentSelected() && isBlank(form.getNewSubDeptName())) {
+            if (form.isOtherSubDepartmentSelected() && isBlank(form.getNewSubDeptName())) {
                 bindingResult.rejectValue("newSubDeptName", "registration.newSubDeptName",
                         "New sub-department name is required.");
             }
         }
 
-        if (form.getPanFile() == null || form.getPanFile().isEmpty()) {
-            if (!StringUtils.hasText(form.getUploadedPanFilePath())) {
-                bindingResult.rejectValue("panFile", "registration.panFile", "PAN document is required.");
-            }
+        if (!hasFile(form.getPanFile())) {
+            bindingResult.rejectValue("panFile", "registration.panFile", "PAN document is required.");
+        }
+        if (!hasFile(form.getGstFile())) {
+            bindingResult.rejectValue("gstFile", "registration.gstFile", "GST document is required.");
+        }
+        if (!hasFile(form.getTanFile())) {
+            bindingResult.rejectValue("tanFile", "registration.tanFile", "TAN document is required.");
         }
 
         if (!isBlank(form.getPrimaryEmail())
@@ -174,7 +178,7 @@ public class DepartmentRegistrationPageController {
                     "Secondary mobile must be different from primary mobile.");
         }
 
-        if (!otpBypassEnabled) {
+        if (isMobileOtpRequired()) {
             if (!bindingResult.hasFieldErrors("primaryMobile")
                     && !otpVerificationService.isVerified(
                             session,
@@ -184,7 +188,9 @@ public class DepartmentRegistrationPageController {
                 bindingResult.rejectValue("primaryMobile", "registration.primaryMobileVerification",
                         "Primary mobile number must be verified through OTP.");
             }
+        }
 
+        if (isEmailOtpRequired()) {
             if (!bindingResult.hasFieldErrors("primaryEmail")
                     && !otpVerificationService.isVerified(
                             session,
@@ -201,75 +207,82 @@ public class DepartmentRegistrationPageController {
         return value == null || value.isBlank();
     }
 
-    private void stageUploadedFiles(DepartmentRegistrationForm form, BindingResult bindingResult) {
-        stageDocument(
-                form.getGstFile(),
-                "department-registration/gst",
-                "gstFile",
-                "GST document",
-                form.getUploadedGstFilePath(),
-                form::setUploadedGstFilePath,
-                form::setUploadedGstFileName,
-                bindingResult);
-        if (hasFile(form.getGstFile())) {
-            form.setGstFile(null);
-        }
-
-        stageDocument(
-                form.getPanFile(),
-                "department-registration/pan",
-                "panFile",
-                "PAN document",
-                form.getUploadedPanFilePath(),
-                form::setUploadedPanFilePath,
-                form::setUploadedPanFileName,
-                bindingResult);
-        if (hasFile(form.getPanFile())) {
-            form.setPanFile(null);
-        }
-
-        stageDocument(
-                form.getTanFile(),
-                "department-registration/tan",
-                "tanFile",
-                "TAN document",
-                form.getUploadedTanFilePath(),
-                form::setUploadedTanFilePath,
-                form::setUploadedTanFileName,
-                bindingResult);
-        if (hasFile(form.getTanFile())) {
-            form.setTanFile(null);
-        }
+    private boolean isMobileOtpRequired() {
+        return !otpBypassEnabled && notificationChannelProperties.isSmsEnabled();
     }
 
-    private void stageDocument(
-            org.springframework.web.multipart.MultipartFile file,
-            String modulePath,
-            String fieldName,
-            String label,
-            String existingPath,
-            Consumer<String> pathSetter,
-            Consumer<String> nameSetter,
-            BindingResult bindingResult) {
-        if (!hasFile(file)) {
-            return;
+    private boolean isEmailOtpRequired() {
+        return !otpBypassEnabled && notificationChannelProperties.isEmailEnabled();
+    }
+
+    private boolean applyRegistrationError(
+            BindingResult bindingResult,
+            DepartmentRegistrationForm form,
+            RuntimeException ex) {
+        String message = ex.getMessage();
+        if (!StringUtils.hasText(message)) {
+            return false;
         }
 
-        try {
-            FileUploadResult result = fileStorageService.store(file, modulePath);
-            if (fileStorageService.isManagedPath(existingPath) && !existingPath.equals(result.fullPath())) {
-                fileStorageService.deleteQuietly(existingPath);
-            }
-
-            pathSetter.accept(result.fullPath());
-            nameSetter.accept(result.originalFileName());
-        } catch (RuntimeException ex) {
-            String message = ex.getMessage() == null ? "Upload failed." : ex.getMessage();
-            bindingResult.rejectValue(fieldName, "registration." + fieldName, label + " upload failed: " + message);
+        if ("This department/sub-department combination is already registered.".equals(message)) {
+            String field = form.getSubDeptId() != null ? "subDeptId" : "departmentId";
+            bindingResult.rejectValue(field, "registration.departmentCombinationDuplicate", message);
+            return true;
         }
+
+        if ("A registration already exists for the provided GST number.".equals(message)) {
+            bindingResult.reject("registration.gstDuplicate", message);
+            return true;
+        }
+
+        if ("A registration already exists for the provided PAN number.".equals(message)) {
+            bindingResult.reject("registration.panDuplicate", message);
+            return true;
+        }
+
+        if ("Unable to process the submitted identity information.".equals(message)) {
+            bindingResult.reject("registration.sensitiveIdentity", message);
+            return true;
+        }
+
+        if ("A registration already exists for the provided TAN number.".equals(message)) {
+            bindingResult.rejectValue("tanNo", "registration.tanDuplicate", message);
+            return true;
+        }
+
+        if ("Selected sub-department does not belong to the chosen department.".equals(message)) {
+            bindingResult.rejectValue("subDeptId", "registration.subDepartmentMismatch", message);
+            return true;
+        }
+
+        return false;
     }
 
     private boolean hasFile(org.springframework.web.multipart.MultipartFile file) {
         return file != null && !file.isEmpty();
+    }
+
+    private void addGenericSensitiveTransportError(BindingResult bindingResult) {
+        if (bindingResult.hasFieldErrors("gstNumberEncrypted")
+                || bindingResult.hasFieldErrors("panNumberEncrypted")
+                || bindingResult.hasFieldErrors("encryptionKeyId")
+                || bindingResult.hasFieldErrors("timestamp")
+                || bindingResult.hasFieldErrors("nonce")) {
+            bindingResult.reject(
+                    "registration.sensitiveIdentity",
+                    "Unable to process the submitted identity information.");
+        }
+    }
+
+    private void rejectPlaintextIdentityParameters(HttpServletRequest request, BindingResult bindingResult) {
+        if (request.getParameterMap().containsKey("gstNo")
+                || request.getParameterMap().containsKey("panNo")
+                || request.getParameterMap().containsKey("gstNumber")
+                || request.getParameterMap().containsKey("panNumber")
+                || request.getParameterMap().containsKey("aadhaarNumber")) {
+            bindingResult.reject(
+                    "registration.plaintextSensitiveIdentity",
+                    "Unable to process the submitted identity information.");
+        }
     }
 }

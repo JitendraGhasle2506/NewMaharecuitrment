@@ -12,5 +12,7 @@ public class HrAssignedAgencyRankView {
     private String agencyName;
 
     private Integer rankNumber;
+
+    private java.util.List<String> mappedCategories;
 }
 

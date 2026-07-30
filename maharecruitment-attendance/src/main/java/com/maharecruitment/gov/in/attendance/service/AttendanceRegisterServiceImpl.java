@@ -3,44 +3,103 @@ package com.maharecruitment.gov.in.attendance.service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.attendance.dto.AttendanceDayDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceRegisterDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceReportDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceReportProjection;
+import com.maharecruitment.gov.in.attendance.entity.AttendanceSource;
 import com.maharecruitment.gov.in.attendance.entity.AttendanceRegisterEntity;
+import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
+import com.maharecruitment.gov.in.attendance.entity.LeaveApplicationEntity;
+import com.maharecruitment.gov.in.attendance.entity.TourApplicationEntity;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceLockRepository;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
+import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
+import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
+import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
+import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.attendance.dto.ManualAttendanceRequestDTO;
+import com.maharecruitment.gov.in.attendance.dto.ManualAttendanceSummaryDTO;
+import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.maharecruitment.gov.in.attendance.entity.AttendanceRegisterActivityEntity;
+import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterActivityRepository;
+
 
 @Service
 @Transactional
 public class AttendanceRegisterServiceImpl implements AttendanceRegisterService {
 
+	private static final DateTimeFormatter DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
 	@Autowired
 	private EmployeeRepository employeeRepository;
+
+	public AttendanceRegisterServiceImpl() {
+		// Explicit constructor for CGLIB proxying and debugging
+	}
+
 	@Autowired
 	private AttendanceRegisterRepo attendanceRegisterRepo;
 	@Autowired
 	private HolidayRepository holidayRepository;
 	@Autowired
-	
+	private DailyAttendanceInternalRepository dailyAttendanceInternalRepository;
+
+	@Autowired
+	private WeekOffWorkingDayRepository weekOffWorkingDayRepository;
+
+	@Autowired
+	private DepartmentProjectApplicationRepository departmentProjectApplicationRepository;
+
+	@Autowired
 	private AttendanceLockRepository attendanceLockRepository;
+
+	@Autowired
+	private AttendanceRegisterActivityRepository activityRepository;
+
+	@Autowired
+	private ProjectMstRepository projectRepo;
+
+	@Autowired
+	private com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository employeeReportingMappingRepository;
+
+	@Autowired
+	private com.maharecruitment.gov.in.attendance.repository.ManualAttendanceRequestRepository manualAttendanceRequestRepository;
+
+	@Autowired
+	private com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository leaveApplicationRepository;
+
+	@Autowired
+	private com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository tourApplicationRepository;
+
+	@Autowired
+	private UserRepository userRepository;
+
 	@Override
 	public AttendanceRegisterDTO getEmployeeDetails(Long id,
 			LocalDate startDate,
@@ -76,7 +135,25 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				status = getDayStatus(attendanceOpt.get(), date.getDayOfMonth());
 			}
 
-			if (status != null && !status.isEmpty()) {
+			// Check for Approved Leaves/Tours
+			final LocalDate fDate = date;
+			List<LeaveApplicationEntity> approvedLeaves = leaveApplicationRepository.findByEmployeeIdAndStatus(id,
+					"APPROVED");
+			List<TourApplicationEntity> approvedTours = tourApplicationRepository.findByEmployeeIdAndStatus(id,
+					"APPROVED");
+
+			boolean onLeave = approvedLeaves.stream()
+					.anyMatch(l -> !fDate.isBefore(l.getStartDate()) && !fDate.isAfter(l.getEndDate()));
+			boolean onTour = approvedTours.stream()
+					.anyMatch(t -> !fDate.isBefore(t.getStartDate()) && !fDate.isAfter(t.getEndDate()));
+
+			if (emp.getJoiningDate() != null && date.isBefore(emp.getJoiningDate())) {
+				dayDTO.setStatus("PRE_JOINING");
+			} else if (onLeave) {
+				dayDTO.setStatus("LEAVE");
+			} else if (onTour) {
+				dayDTO.setStatus("TOUR");
+			} else if (status != null && !status.isEmpty()) {
 				dayDTO.setStatus(status);
 			} else if (date.isAfter(today)) {
 				dayDTO.setStatus("FUTURE");
@@ -101,6 +178,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setName(emp.getFullName());
 		dto.setDesignation(emp.getDesignation() != null ? emp.getDesignation().getDesignationName() : null);
 		dto.setEmail(emp.getEmail());
+		dto.setAadhaarNumber(SensitiveDataMaskingUtil.maskAadhaar(emp.getAadhaarNumber()));
 		dto.setMobile(emp.getMobile());
 		dto.setOrganization(emp.getAgency() != null ? emp.getAgency().getAgencyName() : null);
 		dto.setUserId(emp.getEmployeeId());
@@ -185,6 +263,417 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	}
 
 	@Override
+	public List<AttendanceRegisterDTO> getInternalAttendance(Long departmentId, int month, int year) {
+		List<EmployeeEntity> employees = employeeRepository
+				.findByDepartmentRegistration_DepartmentRegistrationIdAndRecruitmentType(departmentId, "INTERNAL");
+
+		YearMonth yearMonth = YearMonth.of(year, month);
+		LocalDate startDate = yearMonth.atDay(1);
+		LocalDate endDate = yearMonth.atEndOfMonth();
+		LocalDate today = LocalDate.now();
+
+		List<DailyAttendanceInternalEntity> dailyAttendance = dailyAttendanceInternalRepository
+				.findByAttendanceDateBetween(startDate, endDate);
+		Set<LocalDate> holidayDates = holidayRepository.findByHolidayDateBetween(startDate, endDate)
+				.stream()
+				.map(HolidayMasterEntity::getHolidayDate)
+				.collect(Collectors.toSet());
+		Set<LocalDate> workingDayOverrideDates = weekOffWorkingDayRepository.findByWorkingDateBetween(startDate, endDate)
+				.stream()
+				.map(workingDay -> workingDay.getWorkingDate())
+				.collect(Collectors.toSet());
+
+		List<DepartmentProjectApplicationEntity> projects = departmentProjectApplicationRepository
+				.findByDepartmentRegistrationIdOrderByDepartmentProjectApplicationIdDesc(departmentId);
+
+		Map<String, String> projectMap = projects.stream()
+				.collect(Collectors.toMap(DepartmentProjectApplicationEntity::getRequestId,
+						DepartmentProjectApplicationEntity::getProjectName, (existing, replacement) -> existing));
+
+		Map<Long, Map<LocalDate, DailyAttendanceInternalEntity>> attendanceMap = dailyAttendance.stream()
+				.collect(Collectors.groupingBy(DailyAttendanceInternalEntity::getEmployeeId,
+						Collectors.toMap(
+								DailyAttendanceInternalEntity::getAttendanceDate,
+								a -> a,
+								this::pickPreferredInternalAttendanceRow)));
+
+		List<Long> employeeIds = employees.stream().map(EmployeeEntity::getEmployeeId).collect(Collectors.toList());
+		List<LeaveApplicationEntity> allApprovedLeaves = leaveApplicationRepository
+				.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(employeeIds, "APPROVED");
+		Map<Long, List<LeaveApplicationEntity>> leaveMap = allApprovedLeaves.stream()
+				.collect(Collectors.groupingBy(LeaveApplicationEntity::getEmployeeId));
+
+		List<TourApplicationEntity> allApprovedTours = tourApplicationRepository
+				.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(employeeIds, "APPROVED");
+		Map<Long, List<TourApplicationEntity>> tourMap = allApprovedTours.stream()
+				.collect(Collectors.groupingBy(TourApplicationEntity::getEmployeeId));
+
+		List<AttendanceRegisterDTO> resultList = new ArrayList<>();
+		for (EmployeeEntity employee : employees) {
+			AttendanceRegisterDTO dto = new AttendanceRegisterDTO();
+			dto.setEmpId(employee.getEmployeeId());
+			dto.setUserId(employee.getEmployeeId());
+			dto.setName(employee.getFullName());
+			dto.setDesignation(
+					employee.getDesignation() != null ? employee.getDesignation().getDesignationName() : null);
+			dto.setRequestId(employee.getRequestId());
+			dto.setLevel(employee.getLevelCode());
+			dto.setOrganization(employee.getAgency() != null ? employee.getAgency().getAgencyName() : null);
+			dto.setProjectName(employee.getRequestId() != null ? projectMap.get(employee.getRequestId()) : null);
+
+			Map<LocalDate, DailyAttendanceInternalEntity> empAttendance = attendanceMap
+					.getOrDefault(employee.getEmployeeId(), new HashMap<>());
+			List<LeaveApplicationEntity> empLeaves = leaveMap.getOrDefault(employee.getEmployeeId(), new ArrayList<>());
+			List<TourApplicationEntity> empTours = tourMap.getOrDefault(employee.getEmployeeId(), new ArrayList<>());
+
+			List<AttendanceDayDTO> days = new ArrayList<>();
+			for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+				AttendanceDayDTO dayDTO = new AttendanceDayDTO();
+				dayDTO.setDate(date);
+
+				// Check for Approved Leaves
+				final LocalDate fDate = date;
+				boolean onLeave = empLeaves.stream()
+						.anyMatch(l -> !fDate.isBefore(l.getStartDate()) && !fDate.isAfter(l.getEndDate()));
+
+				// Check for Approved Tours
+				boolean onTour = empTours.stream()
+						.anyMatch(t -> !fDate.isBefore(t.getStartDate()) && !fDate.isAfter(t.getEndDate()));
+
+				DailyAttendanceInternalEntity daily = empAttendance.get(date);
+				if (onLeave) {
+					dayDTO.setStatus("LEAVE");
+				} else if (onTour) {
+					dayDTO.setStatus("TOUR");
+				} else if (holidayDates.contains(date)) {
+					if (daily != null) {
+						dayDTO.setInTime(daily.getInTime());
+						dayDTO.setOutTime(daily.getOutTime());
+						dayDTO.setStayHours(daily.getTotalHours());
+					}
+					dayDTO.setStatus("HOLIDAY");
+				} else if (StringUtils.hasText(resolveInternalDailyDisplayStatus(
+						daily,
+						workingDayOverrideDates.contains(date)))) {
+					String resolvedStatus = resolveInternalDailyDisplayStatus(
+							daily,
+							workingDayOverrideDates.contains(date));
+					dayDTO.setInTime(daily.getInTime());
+					dayDTO.setOutTime(daily.getOutTime());
+					dayDTO.setStayHours(daily.getTotalHours());
+					dayDTO.setStatus(resolvedStatus);
+				} else if (date.isAfter(today)) {
+					dayDTO.setStatus("FUTURE");
+				} else if (isWeekOff(date, workingDayOverrideDates)) {
+					dayDTO.setStatus("WEEK_OFF");
+				} else {
+					dayDTO.setStatus("ABSENT");
+				}
+				days.add(dayDTO);
+			}
+			dto.setAttendanceDays(days);
+			resultList.add(dto);
+		}
+		return resultList;
+	}
+
+	@Override
+	public AttendanceRegisterDTO getInternalAttendanceForEmployee(Long employeeId, int month, int year) {
+		EmployeeEntity employee = employeeRepository.findById(employeeId)
+				.orElseThrow(() -> new RuntimeException("Employee not found with id: " + employeeId));
+
+		YearMonth yearMonth = YearMonth.of(year, month);
+		LocalDate startDate = yearMonth.atDay(1);
+		LocalDate endDate = yearMonth.atEndOfMonth();
+
+		List<DailyAttendanceInternalEntity> dailyAttendance = dailyAttendanceInternalRepository
+				.findByEmployeeIdAndMonthAndYear(employeeId, month, year);
+
+		Map<LocalDate, DailyAttendanceInternalEntity> empAttendance = dailyAttendance.stream()
+				.collect(Collectors.toMap(
+						DailyAttendanceInternalEntity::getAttendanceDate,
+						a -> a,
+						this::pickPreferredInternalAttendanceRow));
+
+		List<HolidayMasterEntity> holidays = holidayRepository.findByHolidayDateBetween(startDate, endDate);
+		Set<LocalDate> holidayDates = holidays.stream()
+				.map(HolidayMasterEntity::getHolidayDate)
+				.collect(Collectors.toSet());
+		Set<LocalDate> workingDayOverrideDates = weekOffWorkingDayRepository.findByWorkingDateBetween(startDate, endDate)
+				.stream()
+				.map(workingDay -> workingDay.getWorkingDate())
+				.collect(Collectors.toSet());
+
+		Long departmentId = employee.getDepartmentRegistration() != null
+				? employee.getDepartmentRegistration().getDepartmentRegistrationId()
+				: null;
+
+		Map<String, String> projectMap = new HashMap<>();
+		if (departmentId != null) {
+			List<DepartmentProjectApplicationEntity> projects = departmentProjectApplicationRepository
+					.findByDepartmentRegistrationIdOrderByDepartmentProjectApplicationIdDesc(departmentId);
+
+			projectMap = projects.stream()
+					.collect(Collectors.toMap(DepartmentProjectApplicationEntity::getRequestId,
+							DepartmentProjectApplicationEntity::getProjectName, (existing, replacement) -> existing));
+		}
+
+		AttendanceRegisterDTO dto = new AttendanceRegisterDTO();
+		dto.setEmpId(employee.getEmployeeId());
+		dto.setUserId(employee.getEmployeeId());
+		dto.setName(employee.getFullName());
+		dto.setDesignation(employee.getDesignation() != null ? employee.getDesignation().getDesignationName() : null);
+		dto.setRequestId(employee.getRequestId());
+		dto.setLevel(employee.getLevelCode());
+		dto.setOrganization(employee.getAgency() != null ? employee.getAgency().getAgencyName() : null);
+		dto.setProjectName(employee.getRequestId() != null ? projectMap.get(employee.getRequestId()) : null);
+
+		// New UI Fields
+		dto.setDivision(employee.getSubDepartment() != null ? employee.getSubDepartment().getSubDeptName() : "-");
+		dto.setOfficeLocation(
+				employee.getDepartmentRegistration() != null ? employee.getDepartmentRegistration().getAddress() : "-");
+		dto.setEmail(employee.getEmail());
+		dto.setAadhaarNumber(SensitiveDataMaskingUtil.maskAadhaar(employee.getAadhaarNumber()));
+		dto.setMobile(employee.getMobile());
+		dto.setAddress(employee.getAddress());
+		dto.setEmployeeCode(employee.getEmployeeCode());
+		dto.setJoiningDate(employee.getJoiningDate() != null ? employee.getJoiningDate().format(DISPLAY_DATE_FORMATTER) : "-");
+
+		// Populate Reporting HOD and Manager
+		EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository.findByEmployeeId(employeeId);
+		if (mapping != null) {
+			if (mapping.getHodUserId() != null) {
+				userRepository.findById(mapping.getHodUserId()).ifPresent(hod -> dto.setReportingHOD(hod.getName()));
+			}
+			dto.setReportingManager(resolveReportingAuthorityName(mapping));
+		}
+
+		// Today's Activity
+		LocalDate today = LocalDate.now();
+		DailyAttendanceInternalEntity todayAttendance = dailyAttendanceInternalRepository
+				.findByEmployeeIdAndAttendanceDate(employeeId, today).orElse(null);
+		if (todayAttendance != null) {
+			dto.setTodayInTime(todayAttendance.getInTime());
+			dto.setTodayOutTime(todayAttendance.getOutTime());
+			dto.setTodayStatus(AttendanceStatusResolver.resolveDisplayStatus(todayAttendance));
+		} else {
+			dto.setTodayInTime("-");
+			dto.setTodayOutTime("-");
+		}
+		dto.setAvgResponseTime("-"); // Placeholder
+
+		List<LeaveApplicationEntity> approvedLeaves = leaveApplicationRepository.findByEmployeeIdAndStatus(employeeId,
+				"APPROVED");
+		List<TourApplicationEntity> approvedTours = tourApplicationRepository.findByEmployeeIdAndStatus(employeeId,
+				"APPROVED");
+
+		// Fetch Pending Manual Requests for this month
+		List<com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity> pendingManualRequests = manualAttendanceRequestRepository
+				.findByUserIdAndAttendanceDateBetween(employeeId, startDate, endDate);
+		Set<LocalDate> pendingDates = pendingManualRequests.stream()
+				.filter(r -> "PENDING".equalsIgnoreCase(r.getHodStatus()))
+				.map(com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity::getAttendanceDate)
+				.collect(Collectors.toSet());
+
+		List<AttendanceDayDTO> days = new ArrayList<>();
+		for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+			AttendanceDayDTO dayDTO = new AttendanceDayDTO();
+			dayDTO.setDate(date);
+			DailyAttendanceInternalEntity daily = empAttendance.get(date);
+			if (date.isAfter(today)) {
+				dayDTO.setStatus("");
+				days.add(dayDTO);
+				continue;
+			}
+
+			// Check for Approved Leaves
+			final LocalDate fDate = date;
+			Optional<LeaveApplicationEntity> matchingLeave = !hasCompletePunchTime(daily)
+					? approvedLeaves.stream()
+							.filter(l -> isDateCoveredByLeave(l, fDate))
+							.findFirst()
+					: Optional.empty();
+			boolean onLeave = matchingLeave.isPresent();
+
+			// Check for Approved Tours
+			boolean onTour = approvedTours.stream()
+					.anyMatch(t -> !fDate.isBefore(t.getStartDate()) && !fDate.isAfter(t.getEndDate()));
+
+			if (onLeave) {
+				dayDTO.setStatus(isCompOffLeave(matchingLeave.get()) ? "COMP_OFF" : "LEAVE");
+				if (daily != null) {
+					dayDTO.setInTime(daily.getInTime());
+					dayDTO.setOutTime(daily.getOutTime());
+					dayDTO.setStayHours(daily.getTotalHours());
+				}
+			} else if (onTour) {
+				dayDTO.setStatus("TOUR");
+				if (daily != null) {
+					dayDTO.setInTime(daily.getInTime());
+					dayDTO.setOutTime(daily.getOutTime());
+					dayDTO.setStayHours(daily.getTotalHours());
+				}
+			} else if (holidayDates.contains(date)) {
+				if (daily != null) {
+					dayDTO.setInTime(daily.getInTime());
+					dayDTO.setOutTime(daily.getOutTime());
+					dayDTO.setStayHours(daily.getTotalHours());
+				}
+				dayDTO.setStatus("HOLIDAY");
+			} else if (StringUtils.hasText(resolveInternalDailyDisplayStatus(
+					daily,
+					workingDayOverrideDates.contains(date)))) {
+				String resolvedStatus = resolveInternalDailyDisplayStatus(
+						daily,
+						workingDayOverrideDates.contains(date));
+				dayDTO.setInTime(daily.getInTime());
+				dayDTO.setOutTime(daily.getOutTime());
+				dayDTO.setStayHours(daily.getTotalHours());
+				dayDTO.setStatus(resolvedStatus);
+			} else if (pendingDates.contains(date)) {
+				dayDTO.setStatus("PENDING");
+			} else if (!date.isAfter(LocalDate.now())) {
+				if (isWeekOff(date, workingDayOverrideDates)) {
+					dayDTO.setStatus("WEEK_OFF");
+				} else {
+					dayDTO.setStatus("ABSENT");
+				}
+			} else {
+				dayDTO.setStatus("");
+			}
+			days.add(dayDTO);
+		}
+		dto.setAttendanceDays(days);
+		dto.setDaysInMonth(yearMonth.lengthOfMonth());
+		
+		// Calculate Summary Counts
+		dto.setTotalPresent(days.stream().filter(d -> "PRESENT".equals(d.getStatus())).count());
+		dto.setTotalAbsent(days.stream().filter(d -> "ABSENT".equals(d.getStatus())).count());
+		dto.setTotalLeave(days.stream().filter(d -> "LEAVE".equals(d.getStatus())).count());
+		dto.setTotalCompOff(days.stream().filter(d -> "COMP_OFF".equals(d.getStatus())).count());
+		dto.setTotalHoliday(days.stream().filter(d -> "HOLIDAY".equals(d.getStatus())).count());
+		dto.setTotalWeekOff(days.stream().filter(d -> "WEEK_OFF".equals(d.getStatus())).count());
+		dto.setPayableDays(calculateRegisterPayableDays(dto));
+
+		return dto;
+	}
+
+	private DailyAttendanceInternalEntity pickPreferredInternalAttendanceRow(
+			DailyAttendanceInternalEntity left,
+			DailyAttendanceInternalEntity right) {
+		if (left == null) {
+			return right;
+		}
+		if (right == null) {
+			return left;
+		}
+
+		int leftScore = scoreInternalAttendanceRow(left);
+		int rightScore = scoreInternalAttendanceRow(right);
+		if (leftScore != rightScore) {
+			return rightScore > leftScore ? right : left;
+		}
+
+		Long leftId = left.getId();
+		Long rightId = right.getId();
+		if (leftId == null) {
+			return right;
+		}
+		if (rightId == null) {
+			return left;
+		}
+		return rightId >= leftId ? right : left;
+	}
+
+	private int scoreInternalAttendanceRow(DailyAttendanceInternalEntity daily) {
+		if (daily == null) {
+			return 0;
+		}
+
+		int score = 0;
+		if (StringUtils.hasText(daily.getInTime())) {
+			score += 2;
+		}
+		if (StringUtils.hasText(daily.getOutTime())) {
+			score += 2;
+		}
+		if (StringUtils.hasText(daily.getTotalHours())) {
+			score += 1;
+		}
+
+		String displayStatus = AttendanceStatusResolver.resolveDisplayStatus(daily);
+		if ("PRESENT".equals(displayStatus)) {
+			score += 4;
+		} else if (StringUtils.hasText(displayStatus) && !"ABSENT".equals(displayStatus)) {
+			score += 2;
+		}
+		return score;
+	}
+
+	private boolean hasCompletePunchTime(DailyAttendanceInternalEntity daily) {
+		return daily != null
+				&& StringUtils.hasText(daily.getInTime())
+				&& StringUtils.hasText(daily.getOutTime());
+	}
+
+	private long calculateRegisterPayableDays(AttendanceRegisterDTO dto) {
+		return dto.getTotalPresent()
+				+ dto.getTotalCompOff()
+				+ dto.getTotalHoliday()
+				+ dto.getTotalWeekOff()
+				+ countRegisterStatus(dto, "TOUR");
+	}
+
+	private long countRegisterStatus(AttendanceRegisterDTO dto, String status) {
+		if (dto == null || dto.getAttendanceDays() == null) {
+			return 0;
+		}
+		return dto.getAttendanceDays().stream()
+				.filter(day -> status.equals(day.getStatus()))
+				.count();
+	}
+
+	private boolean isDateCoveredByLeave(LeaveApplicationEntity leave, LocalDate date) {
+		return leave != null
+				&& leave.getStartDate() != null
+				&& leave.getEndDate() != null
+				&& !date.isBefore(leave.getStartDate())
+				&& !date.isAfter(leave.getEndDate());
+	}
+
+	private boolean isCompOffLeave(LeaveApplicationEntity leave) {
+		return leave != null
+				&& (leave.getCompOffWorkDate() != null || isCompOffLeaveType(leave.getLeaveType()));
+	}
+
+	private boolean isCompOffLeaveType(String leaveType) {
+		if (!StringUtils.hasText(leaveType)) {
+			return false;
+		}
+		String normalized = leaveType.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
+		return normalized.equals("CO")
+				|| normalized.equals("COMPOFF")
+				|| normalized.equals("COMPOFFLEAVE")
+				|| normalized.equals("COMPENSATORYOFF")
+				|| normalized.equals("COMPENSATORYLEAVE");
+	}
+
+	private boolean isWeekOff(LocalDate date, Set<LocalDate> workingDayOverrideDates) {
+		return (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY)
+				&& !workingDayOverrideDates.contains(date);
+	}
+
+	private String resolveInternalDailyDisplayStatus(
+			DailyAttendanceInternalEntity daily,
+			boolean workingDayOverride) {
+		String resolvedStatus = AttendanceStatusResolver.resolveDisplayStatus(daily);
+		if (workingDayOverride && "WEEK_OFF".equals(resolvedStatus)) {
+			return null;
+		}
+		return resolvedStatus;
+	}
+
+	@Override
 	public List<AttendanceRegisterDTO> getExternalAttendance(Long departmentId, int month, int year) {
 		List<EmployeeEntity> employees = employeeRepository
 				.findByDepartmentRegistration_DepartmentRegistrationIdAndRecruitmentType(departmentId, "EXTERNAL");
@@ -209,7 +698,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	}
 
 	@Override
-	public void saveExternalAttendance(List<AttendanceRegisterDTO> dtos) {
+	public void saveExternalAttendance(List<AttendanceRegisterDTO> dtos, Long actorUserId) {
 		for (AttendanceRegisterDTO dto : dtos) {
 			if (dto.getAttendanceDays() != null && !dto.getAttendanceDays().isEmpty()) {
 				LocalDate firstDate = dto.getAttendanceDays().get(0).getDate();
@@ -233,6 +722,23 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 					}
 				}
 				attendanceRegisterRepo.save(entity);
+
+				// Log activity history
+				AttendanceRegisterActivityEntity activity = AttendanceRegisterActivityEntity.builder()
+						.employeeUserId(dto.getUserId())
+						.month(month)
+						.year(year)
+						.actorUserId(actorUserId)
+						.actionTimestamp(java.time.LocalDateTime.now())
+						.activityRemarks("External attendance updated/submitted")
+						.build();
+
+				for (AttendanceDayDTO dayDTO : dto.getAttendanceDays()) {
+					if (dayDTO.getStatus() != null) {
+						setActivityDayStatus(activity, dayDTO.getDate().getDayOfMonth(), dayDTO.getStatus());
+					}
+				}
+				activityRepository.save(activity);
 			}
 		}
 	}
@@ -335,12 +841,49 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		}
 	}
 
+	private void setActivityDayStatus(AttendanceRegisterActivityEntity entity, int day, String status) {
+		switch (day) {
+			case 1: entity.setD1(status); break;
+			case 2: entity.setD2(status); break;
+			case 3: entity.setD3(status); break;
+			case 4: entity.setD4(status); break;
+			case 5: entity.setD5(status); break;
+			case 6: entity.setD6(status); break;
+			case 7: entity.setD7(status); break;
+			case 8: entity.setD8(status); break;
+			case 9: entity.setD9(status); break;
+			case 10: entity.setD10(status); break;
+			case 11: entity.setD11(status); break;
+			case 12: entity.setD12(status); break;
+			case 13: entity.setD13(status); break;
+			case 14: entity.setD14(status); break;
+			case 15: entity.setD15(status); break;
+			case 16: entity.setD16(status); break;
+			case 17: entity.setD17(status); break;
+			case 18: entity.setD18(status); break;
+			case 19: entity.setD19(status); break;
+			case 20: entity.setD20(status); break;
+			case 21: entity.setD21(status); break;
+			case 22: entity.setD22(status); break;
+			case 23: entity.setD23(status); break;
+			case 24: entity.setD24(status); break;
+			case 25: entity.setD25(status); break;
+			case 26: entity.setD26(status); break;
+			case 27: entity.setD27(status); break;
+			case 28: entity.setD28(status); break;
+			case 29: entity.setD29(status); break;
+			case 30: entity.setD30(status); break;
+			case 31: entity.setD31(status); break;
+		}
+	}
+
 	@Override
 	public List<AttendanceReportDTO> getAttendanceReportData(Long regId, Long subDeptId, Integer month, Integer year,
 			Long projectId) {
 
 		LocalDate startDate = LocalDate.of(year, month, 1);
 		LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+		LocalDate effectiveEndDate = resolveEffectiveAttendanceEndDate(startDate, endDate, LocalDate.now());
 		List<HolidayMasterEntity> holidays = holidayRepository.findByHolidayDateBetween(startDate, endDate);
 		Set<Integer> holidayDays = holidays.stream()
 				.map(h -> h.getHolidayDate().getDayOfMonth())
@@ -348,6 +891,18 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 		List<AttendanceReportProjection> projections = attendanceRegisterRepo.getAttendanceReportNative(regId,
 				subDeptId, projectId, month, year);
+
+		List<Long> userIds = projections.stream().map(AttendanceReportProjection::getUserId)
+				.collect(Collectors.toList());
+		List<LeaveApplicationEntity> allLeaves = leaveApplicationRepository
+				.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(userIds, "APPROVED");
+		List<TourApplicationEntity> allTours = tourApplicationRepository
+				.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(userIds, "APPROVED");
+
+		Map<Long, List<LeaveApplicationEntity>> leaveMap = allLeaves.stream()
+				.collect(Collectors.groupingBy(LeaveApplicationEntity::getEmployeeId));
+		Map<Long, List<TourApplicationEntity>> tourMap = allTours.stream()
+				.collect(Collectors.groupingBy(TourApplicationEntity::getEmployeeId));
 
 		return projections.stream().map(p -> {
 			AttendanceReportDTO dto = new AttendanceReportDTO();
@@ -358,10 +913,36 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			dto.setSubDepartment(p.getSubDepartmentName());
 			dto.setProjectName(p.getApplicationName());
 
+			List<LeaveApplicationEntity> empLeaves = leaveMap.getOrDefault(p.getUserId(), new ArrayList<>());
+			List<TourApplicationEntity> empTours = tourMap.getOrDefault(p.getUserId(), new ArrayList<>());
+
 			Map<Integer, String> dailyStatus = new HashMap<>();
 			for (int day = 1; day <= 31; day++) {
+				LocalDate dDate = null;
+				try {
+					dDate = LocalDate.of(year, month, day);
+				} catch (Exception e) {
+				}
+
+				final LocalDate finalDDate = dDate;
+				if (finalDDate == null || effectiveEndDate == null || finalDDate.isAfter(effectiveEndDate)) {
+					dailyStatus.put(day, "");
+					continue;
+				}
+				LeaveApplicationEntity approvedLeave = finalDDate == null ? null : empLeaves.stream()
+						.filter(l -> isDateCoveredByLeave(l, finalDDate))
+						.findFirst()
+						.orElse(null);
+				boolean onTour = finalDDate != null && empTours.stream()
+						.anyMatch(t -> !finalDDate.isBefore(t.getStartDate()) && !finalDDate.isAfter(t.getEndDate()));
+
 				String status = getProjectionDayStatus(p, day);
-				if (status != null && !status.isEmpty()) {
+
+				if (approvedLeave != null) {
+					dailyStatus.put(day, isCompOffLeave(approvedLeave) ? "CO" : "L");
+				} else if (onTour) {
+					dailyStatus.put(day, "T");
+				} else if (status != null && !status.isEmpty()) {
 					dailyStatus.put(day, mapStatusToCode(status));
 				} else if (holidayDays.contains(day)) {
 					dailyStatus.put(day, "H");
@@ -370,6 +951,8 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 			}
 			dto.setDailyStatus(dailyStatus);
+			applyAttendanceReportCounts(dto, dailyStatus);
+			dto.setPayableDays(calculateReportPayableDays(dto));
 			return dto;
 		}).collect(Collectors.toList());
 	}
@@ -444,39 +1027,72 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	}
 
 	private String mapStatusToCode(String status) {
-		if (status == null)
-			return "";
-		switch (status.toUpperCase()) {
-			case "PRESENT":
-				return "P";
-			case "ABSENT":
-				return "A";
-			case "WEEK_OFF":
-				return "W";
-			case "LEAVE":
-				return "L";
-			case "TOUR":
-				return "T";
-			case "HOLIDAY":
-				return "H";
-			default:
-				return status;
+		return AttendanceStatusResolver.resolveStatusCode(status);
+	}
+
+	private void applyAttendanceReportCounts(AttendanceReportDTO dto, Map<Integer, String> dailyStatus) {
+		if (dto == null || dailyStatus == null || dailyStatus.isEmpty()) {
+			return;
 		}
+		dto.setPresentCount(countStatus(dailyStatus, "P"));
+		dto.setAbsentCount(countStatus(dailyStatus, "A"));
+		dto.setLeaveCount(countStatus(dailyStatus, "L"));
+		dto.setCompOffCount(countStatus(dailyStatus, "CO"));
+		dto.setTourCount(countStatus(dailyStatus, "T"));
+		dto.setHolidayCount(countStatus(dailyStatus, "H"));
+		dto.setWeekOffCount(countStatus(dailyStatus, "W"));
+	}
+
+	private long calculateReportPayableDays(AttendanceReportDTO dto) {
+		return dto.getPresentCount()
+				+ dto.getCompOffCount()
+				+ dto.getTourCount()
+				+ dto.getHolidayCount()
+				+ dto.getWeekOffCount();
+	}
+
+	private LocalDate resolveEffectiveAttendanceEndDate(LocalDate startDate, LocalDate endDate, LocalDate today) {
+		if (today.isBefore(startDate)) {
+			return null;
+		}
+		return today.isBefore(endDate) ? today : endDate;
+	}
+
+	private long countStatus(Map<Integer, String> dailyStatus, String statusCode) {
+		return dailyStatus.values().stream()
+				.filter(status -> statusCode.equalsIgnoreCase(status))
+				.count();
 	}
 
 	@Override
-	public List<AttendanceReportDTO> getExternalAttendanceReportData(Long regId, Long agencyId, Integer month, Integer year,
+	public List<AttendanceReportDTO> getExternalAttendanceReportData(Long regId, Long agencyId, Integer month,
+			Integer year,
 			Long projectId) {
 
 		LocalDate startDate = LocalDate.of(year, month, 1);
 		LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+		LocalDate effectiveEndDate = resolveEffectiveAttendanceEndDate(startDate, endDate, LocalDate.now());
 		List<HolidayMasterEntity> holidays = holidayRepository.findByHolidayDateBetween(startDate, endDate);
 		Set<Integer> holidayDays = holidays.stream()
 				.map(h -> h.getHolidayDate().getDayOfMonth())
 				.collect(Collectors.toSet());
 
-		List<com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection> projections = attendanceRegisterRepo.getExternalAttendanceReportNative(regId,
-				agencyId, projectId, month, year);
+		List<com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection> projections = attendanceRegisterRepo
+				.getExternalAttendanceReportNative(regId,
+						agencyId, projectId, month, year);
+
+		List<Long> userIds = projections.stream()
+				.map(com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection::getUserId)
+				.collect(Collectors.toList());
+		List<LeaveApplicationEntity> allLeaves = leaveApplicationRepository
+				.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(userIds, "APPROVED");
+		List<TourApplicationEntity> allTours = tourApplicationRepository
+				.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(userIds, "APPROVED");
+
+		Map<Long, List<LeaveApplicationEntity>> leaveMap = allLeaves.stream()
+				.collect(Collectors.groupingBy(LeaveApplicationEntity::getEmployeeId));
+		Map<Long, List<TourApplicationEntity>> tourMap = allTours.stream()
+				.collect(Collectors.groupingBy(TourApplicationEntity::getEmployeeId));
 
 		return projections.stream().map(p -> {
 			AttendanceReportDTO dto = new AttendanceReportDTO();
@@ -489,10 +1105,35 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			dto.setLevel(p.getLevel());
 			dto.setDesignation(p.getDesignation());
 
+			List<LeaveApplicationEntity> empLeaves = leaveMap.getOrDefault(p.getUserId(), new ArrayList<>());
+			List<TourApplicationEntity> empTours = tourMap.getOrDefault(p.getUserId(), new ArrayList<>());
+
 			Map<Integer, String> dailyStatus = new HashMap<>();
 			for (int day = 1; day <= 31; day++) {
+				LocalDate dDate = null;
+				try {
+					dDate = LocalDate.of(year, month, day);
+				} catch (Exception e) {
+				}
+
+				final LocalDate finalDDate = dDate;
+				if (finalDDate == null || effectiveEndDate == null || finalDDate.isAfter(effectiveEndDate)) {
+					dailyStatus.put(day, "");
+					continue;
+				}
+				LeaveApplicationEntity approvedLeave = finalDDate == null ? null : empLeaves.stream()
+						.filter(l -> isDateCoveredByLeave(l, finalDDate))
+						.findFirst()
+						.orElse(null);
+				boolean onTour = finalDDate != null && empTours.stream()
+						.anyMatch(t -> !finalDDate.isBefore(t.getStartDate()) && !finalDDate.isAfter(t.getEndDate()));
+
 				String status = getExternalProjectionDayStatus(p, day);
-				if (status != null && !status.isEmpty()) {
+				if (approvedLeave != null) {
+					dailyStatus.put(day, isCompOffLeave(approvedLeave) ? "CO" : "L");
+				} else if (onTour) {
+					dailyStatus.put(day, "T");
+				} else if (status != null && !status.isEmpty()) {
 					dailyStatus.put(day, mapStatusToCode(status));
 				} else if (holidayDays.contains(day)) {
 					dailyStatus.put(day, "H");
@@ -501,51 +1142,84 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				}
 			}
 			dto.setDailyStatus(dailyStatus);
+			applyAttendanceReportCounts(dto, dailyStatus);
+			dto.setPayableDays(calculateReportPayableDays(dto));
 			return dto;
 		}).collect(Collectors.toList());
 	}
 
-	private String getExternalProjectionDayStatus(com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection p, int day) {
+	private String getExternalProjectionDayStatus(
+			com.maharecruitment.gov.in.attendance.dto.ExternalAttendanceReportProjection p, int day) {
 		switch (day) {
-			case 1: return p.getD1();
-			case 2: return p.getD2();
-			case 3: return p.getD3();
-			case 4: return p.getD4();
-			case 5: return p.getD5();
-			case 6: return p.getD6();
-			case 7: return p.getD7();
-			case 8: return p.getD8();
-			case 9: return p.getD9();
-			case 10: return p.getD10();
-			case 11: return p.getD11();
-			case 12: return p.getD12();
-			case 13: return p.getD13();
-			case 14: return p.getD14();
-			case 15: return p.getD15();
-			case 16: return p.getD16();
-			case 17: return p.getD17();
-			case 18: return p.getD18();
-			case 19: return p.getD19();
-			case 20: return p.getD20();
-			case 21: return p.getD21();
-			case 22: return p.getD22();
-			case 23: return p.getD23();
-			case 24: return p.getD24();
-			case 25: return p.getD25();
-			case 26: return p.getD26();
-			case 27: return p.getD27();
-			case 28: return p.getD28();
-			case 29: return p.getD29();
-			case 30: return p.getD30();
-			case 31: return p.getD31();
-			default: return null;
+			case 1:
+				return p.getD1();
+			case 2:
+				return p.getD2();
+			case 3:
+				return p.getD3();
+			case 4:
+				return p.getD4();
+			case 5:
+				return p.getD5();
+			case 6:
+				return p.getD6();
+			case 7:
+				return p.getD7();
+			case 8:
+				return p.getD8();
+			case 9:
+				return p.getD9();
+			case 10:
+				return p.getD10();
+			case 11:
+				return p.getD11();
+			case 12:
+				return p.getD12();
+			case 13:
+				return p.getD13();
+			case 14:
+				return p.getD14();
+			case 15:
+				return p.getD15();
+			case 16:
+				return p.getD16();
+			case 17:
+				return p.getD17();
+			case 18:
+				return p.getD18();
+			case 19:
+				return p.getD19();
+			case 20:
+				return p.getD20();
+			case 21:
+				return p.getD21();
+			case 22:
+				return p.getD22();
+			case 23:
+				return p.getD23();
+			case 24:
+				return p.getD24();
+			case 25:
+				return p.getD25();
+			case 26:
+				return p.getD26();
+			case 27:
+				return p.getD27();
+			case 28:
+				return p.getD28();
+			case 29:
+				return p.getD29();
+			case 30:
+				return p.getD30();
+			case 31:
+				return p.getD31();
+			default:
+				return null;
 		}
 	}
 
-
 	@Override
 	public void lockAttendance(Long departmentId, int month, int year) {
-		// TODO Auto-generated method stub
 		com.maharecruitment.gov.in.attendance.entity.AttendanceLockEntity lock = attendanceLockRepository
 				.findByDeptRegIdAndMonthAndYear(departmentId, month, year)
 				.orElse(new com.maharecruitment.gov.in.attendance.entity.AttendanceLockEntity());
@@ -562,7 +1236,6 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 	@Override
 	public boolean isAttendanceLocked(Long departmentId, int month, int year) {
-		// TODO Auto-generated method stub
 		Optional<com.maharecruitment.gov.in.attendance.entity.AttendanceLockEntity> lockOpt = attendanceLockRepository
 				.findByDeptRegIdAndMonthAndYear(departmentId, month, year);
 
@@ -575,10 +1248,351 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		LocalDate cutoffDate = LocalDate.of(year, month, 1).plusMonths(1).withDayOfMonth(15);
 
 		if (today.isAfter(cutoffDate)) {
-			// Only lock if data exists in database (as per user request: "data which is not there it will not be locked")
+			// Only lock if data exists in database (as per user request: "data which is not
+			// there it will not be locked")
 			return attendanceRegisterRepo.existsByDeptRegIdAndMonthAndYear(departmentId, month, year);
 		}
 
 		return false;
+	}
+
+	@Override
+	public boolean submitManualAttendance(Long userId, LocalDate date, String inTime, String outTime, String reason) {
+		// Prevent duplicate submissions for the same date
+		List<com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity> existing = manualAttendanceRequestRepository
+				.findByUserIdAndAttendanceDate(userId, date);
+		if (existing != null && !existing.isEmpty()) {
+			boolean alreadyExists = existing.stream().anyMatch(r -> !"REJECTED".equalsIgnoreCase(r.getHodStatus()));
+			if (alreadyExists) {
+				return false; // Skip if already pending or approved
+			}
+		}
+
+		com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
+				.findByEmployeeId(userId);
+		if (mapping == null) {
+			throw new RuntimeException(
+					"Reporting Manager Mapping not found. Please contact HR to be mapped before applying for manual attendance.");
+		}
+
+		com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity request = new com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity();
+		request.setUserId(userId);
+		request.setAttendanceDate(date);
+		request.setInTime(inTime);
+		request.setOutTime(outTime);
+		request.setReason(reason);
+		request.setManagerId(mapping.getManagerEmployeeId());
+		request.setHodId(mapping.getHodUserId());
+		request.setManagerStatus("APPROVED"); // Auto-approved to skip Manager step
+		request.setHodStatus("PENDING");
+
+		manualAttendanceRequestRepository.save(request);
+		return true;
+	}
+
+	@Override
+	public List<com.maharecruitment.gov.in.attendance.dto.ManualAttendanceRequestDTO> getPendingRequests(
+			Long approverId, String roleType) {
+		List<com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity> requests;
+		if ("MANAGER".equalsIgnoreCase(roleType) || "STM".equalsIgnoreCase(roleType)
+				|| "PM".equalsIgnoreCase(roleType)) {
+			requests = manualAttendanceRequestRepository.findByManagerIdAndManagerStatus(approverId, "PENDING");
+		} else if ("HOD".equalsIgnoreCase(roleType)) {
+			requests = manualAttendanceRequestRepository.findByHodIdAndHodStatus(approverId, "PENDING");
+		} else {
+			return new ArrayList<>();
+		}
+
+		return requests.stream().map(req -> {
+			com.maharecruitment.gov.in.attendance.dto.ManualAttendanceRequestDTO dto = new com.maharecruitment.gov.in.attendance.dto.ManualAttendanceRequestDTO();
+			dto.setId(req.getId());
+			dto.setUserId(req.getUserId());
+			dto.setAttendanceDate(req.getAttendanceDate());
+			dto.setInTime(req.getInTime());
+			dto.setOutTime(req.getOutTime());
+			dto.setReason(req.getReason());
+			dto.setManagerStatus(req.getManagerStatus());
+			dto.setHodStatus(req.getHodStatus());
+			dto.setManagerComments(req.getManagerComments());
+			dto.setHodComments(req.getHodComments());
+			dto.setCreatedAt(req.getCreatedAt());
+
+			// Fetch Employee Name
+			employeeRepository.findById(req.getUserId()).ifPresent(e -> dto.setEmployeeName(e.getFullName()));
+
+			// Fetch Project and Manager Names from Mapping
+			com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
+					.findByEmployeeId(req.getUserId());
+			if (mapping != null) {
+				if (mapping.getProjectId() != null) {
+					projectRepo.findById(mapping.getProjectId()).ifPresent(p -> dto.setProjectName(p.getProjectName()));
+				}
+				dto.setManagerName(resolveReportingAuthorityName(mapping));
+			}
+
+			return dto;
+		}).collect(Collectors.toList());
+	}
+
+	@Override
+	public List<ManualAttendanceSummaryDTO> getPendingSummaries(Long approverId, String roleType, Integer month,
+			Integer year) {
+		List<com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity> requests;
+		if ("HOD".equalsIgnoreCase(roleType)) {
+			requests = manualAttendanceRequestRepository.findByHodIdAndHodStatus(approverId, "PENDING");
+		} else {
+			requests = manualAttendanceRequestRepository.findByManagerIdAndManagerStatus(approverId, "PENDING");
+		}
+
+		// Filter by month and year if provided
+		if (month != null && year != null) {
+			requests = requests.stream()
+					.filter(r -> r.getAttendanceDate().getMonthValue() == month
+							&& r.getAttendanceDate().getYear() == year)
+					.collect(Collectors.toList());
+		}
+
+		Map<Long, List<com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity>> groupedByEmployee = requests
+				.stream()
+				.collect(Collectors.groupingBy(
+						com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity::getUserId));
+
+		List<ManualAttendanceSummaryDTO> summaries = new ArrayList<>();
+		for (Map.Entry<Long, List<com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity>> entry : groupedByEmployee
+				.entrySet()) {
+			Long empId = entry.getKey();
+			List<com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity> empRequests = entry
+					.getValue();
+
+			ManualAttendanceSummaryDTO summary = new ManualAttendanceSummaryDTO();
+			summary.setUserId(empId);
+			summary.setPendingCount(empRequests.size());
+
+			// Enrich with basic employee/project info from the first request
+
+			employeeRepository.findById(empId).ifPresent(e -> {
+				summary.setEmployeeName(e.getFullName());
+				summary.setEmployeeCode(e.getEmployeeCode());
+			});
+
+			com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
+					.findByEmployeeId(empId);
+			if (mapping != null) {
+				if (mapping.getProjectId() != null) {
+					projectRepo.findById(mapping.getProjectId()).ifPresent(p -> summary.setProjectName(p.getProjectName()));
+				}
+			}
+
+			summaries.add(summary);
+		}
+		return summaries;
+	}
+
+	@Override
+	public List<ManualAttendanceRequestDTO> getPendingRequestsForEmployee(Long approverId, Long targetEmployeeId,
+			String roleType) {
+		List<com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity> requests;
+		if ("HOD".equalsIgnoreCase(roleType)) {
+			requests = manualAttendanceRequestRepository.findByHodIdAndHodStatus(approverId, "PENDING");
+		} else {
+			requests = manualAttendanceRequestRepository.findByManagerIdAndManagerStatus(approverId, "PENDING");
+		}
+
+		return requests.stream()
+				.filter(r -> r.getUserId().equals(targetEmployeeId))
+				.map(req -> {
+					ManualAttendanceRequestDTO dto = new ManualAttendanceRequestDTO();
+					dto.setId(req.getId());
+					dto.setUserId(req.getUserId());
+					dto.setAttendanceDate(req.getAttendanceDate());
+					dto.setInTime(req.getInTime());
+					dto.setOutTime(req.getOutTime());
+					dto.setReason(req.getReason());
+					dto.setManagerStatus(req.getManagerStatus());
+					dto.setHodStatus(req.getHodStatus());
+					dto.setCreatedAt(req.getCreatedAt());
+
+					// Names for detail view
+					employeeRepository.findById(req.getUserId()).ifPresent(e -> dto.setEmployeeName(e.getFullName()));
+					com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
+							.findByEmployeeId(req.getUserId());
+					if (mapping != null) {
+						if (mapping.getProjectId() != null) {
+							projectRepo.findById(mapping.getProjectId())
+									.ifPresent(p -> dto.setProjectName(p.getProjectName()));
+						}
+						dto.setManagerName(resolveReportingAuthorityName(mapping));
+					}
+					return dto;
+				}).collect(Collectors.toList());
+	}
+
+	@Override
+	public List<ManualAttendanceRequestDTO> getMyManualRequests(Long employeeId) {
+		List<com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity> entities = manualAttendanceRequestRepository
+				.findByUserIdOrderByAttendanceDateDesc(employeeId);
+		return entities.stream().map(req -> {
+			ManualAttendanceRequestDTO dto = new ManualAttendanceRequestDTO();
+			dto.setId(req.getId());
+			dto.setUserId(req.getUserId());
+			dto.setAttendanceDate(req.getAttendanceDate());
+			dto.setInTime(req.getInTime());
+			dto.setOutTime(req.getOutTime());
+			dto.setReason(req.getReason());
+			dto.setManagerStatus(req.getManagerStatus());
+			dto.setHodStatus(req.getHodStatus());
+			dto.setManagerComments(req.getManagerComments());
+			dto.setHodComments(req.getHodComments());
+			dto.setCreatedAt(req.getCreatedAt());
+
+			// Add simple name lookups for employee's own view if possible
+			employeeRepository.findById(req.getUserId()).ifPresent(e -> dto.setEmployeeName(e.getFullName()));
+
+			com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
+					.findByEmployeeId(req.getUserId());
+			if (mapping != null) {
+				if (mapping.getProjectId() != null) {
+					projectRepo.findById(mapping.getProjectId()).ifPresent(p -> dto.setProjectName(p.getProjectName()));
+				}
+				dto.setManagerName(resolveReportingAuthorityName(mapping));
+			}
+
+			return dto;
+		}).collect(Collectors.toList());
+	}
+
+	@Override
+	public List<Map<String, Object>> getTeamMembers(Long approverId, String roleType) {
+		List<com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity> mappings;
+		if ("HOD".equalsIgnoreCase(roleType)) {
+			mappings = employeeReportingMappingRepository.findByHodUserId(approverId);
+		} else {
+			mappings = employeeReportingMappingRepository.findByManagerEmployeeId(approverId);
+		}
+
+		List<Map<String, Object>> result = new ArrayList<>();
+		for (com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity m : mappings) {
+			Map<String, Object> map = new HashMap<>();
+			map.put("employeeId", m.getEmployeeId());
+
+			employeeRepository.findById(m.getEmployeeId()).ifPresent(e -> {
+				map.put("employeeName", e.getFullName());
+				map.put("employeeCode", e.getEmployeeCode());
+			});
+
+			if (m.getProjectId() != null) {
+				projectRepo.findById(m.getProjectId()).ifPresent(p -> {
+					map.put("projectName", p.getProjectName());
+				});
+			}
+
+			result.add(map);
+		}
+		return result;
+	}
+
+	@Override
+	public void approveRejectManualAttendance(Long requestId, Long approverId, String status, String comments,
+			String roleType) {
+		com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity request = manualAttendanceRequestRepository
+				.findById(requestId)
+				.orElseThrow(() -> new RuntimeException("Request not found"));
+
+		if ("MANAGER".equalsIgnoreCase(roleType) || "STM".equalsIgnoreCase(roleType)
+				|| "PM".equalsIgnoreCase(roleType)) {
+			if (!Objects.equals(request.getManagerId(), approverId)) {
+				throw new RuntimeException("Unauthorized: You are not the assigned manager for this request.");
+			}
+			request.setManagerStatus(status);
+			request.setManagerComments(comments);
+
+			if ("REJECTED".equalsIgnoreCase(status)) {
+				request.setHodStatus("REJECTED");
+			} else {
+				request.setHodStatus("PENDING");
+			}
+
+		} else if ("HOD".equalsIgnoreCase(roleType)) {
+			if (!request.getHodId().equals(approverId)) {
+				throw new RuntimeException("Unauthorized: You are not the assigned HOD for this request.");
+			}
+			request.setHodStatus(status);
+			request.setHodComments(comments);
+
+			if ("APPROVED".equalsIgnoreCase(status)) {
+				int month = request.getAttendanceDate().getMonthValue();
+				int year = request.getAttendanceDate().getYear();
+				EmployeeEntity employee = employeeRepository.findById(request.getUserId()).orElse(null);
+
+				com.maharecruitment.gov.in.attendance.entity.AttendanceRegisterEntity entity = attendanceRegisterRepo
+						.findByUserIdAndMonthAndYear(request.getUserId(), month, year)
+						.orElse(new com.maharecruitment.gov.in.attendance.entity.AttendanceRegisterEntity());
+
+				if (entity.getId() == null) {
+					entity.setUserId(request.getUserId());
+					entity.setMonth(month);
+					entity.setYear(year);
+					if (employee != null) {
+						entity.setRequestId(employee.getRequestId());
+						entity.setDesignation(
+								employee.getDesignation() != null ? employee.getDesignation().getDesignationName() : null);
+						entity.setName(employee.getFullName());
+					}
+				}
+
+				setDayStatus(entity, request.getAttendanceDate().getDayOfMonth(), "PRESENT");
+				attendanceRegisterRepo.save(entity);
+
+				DailyAttendanceInternalEntity daily = dailyAttendanceInternalRepository
+						.findFirstByEmployeeIdAndAttendanceDateOrderByIdDesc(
+								request.getUserId(),
+								request.getAttendanceDate())
+						.orElse(new DailyAttendanceInternalEntity());
+				daily.setEmployeeId(request.getUserId());
+				daily.setAttendanceDate(request.getAttendanceDate());
+				daily.setEmployeeCode(employee != null ? employee.getEmployeeCode() : null);
+				daily.setAttendanceSource(AttendanceSource.WEB);
+				daily.setInTime(request.getInTime());
+				daily.setOutTime(request.getOutTime());
+				daily.setStatus("PRESENT");
+				daily.setMonth(month);
+				daily.setYear(year);
+				dailyAttendanceInternalRepository.save(daily);
+			}
+		}
+
+		manualAttendanceRequestRepository.save(request);
+	}
+
+	@Override
+	public void bulkApproveRejectManualAttendance(List<Long> requestIds, Long approverId, String status,
+			String comments, String roleType) {
+		if (requestIds != null) {
+			for (Long id : requestIds) {
+				try {
+					approveRejectManualAttendance(id, approverId, status, comments, roleType);
+				} catch (Exception e) {
+					// Log or handle individual failure if needed, but continue for others
+				}
+			}
+		}
+	}
+
+	private String resolveReportingAuthorityName(EmployeeReportingMappingEntity mapping) {
+		if (mapping == null) {
+			return null;
+		}
+		if ("OTHER".equalsIgnoreCase(mapping.getManagerType())) {
+			return mapping.getHodUserId() == null
+					? null
+					: userRepository.findById(mapping.getHodUserId())
+							.map(com.maharecruitment.gov.in.auth.entity.User::getName)
+							.orElse(null);
+		}
+		return mapping.getManagerEmployeeId() == null
+				? null
+				: employeeRepository.findById(mapping.getManagerEmployeeId())
+						.map(EmployeeEntity::getFullName)
+						.orElse(null);
 	}
 }

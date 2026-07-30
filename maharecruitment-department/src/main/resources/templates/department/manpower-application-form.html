@@ -5,14 +5,18 @@
     <meta charset="UTF-8">
     <title>Department Manpower Application</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
 </head>
 
 <body class="department-shell" th:attr="data-context-path=${contextPath}">
-    <th:block th:replace="~{header/header :: var-sidebar-header('Department', ${applicationForm.requestId != null ? applicationForm.requestId : 'New Manpower Application'}, ~{::section})}">
+    <th:block
+        th:replace="~{header/header :: var-sidebar-header('Department', ${applicationForm.requestId != null ? applicationForm.requestId : 'New Manpower Application'}, ~{::section})}">
         <section>
             <div class="card add-emp-card">
                 <div class="header">
-                    <h2 th:text="${applicationForm.departmentProjectApplicationId == null ? 'Create Manpower Project Application' : 'Edit Manpower Project Application'}">
+                    <h2
+                        th:text="${applicationForm.departmentProjectApplicationId == null ? 'Create Manpower Project Application' : 'Edit Manpower Project Application'}">
                         Create Manpower Project Application
                     </h2>
                 </div>
@@ -21,11 +25,8 @@
                     <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
                     <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
-                    <form id="departmentManpowerApplicationForm"
-                        th:action="@{/department/manpower/save}"
-                        th:object="${applicationForm}"
-                        method="post"
-                        enctype="multipart/form-data">
+                    <form id="departmentManpowerApplicationForm" th:action="@{/department/manpower/save}"
+                        th:object="${applicationForm}" method="post" enctype="multipart/form-data">
 
                         <input type="hidden" th:field="*{departmentProjectApplicationId}">
                         <input type="hidden" id="applicationActionStatus" name="actionStatus" value="submit">
@@ -41,9 +42,8 @@
                                 <label class="form-label">Application Type <span class="text-danger">*</span></label>
                                 <select class="form-select" th:field="*{applicationType}">
                                     <option value="">Select Application Type</option>
-                                    <option th:each="type : ${applicationTypes}"
-                                            th:value="${type}"
-                                            th:text="${#strings.replace(type.name(), '_', ' ')}"></option>
+                                    <option th:each="type : ${applicationTypes}" th:value="${type}"
+                                        th:text="${#strings.replace(type.name(), '_', ' ')}"></option>
                                 </select>
                                 <div class="text-danger small" th:errors="*{applicationType}"></div>
                             </div>
@@ -57,8 +57,8 @@
                                 <select id="designationSelect" class="form-select">
                                     <option value="">Select Designation</option>
                                     <option th:each="designation : ${designationOptions}"
-                                            th:value="${designation.designationId}"
-                                            th:text="${designation.designationName}"></option>
+                                        th:value="${designation.designationId}"
+                                        th:text="${designation.designationName}"></option>
                                 </select>
                             </div>
                             <div class="col-md-5">
@@ -68,7 +68,8 @@
                                 </select>
                             </div>
                             <div class="col-md-2 d-grid">
-                                <button type="button" class="btn btn-primary" id="addRequirementButton">Add Requirement</button>
+                                <button type="button" class="btn btn-primary" id="addRequirementButton">Add
+                                    Requirement</button>
                             </div>
                         </div>
 
@@ -107,9 +108,9 @@
                                                 th:value="${requirement.levelName}">
                                         </td>
                                         <td>
-                                            <span class="monthlyRateText" th:text="${#numbers.formatDecimal(requirement.monthlyRate, 1, 'COMMA', 2, 'POINT')}"></span>
-                                            <input type="hidden" class="monthlyRateValue"
-                                                data-field="monthlyRate"
+                                            <span class="monthlyRateText"
+                                                th:text="${#numbers.formatDecimal(requirement.monthlyRate, 1, 'COMMA', 2, 'POINT')}"></span>
+                                            <input type="hidden" class="monthlyRateValue" data-field="monthlyRate"
                                                 th:name="${'resourceRequirements[' + stat.index + '].monthlyRate'}"
                                                 th:value="${requirement.monthlyRate}">
                                         </td>
@@ -120,20 +121,32 @@
                                                 th:value="${requirement.requiredQuantity}">
                                         </td>
                                         <td>
-                                            <input type="number" min="3" class="form-control durationInMonthsInput"
+                                            <input type="number" min="1" class="form-control durationInMonthsInput"
                                                 data-field="durationInMonths"
                                                 th:name="${'resourceRequirements[' + stat.index + '].durationInMonths'}"
                                                 th:value="${requirement.durationInMonths}">
-                                        </td>
                                         <td>
-                                            <span class="rowTotalCostText" th:text="${#numbers.formatDecimal(requirement.totalCost, 1, 'COMMA', 2, 'POINT')}"></span>
-                                            <input type="hidden" class="rowTotalCostValue"
-                                                data-field="totalCost"
+                                            <span class="rowTotalCostText"
+                                                th:text="${#numbers.formatDecimal(requirement.totalCost, 1, 'COMMA', 2, 'POINT')}"></span>
+                                            <input type="hidden" class="rowTotalCostValue" data-field="totalCost"
                                                 th:name="${'resourceRequirements[' + stat.index + '].totalCost'}"
                                                 th:value="${requirement.totalCost}">
+                                            <input type="hidden" data-field="agencyCommissionAmount"
+                                                th:name="${'resourceRequirements[' + stat.index + '].agencyCommissionAmount'}"
+                                                th:value="${requirement.agencyCommissionAmount}">
+                                            <input type="hidden" data-field="mahaItCommissionAmount"
+                                                th:name="${'resourceRequirements[' + stat.index + '].mahaItCommissionAmount'}"
+                                                th:value="${requirement.mahaItCommissionAmount}">
+                                            <input type="hidden" data-field="taxableAmount"
+                                                th:name="${'resourceRequirements[' + stat.index + '].taxableAmount'}"
+                                                th:value="${requirement.taxableAmount}">
+                                            <input type="hidden" data-field="gstAmount"
+                                                th:name="${'resourceRequirements[' + stat.index + '].gstAmount'}"
+                                                th:value="${requirement.gstAmount}">
                                         </td>
                                         <td>
-                                            <button type="button" class="btn btn-outline-danger btn-sm removeRequirementButton">Remove</button>
+                                            <button type="button"
+                                                class="btn btn-outline-danger btn-sm removeRequirementButton">Remove</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -145,7 +158,7 @@
                                 <table class="table table-sm table-bordered w-auto ms-auto mb-0">
                                     <tbody>
                                         <tr>
-                                            <th class="text-end">Total Estimated Cost (INR, Excluding Taxes)</th>
+                                            <th class="text-end">Total Manpower Value (Excl. Commissions & Taxes)</th>
                                             <td class="text-end"><span id="grandTotalCostText">0.00</span></td>
                                         </tr>
                                     </tbody>
@@ -169,7 +182,14 @@
 
                         <div class="row g-3">
                             <div class="col-md-12">
-                                <label class="form-label">Work Order Document <span class="text-danger">*</span></label>
+                                <label class="form-label">Work Order Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" th:field="*{workOrderNumber}" maxlength="100"
+                                    placeholder="Enter work order number" required>
+                                <div class="text-danger small" th:errors="*{workOrderNumber}"></div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Work Order Document / Demand / Requisition Letter <span
+                                        class="text-danger">*</span></label>
                                 <div class="mb-2" th:if="${applicationForm.existingWorkOrderFilePath != null}">
                                     <span class="badge bg-success">Current document available</span>
                                     <a class="ms-2"
@@ -179,15 +199,14 @@
                                 </div>
                                 <input type="hidden" th:field="*{existingWorkOrderFilePath}">
                                 <input type="hidden" th:field="*{existingWorkOrderOriginalName}">
-                                <input type="file"
-                                    class="form-control"
-                                    th:field="*{workOrderFile}"
+                                <input type="file" class="form-control" th:field="*{workOrderFile}"
                                     id="workOrderFileInput"
                                     th:attr="required=${applicationForm.existingWorkOrderFilePath == null ? 'required' : null}"
                                     accept=".pdf,.doc,.docx">
                                 <div class="form-text">Mandatory. Allowed: PDF, DOC, DOCX. Max size 5 MB.</div>
                                 <div id="selectedWorkOrderPreview" class="mt-2 d-none">
-                                    <a id="selectedWorkOrderLink" href="#" target="_blank" rel="noopener">View Selected Document</a>
+                                    <a id="selectedWorkOrderLink" href="#" target="_blank" rel="noopener">View Selected
+                                        Document</a>
                                     <small id="selectedWorkOrderName" class="text-muted ms-2"></small>
                                 </div>
                                 <div class="text-danger small" id="workOrderValidationMessage"></div>
@@ -197,7 +216,8 @@
 
                         <div class="mt-4 d-flex justify-content-center gap-2">
                             <button type="button" class="btn btn-warning" id="saveDraftButton">Save as Draft</button>
-                            <button type="button" class="btn btn-info" id="previewSubmitButton">Preview & Submit</button>
+                            <button type="button" class="btn btn-info" id="previewSubmitButton">Preview &
+                                Submit</button>
                             <button type="submit" class="d-none" id="hiddenFormSubmitButton"></button>
                             <a class="btn btn-secondary" th:href="@{/department/manpower/list}">Back to List</a>
                         </div>
@@ -205,7 +225,7 @@
                 </div>
             </div>
 
-            <div class="card mt-4" th:if="${activityTimeline != null and !#lists.isEmpty(activityTimeline)}">
+            <!-- <div class="card mt-4" th:if="${activityTimeline != null and !#lists.isEmpty(activityTimeline)}">
                 <div class="card-header">
                     <h5 class="mb-0">Application Activity Timeline</h5>
                 </div>
@@ -238,7 +258,7 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </div> -->
         </section>
     </th:block>
 
@@ -259,6 +279,10 @@
                         <tr>
                             <th>Application Type</th>
                             <td id="previewApplicationType"></td>
+                        </tr>
+                        <tr>
+                            <th>Work Order Number</th>
+                            <td id="previewWorkOrderNumber"></td>
                         </tr>
                     </table>
 
@@ -281,7 +305,7 @@
                         <table class="table table-sm table-bordered w-auto ms-auto mb-0">
                             <tbody>
                                 <tr>
-                                    <th class="text-end">Grand Total (INR, Excluding Taxes)</th>
+                                    <th class="text-end">Total Manpower Value (Excl. Commissions & Taxes)</th>
                                     <td class="text-end"><span id="previewGrandTotalCost">0.00</span></td>
                                 </tr>
                             </tbody>
@@ -307,7 +331,23 @@
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script th:src="@{/js/department-manpower-application.js}"></script>
+    <script>
+        $(document).ready(function () {
+            $('#designationSelect').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Select Designation',
+                width: '100%'
+            });
+
+            // Ensure Select2 triggers the native change event for the existing JS logic
+            $('#designationSelect').on('change', function () {
+                this.dispatchEvent(new Event('change'));
+            });
+        });
+    </script>
 </body>
 
 </html>

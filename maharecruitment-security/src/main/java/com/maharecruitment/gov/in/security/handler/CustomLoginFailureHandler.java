@@ -21,9 +21,9 @@ public class CustomLoginFailureHandler implements AuthenticationFailureHandler {
 
         String loginUrl = request.getContextPath() + "/login";
         if (exception.getMessage().contains("Captcha")) {
-            response.sendRedirect(loginUrl + "?captchaError=true");
+            response.sendRedirect(loginUrl + "?captchaError=true&loginMode=password");
         } else {
-            response.sendRedirect(loginUrl + "?error=true");
+            response.sendRedirect(loginUrl + "?error=true&loginMode=password");
         }
     }
 }

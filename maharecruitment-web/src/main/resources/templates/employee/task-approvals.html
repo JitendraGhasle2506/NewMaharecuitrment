@@ -1,0 +1,176 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Team Task Approvals</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .employee-home-card {
+            overflow: hidden;
+            border-radius: 22px;
+            background: #fff;
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+            border: 1px solid rgba(15, 58, 86, 0.1);
+        }
+        .employee-home-card > .header {
+            padding: 28px 30px 24px;
+            border-bottom: 1px solid rgba(11, 47, 73, 0.08);
+            background:
+                radial-gradient(circle at top right, rgba(28, 126, 214, 0.18), transparent 32%),
+                linear-gradient(135deg, rgba(17, 139, 122, 0.08), rgba(255, 255, 255, 0.96) 52%, rgba(28, 126, 214, 0.06));
+        }
+        .employee-home-card > .header h2 {
+            color: #12344f;
+            font-weight: 700;
+        }
+        .employee-home-card > .header small {
+            display: block;
+            max-width: 70ch;
+            line-height: 1.6;
+        }
+        .employee-home-body {
+            padding: 28px;
+            background: linear-gradient(180deg, #f5fbff 0%, #eef6f7 100%);
+        }
+        .task-panel {
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 22px;
+            padding: 26px;
+            margin-bottom: 22px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
+            border: 1px solid rgba(15, 58, 86, 0.08);
+        }
+        .task-panel-title {
+            color: #102a43;
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 18px;
+            border-bottom: 2px solid #eef6f7;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body class="employee-home">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Manager', 'Task Approvals', ~{::section})}">
+        <section>
+            <div class="card add-emp-card pre-onboarding-card employee-home-card">
+                <div class="header">
+                    <h2 class="mb-0" th:text="${pageHeading != null ? pageHeading : 'Team Task Approvals'}">Task Approvals</h2>
+                    <small class="text-muted" th:text="${pageSubtitle != null ? pageSubtitle : 'Review and approve timesheets.'}">
+                        Review and approve timesheets.
+                    </small>
+                </div>
+
+                <div class="employee-home-body">
+                    <!-- Success/Error Messages -->
+                    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i><span th:text="${successMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i><span th:text="${errorMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+
+                    <!-- Pending Approvals Table -->
+                    <div class="task-panel">
+                        <h4 class="task-panel-title"><i class="fas fa-tasks text-primary me-2"></i> Pending Tasks</h4>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle">
+                                <thead class="table-light text-center">
+                                    <tr>
+                                        <th>Employee Name</th>
+                                        <th>Date</th>
+                                        <th>Project & Task</th>
+                                        <th>Description</th>
+                                        <th>Hours</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="task : ${pendingTasks}">
+                                        <td class="fw-bold" th:text="${task.employeeName}"></td>
+                                        <td class="text-center"
+                                            th:text="${task.taskDate != null ? #temporals.format(task.taskDate, 'dd-MM-yyyy') : '-'}"></td>
+                                        <td>
+                                            <span class="d-block" th:text="${task.projectName}"></span>
+                                            <small class="text-muted" th:text="${task.moduleName}"></small>
+                                        </td>
+                                        <td th:text="${task.taskDescription}"></td>
+                                        <td class="text-center"><span class="badge bg-info text-dark" th:text="${task.hours} + ' Hrs'"></span></td>
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group">
+                                                <!-- Approve Form -->
+                                                <form th:action="@{/manager/tasks/approve}" method="post" class="d-inline">
+                                                    <input type="hidden" name="taskId" th:value="${task.taskId}"/>
+                                                    <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                </form>
+                                                
+                                                <!-- Reject Form Trigger -->
+                                                <button type="button" class="btn btn-sm btn-danger ms-1" title="Reject" 
+                                                        data-bs-toggle="modal" data-bs-target="#rejectModal"
+                                                        th:attr="data-task-id=${task.taskId}">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${pendingTasks == null or pendingTasks.isEmpty()}">
+                                        <td colspan="6" class="text-center text-muted py-4">No pending tasks require your approval. Great job!</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reject Modal -->
+            <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <form th:action="@{/manager/tasks/reject}" method="post">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="rejectModalLabel">Reject Task</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" name="taskId" id="rejectTaskId"/>
+                                <div class="mb-3">
+                                    <label for="remarks" class="form-label">Reason for rejection (Optional)</label>
+                                    <textarea class="form-control" id="remarks" name="remarks" rows="3" placeholder="E.g., Please correct the hours logged."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-danger">Confirm Reject</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </section>
+    </th:block>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var rejectModal = document.getElementById('rejectModal')
+            rejectModal.addEventListener('show.bs.modal', function (event) {
+                // Button that triggered the modal
+                var button = event.relatedTarget
+                // Extract info from data-bs-* attributes
+                var taskId = button.getAttribute('data-task-id')
+                // Update the modal's hidden input
+                var taskIdInput = rejectModal.querySelector('#rejectTaskId')
+                taskIdInput.value = taskId
+            })
+        })
+    </script>
+</body>
+</html>
+

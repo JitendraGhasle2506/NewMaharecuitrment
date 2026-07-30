@@ -1,242 +1,224 @@
 package com.maharecruitment.gov.in.web.service.navigation.impl;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
+import org.springframework.util.AntPathMatcher;
 
 import com.maharecruitment.gov.in.auth.constant.CommonConstant;
 import com.maharecruitment.gov.in.web.service.navigation.NavigationService;
-import com.maharecruitment.gov.in.web.service.navigation.model.SidebarItemView;
 
 @Service
 public class RoleBasedNavigationService implements NavigationService {
 
-    private static final String DEFAULT_HOME_URL = "/home";
+        private static final String DEFAULT_HOME_URL = "/home";
+        private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+        private static final Pattern ABSOLUTE_HTTP_URL = Pattern.compile("^https?://", Pattern.CASE_INSENSITIVE);
+        private static final Pattern URI_SCHEME = Pattern.compile("^[a-z][a-z0-9+.-]*:", Pattern.CASE_INSENSITIVE);
 
-    private static final List<String> ROLE_PRIORITY = List.of(
-            "ROLE_ADMIN",
-            "ROLE_HR",
-            "ROLE_AUDITOR",
-            "ROLE_COO",
-            "ROLE_DEPARTMENT",
-            "ROLE_EMPLOYEE",
-            "ROLE_HOD1",
-            "ROLE_HOD2",
-            "ROLE_PM",
-            "ROLE_STM",
-            "ROLE_AGENCY",
-            "ROLE_USER",
-            "ROLE_COMMON_MANAGER",
-            "ROLE_ATTENDANCE_MANAGER",
-            "ROLE_ESERVICEBOOK_MANAGER",
-            "ROLE_PENSION_MANAGER",
-            "ROLE_HRMS_MANAGER",
-            "ROLE_PAYROLL_MANAGER"
-    );
+        private static final List<String> ROLE_PRIORITY = List.of(
+                        "ROLE_ADMIN",
+                        "ROLE_HR",
+                        "ROLE_AUDITOR",
+                        "ROLE_MD",
+                        "ROLE_COO",
+                        "ROLE_DEPARTMENT",
+                        "ROLE_EMPLOYEE",
+                        "ROLE_HOD",
+                        "ROLE_PM",
+                        "ROLE_STM",
+                        "ROLE_AGENCY",
+                        "ROLE_USER");
 
-    private static final Map<String, List<SidebarItemView>> NAV_ITEMS_BY_ROLE = createNavItemsByRole();
+        private static final List<AccessRule> ACCESS_RULES = List.of(
+                        AccessRule.forRoles(Set.of("ROLE_ADMIN", "ROLE_HR"), "/common/mahait-profile",
+                                        "/common/mahait-profile/**"),
+                        AccessRule.forRoles(Set.of("ROLE_ADMIN", "ROLE_HR"), "/common/holidays",
+                                        "/common/holidays/**"),
+                        AccessRule.forAuthenticated("/home", "/common", "/common/**"),
+                        AccessRule.forRoles(Set.of("ROLE_ADMIN"), "/admin", "/admin/**"),
+                        AccessRule.forRoles(Set.of("ROLE_HR", "ROLE_AUDITOR"), "/hr/department/payment",
+                                        "/hr/department/payment/**"),
+                        AccessRule.forRoles(Set.of("ROLE_HR"), "/hr", "/hr/**", "/employees", "/employees/**"),
+                        AccessRule.forRoles(Set.of("ROLE_AGENCY"), "/agency", "/agency/**"),
+                        AccessRule.forRoles(Set.of("ROLE_USER"), "/user", "/user/**"),
+                        AccessRule.forRoles(Set.of("ROLE_COO", "ROLE_HOD", "ROLE_HOD1", "ROLE_STM", "ROLE_HR",
+                                        "ROLE_PM", "ROLE_EMPLOYEE"), "/panel", "/panel/**"),
+                        AccessRule.forRoles(Set.of("ROLE_HOD", "ROLE_PM", "ROLE_STM", "ROLE_EMPLOYEE"),
+                                        "/interview-authority", "/interview-authority/**"),
+                        AccessRule.forRoles(Set.of("ROLE_STM"), "/stm", "/stm/**"),
+                        AccessRule.forRoles(Set.of("ROLE_PM"), "/pm", "/pm/**"),
+                        AccessRule.forRoles(Set.of("ROLE_HOD"), "/hod1", "/hod1/**", "/hod2", "/hod2/**"),
+                        AccessRule.forRoles(Set.of("ROLE_COO", "ROLE_AUDITOR"), "/coo", "/coo/**"),
+                        AccessRule.forRoles(Set.of("ROLE_MD"), "/md", "/md/**"),
+                        AccessRule.forRoles(Set.of("ROLE_EMPLOYEE"), "/employee", "/employee/**"),
+                        AccessRule.forRoles(Set.of("ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AUDITOR"),
+                                        "/department/payment/*/receipt"),
+                        AccessRule.forRoles(Set.of("ROLE_ADMIN", "ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AUDITOR"),
+                                        "/invoice", "/invoice/**"),
+                        AccessRule.forRoles(Set.of("ROLE_DEPARTMENT"), "/department", "/department/**"),
+                        AccessRule.forRoles(Set.of("ROLE_AUDITOR"), "/auditor", "/auditor/**"),
+                        AccessRule.forRoles(Set.of("ROLE_ADMIN"),
+                                        "/attendance", "/attendance/**",
+                                        "/eservicebook", "/eservicebook/**",
+                                        "/pension", "/pension/**",
+                                        "/hrms", "/hrms/**",
+                                        "/payroll", "/payroll/**"));
 
-    @Override
-    public String resolveHomeUrl(List<String> roles) {
-        Map<String, String> dashboardUrls = CommonConstant.getDashboardUrls();
+        @Override
+        public String resolveHomeUrl(List<String> roles) {
+                Map<String, String> dashboardUrls = CommonConstant.getDashboardUrls();
 
-        for (String role : orderRoles(roles)) {
-            String path = dashboardUrls.get(role);
-            if (path != null && !path.isBlank()) {
-                return path;
-            }
+                for (String role : orderRoles(roles)) {
+                        String path = dashboardUrls.get(role);
+                        if (path != null && !path.isBlank()) {
+                                return path;
+                        }
+                }
+
+                return DEFAULT_HOME_URL;
         }
 
-        return DEFAULT_HOME_URL;
-    }
-
-    @Override
-    public List<SidebarItemView> resolveSidebarItems(List<String> roles) {
-        Map<String, SidebarItemView> uniqueItems = new LinkedHashMap<>();
-
-        for (String role : orderRoles(roles)) {
-            List<SidebarItemView> items = NAV_ITEMS_BY_ROLE.get(role);
-            if (items == null || items.isEmpty()) {
-                continue;
-            }
-
-            for (SidebarItemView item : items) {
-                uniqueItems.putIfAbsent(item.url(), item);
-            }
+        @Override
+        public String resolvePrimaryRoleLabel(List<String> roles) {
+                for (String role : orderRoles(roles)) {
+                        return toDisplayRole(role);
+                }
+                return "User";
         }
 
-        if (uniqueItems.isEmpty()) {
-            String homeUrl = resolveHomeUrl(roles);
-            uniqueItems.put(homeUrl, new SidebarItemView("Dashboard", "fa fa-gauge-high", homeUrl));
+        @Override
+        public boolean canAccessUrl(String url, List<String> roles) {
+                String normalizedUrl = normalizeUrl(url);
+                if (normalizedUrl.isBlank()) {
+                        return false;
+                }
+
+                Set<String> resolvedRoles = new HashSet<>(orderRoles(roles));
+                for (AccessRule accessRule : ACCESS_RULES) {
+                        if (accessRule.matches(normalizedUrl)) {
+                                return accessRule.allows(resolvedRoles);
+                        }
+                }
+
+                return !resolvedRoles.isEmpty();
         }
 
-        return List.copyOf(uniqueItems.values());
-    }
+        private static List<String> orderRoles(List<String> roles) {
+                if (roles == null || roles.isEmpty()) {
+                        return List.of();
+                }
 
-    @Override
-    public String resolvePrimaryRoleLabel(List<String> roles) {
-        for (String role : orderRoles(roles)) {
-            return toDisplayRole(role);
-        }
-        return "User";
-    }
+                Set<String> incomingRoles = new LinkedHashSet<>(roles);
+                List<String> orderedRoles = new ArrayList<>();
 
-    private static List<String> orderRoles(List<String> roles) {
-        if (roles == null || roles.isEmpty()) {
-            return List.of();
-        }
+                for (String role : ROLE_PRIORITY) {
+                        if (incomingRoles.remove(role)) {
+                                orderedRoles.add(role);
+                        }
+                }
 
-        Set<String> incomingRoles = new LinkedHashSet<>(roles);
-        List<String> orderedRoles = new ArrayList<>();
-
-        for (String role : ROLE_PRIORITY) {
-            if (incomingRoles.remove(role)) {
-                orderedRoles.add(role);
-            }
+                orderedRoles.addAll(incomingRoles);
+                return orderedRoles;
         }
 
-        orderedRoles.addAll(incomingRoles);
-        return orderedRoles;
-    }
+        private static String toDisplayRole(String authority) {
+                if (authority == null || !authority.startsWith("ROLE_")) {
+                        return "User";
+                }
 
-    private static String toDisplayRole(String authority) {
-        if (authority == null || !authority.startsWith("ROLE_")) {
-            return "User";
+                String role = authority.substring(5);
+                return switch (role) {
+                        case "HOD" -> "HOD";
+                        case "COO" -> "COO";
+                        case "MD" -> "MD";
+                        default -> role.replace('_', ' ');
+                };
         }
 
-        String role = authority.substring(5);
-        return switch (role) {
-            case "HOD1" -> "HOD-1";
-            case "HOD2" -> "HOD-2";
-            case "COO" -> "COO";
-            case "HRMS_MANAGER" -> "HRMS Manager";
-            case "PAYROLL_MANAGER" -> "Payroll Manager";
-            case "COMMON_MANAGER" -> "Common Manager";
-            case "ATTENDANCE_MANAGER" -> "Attendance Manager";
-            case "ESERVICEBOOK_MANAGER" -> "E-Service Book Manager";
-            case "PENSION_MANAGER" -> "Pension Manager";
-            default -> role.replace('_', ' ');
-        };
-    }
+        private static String normalizeUrl(String url) {
+                if (url == null) {
+                        return "";
+                }
 
-    private static Map<String, List<SidebarItemView>> createNavItemsByRole() {
-        Map<String, List<SidebarItemView>> navItems = new LinkedHashMap<>();
+                String normalized = url.trim();
+                if (normalized.isBlank() || "#".equals(normalized)) {
+                        return "";
+                }
 
-        navItems.put("ROLE_ADMIN", List.of(
-                new SidebarItemView("Admin Dashboard", "fa fa-shield-halved", "/admin/dashboard"),
-                new SidebarItemView("Role Menu Mapping", "fa fa-diagram-project", "/admin/role-menu-mappings"),
-                new SidebarItemView("Menu Management", "fa fa-bars", "/admin/menus"),
-                new SidebarItemView("Submenu Management", "fa fa-sitemap", "/admin/submenus"),
-                new SidebarItemView("Project Master", "fa fa-folder-tree", "/master/projects"),
-                new SidebarItemView("HR Dashboard", "fa fa-users", "/hr/dashboard"),
-                new SidebarItemView("Common Module", "fa fa-layer-group", "/common"),
-                new SidebarItemView("Attendance", "fa fa-calendar-check", "/attendance"),
-                new SidebarItemView("E-Service Book", "fa fa-book", "/eservicebook"),
-                new SidebarItemView("Pension", "fa fa-file-invoice-dollar", "/pension"),
-                new SidebarItemView("HRMS", "fa fa-people-group", "/hrms"),
-                new SidebarItemView("Payroll", "fa fa-money-check-dollar", "/payroll")
-        ));
+                if (isExternalUrl(normalized)) {
+                        return "";
+                }
 
-        navItems.put("ROLE_HR", List.of(
-                new SidebarItemView("HR Dashboard", "fa fa-users", "/hr/dashboard"),
-                new SidebarItemView("Department Request", "fa fa-building-user", "/hr/department-requests"),
-                new SidebarItemView(
-                        "Global Agency Rank Mapping",
-                        "fa fa-ranking-star",
-                        "/hr/department-requests/global-agency-rank-mapping"),
-                new SidebarItemView(
-                        "Global Agency Rank Overview",
-                        "fa fa-table-list",
-                        "/hr/department-requests/agency-rank-mapping"),
-                new SidebarItemView(
-                        "Rank Release Overview",
-                        "fa fa-hourglass-half",
-                        "/hr/department-requests/rank-release-overview"),
-                new SidebarItemView(
-                        "Rank Release Rules",
-                        "fa fa-list-check",
-                        "/hr/department-requests/rank-release-rules"),
-                new SidebarItemView("Onboarded Employees", "fa fa-users", "/hr/employees")
-        ));
+                int fragmentIndex = normalized.indexOf('#');
+                if (fragmentIndex >= 0) {
+                        normalized = normalized.substring(0, fragmentIndex);
+                }
 
-        navItems.put("ROLE_USER", List.of(
-                new SidebarItemView("User Dashboard", "fa fa-user", "/user/dashboard")
-        ));
+                int queryIndex = normalized.indexOf('?');
+                if (queryIndex >= 0) {
+                        normalized = normalized.substring(0, queryIndex);
+                }
 
-        navItems.put("ROLE_AGENCY", List.of(
-                new SidebarItemView("Agency Dashboard", "fa fa-briefcase", "/agency/dashboard"),
-                new SidebarItemView("Agency Profile", "fa fa-id-card", "/agency/profile"),
-                new SidebarItemView("Recruitment Notifications", "fa fa-bell", "/agency/recruitment-notifications"),
-                new SidebarItemView("Selected Candidates", "fa fa-user-check", "/agency/selected-candidates"),
-                new SidebarItemView("Onboarded Employees", "fa fa-id-card", "/agency/onboarding"),
-                new SidebarItemView("Resignation", "fa fa-user-minus", "/agency/onboarding/resigned")
-        ));
+                if (!normalized.startsWith("/")) {
+                        normalized = "/" + normalized;
+                }
 
-        navItems.put("ROLE_STM", List.of(
-                new SidebarItemView("STM Dashboard", "fa fa-sitemap", "/stm/dashboard")
-        ));
+                while (normalized.length() > 1 && normalized.endsWith("/")) {
+                        normalized = normalized.substring(0, normalized.length() - 1);
+                }
 
-        navItems.put("ROLE_PM", List.of(
-                new SidebarItemView("PM Dashboard", "fa fa-diagram-project", "/pm/dashboard")
-        ));
+                return normalized;
+        }
 
-        navItems.put("ROLE_HOD1", List.of(
-                new SidebarItemView("HOD-1 Dashboard", "fa fa-user-tie", "/hod1/dashboard")
-        ));
+        private static boolean isAbsoluteHttpUrl(String url) {
+                return ABSOLUTE_HTTP_URL.matcher(url).find();
+        }
 
-        navItems.put("ROLE_HOD2", List.of(
-                new SidebarItemView("HOD-2 Dashboard", "fa fa-user-gear", "/hod2/dashboard")
-        ));
+        private static boolean isExternalUrl(String url) {
+                return isAbsoluteHttpUrl(url) || url.startsWith("//") || URI_SCHEME.matcher(url).find();
+        }
 
-        navItems.put("ROLE_COO", List.of(
-                new SidebarItemView("COO Dashboard", "fa fa-chart-line", "/coo/dashboard")
-        ));
+        private record AccessRule(List<String> patterns, Set<String> roles, boolean authenticatedOnly) {
 
-        navItems.put("ROLE_AUDITOR", List.of(
-                new SidebarItemView("Department Audit Request", "fa fa-magnifying-glass-chart", "/auditor/department-requests")
-        ));
+                private static AccessRule forAuthenticated(String... patterns) {
+                        return new AccessRule(List.of(patterns), Set.of(), true);
+                }
 
-        navItems.put("ROLE_DEPARTMENT", List.of(
-                new SidebarItemView("Department Home", "fa fa-building", "/department/home"),
-                new SidebarItemView("Department Profile", "fa fa-id-card", "/department/profile"),
-                new SidebarItemView("Manpower Applications", "fa fa-users-gear", "/department/manpower/list"),
-                new SidebarItemView("New Manpower Application", "fa fa-file-circle-plus", "/department/manpower/apply"),
-                new SidebarItemView("Project Name", "fa fa-list-check", "/department/candidate-shortlisting/projects")
-        ));
+                private static AccessRule forRoles(Set<String> roles, String... patterns) {
+                        return new AccessRule(List.of(patterns), Set.copyOf(roles), false);
+                }
 
-        navItems.put("ROLE_EMPLOYEE", List.of(
-                new SidebarItemView("Employee Dashboard", "fa fa-id-badge", "/employee/dashboard")
-        ));
+                private boolean matches(String url) {
+                        return patterns.stream().anyMatch(pattern -> matchesPattern(pattern, url));
+                }
 
-        navItems.put("ROLE_COMMON_MANAGER", List.of(
-                new SidebarItemView("Common Module", "fa fa-layer-group", "/common")
-        ));
+                private boolean allows(Set<String> userRoles) {
+                        if (authenticatedOnly) {
+                                return !userRoles.isEmpty();
+                        }
 
-        navItems.put("ROLE_ATTENDANCE_MANAGER", List.of(
-                new SidebarItemView("Attendance Module", "fa fa-calendar-check", "/attendance")
-        ));
+                        return roles.stream().anyMatch(userRoles::contains);
+                }
 
-        navItems.put("ROLE_ESERVICEBOOK_MANAGER", List.of(
-                new SidebarItemView("E-Service Book", "fa fa-book", "/eservicebook")
-        ));
+                private static boolean matchesPattern(String pattern, String url) {
+                        if (PATH_MATCHER.match(pattern, url)) {
+                                return true;
+                        }
 
-        navItems.put("ROLE_PENSION_MANAGER", List.of(
-                new SidebarItemView("Pension Module", "fa fa-file-invoice-dollar", "/pension")
-        ));
+                        if (!pattern.endsWith("/**")) {
+                                return false;
+                        }
 
-        navItems.put("ROLE_HRMS_MANAGER", List.of(
-                new SidebarItemView("HRMS Module", "fa fa-people-group", "/hrms")
-        ));
+                        String basePath = pattern.substring(0, pattern.length() - 3);
+                        return basePath.equals(url);
+                }
+        }
 
-        navItems.put("ROLE_PAYROLL_MANAGER", List.of(
-                new SidebarItemView("Payroll Module", "fa fa-money-check-dollar", "/payroll")
-        ));
-
-        return Map.copyOf(navItems);
-    }
 }

@@ -65,7 +65,10 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
 
         AgencyMaster savedEntity = agencyRepository.save(entity);
         AgencyUserProvisioningResult provisioningResult = agencyUserProvisioningService.createOrSyncAgencyUser(
-                buildProvisioningRequest(request, null));
+                buildProvisioningRequest(savedEntity, null));
+        agencyUserProvisioningService.synchronizeAgencyUserStatus(
+                savedEntity.getAgencyId(),
+                AgencyStatus.ACTIVE == savedEntity.getStatus());
 
         AgencyMasterResponse response = mapper.toResponse(savedEntity, true);
         applyProvisioningDetails(response, provisioningResult);
@@ -90,7 +93,10 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
 
         AgencyMaster savedEntity = agencyRepository.save(entity);
         AgencyUserProvisioningResult provisioningResult = agencyUserProvisioningService.createOrSyncAgencyUser(
-                buildProvisioningRequest(request, previousEmail));
+                buildProvisioningRequest(savedEntity, previousEmail));
+        agencyUserProvisioningService.synchronizeAgencyUserStatus(
+                savedEntity.getAgencyId(),
+                AgencyStatus.ACTIVE == savedEntity.getStatus());
 
         AgencyMasterResponse response = mapper.toResponse(savedEntity, true);
         applyProvisioningDetails(response, provisioningResult);
@@ -110,6 +116,9 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
         entity.setStatus(status);
         applyAuditMetadataForUpdate(entity);
         AgencyMaster savedEntity = agencyRepository.save(entity);
+        agencyUserProvisioningService.synchronizeAgencyUserStatus(
+                savedEntity.getAgencyId(),
+                AgencyStatus.ACTIVE == savedEntity.getStatus());
         agencyMasterAuditService.log(
                 savedEntity.getAgencyId(),
                 AgencyMasterAuditAction.STATUS_UPDATE,
@@ -126,6 +135,7 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
         entity.setStatus(AgencyStatus.INACTIVE);
         applyAuditMetadataForUpdate(entity);
         AgencyMaster savedEntity = agencyRepository.save(entity);
+        agencyUserProvisioningService.synchronizeAgencyUserStatus(savedEntity.getAgencyId(), false);
         agencyMasterAuditService.log(
                 savedEntity.getAgencyId(),
                 AgencyMasterAuditAction.DELETE,
@@ -239,11 +249,12 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
         return entity;
     }
 
-    private AgencyUserProvisioningRequest buildProvisioningRequest(AgencyMasterRequest request, String previousEmail) {
+    private AgencyUserProvisioningRequest buildProvisioningRequest(AgencyMaster agency, String previousEmail) {
         AgencyUserProvisioningRequest provisioningRequest = new AgencyUserProvisioningRequest();
-        provisioningRequest.setName(normalizeName(request.getContactPersonName()));
-        provisioningRequest.setEmail(normalizeEmail(request.getOfficialEmail()));
-        provisioningRequest.setMobileNo(request.getContactPersonMobileNo().trim());
+        provisioningRequest.setName(normalizeName(agency.getContactPersonName()));
+        provisioningRequest.setEmail(normalizeEmail(agency.getOfficialEmail()));
+        provisioningRequest.setMobileNo(agency.getContactPersonMobileNo().trim());
+        provisioningRequest.setAgencyId(agency.getAgencyId());
         provisioningRequest.setPreviousEmail(previousEmail);
         return provisioningRequest;
     }

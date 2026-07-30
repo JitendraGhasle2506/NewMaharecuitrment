@@ -2,17 +2,25 @@ package com.maharecruitment.gov.in.web.service.agency;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyNotificationDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyVisibleNotificationView;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyCandidateBatchForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyInterviewScheduleForm;
 
 public interface AgencyRecruitmentNotificationPageService {
 
-    List<AgencyVisibleNotificationView> getVisibleNotifications(String actorEmail);
+    Page<AgencyVisibleNotificationView> getVisibleNotifications(String actorEmail, String searchText, Pageable pageable);
+
+    AgencyVisibleNotificationListMetricsView getVisibleNotificationMetrics(String actorEmail, String searchText);
 
     AgencyNotificationDetailView getNotificationDetail(String actorEmail, Long recruitmentNotificationId);
 
@@ -22,9 +30,19 @@ public interface AgencyRecruitmentNotificationPageService {
 
     List<AgencySubmittedCandidateView> getSubmittedCandidates(String actorEmail, Long recruitmentNotificationId);
 
+    List<AgencyShortlistedCandidateProjectView> getShortlistedCandidateProjects(String actorEmail);
+
+    List<AgencyShortlistedCandidateView> getShortlistedCandidates(String actorEmail);
+
+    Page<AgencyShortlistedCandidateView> getShortlistedCandidates(
+            String actorEmail,
+            Long recruitmentNotificationId,
+            String search,
+            Pageable pageable);
+
     List<AgencySelectedCandidateProjectView> getSelectedCandidateProjects(String actorEmail);
 
-    List<AgencySelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId);
+    Page<AgencySelectedCandidateView> getSelectedCandidates(String actorEmail, Long recruitmentNotificationId, String search, Pageable pageable);
 
     void submitCandidates(String actorEmail, Long recruitmentNotificationId, AgencyCandidateBatchForm candidateBatchForm);
 
@@ -35,6 +53,11 @@ public interface AgencyRecruitmentNotificationPageService {
             AgencyInterviewScheduleForm interviewScheduleForm);
 
     void withdrawCandidate(
+            String actorEmail,
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId);
+
+    void forwardInterviewRequest(
             String actorEmail,
             Long recruitmentNotificationId,
             Long recruitmentInterviewDetailId);

@@ -11,9 +11,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const declarationBox = document.getElementById("declarationBox");
     const agreeCheckbox = document.getElementById("agreeCheckbox");
     const registerButton = document.getElementById("registerBtn");
+    const documentInputs = ["gstFile", "panFile", "tanFile"]
+        .map((fieldId) => document.getElementById(fieldId))
+        .filter((input) => input);
     const csrfTokenInput = form.querySelector('input[name="_csrf"]');
     const verificationPurpose = form.dataset.verificationPurpose;
     const otpBypassEnabled = form.dataset.otpBypassEnabled === "true";
+    const mobileOtpEnabled = form.dataset.mobileOtpEnabled === "true";
+    const emailOtpEnabled = form.dataset.emailOtpEnabled === "true";
 
     const primaryMobileInput = document.getElementById("primaryMobile");
     const primaryEmailInput = document.getElementById("primaryEmail");
@@ -35,6 +40,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return {
             isVerified: () => true,
+            onChange: () => {}
+        };
+    };
+
+    const createUnavailableVerification = (statusElement, message) => {
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.classList.remove("is-pending", "is-success");
+            statusElement.classList.add("is-error");
+        }
+        return {
+            isVerified: () => false,
             onChange: () => {}
         };
     };
@@ -63,6 +80,26 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!visible) {
             element.value = "";
         }
+    };
+
+    const isPdfFile = (file) => {
+        if (!file) {
+            return true;
+        }
+
+        const fileName = file.name || "";
+        const contentType = file.type || "";
+        return /\.pdf$/i.test(fileName) && contentType.toLowerCase() === "application/pdf";
+    };
+
+    const validatePdfSelection = (input) => {
+        const [file] = input.files || [];
+        if (!isPdfFile(file)) {
+            input.value = "";
+            alert("Only PDF files are allowed for GST, PAN, and TAN documents.");
+            return false;
+        }
+        return true;
     };
 
     const enableDeclarationAcceptance = () => {
@@ -159,9 +196,32 @@ document.addEventListener("DOMContentLoaded", () => {
         statusElement: document.getElementById("emailVerificationStatus")
     };
 
+    const initializeOtpVerification = (config, statusElement, channelLabel) => {
+        if (typeof window.createOtpVerification !== "function") {
+            return createUnavailableVerification(
+                statusElement,
+                `${channelLabel} OTP is temporarily unavailable. Please refresh the page and try again.`
+            );
+        }
+
+        try {
+            return window.createOtpVerification(config);
+        } catch (error) {
+            if (window.console && typeof window.console.error === "function") {
+                window.console.error(`${channelLabel} OTP setup failed.`, error);
+            }
+            return createUnavailableVerification(
+                statusElement,
+                `${channelLabel} OTP is temporarily unavailable. Please refresh the page and try again.`
+            );
+        }
+    };
+
     const mobileVerification = otpBypassEnabled
         ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP bypass enabled for testing.")
-        : window.createOtpVerification({
+        : !mobileOtpEnabled
+        ? createBypassVerification(mobileOtpElements.statusElement, "Mobile OTP is disabled in this environment.")
+        : initializeOtpVerification({
             purpose: verificationPurpose,
             channel: "MOBILE",
             referenceInput: primaryMobileInput,
@@ -175,11 +235,13 @@ document.addEventListener("DOMContentLoaded", () => {
             csrfToken,
             initialVerified: form.dataset.mobileVerified === "true",
             initialVerifiedMessage: "Primary mobile number already verified."
-        });
+        }, mobileOtpElements.statusElement, "Mobile");
 
     const emailVerification = otpBypassEnabled
         ? createBypassVerification(emailOtpElements.statusElement, "Email OTP bypass enabled for testing.")
-        : window.createOtpVerification({
+        : !emailOtpEnabled
+        ? createBypassVerification(emailOtpElements.statusElement, "Email OTP is disabled in this environment.")
+        : initializeOtpVerification({
             purpose: verificationPurpose,
             channel: "EMAIL",
             referenceInput: primaryEmailInput,
@@ -193,15 +255,18 @@ document.addEventListener("DOMContentLoaded", () => {
             csrfToken,
             initialVerified: form.dataset.emailVerified === "true",
             initialVerifiedMessage: "Primary email address already verified."
-        });
+        }, emailOtpElements.statusElement, "Email");
 
-    if (otpBypassEnabled) {
+    if (otpBypassEnabled || !mobileOtpEnabled) {
         disableOtpControls(
             mobileOtpElements.sendButton,
             mobileOtpElements.verifyButton,
             mobileOtpElements.otpInput,
             mobileOtpElements.otpSection
         );
+    }
+
+    if (otpBypassEnabled || !emailOtpEnabled) {
         disableOtpControls(
             emailOtpElements.sendButton,
             emailOtpElements.verifyButton,
@@ -225,6 +290,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    documentInputs.forEach((input) => {
+        input.addEventListener("change", () => {
+            validatePdfSelection(input);
+        });
+    });
+
     departmentSelect.addEventListener("change", () => {
         updateDepartmentState(false);
     });
@@ -232,8 +303,31 @@ document.addEventListener("DOMContentLoaded", () => {
     subDepartmentSelect.addEventListener("change", updateSubDepartmentState);
     declarationBox.addEventListener("scroll", enableDeclarationAcceptance);
     agreeCheckbox.addEventListener("change", toggleSubmitState);
+    form.addEventListener("submit", (event) => {
+        const invalidInput = documentInputs.find((input) => !validatePdfSelection(input));
+        if (invalidInput) {
+            event.preventDefault();
+            invalidInput.focus();
+        }
+    });
     mobileVerification.onChange(toggleSubmitState);
     emailVerification.onChange(toggleSubmitState);
+
+    const secondaryMobileInput = document.getElementById("secondaryMobile");
+    const secondaryMobileError = document.getElementById("secondaryMobileError");
+
+    if (secondaryMobileInput && secondaryMobileError) {
+        secondaryMobileInput.addEventListener("input", () => {
+            const val = secondaryMobileInput.value.replace(/[^0-9]/g, '');
+            secondaryMobileInput.value = val;
+            
+            if (val.length > 0 && val.length < 10) {
+                secondaryMobileError.textContent = "Secondary mobile number must be 10 digits";
+            } else {
+                secondaryMobileError.textContent = "";
+            }
+        });
+    }
 
     enableDeclarationAcceptance();
     toggleSubmitState();

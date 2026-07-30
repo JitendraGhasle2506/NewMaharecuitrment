@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Internal Employee Attendance Report</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .report-shell .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(20, 34, 61, 0.08);
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .report-subtitle {
+            color: #667085;
+            margin-bottom: 0;
+        }
+
+        .filter-panel {
+            background: linear-gradient(180deg, #f8fbff 0%, #f3f7fc 100%);
+            border: 1px solid #e4ebf3;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 24px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            border: 1px solid #e8eef5;
+            border-radius: 14px;
+            padding: 16px 18px;
+            background: #fff;
+        }
+
+        .summary-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #667085;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .summary-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #12344d;
+            line-height: 1.1;
+            margin-top: 8px;
+        }
+
+        .legend-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .legend-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            font-size: 0.9rem;
+            color: #344054;
+        }
+
+        .legend-code {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.82rem;
+        }
+
+        .legend-present {
+            background: #1f9d55;
+        }
+
+        .legend-absent {
+            background: #d92d20;
+        }
+
+        .legend-leave {
+            background: #7a5af8;
+        }
+
+        .legend-comp-off {
+            background: #0f766e;
+        }
+
+        .legend-tour {
+            background: #0ea5e9;
+        }
+
+        .legend-holiday {
+            background: #f59e0b;
+        }
+
+        .legend-weekoff {
+            background: #475467;
+        }
+
+        .report-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .report-meta {
+            color: #667085;
+            font-size: 0.92rem;
+        }
+
+        .attendance-table-wrap {
+            border: 1px solid #e6edf5;
+            border-radius: 14px;
+            overflow: auto;
+            background: #fff;
+        }
+
+        .attendance-report-table {
+            width: 100%;
+            min-width: 1500px;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.84rem;
+        }
+
+        .attendance-report-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #eff4fa;
+            color: #12344d;
+            border-bottom: 1px solid #d9e3ef;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            font-size: 0.74rem;
+        }
+
+        .attendance-report-table th,
+        .attendance-report-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #edf2f7;
+            border-right: 1px solid #f1f5f9;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .attendance-report-table th:first-child,
+        .attendance-report-table td:first-child,
+        .attendance-report-table th:nth-child(2),
+        .attendance-report-table td:nth-child(2) {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            background: #fff;
+        }
+
+        .attendance-report-table th:nth-child(2),
+        .attendance-report-table td:nth-child(2) {
+            left: 116px;
+        }
+
+        .attendance-report-table thead th:first-child,
+        .attendance-report-table thead th:nth-child(2) {
+            z-index: 3;
+            background: #eff4fa;
+        }
+
+        .employee-cell {
+            min-width: 280px;
+            text-align: left !important;
+        }
+
+        .project-cell {
+            min-width: 180px;
+            text-align: left !important;
+        }
+
+        .agency-cell {
+            min-width: 190px;
+            text-align: left !important;
+        }
+
+        .employee-code-cell {
+            min-width: 116px;
+            background: #fcfdff;
+            font-weight: 600;
+        }
+
+        .employee-name {
+            font-weight: 700;
+            color: #12344d;
+        }
+
+        .employee-meta {
+            display: block;
+            color: #667085;
+            font-size: 0.78rem;
+            margin-top: 3px;
+        }
+
+        .day-column {
+            min-width: 46px;
+            padding: 8px 6px !important;
+        }
+
+        .day-column.weekend {
+            background: #f9fafb;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.79rem;
+            margin: 0 auto;
+        }
+
+        .status-P {
+            background: rgba(31, 157, 85, 0.15);
+            color: #137333;
+        }
+
+        .status-A {
+            background: rgba(217, 45, 32, 0.12);
+            color: #b42318;
+        }
+
+        .status-L {
+            background: rgba(122, 90, 248, 0.14);
+            color: #5b3fd5;
+        }
+
+        .status-CO {
+            width: 34px;
+            border-radius: 999px;
+            background: rgba(15, 118, 110, 0.14);
+            color: #0f766e;
+        }
+
+        .status-T {
+            background: rgba(14, 165, 233, 0.14);
+            color: #0369a1;
+        }
+
+        .status-H {
+            background: rgba(245, 158, 11, 0.16);
+            color: #b54708;
+        }
+
+        .status-W {
+            background: rgba(71, 84, 103, 0.14);
+            color: #344054;
+        }
+
+        .status-empty {
+            background: transparent;
+            color: #98a2b3;
+        }
+
+        .totals-heading,
+        .totals-cell {
+            background: #fbfcfe;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            border: 1px dashed #d0dbe8;
+            border-radius: 14px;
+            padding: 40px 24px;
+            text-align: center;
+            color: #667085;
+            background: #fbfdff;
+        }
+
+        @media (max-width: 991.98px) {
+
+            .attendance-report-table th:first-child,
+            .attendance-report-table td:first-child,
+            .attendance-report-table th:nth-child(2),
+            .attendance-report-table td:nth-child(2) {
+                position: static;
+            }
+        }
+    </style>
+</head>
+
+<body class="hr-shell">
+    <th:block
+        th:replace="~{header/header :: var-sidebar-header('Attendance', 'Internal Attendance Report', ~{::section})}">
+        <section class="report-shell">
+            <div class="card">
+                <div class="card-body p-4">
+                    <div class="report-header">
+                        <div>
+                            <h2 class="mb-1">Internal Employee Attendance Report</h2>
+                            <p class="report-subtitle">
+                                Monthly attendance matrix for internal employees.
+                            </p>
+                        </div>
+                        <div class="report-meta text-end">
+                            <div th:text="${report.monthName + ' ' + report.filter.year}">May 2026</div>
+                            <div
+                                th:text="${'Generated on ' + #temporals.format(report.generatedAt, 'dd-MM-yyyy hh:mm a')}">
+                                Generated on 05 May 2026</div>
+                        </div>
+                    </div>
+
+                    <form class="filter-panel row g-3 align-items-end" method="get"
+                        th:action="@{/hr/internal-attendance-report}" th:object="${filter}">
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Month</label>
+                            <select class="form-select" th:field="*{month}">
+                                <option th:each="entry : ${monthNames}" th:value="${entry.key}"
+                                    th:text="${entry.value}">January</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Year</label>
+                            <select class="form-select" th:field="*{year}">
+                                <option th:each="entry : ${yearOptions}" th:value="${entry.key}"
+                                    th:text="${entry.value}">2026</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Project</label>
+                            <select class="form-select" th:field="*{projectId}">
+                                <option value="">All Projects</option>
+                                <option th:each="entry : ${projectOptions}" th:value="${entry.key}"
+                                    th:text="${entry.value}">Project</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Agency</label>
+                            <select class="form-select" th:field="*{agencyId}">
+                                <option value="">All Agencies</option>
+                                <option th:each="entry : ${agencyOptions}" th:value="${entry.key}"
+                                    th:text="${entry.value}">Agency</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Search</label>
+                            <input type="text" class="form-control" th:field="*{searchText}"
+                                placeholder="Search employee...">
+                        </div>
+                        <div class="col-lg-2 col-md-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1">Apply</button>
+                            <a class="btn btn-outline-secondary" th:href="@{/hr/internal-attendance-report}">Clear</a>
+                        </div>
+                    </form>
+
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="summary-label">Total Employees</div>
+                            <div class="summary-value" th:text="${report.summary.employeeCount}">0</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Total Days In Month</div>
+                            <div class="summary-value" th:text="${report.summary.totalDaysInMonth}">0</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Total Office Days Till Date</div>
+                            <div class="summary-value" th:text="${report.summary.officeDayCount}">0</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Total Week Off Till Date</div>
+                            <div class="summary-value" th:text="${report.summary.totalWeekOffCount}">0</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Total Holidays Till Date</div>
+                            <div class="summary-value" th:text="${report.summary.totalHolidayCount}">0</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Total Payable Days</div>
+                            <div class="summary-value" th:text="${report.summary.payableDays}">0</div>
+                        </div>
+                    </div>
+
+                    <div class="legend-list">
+                        <div class="legend-pill"><span class="legend-code legend-present">P</span><span>Present</span>
+                        </div>
+                        <div class="legend-pill"><span class="legend-code legend-absent">A</span><span>Absent</span>
+                        </div>
+                        <div class="legend-pill"><span class="legend-code legend-leave">L</span><span>Leave</span></div>
+                        <div class="legend-pill"><span class="legend-code legend-comp-off">CO</span><span>Comp Off</span></div>
+                        <div class="legend-pill"><span class="legend-code legend-tour">T</span><span>Tour</span></div>
+                        <div class="legend-pill"><span class="legend-code legend-holiday">H</span><span>Holiday</span>
+                        </div>
+                        <div class="legend-pill"><span class="legend-code legend-weekoff">W</span><span>Week Off</span>
+                        </div>
+                    </div>
+
+                    <div class="report-toolbar">
+                        <div class="report-meta"
+                            th:with="showingFrom=${reportPage.totalElements == 0 ? 0 : reportPage.number * reportPage.size + 1},
+                                     showingTo=${reportPage.totalElements == 0 ? 0 : reportPage.number * reportPage.size + reportPage.numberOfElements}">
+                            <span th:if="${reportPage.totalElements == 0}">No employees matched the selected criteria.</span>
+                            <span th:unless="${reportPage.totalElements == 0}"
+                                th:text="${'Showing ' + showingFrom + ' to ' + showingTo + ' of ' + reportPage.totalElements + ' employee(s) for ' + report.monthName + ' ' + report.filter.year + '.'}">
+                                Showing 0 employees.
+                            </span>
+                        </div>
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-outline-danger btn-sm"
+                                    th:href="@{/hr/internal-attendance-report/download/pdf(month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
+                                    <i class="fas fa-file-pdf me-1"></i> Download PDF
+                                </a>
+                                <a class="btn btn-outline-primary btn-sm"
+                                    th:href="@{/hr/internal-attendance-report/download/time-csv(month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
+                                    <i class="fas fa-clock me-1"></i> Download In/Out Time CSV
+                                </a>
+                            <button type="button" class="btn btn-outline-success btn-sm"
+                                onclick="exportInternalAttendanceReport()">
+                                <i class="fas fa-file-excel me-1"></i> Export Screen CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div th:if="${reportPage.totalElements == 0}" class="empty-state">
+                        <h5 class="mb-2">No attendance data found</h5>
+                        <p class="mb-0">Try adjusting the month or filters to view internal employee attendance records.
+                        </p>
+                    </div>
+
+                    <div th:if="${reportPage.totalElements > 0}" class="attendance-table-wrap">
+                        <table class="attendance-report-table" id="internalAttendanceReportTable">
+                            <thead>
+                                <tr>
+                                    <th class="employee-code-cell">Code</th>
+                                    <th class="employee-cell">Employee</th>
+                                    <th class="project-cell">Project</th>
+                                    <th class="agency-cell">Agency</th>
+                                    <th:block th:each="day : ${report.calendarDays}">
+                                        <th th:if="${day.dayOfWeek.name() == 'SATURDAY' or day.dayOfWeek.name() == 'SUNDAY'}"
+                                            class="day-column weekend">
+                                            <div th:text="${#temporals.format(day, 'dd')}">01</div>
+                                            <small th:text="${#temporals.format(day, 'E')}">Mon</small>
+                                        </th>
+                                        <th th:unless="${day.dayOfWeek.name() == 'SATURDAY' or day.dayOfWeek.name() == 'SUNDAY'}"
+                                            class="day-column">
+                                            <div th:text="${#temporals.format(day, 'dd')}">01</div>
+                                            <small th:text="${#temporals.format(day, 'E')}">Mon</small>
+                                        </th>
+                                    </th:block>
+                                    <th class="totals-heading">P</th>
+                                    <th class="totals-heading">Total Absent</th>
+                                    <th class="totals-heading">Approved Leave</th>
+                                    <th class="totals-heading">CO </th>
+                                    <th class="totals-heading">T</th>
+                                    <th class="totals-heading">H</th>
+                                    <th class="totals-heading">WO</th>
+                                    <th class="totals-heading">Payable Days</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="row : ${reportPage.content}">
+                                    <td class="employee-code-cell" th:text="${row.employeeCode}">EMP000001</td>
+                                    <td class="employee-cell">
+                                        <span class="employee-name" th:text="${row.employeeName}">Employee Name</span>
+                                        <span class="employee-meta" th:text="${row.designation}">
+                                            Designation
+                                        </span>
+                                        <span class="employee-meta"
+                                            th:if="${row.levelCode != null and !#strings.isEmpty(row.levelCode)}"
+                                            th:text="${'Level: ' + row.levelCode}">
+                                            Level
+                                        </span>
+                                    </td>
+                                    <td class="project-cell" th:text="${row.projectName}">Project Name</td>
+                                    <td class="agency-cell" th:text="${row.agencyName}">Agency Name</td>
+                                    <td th:each="day : ${report.calendarDays}" class="day-column">
+                                        <th:block th:with="status=${row.dailyStatus.get(day.dayOfMonth)}">
+                                            <span th:if="${#strings.isEmpty(status)}"
+                                                class="status-badge status-empty"></span>
+                                            <span th:unless="${#strings.isEmpty(status)}"
+                                                th:class="|status-badge status-${status}|" th:text="${status}">
+                                                P
+                                            </span>
+                                        </th:block>
+                                    </td>
+                                    <td class="totals-cell" th:text="${row.presentCount}">0</td>
+                                    <td class="totals-cell" th:text="${row.absentTotalCount}">0</td>
+                                    <td class="totals-cell" th:text="${row.leaveCount}">0</td>
+                                    <td class="totals-cell" th:text="${row.compOffCount}">0</td>
+                                    <td class="totals-cell" th:text="${row.tourCount}">0</td>
+                                    <td class="totals-cell" th:text="${row.holidayCount}">0</td>
+                                    <td class="totals-cell" th:text="${row.weekOffCount}">0</td>
+                                    <td class="totals-cell" th:text="${row.payableDays}">0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="app-pagination-shell"
+                        th:if="${reportPage.totalPages > 1}"
+                        th:with="middleStart=${reportPage.number - 2 > 1 ? reportPage.number - 2 : 1},
+                                 middleEnd=${reportPage.number + 2 < reportPage.totalPages - 2 ? reportPage.number + 2 : reportPage.totalPages - 2},
+                                 showingFrom=${reportPage.totalElements == 0 ? 0 : reportPage.number * reportPage.size + 1},
+                                 showingTo=${reportPage.totalElements == 0 ? 0 : reportPage.number * reportPage.size + reportPage.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">20</span> of
+                                <span th:text="${reportPage.totalElements}">20</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${reportPage.number + 1}">1</span> of <span th:text="${reportPage.totalPages}">1</span>
+                            </div>
+                        </div>
+                        <nav aria-label="Internal attendance report pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${reportPage.first} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-attendance-report(page=${reportPage.number - 1},month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
+                                        Previous
+                                    </a>
+                                </li>
+                                <li class="page-item" th:classappend="${reportPage.number == 0} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-attendance-report(page=0,month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == reportPage.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/hr/internal-attendance-report(page=${pageIndex},month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < reportPage.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${reportPage.totalPages > 1}"
+                                    th:classappend="${reportPage.number == reportPage.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-attendance-report(page=${reportPage.totalPages - 1},month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}"
+                                        th:text="${reportPage.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${reportPage.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/hr/internal-attendance-report(page=${reportPage.number + 1},month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <script th:inline="javascript">
+                function exportInternalAttendanceReport() {
+                    const table = document.getElementById('internalAttendanceReportTable');
+                    if (!table) {
+                        return;
+                    }
+
+                    const rows = Array.from(table.querySelectorAll('tr'));
+                    const csv = rows.map(row => Array.from(row.children)
+                        .map(cell => '"' + cell.innerText.replace(/"/g, '""').replace(/\n/g, ' ') + '"')
+                        .join(','))
+                        .join('\n');
+
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.href = url;
+                    const reportMonth = /*[[${report.monthName}]]*/ 'month';
+                    const reportYear = /*[[${report.filter.year}]]*/ 'year';
+                    const safeMonth = String(reportMonth).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                    link.download = `maha-recruitment-internal-attendance-report-${safeMonth}-${reportYear}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }
+            </script>
+        </section>
+    </th:block>
+</body>
+
+</html>
+

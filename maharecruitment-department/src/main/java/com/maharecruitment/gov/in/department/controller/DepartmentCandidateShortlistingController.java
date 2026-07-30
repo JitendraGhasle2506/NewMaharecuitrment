@@ -159,6 +159,7 @@ public class DepartmentCandidateShortlistingController {
             @PathVariable Long recruitmentInterviewDetailId,
             @RequestParam("decision") DepartmentCandidateReviewDecision reviewDecision,
             @RequestParam(name = "remarks", required = false) String reviewRemarks,
+            @RequestParam(name = "interviewAuthority", required = false) String interviewAuthority,
             Principal principal,
             RedirectAttributes redirectAttributes) {
         String actorEmail = resolveActorEmail(principal);
@@ -169,6 +170,7 @@ public class DepartmentCandidateShortlistingController {
                     recruitmentInterviewDetailId,
                     reviewDecision,
                     reviewRemarks,
+                    interviewAuthority,
                     actorEmail);
             redirectAttributes.addFlashAttribute("successMessage", "Candidate review decision saved successfully.");
         } catch (DepartmentApplicationException ex) {

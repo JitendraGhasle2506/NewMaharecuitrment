@@ -16,14 +16,20 @@ public class AttendanceRegisterDTO {
     private String name;
     private String designation;
     private String email;
+    private String aadhaarNumber;
     private String mobile;
-    private String photoPath;
     private String requestId;
     // Organization Details
     private String organization;
     private String division;
     private String officeLocation;
+    private String address;
+    private String employeeCode;
+    private String joiningDate;
     private String level;
+    private String projectName;
+    private String reportingHOD;
+    private String reportingManager;
 
     // Attendance Filters
     private String dateRange;   // Month-Year (02-2026)
@@ -40,4 +46,18 @@ public class AttendanceRegisterDTO {
     private List<AttendanceDayDTO> presentDays;
     private Double maxOutHour;
     private Long userId;
+    private Integer daysInMonth;
+
+    // Attendance Counts
+    private long totalPresent;
+    private long totalAbsent;
+    private long totalLeave;
+    private long totalCompOff;
+    private long totalHoliday;
+    private long totalWeekOff;
+    private long payableDays;
+
+    public long getTotalAbsentWithApprovedLeave() {
+        return totalAbsent + totalLeave;
+    }
 }

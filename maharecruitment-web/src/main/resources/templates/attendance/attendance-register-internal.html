@@ -1,0 +1,2158 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Internal Employee Attendance Register</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/vendor/bootstrap-datepicker/bootstrap-datepicker.min.css}">
+    <style>
+        :root {
+            --primary-color: #1f4f78;
+            --primary-light: #e0e7ff;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #0ea5e9;
+            --bg-body: #f8fafc;
+            --card-border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        .page-main-content {
+            background-color: var(--bg-body);
+            padding: 18px;
+            border-radius: 12px;
+            width: 100%;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+            width: 160px;
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .info-value {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-main);
+        }
+
+        .profile-card {
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 22px;
+            border: 1px solid #d7e4f2;
+            border-radius: 22px;
+            background:
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 26%),
+                linear-gradient(155deg, #ffffff 0%, #f7fbff 56%, #eef5fb 100%);
+            box-shadow: 0 22px 48px -36px rgba(15, 23, 42, 0.34);
+            padding: 0;
+        }
+
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(31, 79, 120, 0.08), transparent 18%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0));
+            pointer-events: none;
+        }
+
+        .profile-card::after {
+            content: '';
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            top: -150px;
+            right: -120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(31, 79, 120, 0.12), transparent 68%);
+            pointer-events: none;
+        }
+
+        .profile-hero {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
+            gap: 18px 22px;
+            align-items: start;
+            padding: 24px 26px 18px;
+            border-bottom: 1px solid rgba(215, 228, 242, 0.9);
+        }
+
+        .profile-identity {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            min-width: 0;
+        }
+
+        .profile-headline {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .profile-avatar-shell {
+            flex-shrink: 0;
+            padding: 6px;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(215, 228, 242, 0.95);
+            box-shadow: 0 16px 38px -28px rgba(15, 23, 42, 0.35);
+        }
+
+        .profile-avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 22px;
+            object-fit: cover;
+            display: block;
+            border: 4px solid rgba(255, 255, 255, 0.96);
+            background: #f1f5f9;
+        }
+
+        .profile-avatar-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 34px;
+        }
+
+        .aadhaar-value-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .aadhaar-toggle-button {
+            display: inline-flex;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            color: var(--primary-color);
+            transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+
+        .aadhaar-toggle-button:hover {
+            border-color: #93c5fd;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .aadhaar-toggle-button:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.28);
+            outline-offset: 2px;
+        }
+
+        .aadhaar-toggle-button:disabled {
+            cursor: wait;
+            opacity: 0.65;
+        }
+
+        .profile-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .profile-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(31, 79, 120, 0.1);
+            color: var(--primary-color);
+            border: 1px solid rgba(31, 79, 120, 0.08);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .profile-chip-soft {
+            background: rgba(255, 255, 255, 0.92);
+            border-color: #dbe7f4;
+            color: #475569;
+        }
+
+        .profile-name {
+            margin: 0;
+            color: var(--text-main);
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+        }
+
+        .profile-role {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0 0;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .profile-role-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #94a3b8;
+        }
+
+        .profile-facts {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 0;
+        }
+
+        .profile-fact {
+            padding: 13px 14px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid #dbe7f4;
+            box-shadow: 0 14px 34px -30px rgba(15, 23, 42, 0.34);
+        }
+
+        .profile-fact-label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .profile-fact-value {
+            display: block;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+
+        .profile-dashboard-grid {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr);
+            gap: 14px;
+            align-items: start;
+            padding: 18px 26px 24px;
+        }
+
+        .profile-panel-card {
+            height: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid #dbe7f4;
+            box-shadow: 0 18px 38px -32px rgba(15, 23, 42, 0.38);
+        }
+
+        .profile-panel-card-accent {
+            background: linear-gradient(180deg, rgba(249, 252, 255, 0.98), rgba(239, 247, 255, 0.96));
+        }
+
+        .profile-panel-title {
+            margin: 0 0 14px;
+            color: var(--secondary-color);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+        }
+
+        .profile-detail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .profile-detail-list.profile-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 14px;
+        }
+
+        .profile-detail-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .profile-detail-row.detail-row-wide {
+            grid-column: 1 / -1;
+        }
+
+        .profile-detail-icon {
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
+            color: var(--primary-color);
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+        }
+
+        .profile-detail-copy {
+            min-width: 0;
+        }
+
+        .profile-detail-label {
+            display: block;
+            margin-bottom: 2px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .profile-detail-value {
+            display: block;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+
+        .section-title {
+            color: var(--secondary-color);
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 24px;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--card-border);
+        }
+
+        .today-attendance-card {
+            margin-top: 0;
+            padding: 0;
+            border-radius: 0;
+            border: none;
+            background: transparent;
+        }
+
+        .today-attendance-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .today-attendance-item {
+            padding: 12px 10px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #ffffff, #f3f8fd);
+            border: 1px solid #d5e3f0;
+            text-align: center;
+        }
+
+        .today-attendance-item:nth-child(1) {
+            background: linear-gradient(180deg, #effaf5, #e3f6ec);
+            border-color: #bfe7ce;
+        }
+
+        .today-attendance-item:nth-child(2) {
+            background: linear-gradient(180deg, #eff8ff, #e3f1ff);
+            border-color: #c6ddf7;
+        }
+
+        .today-attendance-item:nth-child(3) {
+            background: linear-gradient(180deg, #fff8ed, #fff1da);
+            border-color: #f4ddae;
+        }
+
+        .today-attendance-label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .today-attendance-value {
+            display: block;
+            color: var(--text-main);
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .month-picker-card {
+            margin-top: 14px;
+            padding: 14px;
+            border-radius: 14px;
+            border: 1px solid #dbe7f4;
+            background: rgba(255, 255, 255, 0.88);
+        }
+
+        .month-picker-card .input-group-text,
+        .month-picker-card .form-control {
+            min-height: 44px;
+            border-color: #dbe7f4;
+            background: #fff;
+        }
+
+        .month-picker-card .form-control {
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .month-picker-help {
+            margin: 0 0 10px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+            gap: 1px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #e2e8f0;
+        }
+
+        .summary-col {
+            display: flex;
+        }
+
+        .summary-card {
+            width: 100%;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border-left-width: 0 !important;
+        }
+
+        .summary-card .card-body {
+            min-height: 42px;
+            padding: 7px 9px;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+            gap: 10px;
+        }
+
+        .summary-value {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1;
+            flex: 0 0 auto;
+        }
+
+        .summary-label {
+            color: var(--text-muted);
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: uppercase;
+            line-height: 1.15;
+            text-align: right;
+        }
+
+        @media (max-width: 1199.98px) {
+            .profile-hero {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-facts {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+
+            .profile-dashboard-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .profile-hero,
+            .profile-dashboard-grid {
+                padding-left: 22px;
+                padding-right: 22px;
+            }
+
+            .profile-identity {
+                align-items: flex-start;
+            }
+
+            .profile-facts {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .profile-dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-detail-list.profile-detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .profile-hero {
+                padding-top: 20px;
+            }
+
+            .profile-identity {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .profile-name {
+                font-size: 24px;
+            }
+
+            .profile-facts,
+            .today-attendance-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Attendance Table Refinement */
+        .attendance-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 24px;
+            font-size: 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .attendance-table th {
+            background-color: #f1f5f9;
+            color: var(--secondary-color);
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 12px 4px;
+            border-bottom: 2px solid var(--card-border);
+        }
+
+        .attendance-table td {
+            padding: 8px 2px;
+            border-bottom: 1px solid var(--card-border);
+            border-right: 1px solid var(--card-border);
+            transition: all 0.2s;
+            vertical-align: top;
+        }
+
+        .attendance-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .attendance-table tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        .attendance-select {
+            background: transparent !important;
+            font-weight: 800 !important;
+            font-size: 13px !important;
+            padding: 4px !important;
+            border-radius: 6px !important;
+            text-align: center;
+            outline: none;
+            transition: transform 0.1s;
+        }
+
+        .attendance-select:focus {
+            transform: scale(1.1);
+        }
+
+        .attendance-day-cell {
+            min-width: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .attendance-status {
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .inout-matrix {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            overflow: hidden;
+            min-width: 1100px;
+        }
+
+        .inout-matrix th,
+        .inout-matrix td {
+            border-right: 1px solid var(--card-border);
+            border-bottom: 1px solid var(--card-border);
+            padding: 10px 6px;
+            text-align: center;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .inout-matrix th {
+            background: #f1f5f9;
+            color: var(--secondary-color);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .inout-matrix tr:last-child td {
+            border-bottom: none;
+        }
+
+        .inout-matrix th:last-child,
+        .inout-matrix td:last-child {
+            border-right: none;
+        }
+
+        .inout-matrix .row-label {
+            min-width: 130px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-main);
+            background: #f8fafc;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+        }
+
+        .inout-matrix .day-head-label {
+            min-width: 130px;
+            text-align: left;
+            position: sticky;
+            left: 0;
+            z-index: 2;
+        }
+
+        .inout-matrix .time-value {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .inout-matrix .time-empty {
+            color: var(--text-muted);
+        }
+
+        .status-present { color: var(--success-color) !important; }
+        .status-absent { color: var(--danger-color) !important; }
+        .status-holiday { color: var(--info-color) !important; }
+        .status-weekoff { color: #94a3b8 !important; }
+        .status-leave { color: #8b5cf6 !important; }
+        .status-comp-off { color: #0f766e !important; }
+        .status-tour { color: #db2777 !important; }
+        .status-pending { color: var(--warning-color) !important; }
+
+        /* Modern Legend Chips */
+        .attendance-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 18px 0;
+            padding: 12px 14px;
+            justify-content: flex-start;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px;
+            background: var(--bg-body);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .legend-item:hover {
+            border-color: var(--primary-light);
+            background: #fff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 800;
+            font-size: 10px;
+        }
+
+        .circle-present { background: var(--success-color); }
+        .circle-absent { background: var(--danger-color); }
+        .circle-holiday { background: var(--info-color); }
+        .circle-leave { background: #8b5cf6; }
+        .circle-comp-off { background: #0f766e; }
+        .circle-tour { background: #db2777; }
+        .circle-pending { background: var(--warning-color); }
+        .circle-future { background: #e2e8f0; color: #94a3b8; }
+
+        .btn-success {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 10px 32px;
+            border-radius: 8px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4);
+            transition: all 0.3s;
+        }
+
+        .btn-success:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
+        }
+
+        .attendance-tabs-shell {
+            margin-bottom: 14px;
+            padding: 6px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(238, 245, 252, 0.92));
+            border: 1px solid #d9e6f2;
+            box-shadow: 0 18px 35px -32px rgba(15, 23, 42, 0.4);
+        }
+
+        .attendance-tabs {
+            gap: 8px;
+            border-bottom: none;
+        }
+
+        .attendance-tabs .nav-item {
+            flex: 1 1 0;
+            min-width: 150px;
+        }
+
+        .attendance-tabs .nav-link {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            background: transparent;
+            color: var(--secondary-color);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .attendance-tabs .nav-link:hover {
+            background: rgba(255, 255, 255, 0.76);
+            color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+
+        .attendance-tabs .nav-link.active {
+            background: #ffffff;
+            color: var(--primary-color);
+            box-shadow: 0 14px 28px -24px rgba(15, 23, 42, 0.48);
+        }
+
+        .attendance-tabs .nav-link i {
+            font-size: 13px;
+        }
+
+        .attendance-tab-icon {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(31, 79, 120, 0.1);
+            border: 1px solid rgba(31, 79, 120, 0.08);
+            color: var(--primary-color);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+        }
+
+        .attendance-tabs .nav-link.active .attendance-tab-icon {
+            background: linear-gradient(180deg, rgba(31, 79, 120, 0.16), rgba(14, 165, 233, 0.12));
+            border-color: rgba(31, 79, 120, 0.18);
+        }
+
+        .attendance-tab-copy {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .attendance-tab-label {
+            color: inherit;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+        }
+
+        .attendance-tab-meta {
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+
+        .attendance-tabs .nav-link.active .attendance-tab-meta {
+            color: #1f4f78;
+        }
+
+        .register-panel {
+            border: 1px solid #dbe7f4;
+            border-radius: 20px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 24%),
+                linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+            box-shadow: 0 24px 48px -40px rgba(15, 23, 42, 0.46);
+        }
+
+        .register-panel .body {
+            padding: 20px;
+        }
+
+        .register-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .register-panel-title {
+            margin: 0;
+            color: var(--text-main);
+            font-size: 23px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .register-panel-subtitle {
+            margin: 8px 0 0;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            max-width: 720px;
+            line-height: 1.6;
+        }
+
+        .register-panel-badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .register-panel-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid #d8e6f3;
+            color: var(--primary-color);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            box-shadow: 0 12px 24px -24px rgba(15, 23, 42, 0.45);
+        }
+
+        .register-panel-badge-soft {
+            color: #475569;
+            background: rgba(248, 250, 252, 0.96);
+        }
+
+        .register-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #e2e8f0;
+        }
+
+        .register-meta-card {
+            min-height: 42px;
+            padding: 7px 9px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .register-meta-label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0;
+            line-height: 1.15;
+            text-transform: uppercase;
+        }
+
+        .register-meta-value {
+            display: block;
+            flex: 0 0 auto;
+            margin-top: 0;
+            color: var(--text-main);
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .panel-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+            gap: 1px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #e2e8f0;
+        }
+
+        .panel-meta-card {
+            min-height: 42px;
+            padding: 7px 9px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .panel-meta-label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0;
+            line-height: 1.15;
+            text-transform: uppercase;
+        }
+
+        .panel-meta-value {
+            display: block;
+            flex: 0 0 auto;
+            margin-top: 0;
+            color: var(--text-main);
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .panel-table-wrap {
+            border: 1px solid #dbe7f4;
+            border-radius: 18px;
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        }
+
+        .panel-table-wrap .table-responsive {
+            margin: 0;
+        }
+
+        .panel-table-wrap .inout-matrix {
+            border: none;
+            border-radius: 0;
+            min-width: 1100px;
+        }
+
+        .request-table {
+            min-width: 760px;
+            margin-bottom: 0;
+        }
+
+        .request-table thead th {
+            background: #f4f8fc;
+            color: var(--secondary-color);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 12px 14px;
+            border-bottom: 1px solid #dbe7f4;
+            white-space: nowrap;
+        }
+
+        .request-table tbody td {
+            padding: 12px 14px;
+            color: var(--text-main);
+            font-size: 13px;
+            vertical-align: middle;
+            border-color: #e2e8f0;
+        }
+
+        .request-table tbody tr:hover td {
+            background: #f8fbff;
+        }
+
+        .empty-state-cell {
+            padding: 28px 18px !important;
+            color: var(--text-muted) !important;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .register-helper {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding: 16px 18px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(240, 249, 255, 0.96), rgba(248, 250, 252, 0.96));
+            border: 1px solid #cfe2f4;
+        }
+
+        .register-helper-icon {
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(31, 79, 120, 0.12);
+            color: var(--primary-color);
+            border: 1px solid rgba(31, 79, 120, 0.1);
+        }
+
+        .register-helper-copy strong {
+            display: block;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .register-helper-copy span {
+            display: block;
+            margin-top: 4px;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.55;
+        }
+
+        .register-table-wrap {
+            border: 1px solid #dbe7f4;
+            border-radius: 18px;
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        }
+
+        .register-table-wrap .table-responsive {
+            margin: 0;
+        }
+
+        .attendance-table {
+            margin-top: 0;
+            min-width: max-content;
+            border: none;
+            border-radius: 0;
+            overflow: visible;
+        }
+
+        .attendance-table th,
+        .attendance-table td {
+            min-width: 68px;
+        }
+
+        .attendance-table th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #f4f8fc;
+            padding: 12px 6px;
+        }
+
+        .attendance-table td {
+            padding: 8px 4px;
+            background: rgba(255, 255, 255, 0.98);
+        }
+
+        .attendance-table th:first-child,
+        .attendance-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            min-width: 200px;
+            max-width: 200px;
+            text-align: left;
+            background: #ffffff;
+            box-shadow: 14px 0 18px -20px rgba(15, 23, 42, 0.38);
+        }
+
+        .attendance-table thead th:first-child {
+            z-index: 4;
+            background: #f4f8fc;
+        }
+
+        .attendance-row-name {
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+        }
+
+        .attendance-row-employee {
+            display: block;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .attendance-row-caption {
+            display: block;
+            margin-top: 3px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .day-head {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            line-height: 1;
+        }
+
+        .day-head-date {
+            color: var(--text-main);
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .day-head-name {
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .weekend-head {
+            background: #edf3f8 !important;
+        }
+
+        .weekend-cell {
+            background: #fbfdff !important;
+        }
+
+        .attendance-day-cell {
+            min-width: 60px;
+            gap: 4px;
+        }
+
+        .attendance-status-frame {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .attendance-status {
+            min-height: 34px;
+        }
+
+        .attendance-select {
+            min-width: 44px;
+            min-height: 36px;
+            padding: 4px 8px !important;
+            border-radius: 12px !important;
+            border: 1px solid #d7e5f2 !important;
+            appearance: none;
+            box-shadow: none !important;
+        }
+
+        .attendance-select:disabled {
+            opacity: 1;
+            cursor: default;
+        }
+
+        .attendance-select.status-present {
+            background: rgba(16, 185, 129, 0.14) !important;
+            border-color: rgba(16, 185, 129, 0.28) !important;
+        }
+
+        .attendance-select.status-absent {
+            background: rgba(239, 68, 68, 0.1) !important;
+            border-color: rgba(239, 68, 68, 0.2) !important;
+        }
+
+        .attendance-select.status-weekoff {
+            background: rgba(148, 163, 184, 0.14) !important;
+            border-color: rgba(148, 163, 184, 0.26) !important;
+        }
+
+        .attendance-select.status-holiday {
+            background: rgba(14, 165, 233, 0.1) !important;
+            border-color: rgba(14, 165, 233, 0.22) !important;
+        }
+
+        .attendance-readonly-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 32px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .attendance-readonly-badge.status-leave {
+            background: rgba(139, 92, 246, 0.12);
+            border-color: rgba(139, 92, 246, 0.24);
+        }
+
+        .attendance-readonly-badge.status-comp-off {
+            background: rgba(15, 118, 110, 0.12);
+            border-color: rgba(15, 118, 110, 0.24);
+        }
+
+        .attendance-readonly-badge.status-present {
+            background: rgba(16, 185, 129, 0.14);
+            border-color: rgba(16, 185, 129, 0.28);
+        }
+
+        .attendance-readonly-badge.status-absent {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.24);
+        }
+
+        .attendance-readonly-badge.status-weekoff {
+            background: rgba(148, 163, 184, 0.14);
+            border-color: rgba(148, 163, 184, 0.26);
+        }
+
+        .attendance-readonly-badge.status-holiday {
+            background: rgba(14, 165, 233, 0.1);
+            border-color: rgba(14, 165, 233, 0.24);
+        }
+
+        .attendance-readonly-badge.status-tour {
+            background: rgba(219, 39, 119, 0.1);
+            border-color: rgba(219, 39, 119, 0.22);
+        }
+
+        .attendance-readonly-badge.status-pending {
+            background: rgba(245, 158, 11, 0.12);
+            border-color: rgba(245, 158, 11, 0.26);
+        }
+
+        .attendance-readonly-badge.status-future {
+            background: rgba(226, 232, 240, 0.9);
+            border-color: rgba(203, 213, 225, 0.9);
+            color: #94a3b8;
+        }
+
+        @media (max-width: 991.98px) {
+            .attendance-tabs .nav-item {
+                flex: 1 1 calc(50% - 10px);
+            }
+
+            .register-panel .body {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .register-meta-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .attendance-tabs .nav-item {
+                flex: 1 1 100%;
+            }
+
+            .register-panel-title {
+                font-size: 22px;
+            }
+
+            .attendance-table th:first-child,
+            .attendance-table td:first-child {
+                min-width: 170px;
+                max-width: 170px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Attendance Register', 'Employee Corner', ~{::section})}">
+        <section>
+            <div class="page-main-content">
+                <ul class="breadcrumb breadcrumb-style" style="background: none; padding: 0; display: inline-flex;">
+                    <li class="breadcrumb-item"><i class="fa fa-home"></i> Home</li>
+                    <li class="breadcrumb-item">Employee Corner</li>
+                    <li class="breadcrumb-item active">View Attendance Register</li>
+                </ul>
+
+                <div class="profile-card">
+                    <div class="profile-hero">
+                        <div class="profile-identity">
+                            <div class="profile-avatar-shell">
+                                <img id="attendanceProfilePhoto"
+                                     class="profile-avatar"
+                                     th:src="@{/employee/profile/photo}"
+                                     th:alt="|Photograph of ${attendance.name ?: 'employee'}|">
+                                <div id="attendanceProfilePhotoFallback"
+                                     class="profile-avatar profile-avatar-fallback d-none"
+                                     role="img"
+                                     th:attr="aria-label=|Generic avatar for ${attendance.name ?: 'employee'}|">
+                                    <i class="fa fa-user" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                            <div class="profile-headline">
+                                <div class="profile-chip-row">
+                                    <span class="profile-chip">Employee Attendance</span>
+                                </div>
+                                <h3 class="profile-name" th:text="${attendance.name}">Employee Name</h3>
+                                <div class="profile-role">
+                                    <span th:text="${attendance.designation ?: 'Employee'}">Designation</span>
+                                    <span class="profile-role-dot"></span>
+                                    <span th:text="${attendance.organization ?: 'Organization'}">Organization</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-facts">
+                            <div class="profile-fact">
+                                <span class="profile-fact-label">Employee ID</span>
+                                <span class="profile-fact-value" th:text="${attendance.employeeCode ?: '-'}">-</span>
+                            </div>
+                            <div class="profile-fact">
+                                <span class="profile-fact-label">Joining Date</span>
+                                <span class="profile-fact-value" th:text="${attendance.joiningDate ?: '-'}">-</span>
+                            </div>
+                            <div class="profile-fact">
+                                <span class="profile-fact-label">Level</span>
+                                <span class="profile-fact-value" th:text="${attendance.level ?: '-'}">-</span>
+                            </div>
+                            <div class="profile-fact">
+                                <span class="profile-fact-label">Request ID</span>
+                                <span class="profile-fact-value" th:text="${attendance.requestId ?: '-'}">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-dashboard-grid">
+                        <div class="profile-panel-card profile-panel-card-accent">
+                            <h6 class="profile-panel-title">Today's Attendance</h6>
+                            <div class="today-attendance-card">
+                                <div class="today-attendance-grid">
+                                    <div class="today-attendance-item">
+                                        <span class="today-attendance-label">In Time</span>
+                                        <span class="today-attendance-value" th:text="${attendance.todayInTime ?: '-'}">-</span>
+                                    </div>
+                                    <div class="today-attendance-item">
+                                        <span class="today-attendance-label">Out Time</span>
+                                        <span class="today-attendance-value" th:text="${attendance.todayOutTime ?: '-'}">-</span>
+                                    </div>
+                                    <div class="today-attendance-item">
+                                        <span class="today-attendance-label">Status</span>
+                                        <span class="today-attendance-value" th:text="${attendance.todayStatus ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="month-picker-card">
+                                <h6 class="profile-panel-title mb-2">Data for Month</h6>
+                                <p class="month-picker-help">Select a month to refresh the register.</p>
+                                <form th:action="@{/employee/fetchMyAttendance}" method="post">
+                                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <div class="input-group">
+                                        <span class="input-group-text datepicker-icon" style="cursor: pointer; border-right: none;">
+                                            <i class="fa fa-calendar text-primary"></i>
+                                        </span>
+                                        <input type="text" name="dateRange" id="dateRangePicker" class="form-control"
+                                               th:value="${attendance.dateRange}" readonly
+                                               style="cursor: pointer; border-left: none;">
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="profile-panel-card">
+                            <h6 class="profile-panel-title">Contact Details</h6>
+                            <div class="profile-detail-list profile-detail-grid">
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-envelope"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Email Address</span>
+                                        <span class="profile-detail-value" th:text="${attendance.email ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-phone-alt"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Mobile Number</span>
+                                        <span class="profile-detail-value" th:text="${attendance.mobile ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-id-card"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Aadhaar Number</span>
+                                        <div class="aadhaar-value-row">
+                                            <span id="aadhaarValue"
+                                                  class="profile-detail-value"
+                                                  aria-live="polite"
+                                                  th:text="${attendance.aadhaarNumber ?: '-'}">XXXXXXXX1234</span>
+                                            <button th:if="${attendance.aadhaarNumber != null}"
+                                                    id="aadhaarToggle"
+                                                    class="aadhaar-toggle-button"
+                                                    type="button"
+                                                    th:attr="data-reveal-url=@{/employee/intAttendance/aadhaar/reveal}"
+                                                    aria-controls="aadhaarValue"
+                                                    aria-label="Show Aadhaar"
+                                                    aria-pressed="false"
+                                                    title="Show Aadhaar">
+                                                <i class="fa fa-eye" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                        <span id="aadhaarStatus" class="visually-hidden" aria-live="polite"></span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-building"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Office Location</span>
+                                        <span class="profile-detail-value" th:text="${attendance.officeLocation ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row detail-row-wide">
+                                    <div class="profile-detail-icon"><i class="fa fa-map-marker-alt"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Address</span>
+                                        <span class="profile-detail-value" th:text="${attendance.address ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-panel-card">
+                            <h6 class="profile-panel-title">Work Structure</h6>
+                            <div class="profile-detail-list profile-detail-grid">
+                                <div class="profile-detail-row detail-row-wide">
+                                    <div class="profile-detail-icon"><i class="fa fa-folder-open"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Project Name</span>
+                                        <span class="profile-detail-value" th:text="${attendance.projectName ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-user-tie"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Reporting HOD</span>
+                                        <span class="profile-detail-value" th:text="${attendance.reportingHOD ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row">
+                                    <div class="profile-detail-icon"><i class="fa fa-user-check"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Reporting Manager</span>
+                                        <span class="profile-detail-value" th:text="${attendance.reportingManager ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Attendance Summary Cards -->
+                <div class="summary-strip">
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #ecfdf5;">
+                            <div class="card-body">
+                                <h3 class="summary-value text-success" th:text="${attendance.totalPresent}">0</h3>
+                                <div class="summary-label">Present</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #fef2f2;">
+                            <div class="card-body">
+                                <h3 class="summary-value text-danger" th:text="${attendance.totalAbsentWithApprovedLeave}">0</h3>
+                                <div class="summary-label">Absent A+L</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #f5f3ff;">
+                            <div class="card-body">
+                                <h3 class="summary-value" style="color: #8b5cf6;" th:text="${attendance.totalLeave}">0</h3>
+                                <div class="summary-label">Leave</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #f0f9ff;">
+                            <div class="card-body">
+                                <h3 class="summary-value text-info" th:text="${attendance.totalHoliday}">0</h3>
+                                <div class="summary-label">Holidays</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #f1f5f9;">
+                            <div class="card-body">
+                                <h3 class="summary-value" style="color: #94a3b8;" th:text="${attendance.totalWeekOff}">0</h3>
+                                <div class="summary-label">Week Off</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #fffbeb;">
+                            <div class="card-body">
+                                <h3 class="summary-value text-warning" th:text="${attendance.daysInMonth ?: daysInMonth}">30</h3>
+                                <div class="summary-label">Month Days</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-col">
+                        <div class="card h-100 border-0 shadow-sm summary-card" style="background: #eefdf8;">
+                            <div class="card-body">
+                                <h3 class="summary-value" style="color: #0f766e;" th:text="${attendance.payableDays}">0</h3>
+                                <div class="summary-label">Payable</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                    <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                    <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <div class="attendance-tabs-shell">
+                    <ul class="nav nav-tabs attendance-tabs" id="myTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">
+                                <span class="attendance-tab-icon"><i class="fa fa-table"></i></span>
+                                <span class="attendance-tab-copy">
+                                    <span class="attendance-tab-label">Attendance Register</span>
+                                    <span class="attendance-tab-meta" th:text="${(attendance.daysInMonth ?: daysInMonth) + ' Days'}">30 Days</span>
+                                </span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="inout-tab" data-bs-toggle="tab" data-bs-target="#inout" type="button" role="tab">
+                                <span class="attendance-tab-icon"><i class="fa fa-right-left"></i></span>
+                                <span class="attendance-tab-copy">
+                                    <span class="attendance-tab-label">Attendance In/Out</span>
+                                    <span class="attendance-tab-meta" th:text="${(attendanceTimeRows != null ? #lists.size(attendanceTimeRows) : 0) + ' Entries'}">0 Entries</span>
+                                </span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                                <span class="attendance-tab-icon"><i class="fa fa-clock"></i></span>
+                                <span class="attendance-tab-copy">
+                                    <span class="attendance-tab-label">Pending Requests</span>
+                                    <span class="attendance-tab-meta" th:text="${(pendingRequests != null ? #lists.size(pendingRequests) : 0) + ' Open'}">0 Open</span>
+                                </span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab">
+                                <span class="attendance-tab-icon"><i class="fa fa-check-circle"></i></span>
+                                <span class="attendance-tab-copy">
+                                    <span class="attendance-tab-label">Approved Requests</span>
+                                    <span class="attendance-tab-meta" th:text="${(approvedRequests != null ? #lists.size(approvedRequests) : 0) + ' Closed'}">0 Closed</span>
+                                </span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+                                <span class="attendance-tab-icon"><i class="fa fa-history"></i></span>
+                                <span class="attendance-tab-copy">
+                                    <span class="attendance-tab-label">Rejected/History</span>
+                                    <span class="attendance-tab-meta" th:text="${(rejectedRequests != null ? #lists.size(rejectedRequests) : 0) + ' Records'}">0 Records</span>
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="tab-content" id="myTabContent">
+                    <!-- Register Tab -->
+                    <div class="tab-pane fade show active" id="register" role="tabpanel">
+                        <div class="card mt-3 register-panel" style="width:100%;">
+                            <div class="body">
+                                <div class="register-panel-header">
+                                    <div>
+                                        <h4 class="register-panel-title">Attendance Register</h4>
+                                    </div>
+                                </div>
+
+                                <div class="register-meta-grid">
+                                    <div class="register-meta-card">
+                                        <span class="register-meta-label">Present</span>
+                                        <span class="register-meta-value status-present" th:text="${attendance.totalPresent}">0</span>
+                                    </div>
+                                    <div class="register-meta-card">
+                                        <span class="register-meta-label">Absent A+L</span>
+                                        <span class="register-meta-value status-absent" th:text="${attendance.totalAbsentWithApprovedLeave}">0</span>
+                                    </div>
+                                    <div class="register-meta-card">
+                                        <span class="register-meta-label">Leave / CO / Tour</span>
+                                        <span class="register-meta-value" style="color:#7c3aed;" th:text="${attendance.totalLeave + ' / ' + attendance.totalCompOff + ' / ' + (attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[status == 'TOUR']) : 0)}">0 / 0 / 0</span>
+                                    </div>
+                                    <div class="register-meta-card">
+                                        <span class="register-meta-label">W-Off / Holiday</span>
+                                        <span class="register-meta-value" style="color:#475569;" th:text="${attendance.totalWeekOff + ' / ' + attendance.totalHoliday}">0 / 0</span>
+                                    </div>
+                                    <div class="register-meta-card">
+                                        <span class="register-meta-label">Payable</span>
+                                        <span class="register-meta-value" style="color:#0f766e;" th:text="${attendance.payableDays}">0</span>
+                                    </div>
+                                </div>
+
+                                <div class="attendance-legend">
+									<div class="legend-item"><div class="legend-circle circle-present">P</div><span>Present</span></div>
+									<div class="legend-item"><div class="legend-circle circle-absent">A</div><span>Absent</span></div>
+									<div class="legend-item"><div class="legend-circle status-weekoff" style="color:#fff; background: #94a3b8;">W</div><span>Week OFF</span></div>
+									<div class="legend-item"><div class="legend-circle circle-holiday">H</div><span>Holiday</span></div>
+									<div class="legend-item"><div class="legend-circle circle-leave">L</div><span>Leave</span></div>
+									<div class="legend-item"><div class="legend-circle circle-comp-off">CO</div><span>Comp Off</span></div>
+									<div class="legend-item"><div class="legend-circle circle-tour">T</div><span>Tour</span></div>
+									<div class="legend-item"><div class="legend-circle circle-pending">P</div><span>Pending Approval</span></div>
+									<div class="legend-item"><div class="legend-circle circle-future">-</div><span>Invalid Date</span></div>
+								</div>
+								
+                                <div class="register-table-wrap">
+                                    <table class="attendance-table" id="attendanceTable">
+                                        <thead>
+                                            <tr>
+                                                <th>
+                                                    <div class="day-head" style="align-items:flex-start;">
+                                                        <span class="day-head-date">Register</span>
+                                                        <span class="day-head-name">Day-wise status</span>
+                                                    </div>
+                                                </th>
+                                                <th th:each="day : ${attendance.attendanceDays}"
+                                                    th:classappend="${day.date.dayOfWeek.name() == 'SATURDAY' or day.date.dayOfWeek.name() == 'SUNDAY'} ? 'weekend-head'">
+                                                    <div class="day-head">
+                                                        <span class="day-head-date" th:text="${#temporals.format(day.date, 'dd')}">01</span>
+                                                        <span class="day-head-name" th:text="${#temporals.format(day.date, 'E')}">Mon</span>
+                                                    </div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="attendance-row-name">
+                                                    <span class="attendance-row-employee" th:text="${attendance.name}">Employee Name</span>
+                                                </td>
+                                                <td th:each="day : ${attendance.attendanceDays}"
+                                                    th:classappend="${day.date.dayOfWeek.name() == 'SATURDAY' or day.date.dayOfWeek.name() == 'SUNDAY'} ? ' weekend-cell'">
+                                                    <div class="attendance-day-cell" th:title="${day.status}">
+                                                            <div class="attendance-status-frame">
+                                                                <div class="attendance-status">
+                                                                    <span th:if="${day.status == 'PRESENT'}" class="attendance-readonly-badge status-present">P</span>
+                                                                    <span th:if="${day.status == 'ABSENT'}" class="attendance-readonly-badge status-absent">A</span>
+                                                                    <span th:if="${day.status == 'WEEK_OFF'}" class="attendance-readonly-badge status-weekoff">W</span>
+                                                                <span th:if="${day.status == 'HOLIDAY'}" class="attendance-readonly-badge status-holiday">H</span>
+                                                                <span th:if="${day.status == 'LEAVE'}" class="attendance-readonly-badge status-leave">L</span>
+                                                                <span th:if="${day.status == 'COMP_OFF'}" class="attendance-readonly-badge status-comp-off">CO</span>
+                                                                    <span th:if="${day.status == 'TOUR'}" class="attendance-readonly-badge status-tour">T</span>
+                                                                    <span th:if="${day.status == 'PENDING'}" class="attendance-readonly-badge status-pending">P</span>
+                                                                    <span th:if="${day.status == 'FUTURE' or day.status == '' or day.status == null}" class="attendance-readonly-badge status-future">-</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance In/Out Tab -->
+                    <div class="tab-pane fade" id="inout" role="tabpanel">
+                        <div class="card mt-3 register-panel" style="width:100%;">
+                            <div class="body">
+                                <div class="register-panel-header">
+                                    <div>
+                                        <h4 class="register-panel-title">Attendance In/Out</h4>
+                                        <p class="register-panel-subtitle">Daily punch timings for the selected month.</p>
+                                    </div>
+                                </div>
+
+                                <div class="panel-meta-grid">
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Calendar</span>
+                                        <span class="panel-meta-value text-warning" th:text="${attendance.daysInMonth ?: daysInMonth}">30</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">In</span>
+                                        <span class="panel-meta-value text-success" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[inTime != null]) : 0}">0</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Out</span>
+                                        <span class="panel-meta-value text-info" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[outTime != null]) : 0}">0</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Worked</span>
+                                        <span class="panel-meta-value" style="color:#1f4f78;" th:text="${attendance.attendanceDays != null ? #lists.size(attendance.attendanceDays.?[stayHours != null]) : 0}">0</span>
+                                    </div>
+                                </div>
+
+                                <div class="panel-table-wrap">
+                                    <div class="table-responsive">
+                                        <table class="inout-matrix">
+                                            <thead>
+                                                <tr>
+                                                    <th class="day-head-label">Day</th>
+                                                    <th th:each="day : ${attendance.attendanceDays}"
+                                                        th:text="${#temporals.format(day.date, 'dd')}">01</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="row-label">In Time</td>
+                                                    <td th:each="day : ${attendance.attendanceDays}"
+                                                        th:class="${day.inTime != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
+                                                        th:text="${day.inTime != null ? day.inTime : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="row-label">Out Time</td>
+                                                    <td th:each="day : ${attendance.attendanceDays}"
+                                                        th:class="${day.outTime != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
+                                                        th:text="${day.outTime != null ? day.outTime : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="row-label">Total Time</td>
+                                                    <td th:each="day : ${attendance.attendanceDays}"
+                                                        th:class="${day.stayHours != null ? 'time-value' : (day.status == 'ABSENT' ? 'status-absent fw-bold' : (day.status == 'WEEK_OFF' ? 'status-weekoff fw-bold' : 'time-empty'))}"
+                                                        th:text="${day.stayHours != null ? day.stayHours : (day.status == 'ABSENT' ? 'A' : (day.status == 'WEEK_OFF' ? 'WO' : '-'))}">-</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pending Requests Tab -->
+                    <div class="tab-pane fade" id="pending" role="tabpanel">
+                        <div class="card mt-3 register-panel" style="width:100%;">
+                            <div class="body">
+                                <div class="register-panel-header">
+                                    <div>
+                                        <h4 class="register-panel-title">Pending Requests</h4>
+                                        <p class="register-panel-subtitle">Manual attendance requests waiting for review.</p>
+                                    </div>
+                                </div>
+
+                                <div class="panel-meta-grid">
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Open Requests</span>
+                                        <span class="panel-meta-value text-warning" th:text="${pendingRequests != null ? #lists.size(pendingRequests) : 0}">0</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Selected Month</span>
+                                        <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Review Stage</span>
+                                        <span class="panel-meta-value" style="font-size:18px; color:#1f4f78;">HOD Review</span>
+                                    </div>
+                                </div>
+
+                                <div class="panel-table-wrap">
+                                    <div class="table-responsive">
+                                        <table class="table request-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Request Date</th>
+                                                    <th>In Time</th>
+                                                    <th>Out Time</th>
+                                                    <th>Reason</th>
+                                                    <th>HOD Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:if="${pendingRequests == null || pendingRequests.isEmpty()}">
+                                                    <td colspan="5" class="empty-state-cell">You have no pending manual attendance requests.</td>
+                                                </tr>
+                                                <tr th:each="req : ${pendingRequests}">
+                                                    <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
+                                                    <td th:text="${req.inTime}"></td>
+                                                    <td th:text="${req.outTime}"></td>
+                                                    <td th:text="${req.reason}"></td>
+                                                    <td><span class="badge bg-warning text-dark" th:text="${req.hodStatus}"></span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Approved Requests Tab -->
+                    <div class="tab-pane fade" id="approved" role="tabpanel">
+                        <div class="card mt-3 register-panel" style="width:100%;">
+                            <div class="body">
+                                <div class="register-panel-header">
+                                    <div>
+                                        <h4 class="register-panel-title">Approved Requests</h4>
+                                        <p class="register-panel-subtitle">Manual attendance requests that are already approved.</p>
+                                    </div>
+                                </div>
+
+                                <div class="panel-meta-grid">
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Closed Requests</span>
+                                        <span class="panel-meta-value text-success" th:text="${approvedRequests != null ? #lists.size(approvedRequests) : 0}">0</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Selected Month</span>
+                                        <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Final Status</span>
+                                        <span class="panel-meta-value" style="font-size:18px; color:#16a34a;">Approved</span>
+                                    </div>
+                                </div>
+
+                                <div class="panel-table-wrap">
+                                    <div class="table-responsive">
+                                        <table class="table request-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Request Date</th>
+                                                    <th>In Time</th>
+                                                    <th>Out Time</th>
+                                                    <th>Reason</th>
+                                                    <th>HOD Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:if="${approvedRequests == null || approvedRequests.isEmpty()}">
+                                                    <td colspan="5" class="empty-state-cell">
+                                                        <i class="fa fa-info-circle me-2"></i>
+                                                        No approved manual attendance requests for this month.
+                                                    </td>
+                                                </tr>
+                                                <tr th:each="req : ${approvedRequests}">
+                                                    <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
+                                                    <td th:text="${req.inTime}"></td>
+                                                    <td th:text="${req.outTime}"></td>
+                                                    <td th:text="${req.reason}"></td>
+                                                    <td><span class="badge bg-success" th:text="${req.hodStatus}"></span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- History Tab -->
+                    <div class="tab-pane fade" id="history" role="tabpanel">
+                        <div class="card mt-3 register-panel" style="width:100%;">
+                            <div class="body">
+                                <div class="register-panel-header">
+                                    <div>
+                                        <h4 class="register-panel-title">Rejected/History</h4>
+                                        <p class="register-panel-subtitle">Manual attendance requests rejected in the selected month.</p>
+                                    </div>
+                                </div>
+
+                                <div class="panel-meta-grid">
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">History Records</span>
+                                        <span class="panel-meta-value text-danger" th:text="${rejectedRequests != null ? #lists.size(rejectedRequests) : 0}">0</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Selected Month</span>
+                                        <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Final Status</span>
+                                        <span class="panel-meta-value" style="font-size:18px; color:#dc2626;">Rejected</span>
+                                    </div>
+                                </div>
+
+                                <div class="panel-table-wrap">
+                                    <div class="table-responsive">
+                                        <table class="table request-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Request Date</th>
+                                                    <th>In Time</th>
+                                                    <th>Out Time</th>
+                                                    <th>Reason</th>
+                                                    <th>HOD Status</th>
+                                                    <th>HOD Comments</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:if="${rejectedRequests == null || rejectedRequests.isEmpty()}">
+                                                    <td colspan="6" class="empty-state-cell">No rejected requests in history.</td>
+                                                </tr>
+                                                <tr th:each="req : ${rejectedRequests}">
+                                                    <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
+                                                    <td th:text="${req.inTime}"></td>
+                                                    <td th:text="${req.outTime}"></td>
+                                                    <td th:text="${req.reason}"></td>
+                                                    <td><span class="badge bg-danger" th:text="${req.hodStatus}"></span></td>
+                                                    <td th:text="${req.hodComments}"></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}"></script>
+    <script th:src="@{/assets/vendor/bootstrap-datepicker/bootstrap-datepicker.min.js}"></script>
+    
+    <script>
+        $(document).ready(function(){
+            $('#dateRangePicker').datepicker({
+                format: "mm-yyyy",
+                startView: "months", 
+                minViewMode: "months",
+                autoclose: true,
+                orientation: "bottom"
+            }).on('changeDate', function(e) {
+                // Auto-submit the form when the calendar drops a new date
+                $(this).closest('form').submit();
+            });
+            
+            // Allow clicking the calendar icon to open it
+            $('.datepicker-icon').on('click', function() {
+                $('#dateRangePicker').datepicker('show');
+            });
+        });
+    </script>
+    <script>
+        (function () {
+            const profilePhoto = document.getElementById('attendanceProfilePhoto');
+            const profilePhotoFallback = document.getElementById('attendanceProfilePhotoFallback');
+
+            function showGenericAvatar() {
+                if (profilePhoto) {
+                    profilePhoto.classList.add('d-none');
+                }
+                if (profilePhotoFallback) {
+                    profilePhotoFallback.classList.remove('d-none');
+                }
+            }
+
+            if (profilePhoto) {
+                profilePhoto.addEventListener('error', showGenericAvatar);
+                if (profilePhoto.complete && profilePhoto.naturalWidth === 0) {
+                    showGenericAvatar();
+                }
+            }
+
+            const aadhaarValue = document.getElementById('aadhaarValue');
+            const aadhaarToggle = document.getElementById('aadhaarToggle');
+            const aadhaarStatus = document.getElementById('aadhaarStatus');
+            if (!aadhaarValue || !aadhaarToggle) {
+                return;
+            }
+
+            const maskedAadhaar = aadhaarValue.textContent;
+            const revealUrl = aadhaarToggle.dataset.revealUrl;
+            const csrfTokenElement = document.querySelector('meta[name="_csrf"]');
+            const csrfHeaderElement = document.querySelector('meta[name="_csrf_header"]');
+            let remaskTimer = null;
+
+            function updateToggle(showing) {
+                const label = showing ? 'Hide Aadhaar' : 'Show Aadhaar';
+                aadhaarToggle.setAttribute('aria-label', label);
+                aadhaarToggle.setAttribute('aria-pressed', String(showing));
+                aadhaarToggle.setAttribute('title', label);
+                const icon = aadhaarToggle.querySelector('i');
+                if (icon) {
+                    icon.className = showing ? 'fa fa-eye-slash' : 'fa fa-eye';
+                }
+            }
+
+            function remask(statusMessage) {
+                if (remaskTimer !== null) {
+                    window.clearTimeout(remaskTimer);
+                    remaskTimer = null;
+                }
+                aadhaarValue.textContent = maskedAadhaar;
+                updateToggle(false);
+                if (aadhaarStatus) {
+                    aadhaarStatus.textContent = statusMessage || '';
+                }
+            }
+
+            async function revealAadhaar() {
+                aadhaarToggle.disabled = true;
+                if (aadhaarStatus) {
+                    aadhaarStatus.textContent = 'Loading Aadhaar.';
+                }
+
+                try {
+                    const headers = { 'Accept': 'text/plain' };
+                    if (csrfTokenElement && csrfHeaderElement) {
+                        headers[csrfHeaderElement.content] = csrfTokenElement.content;
+                    }
+
+                    const response = await fetch(revealUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                        headers: headers
+                    });
+                    if (!response.ok) {
+                        throw new Error('Reveal request failed.');
+                    }
+
+                    const revealedAadhaar = (await response.text()).trim();
+                    if (!/^\d{12}$/.test(revealedAadhaar)) {
+                        throw new Error('Reveal response was invalid.');
+                    }
+
+                    aadhaarValue.textContent = revealedAadhaar;
+                    updateToggle(true);
+                    if (aadhaarStatus) {
+                        aadhaarStatus.textContent = 'Aadhaar shown temporarily.';
+                    }
+                    remaskTimer = window.setTimeout(function () {
+                        remask('Aadhaar hidden automatically.');
+                    }, 30000);
+                } catch (error) {
+                    remask('Unable to show Aadhaar. Please try again.');
+                } finally {
+                    aadhaarToggle.disabled = false;
+                }
+            }
+
+            aadhaarToggle.addEventListener('click', function () {
+                if (aadhaarToggle.getAttribute('aria-pressed') === 'true') {
+                    remask('Aadhaar hidden.');
+                    return;
+                }
+                revealAadhaar();
+            });
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) {
+                    remask();
+                }
+            });
+            window.addEventListener('pagehide', function () {
+                remask();
+            });
+        }());
+    </script>
+</body>
+
+</html>
+

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Dashboard</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/employee-dashboard.css}" />
+    <script th:src="@{/assets/vendor/sweetalert2/sweetalert2.all.min.js}"></script>
+</head>
+
+<body class="employee-dashboard-page">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Employee', 'Employee Dashboard', ~{::section})}">
+        <section class="employee-dashboard"
+            th:attr="data-profile-url=@{/employee/profile},
+                     data-save-url=@{/employee/profile/update},
+                     data-photo-upload-url=@{/employee/profile/photo/upload},
+                     data-photo-url=@{/employee/profile/photo},
+                     data-calendar-url=@{/attendance/employee-attendance-calendar}">
+            <input type="hidden" id="csrfToken" th:if="${_csrf != null}" th:value="${_csrf.token}" />
+            <input type="hidden" id="csrfHeader" th:if="${_csrf != null}" th:value="${_csrf.headerName}" />
+
+            <div class="dashboard-intro">
+                <div>
+                    <span class="dashboard-kicker">MahaIT Recruitment</span>
+                    <h2 th:text="${pageHeading}">Employee Dashboard</h2>
+                    <p th:text="${pageSubtitle}">View and update your personal information.</p>
+                </div>
+                <div class="completion-meter" th:attr="data-completion=${profile.completionPercentage}"
+                    th:style="'--completion:' + ${profile.completionPercentage}">
+                    <span id="completionValue" th:text="${profile.completionPercentage + '%'}">0%</span>
+                    <small>Profile Completion</small>
+                </div>
+            </div>
+
+            <div class="profile-grid">
+                <article class="profile-card">
+                    <div class="profile-photo-wrap">
+                        <img id="profilePhoto"
+                            th:if="${loggedInUser != null and loggedInUser.photoPath != null and !#strings.isEmpty(loggedInUser.photoPath)}"
+                            th:src="@{${loggedInUser.photoPath}}" alt="Employee profile photo">
+                        <div id="profilePhotoFallback"
+                            th:classappend="${loggedInUser != null and loggedInUser.photoPath != null and !#strings.isEmpty(loggedInUser.photoPath)} ? ' d-none' : ''"
+                            class="profile-photo-fallback">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                    </div>
+                    <div class="profile-main">
+                        <span id="profileStatus" class="profile-status"
+                            th:text="${profile.profileAvailable ? 'Profile available' : 'Complete your profile'}">
+                            Complete your profile
+                        </span>
+                        <h3 id="summaryFullName" th:text="${#strings.isEmpty(profile.fullName) ? 'Employee' : profile.fullName}">
+                            Employee
+                        </h3>
+                        <div class="profile-code">
+                            <i class="fa-solid fa-id-badge"></i>
+                            <span id="summaryEmployeeCode" th:text="${#strings.isEmpty(profile.employeeCode) ? '-' : profile.employeeCode}">-</span>
+                        </div>
+                    </div>
+                    <dl class="profile-facts">
+                        <div>
+                            <dt>Role</dt>
+                            <dd id="summaryRole" th:text="${#strings.isEmpty(profile.role) ? '-' : profile.role}">-</dd>
+                        </div>
+                        <div>
+                            <dt>Department</dt>
+                            <dd id="summaryDepartment" th:text="${#strings.isEmpty(profile.department) ? '-' : profile.department}">-</dd>
+                        </div>
+                        <div>
+                            <dt>Email</dt>
+                            <dd id="summaryEmail" th:text="${#strings.isEmpty(profile.email) ? '-' : profile.email}">-</dd>
+                        </div>
+                        <div>
+                            <dt>Mobile / Alternate</dt>
+                            <dd>
+                                <span id="summaryMobile" th:text="${#strings.isEmpty(profile.mobileNo) ? '-' : profile.mobileNo}">-</span>
+                                <span id="summaryAltMobile"
+                                    th:text="${#strings.isEmpty(profile.alternateMobileNo) ? '' : ' / ' + profile.alternateMobileNo}"></span>
+                            </dd>
+                        </div>
+                    </dl>
+                </article>
+
+                <div class="quick-actions">
+                    <button type="button" class="quick-action" data-scroll-target="personalInfoForm">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Update Personal Information</span>
+                    </button>
+                    <button type="button" class="quick-action" data-scroll-target="photoUploadCard">
+                        <i class="fa-solid fa-camera"></i>
+                        <span>Upload / Change Photo</span>
+                    </button>
+                    <button type="button" class="quick-action" data-scroll-target="addressFields">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <span>Update Address</span>
+                    </button>
+                    <a class="quick-action" th:href="@{/employee/attendance-calendar}">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        <span>Calendar</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="dashboard-panels">
+                <article id="personalInfoForm" class="edit-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <span>Editable Details</span>
+                            <h3>Personal Information</h3>
+                        </div>
+                    </div>
+
+                    <form id="employeeProfileForm" novalidate>
+                        <div class="form-grid read-only-grid">
+                            <label>
+                                Full Name
+                                <input type="text" th:value="${profile.fullName}" readonly disabled>
+                            </label>
+                            <label>
+                                Email
+                                <input type="email" th:value="${profile.email}" readonly disabled>
+                            </label>
+                            <label>
+                                Employee ID
+                                <input type="text" th:value="${profile.employeeId}" readonly disabled>
+                            </label>
+                            <label>
+                                Employee Code
+                                <input type="text" th:value="${profile.employeeCode}" readonly disabled>
+                            </label>
+                        </div>
+
+                        <div class="form-grid">
+                            <label>
+                                Date of Birth
+                                <input name="dob" type="date" th:value="${profile.dob}">
+                                <small class="field-error" data-error-for="dob"></small>
+                            </label>
+                            <label>
+                                Gender
+                                <select name="gender">
+                                    <option value="">Select</option>
+                                    <option value="Male" th:selected="${profile.gender == 'Male'}">Male</option>
+                                    <option value="Female" th:selected="${profile.gender == 'Female'}">Female</option>
+                                    <option value="Other" th:selected="${profile.gender == 'Other'}">Other</option>
+                                </select>
+                                <small class="field-error" data-error-for="gender"></small>
+                            </label>
+                            <label>
+                                Mobile Number
+                                <input name="mobileNo" type="tel" maxlength="15" th:value="${profile.mobileNo}">
+                                <small class="field-error" data-error-for="mobileNo"></small>
+                            </label>
+                            <label>
+                                Alternate Mobile
+                                <input name="alternateMobileNo" type="tel" maxlength="15"
+                                    th:value="${profile.alternateMobileNo}">
+                                <small class="field-error" data-error-for="alternateMobileNo"></small>
+                            </label>
+                            <label>
+                                PAN Number
+                                <input name="panNo" type="text" maxlength="10" th:value="${profile.panNo}">
+                                <small class="field-error" data-error-for="panNo"></small>
+                            </label>
+                            <label>
+                                Marital Status
+                                <select name="maritalStatus">
+                                    <option value="">Select</option>
+                                    <option value="Single" th:selected="${profile.maritalStatus == 'Single'}">Single</option>
+                                    <option value="Married" th:selected="${profile.maritalStatus == 'Married'}">Married</option>
+                                    <option value="Other" th:selected="${profile.maritalStatus == 'Other'}">Other</option>
+                                </select>
+                                <small class="field-error" data-error-for="maritalStatus"></small>
+                            </label>
+                            <label>
+                                Blood Group
+                                <select name="bloodGroup">
+                                    <option value="">Select</option>
+                                    <option value="A+" th:selected="${profile.bloodGroup == 'A+'}">A+</option>
+                                    <option value="A-" th:selected="${profile.bloodGroup == 'A-'}">A-</option>
+                                    <option value="B+" th:selected="${profile.bloodGroup == 'B+'}">B+</option>
+                                    <option value="B-" th:selected="${profile.bloodGroup == 'B-'}">B-</option>
+                                    <option value="AB+" th:selected="${profile.bloodGroup == 'AB+'}">AB+</option>
+                                    <option value="AB-" th:selected="${profile.bloodGroup == 'AB-'}">AB-</option>
+                                    <option value="O+" th:selected="${profile.bloodGroup == 'O+'}">O+</option>
+                                    <option value="O-" th:selected="${profile.bloodGroup == 'O-'}">O-</option>
+                                </select>
+                                <small class="field-error" data-error-for="bloodGroup"></small>
+                            </label>
+                            <label>
+                                Emergency Contact Name
+                                <input name="emergencyContactName" type="text"
+                                    th:value="${profile.emergencyContactName}">
+                                <small class="field-error" data-error-for="emergencyContactName"></small>
+                            </label>
+                            <label>
+                                Emergency Contact Number
+                                <input name="emergencyContactNo" type="tel" maxlength="15"
+                                    th:value="${profile.emergencyContactNo}">
+                                <small class="field-error" data-error-for="emergencyContactNo"></small>
+                            </label>
+                        </div>
+
+                        <div id="addressFields" class="address-grid">
+                            <label>
+                                Current Address
+                                <textarea name="currentAddress" rows="4"
+                                    th:text="${profile.currentAddress}"></textarea>
+                                <small class="field-error" data-error-for="currentAddress"></small>
+                            </label>
+                            <label>
+                                Permanent Address
+                                <textarea name="permanentAddress" rows="4"
+                                    th:text="${profile.permanentAddress}"></textarea>
+                                <small class="field-error" data-error-for="permanentAddress"></small>
+                            </label>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                Save Profile
+                            </button>
+                        </div>
+                    </form>
+                </article>
+
+                <aside id="photoUploadCard" class="photo-upload-card">
+                    <div class="panel-heading compact">
+                        <div>
+                            <span>Profile Photo</span>
+                            <h3>Upload Photo</h3>
+                        </div>
+                    </div>
+                    <div class="photo-preview">
+                        <img id="photoPreview"
+                            th:if="${loggedInUser != null and loggedInUser.photoPath != null and !#strings.isEmpty(loggedInUser.photoPath)}"
+                            th:src="@{${loggedInUser.photoPath}}" alt="Selected profile photo">
+                        <div id="photoPreviewFallback"
+                            th:classappend="${loggedInUser != null and loggedInUser.photoPath != null and !#strings.isEmpty(loggedInUser.photoPath)} ? ' d-none' : ''">
+                            <i class="fa-solid fa-image"></i>
+                            <span>No photo selected</span>
+                        </div>
+                    </div>
+                    <form id="photoUploadForm" novalidate>
+                        <input id="photoFile" name="file" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                        <small class="upload-note">JPG, JPEG, or PNG only. Maximum 2 MB.</small>
+                        <small class="field-error" data-error-for="file"></small>
+                        <button type="submit" class="btn btn-outline-primary w-100">
+                            <i class="fa-solid fa-upload"></i>
+                            Save Photo
+                        </button>
+                    </form>
+                </aside>
+            </div>
+        </section>
+    </th:block>
+    <script th:src="@{/js/employee-dashboard.js}"></script>
+</body>
+
+</html>

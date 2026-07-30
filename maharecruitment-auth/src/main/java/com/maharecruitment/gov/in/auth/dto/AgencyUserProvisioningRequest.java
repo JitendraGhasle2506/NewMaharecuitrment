@@ -24,6 +24,8 @@ public class AgencyUserProvisioningRequest {
     @Pattern(regexp = "^[0-9]{10}$", message = "Agency contact mobile number must be 10 digits")
     private String mobileNo;
 
+    private Long agencyId;
+
     @Email(message = "Previous agency official email must be valid")
     @Size(max = 255, message = "Previous agency official email must not exceed 255 characters")
     private String previousEmail;

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>IT Infra & Utilities</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .asset-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            margin-bottom: 2rem;
+            background: #fff;
+        }
+        .asset-header {
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid #edf2f7;
+            border-radius: 12px 12px 0 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #eef2ff 100%);
+        }
+        .asset-body { padding: 2rem; }
+        .record-table thead th {
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #718096;
+            background: #f7fafc;
+        }
+        .section-divider {
+            border: none;
+            border-top: 2px dashed #e2e8f0;
+            margin: 1.5rem 0;
+        }
+    </style>
+</head>
+<body class="infra-shell">
+
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Utilities', ~{::section})}">
+        <section>
+
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show d-flex align-items-center shadow-sm mb-3" role="alert">
+                <i class="fas fa-check-circle me-2 fs-5"></i>
+                <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center shadow-sm mb-3" role="alert">
+                <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+                <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- ─── LIST VIEW ────────────────────────────────── -->
+            <div id="listView">
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                    <h4 class="mb-0 text-dark fw-bold">IT Infrastructure & Asset Utilities</h4>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-secondary fw-bold shadow-sm px-3" onclick="toggleView('addCategoryView')">
+                            <i class="fas fa-tags me-2"></i> Add Category
+                        </button>
+                        <button class="btn btn-primary fw-bold shadow-sm px-3" onclick="toggleView('addAssetView')">
+                            <i class="fas fa-laptop me-2"></i> Add Asset
+                        </button>
+                        <button class="btn btn-success fw-bold shadow-sm px-3" onclick="toggleView('allocateAssetView')">
+                            <i class="fas fa-user-plus me-2"></i> Allocate Asset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dashboard Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card asset-card">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                                    <i class="fas fa-boxes text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="text-muted mb-1">Total Assets</h6>
+                                    <h3 class="mb-0 fw-bold" th:text="${#lists.size(assets)}">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card asset-card">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                                    <i class="fas fa-user-check text-success fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="text-muted mb-1">Allocated Assets</h6>
+                                    <h3 class="mb-0 fw-bold text-success" th:text="${#lists.size(allocations.?[allocationStatus == 'ASSIGNED'])}">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card asset-card">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                                    <i class="fas fa-exclamation-triangle text-warning fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="text-muted mb-1">Damaged/Lost</h6>
+                                    <h3 class="mb-0 fw-bold text-warning" th:text="${#lists.size(assets.?[status == 'DAMAGED' || status == 'LOST'])}">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Asset Allocations Table -->
+                <div class="card asset-card">
+                    <div class="asset-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-list-ul text-primary fs-5"></i>
+                            <h6 class="mb-0 fw-bold text-dark">Current Asset Allocations</h6>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 record-table">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">Employee</th>
+                                        <th>Asset Name</th>
+                                        <th>Asset Code</th>
+                                        <th>Category</th>
+                                        <th>Allocated Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="alloc : ${allocations}" th:if="${alloc.allocationStatus == 'ASSIGNED'}">
+                                        <td class="ps-4 fw-semibold" th:text="${alloc.employee.fullName + ' (' + alloc.employee.employeeCode + ')'}"></td>
+                                        <td th:text="${alloc.asset.assetName}"></td>
+                                        <td th:text="${alloc.asset.assetCode}"></td>
+                                        <td th:text="${alloc.asset.assetCategory.categoryName}"></td>
+                                        <td th:text="${#temporals.format(alloc.allocatedDate, 'dd-MM-yyyy')}"></td>
+                                        <td><span class="badge bg-success-subtle text-success-emphasis">Assigned</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-warning" 
+                                                    th:attr="onclick=|openReturnView('${alloc.id}', '${alloc.asset.assetName}', '${alloc.employee.fullName}')|">
+                                                <i class="fas fa-undo me-1"></i> Return
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(allocations.?[allocationStatus == 'ASSIGNED'])}">
+                                        <td colspan="7" class="text-center text-muted py-4">No active allocations found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Assets Table -->
+                <div class="card asset-card">
+                    <div class="asset-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-boxes text-secondary fs-5"></i>
+                            <h6 class="mb-0 fw-bold text-dark">All Assets Master List</h6>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 record-table">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">Asset Code</th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Purchase Date</th>
+                                        <th>Warranty Expiry</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="asset : ${assets}">
+                                        <td class="ps-4 fw-semibold" th:text="${asset.assetCode}"></td>
+                                        <td th:text="${asset.assetName}"></td>
+                                        <td th:text="${asset.assetCategory.categoryName}"></td>
+                                        <td th:text="${asset.purchaseDate != null ? #temporals.format(asset.purchaseDate, 'dd-MM-yyyy') : '-'}"></td>
+                                        <td th:text="${asset.warrantyExpiryDate != null ? #temporals.format(asset.warrantyExpiryDate, 'dd-MM-yyyy') : '-'}"></td>
+                                        <td>
+                                            <span class="badge" 
+                                                  th:classappend="${asset.status == 'AVAILABLE' ? 'bg-info-subtle text-info-emphasis' : 
+                                                                (asset.status == 'ALLOCATED' ? 'bg-success-subtle text-success-emphasis' : 'bg-danger-subtle text-danger-emphasis')}"
+                                                  th:text="${asset.status}">
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- End List View -->
+
+
+            <!-- ─── ADD CATEGORY VIEW ──────────────────────────── -->
+            <div id="addCategoryView" class="d-none">
+                <div class="card asset-card">
+                    <div class="asset-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-secondary bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                <i class="fas fa-tags text-secondary fs-5"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Add Asset Category</h5>
+                                <p class="text-muted mb-0 small">Create a new category for your assets.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
+                    </div>
+                    <div class="asset-body">
+                        <form th:action="@{/infra/utilities/assets/category}" method="post">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Category Name <span class="text-danger">*</span></label>
+                                    <input type="text" name="categoryName" class="form-control" required placeholder="e.g. Laptop, Mobile">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Description</label>
+                                    <textarea name="description" class="form-control" rows="1"></textarea>
+                                </div>
+                            </div>
+                            <hr class="section-divider">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary px-4" onclick="toggleView('listView')">Cancel</button>
+                                <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">Save Category</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── ADD ASSET VIEW ─────────────────────────────── -->
+            <div id="addAssetView" class="d-none">
+                <div class="card asset-card">
+                    <div class="asset-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                <i class="fas fa-laptop text-primary fs-5"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Add New Asset</h5>
+                                <p class="text-muted mb-0 small">Register a new physical or digital asset into the inventory.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
+                    </div>
+                    <div class="asset-body">
+                        <form th:action="@{/infra/utilities/assets/add}" method="post">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Category <span class="text-danger">*</span></label>
+                                    <select name="assetCategory.id" class="form-select" required>
+                                        <option value="">Select Category</option>
+                                        <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.categoryName}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Asset Code / Serial No <span class="text-danger">*</span></label>
+                                    <input type="text" name="assetCode" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Asset Name <span class="text-danger">*</span></label>
+                                    <input type="text" name="assetName" class="form-control" required placeholder="e.g. Dell Latitude 5420">
+                                </div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Purchase Date</label>
+                                    <input type="date" name="purchaseDate" class="form-control">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Warranty Expiry</label>
+                                    <input type="date" name="warrantyExpiryDate" class="form-control">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Notes</label>
+                                    <textarea name="notes" class="form-control" rows="1"></textarea>
+                                </div>
+                            </div>
+                            <hr class="section-divider">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary px-4" onclick="toggleView('listView')">Cancel</button>
+                                <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">Save Asset</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── ALLOCATE ASSET VIEW ────────────────────────── -->
+            <div id="allocateAssetView" class="d-none">
+                <div class="card asset-card">
+                    <div class="asset-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                <i class="fas fa-user-plus text-success fs-5"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Allocate Asset</h5>
+                                <p class="text-muted mb-0 small">Assign an available asset to an employee.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
+                    </div>
+                    <div class="asset-body">
+                        <form th:action="@{/infra/utilities/assets/allocate}" method="post">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Select Employee <span class="text-danger">*</span></label>
+                                    <select name="employeeId" class="form-select" required>
+                                        <option value="">-- Choose Employee --</option>
+                                        <option th:each="emp : ${employees}" th:value="${emp.employeeId}" th:text="${emp.fullName + ' (' + emp.employeeCode + ')'}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Select Available Asset <span class="text-danger">*</span></label>
+                                    <select name="assetId" class="form-select" required>
+                                        <option value="">-- Choose Asset --</option>
+                                        <option th:each="asset : ${assets}" th:if="${asset.status == 'AVAILABLE'}" th:value="${asset.id}" th:text="${asset.assetName + ' (' + asset.assetCode + ')'}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Remarks</label>
+                                    <textarea name="remarks" class="form-control" rows="2" placeholder="e.g. Issued fresh charger too"></textarea>
+                                </div>
+                            </div>
+                            <hr class="section-divider">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary px-4" onclick="toggleView('listView')">Cancel</button>
+                                <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm">Allocate Asset</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── RETURN ASSET VIEW ──────────────────────────── -->
+            <div id="returnAssetView" class="d-none">
+                <div class="card asset-card">
+                    <div class="asset-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                <i class="fas fa-undo text-warning fs-5"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Return Asset</h5>
+                                <p class="text-muted mb-0 small">Process the return of an allocated asset.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
+                    </div>
+                    <div class="asset-body">
+                        <form th:action="@{/infra/utilities/assets/return}" method="post">
+                            <input type="hidden" name="allocationId" id="returnAllocationId">
+                            
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Employee</label>
+                                    <input type="text" id="returnEmpName" class="form-control bg-light" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Asset</label>
+                                    <input type="text" id="returnAssetName" class="form-control bg-light" readonly>
+                                </div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Return Condition / Remarks <span class="text-danger">*</span></label>
+                                    <textarea name="remarks" class="form-control" required rows="3" placeholder="e.g. Working fine, scratches on top"></textarea>
+                                </div>
+                            </div>
+                            <hr class="section-divider">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary px-4" onclick="toggleView('listView')">Cancel</button>
+                                <button type="submit" class="btn btn-warning px-4 fw-bold shadow-sm">Process Return</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </th:block>
+
+    <script th:inline="javascript">
+        function toggleView(viewId) {
+            const views = ['listView', 'addCategoryView', 'addAssetView', 'allocateAssetView', 'returnAssetView'];
+            views.forEach(id => {
+                document.getElementById(id).classList.add('d-none');
+            });
+            document.getElementById(viewId).classList.remove('d-none');
+        }
+
+        function openReturnView(allocationId, assetName, empName) {
+            document.getElementById('returnAllocationId').value = allocationId;
+            document.getElementById('returnAssetName').value = assetName;
+            document.getElementById('returnEmpName').value = empName;
+            toggleView('returnAssetView');
+        }
+    </script>
+</body>
+</html>

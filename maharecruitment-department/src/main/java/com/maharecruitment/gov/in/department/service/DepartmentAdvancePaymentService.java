@@ -2,6 +2,9 @@ package com.maharecruitment.gov.in.department.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.maharecruitment.gov.in.department.dto.AdvancePaymentForm;
 import com.maharecruitment.gov.in.department.dto.DepartmentProjectApplicationSummaryView;
 import com.maharecruitment.gov.in.department.entity.AuditorReviewDecision;
@@ -22,7 +25,7 @@ public interface DepartmentAdvancePaymentService {
 
     AdvancePaymentForm getPaymentForEdit(Long paymentId, String actorEmail);
 
-    List<DepartmentAdvancePaymentEntity> getPaymentSummaries(String actorEmail);
+    Page<DepartmentAdvancePaymentEntity> getPaymentSummaries(String actorEmail, Pageable pageable);
 
     List<DepartmentProjectApplicationSummaryView> getEligibleProjectsForAdvancePayment(String actorEmail);
 
@@ -32,7 +35,7 @@ public interface DepartmentAdvancePaymentService {
 
     void reviewByAuditor(Long paymentId, AuditorReviewDecision decision, String remarks, String actorEmail);
 
-    List<DepartmentAdvancePaymentEntity> getReviewList(String actorEmail);
+    Page<DepartmentAdvancePaymentEntity> getReviewList(String actorEmail, Pageable pageable);
 
     AdvancePaymentForm getPaymentForReview(Long paymentId, String actorEmail);
 

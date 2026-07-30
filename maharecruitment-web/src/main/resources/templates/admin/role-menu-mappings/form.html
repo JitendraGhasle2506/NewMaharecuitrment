@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -31,7 +31,7 @@
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                         <div class="col-md-6">
-                            <label class="form-label">Role</label>
+                            <label class="form-label">Role <span class="text-danger">*</span></label>
                             <select class="form-select" th:field="*{roleId}" th:disabled="${isEdit}">
                                 <option th:value="''">-- Select Role --</option>
                                 <option th:each="role : ${availableRoles}" th:value="${role.id}" th:text="${role.name}"></option>
@@ -42,11 +42,22 @@
 
                         <div class="col-12">
                             <label class="form-label">Menus</label>
-                            <select class="form-select" multiple th:field="*{menuIds}">
-                                <option th:each="menu : ${availableMenus}" th:value="${menu.menuId}"
-                                    th:text="${menu.menuNameEnglish + (menu.url != null ? ' (' + menu.url + ')' : '')}"></option>
-                            </select>
-                            <small class="text-muted">Hold Ctrl to select multiple menus.</small>
+                            <div class="border rounded p-3" style="max-height: 420px; overflow-y: auto;">
+                                <div class="row g-2">
+                                    <div class="col-md-6" th:each="menu : ${availableMenus}">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                th:field="*{menuIds}" th:value="${menu.menuId}"
+                                                th:id="|menu-${menu.menuId}|">
+                                            <label class="form-check-label" th:for="|menu-${menu.menuId}|"
+                                                th:text="${menu.menuNameEnglish + (menu.url != null ? ' (' + menu.url + ')' : '')}">
+                                                Menu Name
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted">Checked menus will be mapped to the selected role.</small>
                         </div>
 
                         <div class="col-12 d-flex gap-2">
@@ -62,3 +73,4 @@
 </body>
 
 </html>
+

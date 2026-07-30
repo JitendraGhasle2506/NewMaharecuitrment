@@ -9,5 +9,16 @@ public interface AccountNotificationService {
             String username,
             String temporaryPassword);
 
+    void sendEmployeeCredentials(
+            String email,
+            String mobileNo,
+            String contactName,
+            String username,
+            String temporaryPassword);
+
     void sendAgencyCredentials(String email, String contactName, String temporaryPassword);
+
+    void sendResignationNotification(String email, String role, String employeeName, String resignDate);
+
+    void sendPasswordResetCompleted(String email, String mobileNo, String name);
 }

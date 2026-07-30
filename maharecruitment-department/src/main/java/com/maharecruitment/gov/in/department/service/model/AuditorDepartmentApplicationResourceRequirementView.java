@@ -15,4 +15,9 @@ public class AuditorDepartmentApplicationResourceRequirementView {
     private Integer requiredQuantity;
     private Integer durationInMonths;
     private BigDecimal totalCost;
+
+    private BigDecimal agencyCommissionAmount;
+    private BigDecimal mahaItCommissionAmount;
+    private BigDecimal taxableAmount;
+    private BigDecimal gstAmount;
 }

@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.master.service.impl;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.master.entity.AgencyMasterAuditAction;
 import com.maharecruitment.gov.in.master.entity.AgencyMasterAuditLog;
@@ -24,6 +25,7 @@ public class AgencyMasterAuditServiceImpl implements AgencyMasterAuditService {
     }
 
     @Override
+    @Transactional
     public void log(Long agencyId, AgencyMasterAuditAction action, String details) {
         AgencyMasterAuditLog auditLog = new AgencyMasterAuditLog();
         auditLog.setAgencyId(agencyId);

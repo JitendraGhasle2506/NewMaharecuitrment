@@ -3,6 +3,8 @@ package com.maharecruitment.gov.in.recruitment.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -10,8 +12,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
+import com.maharecruitment.gov.in.recruitment.repository.projection.AgencyShortlistedCandidateProjectSummaryProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.AgencySelectedCandidateProjectSummaryProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.DepartmentNotificationCandidateSummaryProjection;
+import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyCandidateRequestSummaryMetricsProjection;
+import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyCandidateRequestSummaryProjection;
 
 import jakarta.persistence.LockModeType;
 
@@ -38,11 +43,89 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "left join fetch vacancy.designationMst designation "
             + "where candidate.agency.agencyId = :agencyId "
             + "and candidate.active = true "
+            + "and candidate.candidateStatus in ("
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT, "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY"
+            + ") "
+            + "and candidate.finalDecisionStatus is null "
+            + "order by candidate.departmentShortlistedAt desc, candidate.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findAllShortlistedCandidatesByAgency(@Param("agencyId") Long agencyId);
+
+    @Query("select n.recruitmentNotificationId as recruitmentNotificationId, "
+            + "n.requestId as requestId, "
+            + "p.projectName as projectName, "
+            + "count(c.recruitmentInterviewDetailId) as shortlistedCandidatesCount, "
+            + "max(c.departmentShortlistedAt) as latestShortlistedAt "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join c.recruitmentNotification n "
+            + "join n.projectMst p "
+            + "where c.agency.agencyId = :agencyId "
+            + "and c.active = true "
+            + "and c.candidateStatus in ("
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT, "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY"
+            + ") "
+            + "and c.finalDecisionStatus is null "
+            + "group by n.recruitmentNotificationId, n.requestId, p.projectName "
+            + "order by max(c.departmentShortlistedAt) desc")
+    List<AgencyShortlistedCandidateProjectSummaryProjection> findShortlistedCandidateProjectSummariesByAgency(
+            @Param("agencyId") Long agencyId);
+
+    @Query(value = "select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where candidate.agency.agencyId = :agencyId "
+            + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
+            + "and candidate.active = true "
+            + "and candidate.candidateStatus in ("
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT, "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY"
+            + ") "
+            + "and candidate.finalDecisionStatus is null "
+            + "and (:searchPattern is null or upper(candidate.candidateName) like :searchPattern "
+            + "or upper(candidate.candidateEmail) like :searchPattern "
+            + "or upper(designation.designationName) like :searchPattern) "
+            + "order by candidate.departmentShortlistedAt desc, candidate.createdDateTime desc",
+            countQuery = "select count(candidate.recruitmentInterviewDetailId) "
+                    + "from RecruitmentInterviewDetailEntity candidate "
+                    + "left join candidate.designationVacancy vacancy "
+                    + "left join vacancy.designationMst designation "
+                    + "where candidate.agency.agencyId = :agencyId "
+                    + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
+                    + "and candidate.active = true "
+                    + "and candidate.candidateStatus in ("
+                    + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT, "
+                    + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY"
+                    + ") "
+                    + "and candidate.finalDecisionStatus is null "
+                    + "and (:searchPattern is null or upper(candidate.candidateName) like :searchPattern "
+                    + "or upper(candidate.candidateEmail) like :searchPattern "
+                    + "or upper(designation.designationName) like :searchPattern)")
+    Page<RecruitmentInterviewDetailEntity> findShortlistedCandidatesByAgency(
+            @Param("agencyId") Long agencyId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId,
+            @Param("searchPattern") String searchPattern,
+            Pageable pageable);
+
+    @Query("select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where candidate.agency.agencyId = :agencyId "
+            + "and candidate.active = true "
             + "and candidate.finalDecisionStatus = 'SELECTED' "
+            + "and not exists (select preOnboarding.preOnboardingId "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null) "
             + "order by candidate.finalDecisionAt desc, candidate.createdDateTime desc")
     List<RecruitmentInterviewDetailEntity> findSelectedCandidatesByAgency(@Param("agencyId") Long agencyId);
 
-    @Query("select candidate "
+    @Query(value = "select candidate "
             + "from RecruitmentInterviewDetailEntity candidate "
             + "join fetch candidate.recruitmentNotification notification "
             + "join fetch notification.projectMst project "
@@ -52,10 +135,32 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
             + "and candidate.active = true "
             + "and candidate.finalDecisionStatus = 'SELECTED' "
-            + "order by candidate.finalDecisionAt desc, candidate.createdDateTime desc")
-    List<RecruitmentInterviewDetailEntity> findSelectedCandidatesByAgencyAndNotification(
+            + "and (:searchPattern is null or upper(candidate.candidateName) like :searchPattern "
+            + "or upper(candidate.candidateEmail) like :searchPattern "
+            + "or upper(designation.designationName) like :searchPattern) "
+            + "and not exists (select preOnboarding.preOnboardingId "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null) "
+            + "order by candidate.finalDecisionAt desc, candidate.createdDateTime desc",
+            countQuery = "select count(candidate.recruitmentInterviewDetailId) "
+                    + "from RecruitmentInterviewDetailEntity candidate "
+                    + "left join candidate.designationVacancy vacancy "
+                    + "left join vacancy.designationMst designation "
+                    + "where candidate.agency.agencyId = :agencyId "
+                    + "and candidate.recruitmentNotification.recruitmentNotificationId = :recruitmentNotificationId "
+                    + "and candidate.active = true "
+                    + "and candidate.finalDecisionStatus = 'SELECTED' "
+                    + "and (:searchPattern is null or upper(candidate.candidateName) like :searchPattern "
+                    + "or upper(candidate.candidateEmail) like :searchPattern "
+                    + "or upper(designation.designationName) like :searchPattern) "
+                    + "and not exists (select preOnboarding.preOnboardingId "
+                    + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+                    + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null)")
+    Page<RecruitmentInterviewDetailEntity> findSelectedCandidatesByAgencyAndNotification(
             @Param("agencyId") Long agencyId,
-            @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId,
+            @Param("searchPattern") String searchPattern,
+            Pageable pageable);
 
     @Query("select n.recruitmentNotificationId as recruitmentNotificationId, "
             + "n.requestId as requestId, "
@@ -68,10 +173,100 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             + "where c.agency.agencyId = :agencyId "
             + "and c.active = true "
             + "and c.finalDecisionStatus = 'SELECTED' "
+            + "and not exists (select preOnboarding.preOnboardingId "
+            + "from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = c and preOnboarding.onboardedAt is not null) "
             + "group by n.recruitmentNotificationId, n.requestId, p.projectName "
             + "order by max(c.finalDecisionAt) desc")
     List<AgencySelectedCandidateProjectSummaryProjection> findSelectedCandidateProjectSummariesByAgency(
             @Param("agencyId") Long agencyId);
+
+    @Query("select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch notification.internalVacancyOpening opening "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where candidate.agency.agencyId = :agencyId "
+            + "and candidate.active = true "
+            + "and candidate.assessmentSubmitted = true "
+            + "and notification.internalVacancyOpening is not null "
+            + "and notification.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and not exists (select 1 from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null) "
+            + "order by coalesce(candidate.assessmentSubmittedAt, candidate.createdDateTime) desc, "
+            + "candidate.recruitmentInterviewDetailId desc")
+    List<RecruitmentInterviewDetailEntity> findInternalAssessmentSubmittedCandidatesByAgency(
+            @Param("agencyId") Long agencyId);
+
+    @Query("select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch notification.internalVacancyOpening opening "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where candidate.agency.agencyId = :agencyId "
+            + "and notification.recruitmentNotificationId = :recruitmentNotificationId "
+            + "and candidate.active = true "
+            + "and candidate.assessmentSubmitted = true "
+            + "and notification.internalVacancyOpening is not null "
+            + "and notification.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and not exists (select 1 from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null) "
+            + "order by coalesce(candidate.assessmentSubmittedAt, candidate.createdDateTime) desc, "
+            + "candidate.recruitmentInterviewDetailId desc")
+    List<RecruitmentInterviewDetailEntity> findInternalAssessmentSubmittedCandidatesByAgencyAndNotification(
+            @Param("agencyId") Long agencyId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+
+    @Query("select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch notification.internalVacancyOpening opening "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where candidate.agency.agencyId = :agencyId "
+            + "and notification.recruitmentNotificationId = :recruitmentNotificationId "
+            + "and candidate.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and candidate.active = true "
+            + "and candidate.assessmentSubmitted = true "
+            + "and notification.internalVacancyOpening is not null "
+            + "and notification.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and not exists (select 1 from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null)")
+    Optional<RecruitmentInterviewDetailEntity> findInternalAssessmentSubmittedCandidateByAgencyAndNotificationAndId(
+            @Param("agencyId") Long agencyId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select candidate "
+            + "from RecruitmentInterviewDetailEntity candidate "
+            + "join fetch candidate.recruitmentNotification notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch notification.internalVacancyOpening opening "
+            + "join fetch candidate.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where candidate.agency.agencyId = :agencyId "
+            + "and notification.recruitmentNotificationId = :recruitmentNotificationId "
+            + "and candidate.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and candidate.active = true "
+            + "and candidate.assessmentSubmitted = true "
+            + "and notification.internalVacancyOpening is not null "
+            + "and notification.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and not exists (select 1 from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.interviewDetail = candidate and preOnboarding.onboardedAt is not null)")
+    Optional<RecruitmentInterviewDetailEntity> findInternalAssessmentSubmittedCandidateByAgencyAndNotificationAndIdForUpdate(
+            @Param("agencyId") Long agencyId,
+            @Param("recruitmentNotificationId") Long recruitmentNotificationId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId);
 
     @Query("select n.recruitmentNotificationId as recruitmentNotificationId, "
             + "n.requestId as requestId, "
@@ -122,12 +317,155 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
 
-    boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateEmailIgnoreCase(
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and n.internalVacancyOpening is not null "
+            + "and c.active = true "
+            + "order by case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacancyByRequestId(
+            @Param("requestId") String requestId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join n.internalVacancyOpening opening "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId)) "
+            + "and n.internalVacancyOpening is not null "
+            + "and n.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and c.active = true "
+            + "order by upper(n.requestId) asc, "
+            + "case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacanciesByInterviewAuthority(
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join n.internalVacancyOpening opening "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId)) "
+            + "and n.internalVacancyOpening is not null "
+            + "and n.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and c.active = true "
+            + "order by case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacancyByRequestIdAndInterviewAuthority(
+            @Param("requestId") String requestId,
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where n.internalVacancyOpening is not null "
+            + "and c.active = true "
+            + "order by upper(n.requestId) asc, "
+            + "case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findActiveCandidatesForInternalVacancies();
+
+    @Query(
+            value = "select upper(n.requestId) as requestId, "
+                    + "p.projectName as projectName, "
+                    + "count(c.recruitmentInterviewDetailId) as totalCandidates, "
+                    + "coalesce(sum(case when c.candidateStatus is null then 1 else 0 end), 0) as pendingReviewCandidates, "
+                    + "coalesce(sum(case when c.candidateStatus = "
+                    + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT "
+                    + "then 1 else 0 end), 0) as shortlistedCandidates, "
+                    + "coalesce(sum(case when c.candidateStatus = "
+                    + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT "
+                    + "then 1 else 0 end), 0) as rejectedCandidates, "
+                    + "coalesce(sum(case when c.candidateStatus = "
+                    + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+                    + "and (c.assessmentSubmitted is null or c.assessmentSubmitted = false) then 1 else 0 end), 0) "
+                    + "as interviewScheduledCandidates, "
+                    + "coalesce(sum(case when c.assessmentSubmitted = true then 1 else 0 end), 0) "
+                    + "as feedbackSubmittedCandidates, "
+                    + "max(c.createdDateTime) as latestSubmittedAt "
+                    + "from RecruitmentInterviewDetailEntity c "
+                    + "join c.recruitmentNotification n "
+                    + "join n.projectMst p "
+                    + "where n.internalVacancyOpening is not null "
+                    + "and c.active = true "
+                    + "and (:searchPattern is null "
+                    + "or upper(n.requestId) like :searchPattern "
+                    + "or upper(p.projectName) like :searchPattern) "
+                    + "group by n.recruitmentNotificationId, n.requestId, p.projectName "
+                    + "order by max(c.createdDateTime) desc",
+            countQuery = "select count(distinct n.recruitmentNotificationId) "
+                    + "from RecruitmentInterviewDetailEntity c "
+                    + "join c.recruitmentNotification n "
+                    + "join n.projectMst p "
+                    + "where n.internalVacancyOpening is not null "
+                    + "and c.active = true "
+                    + "and (:searchPattern is null "
+                    + "or upper(n.requestId) like :searchPattern "
+                    + "or upper(p.projectName) like :searchPattern)")
+    Page<InternalVacancyCandidateRequestSummaryProjection> findInternalVacancyCandidateRequestSummaryPage(
+            @Param("searchPattern") String searchPattern,
+            Pageable pageable);
+
+    @Query("select count(distinct n.recruitmentNotificationId) as requestCount, "
+            + "count(c.recruitmentInterviewDetailId) as totalCandidates, "
+            + "coalesce(sum(case when c.candidateStatus is null then 1 else 0 end), 0) as pendingReviewCandidates, "
+            + "coalesce(sum(case when c.candidateStatus = "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT "
+            + "then 1 else 0 end), 0) as shortlistedCandidates, "
+            + "coalesce(sum(case when c.candidateStatus = "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT "
+            + "then 1 else 0 end), 0) as rejectedCandidates, "
+            + "coalesce(sum(case when c.candidateStatus = "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+            + "and (c.assessmentSubmitted is null or c.assessmentSubmitted = false) then 1 else 0 end), 0) "
+            + "as interviewScheduledCandidates, "
+            + "coalesce(sum(case when c.assessmentSubmitted = true then 1 else 0 end), 0) "
+            + "as feedbackSubmittedCandidates "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join c.recruitmentNotification n "
+            + "join n.projectMst p "
+            + "where n.internalVacancyOpening is not null "
+            + "and c.active = true "
+            + "and (:searchPattern is null "
+            + "or upper(n.requestId) like :searchPattern "
+            + "or upper(p.projectName) like :searchPattern)")
+    InternalVacancyCandidateRequestSummaryMetricsProjection summarizeInternalVacancyCandidateRequestMetrics(
+            @Param("searchPattern") String searchPattern);
+
+    boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateEmailIgnoreCase(
             Long recruitmentNotificationId,
             Long agencyId,
             String candidateEmail);
 
-    boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateMobile(
+    long countByAgencyAgencyIdAndInterviewDateTimeIsNotNull(Long agencyId);
+
+    boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndActiveTrue(Long recruitmentNotificationId);
+
+    boolean existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateMobile(
             Long recruitmentNotificationId,
             Long agencyId,
             String candidateMobile);
@@ -164,6 +502,68 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId,
             @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join c.recruitmentNotification n "
+            + "join n.internalVacancyOpening opening "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and c.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId)) "
+            + "and n.internalVacancyOpening is not null "
+            + "and n.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and c.active = true")
+    Optional<RecruitmentInterviewDetailEntity> findByIdForInternalVacancyInterviewAuthorityReviewUpdate(
+            @Param("requestId") String requestId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId,
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "join n.internalVacancyOpening opening "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and c.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId)) "
+            + "and n.internalVacancyOpening is not null "
+            + "and n.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and c.active = true")
+    Optional<RecruitmentInterviewDetailEntity> findByIdForInternalVacancyInterviewWorkflowUpdate(
+            @Param("requestId") String requestId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId,
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "join fetch c.agency agency "
+            + "join n.internalVacancyOpening opening "
+            + "where upper(n.requestId) = upper(:requestId) "
+            + "and c.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId)) "
+            + "and n.internalVacancyOpening is not null "
+            + "and n.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
+            + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
+            + "and c.active = true")
+    Optional<RecruitmentInterviewDetailEntity> findByIdForInternalVacancyInterviewWorkflowView(
+            @Param("requestId") String requestId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId,
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c "
@@ -263,4 +663,50 @@ public interface RecruitmentInterviewDetailRepository extends JpaRepository<Recr
     List<RecruitmentInterviewDetailEntity> findInterviewScheduleAvailableCandidatesForDepartmentByNotification(
             @Param("departmentRegistrationId") Long departmentRegistrationId,
             @Param("recruitmentNotificationId") Long recruitmentNotificationId);
+
+    @Query("select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where c.active = true "
+            + "and c.interviewAuthority = 'MAHAIT_HR' "
+            + "and c.candidateStatus = "
+            + "com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+            + "and c.departmentShortlistedAt is not null "
+            + "and c.interviewDateTime is not null "
+            + "and c.finalDecisionStatus is null "
+            + "order by c.interviewDateTime desc, c.createdDateTime desc")
+    List<RecruitmentInterviewDetailEntity> findExternalInterviewsForHR();
+
+    @Query(value = "select c "
+            + "from RecruitmentInterviewDetailEntity c "
+            + "join fetch c.recruitmentNotification n "
+            + "join fetch n.projectMst p "
+            + "inner join RecruitmentExternalInterviewPanelMemberEntity panel on panel.recruitmentInterviewDetail.recruitmentInterviewDetailId = c.recruitmentInterviewDetailId "
+            + "join fetch c.agency agency "
+            + "join fetch c.designationVacancy vacancy "
+            + "left join fetch vacancy.designationMst designation "
+            + "where panel.panelUserId = :userId "
+            + "and c.active = true "
+            + "and c.candidateStatus = com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+            + "and (:search is null or upper(n.requestId) like :search or upper(p.projectName) like :search or upper(c.candidateName) like :search) "
+            + "order by case when c.interviewDateTime is null then 1 else 0 end asc, "
+            + "c.interviewDateTime desc, c.createdDateTime desc",
+            countQuery = "select count(c.recruitmentInterviewDetailId) "
+                    + "from RecruitmentInterviewDetailEntity c "
+                    + "join c.recruitmentNotification n "
+                    + "join n.projectMst p "
+                    + "inner join RecruitmentExternalInterviewPanelMemberEntity panel on panel.recruitmentInterviewDetail.recruitmentInterviewDetailId = c.recruitmentInterviewDetailId "
+                    + "where panel.panelUserId = :userId "
+                    + "and c.active = true "
+                    + "and c.candidateStatus = com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY "
+                    + "and (:search is null or upper(n.requestId) like :search or upper(p.projectName) like :search or upper(c.candidateName) like :search)")
+    Page<RecruitmentInterviewDetailEntity> findAssignedExternalCandidatesForPanelUser(
+            @Param("userId") Long userId,
+            @Param("search") String search,
+            Pageable pageable);
+
 }

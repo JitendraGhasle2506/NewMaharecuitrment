@@ -1,5 +1,8 @@
 package com.maharecruitment.gov.in.web.controller.admin;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -7,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -19,6 +23,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.maharecruitment.gov.in.auth.dto.SubMenuUpsertRequest;
 import com.maharecruitment.gov.in.auth.entity.MstSubMenu;
 import com.maharecruitment.gov.in.auth.service.MenuManagementService;
+import com.maharecruitment.gov.in.auth.service.RoleManagementService;
 import com.maharecruitment.gov.in.auth.service.SubMenuManagementService;
 import com.maharecruitment.gov.in.web.dto.admin.SubMenuForm;
 
@@ -34,22 +39,35 @@ public class AdminSubMenuPageController {
 
     private final SubMenuManagementService subMenuManagementService;
     private final MenuManagementService menuManagementService;
+    private final RoleManagementService roleManagementService;
 
     public AdminSubMenuPageController(
             SubMenuManagementService subMenuManagementService,
-            MenuManagementService menuManagementService) {
+            MenuManagementService menuManagementService,
+            RoleManagementService roleManagementService) {
         this.subMenuManagementService = subMenuManagementService;
         this.menuManagementService = menuManagementService;
+        this.roleManagementService = roleManagementService;
     }
 
     @GetMapping
     public String list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
             Model model) {
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
-        Page<MstSubMenu> subMenus = subMenuManagementService.getAll(pageable);
+        int resolvedPage = Math.max(page, 0);
+        int resolvedSize = Math.max(size, 1);
+        String normalizedSearch = normalizeSearch(search);
+        Pageable pageable = PageRequest.of(resolvedPage, resolvedSize);
+        Page<MstSubMenu> subMenus = subMenuManagementService.getAll(normalizedSearch, pageable);
+        if (subMenus.getTotalPages() > 0 && resolvedPage >= subMenus.getTotalPages()) {
+            pageable = PageRequest.of(subMenus.getTotalPages() - 1, resolvedSize);
+            subMenus = subMenuManagementService.getAll(normalizedSearch, pageable);
+        }
         model.addAttribute("subMenus", subMenus);
+        model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
+        model.addAttribute("pageSize", subMenus.getSize());
         return "admin/submenus/list";
     }
 
@@ -78,6 +96,7 @@ public class AdminSubMenuPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        validateForm(form, bindingResult);
         if (bindingResult.hasErrors()) {
             populateForm(model, form, null);
             return VIEW_PATH;
@@ -102,6 +121,7 @@ public class AdminSubMenuPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        validateForm(form, bindingResult);
         if (bindingResult.hasErrors()) {
             populateForm(model, form, subMenuId);
             return VIEW_PATH;
@@ -135,6 +155,13 @@ public class AdminSubMenuPageController {
         model.addAttribute("subMenuId", subMenuId);
         model.addAttribute("isEdit", subMenuId != null);
         model.addAttribute("parentMenus", menuManagementService.getParentMenus());
+        model.addAttribute("availableRoles", roleManagementService.getAll());
+    }
+
+    private void validateForm(SubMenuForm form, BindingResult bindingResult) {
+        if (form.getRoleIds() == null || form.getRoleIds().isEmpty()) {
+            bindingResult.rejectValue("roleIds", "submenu.roles", "At least one role is required.");
+        }
     }
 
     private SubMenuUpsertRequest toRequest(SubMenuForm form) {
@@ -148,6 +175,7 @@ public class AdminSubMenuPageController {
         request.setIsActive(form.getIsActive() == null || form.getIsActive().isBlank()
                 ? 'Y'
                 : Character.toUpperCase(form.getIsActive().trim().charAt(0)));
+        request.setRoleIds(form.getRoleIds() == null ? List.of() : new ArrayList<>(form.getRoleIds()));
         return request;
     }
 
@@ -160,6 +188,13 @@ public class AdminSubMenuPageController {
         form.setUrl(existing.getUrl());
         form.setIcon(existing.getIcon());
         form.setIsActive(existing.getIsActive() == null ? "Y" : String.valueOf(existing.getIsActive()));
+        form.setRoleIds(existing.getRoles() == null
+                ? List.of()
+                : existing.getRoles().stream().map(role -> role.getId()).toList());
         return form;
+    }
+
+    private String normalizeSearch(String search) {
+        return StringUtils.hasText(search) ? search.trim() : null;
     }
 }

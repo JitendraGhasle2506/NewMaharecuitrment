@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -24,6 +24,21 @@
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/submenus}">Submenus</a>
                     </div>
 
+                    <form class="row g-2 align-items-center mb-3" method="get" th:action="@{/admin/menus}">
+                        <input type="hidden" name="size" th:value="${pageSize}">
+                        <div class="col-md-6 col-lg-5">
+                            <input type="search"
+                                class="form-control"
+                                name="search"
+                                th:value="${searchTerm}"
+                                placeholder="Search by menu name, URL, role, type or status">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                            <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/menus(size=${pageSize})}">Clear</a>
+                        </div>
+                    </form>
+
                     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
@@ -42,7 +57,8 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${menus.isEmpty()}">
-                                    <td colspan="7" class="text-center text-muted">No records found</td>
+                                    <td colspan="7" class="text-center text-muted"
+                                        th:text="${#strings.isEmpty(searchTerm)} ? 'No records found' : 'No menus matched your search'">No records found</td>
                                 </tr>
                                 <tr th:each="menu : ${menus.content}">
                                     <td th:text="${menu.menuId}"></td>
@@ -76,16 +92,54 @@
                         </table>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-3" th:if="${menus.totalPages > 1}">
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!menus.first}"
-                            th:href="@{/admin/menus(page=${menus.number - 1},size=${menus.size})}">Previous</a>
-                        <span th:if="${menus.first}"></span>
-                        <span class="small text-muted">
-                            Page <span th:text="${menus.number + 1}"></span> of <span th:text="${menus.totalPages}"></span>
-                        </span>
-                        <a class="btn btn-outline-secondary btn-sm" th:if="${!menus.last}"
-                            th:href="@{/admin/menus(page=${menus.number + 1},size=${menus.size})}">Next</a>
-                        <span th:if="${menus.last}"></span>
+                    <div class="app-pagination-shell"
+                        th:if="${menus.totalPages > 1}"
+                        th:with="middleStart=${menus.number - 2 > 1 ? menus.number - 2 : 1},
+                                 middleEnd=${menus.number + 2 < menus.totalPages - 2 ? menus.number + 2 : menus.totalPages - 2},
+                                 showingFrom=${menus.totalElements == 0 ? 0 : menus.number * menus.size + 1},
+                                 showingTo=${menus.totalElements == 0 ? 0 : menus.number * menus.size + menus.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                <span th:text="${menus.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${menus.number + 1}">1</span> of <span th:text="${menus.totalPages}">1</span>
+                            </div>
+                        </div>
+                        <nav aria-label="Menu management pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${menus.first} ? ' disabled'">
+                                    <a class="page-link" th:href="@{/admin/menus(page=${menus.number - 1},size=${menus.size},search=${searchTerm})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:classappend="${menus.number == 0} ? ' active'">
+                                    <a class="page-link" th:href="@{/admin/menus(page=0,size=${menus.size},search=${searchTerm})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == menus.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/admin/menus(page=${pageIndex},size=${menus.size},search=${searchTerm})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < menus.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${menus.totalPages > 1}"
+                                    th:classappend="${menus.number == menus.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/admin/menus(page=${menus.totalPages - 1},size=${menus.size},search=${searchTerm})}"
+                                        th:text="${menus.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${menus.last} ? ' disabled'">
+                                    <a class="page-link" th:href="@{/admin/menus(page=${menus.number + 1},size=${menus.size},search=${searchTerm})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -94,3 +148,4 @@
 </body>
 
 </html>
+

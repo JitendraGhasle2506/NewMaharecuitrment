@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
+import com.maharecruitment.gov.in.department.repository.projection.CellEmployeeCountProjection;
 import com.maharecruitment.gov.in.department.repository.projection.DepartmentProjectCountByDepartmentAndSubDepartmentProjection;
 import com.maharecruitment.gov.in.department.repository.projection.DepartmentProjectCountByDepartmentProjection;
 import com.maharecruitment.gov.in.department.repository.projection.DepartmentProjectCountBySubDepartmentProjection;
@@ -21,8 +24,50 @@ public interface DepartmentProjectApplicationRepository extends JpaRepository<De
 
     boolean existsByRequestId(String requestId);
 
+    long countByApplicationStatus(DepartmentApplicationStatus applicationStatus);
+
+    @Query("""
+            select
+                case
+                    when trim(coalesce(cell.cellName, '')) = '' then :unassignedCell
+                    else trim(cell.cellName)
+                end as cellName,
+                coalesce(sum(case when upper(trim(coalesce(employee.recruitmentType, ''))) = :internalType then 1 else 0 end), 0) as internalEmployees,
+                coalesce(sum(case when upper(trim(coalesce(employee.recruitmentType, ''))) = :externalType then 1 else 0 end), 0) as externalEmployees
+            from ProjectMst project
+            left join project.cell cell,
+                 DepartmentProjectApplicationEntity application,
+                 EmployeeEntity employee
+            where application.departmentProjectApplicationId = project.applicationId
+              and employee.requestId = application.requestId
+              and trim(coalesce(employee.requestId, '')) <> ''
+            group by
+                case
+                    when trim(coalesce(cell.cellName, '')) = '' then :unassignedCell
+                    else trim(cell.cellName)
+                end
+            """)
+    List<CellEmployeeCountProjection> summarizeEmployeeCountsByProjectCell(
+            @Param("internalType") String internalType,
+            @Param("externalType") String externalType,
+            @Param("unassignedCell") String unassignedCell);
+
+    Optional<DepartmentProjectApplicationEntity> findByRequestIdIgnoreCase(String requestId);
+    
+    List<DepartmentProjectApplicationEntity> findByApplicationStatusInOrderByDepartmentProjectApplicationIdDesc(
+            Collection<DepartmentApplicationStatus> applicationStatuses);
+
+    Page<DepartmentProjectApplicationEntity> findByApplicationStatusInOrderByDepartmentProjectApplicationIdDesc(
+            Collection<DepartmentApplicationStatus> applicationStatuses,
+            Pageable pageable);
+
+
     List<DepartmentProjectApplicationEntity> findByDepartmentRegistrationIdOrderByDepartmentProjectApplicationIdDesc(
             Long departmentRegistrationId);
+
+    Page<DepartmentProjectApplicationEntity> findByDepartmentRegistrationIdOrderByDepartmentProjectApplicationIdDesc(
+            Long departmentRegistrationId,
+            Pageable pageable);
 
     Optional<DepartmentProjectApplicationEntity> findByDepartmentProjectApplicationIdAndDepartmentRegistrationId(
             Long departmentProjectApplicationId,

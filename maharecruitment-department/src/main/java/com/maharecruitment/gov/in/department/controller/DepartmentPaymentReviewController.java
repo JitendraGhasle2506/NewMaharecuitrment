@@ -3,6 +3,9 @@ package com.maharecruitment.gov.in.department.controller;
 import java.security.Principal;
 import java.util.Locale;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.maharecruitment.gov.in.department.dto.AdvancePaymentForm;
@@ -33,10 +37,16 @@ public class DepartmentPaymentReviewController {
     }
 
     @GetMapping({ "/hr/department/payment/list", "/auditor/department/payment/list" })
-    public String listPayments(Model model, Principal principal) {
+    public String listPayments(
+            @RequestParam(defaultValue = "0", required = false) Integer page,
+            @RequestParam(defaultValue = "10", required = false) Integer size,
+            Model model, 
+            Principal principal) {
+        if (page == null) page = 0;
+        if (size == null) size = 10;
         String actorEmail = resolveActorEmail(principal);
-        var payments = paymentService.getReviewList(actorEmail);
-        System.out.println("DEBUG: Review list fetched for " + actorEmail + ", count: " + payments.size());
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        var payments = paymentService.getReviewList(actorEmail, pageable);
         model.addAttribute("payments", payments);
         return "hr/department-payment-list";
     }

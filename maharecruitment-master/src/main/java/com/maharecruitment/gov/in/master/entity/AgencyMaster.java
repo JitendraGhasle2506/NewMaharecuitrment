@@ -57,7 +57,7 @@ public class AgencyMaster extends Auditable {
     @Column(name = "entity_type", nullable = false, length = 30)
     private AgencyEntityType entityType;
 
-    @Column(name = "pan_number", nullable = false, length = 10)
+    @Column(name = "pan_number", nullable = false, length = 255)
     private String panNumber;
 
     @Column(name = "pan_copy_path", nullable = false, length = 500)
@@ -69,7 +69,7 @@ public class AgencyMaster extends Auditable {
     @Column(name = "certificate_document_path", nullable = false, length = 500)
     private String certificateDocumentPath;
 
-    @Column(name = "gst_number", nullable = false, length = 15)
+    @Column(name = "gst_number", nullable = false, length = 255)
     private String gstNumber;
 
     @Column(name = "gst_document_path", nullable = false, length = 500)
@@ -90,7 +90,7 @@ public class AgencyMaster extends Auditable {
     @Column(name = "bank_branch", nullable = false, length = 150)
     private String bankBranch;
 
-    @Column(name = "bank_account_number", nullable = false, length = 30)
+    @Column(name = "bank_account_number", nullable = false, length = 255)
     private String bankAccountNumber;
 
     @Enumerated(EnumType.STRING)

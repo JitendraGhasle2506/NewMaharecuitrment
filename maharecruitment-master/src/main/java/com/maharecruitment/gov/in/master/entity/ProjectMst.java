@@ -7,6 +7,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -18,7 +22,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "project_mst")
+@Table(name = "project_mst", indexes = {
+        @Index(name = "idx_project_mst_cell_id", columnList = "cell_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -34,6 +40,9 @@ public class ProjectMst extends Auditable {
     @Column(name = "project_name", nullable = false, length = 100)
     private String projectName;
 
+    @Column(name = "project_code", length = 30)
+    private String projectCode;
+
     @Column(name = "project_desc", length = 100)
     private String projectDesc;
 
@@ -42,11 +51,23 @@ public class ProjectMst extends Auditable {
     @Column(name = "project_type", nullable = false, length = 80)
     private ProjectType projectType;
 
+    @NotNull(message = "Project scope is required")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "project_scope_type", nullable = false, length = 20)
+    private ProjectScopeType projectScopeType;
+
     @Column(name = "department_registration_id")
     private Long departmentRegistrationId;
 
     @Column(name = "application_id")
     private Long applicationId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cell_id")
+    private CellMaster cell;
+
+    @Column(name = "active_flag", nullable = false, length = 1)
+    private String activeFlag = "Y";
 
     @PrePersist
     @PreUpdate
@@ -54,8 +75,12 @@ public class ProjectMst extends Auditable {
         if (projectName != null) {
             projectName = projectName.trim();
         }
+        if (projectCode != null) {
+            projectCode = projectCode.trim().toUpperCase();
+        }
         if (projectDesc != null) {
             projectDesc = projectDesc.trim();
         }
+        activeFlag = "N".equalsIgnoreCase(activeFlag) ? "N" : "Y";
     }
 }

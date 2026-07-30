@@ -8,8 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -23,8 +25,10 @@ import com.maharecruitment.gov.in.auth.dto.UserUpsertRequest;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
 import com.maharecruitment.gov.in.auth.service.RoleManagementService;
+import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.service.UserManagementService;
 import com.maharecruitment.gov.in.web.dto.admin.UserForm;
+import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 
 import jakarta.validation.Valid;
 
@@ -33,28 +37,44 @@ import jakarta.validation.Valid;
 public class AdminUserPageController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminUserPageController.class);
+    private static final String ROLE_DEPARTMENT = "ROLE_DEPARTMENT";
+    private static final String ROLE_AGENCY = "ROLE_AGENCY";
 
     private final UserManagementService userManagementService;
     private final RoleManagementService roleManagementService;
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
+    private final AgencyMasterRepository agencyMasterRepository;
+    private final UserAffiliationService userAffiliationService;
 
     public AdminUserPageController(
             UserManagementService userManagementService,
             RoleManagementService roleManagementService,
-            DepartmentRegistrationRepository departmentRegistrationRepository) {
+            DepartmentRegistrationRepository departmentRegistrationRepository,
+            AgencyMasterRepository agencyMasterRepository,
+            UserAffiliationService userAffiliationService) {
         this.userManagementService = userManagementService;
         this.roleManagementService = roleManagementService;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
+        this.agencyMasterRepository = agencyMasterRepository;
+        this.userAffiliationService = userAffiliationService;
     }
 
     @GetMapping
     public String list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
             Model model) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
-        Page<User> users = userManagementService.getAll(pageable);
+        String normalizedSearch = normalizeSearch(search);
+        Page<User> users = userManagementService.getAll(normalizedSearch, pageable);
+        if (users.getTotalPages() > 0 && page >= users.getTotalPages()) {
+            pageable = PageRequest.of(users.getTotalPages() - 1, Math.max(size, 1));
+            users = userManagementService.getAll(normalizedSearch, pageable);
+        }
         model.addAttribute("users", users);
+        model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
+        model.addAttribute("pageSize", users.getSize());
         return "admin/users/list";
     }
 
@@ -84,12 +104,15 @@ public class AdminUserPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        normalizeAffiliationSelection(form);
         validateRoleSelection(form, bindingResult);
+        validateAffiliationSelection(form, bindingResult);
         if (form.getPassword() == null || form.getPassword().isBlank()) {
             bindingResult.rejectValue("password", "user.password", "Password is required.");
         }
 
         if (bindingResult.hasErrors()) {
+            clearSensitiveFields(form);
             populateForm(model, form, null);
             return "admin/users/form";
         }
@@ -101,6 +124,7 @@ public class AdminUserPageController {
         } catch (RuntimeException ex) {
             log.error("User create failed", ex);
             model.addAttribute("errorMessage", ex.getMessage());
+            clearSensitiveFields(form);
             populateForm(model, form, null);
             return "admin/users/form";
         }
@@ -113,8 +137,11 @@ public class AdminUserPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        normalizeAffiliationSelection(form);
         validateRoleSelection(form, bindingResult);
+        validateAffiliationSelection(form, bindingResult);
         if (bindingResult.hasErrors()) {
+            clearSensitiveFields(form);
             populateForm(model, form, userId);
             return "admin/users/form";
         }
@@ -126,18 +153,29 @@ public class AdminUserPageController {
         } catch (RuntimeException ex) {
             log.error("User update failed for id={}", userId, ex);
             model.addAttribute("errorMessage", ex.getMessage());
+            clearSensitiveFields(form);
             populateForm(model, form, userId);
             return "admin/users/form";
         }
     }
 
     @PostMapping("/{userId}/delete")
-    public String delete(@PathVariable Long userId, RedirectAttributes redirectAttributes) {
+    public String delete(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "search", required = false) String search,
+            RedirectAttributes redirectAttributes) {
         try {
             userManagementService.delete(userId);
-            redirectAttributes.addFlashAttribute("successMessage", "User deleted successfully");
+            redirectAttributes.addFlashAttribute("successMessage", "User deactivated successfully");
         } catch (RuntimeException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        redirectAttributes.addAttribute("page", Math.max(page, 0));
+        redirectAttributes.addAttribute("size", Math.max(size, 1));
+        if (StringUtils.hasText(search)) {
+            redirectAttributes.addAttribute("search", search.trim());
         }
         return "redirect:/admin/users";
     }
@@ -147,7 +185,12 @@ public class AdminUserPageController {
         model.addAttribute("userId", userId);
         model.addAttribute("isEdit", userId != null);
         model.addAttribute("availableRoles", roleManagementService.getAll());
-        model.addAttribute("departments", departmentRegistrationRepository.findAll());
+        model.addAttribute("departmentRoleName", ROLE_DEPARTMENT);
+        model.addAttribute("agencyRoleName", ROLE_AGENCY);
+        model.addAttribute("departments", departmentRegistrationRepository.findAll(
+                Sort.by(Sort.Direction.ASC, "departmentName")));
+        model.addAttribute("agencies", agencyMasterRepository.findAll(
+                Sort.by(Sort.Direction.ASC, "agencyName")));
     }
 
     private UserUpsertRequest toRequest(UserForm form) {
@@ -157,6 +200,7 @@ public class AdminUserPageController {
         request.setMobileNo(form.getMobileNo());
         request.setPassword(form.getPassword());
         request.setDepartmentRegistrationId(form.getDepartmentRegistrationId());
+        request.setAgencyId(form.getAgencyId());
         request.setRoleIds(form.getRoleIds() == null ? List.of() : new ArrayList<>(form.getRoleIds()));
         return request;
     }
@@ -166,8 +210,9 @@ public class AdminUserPageController {
         form.setName(user.getName());
         form.setEmail(user.getEmail());
         form.setMobileNo(user.getMobileNo());
-        form.setDepartmentRegistrationId(
-                user.getDepartmentRegistrationId() == null ? null : user.getDepartmentRegistrationId().getDepartmentRegistrationId());
+        var affiliation = userAffiliationService.getAffiliation(user);
+        form.setDepartmentRegistrationId(affiliation.getDepartmentRegistrationId());
+        form.setAgencyId(affiliation.getAgencyId());
         form.setRoleIds(user.getRoleIds());
         return form;
     }
@@ -176,5 +221,48 @@ public class AdminUserPageController {
         if (form.getRoleIds() == null || form.getRoleIds().isEmpty()) {
             bindingResult.rejectValue("roleIds", "user.roles", "At least one role is required.");
         }
+    }
+
+    private void validateAffiliationSelection(UserForm form, BindingResult bindingResult) {
+        Long departmentRegistrationId = form.getDepartmentRegistrationId();
+        if (departmentRegistrationId != null && !departmentRegistrationRepository.existsById(departmentRegistrationId)) {
+            bindingResult.rejectValue(
+                    "departmentRegistrationId",
+                    "user.departmentRegistrationId",
+                    "Selected department is not registered.");
+        }
+
+        Long agencyId = form.getAgencyId();
+        if (agencyId != null && !agencyMasterRepository.existsById(agencyId)) {
+            bindingResult.rejectValue("agencyId", "user.agencyId", "Selected agency is not registered.");
+        }
+    }
+
+    private void normalizeAffiliationSelection(UserForm form) {
+        if (!hasSelectedRole(form, ROLE_DEPARTMENT)) {
+            form.setDepartmentRegistrationId(null);
+        }
+
+        if (!hasSelectedRole(form, ROLE_AGENCY)) {
+            form.setAgencyId(null);
+        }
+    }
+
+    private boolean hasSelectedRole(UserForm form, String roleName) {
+        if (form.getRoleIds() == null || form.getRoleIds().isEmpty()) {
+            return false;
+        }
+
+        return roleManagementService.getAll().stream()
+                .filter(role -> form.getRoleIds().contains(role.getId()))
+                .anyMatch(role -> roleName.equalsIgnoreCase(role.getName()));
+    }
+
+    private void clearSensitiveFields(UserForm form) {
+        form.setPassword(null);
+    }
+
+    private String normalizeSearch(String search) {
+        return StringUtils.hasText(search) ? search.trim() : null;
     }
 }

@@ -15,14 +15,87 @@
     const requiredCheckboxSelector = "[data-required-doc='true'], #agencyFlag";
     
     // Core inputs for validation
+    const emailInput = form.querySelector("[name='email']");
     const mobileInput = form.querySelector("[name='mobile']");
     const joiningDateInput = document.getElementById("joiningDate");
-    const onboardingDateInput = document.getElementById("onboardingDate");
     const dobInput = document.getElementById("dob");
     const panInput = document.getElementById("pan");
     const aadhaarInput = form.querySelector("[name='aadhaar']");
+    const emailValidationMessage = document.getElementById("emailValidationMessage");
+    const mobileValidationMessage = document.getElementById("mobileValidationMessage");
+    const panValidationMessage = document.getElementById("panValidationMessage");
+    const aadhaarValidationMessage = document.getElementById("aadhaarValidationMessage");
+    const preOnboardingIdInput = form.querySelector("[name='preOnboardingId']");
+    const candidatePhotoInput = document.getElementById("uploadImage");
+    const candidatePhotoPreview = document.getElementById("candidatePhotoPreview");
+    const candidatePhotoEmpty = document.getElementById("candidatePhotoEmpty");
+    const candidatePhotoFileName = document.getElementById("candidatePhotoFileName");
+    const allowedPhotoExtensions = ["jpg", "jpeg", "png"];
+    const maxPhotoSizeBytes = 1024 * 1024;
+    const companyPayrollCheckbox = document.getElementById("companyPayrollMoreThanThreeMonths");
+    const companyPayrollProofInput = document.getElementById("companyPayrollProof");
+    const companyPayrollProofBlock = document.getElementById("companyPayrollProofBlock");
+    const existingCompanyPayrollProofPath = companyPayrollProofBlock
+        ? (companyPayrollProofBlock.getAttribute("data-existing-path") || "")
+        : "";
     const hrFlowInput = form.querySelector("[name='hrFlow']");
     const hrFlow = hrFlowInput && hrFlowInput.value === "true";
+    const employeeLocationPicker = document.getElementById("employeeLocationPicker");
+    const selectedEmployeeLocationInputs = document.getElementById("selectedEmployeeLocationInputs");
+    const selectedEmployeeLocationBox = document.getElementById("selectedEmployeeLocationBox");
+    const existingPhotoPath = candidatePhotoPreview
+        ? (candidatePhotoPreview.getAttribute("data-managed-path") || "")
+        : "";
+    const existingPhotoName = candidatePhotoPreview
+        ? (candidatePhotoPreview.getAttribute("data-managed-name") || "")
+        : "";
+    const defaultAadhaarMessage = aadhaarValidationMessage
+        ? aadhaarValidationMessage.textContent
+        : "Aadhaar number must be exactly 12 digits.";
+    const asyncValidationState = {
+        aadhaar: createAsyncValidationState(),
+        pan: createAsyncValidationState(),
+        email: createAsyncValidationState(),
+        mobile: createAsyncValidationState()
+    };
+    const validationConfig = {
+        aadhaar: {
+            input: aadhaarInput,
+            messageElement: aadhaarValidationMessage,
+            defaultMessage: defaultAadhaarMessage,
+            endpoint: "agency/onboarding/pre/validate-aadhaar",
+            paramName: "aadhaar",
+            checkingMessage: "Checking Aadhaar number...",
+            requestErrorMessage: "Unable to validate Aadhaar right now. Please try again."
+        },
+        pan: {
+            input: panInput,
+            messageElement: panValidationMessage,
+            defaultMessage: panValidationMessage ? panValidationMessage.textContent : "Please enter a valid PAN (e.g., ABCDE1234F).",
+            endpoint: "agency/onboarding/pre/validate-pan",
+            paramName: "pan",
+            checkingMessage: "Checking PAN number...",
+            requestErrorMessage: "Unable to validate PAN right now. Please try again."
+        },
+        email: {
+            input: emailInput,
+            messageElement: emailValidationMessage,
+            defaultMessage: emailValidationMessage ? emailValidationMessage.textContent : "Please enter a valid email address.",
+            endpoint: "agency/onboarding/pre/validate-email",
+            paramName: "email",
+            checkingMessage: "Checking email address...",
+            requestErrorMessage: "Unable to validate email right now. Please try again."
+        },
+        mobile: {
+            input: mobileInput,
+            messageElement: mobileValidationMessage,
+            defaultMessage: mobileValidationMessage ? mobileValidationMessage.textContent : "Mobile number must be exactly 10 digits.",
+            endpoint: "agency/onboarding/pre/validate-mobile",
+            paramName: "mobile",
+            checkingMessage: "Checking mobile number...",
+            requestErrorMessage: "Unable to validate mobile right now. Please try again."
+        }
+    };
 
     function attachRowEvents(row) {
         row.querySelectorAll(".experience-date").forEach(function (input) {
@@ -121,6 +194,166 @@
         } else {
             field.classList.remove("is-invalid", "is-valid");
         }
+    }
+
+    function createAsyncValidationState() {
+        return {
+            checkedValue: "",
+            requestedValue: "",
+            pending: false,
+            duplicate: false,
+            message: "",
+            timer: null,
+            request: null
+        };
+    }
+
+    function normalizeAadhaarValue(value) {
+        return (value || "").trim();
+    }
+
+    function normalizePanValue(value) {
+        return (value || "").toUpperCase().trim();
+    }
+
+    function normalizeEmailValue(value) {
+        return (value || "").trim().toLowerCase();
+    }
+
+    function normalizeMobileValue(value) {
+        return (value || "").trim();
+    }
+
+    function getNormalizedAsyncValue(fieldKey) {
+        const input = validationConfig[fieldKey] && validationConfig[fieldKey].input;
+        const rawValue = input ? input.value : "";
+        switch (fieldKey) {
+            case "pan":
+                return normalizePanValue(rawValue);
+            case "email":
+                return normalizeEmailValue(rawValue);
+            case "mobile":
+                return normalizeMobileValue(rawValue);
+            default:
+                return normalizeAadhaarValue(rawValue);
+        }
+    }
+
+    function setAsyncFieldValidity(fieldKey, message) {
+        const config = validationConfig[fieldKey];
+        if (!config || !config.input) {
+            return;
+        }
+        if (config.messageElement) {
+            config.messageElement.textContent = message || config.defaultMessage;
+        }
+        setFieldValidity(config.input, message || "");
+    }
+
+    function resetAsyncValidationState(fieldKey) {
+        const state = asyncValidationState[fieldKey];
+        if (!state) {
+            return;
+        }
+        state.checkedValue = "";
+        state.requestedValue = "";
+        state.pending = false;
+        state.duplicate = false;
+        state.message = "";
+    }
+
+    function cancelAsyncValidationRequest(fieldKey) {
+        const state = asyncValidationState[fieldKey];
+        if (!state) {
+            return;
+        }
+        if (state.timer) {
+            clearTimeout(state.timer);
+            state.timer = null;
+        }
+        if (state.request) {
+            state.request.abort();
+            state.request = null;
+        }
+    }
+
+    function scheduleAsyncDuplicateCheck(fieldKey, value) {
+        const config = validationConfig[fieldKey];
+        const state = asyncValidationState[fieldKey];
+        if (!config || !config.input || hrFlow || !value) {
+            return;
+        }
+        if (state.pending && state.requestedValue === value) {
+            return;
+        }
+        if (state.checkedValue === value) {
+            return;
+        }
+
+        cancelAsyncValidationRequest(fieldKey);
+        state.pending = true;
+        state.requestedValue = value;
+        state.duplicate = false;
+        state.message = "";
+
+        state.timer = window.setTimeout(function () {
+            const contextPath = window.preOnboardingConfig && window.preOnboardingConfig.contextPath
+                ? window.preOnboardingConfig.contextPath
+                : "/";
+            const params = new URLSearchParams();
+            params.set(config.paramName, value);
+            if (preOnboardingIdInput && preOnboardingIdInput.value) {
+                params.set("preOnboardingId", preOnboardingIdInput.value);
+            }
+
+            state.request = new AbortController();
+            fetch(contextPath + config.endpoint + "?" + params.toString(), {
+                method: "GET",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                signal: state.request.signal
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error("Validation request failed.");
+                    }
+                    return response.json();
+                })
+                .then(function (payload) {
+                    if (getNormalizedAsyncValue(fieldKey) !== value) {
+                        return;
+                    }
+
+                    state.pending = false;
+                    state.requestedValue = "";
+                    state.checkedValue = value;
+                    state.duplicate = Boolean(payload && payload.duplicate);
+                    state.message = payload && payload.message ? payload.message : "";
+                    state.request = null;
+                    checkFormValidity();
+                })
+                .catch(function (error) {
+                    if (error && error.name === "AbortError") {
+                        return;
+                    }
+                    if (getNormalizedAsyncValue(fieldKey) !== value) {
+                        return;
+                    }
+
+                    state.pending = false;
+                    state.requestedValue = "";
+                    state.checkedValue = value;
+                    state.duplicate = true;
+                    state.message = config.requestErrorMessage;
+                    state.request = null;
+                    checkFormValidity();
+                });
+        }, 350);
+    }
+
+    function setAadhaarFieldValidity(message) {
+        setAsyncFieldValidity("aadhaar", message);
     }
 
     function clearEmploymentFieldValidity(row) {
@@ -355,15 +588,7 @@
     }
 
     function validateJoiningAndOnboardingDates() {
-        if (!joiningDateInput || !onboardingDateInput) return true;
-        
-        setFieldValidity(onboardingDateInput, "");
-        if (!joiningDateInput.value || !onboardingDateInput.value) return true;
-
-        if (onboardingDateInput.value < joiningDateInput.value) {
-            setFieldValidity(onboardingDateInput, "Onboarding date cannot be before joining date.");
-            return false;
-        }
+        if (!joiningDateInput) return true;
 
         setFieldValidity(joiningDateInput, "");
         return true;
@@ -372,10 +597,24 @@
     function validateMobile() {
         if (!mobileInput) return true;
         const value = mobileInput.value.trim();
-        setFieldValidity(mobileInput, "");
+        setAsyncFieldValidity("mobile", "");
         if (!value) return true;
-        if (!/^[0-9]{10,15}$/.test(value)) {
-            setFieldValidity(mobileInput, "Mobile number must be 10 to 15 digits.");
+        if (!/^[0-9]{10}$/.test(value)) {
+            setAsyncFieldValidity("mobile", "Mobile number must be exactly 10 digits.");
+            return false;
+        }
+        const state = asyncValidationState.mobile;
+        if (state.pending && state.requestedValue === value) {
+            setAsyncFieldValidity("mobile", validationConfig.mobile.checkingMessage);
+            return false;
+        }
+        if (state.checkedValue !== value) {
+            scheduleAsyncDuplicateCheck("mobile", value);
+            setAsyncFieldValidity("mobile", validationConfig.mobile.checkingMessage);
+            return false;
+        }
+        if (state.duplicate) {
+            setAsyncFieldValidity("mobile", state.message || "Mobile number already exists in the system.");
             return false;
         }
         return true;
@@ -406,27 +645,349 @@
         if (!panInput) return true;
         const value = panInput.value.toUpperCase().trim();
         panInput.value = value; // Auto-capitalize
-        setFieldValidity(panInput, "");
+        setAsyncFieldValidity("pan", "");
         if (!value) return true;
         
         if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value)) {
-            setFieldValidity(panInput, "Invalid PAN format (e.g., ABCDE1234F).");
+            setAsyncFieldValidity("pan", "Invalid PAN format (e.g., ABCDE1234F).");
             return false;
         }
+        const state = asyncValidationState.pan;
+        if (state.pending && state.requestedValue === value) {
+            setAsyncFieldValidity("pan", validationConfig.pan.checkingMessage);
+            return false;
+        }
+        if (state.checkedValue !== value) {
+            scheduleAsyncDuplicateCheck("pan", value);
+            setAsyncFieldValidity("pan", validationConfig.pan.checkingMessage);
+            return false;
+        }
+        if (state.duplicate) {
+            setAsyncFieldValidity("pan", state.message || "PAN number already exists in the system.");
+            return false;
+        }
+        return true;
+    }
+
+    function validateEmail() {
+        if (!emailInput) return true;
+        const value = emailInput.value.trim();
+        setAsyncFieldValidity("email", "");
+        if (!value) return true;
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            setAsyncFieldValidity("email", "Please enter a valid email address.");
+            return false;
+        }
+
+        const normalizedValue = normalizeEmailValue(value);
+        const state = asyncValidationState.email;
+        if (state.pending && state.requestedValue === normalizedValue) {
+            setAsyncFieldValidity("email", validationConfig.email.checkingMessage);
+            return false;
+        }
+        if (state.checkedValue !== normalizedValue) {
+            scheduleAsyncDuplicateCheck("email", normalizedValue);
+            setAsyncFieldValidity("email", validationConfig.email.checkingMessage);
+            return false;
+        }
+        if (state.duplicate) {
+            setAsyncFieldValidity("email", state.message || "Email already exists in the system.");
+            return false;
+        }
+
         return true;
     }
 
     function validateAadhaar() {
         if (!aadhaarInput) return true;
         const value = aadhaarInput.value.trim();
-        setFieldValidity(aadhaarInput, "");
+        setAadhaarFieldValidity("");
         if (!value) return true;
         
         if (!/^[0-9]{12}$/.test(value)) {
-            setFieldValidity(aadhaarInput, "Aadhaar must be exactly 12 digits.");
+            setAadhaarFieldValidity("Aadhaar must be exactly 12 digits.");
             return false;
         }
+
+        const state = asyncValidationState.aadhaar;
+        if (state.pending && state.requestedValue === value) {
+            setAadhaarFieldValidity(validationConfig.aadhaar.checkingMessage);
+            return false;
+        }
+
+        if (state.checkedValue !== value) {
+            scheduleAsyncDuplicateCheck("aadhaar", value);
+            setAadhaarFieldValidity(validationConfig.aadhaar.checkingMessage);
+            return false;
+        }
+
+        if (state.duplicate) {
+            setAadhaarFieldValidity(state.message || "Aadhaar number already exists in the system.");
+            return false;
+        }
+
         return true;
+    }
+
+    function validateCompanyPayrollProof() {
+        if (!companyPayrollCheckbox || !companyPayrollProofInput || hrFlow) {
+            return true;
+        }
+
+        const isChecked = companyPayrollCheckbox.checked;
+        if (companyPayrollProofBlock) {
+            companyPayrollProofBlock.classList.toggle("d-none", !isChecked);
+        }
+        companyPayrollProofInput.required = isChecked && !existingCompanyPayrollProofPath;
+
+        if (!isChecked) {
+            setFieldValidity(companyPayrollProofInput, "");
+            companyPayrollProofInput.value = "";
+            return true;
+        }
+
+        const hasUploadedFile = companyPayrollProofInput.files && companyPayrollProofInput.files.length > 0;
+        if (!hasUploadedFile && !existingCompanyPayrollProofPath) {
+            setFieldValidity(
+                companyPayrollProofInput,
+                "Company payroll proof document is required when the employee is on company payroll for more than 3 months."
+            );
+            return false;
+        }
+
+        setFieldValidity(companyPayrollProofInput, "");
+        return true;
+    }
+
+    function getManagedDocumentUrl(path) {
+        if (!path) {
+            return "";
+        }
+
+        const contextPath = window.preOnboardingConfig && window.preOnboardingConfig.contextPath
+            ? window.preOnboardingConfig.contextPath
+            : "/";
+        const encodedPath = encodeURIComponent(btoa(path));
+        return contextPath + "documents/view?path=" + encodedPath;
+    }
+
+    function showPhotoPlaceholder() {
+        if (candidatePhotoPreview) {
+            candidatePhotoPreview.removeAttribute("src");
+            candidatePhotoPreview.classList.add("d-none");
+        }
+        if (candidatePhotoEmpty) {
+            candidatePhotoEmpty.classList.remove("d-none");
+        }
+        if (candidatePhotoFileName) {
+            candidatePhotoFileName.textContent = "No photo selected";
+        }
+    }
+
+    function showPhotoUploadError(message) {
+        if (window.Swal) {
+            window.Swal.fire({
+                icon: "error",
+                title: "Invalid photo",
+                text: message
+            });
+            return;
+        }
+        window.alert(message);
+    }
+
+    function getFileExtension(fileName) {
+        const normalizedName = (fileName || "").toLowerCase();
+        const lastDotIndex = normalizedName.lastIndexOf(".");
+        return lastDotIndex >= 0 ? normalizedName.substring(lastDotIndex + 1) : "";
+    }
+
+    function validatePhotoFile(file) {
+        if (!file) {
+            return { valid: true, message: "" };
+        }
+
+        const extension = getFileExtension(file.name);
+        if (!allowedPhotoExtensions.includes(extension)) {
+            return {
+                valid: false,
+                message: "Please select a JPG, JPEG, or PNG photo."
+            };
+        }
+
+        if (file.size > maxPhotoSizeBytes) {
+            return {
+                valid: false,
+                message: "Photo size must be 1 MB or smaller."
+            };
+        }
+
+        return { valid: true, message: "" };
+    }
+
+    function showManagedPhoto(path) {
+        if (!candidatePhotoPreview || !path) {
+            showPhotoPlaceholder();
+            return;
+        }
+
+        candidatePhotoPreview.src = getManagedDocumentUrl(path);
+        candidatePhotoPreview.classList.remove("d-none");
+        if (candidatePhotoEmpty) {
+            candidatePhotoEmpty.classList.add("d-none");
+        }
+        if (candidatePhotoFileName) {
+            candidatePhotoFileName.textContent = existingPhotoName || "Existing photo";
+        }
+    }
+
+    function showUploadedPhoto(file) {
+        if (!candidatePhotoPreview || !file) {
+            if (existingPhotoPath) {
+                showManagedPhoto(existingPhotoPath);
+            } else {
+                showPhotoPlaceholder();
+            }
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            if (!candidatePhotoPreview || !event || !event.target) {
+                return;
+            }
+            candidatePhotoPreview.src = event.target.result;
+            candidatePhotoPreview.classList.remove("d-none");
+            if (candidatePhotoEmpty) {
+                candidatePhotoEmpty.classList.add("d-none");
+            }
+            if (candidatePhotoFileName) {
+                candidatePhotoFileName.textContent = file.name || "Selected photo";
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function getSelectedEmployeeLocationInputs() {
+        if (!selectedEmployeeLocationInputs) {
+            return [];
+        }
+        return Array.from(selectedEmployeeLocationInputs.querySelectorAll("input[name='selectedLocationIds']"));
+    }
+
+    function getSelectedEmployeeLocationIds() {
+        return getSelectedEmployeeLocationInputs()
+            .map(function (input) { return input.value; })
+            .filter(Boolean);
+    }
+
+    function getLocationOption(locationId) {
+        if (!employeeLocationPicker) {
+            return null;
+        }
+        return Array.from(employeeLocationPicker.options).find(function (option) {
+            return option.value === String(locationId);
+        }) || null;
+    }
+
+    function resetEmployeeLocationPicker() {
+        if (!employeeLocationPicker) {
+            return;
+        }
+        employeeLocationPicker.value = "";
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
+            window.jQuery(employeeLocationPicker).val("").trigger("change.select2");
+        }
+    }
+
+    function initializeEmployeeLocationPicker() {
+        if (!employeeLocationPicker || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.select2) {
+            return false;
+        }
+
+        const placeholder = employeeLocationPicker.getAttribute("data-placeholder") || "Search and select location";
+        const picker = window.jQuery(employeeLocationPicker);
+        picker.select2({
+            theme: "bootstrap-5",
+            width: "100%",
+            placeholder: placeholder,
+            allowClear: true
+        });
+        picker.on("select2:select", function () {
+            addEmployeeLocation(employeeLocationPicker.value);
+        });
+        picker.on("select2:clear", checkFormValidity);
+        return true;
+    }
+
+    function addEmployeeLocation(locationId) {
+        if (!selectedEmployeeLocationInputs || !locationId) {
+            return;
+        }
+        const normalizedLocationId = String(locationId);
+        if (getSelectedEmployeeLocationIds().includes(normalizedLocationId)) {
+            resetEmployeeLocationPicker();
+            return;
+        }
+
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "selectedLocationIds";
+        input.value = normalizedLocationId;
+        selectedEmployeeLocationInputs.appendChild(input);
+
+        resetEmployeeLocationPicker();
+        renderSelectedEmployeeLocations();
+        checkFormValidity();
+    }
+
+    function removeEmployeeLocation(locationId) {
+        getSelectedEmployeeLocationInputs().forEach(function (input) {
+            if (input.value === String(locationId)) {
+                input.remove();
+            }
+        });
+        renderSelectedEmployeeLocations();
+        checkFormValidity();
+    }
+
+    function renderSelectedEmployeeLocations() {
+        if (!selectedEmployeeLocationBox) {
+            return;
+        }
+
+        selectedEmployeeLocationBox.innerHTML = "";
+        const selectedIds = getSelectedEmployeeLocationIds();
+        if (selectedIds.length === 0) {
+            const emptyState = document.createElement("div");
+            emptyState.className = "hr-selected-location-empty";
+            emptyState.textContent = "No employee location selected.";
+            selectedEmployeeLocationBox.appendChild(emptyState);
+            return;
+        }
+
+        selectedIds.forEach(function (locationId) {
+            const option = getLocationOption(locationId);
+            const item = document.createElement("div");
+            item.className = "hr-selected-location-item";
+
+            const label = document.createElement("span");
+            label.className = "hr-selected-location-label";
+            label.textContent = option ? option.textContent.trim() : "Location #" + locationId;
+
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.className = "hr-selected-location-remove";
+            removeButton.textContent = "Remove";
+            removeButton.addEventListener("click", function () {
+                removeEmployeeLocation(locationId);
+            });
+
+            item.appendChild(label);
+            item.appendChild(removeButton);
+            selectedEmployeeLocationBox.appendChild(item);
+        });
     }
 
     function checkFormValidity() {
@@ -438,11 +999,13 @@
             const locValid = hrLoc && hrLoc.value.trim() !== "";
             const dateValid = hrDate && hrDate.value !== "";
             const checkValid = hrCheck && hrCheck.checked;
+            const mappedLocationValid = !employeeLocationPicker || getSelectedEmployeeLocationIds().length > 0;
             
             if (hrLoc) setFieldValidity(hrLoc, locValid ? "" : "Location is required.");
             if (hrDate) setFieldValidity(hrDate, dateValid ? "" : "Date is required.");
+            if (employeeLocationPicker) setFieldValidity(employeeLocationPicker, mappedLocationValid ? "" : "Select at least one employee location.");
             
-            submitBtn.disabled = !locValid || !dateValid || !checkValid;
+            submitBtn.disabled = !locValid || !dateValid || !checkValid || !mappedLocationValid;
             return;
         }
 
@@ -452,14 +1015,16 @@
         });
         const employmentValid = validateEmploymentRows().valid;
         const datesValid = validateJoiningAndOnboardingDates();
+        const emailValid = validateEmail();
         const mobileValid = validateMobile();
         const dobValid = validateDOB();
         const panValid = validatePAN();
         const aadhaarValid = validateAadhaar();
+        const payrollProofValid = validateCompanyPayrollProof();
         
         const isBasicValid = form.checkValidity();
 
-        submitBtn.disabled = !requiredDocsComplete || !employmentValid || !datesValid || !mobileValid || !dobValid || !panValid || !aadhaarValid || !isBasicValid;
+        submitBtn.disabled = !requiredDocsComplete || !employmentValid || !datesValid || !emailValid || !mobileValid || !dobValid || !panValid || !aadhaarValid || !payrollProofValid || !isBasicValid;
     }
 
     function openManagedDocument(path) {
@@ -490,15 +1055,72 @@
         checkbox.addEventListener("change", checkFormValidity);
     });
 
-    [joiningDateInput, onboardingDateInput, dobInput].forEach(function (el) {
+    if (companyPayrollCheckbox) {
+        companyPayrollCheckbox.addEventListener("change", checkFormValidity);
+    }
+
+    if (companyPayrollProofInput) {
+        companyPayrollProofInput.addEventListener("change", checkFormValidity);
+    }
+
+    [joiningDateInput, dobInput].forEach(function (el) {
         if (el) {
             el.addEventListener("change", checkFormValidity);
         }
     });
 
-    [mobileInput, panInput, aadhaarInput].forEach(function (el) {
+    [emailInput, mobileInput, panInput, aadhaarInput].forEach(function (el) {
         if (el) {
-            el.addEventListener("input", checkFormValidity);
+            el.addEventListener("input", function() {
+                if (el === emailInput) {
+                    this.value = this.value.replace(/\s+/g, "");
+                }
+                if (el === mobileInput) {
+                    this.value = this.value.replace(/[^0-9]/g, "").substring(0, 10);
+                }
+                if (el === panInput) {
+                    this.value = this.value.toUpperCase();
+                }
+                if (el === aadhaarInput) {
+                    this.value = this.value.replace(/[^0-9]/g, "").substring(0, 12);
+                }
+
+                const fieldKey = el === emailInput
+                    ? "email"
+                    : el === mobileInput
+                        ? "mobile"
+                        : el === panInput
+                            ? "pan"
+                            : "aadhaar";
+                const normalizedValue = getNormalizedAsyncValue(fieldKey);
+                if (normalizedValue !== asyncValidationState[fieldKey].checkedValue) {
+                    cancelAsyncValidationRequest(fieldKey);
+                    resetAsyncValidationState(fieldKey);
+                    if (validationConfig[fieldKey].messageElement) {
+                        validationConfig[fieldKey].messageElement.textContent = validationConfig[fieldKey].defaultMessage;
+                    }
+                }
+                checkFormValidity();
+            });
+        }
+    });
+
+    const emergencyContactNameInput = document.getElementById("emergencyContactName");
+    const emergencyContactMobileInput = document.getElementById("emergencyContactMobile");
+    const emergencyContactRelationInput = document.getElementById("emergencyContactRelation");
+    const emergencyContactAltMobileInput = document.getElementById("emergencyContactAltMobile");
+
+    [emergencyContactNameInput, emergencyContactMobileInput, emergencyContactRelationInput, emergencyContactAltMobileInput].forEach(function (el) {
+        if (el) {
+            el.addEventListener("input", function () {
+                if (el === emergencyContactNameInput) {
+                    this.value = this.value.replace(/[^a-zA-Z\s]/g, "");
+                }
+                if (el === emergencyContactMobileInput || el === emergencyContactAltMobileInput) {
+                    this.value = this.value.replace(/[^0-9]/g, "").substring(0, 10);
+                }
+                checkFormValidity();
+            });
         }
     });
 
@@ -507,12 +1129,44 @@
         const hrDate = document.getElementById("hrOnboardingDate");
         const hrCheck = document.getElementById("hrVerified");
         [hrLoc, hrDate].forEach(el => el && el.addEventListener("input", checkFormValidity));
+        if (employeeLocationPicker) {
+            if (!initializeEmployeeLocationPicker()) {
+                employeeLocationPicker.addEventListener("change", function () {
+                    addEmployeeLocation(employeeLocationPicker.value);
+                });
+            }
+            renderSelectedEmployeeLocations();
+        }
         if (hrCheck) hrCheck.addEventListener("change", checkFormValidity);
     }
 
-    if (panInput) {
-        panInput.addEventListener("input", function() {
-            this.value = this.value.toUpperCase();
+    if (candidatePhotoInput) {
+        candidatePhotoInput.addEventListener("change", function () {
+            if (this.files && this.files[0]) {
+                const selectedPhoto = this.files[0];
+                const validation = validatePhotoFile(selectedPhoto);
+                if (!validation.valid) {
+                    this.value = "";
+                    if (existingPhotoPath) {
+                        showManagedPhoto(existingPhotoPath);
+                    } else {
+                        showPhotoPlaceholder();
+                    }
+                    showPhotoUploadError(validation.message);
+                    return;
+                }
+                showUploadedPhoto(selectedPhoto);
+            } else if (existingPhotoPath) {
+                showManagedPhoto(existingPhotoPath);
+            } else {
+                showPhotoPlaceholder();
+            }
+        });
+    }
+
+    if (candidatePhotoPreview) {
+        candidatePhotoPreview.addEventListener("error", function () {
+            showPhotoPlaceholder();
         });
     }
 
@@ -529,6 +1183,12 @@
     });
 
     calculateTotalExperience();
+    validateCompanyPayrollProof();
+    if (existingPhotoPath) {
+        showManagedPhoto(existingPhotoPath);
+    } else {
+        showPhotoPlaceholder();
+    }
     checkFormValidity();
     window.openManagedDocument = openManagedDocument;
 })();

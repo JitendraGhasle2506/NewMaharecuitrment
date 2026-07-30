@@ -3,7 +3,9 @@ package com.maharecruitment.gov.in.recruitment.entity;
 import java.time.LocalDate;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
+import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
+import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.entity.SubDepartment;
 
@@ -26,7 +28,8 @@ import lombok.Setter;
 @Entity
 @Table(name = "employee_master", indexes = {
         @Index(name = "idx_employee_code", columnList = "employee_code"),
-        @Index(name = "idx_employee_email", columnList = "email")
+        @Index(name = "idx_employee_email", columnList = "email"),
+        @Index(name = "idx_employee_department_id", columnList = "department_id")
 })
 @Getter
 @Setter
@@ -38,6 +41,10 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "employee_id")
     private Long employeeId;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
+    private User user;
 
     @Column(name = "employee_code", unique = true, nullable = true, length = 50)
     private String employeeCode;
@@ -60,23 +67,53 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @Column(name = "date_of_birth", nullable = false)
     private LocalDate dateOfBirth;
 
+    @Column(name = "gender", nullable = false, length = 20)
+    private String gender;
+
+    @Column(name = "blood_group", nullable = false, length = 20)
+    private String bloodGroup;
+
     @Column(name = "address", nullable = false, length = 1000)
     private String address;
+
+    @Column(name = "emergency_contact_name", nullable = false, length = 100)
+    private String emergencyContactName;
+
+    @Column(name = "emergency_contact_relation", nullable = false, length = 50)
+    private String emergencyContactRelation;
+
+    @Column(name = "emergency_contact_mobile", nullable = false, length = 15)
+    private String emergencyContactMobile;
+
+    @Column(name = "emergency_contact_alt_mobile", length = 15)
+    private String emergencyContactAltMobile;
 
     @Column(name = "joining_date", nullable = false)
     private LocalDate joiningDate;
 
-    @Column(name = "onboarding_date", nullable = false)
+    @Column(name = "mahait_onboarding_date", nullable = false)
     private LocalDate onboardingDate;
 
     @Column(name = "resignation_date")
     private LocalDate resignationDate;
 
-    @Column(name = "pan_number", nullable = false, length = 10)
+    @Column(name = "pan_number", nullable = false, length = 255)
     private String panNumber;
 
-    @Column(name = "aadhaar_number", nullable = false, length = 12)
+    @Column(name = "aadhaar_number", nullable = false, length = 255)
     private String aadhaarNumber;
+
+    @Column(name = "company_payroll_more_than_three_months", nullable = false)
+    private Boolean companyPayrollMoreThanThreeMonths = false;
+
+    @Column(name = "photo_path", length = 1000)
+    private String photoPath;
+
+    @Column(name = "mobile_photo_path", length = 1000)
+    private String mobilePhotoPath;
+
+    @Column(name = "embedding", columnDefinition = "text")
+    private String embedding;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pre_onboarding_id")
@@ -89,6 +126,10 @@ public class EmployeeEntity extends RecruitmentAuditable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_registration_id")
     private DepartmentRegistrationEntity departmentRegistration;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private DepartmentMst department;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sub_department_id")

@@ -10,6 +10,8 @@ public interface SubMenuManagementService {
 
     Page<MstSubMenu> getAll(Pageable pageable);
 
+    Page<MstSubMenu> getAll(String searchTerm, Pageable pageable);
+
     MstSubMenu getById(Long subMenuId);
 
     MstSubMenu create(SubMenuUpsertRequest request);

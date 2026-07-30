@@ -21,7 +21,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,14 +29,6 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "recruitment_interview_detail",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_recruitment_interview_notification_agency_email",
-                        columnNames = { "recruitment_notification_id", "agency_id", "candidate_email" }),
-                @UniqueConstraint(
-                        name = "uk_recruitment_interview_notification_agency_mobile",
-                        columnNames = { "recruitment_notification_id", "agency_id", "candidate_mobile" })
-        },
         indexes = {
                 @Index(name = "idx_recruitment_interview_notification", columnList = "recruitment_notification_id"),
                 @Index(name = "idx_recruitment_interview_agency", columnList = "agency_id"),
@@ -116,6 +107,9 @@ public class RecruitmentInterviewDetailEntity extends RecruitmentAuditable {
     @Column(name = "department_shortlist_remarks", length = 1000)
     private String departmentShortlistRemarks;
 
+    @Column(name = "interview_authority", length = 50)
+    private String interviewAuthority;
+
     @Column(name = "interview_scheduled_at")
     private LocalDateTime interviewScheduledAt;
 
@@ -185,6 +179,7 @@ public class RecruitmentInterviewDetailEntity extends RecruitmentAuditable {
         interviewLink = normalizeText(interviewLink);
         interviewRemarks = normalizeText(interviewRemarks);
         departmentShortlistRemarks = normalizeText(departmentShortlistRemarks);
+        interviewAuthority = normalizeText(interviewAuthority);
         departmentInterviewChangeReason = normalizeText(departmentInterviewChangeReason);
         finalDecisionStatus = normalizeText(finalDecisionStatus);
         finalDecisionRemarks = normalizeText(finalDecisionRemarks);

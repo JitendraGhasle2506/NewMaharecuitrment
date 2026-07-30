@@ -145,7 +145,7 @@
 </head>
 
 <body class="department-shell">
-    <th:block th:replace="~{header/header :: var-sidebar-header('Department', 'Project Name', ~{::section})}">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Department', 'Candidate Shortlisting', ~{::section})}">
         <section th:with="totalRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates) : 0},
                           pendingRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates.?[candidateStatus.name() == 'SUBMITTED_BY_AGENCY']) : 0},
                           shortlistedRows=${shortlistingDetail != null and shortlistingDetail.candidates != null ? #lists.size(shortlistingDetail.candidates.?[candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT']) : 0},
@@ -155,7 +155,7 @@
                 <div class="header d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="mb-0" th:text="${shortlistingDetail.projectName != null ? shortlistingDetail.projectName : 'Project'}">
-                            Project Name
+                            Candidate Shortlisting
                         </h2>
                         <small class="text-muted"
                                th:text="${'Request ID: ' + (shortlistingDetail.requestId != null ? shortlistingDetail.requestId : '-')}">
@@ -234,12 +234,13 @@
                                     <th>Status</th>
                                     <th>Resume</th>
                                     <th>Interview Details</th>
+                                    <th>Interview Authority</th>
                                     <th style="min-width: 300px;">Shortlisting Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(shortlistingDetail.candidates)}">
-                                    <td colspan="10" class="empty-state">
+                                    <td colspan="11" class="empty-state">
                                         No candidates submitted for this project.
                                     </td>
                                 </tr>
@@ -315,6 +316,19 @@
                                         <span th:if="${candidate.interviewDateTime == null}" class="text-muted">-</span>
                                     </td>
                                     <td>
+                                        <!-- Interview Authority: DEPARTMENT - show badge only -->
+                                        <div th:if="${candidate.interviewAuthority == 'DEPARTMENT'}">
+                                            <span class="status-chip status-shortlisted" style="display:block;">Department Interview</span>
+                                        </div>
+                                        <!-- Interview Authority: MAHAIT_HR - show Submitted By HR badge -->
+                                        <div th:if="${candidate.interviewAuthority == 'MAHAIT_HR'}">
+                                            <span class="status-chip status-scheduled">MahaIT HR Interview</span>
+                                            <div class="remarks-note mt-1">Submitted By HR</div>
+                                        </div>
+                                        <!-- No authority set yet -->
+                                        <span th:if="${candidate.interviewAuthority == null or #strings.isEmpty(candidate.interviewAuthority)}" class="text-muted">-</span>
+                                    </td>
+                                    <td>
                                         <div th:if="${candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY' or candidate.assessmentSubmitted == true or candidate.finalDecisionStatus != null}">
                                             <a class="btn btn-outline-primary btn-sm"
                                                th:href="@{/department/candidate-shortlisting/projects/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/interview-review(
@@ -337,6 +351,15 @@
                                                    maxlength="1000"
                                                    th:value="${candidate.departmentShortlistRemarks != null ? candidate.departmentShortlistRemarks : ''}"
                                                    placeholder="Remarks (mandatory for reject)">
+                                            
+                                            <select name="interviewAuthority" class="form-select form-select-sm mb-2 interview-authority-select">
+                                                <option value="">Select Interview Authority</option>
+                                                <option value="DEPARTMENT"
+                                                    th:selected="${candidate.interviewAuthority != null and candidate.interviewAuthority == 'DEPARTMENT'}">Department Interview</option>
+                                                <option value="MAHAIT_HR"
+                                                    th:selected="${candidate.interviewAuthority != null and candidate.interviewAuthority == 'MAHAIT_HR'}">MahaIT HR Interview</option>
+                                            </select>
+
                                             <div class="d-flex gap-2">
                                                 <button type="submit"
                                                         class="btn btn-outline-success btn-sm"
@@ -447,7 +470,9 @@
 
                     const decision = submitter.value;
                     const remarksField = form.querySelector('input[name="remarks"]');
+                    const authoritySelect = form.querySelector('select[name="interviewAuthority"]');
                     const remarks = remarksField ? remarksField.value.trim() : '';
+                    const authority = authoritySelect ? authoritySelect.value : '';
 
                     if (decision === 'REJECT' && !remarks) {
                         event.preventDefault();
@@ -455,6 +480,16 @@
                         if (remarksField) {
                             remarksField.focus();
                         }
+                        return;
+                    }
+
+                    if (decision === 'SHORTLIST' && !authority) {
+                        event.preventDefault();
+                        alert('Please select an Interview Authority when shortlisting.');
+                        if (authoritySelect) {
+                            authoritySelect.focus();
+                        }
+                        return;
                     }
                 });
             });

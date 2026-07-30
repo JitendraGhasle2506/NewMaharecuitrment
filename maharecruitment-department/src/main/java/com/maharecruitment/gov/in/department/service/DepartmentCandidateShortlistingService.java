@@ -30,6 +30,7 @@ public interface DepartmentCandidateShortlistingService {
             Long recruitmentInterviewDetailId,
             DepartmentCandidateReviewDecision reviewDecision,
             String reviewRemarks,
+            String interviewAuthority,
             String actorEmail);
 
     DepartmentInterviewWorkflowDetailView getInterviewWorkflowDetail(

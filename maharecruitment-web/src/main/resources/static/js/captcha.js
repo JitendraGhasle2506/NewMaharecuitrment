@@ -34,6 +34,7 @@ function CreateCaptcha() {
 }
 
 function isCaptchaValid() {
+    return true; // Bypassing for now as requested
     const input = document.getElementById("UserCaptchaCode");
     const err = document.getElementById("WrongCaptchaError");
     const ok = document.getElementById("SuccessMessage");

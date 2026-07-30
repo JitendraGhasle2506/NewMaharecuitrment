@@ -1,12 +1,10 @@
 package com.maharecruitment.gov.in.web.service.verification.impl;
 
-import java.util.Locale;
-
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.service.verification.OtpChannelHandler;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryReferences;
 import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
 
 @Component
@@ -25,19 +23,16 @@ public class EmailOtpChannelHandler implements OtpChannelHandler {
 
     @Override
     public String normalizeReference(String reference) {
-        if (!StringUtils.hasText(reference)) {
-            throw new IllegalArgumentException("Email address is required.");
-        }
-
-        String normalized = reference.trim().toLowerCase(Locale.ROOT);
-        if (!normalized.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
-            throw new IllegalArgumentException("Enter a valid email address.");
-        }
-        return normalized;
+        return OtpDeliveryReferences.normalizeEmail(reference);
     }
 
     @Override
-    public void dispatchOtp(String reference, String otp) {
-        otpDispatchService.sendEmailOtp(reference, otp);
+    public void dispatchOtp(String purpose, String reference, String otp) {
+        otpDispatchService.sendEmailOtp(reference, otp, purpose);
+    }
+
+    @Override
+    public void dispatchOtp(String purpose, String reference, String otp, String otpReferenceId) {
+        otpDispatchService.sendEmailOtp(reference, otp, purpose, otpReferenceId);
     }
 }

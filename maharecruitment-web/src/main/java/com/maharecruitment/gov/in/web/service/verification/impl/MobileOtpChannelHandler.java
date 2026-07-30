@@ -1,41 +1,50 @@
 package com.maharecruitment.gov.in.web.service.verification.impl;
 
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
+import com.maharecruitment.gov.in.common.sms.service.SmsService;
+import com.maharecruitment.gov.in.common.sms.template.SmsTemplateCode;
+import com.maharecruitment.gov.in.common.sms.util.MobileNumberUtil;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.service.verification.OtpChannelHandler;
-import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
+import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
 @Component
 public class MobileOtpChannelHandler implements OtpChannelHandler {
 
-    private final OtpDispatchService otpDispatchService;
+    private final SmsService smsService;
 
-    public MobileOtpChannelHandler(OtpDispatchService otpDispatchService) {
-        this.otpDispatchService = otpDispatchService;
+    public MobileOtpChannelHandler(SmsService smsService) {
+        this.smsService = smsService;
     }
 
     @Override
     public VerificationChannel getChannel() {
-        return VerificationChannel.MOBILE;
+        return VerificationChannel.SMS;
     }
 
     @Override
     public String normalizeReference(String reference) {
-        if (!StringUtils.hasText(reference)) {
-            throw new IllegalArgumentException("Mobile number is required.");
-        }
-
-        String normalized = reference.trim();
-        if (!normalized.matches("^[0-9]{10}$")) {
-            throw new IllegalArgumentException("Mobile number must be 10 digits.");
-        }
-        return normalized;
+        return MobileNumberUtil.normalizeIndianMobileNumber(reference);
     }
 
     @Override
-    public void dispatchOtp(String reference, String otp) {
-        otpDispatchService.sendMobileOtp(reference, otp);
+    public void dispatchOtp(String purpose, String reference, String otp) {
+        dispatchOtp(purpose, reference, otp, null);
+    }
+
+    @Override
+    public void dispatchOtp(String purpose, String reference, String otp, String otpReferenceId) {
+        if (VerificationPurposes.LOGIN_AUTHENTICATION.equalsIgnoreCase(purpose)) {
+            smsService.sendLoginOtp(null, reference, otp);
+            return;
+        }
+        smsService.sendTemplateSms(
+                null,
+                reference,
+                SmsTemplateCode.REGISTRATION_OTP,
+                Map.of("otp", otp));
     }
 }

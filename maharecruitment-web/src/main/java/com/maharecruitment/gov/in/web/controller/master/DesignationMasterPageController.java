@@ -19,9 +19,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.maharecruitment.gov.in.master.dto.DesignationCategoryMasterResponse;
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationMasterRequest;
 import com.maharecruitment.gov.in.master.dto.ManpowerDesignationMasterResponse;
 import com.maharecruitment.gov.in.master.dto.ResourceLevelExperienceResponse;
+import com.maharecruitment.gov.in.master.service.DesignationCategoryMasterService;
 import com.maharecruitment.gov.in.master.service.ManpowerDesignationMasterService;
 import com.maharecruitment.gov.in.master.service.ResourceLevelExperienceService;
 
@@ -33,12 +35,15 @@ public class DesignationMasterPageController {
 
     private final ManpowerDesignationMasterService designationService;
     private final ResourceLevelExperienceService resourceLevelService;
+    private final DesignationCategoryMasterService categoryService;
 
     public DesignationMasterPageController(
             ManpowerDesignationMasterService designationService,
-            ResourceLevelExperienceService resourceLevelService) {
+            ResourceLevelExperienceService resourceLevelService,
+            DesignationCategoryMasterService categoryService) {
         this.designationService = designationService;
         this.resourceLevelService = resourceLevelService;
+        this.categoryService = categoryService;
     }
 
     @GetMapping
@@ -170,5 +175,10 @@ public class DesignationMasterPageController {
                     return firstCode.compareToIgnoreCase(secondCode);
                 })
                 .toList();
+    }
+
+    @ModelAttribute("availableCategories")
+    public List<DesignationCategoryMasterResponse> availableCategories() {
+        return categoryService.getAll(false);
     }
 }

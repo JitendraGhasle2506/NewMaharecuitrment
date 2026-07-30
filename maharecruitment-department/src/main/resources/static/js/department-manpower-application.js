@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const MINIMUM_DURATION_IN_MONTHS = 3;
+    const MINIMUM_DURATION_IN_MONTHS = 1;
 
     const formElement = document.getElementById("departmentManpowerApplicationForm");
     if (!formElement) {
@@ -23,6 +23,7 @@
     const taxBreakupBody = document.getElementById("taxBreakupBody");
     const totalTaxAmountText = document.getElementById("totalTaxAmountText");
     const grandTotalIncludingTaxText = document.getElementById("grandTotalIncludingTaxText");
+    const workOrderNumberInput = formElement.querySelector('[name="workOrderNumber"]');
     const workOrderFileInput = document.getElementById("workOrderFileInput");
     const workOrderValidationMessage = document.getElementById("workOrderValidationMessage");
     const existingWorkOrderFilePathInput = formElement.querySelector('[name="existingWorkOrderFilePath"]');
@@ -36,10 +37,13 @@
 
     const requirementRowKeys = new Set();
     let applicableTaxRates = [];
+    let commissionRates = { AGENCY: 10, MAHAIT: 10 };
     let selectedWorkOrderObjectUrl = null;
+    let levelFetchController = null;
 
     initializeExistingRows();
     loadApplicableTaxRates();
+    loadCommissionRates();
     recalculateGrandTotalCost();
 
     designationSelectElement?.addEventListener("change", onDesignationChange);
@@ -68,14 +72,22 @@
     function onDesignationChange() {
         const designationId = designationSelectElement.value;
         resetLevelSelect();
+
+        if (levelFetchController) {
+            levelFetchController.abort();
+        }
+
         if (!designationId) {
             return;
         }
 
+        levelFetchController = new AbortController();
         const levelEndpoint = `${contextPath}/department/manpower/by-designation/${designationId}`;
-        fetch(levelEndpoint)
+
+        fetch(levelEndpoint, { signal: levelFetchController.signal })
             .then((response) => response.json())
             .then((levels) => {
+                resetLevelSelect(); // Secondary clear just in case
                 levels.forEach((level) => {
                     const optionElement = document.createElement("option");
                     optionElement.value = level.levelCode;
@@ -84,6 +96,7 @@
                 });
             })
             .catch((error) => {
+                if (error.name === 'AbortError') return;
                 console.error("Unable to load levels by designation.", error);
             });
     }
@@ -159,6 +172,22 @@
             });
     }
 
+    function loadCommissionRates() {
+        const endpoint = `${contextPath}/department/manpower/commission-rates`;
+        fetch(endpoint)
+            .then((response) => response.json())
+            .then((rates) => {
+                commissionRates = {
+                    AGENCY: Number(rates.AGENCY || 10),
+                    MAHAIT: Number(rates.MAHAIT || 10)
+                };
+                recalculateGrandTotalCost();
+            })
+            .catch((error) => {
+                console.error("Unable to load commission rates.", error);
+            });
+    }
+
     function appendRequirementRow(requirementData) {
         const rowElement = document.createElement("tr");
         rowElement.setAttribute("data-row-key", requirementData.rowKey);
@@ -182,11 +211,15 @@
                 <input type="number" min="1" class="form-control requiredQuantityInput" data-field="requiredQuantity" value="1">
             </td>
             <td>
-                <input type="number" min="${MINIMUM_DURATION_IN_MONTHS}" class="form-control durationInMonthsInput" data-field="durationInMonths" value="${MINIMUM_DURATION_IN_MONTHS}">
+                <input type="number" min="${MINIMUM_DURATION_IN_MONTHS}" class="form-control durationInMonthsInput" data-field="durationInMonths" value="12">
             </td>
             <td>
                 <span class="rowTotalCostText">0.00</span>
                 <input type="hidden" class="rowTotalCostValue" data-field="totalCost" value="0">
+                <input type="hidden" data-field="agencyCommissionAmount" value="0">
+                <input type="hidden" data-field="mahaItCommissionAmount" value="0">
+                <input type="hidden" data-field="taxableAmount" value="0">
+                <input type="hidden" data-field="gstAmount" value="0">
             </td>
             <td>
                 <button type="button" class="btn btn-outline-danger btn-sm removeRequirementButton">Remove</button>
@@ -257,6 +290,12 @@
         const rowTotalCostText = rowElement.querySelector(".rowTotalCostText");
         const rowTotalCostValue = rowElement.querySelector(".rowTotalCostValue");
 
+        // New hidden fields
+        const agencyCommInput = rowElement.querySelector('[data-field="agencyCommissionAmount"]');
+        const mahaItCommInput = rowElement.querySelector('[data-field="mahaItCommissionAmount"]');
+        const taxableAmountInput = rowElement.querySelector('[data-field="taxableAmount"]');
+        const gstAmountInput = rowElement.querySelector('[data-field="gstAmount"]');
+
         const rawQuantity = Number(quantityInput?.value);
         const rawDurationInMonths = Number(durationInput?.value);
         const quantity = Number.isFinite(rawQuantity) && rawQuantity > 0 ? Math.max(1, rawQuantity) : 0;
@@ -264,7 +303,14 @@
             ? Math.max(MINIMUM_DURATION_IN_MONTHS, rawDurationInMonths)
             : 0;
         const monthlyRate = Number(monthlyRateInput?.value || 0);
-        const totalCost = quantity * durationInMonths * monthlyRate;
+
+        // Calculation Logic
+        const manpowerValue = roundToTwo(quantity * durationInMonths * monthlyRate);
+        const agencyCommission = roundToTwo(manpowerValue * (commissionRates.AGENCY / 100));
+        const subTotal1 = manpowerValue + agencyCommission;
+        const mahaItCommission = roundToTwo(subTotal1 * (commissionRates.MAHAIT / 100));
+        const taxableAmount = subTotal1 + mahaItCommission;
+        const gstAmount = roundToTwo(taxableAmount * 0.18);
 
         if (normalizeInputs && quantityInput) {
             quantityInput.value = quantity;
@@ -273,30 +319,39 @@
             durationInput.value = durationInMonths;
         }
         if (rowTotalCostText) {
-            rowTotalCostText.textContent = formatCurrency(totalCost);
+            rowTotalCostText.textContent = formatCurrency(manpowerValue);
         }
         if (rowTotalCostValue) {
-            rowTotalCostValue.value = totalCost.toFixed(2);
+            rowTotalCostValue.value = manpowerValue.toFixed(2);
         }
+
+        // Update hidden fields
+        if (agencyCommInput) agencyCommInput.value = agencyCommission.toFixed(2);
+        if (mahaItCommInput) mahaItCommInput.value = mahaItCommission.toFixed(2);
+        if (taxableAmountInput) taxableAmountInput.value = taxableAmount.toFixed(2);
+        if (gstAmountInput) gstAmountInput.value = gstAmount.toFixed(2);
     }
 
     function recalculateGrandTotalCost() {
         const rows = resourceRequirementTableBody?.querySelectorAll("tr") || [];
-        let total = 0;
+        let totalManpowerValue = 0;
+        let totalAgencyComm = 0;
+        let totalMahaItComm = 0;
+        let totalTaxableAmount = 0;
 
         rows.forEach((row) => {
-            const rowCostValue = Number(row.querySelector(".rowTotalCostValue")?.value || 0);
-            total += rowCostValue;
+            totalManpowerValue += Number(row.querySelector(".rowTotalCostValue")?.value || 0);
+            totalAgencyComm += Number(row.querySelector('[data-field="agencyCommissionAmount"]')?.value || 0);
+            totalMahaItComm += Number(row.querySelector('[data-field="mahaItCommissionAmount"]')?.value || 0);
+            totalTaxableAmount += Number(row.querySelector('[data-field="taxableAmount"]')?.value || 0);
         });
 
         if (grandTotalCostText) {
-            grandTotalCostText.textContent = formatCurrency(total);
-        }
-        if (grandTotalCostValue) {
-            grandTotalCostValue.value = total.toFixed(2);
+            grandTotalCostText.textContent = formatCurrency(totalManpowerValue);
         }
 
-        updateTaxSummary(total);
+        // Update summary displayed values (Total including commissions but excluding GST)
+        updateTaxSummary(totalManpowerValue, totalAgencyComm, totalMahaItComm, totalTaxableAmount);
     }
 
     function resequenceRequirementRows() {
@@ -328,7 +383,7 @@
                 setWorkOrderValidationMessage("");
                 return true;
             }
-            setWorkOrderValidationMessage("Work-order document is mandatory.");
+            setWorkOrderValidationMessage("Work Order Document / Demand / Requisition Letter is mandatory.");
             return false;
         }
 
@@ -373,6 +428,10 @@
     }
 
     function onPreviewSubmitClick() {
+        if (!validateWorkOrderNumber()) {
+            return;
+        }
+
         if (!validateWorkOrderFile(workOrderFileInput || { files: [] })) {
             return;
         }
@@ -401,6 +460,7 @@
     function buildPreviewContent() {
         const previewProjectName = document.getElementById("previewProjectName");
         const previewApplicationType = document.getElementById("previewApplicationType");
+        const previewWorkOrderNumber = document.getElementById("previewWorkOrderNumber");
         const previewTableBody = document.getElementById("previewResourceRequirementBody");
 
         if (!previewTableBody) {
@@ -409,6 +469,9 @@
 
         previewProjectName.textContent = formElement.querySelector('[name="projectName"]')?.value || "";
         previewApplicationType.textContent = formElement.querySelector('[name="applicationType"] option:checked')?.textContent || "";
+        if (previewWorkOrderNumber) {
+            previewWorkOrderNumber.textContent = workOrderNumberInput?.value?.trim() || "";
+        }
 
         previewTableBody.innerHTML = "";
         const rows = resourceRequirementTableBody?.querySelectorAll("tr") || [];
@@ -416,13 +479,23 @@
             return false;
         }
 
+        let totalManpower = 0;
+        let totalAgencyComm = 0;
+        let totalMahaItComm = 0;
+        let totalTaxable = 0;
+
         rows.forEach((row) => {
             const designationName = row.querySelector('[data-field="designationName"]')?.value || "";
             const levelName = row.querySelector('[data-field="levelName"]')?.value || "";
             const monthlyRate = Number(row.querySelector(".monthlyRateValue")?.value || 0);
             const requiredQuantity = Number(row.querySelector(".requiredQuantityInput")?.value || 0);
             const durationInMonths = Number(row.querySelector(".durationInMonthsInput")?.value || 0);
-            const rowTotalCost = Number(row.querySelector(".rowTotalCostValue")?.value || 0);
+            const manpowerValue = Number(row.querySelector(".rowTotalCostValue")?.value || 0);
+
+            totalManpower += manpowerValue;
+            totalAgencyComm += Number(row.querySelector('[data-field="agencyCommissionAmount"]')?.value || 0);
+            totalMahaItComm += Number(row.querySelector('[data-field="mahaItCommissionAmount"]')?.value || 0);
+            totalTaxable += Number(row.querySelector('[data-field="taxableAmount"]')?.value || 0);
 
             const previewRow = document.createElement("tr");
             previewRow.innerHTML = `
@@ -431,15 +504,25 @@
                 <td>${formatCurrency(monthlyRate)}</td>
                 <td>${requiredQuantity}</td>
                 <td>${durationInMonths}</td>
-                <td>${formatCurrency(rowTotalCost)}</td>
+                <td>${formatCurrency(manpowerValue)}</td>
             `;
             previewTableBody.appendChild(previewRow);
         });
 
-        const baseCost = Number(grandTotalCostValue?.value || 0);
-        const taxComponents = buildTaxComponents(baseCost);
-        updatePreviewTaxSummary(baseCost, taxComponents);
+        const taxComponents = buildTaxComponents(totalTaxable);
+        updatePreviewTaxSummary(totalManpower, totalAgencyComm, totalMahaItComm, totalTaxable, taxComponents);
         return true;
+    }
+
+    function validateWorkOrderNumber() {
+        const workOrderNumber = workOrderNumberInput?.value?.trim() || "";
+        if (workOrderNumber.length > 0) {
+            return true;
+        }
+
+        alert("Work Order Number is mandatory.");
+        workOrderNumberInput?.focus();
+        return false;
     }
 
     function resetLevelSelect() {
@@ -476,12 +559,18 @@
             .filter((taxRate) => taxRate.taxCode && Number.isFinite(taxRate.ratePercentage) && taxRate.ratePercentage > 0);
     }
 
-    function updateTaxSummary(baseCost) {
-        const taxComponents = buildTaxComponents(baseCost);
-        const totalTaxAmount = taxComponents.reduce((sum, taxComponent) => sum + taxComponent.taxAmount, 0);
-        const grandTotalIncludingTax = baseCost + totalTaxAmount;
+    function updateTaxSummary(totalManpower, totalAgencyComm, totalMahaItComm, totalTaxable) {
+        // Build commissions for the display
+        const commissions = [
+            { label: `Agency Commission (${formatPercentage(commissionRates.AGENCY)}%)`, amount: totalAgencyComm },
+            { label: `MahaIT Commission (${formatPercentage(commissionRates.MAHAIT)}%) <br>(Total Manpower Value + Agency Commission) * ${formatPercentage(commissionRates.MAHAIT)}%`, amount: totalMahaItComm }
+        ];
 
-        renderTaxBreakupRows(taxBreakupBody, taxComponents);
+        const taxComponents = buildTaxComponents(totalTaxable);
+        const totalTaxAmount = taxComponents.reduce((sum, tx) => sum + tx.taxAmount, 0);
+        const grandTotalIncludingTax = totalTaxable + totalTaxAmount;
+
+        renderFinancialBreakdownRows(taxBreakupBody, commissions, taxComponents);
 
         if (totalTaxAmountText) {
             totalTaxAmountText.textContent = formatCurrency(totalTaxAmount);
@@ -489,18 +578,28 @@
         if (grandTotalIncludingTaxText) {
             grandTotalIncludingTaxText.textContent = formatCurrency(grandTotalIncludingTax);
         }
+        if (grandTotalCostValue) {
+            grandTotalCostValue.value = grandTotalIncludingTax.toFixed(2);
+        }
 
-        updatePreviewTaxSummary(baseCost, taxComponents);
+        updatePreviewTaxSummary(totalManpower, totalAgencyComm, totalMahaItComm, totalTaxable, taxComponents);
     }
 
-    function updatePreviewTaxSummary(baseCost, taxComponents) {
-        const totalTaxAmount = taxComponents.reduce((sum, taxComponent) => sum + taxComponent.taxAmount, 0);
-        const grandTotalIncludingTax = baseCost + totalTaxAmount;
+    function updatePreviewTaxSummary(totalManpower, totalAgencyComm, totalMahaItComm, totalTaxable, taxComponents) {
+        const totalTaxAmount = taxComponents.reduce((sum, tx) => sum + tx.taxAmount, 0);
+        const grandTotalIncludingTax = totalTaxable + totalTaxAmount;
 
         if (previewGrandTotalCost) {
-            previewGrandTotalCost.textContent = formatCurrency(baseCost);
+            previewGrandTotalCost.textContent = formatCurrency(totalManpower);
         }
-        renderTaxBreakupRows(previewTaxBreakupBody, taxComponents);
+
+        const commissions = [
+            { label: `Agency Commission (${formatPercentage(commissionRates.AGENCY)}%)`, amount: totalAgencyComm },
+            { label: `MahaIT Commission (${formatPercentage(commissionRates.MAHAIT)}%) <br>(Total Manpower Value + Agency Commission) * ${formatPercentage(commissionRates.MAHAIT)}%`, amount: totalMahaItComm }
+        ];
+
+        renderFinancialBreakdownRows(previewTaxBreakupBody, commissions, taxComponents);
+
         if (previewTotalTaxAmount) {
             previewTotalTaxAmount.textContent = formatCurrency(totalTaxAmount);
         }
@@ -520,12 +619,18 @@
         });
     }
 
-    function renderTaxBreakupRows(container, taxComponents) {
-        if (!container) {
-            return;
-        }
-
+    function renderFinancialBreakdownRows(container, commissions, taxComponents) {
+        if (!container) return;
         container.innerHTML = "";
+
+        commissions.forEach(comm => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <th class="text-end text-muted small">${comm.label}</th>
+                <td class="text-end small">${formatCurrency(comm.amount)}</td>
+            `;
+            container.appendChild(row);
+        });
 
         taxComponents.forEach((taxComponent) => {
             const taxRow = document.createElement("tr");

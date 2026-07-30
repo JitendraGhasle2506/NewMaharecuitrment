@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle}">Holiday Master</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .holiday-stat-card {
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 20px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+            padding: 1.1rem 1.2rem;
+            height: 100%;
+        }
+
+        .holiday-stat-label {
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
+        .holiday-stat-value {
+            color: #17324d;
+            font-size: 1.35rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .holiday-panel {
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 24px;
+            background: #fff;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+            padding: 1.4rem;
+            height: 100%;
+        }
+
+        .holiday-panel-title {
+            color: #17324d;
+            font-size: 1.05rem;
+            font-weight: 800;
+            margin-bottom: 0.35rem;
+        }
+
+        .holiday-search-input {
+            border-radius: 14px;
+            min-height: 44px;
+        }
+
+        .holiday-table th,
+        .holiday-table td,
+        .holiday-log-table th,
+        .holiday-log-table td {
+            vertical-align: middle;
+        }
+
+        .holiday-summary-chip {
+            border-radius: 999px;
+            padding: 0.35rem 0.75rem;
+            background: rgba(37, 99, 235, 0.08);
+            color: #1d4ed8;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .holiday-highlight-label {
+            color: #0f766e;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Common', 'Holiday Master', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h2 class="mb-1">Holiday Master</h2>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a th:href="@{/common/holidays}" class="btn btn-outline-secondary btn-sm">Refresh</a>
+                        <a th:href="@{/common/holidays/add}" class="btn btn-primary btn-sm">
+                            <i class="fa fa-plus me-1"></i> Add Holiday
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="holiday-stat-card">
+                                <div class="holiday-stat-label">Total Holidays</div>
+                                <div class="holiday-stat-value" th:text="${totalHolidayCount}">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="holiday-stat-card">
+                                <div class="holiday-stat-label">This Year</div>
+                                <div class="holiday-stat-value" th:text="${currentYearHolidayCount}">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="holiday-stat-card">
+                                <div class="holiday-stat-label">Upcoming</div>
+                                <div class="holiday-stat-value" th:text="${upcomingHolidayCount}">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="holiday-stat-card">
+                                <div class="holiday-stat-label">Weekend Holidays</div>
+                                <div class="holiday-stat-value" th:text="${weekendHolidayCount}">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 align-items-stretch">
+                        <div class="col-xl-8">
+                            <div class="holiday-panel">
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                                    <div>
+                                        <div class="holiday-panel-title">Holiday Directory</div>
+                                    </div>
+                                    <div th:if="${nextHoliday != null}" class="text-md-end">
+                                        <div class="holiday-summary-chip" th:text="${daysUntilNextHoliday == 0 ? 'Next holiday is today' : 'Next holiday in ' + daysUntilNextHoliday + ' day(s)'}">
+                                            Next holiday in 3 day(s)
+                                        </div>
+                                        <div class="small text-muted mt-2">
+                                            <span class="holiday-highlight-label" th:text="${nextHoliday.holidayName}">Holiday</span>
+                                            on
+                                            <span th:text="${#temporals.format(nextHoliday.holidayDate, 'dd-MM-yyyy')}">07 May 2026</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control holiday-search-input" id="holidaySearchInput"
+                                            placeholder="Search holiday name, date or weekday">
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle holiday-table mb-0" id="holidayTable">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Day</th>
+                                                <th>Holiday Name</th>
+                                                <th>Type</th>
+                                                <th class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${#lists.isEmpty(holidays)}">
+                                                <td colspan="5" class="text-center py-5 text-muted">No holiday records have been configured yet.</td>
+                                            </tr>
+                                            <tr th:each="holiday : ${holidays}"
+                                                th:classappend="${selectedHoliday != null and selectedHoliday.id == holiday.id ? ' table-info' : ''}">
+                                                <td>
+                                                    <div class="fw-semibold" th:text="${#temporals.format(holiday.holidayDate, 'dd-MM-yyyy')}">07 May 2026</div>
+                                                    <div class="small text-muted">ID <span th:text="${holiday.id}">1</span></div>
+                                                </td>
+                                                <td th:text="${#temporals.format(holiday.holidayDate, 'EEEE')}">Thursday</td>
+                                                <td>
+                                                    <div class="fw-semibold" th:text="${holiday.holidayName}">Holiday Name</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge"
+                                                        th:classappend="${holiday.holidayDate.dayOfWeek.name() == 'SATURDAY' or holiday.holidayDate.dayOfWeek.name() == 'SUNDAY' ? ' text-bg-warning' : ' text-bg-info'}"
+                                                        th:text="${holiday.holidayDate.dayOfWeek.name() == 'SATURDAY' or holiday.holidayDate.dayOfWeek.name() == 'SUNDAY' ? 'Weekend' : 'Working Day'}">
+                                                        Working Day
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="d-inline-flex flex-wrap justify-content-center gap-2">
+                                                        <a th:href="@{/common/holidays(holidayId=${holiday.id})}" class="btn btn-outline-secondary btn-sm">Activity</a>
+                                                        <a th:href="@{/common/holidays/edit/{id}(id=${holiday.id})}" class="btn btn-outline-primary btn-sm">Manage</a>
+                                                        <a th:href="@{/common/holidays/archive/{id}(id=${holiday.id})}"
+                                                            class="btn btn-outline-danger btn-sm"
+                                                            onclick="return confirm('Archive this holiday?')">
+                                                            Archive
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-4" id="activity-log">
+                            <div class="holiday-panel">
+                                <div class="holiday-panel-title">Holiday Activity</div>
+
+                                <div class="table-responsive" th:if="${selectedHoliday != null}">
+                                    <table class="table table-sm table-bordered holiday-log-table mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>When</th>
+                                                <th>Action</th>
+                                                <th>Actor</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${#lists.isEmpty(activityTimeline)}">
+                                                <td colspan="3" class="text-center text-muted">No audit entries found.</td>
+                                            </tr>
+                                            <tr th:each="event : ${activityTimeline}">
+                                                <td>
+                                                    <div th:text="${#temporals.format(event.occurredAt, 'dd-MM-yyyy hh:mm a')}">07 May 2026 03:15 PM</div>
+                                                    <div class="small text-muted" th:if="${event.activityDetails}" th:text="${event.activityDetails}"></div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge text-bg-light border" th:text="${event.actionType}">UPDATE</span>
+                                                </td>
+                                                <td>
+                                                    <div class="fw-semibold" th:text="${event.actorName != null ? event.actorName : event.actorLoginId}">Admin</div>
+                                                    <div class="small text-muted" th:text="${event.activitySummary}">Holiday updated</div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.getElementById('holidaySearchInput');
+            const rows = document.querySelectorAll('#holidayTable tbody tr');
+
+            if (!searchInput) {
+                return;
+            }
+
+            searchInput.addEventListener('input', function () {
+                const filter = this.value.toLowerCase();
+                rows.forEach(function (row) {
+                    if (row.querySelector('td') === null) {
+                        return;
+                    }
+                    row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+

@@ -2,7 +2,7 @@ package com.maharecruitment.gov.in.department.entity;
 
 import java.math.BigDecimal;
 
-import com.maharecruitment.gov.in.auth.entity.Auditable;
+import com.maharecruitment.gov.in.common.entity.Auditable;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -68,4 +68,13 @@ public class DepartmentAdvancePaymentEntity extends Auditable {
 
     @Column(name = "remarks", length = 1000)
     private String remarks;
+
+    @Column(name = "utr_number", length = 100)
+    private String utrNumber;
+
+    @Column(name = "payment_mode", length = 20)
+    private String paymentMode;
+
+    @Column(name = "cheque_number", length = 50)
+    private String chequeNumber;
 }

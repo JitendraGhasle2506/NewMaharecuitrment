@@ -1,0 +1,174 @@
+package com.maharecruitment.gov.in.attendance.controller;
+
+import java.time.LocalDate;
+import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
+import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+
+@Controller
+@RequestMapping("/hod1/manual-attendance")
+public class ManualAttendanceApprovalController {
+
+    @Autowired
+    private AttendanceRegisterService attendanceService;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @GetMapping
+    public String viewApprovals(
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String roleType,
+            Model model, HttpSession session) {
+        
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser == null) {
+            model.addAttribute("errorMessage", "Session expired. Please log in again.");
+            return "attendance/manual-attendance-approvals";
+        }
+
+        // Default to current month/year if not provided
+        LocalDate now = LocalDate.now();
+        if (month == null) month = now.getMonthValue();
+        if (year == null) year = now.getYear();
+
+        if (roleType == null) {
+            roleType = (sessionUser.roles() != null && sessionUser.roles().contains("ROLE_HOD")) ? "HOD" : "MANAGER";
+        }
+
+        Long approverId;
+        if ("HOD".equalsIgnoreCase(roleType)) {
+            approverId = sessionUser.id();
+        } else {
+            EmployeeEntity employee = requireEmployee(sessionUser);
+            approverId = employee.getEmployeeId();
+        }
+
+        model.addAttribute("pendingSummaries", attendanceService.getPendingSummaries(approverId, roleType, month, year));
+        model.addAttribute("currentRoleType", roleType);
+        model.addAttribute("selectedMonth", month);
+        model.addAttribute("selectedYear", year);
+
+        // Add Month names and Year list
+        java.util.Map<Integer, String> monthNames = new java.util.TreeMap<>();
+        String[] months = new java.text.DateFormatSymbols().getMonths();
+        for (int i = 0; i < 12; i++) {
+            monthNames.put(i + 1, months[i]);
+        }
+        model.addAttribute("monthNames", monthNames);
+
+        java.util.List<Integer> years = new java.util.ArrayList<>();
+        int currentYear = now.getYear();
+        for (int i = currentYear - 2; i <= currentYear + 1; i++) {
+            years.add(i);
+        }
+        model.addAttribute("yearsList", years);
+
+        return "attendance/manual-attendance-approvals";
+    }
+
+    @GetMapping("/details")
+    public String viewDetails(@RequestParam("userId") Long targetUserId, 
+                             @RequestParam(required = false) String roleType,
+                             Model model, HttpSession session) {
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        
+        if (sessionUser == null) return "redirect:/login";
+
+        if (roleType == null) {
+            roleType = (sessionUser.roles() != null && sessionUser.roles().contains("ROLE_HOD")) ? "HOD" : "MANAGER";
+        }
+
+        Long approverId;
+        if ("HOD".equalsIgnoreCase(roleType)) {
+            approverId = sessionUser.id();
+        } else {
+            EmployeeEntity employee = requireEmployee(sessionUser);
+            approverId = employee.getEmployeeId();
+        }
+        
+        model.addAttribute("pendingRequests", attendanceService.getPendingRequestsForEmployee(approverId, targetUserId, roleType));
+        model.addAttribute("currentRoleType", roleType);
+        model.addAttribute("targetUserId", targetUserId);
+
+        return "attendance/manual-attendance-details";
+    }
+
+    @PostMapping("/action")
+    public String takeAction(
+            @RequestParam("requestId") Long requestId,
+            @RequestParam("userId") Long targetUserId,
+            @RequestParam("status") String status, 
+            @RequestParam("comments") String comments,
+            @RequestParam("roleType") String roleType,
+            HttpSession session, 
+            RedirectAttributes redirectAttrs) {
+
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser == null) {
+            redirectAttrs.addFlashAttribute("errorMessage", "Session expired.");
+            return "redirect:/login";
+        }
+
+        Long approverId;
+        if ("HOD".equalsIgnoreCase(roleType)) {
+            approverId = sessionUser.id();
+        } else {
+            EmployeeEntity employee = requireEmployee(sessionUser);
+            approverId = employee.getEmployeeId();
+        }
+
+        try {
+            attendanceService.approveRejectManualAttendance(requestId, approverId, status, comments, roleType);
+            redirectAttrs.addFlashAttribute("successMessage", "Request " + status.toLowerCase() + " successfully.");
+        } catch (Exception e) {
+            redirectAttrs.addFlashAttribute("errorMessage", "Error processing request: " + e.getMessage());
+        }
+
+        return "redirect:/hod1/manual-attendance/details?userId=" + targetUserId + "&roleType=" + roleType;
+    }
+
+    @PostMapping("/bulk-action")
+    public String takeBulkAction(
+            @RequestParam("requestIds") java.util.List<Long> requestIds,
+            @RequestParam("userId") Long targetUserId,
+            @RequestParam("status") String status, 
+            @RequestParam("comments") String comments,
+            @RequestParam("roleType") String roleType,
+            HttpSession session, 
+            RedirectAttributes redirectAttrs) {
+
+        SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        if (sessionUser == null) return "redirect:/login";
+
+        Long approverId;
+        if ("HOD".equalsIgnoreCase(roleType)) {
+            approverId = sessionUser.id();
+        } else {
+            EmployeeEntity employee = requireEmployee(sessionUser);
+            approverId = employee.getEmployeeId();
+        }
+
+        try {
+            attendanceService.bulkApproveRejectManualAttendance(requestIds, approverId, status, comments, roleType);
+            redirectAttrs.addFlashAttribute("successMessage", "Selected requests " + status.toLowerCase() + " successfully.");
+        } catch (Exception e) {
+            redirectAttrs.addFlashAttribute("errorMessage", "Error processing requests: " + e.getMessage());
+        }
+
+        return "redirect:/hod1/manual-attendance/details?userId=" + targetUserId + "&roleType=" + roleType;
+    }
+
+    private EmployeeEntity requireEmployee(SessionUserDTO sessionUser) {
+        return employeeRepository.findByUser_Id(sessionUser.id())
+                .orElseThrow(() -> new IllegalArgumentException("Employee record not found"));
+    }
+}

@@ -71,7 +71,7 @@ public class ManpowerDesignationRateController {
     @DeleteMapping("/{rateId}")
     public ResponseEntity<ApiResponse<Void>> softDelete(@PathVariable Long rateId) {
         service.softDelete(rateId);
-        return ResponseEntity.ok(ApiResponse.of("Designation rate deleted successfully", null));
+        return ResponseEntity.ok(ApiResponse.of("Designation rate deactivated successfully", null));
     }
 
     @PatchMapping("/{rateId}/restore")

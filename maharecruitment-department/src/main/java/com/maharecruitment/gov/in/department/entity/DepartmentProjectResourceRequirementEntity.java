@@ -59,6 +59,18 @@ public class DepartmentProjectResourceRequirementEntity {
     @Column(name = "total_cost", nullable = false, precision = 14, scale = 2)
     private BigDecimal totalCost;
 
+    @Column(name = "agency_commission_amount", precision = 14, scale = 2)
+    private BigDecimal agencyCommissionAmount;
+
+    @Column(name = "mahait_commission_amount", precision = 14, scale = 2)
+    private BigDecimal mahaItCommissionAmount;
+
+    @Column(name = "taxable_amount", precision = 14, scale = 2)
+    private BigDecimal taxableAmount;
+
+    @Column(name = "gst_amount", precision = 14, scale = 2)
+    private BigDecimal gstAmount;
+
     @PrePersist
     @PreUpdate
     void normalizeFields() {

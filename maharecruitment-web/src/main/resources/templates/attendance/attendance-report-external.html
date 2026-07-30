@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -55,11 +55,24 @@
 			font-weight: bold;
 		}
 
+		.status-comp-off {
+			color: #0f766e;
+			font-weight: bold;
+		}
+
 		.filter-section {
 			margin-bottom: 20px;
 			padding: 15px;
 			background-color: #f9f9f9;
 			border-radius: 5px;
+		}
+
+		.filter-section label {
+			margin-bottom: 0.4rem;
+			font-size: 0.95rem;
+			font-weight: 600;
+			font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+			color: #2d4461;
 		}
 
 		.attendance-legend {
@@ -96,6 +109,7 @@
 		.circle-absent { background-color: rgb(255, 0, 0); }
 		.circle-holiday { background-color: #2196f3; }
 		.circle-leave { background-color: #556b2f; }
+		.circle-comp-off { background-color: #0f766e; }
 		.circle-tour { background-color: #9c27b0; }
 		.circle-weekoff { background-color: #e0e0e0; color: #444; }
 		.circle-future { background-color: #eeeeee; color: #bdbdbd; }
@@ -122,7 +136,8 @@
 			outline: none;
 			width: 100%;
 			padding: 5px 0;
-			font-size: 13px;
+			font-size: 1rem;
+			font-family: "Public Sans", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
 		}
 		
 		#btnExport {
@@ -222,6 +237,10 @@
 										<span>Leave</span>
 									</div>
 									<div class="legend-item">
+										<div class="legend-circle circle-comp-off">CO</div>
+										<span>Comp Off</span>
+									</div>
+									<div class="legend-item">
 										<div class="legend-circle circle-tour">T</div>
 										<span>Tour</span>
 									</div>
@@ -252,6 +271,14 @@
 												<th>Agency Name</th>
 												<th th:each="day : ${#numbers.sequence(1, daysInMonth)}"
 													th:text="${day < 10 ? '0' + day : day}"></th>
+												<th>Present Total</th>
+												<th>Total Absent (A+L)</th>
+												<th>Approved Leave Total</th>
+												<th>Comp Off Total</th>
+												<th>Tour Total</th>
+												<th>Holiday Total</th>
+												<th>Week Off Total</th>
+												<th>Payable Days Till Date</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -271,10 +298,19 @@
 															   (status == 'A' ? 'status-absent' : 
 															   (status == 'W' ? 'status-weekoff' : 
 															   (status == 'L' ? 'status-leave' : 
+															   (status == 'CO' ? 'status-comp-off' : 
 															   (status == 'T' ? 'status-tour' : 
-															   (status == 'H' ? 'status-holiday' : '')))))}">
+															   (status == 'H' ? 'status-holiday' : ''))))))}">
 													<span th:text="${status}"></span>
 												</td>
+												<td th:text="${emp.presentCount}">0</td>
+												<td th:text="${emp.absentTotalCount}">0</td>
+												<td th:text="${emp.leaveCount}">0</td>
+												<td th:text="${emp.compOffCount}">0</td>
+												<td th:text="${emp.tourCount}">0</td>
+												<td th:text="${emp.holidayCount}">0</td>
+												<td th:text="${emp.weekOffCount}">0</td>
+												<td th:text="${emp.payableDays}">0</td>
 											</tr>
 										</tbody>
 									</table>
@@ -289,7 +325,7 @@
 				</div>
 			</div>
 
-			<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+			<script th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}"></script>
 			<script th:inline="javascript">
 				$(document).ready(function () {
 					// Client-side search filter
@@ -333,7 +369,10 @@
 					var tableSelect = document.getElementById(tableID);
 					var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
 					
-					filename = filename?filename+'.xls':'excel_data.xls';
+					var selectedMonthText = $('select[name="month"] option:selected').text() || 'month';
+					var selectedYear = $('select[name="year"]').val() || 'year';
+					var safeMonth = selectedMonthText.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+					filename = filename ? filename + '_' + safeMonth + '_' + selectedYear + '.xls' : 'maha_recruitment_attendance_report_' + safeMonth + '_' + selectedYear + '.xls';
 					downloadLink = document.createElement("a");
 					document.body.appendChild(downloadLink);
 					
@@ -354,3 +393,4 @@
 </body>
 
 </html>
+

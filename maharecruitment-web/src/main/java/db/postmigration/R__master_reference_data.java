@@ -21,9 +21,11 @@ public class R__master_reference_data extends BaseJavaMigration {
 
         if (tableExists(connection, "department_mst")) {
             bootstrapDepartments(jdbcTemplate);
+            syncIdentitySequence(jdbcTemplate, "department_mst", "department_id");
         }
         if (tableExists(connection, "sub_department")) {
             bootstrapSubDepartments(jdbcTemplate);
+            syncIdentitySequence(jdbcTemplate, "sub_department", "sub_dept_id");
         }
         if (tableExists(connection, "resource_level_experience_mst")
                 && tableExists(connection, "manpower_designation_master")
@@ -33,6 +35,28 @@ public class R__master_reference_data extends BaseJavaMigration {
             bootstrapDesignations(jdbcTemplate);
             bootstrapDesignationRates(jdbcTemplate);
         }
+    }
+
+    private void syncIdentitySequence(JdbcTemplate jdbcTemplate, String tableName, String idColumn) {
+        String sequenceName = jdbcTemplate.queryForObject(
+                "select pg_get_serial_sequence(?, ?)",
+                String.class,
+                tableName,
+                idColumn);
+
+        if (sequenceName == null || sequenceName.isBlank()) {
+            return;
+        }
+
+        Long nextValue = jdbcTemplate.queryForObject(
+                "select coalesce(max(" + idColumn + "), 0) + 1 from " + tableName,
+                Long.class);
+
+        jdbcTemplate.queryForObject(
+                "select setval(cast(? as regclass), ?, false)",
+                Long.class,
+                sequenceName,
+                nextValue);
     }
 
     private void bootstrapDepartments(JdbcTemplate jdbcTemplate) {

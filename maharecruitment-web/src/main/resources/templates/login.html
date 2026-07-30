@@ -3,9 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Registration and Login System</title>
+    <title>MahaIT Recruitment Login</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/captcha.css}" />
+    <link rel="stylesheet" th:href="@{/css/login.css}" />
 </head>
 
 <body class="portal-shell">
@@ -16,11 +17,11 @@
     </div>
 
     <nav class="navbar navbar-expand-lg portal-nav">
-        <div class="container">
-            <a class="navbar-brand fw-semibold" th:href="@{/index}">MahaIT Recruitment</a>
-            <div class="d-flex gap-2">
-                <a class="btn btn-outline-light btn-sm" th:href="@{/register/department-registration}">Register</a>
-            </div>
+        <div class="container justify-content-center">
+            <a class="navbar-brand fw-semibold" th:href="@{/index}">
+                <img th:src="@{/img/mahait_logo.png}" alt="MahaIT" class="brand-logo">
+                <span>MahaIT Recruitment</span>
+            </a>
         </div>
     </nav>
 
@@ -29,83 +30,183 @@
             <div class="row g-4 align-items-stretch">
                 <div class="col-lg-7">
                     <section class="hero-panel">
-                        <p class="hero-chip">Government of Maharashtra</p>
-                        <h1>Digital Recruitment and Workforce Operations</h1>
+                        <div class="hero-logo-wrap">
+                            <img th:src="@{/img/mahait_logo.png}" alt="MahaIT Logo" class="hero-logo-img" />
+                            <div class="hero-logo-text">
+                                <span class="hero-logo-org">Maharashtra Information Technology Corporation</span>
+                                <span class="hero-logo-tagline">Empowering Digital Governance</span>
+                            </div>
+                        </div>
+                        <p class="hero-chip"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Government of Maharashtra</p>
+                        <h1>MahaIT Digital Recruitment & Workforce Platform</h1>
                         <p class="hero-subtitle">
-                            One platform for department onboarding, attendance, compliance flow, and secure role-based access.
+                            An integrated ecosystem empowering government departments with seamless end-to-end
+                            recruitment management, from candidate shortlisting and pre-onboarding to automated
+                            attendance tracking and transparent compliance monitoring.
                         </p>
                         <div class="hero-stats">
                             <div class="stat-card">
-                                <span class="stat-value">Unified</span>
-                                <span class="stat-label">Department Workflow</span>
+                                <span class="stat-icon"><i class="fa-solid fa-route"></i></span>
+                                <span class="stat-value">End-to-End</span>
+                                <span class="stat-label">Recruitment Cycle</span>
                             </div>
                             <div class="stat-card">
-                                <span class="stat-value">Secure</span>
-                                <span class="stat-label">Role-based Login</span>
+                                <span class="stat-icon"><i class="fa-solid fa-gears"></i></span>
+                                <span class="stat-value">Automated</span>
+                                <span class="stat-label">Onboarding Flow</span>
                             </div>
                             <div class="stat-card">
-                                <span class="stat-value">Realtime</span>
-                                <span class="stat-label">Attendance Visibility</span>
+                                <span class="stat-icon"><i class="fa-solid fa-chart-bar"></i></span>
+                                <span class="stat-value">Transparent</span>
+                                <span class="stat-label">Workforce Ops</span>
                             </div>
+                        </div>
+                        <div class="trust-strip">
+                            <span class="trust-item"><i class="fa-solid fa-building-user"></i> Department Mapping</span>
+                            <span class="trust-item"><i class="fa-solid fa-file-shield"></i> Compliance Ready</span>
+                            <span class="trust-item"><i class="fa-solid fa-user-shield"></i> Secure Verification</span>
                         </div>
                     </section>
                 </div>
 
                 <div class="col-lg-5">
                     <section class="auth-card">
+                        <div class="auth-card-logo">
+                            <span class="auth-logo-mark"><i class="fa-solid fa-building-columns"></i></span>
+                            <span class="auth-logo-name">MahaIT Portal</span>
+                        </div>
                         <h2>Sign In</h2>
-                        <p class="auth-subtext">Use your registered email and password.</p>
+                        <p class="auth-subtext">Use your registered email or mobile number to sign in.</p>
 
-                        <div th:if="${param.error}" class="alert alert-danger">Invalid Email or Password</div>
+                        <div th:if="${param.error}" class="alert alert-danger">Invalid email, mobile number, or password.</div>
                         <div th:if="${param.logout}" class="alert alert-success">You have been logged out.</div>
-                        <div th:if="${param.sessionExpired}" class="alert alert-warning">Session expired. Please login again.</div>
-                        <div th:if="${param.unauthenticated}" class="alert alert-warning">Please login to continue.</div>
-                        <div th:if="${param.accessDenied}" class="alert alert-danger">Access denied for requested module.</div>
-                        <div th:if="${generatedUsername != null and generatedPassword != null}" class="alert alert-success">
+                        <div th:if="${param.sessionExpired}" class="alert alert-warning">Session expired. Please login
+                            again.</div>
+                        <div th:if="${param.csrfExpired}" class="alert alert-warning">Your page session expired while submitting the request. Please login again and retry.</div>
+                        <div th:if="${param.unauthenticated}" class="alert alert-warning">Please login to continue.
+                        </div>
+                        <div th:if="${param.accessDenied}" class="alert alert-danger">Access denied for requested
+                            module.</div>
+                        <div th:if="${generatedUsername != null and generatedPassword != null}"
+                            class="alert alert-success">
                             Department registration submitted successfully.<br>
                             Username: <strong th:text="${generatedUsername}"></strong><br>
                             Temporary Password: <strong th:text="${generatedPassword}"></strong><br>
                             Credentials have also been sent to your registered email and mobile number.
                         </div>
-                        <div th:if="${param.registered != null and generatedUsername == null}" class="alert alert-success">Department registration submitted successfully. Please wait for approval.</div>
+                        <div th:if="${param.registered != null and generatedUsername == null}"
+                            class="alert alert-success">Department registration submitted successfully. Please wait for
+                            approval.</div>
+                        <div th:if="${otpErrorMessage != null}" class="alert alert-danger" th:text="${otpErrorMessage}">
+                            OTP login failed.
+                        </div>
 
-                        <form id="loginForm" method="post" th:action="@{/doLogin}" class="form-horizontal">
+                        <div class="login-mode-switch" role="radiogroup" aria-label="Login method">
+                            <label class="login-mode-option">
+                                <input type="radio" name="loginMode" value="otp"
+                                    th:disabled="${otpLoginEnabled != true}"
+                                    th:checked="${otpLoginEnabled == true and (param.loginMode == null or param.loginMode[0] != 'password')}">
+                                <span>OTP Login</span>
+                            </label>
+                            <label class="login-mode-option">
+                                <input type="radio" name="loginMode" value="password"
+                                    th:checked="${otpLoginEnabled != true or (param.loginMode != null and param.loginMode[0] == 'password')}">
+                                <span>Password Login</span>
+                            </label>
+                        </div>
+
+                        <form id="otpLoginForm" method="post" th:action="@{/login/otp}" class="form-horizontal login-mode-panel otp-login-form"
+                            th:attr="data-otp-send-url=@{/login/otp/send},data-csrf-token=${_csrf.token},data-login-mode=otp,data-otp-expiry-seconds=${otpExpirySeconds},data-otp-resend-cooldown-seconds=${otpResendCooldownSeconds},data-otp-sent=${otpErrorMessage != null},data-email-otp-enabled=${otpEmailEnabled},data-sms-otp-enabled=${otpSmsEnabled}">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                             <div class="form-group mb-3">
-                                <label for="username" class="control-label">Email</label>
+                                <label for="otpIdentifier" class="control-label">Email / Mobile</label>
+                                <input type="text" id="otpIdentifier" name="identifier" class="form-control"
+                                    placeholder="Enter registered email or mobile number"
+                                    th:value="${otpIdentifier}" minlength="3" maxlength="100" oninput="this.value=this.value.replace(/\s/g, '');" required />
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="otpChannelDisplay" class="control-label">OTP Delivery</label>
+                                <input type="hidden" id="otpChannel" name="channel" th:value="${otpChannel}" />
+                                <div id="otpChannelDisplay" class="otp-channel-display" aria-live="polite">
+                                    Enter Email / Mobile
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <div class="otp-send-row">
+                                    <button type="button" id="sendLoginOtpBtn" class="btn btn-outline-primary w-100"
+                                        th:disabled="${otpLoginEnabled != true}">Send OTP</button>
+                                </div>
+                                <div id="otpLoginStatus" class="otp-status" aria-live="polite"></div>
+                                <div id="otpLoginTiming" class="otp-timing" aria-live="polite"></div>
+                            </div>
+                            <div id="loginOtpSection" class="form-group mb-3 otp-entry-section">
+                                <label for="loginOtp" class="control-label">OTP</label>
+                                <input type="text" id="loginOtp" name="otp" class="form-control"
+                                    placeholder="Enter 6 digit OTP" inputmode="numeric" minlength="6" maxlength="6"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '');" required disabled />
+                            </div>
+                            <div th:if="${otpRemainingAttempts != null}" class="otp-status"
+                                th:text="'Remaining attempts: ' + ${otpRemainingAttempts}">
+                                Remaining attempts: 5
+                            </div>
+                            <div th:if="${otpLockSecondsRemaining != null and otpLockSecondsRemaining > 0}"
+                                id="otpLoginLockCountdown"
+                                class="otp-status is-error"
+                                th:attr="data-lock-seconds=${otpLockSecondsRemaining}">
+                                OTP verification failed. Please try again.
+                            </div>
+                            <div th:if="${otpCaptchaRequired == true}" id="loginOtpCaptchaSection" class="form-group mb-3 otp-captcha-section is-visible">
+                                <input type="hidden" name="captchaId" th:value="${otpCaptchaId}" />
+                                <label for="loginOtpCaptchaAnswer" class="control-label" th:text="${otpCaptchaQuestion}">Captcha</label>
+                                <input type="text" id="loginOtpCaptchaAnswer" name="captchaAnswer" class="form-control"
+                                    inputmode="numeric" maxlength="3" autocomplete="off"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '');" required />
+                            </div>
+                            <div class="form-group mb-0 d-grid">
+                                <button type="submit" id="loginOtpVerifyBtn" class="btn btn-primary btn-login">Login with OTP</button>
+                            </div>
+                            <div class="form-group mt-3 mb-0 d-grid">
+                                <a th:href="@{/register/department-registration}"
+                                    class="btn btn-outline-secondary">Department Registration</a>
+                            </div>
+                        </form>
+
+                        <form id="loginForm" method="post" th:action="@{/doLogin}" class="form-horizontal login-mode-panel is-hidden"
+                            data-login-mode="password"
+                            th:attr="data-credential-key-url=@{/security/credential-encryption/public-key}">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                            <input type="hidden" id="encryptedPassword" name="password" autocomplete="off" />
+                            <div class="form-group mb-3">
+                                <label for="username" class="control-label">Email / Mobile</label>
                                 <input type="text" id="username" name="username" class="form-control"
-                                    placeholder="Enter email address" required />
+                                    placeholder="Enter registered email or mobile number"
+                                    minlength="3" maxlength="100" oninput="this.value=this.value.replace(/\s/g, '');" required />
                             </div>
                             <div class="form-group mb-3">
                                 <label for="password" class="control-label">Password</label>
-                                <input type="password" id="password" name="password" class="form-control"
-                                    placeholder="Enter password" required />
-                            </div>
-
-                            <div class="form-group mb-3">
-                                <div class="cpmain">
-                                    <fieldset class="captchaMain">
-                                        <div class="CaptchaWrap">
-                                            <div id="CaptchaImageCode" class="CaptchaTxtField">
-                                                <canvas id="CapCode" class="capcode" width="300" height="80"></canvas>
-                                            </div>
-                                            <button type="button" class="ReloadBtn" onclick="CreateCaptcha();"
-                                                aria-label="Reload captcha"></button>
-                                        </div>
-                                        <input type="text" id="UserCaptchaCode" onkeyup="myFunction();"
-                                            class="CaptchaTxtField form-control mt-3" maxlength="6"
-                                            placeholder="Enter Captcha - Case Sensitive" required>
-                                        <span id="WrongCaptchaError" class="error mt-1 d-block"></span>
-                                        <span id="SuccessMessage" style="display: none;" class="success mt-1 d-block"></span>
-                                    </fieldset>
+                                <div class="input-group">
+                                    <input type="password" id="password" class="form-control"
+                                        placeholder="Enter password"
+                                        minlength="8" maxlength="20"
+                                        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,20}"
+                                        title="Password must be between 8 to 20 characters and contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
+                                        oninput="this.value = this.value.replace(/^\s+/, '');" required />
+                                    <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center" type="button" id="togglePassword" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-left: 0;">
+                                        <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>
+                                    </button>
                                 </div>
+                                <div id="passwordLoginStatus" class="otp-status" aria-live="polite"></div>
                             </div>
 
                             <div class="form-group mb-3 d-grid">
                                 <button type="submit" class="btn btn-primary btn-login">Login</button>
                             </div>
+                            <div class="form-group mb-3 text-center">
+                                <a th:href="@{/forgot-password}" class="small">Forgot password?</a>
+                            </div>
                             <div class="form-group mb-0 d-grid">
-                                <a th:href="@{/register/department-registration}" class="btn btn-outline-secondary">Department Registration</a>
+                                <a th:href="@{/register/department-registration}"
+                                    class="btn btn-outline-secondary">Department Registration</a>
                             </div>
                         </form>
                     </section>
@@ -114,16 +215,59 @@
         </div>
     </main>
 
-    <footer class="footer portal-footer">
-        <div class="container">
-            <div class="d-flex justify-content-between py-3 flex-wrap gap-2">
-                <span>Copyright © 2024 Maharashtra Information Technology Corporation Ltd., Government of Maharashtra, India</span>
-                <span>Visitor Count: <span th:text="${visitorCount}"></span></span>
-            </div>
-        </div>
-    </footer>
+    <th:block th:replace="~{fragments/footer :: var-footer}"></th:block>
 
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function () {
+            var blockEmbeddedLogin = /*[[${param.sessionExpired != null or param.unauthenticated != null}]]*/ false;
+            if (!blockEmbeddedLogin || window.self === window.top) {
+                return;
+            }
+
+            var authCard = document.querySelector('.auth-card');
+            var loginForm = document.getElementById('loginForm');
+            var otpLoginForm = document.getElementById('otpLoginForm');
+
+            if (loginForm) {
+                loginForm.style.display = 'none';
+                loginForm.querySelectorAll('input, button, textarea, select, a').forEach(function (element) {
+                    if ('disabled' in element) {
+                        element.disabled = true;
+                    }
+                });
+            }
+
+            if (otpLoginForm) {
+                otpLoginForm.style.display = 'none';
+                otpLoginForm.querySelectorAll('input, button, textarea, select, a').forEach(function (element) {
+                    if ('disabled' in element) {
+                        element.disabled = true;
+                    }
+                });
+            }
+
+            if (authCard && !document.getElementById('embeddedSessionExpiredAlert')) {
+                var alertNode = document.createElement('div');
+                alertNode.id = 'embeddedSessionExpiredAlert';
+                alertNode.className = 'alert alert-warning';
+                alertNode.textContent = 'Session expired. Please login again in the main window. Login inside this preview is not allowed.';
+                authCard.appendChild(alertNode);
+            }
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'mahait-session-expired',
+                        reason: /*[[${param.sessionExpired != null}]]*/ false ? 'sessionExpired' : 'unauthenticated'
+                    }, window.location.origin);
+                }
+            } catch (error) {
+                console.warn('Unable to notify parent window about embedded session expiry.', error);
+            }
+        });
+    </script>
     <script th:src="@{/js/captcha.js}"></script>
+    <script th:src="@{/js/login-otp.js(v='20260713-auto-otp-channel')}"></script>
 </body>
 
 </html>

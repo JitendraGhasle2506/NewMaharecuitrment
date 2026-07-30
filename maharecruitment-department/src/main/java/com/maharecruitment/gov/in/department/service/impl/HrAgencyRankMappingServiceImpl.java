@@ -25,6 +25,7 @@ import com.maharecruitment.gov.in.department.service.HrDepartmentRequestService;
 import com.maharecruitment.gov.in.department.service.model.HrAgencyOptionView;
 import com.maharecruitment.gov.in.department.service.model.HrAgencyRankMappingListRowView;
 import com.maharecruitment.gov.in.department.service.model.HrAgencyRankMappingListView;
+import com.maharecruitment.gov.in.department.service.model.HrAgencyRankReleaseOverviewGroupView;
 import com.maharecruitment.gov.in.department.service.model.HrAgencyRankMappingView;
 import com.maharecruitment.gov.in.department.service.model.HrAssignedAgencyRankView;
 import com.maharecruitment.gov.in.department.service.model.HrDepartmentApplicationReviewDetailView;
@@ -37,6 +38,7 @@ import com.maharecruitment.gov.in.master.entity.SubDepartment;
 import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
+import com.maharecruitment.gov.in.master.repository.DesignationCategoryMasterRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyGlobalRankEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingStatus;
@@ -55,6 +57,10 @@ import com.maharecruitment.gov.in.recruitment.service.model.AgencyRankAssignment
 @Transactional(readOnly = true)
 public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingService {
 
+    private static final int DEFAULT_RANK_RELEASE_PAGE_SIZE = 10;
+    private static final int MAX_RANK_RELEASE_PAGE_SIZE = 100;
+    private static final java.util.Set<String> RESTRICTED_CATEGORIES = java.util.Set.of("Technical", "Techno Functional", "Operation & Project Management", "Support");
+
     private final HrDepartmentRequestService hrDepartmentRequestService;
     private final RecruitmentNotificationRepository recruitmentNotificationRepository;
     private final AgencyGlobalRankRepository agencyGlobalRankRepository;
@@ -65,6 +71,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
     private final DepartmentProjectApplicationRepository departmentProjectApplicationRepository;
     private final DepartmentMstRepository departmentMstRepository;
     private final SubDepartmentRepository subDepartmentRepository;
+    private final DesignationCategoryMasterRepository designationCategoryMasterRepository;
 
     public HrAgencyRankMappingServiceImpl(
             HrDepartmentRequestService hrDepartmentRequestService,
@@ -76,7 +83,8 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
             AgencyMasterRepository agencyMasterRepository,
             DepartmentProjectApplicationRepository departmentProjectApplicationRepository,
             DepartmentMstRepository departmentMstRepository,
-            SubDepartmentRepository subDepartmentRepository) {
+            SubDepartmentRepository subDepartmentRepository,
+            DesignationCategoryMasterRepository designationCategoryMasterRepository) {
         this.hrDepartmentRequestService = hrDepartmentRequestService;
         this.recruitmentNotificationRepository = recruitmentNotificationRepository;
         this.agencyGlobalRankRepository = agencyGlobalRankRepository;
@@ -87,6 +95,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
         this.departmentProjectApplicationRepository = departmentProjectApplicationRepository;
         this.departmentMstRepository = departmentMstRepository;
         this.subDepartmentRepository = subDepartmentRepository;
+        this.designationCategoryMasterRepository = designationCategoryMasterRepository;
     }
 
     @Override
@@ -109,16 +118,34 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
 
         return HrAgencyRankMappingListView.builder()
                 .rankMappings(rows)
+                .releaseGroups(List.of())
+                .pageNumber(0)
+                .pageSize(rows.size() > 0 ? rows.size() : DEFAULT_RANK_RELEASE_PAGE_SIZE)
+                .totalElements(rows.size())
+                .totalPages(rows.isEmpty() ? 1 : 1)
+                .hasPrevious(false)
+                .hasNext(false)
+                .showingFrom(rows.isEmpty() ? 0 : 1)
+                .showingTo(rows.size())
                 .build();
     }
 
     @Override
-    public HrAgencyRankMappingListView getRankReleaseOverviewListView() {
+    public HrAgencyRankMappingListView getRankReleaseOverviewListView(int pageNumber, int pageSize) {
         List<AgencyGlobalRankEntity> globalRanks = agencyGlobalRankRepository
                 .findAllWithAgencyOrderByRankNumberAscAgencyAgencyIdAsc();
         if (globalRanks.isEmpty()) {
             return HrAgencyRankMappingListView.builder()
                     .rankMappings(List.of())
+                    .releaseGroups(List.of())
+                    .pageNumber(0)
+                    .pageSize(normalizePageSize(pageSize))
+                    .totalElements(0)
+                    .totalPages(1)
+                    .hasPrevious(false)
+                    .hasNext(false)
+                    .showingFrom(0)
+                    .showingTo(0)
                     .build();
         }
 
@@ -128,6 +155,15 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
         if (notifications.isEmpty()) {
             return HrAgencyRankMappingListView.builder()
                     .rankMappings(List.of())
+                    .releaseGroups(List.of())
+                    .pageNumber(0)
+                    .pageSize(normalizePageSize(pageSize))
+                    .totalElements(0)
+                    .totalPages(1)
+                    .hasPrevious(false)
+                    .hasNext(false)
+                    .showingFrom(0)
+                    .showingTo(0)
                     .build();
         }
 
@@ -165,8 +201,27 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
             }
         }
 
+        List<HrAgencyRankReleaseOverviewGroupView> allGroups = buildRankReleaseOverviewGroups(rows);
+        int normalizedPageSize = normalizePageSize(pageSize);
+        int totalPages = Math.max(1, (int) Math.ceil((double) allGroups.size() / normalizedPageSize));
+        int normalizedPageNumber = normalizePageNumber(pageNumber, totalPages);
+        int fromIndex = allGroups.isEmpty() ? 0 : normalizedPageNumber * normalizedPageSize;
+        int toIndex = Math.min(fromIndex + normalizedPageSize, allGroups.size());
+        List<HrAgencyRankReleaseOverviewGroupView> pagedGroups = allGroups.isEmpty()
+                ? List.of()
+                : List.copyOf(allGroups.subList(fromIndex, toIndex));
+
         return HrAgencyRankMappingListView.builder()
                 .rankMappings(rows)
+                .releaseGroups(pagedGroups)
+                .pageNumber(normalizedPageNumber)
+                .pageSize(normalizedPageSize)
+                .totalElements(allGroups.size())
+                .totalPages(totalPages)
+                .hasPrevious(normalizedPageNumber > 0)
+                .hasNext(normalizedPageNumber + 1 < totalPages)
+                .showingFrom(allGroups.isEmpty() ? 0 : fromIndex + 1)
+                .showingTo(allGroups.isEmpty() ? 0 : toIndex)
                 .build();
     }
 
@@ -192,15 +247,26 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
 
     @Override
     public HrAgencyRankMappingView getGlobalRankMappingView() {
+        // Fetch only Rank 1 mappings as they represent the L1 agencies for specific categories
         List<AgencyGlobalRankEntity> assignedRanks = agencyGlobalRankRepository
-                .findAllWithAgencyOrderByRankNumberAscAgencyAgencyIdAsc();
+                .findByRankNumberWithAgencyOrderByAgencyAgencyIdAsc(1);
 
         List<HrAgencyOptionView> agencyOptions = buildAgencyOptions(assignedRanks);
+        
+        // Fetch all active categories from the DesignationCategoryMaster
+        List<String> activeCategories = designationCategoryMasterRepository.findByActiveFlag("Y")
+                .stream()
+                .map(cat -> cat.getCategoryName())
+                .collect(Collectors.toList());
+
         List<HrAssignedAgencyRankView> assignedAgencyRanks = assignedRanks.stream()
                 .map(rankEntity -> HrAssignedAgencyRankView.builder()
                         .agencyId(rankEntity.getAgency().getAgencyId())
                         .agencyName(rankEntity.getAgency().getAgencyName())
                         .rankNumber(rankEntity.getRankNumber())
+                        .mappedCategories(rankEntity.getMappedCategories() != null 
+                                ? List.of(rankEntity.getMappedCategories().split(",")) 
+                                : List.of())
                         .build())
                 .toList();
 
@@ -211,6 +277,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
                 .projectName("All Recruitment Notifications")
                 .recruitmentNotificationAvailable(true)
                 .agencyOptions(agencyOptions)
+                .availableCategories(activeCategories)
                 .assignedAgencyRanks(assignedAgencyRanks)
                 .build();
     }
@@ -228,6 +295,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
         RecruitmentNotificationEntity recruitmentNotification = resolveRecruitmentNotification(
                 applicationReviewDetail.getRequestId());
 
+        // For request-specific mapping, we also show existing mappings
         List<AgencyGlobalRankEntity> assignedRanks = agencyGlobalRankRepository
                 .findAllWithAgencyOrderByRankNumberAscAgencyAgencyIdAsc();
 
@@ -237,6 +305,9 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
                         .agencyId(rankEntity.getAgency().getAgencyId())
                         .agencyName(rankEntity.getAgency().getAgencyName())
                         .rankNumber(rankEntity.getRankNumber())
+                        .mappedCategories(rankEntity.getMappedCategories() != null 
+                                ? List.of(rankEntity.getMappedCategories().split(",")) 
+                                : List.of())
                         .build())
                 .toList();
 
@@ -261,22 +332,62 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
     @Override
     @Transactional
     public void assignGlobalAgencyRanks(List<HrAgencyRankRowForm> rankRows) {
-        List<HrAgencyRankRowForm> normalizedRows = normalizeRows(rankRows);
-        validateRows(normalizedRows);
+        if (rankRows == null || rankRows.isEmpty()) {
+            throw new DepartmentApplicationException("No mappings provided.");
+        }
 
-        List<AgencyRankAssignmentCommand> assignmentCommands = normalizedRows.stream()
-                .map(row -> AgencyRankAssignmentCommand.builder()
-                        .agencyId(row.getAgencyId())
-                        .rankNumber(row.getRankNumber())
-                        .build())
-                .toList();
+        // Fetch all active categories from the DesignationCategoryMaster
+        List<String> allActiveCategoriesNames = designationCategoryMasterRepository.findByActiveFlag("Y")
+                .stream()
+                .map(cat -> cat.getCategoryName())
+                .collect(Collectors.toList());
 
-        try {
-            recruitmentNotificationRankAssignmentService.assignAgencyRanks(
-                    null,
-                    assignmentCommands);
-        } catch (RecruitmentNotificationException ex) {
-            throw new DepartmentApplicationException(ex.getMessage());
+        // 0. Validation for established restricted categories
+        validateRestrictedCategoryMappings(rankRows);
+
+        // 1. Clear ALL existing global rank mappings
+        agencyGlobalRankRepository.deleteAll();
+        agencyGlobalRankRepository.flush();
+
+        // 2. Group incoming categories by Agency ID
+        // The UI now sends one row per category. Multiple rows might have the same agencyId.
+        Map<Long, List<String>> categoriesByAgencyId = new HashMap<>();
+        for (HrAgencyRankRowForm row : rankRows) {
+            if (row.getAgencyId() != null && StringUtils.hasText(row.getCategoryName())) {
+                categoriesByAgencyId.computeIfAbsent(row.getAgencyId(), id -> new ArrayList<>())
+                        .add(row.getCategoryName());
+            }
+        }
+
+        // 3. Save Rank 1 Mappings
+        for (Map.Entry<Long, List<String>> entry : categoriesByAgencyId.entrySet()) {
+            Long agencyId = entry.getKey();
+            List<String> categories = entry.getValue();
+
+            AgencyMaster agency = agencyMasterRepository.findById(agencyId)
+                    .orElseThrow(() -> new DepartmentApplicationException("Agency not found: " + agencyId));
+            
+            AgencyGlobalRankEntity rankEntity = new AgencyGlobalRankEntity();
+            rankEntity.setAgency(agency);
+            rankEntity.setRankNumber(1);
+            rankEntity.setMappedCategories(String.join(",", categories));
+            rankEntity.setAssignedDate(LocalDateTime.now());
+            agencyGlobalRankRepository.save(rankEntity);
+        }
+
+        // 4. Save Rank 2 Mappings for unmapped agencies
+        List<AgencyMaster> allActiveAgencies = agencyMasterRepository.findByStatusOrderByAgencyNameAsc(AgencyStatus.ACTIVE);
+        String allCategoriesStr = String.join(",", allActiveCategoriesNames);
+
+        for (AgencyMaster agency : allActiveAgencies) {
+            if (!categoriesByAgencyId.containsKey(agency.getAgencyId())) {
+                AgencyGlobalRankEntity rankEntity = new AgencyGlobalRankEntity();
+                rankEntity.setAgency(agency);
+                rankEntity.setRankNumber(2);
+                rankEntity.setMappedCategories(allCategoriesStr);
+                rankEntity.setAssignedDate(LocalDateTime.now());
+                agencyGlobalRankRepository.save(rankEntity);
+            }
         }
     }
 
@@ -365,6 +476,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
             HrAgencyRankRowForm normalizedRow = new HrAgencyRankRowForm();
             normalizedRow.setAgencyId(row.getAgencyId());
             normalizedRow.setRankNumber(row.getRankNumber());
+            normalizedRow.setMappedCategories(row.getMappedCategories() != null ? new java.util.ArrayList<>(row.getMappedCategories()) : new java.util.ArrayList<>());
             normalizedRows.add(normalizedRow);
         }
         return normalizedRows;
@@ -536,6 +648,89 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
                 .releaseStatusLabel(releaseStatus.label())
                 .applicationContextAvailable(departmentId != null && subDepartmentId != null && applicationId != null)
                 .build();
+    }
+
+    private List<HrAgencyRankReleaseOverviewGroupView> buildRankReleaseOverviewGroups(
+            List<HrAgencyRankMappingListRowView> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, List<HrAgencyRankMappingListRowView>> rowsByGroupKey = new LinkedHashMap<>();
+        for (HrAgencyRankMappingListRowView row : rows) {
+            rowsByGroupKey.computeIfAbsent(resolveRankReleaseOverviewGroupKey(row), key -> new ArrayList<>())
+                    .add(row);
+        }
+
+        List<HrAgencyRankReleaseOverviewGroupView> groups = new ArrayList<>();
+        rowsByGroupKey.values().forEach(groupRows -> groups.add(toRankReleaseOverviewGroup(groupRows)));
+        return groups;
+    }
+
+    private String resolveRankReleaseOverviewGroupKey(HrAgencyRankMappingListRowView row) {
+        if (row.getDepartmentProjectApplicationId() != null) {
+            return "APP:" + row.getDepartmentProjectApplicationId();
+        }
+        if (StringUtils.hasText(row.getRequestId())) {
+            return "REQ:" + row.getRequestId();
+        }
+        if (StringUtils.hasText(row.getProjectName())) {
+            return "PROJECT:" + row.getProjectName().trim().toLowerCase();
+        }
+        return "NOTIFICATION:" + row.getRecruitmentNotificationId();
+    }
+
+    private HrAgencyRankReleaseOverviewGroupView toRankReleaseOverviewGroup(
+            List<HrAgencyRankMappingListRowView> groupRows) {
+        HrAgencyRankMappingListRowView firstRow = groupRows.get(0);
+        int releasedCount = (int) groupRows.stream()
+                .filter(row -> "RELEASED".equalsIgnoreCase(row.getReleaseStatusCode()))
+                .count();
+        int totalReleaseRows = groupRows.size();
+        Long latestNotificationId = groupRows.stream()
+                .map(HrAgencyRankMappingListRowView::getRecruitmentNotificationId)
+                .filter(Objects::nonNull)
+                .max(Long::compareTo)
+                .orElse(null);
+
+        return HrAgencyRankReleaseOverviewGroupView.builder()
+                .requestId(firstRow.getRequestId())
+                .projectName(firstRow.getProjectName())
+                .departmentId(firstRow.getDepartmentId())
+                .departmentName(firstRow.getDepartmentName())
+                .subDepartmentId(firstRow.getSubDepartmentId())
+                .subDepartmentName(firstRow.getSubDepartmentName())
+                .departmentProjectApplicationId(firstRow.getDepartmentProjectApplicationId())
+                .latestNotificationId(latestNotificationId)
+                .notificationCount((int) groupRows.stream()
+                        .map(HrAgencyRankMappingListRowView::getRecruitmentNotificationId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .count())
+                .totalReleaseRows(totalReleaseRows)
+                .releasedCount(releasedCount)
+                .pendingCount(totalReleaseRows - releasedCount)
+                .applicationContextAvailable(groupRows.stream()
+                        .anyMatch(HrAgencyRankMappingListRowView::isApplicationContextAvailable))
+                .releaseDetails(List.copyOf(groupRows))
+                .build();
+    }
+
+    private int normalizePageSize(int pageSize) {
+        if (pageSize < 1) {
+            return DEFAULT_RANK_RELEASE_PAGE_SIZE;
+        }
+        return Math.min(pageSize, MAX_RANK_RELEASE_PAGE_SIZE);
+    }
+
+    private int normalizePageNumber(int pageNumber, int totalPages) {
+        if (pageNumber < 0) {
+            return 0;
+        }
+        if (pageNumber >= totalPages) {
+            return totalPages - 1;
+        }
+        return pageNumber;
     }
 
     private List<Integer> buildSortedGlobalRanks(List<AgencyGlobalRankEntity> globalRanks) {
@@ -725,4 +920,36 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
         }
         return subDepartmentNameById.getOrDefault(subDepartmentId, "Sub-Department " + subDepartmentId);
     }
+
+    private void validateRestrictedCategoryMappings(List<HrAgencyRankRowForm> incomingRows) {
+        List<AgencyGlobalRankEntity> existingRankOneMappings = agencyGlobalRankRepository
+                .findByRankNumberWithAgencyOrderByAgencyAgencyIdAsc(1);
+
+        for (AgencyGlobalRankEntity existingMapping : existingRankOneMappings) {
+            String mappedStr = existingMapping.getMappedCategories();
+            if (!StringUtils.hasText(mappedStr)) {
+                continue;
+            }
+
+            List<String> categories = List.of(mappedStr.split(","));
+            for (String category : categories) {
+                if (RESTRICTED_CATEGORIES.contains(category)) {
+                    // Find if this category is being changed in the incoming rows
+                    incomingRows.stream()
+                            .filter(row -> category.equals(row.getCategoryName()))
+                            .findFirst()
+                            .ifPresent(incomingRow -> {
+                                if (incomingRow.getAgencyId() != null && 
+                                    !existingMapping.getAgency().getAgencyId().equals(incomingRow.getAgencyId())) {
+                                    
+                                    throw new DepartmentApplicationException(String.format(
+                                            "The agency mapping for '%s' category is already established with '%s' and cannot be changed.",
+                                            category, existingMapping.getAgency().getAgencyName()));
+                                }
+                            });
+                }
+            }
+        }
+    }
+
 }

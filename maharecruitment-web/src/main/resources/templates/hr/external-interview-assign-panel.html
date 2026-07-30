@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>MahaIT Recruitment - Assign Interview Panel</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .external-detail .hero,
+        .external-detail .section-card,
+        .external-detail .mini-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: #fff;
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.05);
+        }
+
+        .external-detail .hero {
+            padding: 24px;
+            margin-bottom: 18px;
+            background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
+        }
+
+        .external-detail .hero h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .external-detail .hero-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .external-detail .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .external-detail .mini-card {
+            padding: 18px;
+        }
+
+        .external-detail .label {
+            display: block;
+            color: #64748b;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .external-detail .value {
+            color: #0f172a;
+            font-size: 1.08rem;
+            font-weight: 700;
+        }
+
+        .external-detail .muted-copy {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .external-detail .section-title {
+            margin: 0 0 16px;
+            color: #0f172a;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .external-detail .section-card {
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .external-detail .panel-management-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+        }
+
+        .external-detail .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .external-detail .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .external-detail .status-pill.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .external-detail .status-pill.neutral {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .external-detail .assigned-panel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .external-detail .assigned-panel-card {
+            padding: 18px;
+            border: 1px solid #dbe3ef;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .external-detail .assigned-panel-index {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .external-detail .assigned-panel-name {
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .external-detail .assigned-panel-role {
+            color: #475569;
+            font-size: 0.92rem;
+            margin: 0;
+        }
+
+        .external-detail .panel-filter-card {
+            padding: 18px;
+            border: 1px solid #dbe3ef;
+            border-radius: 18px;
+            background: #f8fafc;
+        }
+
+        .external-detail .panel-filter-title {
+            margin: 0 0 8px;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .external-detail .panel-role-filter-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .external-detail .panel-role-filter {
+            cursor: pointer;
+            border-radius: 999px;
+            padding: 5px 12px;
+            background: #e0f2fe;
+            color: #075985;
+            font-size: 0.8rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .external-detail .panel-role-filter.active {
+            background: #0f766e;
+            color: #fff;
+        }
+
+        .external-detail .panel-option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .external-detail .panel-option {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .external-detail .panel-option input {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 2;
+        }
+
+        .external-detail .panel-option-body {
+            display: block;
+            padding: 16px;
+            border: 1px solid #dbe3ef;
+            border-radius: 18px;
+            background: #fff;
+            transition: all 0.2s;
+        }
+
+        .external-detail .panel-option input:checked + .panel-option-body {
+            border-color: #2563eb;
+            background: #eff6ff;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.1);
+        }
+
+        .external-detail .feedback-review-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .external-detail .feedback-card {
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            background: #f8fafc;
+        }
+
+        .external-detail .mark-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            font-size: 0.85rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .external-detail .status-badge {
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .external-detail .status-badge.recommended { background: #dcfce7; color: #166534; }
+        .external-detail .status-badge.not-recommended { background: #fee2e2; color: #b91c1c; }
+
+        @media (max-width: 1024px) {
+            .external-detail .overview-grid { grid-template-columns: repeat(2, 1fr); }
+            .external-detail .panel-management-layout { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            .external-detail .overview-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body class="external-detail">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Human Resources', 'External Interview Panel', ~{::section})}">
+        <section>
+            <div class="hero fade-in">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                    <div>
+                        <h2 th:text="${detail.candidateName}">Candidate Name</h2>
+                        <p class="mb-0 mt-2">
+                            <i class="fas fa-project-diagram me-1"></i> <span th:text="${detail.projectName}">Project</span>
+                            <span class="mx-2">|</span>
+                            <i class="fas fa-id-badge me-1"></i> <span th:text="${detail.requestId}">REQ-ID</span>
+                            <span class="mx-2">|</span>
+                            <i class="fas fa-user-tag me-1"></i> <span th:text="${detail.designationName}">Designation</span>
+                        </p>
+                    </div>
+                    <div class="hero-actions">
+                        <button th:if="${detail.resumeFilePath != null}" type="button" class="btn btn-outline-dark"
+                            th:attr="data-path=${detail.resumeFilePath}" onclick="openManagedDocument(this.getAttribute('data-path'))">
+                            <i class="fas fa-file-pdf me-1"></i> View Resume
+                        </button>
+                        <a class="btn btn-outline-secondary" th:href="@{/hr/external-interviews}">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i> <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="overview-grid">
+                <div class="mini-card fade-in">
+                    <span class="label">Interview Details</span>
+                    <div class="value" th:text="${detail.interviewDateTime != null ? #temporals.format(detail.interviewDateTime, 'dd-MM-yyyy') : 'TBD'}">Date</div>
+                    <div class="muted-copy mt-1" th:text="${detail.interviewTimeSlot != null ? detail.interviewTimeSlot : 'No time slot'}">Time</div>
+                </div>
+                <div class="mini-card fade-in" style="animation-delay: 0.1s">
+                    <span class="label">Agency</span>
+                    <div class="value" th:text="${detail.agencyName}">Agency Name</div>
+                    <div class="muted-copy mt-1">Sourcing Agency</div>
+                </div>
+                <div class="mini-card fade-in" style="animation-delay: 0.2s">
+                    <span class="label">Contact</span>
+                    <div class="value" th:text="${detail.candidateMobile}">Mobile</div>
+                    <div class="muted-copy mt-1" th:text="${detail.candidateEmail}">Email</div>
+                </div>
+                <div class="mini-card fade-in" style="animation-delay: 0.3s">
+                    <span class="label">Panel Status</span>
+                    <div class="value">
+                        <span th:if="${detail.panelAssigned}" class="text-success"><i class="fas fa-check-circle me-1"></i> Assigned</span>
+                        <span th:if="${!detail.panelAssigned}" class="text-warning"><i class="fas fa-clock me-1"></i> Pending</span>
+                    </div>
+                    <div class="muted-copy mt-1" th:text="${detail.panelMembers != null ? detail.panelMembers.size() + ' Members' : '0 Members'}">Count</div>
+                </div>
+            </div>
+
+            <div class="section-card fade-in">
+                <div class="section-header">
+                    <div>
+                        <h5 class="section-title mb-1"><i class="fas fa-user-check me-2"></i> Assigned Members</h5>
+                        <div class="muted-copy">Current interview panel assigned for this external candidate.</div>
+                    </div>
+                    <span th:if="${detail.panelAssigned}" class="status-pill success">
+                        <i class="fas fa-check-circle"></i> Assigned
+                    </span>
+                    <span th:if="${!detail.panelAssigned}" class="status-pill neutral">
+                        <i class="fas fa-clock"></i> Pending
+                    </span>
+                </div>
+
+                <div class="muted-copy mb-3" th:if="${detail.panelAssignedAt != null}"
+                    th:text="${'Assigned on ' + #temporals.format(detail.panelAssignedAt, 'dd-MM-yyyy HH:mm')}">
+                    Assigned on
+                </div>
+
+                <div th:if="${#lists.isEmpty(detail.panelMembers)}" class="alert alert-info mb-0">
+                    No panel members have been assigned yet.
+                </div>
+
+                <div th:if="${!#lists.isEmpty(detail.panelMembers)}" class="assigned-panel-grid">
+                    <div th:each="member, stat : ${detail.panelMembers}" class="assigned-panel-card">
+                        <div class="assigned-panel-index" th:text="${stat.count}">1</div>
+                        <div class="assigned-panel-name"
+                            th:text="${member.panelMemberName != null ? member.panelMemberName : '-'}">Member Name</div>
+                        <p class="assigned-panel-role mb-0">
+                            <i class="fas fa-briefcase me-1 text-primary"></i>
+                            <span th:text="${member.panelMemberDesignation != null ? member.panelMemberDesignation : '-'}">Designation</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Selection Section -->
+            <div class="section-card fade-in">
+                <h5 class="section-title"><i class="fas fa-users-cog me-2"></i> Manage Interview Panel</h5>
+                <form th:action="@{/hr/external-interviews/{id}/assign-panel(id=${detail.recruitmentInterviewDetailId})}" method="post" id="panelForm">
+                    <div class="panel-management-layout">
+                        <div class="panel-control-column">
+                            <div class="panel-filter-card">
+                                <h6 class="panel-filter-title">Role Filter</h6>
+                                <div class="panel-role-filter-group">
+                                    <span class="panel-role-filter active" data-role="ALL">ALL</span>
+                                    <span class="panel-role-filter" data-role="HR">HR</span>
+                                    <span class="panel-role-filter" data-role="COO">COO</span>
+                                    <span class="panel-role-filter" data-role="HOD">HOD</span>
+                                    <span class="panel-role-filter" data-role="PM">PM</span>
+                                    <span class="panel-role-filter" data-role="STM">STM</span>
+                                    <span class="panel-role-filter" data-role="EMP">EMP</span>
+                                </div>
+                                <p class="panel-helper-copy mt-3">
+                                    Select 2 to 5 members for the interview panel. Panel members will be responsible for individual candidate assessments.
+                                </p>
+                                <div class="mt-4">
+                                    <h6 class="panel-filter-title">Advanced Filters</h6>
+                                    <div class="mb-3">
+                                        <label for="searchField" class="form-label label mb-1">Search Panel Members</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                                            <input type="text" id="searchField" class="form-control" placeholder="Search by name, email, or role...">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="designationFilter" class="form-label label mb-1">Filter by Designation</label>
+                                        <select id="designationFilter" class="form-select form-select-sm">
+                                            <option value="ALL">All Designations</option>
+                                            <option th:each="dsig : ${designations}" th:value="${dsig}" th:text="${dsig}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-primary w-100 py-2">
+                                        <i class="fas fa-save me-1"></i> Save Panel Assignment
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel-user-column">
+                            <div id="selectionPrompt" class="alert alert-info text-center py-4">
+                                <i class="fas fa-users fa-2x mb-3 d-block"></i>
+                                <h6>Ready to build your panel?</h6>
+                                <p class="mb-0">Please select a <strong>Designation</strong>, use the <strong>Role Filter</strong>, or <strong>Search</strong> to find panel members.</p>
+                            </div>
+
+                            <div class="panel-option-grid" id="userPool" style="display: none;">
+                                <label th:each="user : ${eligiblePanelUsers}" class="panel-option" 
+                                       th:attr="data-roles=${user.roleLabelCsv}, data-designation=${user.designationName}, data-name=${#strings.toLowerCase(user.name)}, data-email=${#strings.toLowerCase(user.email)}">
+                                    <input type="checkbox" name="selectedUserIds" th:value="${user.userId}" 
+                                           class="panel-checkbox"
+                                           th:checked="${detail.panelMembers != null && #lists.toList(detail.panelMembers).?[panelUserId == __${user.userId}__].size() > 0}">
+                                    <div class="panel-option-body">
+                                        <span class="panel-option-name" th:text="${user.name}">Name</span>
+                                        <span class="panel-option-copy">
+                                            <i class="fas fa-envelope me-1"></i> <span th:text="${user.email}">Email</span><br>
+                                            <i class="fas fa-briefcase me-1"></i> <span th:text="${user.roleLabelCsv}">Roles</span><br>
+                                            <i class="fas fa-user-tag me-1 text-primary"></i> <span class="fw-bold" th:text="${user.designationName}">Designation</span>
+                                        </span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Feedback Review Section -->
+            <div class="section-card fade-in" th:if="${detail.panelFeedbackSubmittedCount > 0}">
+                <h5 class="section-title"><i class="fas fa-clipboard-check me-2"></i> Panel Feedback Review</h5>
+                <div class="feedback-review-grid">
+                    <div th:each="feedback : ${detail.panelFeedbacks}" class="feedback-card">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h6 class="mb-0 fw-bold" th:text="${feedback.reviewerName}">Reviewer</h6>
+                                <small class="text-muted" th:text="${feedback.reviewerRoleLabel}">Role</small>
+                            </div>
+                            <span class="status-badge" th:classappend="${feedback.recommendationStatus == 'RECOMMENDED' ? 'recommended' : 'not-recommended'}"
+                                  th:text="${feedback.recommendationStatus}">STATUS</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="mark-badge">Comm: <strong th:text="${feedback.communicationSkillMarks}">0</strong></div>
+                            <div class="mark-badge">Tech: <strong th:text="${feedback.technicalSkillMarks}">0</strong></div>
+                            <div class="mark-badge">Lead: <strong th:text="${feedback.leadershipQualityMarks}">0</strong></div>
+                            <div class="mark-badge">Rel Exp: <strong th:text="${feedback.relevantExperienceMarks}">0</strong></div>
+                        </div>
+
+                        <div class="mb-2">
+                            <span class="label">Remarks</span>
+                            <p class="small mb-2" th:text="${feedback.assessmentRemarks}">Remarks</p>
+                        </div>
+                        
+                        <div>
+                            <span class="label">Final Conclusion</span>
+                            <p class="small mb-0 fst-italic" th:text="${feedback.finalRemarks}">Final Conclusion</p>
+                        </div>
+                        
+                        <div class="mt-3 pt-2 border-top text-end">
+                            <small class="text-muted">
+                                <i class="far fa-clock me-1"></i> <span th:text="${#temporals.format(feedback.submittedAt, 'dd-MM-yyyy HH:mm')}">Date</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HR Final Decision Section — shown when >= 2 assessments exist -->
+            <div class="section-card fade-in" th:if="${detail.panelFeedbackSubmittedCount >= 2}">
+                <h5 class="section-title"><i class="fas fa-gavel me-2 text-danger"></i> HR Final Decision</h5>
+
+                <!-- Score Summary Card -->
+                <div class="row g-3 mb-4" th:if="${detail.finalDecisionStatus == null}">
+                    <div class="col-md-3">
+                        <div class="mini-card text-center">
+                            <span class="label">Total Marks Awarded</span>
+                            <div class="value" th:text="${detail.totalMarksAwarded} + ' / ' + ${detail.totalMarksPossible}">0/0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mini-card text-center">
+                            <span class="label">Average Score</span>
+                            <div class="value" th:text="${#numbers.formatDecimal(detail.averageScorePercentage, 1, 1)} + '%'">0.0%</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mini-card text-center">
+                            <span class="label">Passing Threshold</span>
+                            <div class="value text-muted">60%</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mini-card text-center">
+                            <span class="label">System Decision</span>
+                            <div class="value mt-1">
+                                <span th:if="${detail.computedDecision == 'SELECTED'}"
+                                      class="badge bg-success fs-6 px-3 py-2">
+                                    <i class="fas fa-user-check me-1"></i> SELECTED
+                                </span>
+                                <span th:if="${detail.computedDecision == 'REJECTED'}"
+                                      class="badge bg-danger fs-6 px-3 py-2">
+                                    <i class="fas fa-user-times me-1"></i> REJECTED
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info note -->
+                <div class="alert alert-info mb-4" th:if="${detail.finalDecisionStatus == null}">
+                    <i class="fas fa-info-circle me-2"></i>
+                    The decision above is <strong>automatically computed</strong> based on the average score of
+                    <strong th:text="${detail.panelFeedbackSubmittedCount}">0</strong> panel assessment(s).
+                    A score of <strong>60% or above</strong> results in <span class="text-success fw-bold">SELECTED</span>;
+                    below 60% results in <span class="text-danger fw-bold">REJECTED</span>.
+                    Click <em>Confirm &amp; Submit Decision</em> to record this result.
+                </div>
+
+                <!-- Confirm Form -->
+                <div th:if="${detail.finalDecisionStatus == null}">
+                    <form th:action="@{/hr/external-interviews/{id}/final-decision(id=${detail.recruitmentInterviewDetailId})}"
+                          method="post" id="finalDecisionForm">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold" for="decisionRemarks">
+                                Decision Remarks <span class="text-muted fw-normal">(optional)</span>
+                            </label>
+                            <textarea class="form-control" id="decisionRemarks" name="decisionRemarks"
+                                      rows="3" maxlength="1000"
+                                      placeholder="Add any concluding remarks or observations..."></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn px-5 py-2 fw-bold"
+                                    th:classappend="${detail.computedDecision == 'SELECTED'} ? 'btn-success' : 'btn-danger'"
+                                    onclick="return confirm('Are you sure you want to confirm and record the system-computed decision? This action cannot be undone.')">
+                                <i class="fas fa-gavel me-2"></i> Confirm &amp; Submit Decision
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Already decided: read-only result -->
+                <div th:if="${detail.finalDecisionStatus != null}"
+                     class="d-flex align-items-center gap-3 p-3 rounded-3"
+                     th:classappend="${detail.finalDecisionStatus == 'SELECTED'} ? 'bg-success bg-opacity-10 border border-success' : 'bg-danger bg-opacity-10 border border-danger'">
+                    <i class="fa-2x"
+                       th:classappend="${detail.finalDecisionStatus == 'SELECTED'} ? 'fas fa-check-circle text-success' : 'fas fa-times-circle text-danger'"></i>
+                    <div>
+                        <div class="fw-bold fs-5"
+                             th:text="${detail.finalDecisionStatus == 'SELECTED'} ? 'Candidate Selected' : 'Candidate Rejected'"></div>
+                        <small class="text-muted">
+                            Final decision has been recorded based on average assessment score.
+                            No further changes are allowed.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning: < 2 assessments, no decision yet -->
+            <div class="section-card fade-in border-warning border-top border-3"
+                 th:if="${detail.panelFeedbackSubmittedCount < 2 and detail.finalDecisionStatus == null}">
+                <div class="d-flex align-items-center gap-3 text-warning">
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    <div>
+                        <div class="fw-bold">Awaiting Panel Assessments</div>
+                        <small class="text-muted">
+                            <span th:text="${detail.panelFeedbackSubmittedCount}">0</span> of minimum 2 panel assessments submitted.
+                            The final decision will be auto-computed once at least 2 members have submitted their assessments.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <script th:inline="javascript">
+                const contextPath = /*[[@{/}]]*/ '/';
+
+                document.addEventListener("DOMContentLoaded", function () {
+                    const roleFilters = document.querySelectorAll('.panel-role-filter');
+                    const userPool = document.getElementById('userPool');
+                    const userOptions = document.querySelectorAll('.panel-option');
+                    const searchField = document.getElementById('searchField');
+                    const designationFilter = document.getElementById('designationFilter');
+                    const selectionPrompt = document.getElementById('selectionPrompt');
+
+                    function applyFilters() {
+                        const activeRole = document.querySelector('.panel-role-filter.active').getAttribute('data-role');
+                        const selectedDesignation = designationFilter.value;
+                        const searchQuery = searchField.value.toLowerCase().trim();
+
+                        const isFilterActive = activeRole !== 'ALL' || selectedDesignation !== 'ALL' || searchQuery !== '';
+
+                        if (!isFilterActive) {
+                            userPool.style.display = 'none';
+                            selectionPrompt.style.display = 'block';
+                            return;
+                        }
+
+                        userPool.style.display = 'grid';
+                        selectionPrompt.style.display = 'none';
+
+                        userOptions.forEach(option => {
+                            const userRoles = option.getAttribute('data-roles');
+                            const userDesignation = option.getAttribute('data-designation');
+                            const userName = option.getAttribute('data-name');
+                            const userEmail = option.getAttribute('data-email');
+
+                            const matchesRole = activeRole === 'ALL' || userRoles.includes(activeRole);
+                            const matchesDesignation = selectedDesignation === 'ALL' || userDesignation === selectedDesignation;
+                            
+                            const matchesSearch = searchQuery === '' || 
+                                                userName.includes(searchQuery) || 
+                                                userEmail.includes(searchQuery) || 
+                                                userRoles.toLowerCase().includes(searchQuery);
+
+                            if (matchesRole && matchesDesignation && matchesSearch) {
+                                option.style.display = 'block';
+                            } else {
+                                option.style.display = 'none';
+                            }
+                        });
+                    }
+
+                    roleFilters.forEach(filter => {
+                        filter.addEventListener('click', function() {
+                            roleFilters.forEach(f => f.classList.remove('active'));
+                            this.classList.add('active');
+                            applyFilters();
+                        });
+                    });
+
+                    searchField.addEventListener('input', applyFilters);
+                    designationFilter.addEventListener('change', applyFilters);
+
+                    // Limit selection between 2 and 5
+                    const form = document.getElementById('panelForm');
+                    form.addEventListener('submit', function(e) {
+                        const checkedCount = document.querySelectorAll('.panel-checkbox:checked').length;
+                        if (checkedCount < 2 || checkedCount > 5) {
+                            e.preventDefault();
+                            alert('Please select between 2 and 5 panel members.');
+                        }
+                    });
+                });
+
+                function openManagedDocument(path) {
+                    if (!path) return;
+                    try {
+                        const encodedPath = encodeURIComponent(btoa(path));
+                        window.open(contextPath + "documents/view?path=" + encodedPath, "_blank");
+                    } catch (error) {
+                        alert("Unable to open document.");
+                    }
+                }
+            </script>
+        </section>
+    </th:block>
+</body>
+
+</html>
+

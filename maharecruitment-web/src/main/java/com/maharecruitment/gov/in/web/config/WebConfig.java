@@ -25,22 +25,23 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(sessionValidationInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/", "/index", "/login", "/doLogin")
+                .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send")
                 .excludePathPatterns("/register/**", "/registration**")
-                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
+                .excludePathPatterns("/css/**", "/js/**", "/assets/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/error/**")
                 .excludePathPatterns("/api/**", "/rest/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html");
 
         registry.addInterceptor(menuInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/", "/index", "/login", "/doLogin")
+                .excludePathPatterns("/", "/index", "/login", "/doLogin", "/login/otp", "/login/otp/send")
                 .excludePathPatterns("/register/**", "/registration**")
-                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
+                .excludePathPatterns("/css/**", "/js/**", "/assets/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/error/**")
                 .excludePathPatterns("/api/**", "/rest/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html");
 
         registry.addInterceptor(breadcrumbInterceptor)
                 .addPathPatterns("/**")
+                .excludePathPatterns("/css/**", "/js/**", "/assets/**", "/images/**", "/icons/**", "/img/**", "/webjars/**")
                 .excludePathPatterns("/api/**", "/rest/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html");
     }
 }

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.maharecruitment.gov.in.auth.entity.Auditable;
+import com.maharecruitment.gov.in.common.entity.Auditable;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -74,11 +74,17 @@ public class DepartmentProjectApplicationEntity extends Auditable {
     @Column(name = "is_active", nullable = false)
     private Boolean active = true;
 
+    @Column(name = "is_partial_payment_allowed")
+    private Boolean isPartialPaymentAllowed = false;
+
     @Column(name = "total_estimated_cost", precision = 14, scale = 2)
     private BigDecimal totalEstimatedCost;
 
     @Column(name = "mahait_contact", length = 100)
     private String mahaitContact;
+
+    @Column(name = "work_order_number", length = 100)
+    private String workOrderNumber;
 
     @Column(name = "work_order_original_name", length = 255)
     private String workOrderOriginalName;
@@ -102,6 +108,10 @@ public class DepartmentProjectApplicationEntity extends Auditable {
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("actionTimestamp DESC")
     private List<DepartmentProjectApplicationActivityEntity> activityLog = new ArrayList<>();
+
+    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("departmentProformaInvoiceId DESC")
+    private List<DepartmentProformaInvoiceEntity> proformaInvoices = new ArrayList<>();
 
     public void replaceResourceRequirements(List<DepartmentProjectResourceRequirementEntity> requirements) {
         resourceRequirements.clear();
@@ -141,6 +151,9 @@ public class DepartmentProjectApplicationEntity extends Auditable {
         }
         if (mahaitContact != null) {
             mahaitContact = mahaitContact.trim();
+        }
+        if (workOrderNumber != null) {
+            workOrderNumber = workOrderNumber.trim();
         }
         if (remarks != null) {
             remarks = remarks.trim();

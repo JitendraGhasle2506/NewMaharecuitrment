@@ -2,6 +2,9 @@ package com.maharecruitment.gov.in.web.service.registration.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Locale;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +28,7 @@ import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationFor
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationResult;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
+import com.maharecruitment.gov.in.web.service.security.CredentialEncryptionService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 
 @Service
@@ -37,6 +41,10 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
     private final DepartmentUserProvisioningService departmentUserProvisioningService;
     private final FileStorageService fileStorageService;
     private final AccountNotificationService accountNotificationService;
+    private final CredentialEncryptionService credentialEncryptionService;
+    private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
+    private static final Pattern GST_PATTERN = Pattern.compile(
+            "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$");
 
     public DepartmentRegistrationPageServiceImpl(
             DepartmentMstService departmentService,
@@ -44,18 +52,26 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
             DepartmentRegistrationService registrationService,
             DepartmentUserProvisioningService departmentUserProvisioningService,
             FileStorageService fileStorageService,
-            AccountNotificationService accountNotificationService) {
+            AccountNotificationService accountNotificationService,
+            CredentialEncryptionService credentialEncryptionService) {
         this.departmentService = departmentService;
         this.subDepartmentService = subDepartmentService;
         this.registrationService = registrationService;
         this.departmentUserProvisioningService = departmentUserProvisioningService;
         this.fileStorageService = fileStorageService;
         this.accountNotificationService = accountNotificationService;
+        this.credentialEncryptionService = credentialEncryptionService;
     }
 
     @Override
     public DepartmentRegistrationResult register(DepartmentRegistrationForm form) {
         validateContactIndependence(form);
+        PlainSensitiveIdentity sensitiveIdentity;
+        try {
+            sensitiveIdentity = secureSensitiveIdentity(form);
+        } finally {
+            form.clearEncryptedSubmission();
+        }
 
         ResolvedDepartment resolvedDepartment = resolveDepartment(form);
         ResolvedSubDepartment resolvedSubDepartment = resolveSubDepartment(form, resolvedDepartment.departmentId());
@@ -65,30 +81,27 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
             String gstPath = storeDocument(
                     "department-registration/gst",
                     form.getGstFile(),
-                    form.getUploadedGstFilePath(),
-                    false,
+                    true,
                     storedFiles);
             String panPath = storeDocument(
                     "department-registration/pan",
                     form.getPanFile(),
-                    form.getUploadedPanFilePath(),
                     true,
                     storedFiles);
             String tanPath = storeDocument(
                     "department-registration/tan",
                     form.getTanFile(),
-                    form.getUploadedTanFilePath(),
-                    false,
+                    true,
                     storedFiles);
 
             DepartmentRegistrationRequest request = new DepartmentRegistrationRequest();
             request.setDepartmentId(resolvedDepartment.departmentId());
-            request.setSubDeptId(resolvedSubDepartment.subDepartmentId());
+            request.setSubDeptId(resolvedSubDepartment != null ? resolvedSubDepartment.subDepartmentId() : null);
             request.setDepartmentName(resolvedDepartment.departmentName());
             request.setAddress(form.getAddress());
             request.setBillDepartmentName(form.getBillDepartmentName());
-            request.setGstNo(form.getGstNo());
-            request.setPanNo(form.getPanNo());
+            request.setGstNo(sensitiveIdentity.gst());
+            request.setPanNo(sensitiveIdentity.pan());
             request.setTanNo(form.getTanNo());
             request.setBillAddress(form.getBillAddress());
             request.setGstFilePath(gstPath);
@@ -128,6 +141,40 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
         }
     }
 
+    private PlainSensitiveIdentity secureSensitiveIdentity(DepartmentRegistrationForm form) {
+        if (form.getTimestamp() == null) {
+            throw sensitiveIdentityFailure();
+        }
+
+        try {
+            // Replay metadata is validated and consumed once for the entire form request.
+            Map<String, String> decrypted = credentialEncryptionService.decryptSensitivePayloads(
+                    Map.of(
+                            "panNumber", form.getPanNumberEncrypted(),
+                            "gstNumber", form.getGstNumberEncrypted()),
+                    form.getEncryptionKeyId(),
+                    form.getTimestamp(),
+                    form.getNonce(),
+                    "DEPARTMENT_REGISTRATION");
+            String pan = decrypted.get("panNumber");
+            String gst = decrypted.get("gstNumber");
+
+            String panNormalized = pan.trim().toUpperCase(Locale.ROOT);
+            String gstNormalized = gst.trim().toUpperCase(Locale.ROOT);
+            if (!PAN_PATTERN.matcher(panNormalized).matches()
+                    || !GST_PATTERN.matcher(gstNormalized).matches()) {
+                throw sensitiveIdentityFailure();
+            }
+            return new PlainSensitiveIdentity(gstNormalized, panNormalized);
+        } catch (RuntimeException ex) {
+            throw sensitiveIdentityFailure();
+        }
+    }
+
+    private IllegalArgumentException sensitiveIdentityFailure() {
+        return new IllegalArgumentException("Unable to process the submitted identity information.");
+    }
+
     private ResolvedDepartment resolveDepartment(DepartmentRegistrationForm form) {
         if (form.isOtherDepartmentSelected()) {
             DepartmentRequest request = new DepartmentRequest();
@@ -142,15 +189,18 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
 
     private ResolvedSubDepartment resolveSubDepartment(DepartmentRegistrationForm form, Long departmentId) {
         if (form.isOtherDepartmentSelected() || form.isOtherSubDepartmentSelected()) {
-            SubDepartmentRequest request = new SubDepartmentRequest();
-            request.setDepartmentId(departmentId);
-            request.setSubDeptName(form.getNewSubDeptName());
-            SubDepartmentResponse response = subDepartmentService.create(request);
-            return new ResolvedSubDepartment(response.getSubDeptId(), response.getSubDeptName());
+            if (StringUtils.hasText(form.getNewSubDeptName())) {
+                SubDepartmentRequest request = new SubDepartmentRequest();
+                request.setDepartmentId(departmentId);
+                request.setSubDeptName(form.getNewSubDeptName());
+                SubDepartmentResponse response = subDepartmentService.create(request);
+                return new ResolvedSubDepartment(response.getSubDeptId(), response.getSubDeptName());
+            }
+            return null;
         }
 
         if (form.getSubDeptId() == null) {
-            throw new IllegalArgumentException("Sub-department selection is required.");
+            return null;
         }
 
         SubDepartmentResponse response = subDepartmentService.getById(form.getSubDeptId());
@@ -173,25 +223,13 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
     private String storeDocument(
             String category,
             org.springframework.web.multipart.MultipartFile file,
-            String existingPath,
             boolean required,
             List<String> storedFiles) {
         if (file != null && !file.isEmpty()) {
             FileUploadResult result = fileStorageService.store(file, category);
             storedFiles.add(result.fullPath());
 
-            if (fileStorageService.isManagedPath(existingPath) && !existingPath.equals(result.fullPath())) {
-                fileStorageService.deleteQuietly(existingPath);
-            }
-
             return result.fullPath();
-        }
-
-        if (StringUtils.hasText(existingPath)) {
-            if (!fileStorageService.isManagedPath(existingPath)) {
-                throw new IllegalArgumentException("Invalid uploaded document reference.");
-            }
-            return existingPath;
         }
 
         if (required) {
@@ -231,5 +269,8 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
     }
 
     private record ResolvedSubDepartment(Long subDepartmentId, String subDepartmentName) {
+    }
+
+    private record PlainSensitiveIdentity(String gst, String pan) {
     }
 }

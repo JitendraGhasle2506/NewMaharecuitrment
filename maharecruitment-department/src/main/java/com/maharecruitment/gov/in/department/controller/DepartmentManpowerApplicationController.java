@@ -1,14 +1,19 @@
 package com.maharecruitment.gov.in.department.controller;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -114,9 +119,14 @@ public class DepartmentManpowerApplicationController {
     }
 
     @GetMapping("/list")
-    public String list(Model model, Principal principal) {
+    public String list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Model model, 
+            Principal principal) {
         String actorEmail = resolveActorEmail(principal);
-        model.addAttribute("applications", manpowerApplicationService.getApplicationSummaries(actorEmail));
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        model.addAttribute("applications", manpowerApplicationService.getApplicationSummaries(actorEmail, pageable));
         return "department/manpower-application-list";
     }
 
@@ -139,6 +149,12 @@ public class DepartmentManpowerApplicationController {
     public List<DepartmentTaxRateView> getApplicableTaxRates(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate applicableDate) {
         return taxRateQueryService.getApplicableTaxRates(applicableDate);
+    }
+
+    @GetMapping("/commission-rates")
+    @ResponseBody
+    public Map<String, BigDecimal> getCommissionRates() {
+        return manpowerApplicationService.getCommissionRates();
     }
 
     @GetMapping("/{applicationId}/activities")

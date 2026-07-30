@@ -1,0 +1,3 @@
+employeeCode,recruitmentType,fullName,email,mobile,dateOfBirth,gender,bloodGroup,address,emergencyContactName,emergencyContactRelation,emergencyContactMobile,emergencyContactAltMobile,joiningDate,onboardingDate,panNumber,aadhaarNumber,departmentRegistrationId,subDepartmentId,designationId,agencyId,levelCode,requestId,status,locationIds,temporaryPassword
+,INTERNAL,Rahul Patil,rahul.patil@example.com,9876543210,1990-01-15,MALE,O+,Mumbai Office Address,Suresh Patil,Father,9876543211,,2026-07-01,2026-07-01,ABCDE1234F,123412341234,1,1,1,1,L1,REQ-INT-001,ACTIVE,1|2,
+,EXTERNAL,Anita Sharma,anita.sharma@example.com,9876543220,1992-03-20,FEMALE,A+,Pune Office Address,Ramesh Sharma,Father,9876543221,,2026-07-01,2026-07-01,PQRST1234L,567856785678,1,1,1,1,L2,REQ-EXT-001,ACTIVE,3,

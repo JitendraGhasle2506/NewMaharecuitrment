@@ -14,4 +14,6 @@ public class DepartmentRunningProjectView {
     private LocalDate startDate;
     private int allocatedEmployees;
     private String status;
+    private boolean paymentPending;
+    private Long applicationId;
 }

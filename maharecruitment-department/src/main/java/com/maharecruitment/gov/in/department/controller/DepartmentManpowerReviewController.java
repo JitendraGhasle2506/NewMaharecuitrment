@@ -40,7 +40,7 @@ public class DepartmentManpowerReviewController {
                 decision,
                 request.getRemarks(),
                 actorEmail);
-        return ResponseEntity.ok(ApiResponse.of("HR review decision applied successfully.", status));
+        return ResponseEntity.ok(ApiResponse.of("HR review decision applied successfully and forwarded to the auditor", status));
     }
 
     @PostMapping("/auditor/department/manpower/{applicationId}/review")
@@ -68,7 +68,7 @@ public class DepartmentManpowerReviewController {
                 applicationId,
                 request.getRemarks(),
                 actorEmail);
-        return ResponseEntity.ok(ApiResponse.of("Application marked completed.", status));
+        return ResponseEntity.ok(ApiResponse.of("Application marked completed successfully. Proforma Invoice generated.", status));
     }
 
     private String resolveActorEmail(Principal principal) {

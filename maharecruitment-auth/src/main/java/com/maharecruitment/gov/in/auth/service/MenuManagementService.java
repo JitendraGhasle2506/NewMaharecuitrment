@@ -12,6 +12,8 @@ public interface MenuManagementService {
 
     Page<MstMenu> getAll(Pageable pageable);
 
+    Page<MstMenu> getAll(String searchTerm, Pageable pageable);
+
     List<MstMenu> getParentMenus();
 
     MstMenu getById(Long menuId);

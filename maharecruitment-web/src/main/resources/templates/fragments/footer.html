@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+    <th:block th:fragment="var-footer">
+        <footer class="site-footer">
+            <div class="container-fluid px-3 px-lg-4">
+                <div class="site-footer-inner">
+                    <span class="site-footer-copy">
+                        Copyright &copy; 2026 Maharashtra Information Technology Corporation Ltd., Government of
+                        Maharashtra, India
+                    </span>
+                    <span class="site-footer-meta"
+                        th:if="${sessionUser != null and sessionUser.lastLoginTime != null}"
+                        th:text="${'Last login: ' + #temporals.format(sessionUser.lastLoginTime, 'dd-MM-yyyy, hh:mm a')}">
+                        Last login unavailable
+                    </span>
+                </div>
+            </div>
+        </footer>
+    </th:block>
+</body>
+</html>
+

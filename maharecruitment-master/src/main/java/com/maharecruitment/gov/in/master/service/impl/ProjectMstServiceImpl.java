@@ -7,12 +7,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.master.dto.ProjectRequest;
 import com.maharecruitment.gov.in.master.dto.ProjectResponse;
+import com.maharecruitment.gov.in.master.entity.CellMaster;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
+import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 import com.maharecruitment.gov.in.master.entity.ProjectType;
 import com.maharecruitment.gov.in.master.exception.BusinessValidationException;
 import com.maharecruitment.gov.in.master.exception.DuplicateResourceException;
 import com.maharecruitment.gov.in.master.exception.ResourceNotFoundException;
 import com.maharecruitment.gov.in.master.mapper.ProjectMapper;
+import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.master.service.ProjectMstService;
 
@@ -20,11 +23,19 @@ import com.maharecruitment.gov.in.master.service.ProjectMstService;
 @Transactional(readOnly = true)
 public class ProjectMstServiceImpl implements ProjectMstService {
 
+    private static final String ACTIVE = "Y";
+    private static final String INACTIVE = "N";
+
     private final ProjectMstRepository projectRepository;
+    private final CellMasterRepository cellMasterRepository;
     private final ProjectMapper projectMapper;
 
-    public ProjectMstServiceImpl(ProjectMstRepository projectRepository, ProjectMapper projectMapper) {
+    public ProjectMstServiceImpl(
+            ProjectMstRepository projectRepository,
+            CellMasterRepository cellMasterRepository,
+            ProjectMapper projectMapper) {
         this.projectRepository = projectRepository;
+        this.cellMasterRepository = cellMasterRepository;
         this.projectMapper = projectMapper;
     }
 
@@ -32,10 +43,12 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     @Transactional
     public ProjectResponse create(ProjectRequest request) {
         String projectName = normalizeName(request.getProjectName());
-        ensureUniqueProject(projectName, request.getDepartmentRegistrationId(), null);
+        ensureUniqueProject(projectName, null, null);
+        String projectCode = normalizeCode(request.getProjectCode());
+        ensureUniqueProjectCode(projectCode, null);
 
         ProjectMst entity = new ProjectMst();
-        mapRequestToEntity(request, entity, projectName);
+        mapRequestToEntity(request, entity, projectName, projectCode);
 
         return projectMapper.toResponse(projectRepository.save(entity));
     }
@@ -47,8 +60,10 @@ public class ProjectMstServiceImpl implements ProjectMstService {
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found for id: " + projectId));
 
         String projectName = normalizeName(request.getProjectName());
-        ensureUniqueProject(projectName, request.getDepartmentRegistrationId(), projectId);
-        mapRequestToEntity(request, entity, projectName);
+        ensureUniqueProject(projectName, entity.getDepartmentRegistrationId(), projectId);
+        String projectCode = normalizeCode(request.getProjectCode());
+        ensureUniqueProjectCode(projectCode, projectId);
+        mapRequestToEntity(request, entity, projectName, projectCode);
 
         return projectMapper.toResponse(projectRepository.save(entity));
     }
@@ -61,16 +76,40 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     }
 
     @Override
-    public Page<ProjectResponse> getAll(Pageable pageable) {
-        return projectRepository.findAll(pageable).map(projectMapper::toResponse);
+    public Page<ProjectResponse> getAll(boolean includeInactive, Pageable pageable) {
+        Page<ProjectMst> projects = includeInactive
+                ? projectRepository.findAll(pageable)
+                : projectRepository.findByActiveFlagIgnoreCase(ACTIVE, pageable);
+        return projects.map(projectMapper::toResponse);
+    }
+
+    @Override
+    public Page<ProjectResponse> getAll(Long cellId, boolean includeInactive, Pageable pageable) {
+        if (cellId == null) {
+            return getAll(includeInactive, pageable);
+        }
+        Page<ProjectMst> projects = includeInactive
+                ? projectRepository.findByCell_CellId(cellId, pageable)
+                : projectRepository.findByCell_CellIdAndActiveFlagIgnoreCase(cellId, ACTIVE, pageable);
+        return projects.map(projectMapper::toResponse);
     }
 
     @Override
     @Transactional
-    public void delete(Long projectId) {
+    public void softDelete(Long projectId) {
         ProjectMst entity = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found for id: " + projectId));
-        projectRepository.delete(entity);
+        entity.setActiveFlag(INACTIVE);
+        projectRepository.save(entity);
+    }
+
+    @Override
+    @Transactional
+    public void restore(Long projectId) {
+        ProjectMst entity = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found for id: " + projectId));
+        entity.setActiveFlag(ACTIVE);
+        projectRepository.save(entity);
     }
 
     @Override
@@ -103,19 +142,55 @@ public class ProjectMstServiceImpl implements ProjectMstService {
                         .orElseGet(ProjectMst::new));
 
         entity.setProjectName(normalizedProjectName);
+        if (entity.getProjectCode() == null || entity.getProjectCode().isBlank()) {
+            entity.setProjectCode(generateSyncedProjectCode(applicationId, normalizedProjectName));
+        }
         entity.setProjectType(projectType);
+        entity.setProjectScopeType(ProjectScopeType.EXTERNAL);
         entity.setDepartmentRegistrationId(departmentRegistrationId);
         entity.setApplicationId(applicationId);
+        entity.setActiveFlag(ACTIVE);
 
         return projectMapper.toResponse(projectRepository.save(entity));
     }
 
-    private void mapRequestToEntity(ProjectRequest request, ProjectMst entity, String normalizedProjectName) {
+    private void mapRequestToEntity(
+            ProjectRequest request,
+            ProjectMst entity,
+            String normalizedProjectName,
+            String projectCode) {
         entity.setProjectName(normalizedProjectName);
+        entity.setProjectCode(projectCode);
         entity.setProjectDesc(normalizeDescription(request.getProjectDesc()));
         entity.setProjectType(request.getProjectType());
-        entity.setDepartmentRegistrationId(request.getDepartmentRegistrationId());
-        entity.setApplicationId(request.getApplicationId());
+        entity.setProjectScopeType(resolveProjectScopeType(request.getProjectScopeType(), entity.getApplicationId()));
+        entity.setCell(resolveActiveCell(request.getCellId()));
+    }
+
+    private CellMaster resolveActiveCell(Long cellId) {
+        if (cellId == null) {
+            throw new BusinessValidationException("Cell is required.");
+        }
+        CellMaster cell = cellMasterRepository.findByCellId(cellId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cell not found with id: " + cellId));
+        if (!"Y".equalsIgnoreCase(cell.getActiveFlag())) {
+            throw new BusinessValidationException("Selected cell is inactive.");
+        }
+        if (cell.getWing() == null || !"Y".equalsIgnoreCase(cell.getWing().getActiveFlag())) {
+            throw new BusinessValidationException("Selected cell belongs to an inactive wing.");
+        }
+        return cell;
+    }
+
+    private ProjectScopeType resolveProjectScopeType(ProjectScopeType projectScopeType, Long applicationId) {
+        if (projectScopeType == null) {
+            throw new BusinessValidationException("Project scope is required.");
+        }
+        if (applicationId != null && projectScopeType != ProjectScopeType.EXTERNAL) {
+            throw new BusinessValidationException(
+                    "Projects linked to department applications must remain external.");
+        }
+        return projectScopeType;
     }
 
     private void ensureUniqueProject(String projectName, Long departmentRegistrationId, Long excludeId) {
@@ -127,8 +202,18 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         }
     }
 
+    private void ensureUniqueProjectCode(String projectCode, Long excludeId) {
+        if (projectRepository.existsByProjectCodeExcludingId(projectCode, excludeId)) {
+            throw new DuplicateResourceException("Project already exists with code: " + projectCode);
+        }
+    }
+
     private String normalizeName(String value) {
         return value == null ? null : value.trim();
+    }
+
+    private String normalizeCode(String value) {
+        return value == null ? null : value.trim().toUpperCase();
     }
 
     private String normalizeDescription(String value) {
@@ -137,5 +222,23 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String generateSyncedProjectCode(Long applicationId, String projectName) {
+        String base = "APP-" + applicationId;
+        if (!projectRepository.existsByProjectCodeExcludingId(base, null)) {
+            return base;
+        }
+
+        String prefix = projectName == null
+                ? "PRJ"
+                : projectName.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
+        if (prefix.length() > 12) {
+            prefix = prefix.substring(0, 12);
+        }
+        if (prefix.isBlank()) {
+            prefix = "PRJ";
+        }
+        return prefix + "-" + applicationId;
     }
 }

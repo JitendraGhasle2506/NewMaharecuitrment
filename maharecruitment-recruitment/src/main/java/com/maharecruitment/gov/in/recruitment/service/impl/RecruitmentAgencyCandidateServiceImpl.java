@@ -10,6 +10,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -33,10 +35,12 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDet
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyCandidateService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentAgencyNotificationActionService;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateInterviewScheduleInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyCandidateSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySelectedCandidateView;
+import com.maharecruitment.gov.in.recruitment.service.model.AgencyShortlistedCandidateView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencySubmittedCandidateView;
 
 @Service
@@ -92,6 +96,57 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
     }
 
     @Override
+    public List<AgencyShortlistedCandidateProjectView> getShortlistedCandidateProjects(Long agencyId) {
+        requirePositiveId(agencyId, "Agency id is required.");
+
+        return interviewDetailRepository.findShortlistedCandidateProjectSummariesByAgency(agencyId)
+                .stream()
+                .map(summary -> AgencyShortlistedCandidateProjectView.builder()
+                        .recruitmentNotificationId(summary.getRecruitmentNotificationId())
+                        .requestId(summary.getRequestId())
+                        .projectName(summary.getProjectName())
+                        .shortlistedCandidatesCount(summary.getShortlistedCandidatesCount() == null
+                                ? 0L
+                                : summary.getShortlistedCandidatesCount())
+                        .latestShortlistedAt(summary.getLatestShortlistedAt())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<AgencyShortlistedCandidateView> getShortlistedCandidates(Long agencyId) {
+        requirePositiveId(agencyId, "Agency id is required.");
+
+        return interviewDetailRepository.findAllShortlistedCandidatesByAgency(agencyId)
+                .stream()
+                .map(this::toShortlistedCandidateView)
+                .toList();
+    }
+
+    @Override
+    public Page<AgencyShortlistedCandidateView> getShortlistedCandidates(
+            Long agencyId,
+            Long recruitmentNotificationId,
+            String search,
+            Pageable pageable) {
+        requirePositiveId(agencyId, "Agency id is required.");
+        requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
+
+        String searchPattern = null;
+        if (StringUtils.hasText(search)) {
+            searchPattern = "%" + search.trim().toUpperCase() + "%";
+        }
+
+        Pageable resolvedPageable = pageable == null ? Pageable.unpaged() : pageable;
+        return interviewDetailRepository.findShortlistedCandidatesByAgency(
+                        agencyId,
+                        recruitmentNotificationId,
+                        searchPattern,
+                        resolvedPageable)
+                .map(this::toShortlistedCandidateView);
+    }
+
+    @Override
     public List<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId) {
         requirePositiveId(agencyId, "Agency id is required.");
 
@@ -125,20 +180,24 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
     }
 
     @Override
-    public List<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId, Long recruitmentNotificationId) {
+    public Page<AgencySelectedCandidateView> getSelectedCandidates(Long agencyId, Long recruitmentNotificationId, String search, Pageable pageable) {
         requirePositiveId(agencyId, "Agency id is required.");
         requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
 
-        List<RecruitmentInterviewDetailEntity> selectedCandidates = interviewDetailRepository
-                .findSelectedCandidatesByAgencyAndNotification(agencyId, recruitmentNotificationId);
-        Map<Long, AgencyCandidatePreOnboardingEntity> preOnboardingByCandidateId = loadPreOnboardingMap(selectedCandidates);
+        String searchPattern = null;
+        if (StringUtils.hasText(search)) {
+            searchPattern = "%" + search.trim().toUpperCase() + "%";
+        }
 
-        return selectedCandidates
-                .stream()
-                .map(candidate -> toSelectedCandidateView(
-                        candidate,
-                        preOnboardingByCandidateId.get(candidate.getRecruitmentInterviewDetailId())))
-                .toList();
+        Pageable resolvedPageable = pageable == null ? Pageable.unpaged() : pageable;
+        Page<RecruitmentInterviewDetailEntity> pagedCandidates = interviewDetailRepository
+                .findSelectedCandidatesByAgencyAndNotification(agencyId, recruitmentNotificationId, searchPattern, resolvedPageable);
+
+        Map<Long, AgencyCandidatePreOnboardingEntity> preOnboardingByCandidateId = loadPreOnboardingMap(pagedCandidates.getContent());
+
+        return pagedCandidates.map(candidate -> toSelectedCandidateView(
+                candidate,
+                preOnboardingByCandidateId.get(candidate.getRecruitmentInterviewDetailId())));
     }
 
     @Override
@@ -211,21 +270,23 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             }
 
             if (interviewDetailRepository
-                    .existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateEmailIgnoreCase(
+                    .existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateEmailIgnoreCase(
                             recruitmentNotificationId,
                             agencyId,
                             normalizedEmail)) {
                 throw new RecruitmentNotificationException(
-                        "Candidate email already submitted for this notification: " + normalizedEmail);
+                        "Candidate email already exists in submitted candidates for this notification: "
+                                + normalizedEmail);
             }
 
             if (interviewDetailRepository
-                    .existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndCandidateMobile(
+                    .existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateMobile(
                             recruitmentNotificationId,
                             agencyId,
                             normalizedInput.getMobile())) {
                 throw new RecruitmentNotificationException(
-                        "Candidate mobile already submitted for this notification: " + normalizedInput.getMobile());
+                        "Candidate mobile already exists in submitted candidates for this notification: "
+                                + normalizedInput.getMobile());
             }
 
             RecruitmentInterviewDetailEntity candidateEntity = new RecruitmentInterviewDetailEntity();
@@ -284,6 +345,10 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         if (StringUtils.hasText(candidateEntity.getFinalDecisionStatus())) {
             throw new RecruitmentNotificationException("Interview schedule cannot be modified after final department decision.");
         }
+        if (Boolean.TRUE.equals(candidateEntity.getAssessmentSubmitted())) {
+            throw new RecruitmentNotificationException(
+                    "Interview details cannot be modified after assessment feedback is submitted.");
+        }
 
         candidateEntity.setInterviewDateTime(scheduleInput.getInterviewDateTime());
         candidateEntity.setInterviewTimeSlot(scheduleInput.getInterviewTimeSlot());
@@ -327,25 +392,61 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         if (preOnboarding != null && preOnboarding.getOnboardedAt() != null) {
             throw new RecruitmentNotificationException("Candidate is already onboarded and cannot be withdrawn.");
         }
-
-        if (preOnboarding != null) {
-            preOnboardingRepository.delete(preOnboarding);
+        if (candidateEntity.getCandidateStatus() == RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT) {
+            throw new RecruitmentNotificationException("Rejected candidate cannot be withdrawn.");
         }
-        assessmentFeedbackRepository.findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(
-                recruitmentInterviewDetailId).ifPresent(assessmentFeedbackRepository::delete);
 
-        interviewDetailRepository.delete(candidateEntity);
+        candidateEntity.setActive(false);
+        interviewDetailRepository.save(candidateEntity);
+    }
+
+    @Override
+    @Transactional
+    public void forwardInterviewRequest(
+            Long recruitmentNotificationId,
+            Long recruitmentInterviewDetailId,
+            Long agencyId) {
+        requirePositiveId(recruitmentNotificationId, "Recruitment notification id is required.");
+        requirePositiveId(recruitmentInterviewDetailId, "Candidate id is required.");
+        requirePositiveId(agencyId, "Agency id is required.");
+
+        ensureNotificationReleasedForAgency(recruitmentNotificationId, agencyId);
+
+        RecruitmentInterviewDetailEntity candidateEntity = interviewDetailRepository
+                .findByRecruitmentInterviewDetailIdAndRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId(
+                        recruitmentInterviewDetailId,
+                        recruitmentNotificationId,
+                        agencyId)
+                .orElseThrow(() -> new RecruitmentNotificationException("Candidate record not found for this notification."));
+
+        if (candidateEntity.getCandidateStatus() != RecruitmentCandidateStatus.SHORTLISTED_BY_DEPARTMENT) {
+            throw new RecruitmentNotificationException(
+                    "Interview request can only be forwarded for shortlisted candidates.");
+        }
+        
+        String auth = candidateEntity.getInterviewAuthority();
+        if (!"DEPARTMENT".equals(auth) && !"MAHAIT_HR".equals(auth)) {
+            throw new RecruitmentNotificationException("Interview authority must be DEPARTMENT or MAHAIT_HR to forward.");
+        }
+
+        candidateEntity.setCandidateStatus(RecruitmentCandidateStatus.INTERVIEW_REQUEST_SENT_BY_AGENCY);
+        interviewDetailRepository.save(candidateEntity);
     }
 
     private AgencyNotificationTrackingEntity ensureNotificationReleasedForAgency(
             Long recruitmentNotificationId,
             Long agencyId) {
-        return trackingRepository
+        AgencyNotificationTrackingEntity tracking = trackingRepository
                 .findByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId(
                         recruitmentNotificationId,
                         agencyId)
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Notification is not released for this agency."));
+        if (tracking.getRecruitmentNotification() == null
+                || tracking.getRecruitmentNotification().getStatus() == RecruitmentNotificationStatus.CLOSED) {
+            throw new RecruitmentNotificationException("Notification is no longer active for this agency.");
+        }
+        return tracking;
     }
 
     private AgencyCandidateSubmissionInput normalizeCandidateInput(AgencyCandidateSubmissionInput input) {
@@ -393,9 +494,9 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
         if (!StringUtils.hasText(input.getMobile())) {
             throw new RecruitmentNotificationException("Candidate mobile is required in row " + rowNumber + ".");
         }
-        if (!input.getMobile().matches("^[0-9]{10,15}$")) {
+        if (!input.getMobile().matches("^[0-9]{10}$")) {
             throw new RecruitmentNotificationException(
-                    "Candidate mobile must be 10 to 15 digits in row " + rowNumber + ".");
+                    "Candidate mobile must be 10 digits in row " + rowNumber + ".");
         }
         if (!StringUtils.hasText(input.getCandidateEducation())) {
             throw new RecruitmentNotificationException("Candidate qualification is required in row " + rowNumber + ".");
@@ -466,6 +567,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .designationName(designationName)
                 .levelCode(candidate.getDesignationVacancy().getLevelCode())
                 .candidateStatus(candidate.getCandidateStatus())
+                .interviewAuthority(candidate.getInterviewAuthority())
                 .resumeOriginalName(candidate.getResumeOriginalName())
                 .resumeFilePath(candidate.getResumeFilePath())
                 .interviewDateTime(candidate.getInterviewDateTime())
@@ -542,6 +644,44 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .build();
     }
 
+    private AgencyShortlistedCandidateView toShortlistedCandidateView(RecruitmentInterviewDetailEntity candidate) {
+        String designationName = candidate.getDesignationVacancy() != null
+                && candidate.getDesignationVacancy().getDesignationMst() != null
+                        ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
+                        : "-";
+
+        return AgencyShortlistedCandidateView.builder()
+                .recruitmentNotificationId(candidate.getRecruitmentNotification() != null
+                        ? candidate.getRecruitmentNotification().getRecruitmentNotificationId()
+                        : null)
+                .requestId(candidate.getRecruitmentNotification() != null
+                        ? candidate.getRecruitmentNotification().getRequestId()
+                        : null)
+                .projectName(candidate.getRecruitmentNotification() != null
+                        && candidate.getRecruitmentNotification().getProjectMst() != null
+                                ? candidate.getRecruitmentNotification().getProjectMst().getProjectName()
+                                : "-")
+                .recruitmentInterviewDetailId(candidate.getRecruitmentInterviewDetailId())
+                .candidateName(candidate.getCandidateName())
+                .candidateEmail(candidate.getCandidateEmail())
+                .candidateMobile(candidate.getCandidateMobile())
+                .designationName(designationName)
+                .levelCode(candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null)
+                .totalExperience(candidate.getTotalExperience())
+                .relevantExperience(candidate.getRelevantExperience())
+                .joiningTime(candidate.getJoiningTime())
+                .resumeFilePath(candidate.getResumeFilePath())
+                .candidateStatus(candidate.getCandidateStatus())
+                .departmentShortlistedAt(candidate.getDepartmentShortlistedAt())
+                .departmentShortlistRemarks(candidate.getDepartmentShortlistRemarks())
+                .interviewDateTime(candidate.getInterviewDateTime())
+                .interviewTimeSlot(candidate.getInterviewTimeSlot())
+                .interviewLink(candidate.getInterviewLink())
+                .interviewRemarks(candidate.getInterviewRemarks())
+                .assessmentSubmitted(candidate.getAssessmentSubmitted())
+                .build();
+    }
+
     private void requirePositiveId(Long value, String message) {
         if (value == null || value < 1) {
             throw new RecruitmentNotificationException(message);
@@ -561,6 +701,7 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             AgencyCandidatePreOnboardingEntity preOnboarding) {
         return candidate != null
                 && Boolean.TRUE.equals(candidate.getActive())
+                && candidate.getCandidateStatus() != RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT
                 && (preOnboarding == null || preOnboarding.getOnboardedAt() == null);
     }
 

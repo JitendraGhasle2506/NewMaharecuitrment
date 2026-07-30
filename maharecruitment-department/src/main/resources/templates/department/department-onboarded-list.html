@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+<meta charset="UTF-8">
+<title>Onboarded Employees</title>
+<th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body class="agency-shell">
+	<th:block
+		th:replace="~{header/header :: var-sidebar-header('Department', 'Onboarded Employees', ~{::section})}">
+		<section>
+			<div class="card add-emp-card">
+				<div
+					class="header d-flex justify-content-between align-items-center">
+					<div>
+						<h2 class="mb-0"
+							th:text="${pageTitle != null ? pageTitle : 'Onboarded Employees'}">Onboarded
+							Employees</h2>
+						<small class="text-muted"
+							th:text="${pageSubtitle != null ? pageSubtitle : 'Department-wise onboarded employee list.'}">
+							Department-wise onboarded employee list. </small>
+					</div>
+
+				</div>
+
+				<div class="card-body">
+					<div th:if="${successMessage}" class="alert alert-success"
+						th:text="${successMessage}"></div>
+					<div th:if="${errorMessage}" class="alert alert-danger"
+						th:text="${errorMessage}"></div>
+
+					<div class="table-responsive">
+						<table class="table table-bordered table-sm align-middle">
+							<thead class="table-light">
+								<tr>
+									<th>#</th>
+									<th>Employee Code</th>
+									<th>Request ID</th>
+									<th>Email</th>
+									<th>Level</th>
+									<th>Employee</th>
+									<th>Designation</th>
+									<th>Joining Date</th>
+									<th>MahaIT Onboarding Date</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
+
+								<tr th:if="${#lists.isEmpty(onboardedEmployees)}">
+									<td colspan="10" class="text-center text-muted">No
+										onboarded employees found.</td>
+								</tr>
+
+								<tr th:each="employee, stat : ${onboardedEmployees}">
+									<td th:text="${stat.count}">1</td>
+
+									<td
+										th:text="${employee.employeeCode != null ? employee.employeeCode : '-'}">
+										EMP001</td>
+
+									<td
+										th:text="${employee.requestId != null ? employee.requestId : '-'}">
+										REQ001</td>
+
+									<td 
+										th:text="${(employee.candidateEmail != null ? employee.candidateEmail : '-')}">
+											email | mobile
+									</td>
+
+									<td
+										th:text="${employee.levelCode != null ? employee.levelCode : '-'}">
+										L1</td>
+
+									<td
+										th:text="${employee.candidateName != null ?employee.candidateName : '-'}">
+										01-Apr-2026</td>
+
+									<td th:text="${employee.designationName != null ?employee.designationName : '-'}">
+									</td>
+
+									<td
+										th:text="${employee.joiningDate != null ? #temporals.format(employee.joiningDate,'dd-MM-yyyy') : '-'}">
+										05-Apr-2026</td>
+										
+									<td
+										th:text="${employee.onboardingDate != null ? #temporals.format(employee.onboardingDate,'dd-MM-yyyy') : '-'}">
+										05-Apr-2026</td>
+
+									<td th:text="${employee.status != null ? employee.status : '-'}"></td>
+
+								</tr>
+
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</section>
+	</th:block>
+</body>
+
+</html>

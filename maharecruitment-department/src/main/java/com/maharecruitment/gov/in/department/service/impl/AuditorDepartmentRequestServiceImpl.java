@@ -376,13 +376,21 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
                 .toList();
         AuditorDepartmentRegistrationDetailView registrationDetail = toRegistrationDetail(registration);
         LocalDate taxApplicableDate = resolveTaxApplicableDate(application);
-        BigDecimal baseCost = toScaledAmount(application.getTotalEstimatedCost());
-        List<AuditorApplicationTaxComponentView> taxComponents = calculateTaxComponents(baseCost, taxApplicableDate);
+        
+        BigDecimal taxableSubTotal = application.getResourceRequirements().stream()
+                .map(DepartmentProjectResourceRequirementEntity::getTaxableAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        List<AuditorApplicationTaxComponentView> taxComponents = calculateTaxComponents(taxableSubTotal, taxApplicableDate);
         BigDecimal totalTaxAmount = taxComponents.stream()
                 .map(AuditorApplicationTaxComponentView::getTaxAmount)
                 .reduce(ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalCostIncludingTax = baseCost.add(totalTaxAmount).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalCostIncludingTax = taxableSubTotal.add(totalTaxAmount).setScale(2, RoundingMode.HALF_UP);
+        boolean approvalAllowed = isApprovalAllowed(application.getApplicationStatus());
+        boolean sendBackAllowed = isSendBackAllowed(application.getApplicationStatus());
 
         return AuditorDepartmentApplicationReviewDetailView.builder()
                 .departmentId(departmentId)
@@ -402,9 +410,12 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
                 .updatedDate(application.getUpdatedDate())
                 .workOrderAvailable(StringUtils.hasText(application.getWorkOrderFilePath()))
                 .workOrderOriginalName(application.getWorkOrderOriginalName())
-                .auditorActionAllowed(isAuditorActionAllowed(application.getApplicationStatus()))
+                .auditorActionAllowed(approvalAllowed || sendBackAllowed)
+                .approvalAllowed(approvalAllowed)
+                .sendBackAllowed(sendBackAllowed)
                 .completionAllowed(isCompletionAllowed(application.getApplicationStatus()))
                 .taxApplicableDate(taxApplicableDate)
+                .taxableSubTotal(taxableSubTotal)
                 .totalTaxAmount(totalTaxAmount)
                 .totalCostIncludingTax(totalCostIncludingTax)
                 .taxComponents(taxComponents)
@@ -520,6 +531,10 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
                 .requiredQuantity(requirementEntity.getRequiredQuantity())
                 .durationInMonths(requirementEntity.getDurationInMonths())
                 .totalCost(requirementEntity.getTotalCost())
+                .agencyCommissionAmount(requirementEntity.getAgencyCommissionAmount())
+                .mahaItCommissionAmount(requirementEntity.getMahaItCommissionAmount())
+                .taxableAmount(requirementEntity.getTaxableAmount())
+                .gstAmount(requirementEntity.getGstAmount())
                 .build();
     }
 
@@ -578,9 +593,15 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
         return application;
     }
 
-    private boolean isAuditorActionAllowed(DepartmentApplicationStatus currentStatus) {
+    private boolean isApprovalAllowed(DepartmentApplicationStatus currentStatus) {
         return currentStatus == DepartmentApplicationStatus.HR_APPROVED
                 || currentStatus == DepartmentApplicationStatus.AUDITOR_REVIEW;
+    }
+
+    private boolean isSendBackAllowed(DepartmentApplicationStatus currentStatus) {
+        return currentStatus == DepartmentApplicationStatus.HR_APPROVED
+                || currentStatus == DepartmentApplicationStatus.AUDITOR_REVIEW
+                || currentStatus == DepartmentApplicationStatus.AUDITOR_APPROVED;
     }
 
     private boolean isCompletionAllowed(DepartmentApplicationStatus currentStatus) {
@@ -651,8 +672,8 @@ public class AuditorDepartmentRequestServiceImpl implements AuditorDepartmentReq
                 .subDepartmentName(registrationSubDepartmentName)
                 .billingDepartmentName(registration.getBillDepartmentName())
                 .billingAddress(registration.getBillAddress())
-                .gstNumber(registration.getGstNo())
-                .panNumber(registration.getPanNo())
+                .gstNumber(com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil.maskGst(registration.getGstNo()))
+                .panNumber(com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil.maskPan(registration.getPanNo()))
                 .tanNumber(registration.getTanNo())
                 .gstDocumentName(extractFileName(gstPath))
                 .panDocumentName(extractFileName(panPath))

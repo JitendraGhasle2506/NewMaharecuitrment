@@ -14,10 +14,20 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import com.project.notification.service.NotificationService;
+import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.department.entity.DepartmentApplicationActivityType;
+import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationActivityEntity;
+import com.maharecruitment.gov.in.department.service.model.HrPartialPaymentAuthorizationView;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
@@ -28,6 +38,8 @@ import com.maharecruitment.gov.in.department.entity.HrReviewDecision;
 import com.maharecruitment.gov.in.department.exception.DepartmentApplicationException;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationActivityRepository;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
+import com.maharecruitment.gov.in.department.repository.DepartmentAdvancePaymentRepository;
+
 import com.maharecruitment.gov.in.department.repository.projection.DepartmentSubmittedProjectCountProjection;
 import com.maharecruitment.gov.in.department.service.DepartmentManpowerApplicationService;
 import com.maharecruitment.gov.in.department.service.HrDepartmentRequestService;
@@ -63,6 +75,8 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
     private final DepartmentManpowerApplicationService manpowerApplicationService;
     private final DepartmentMstRepository departmentMstRepository;
     private final SubDepartmentRepository subDepartmentRepository;
+    private final UserRepository userRepository;
+    private final DepartmentAdvancePaymentRepository departmentAdvancePaymentRepository;
 
     public HrDepartmentRequestServiceImpl(
             DepartmentRegistrationRepository departmentRegistrationRepository,
@@ -70,13 +84,17 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
             DepartmentProjectApplicationActivityRepository activityRepository,
             DepartmentManpowerApplicationService manpowerApplicationService,
             DepartmentMstRepository departmentMstRepository,
-            SubDepartmentRepository subDepartmentRepository) {
+            SubDepartmentRepository subDepartmentRepository,
+            UserRepository userRepository,
+            DepartmentAdvancePaymentRepository departmentAdvancePaymentRepository) {
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.departmentProjectApplicationRepository = departmentProjectApplicationRepository;
         this.activityRepository = activityRepository;
         this.manpowerApplicationService = manpowerApplicationService;
         this.departmentMstRepository = departmentMstRepository;
         this.subDepartmentRepository = subDepartmentRepository;
+        this.userRepository = userRepository;
+        this.departmentAdvancePaymentRepository = departmentAdvancePaymentRepository;
     }
 
     @Override
@@ -309,6 +327,67 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
     }
 
     @Override
+    public List<HrDepartmentSubmittedApplicationView> getAllSubmittedApplications() {
+        List<DepartmentProjectApplicationEntity> applications = departmentProjectApplicationRepository
+                .findByApplicationStatusInOrderByDepartmentProjectApplicationIdDesc(SUBMITTED_STATUSES);
+
+        if (applications.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> departmentIds = applications.stream()
+                .map(DepartmentProjectApplicationEntity::getDepartmentId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Map<Long, String> departmentNameMasterById = departmentMstRepository.findAllById(departmentIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        DepartmentMst::getDepartmentId,
+                        DepartmentMst::getDepartmentName,
+                        (first, second) -> first,
+                        LinkedHashMap::new));
+
+        Set<Long> departmentRegistrationIds = applications.stream()
+                .map(DepartmentProjectApplicationEntity::getDepartmentRegistrationId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Map<Long, String> departmentNameFallbackById = departmentRegistrationRepository.findAllById(departmentRegistrationIds)
+                .stream()
+                .filter(registration -> registration.getDepartmentId() != null)
+                .filter(registration -> StringUtils.hasText(registration.getDepartmentName()))
+                .collect(Collectors.toMap(
+                        DepartmentRegistrationEntity::getDepartmentId,
+                        DepartmentRegistrationEntity::getDepartmentName,
+                        (first, second) -> first,
+                        LinkedHashMap::new));
+
+        Set<Long> subDepartmentIds = applications.stream()
+                .map(DepartmentProjectApplicationEntity::getSubDepartmentId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Map<Long, String> subDepartmentNameById = subDepartmentRepository.findAllById(subDepartmentIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        SubDepartment::getSubDeptId,
+                        SubDepartment::getSubDeptName,
+                        (first, second) -> first,
+                        LinkedHashMap::new));
+
+        return applications.stream()
+                .map(application -> toSubmittedApplicationView(
+                        application,
+                        resolveDepartmentName(
+                                application.getDepartmentId(),
+                                departmentNameMasterById,
+                                departmentNameFallbackById),
+                        resolveSubDepartmentName(application.getSubDepartmentId(), subDepartmentNameById)))
+                .toList();
+    }
+
+    @Override
     public HrDepartmentApplicationReviewDetailView getApplicationReviewDetail(
             Long departmentId,
             Long subDepartmentId,
@@ -424,9 +503,105 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .build();
     }
 
+    @Override
+    public Page<HrPartialPaymentAuthorizationView> getApplicationsForPaymentAuthorization(Pageable pageable) {
+        Page<DepartmentProjectApplicationEntity> pagedEntities = departmentProjectApplicationRepository
+                .findByApplicationStatusInOrderByDepartmentProjectApplicationIdDesc(
+                        List.of(DepartmentApplicationStatus.AUDITOR_APPROVED, DepartmentApplicationStatus.COMPLETED),
+                        pageable);
+
+        List<HrPartialPaymentAuthorizationView> content = pagedEntities.getContent().stream()
+                .filter(this::isEligibleForAuthorizationDashboard)
+                .map(this::toPartialPaymentAuthView)
+                .toList();
+
+        return new PageImpl<>(content, pageable, pagedEntities.getTotalElements());
+    }
+
+    private boolean isEligibleForAuthorizationDashboard(DepartmentProjectApplicationEntity application) {
+        // 1. Exclude if there's any payment record currently "in-progress" (not approved/rejected)
+        long pendingPayments = departmentAdvancePaymentRepository.countByApplicationAndApplicationStatusNotIn(
+                application,
+                List.of(DepartmentApplicationStatus.AUDITOR_APPROVED, DepartmentApplicationStatus.HR_REJECTED));
+        
+        if (pendingPayments > 0) {
+            return false;
+        }
+
+        // 2. Ideally exclude if the balance is zero, but that requires expensive native queries.
+        // For now, requirement specifies "whose advance payment is done", which usually means pending checks.
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public void authorizePartialPayment(Long applicationId, boolean allowed, String actorEmail) {
+        DepartmentProjectApplicationEntity application = departmentProjectApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new DepartmentApplicationException("Application not found."));
+
+        if (application.getApplicationStatus() != DepartmentApplicationStatus.AUDITOR_APPROVED && 
+            application.getApplicationStatus() != DepartmentApplicationStatus.COMPLETED) {
+            throw new DepartmentApplicationException("Partial payment can only be authorized for approved proforma invoices.");
+        }
+
+        application.setIsPartialPaymentAllowed(allowed);
+        departmentProjectApplicationRepository.save(application);
+
+        User actor = userRepository.findByEmailIgnoreCase(actorEmail)
+                .orElseThrow(() -> new DepartmentApplicationException("Actor not found."));
+
+        recordAuthorizationActivity(application, allowed, actor);
+    }
+
+    private HrPartialPaymentAuthorizationView toPartialPaymentAuthView(DepartmentProjectApplicationEntity application) {
+        String departmentName = departmentMstRepository.findById(application.getDepartmentId())
+                .map(DepartmentMst::getDepartmentName)
+                .orElse("Dept-" + application.getDepartmentId());
+
+        String subDepartmentName = subDepartmentRepository.findById(application.getSubDepartmentId())
+                .map(SubDepartment::getSubDeptName)
+                .orElse("SubDept-" + application.getSubDepartmentId());
+
+        return HrPartialPaymentAuthorizationView.builder()
+                .departmentProjectApplicationId(application.getDepartmentProjectApplicationId())
+                .requestId(application.getRequestId())
+                .projectName(application.getProjectName())
+                .departmentName(departmentName)
+                .subDepartmentName(subDepartmentName)
+                .totalEstimatedCost(application.getTotalEstimatedCost())
+                .partialPaymentAllowed(Boolean.TRUE.equals(application.getIsPartialPaymentAllowed()))
+                .build();
+    }
+
+    private void recordAuthorizationActivity(DepartmentProjectApplicationEntity application, boolean allowed, User actor) {
+        DepartmentProjectApplicationActivityEntity activity = new DepartmentProjectApplicationActivityEntity();
+        activity.setApplication(application);
+        activity.setActivityType(DepartmentApplicationActivityType.UPDATED);
+        activity.setPreviousStatus(application.getApplicationStatus());
+
+        activity.setNewStatus(application.getApplicationStatus());
+        activity.setActorUserId(actor.getId());
+        activity.setActorEmail(actor.getEmail());
+        activity.setActorName(actor.getName());
+        activity.setActivityRemarks(allowed ? "Partial payment AUTHORIZED by HR." : "Partial payment REVOKED by HR.");
+        activity.setActionTimestamp(java.time.LocalDateTime.now());
+        activityRepository.save(activity);
+    }
+
     private HrDepartmentSubmittedApplicationView toSubmittedApplicationView(
             DepartmentProjectApplicationEntity applicationEntity) {
+        return toSubmittedApplicationView(applicationEntity, null, null);
+    }
+
+    private HrDepartmentSubmittedApplicationView toSubmittedApplicationView(
+            DepartmentProjectApplicationEntity applicationEntity,
+            String departmentName,
+            String subDepartmentName) {
         return HrDepartmentSubmittedApplicationView.builder()
+                .departmentId(applicationEntity.getDepartmentId())
+                .departmentName(departmentName)
+                .subDepartmentId(applicationEntity.getSubDepartmentId())
+                .subDepartmentName(subDepartmentName)
                 .departmentProjectApplicationId(applicationEntity.getDepartmentProjectApplicationId())
                 .requestId(applicationEntity.getRequestId())
                 .projectName(applicationEntity.getProjectName())
@@ -439,6 +614,14 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .build();
     }
 
+    private String resolveSubDepartmentName(Long subDepartmentId, Map<Long, String> subDepartmentNameById) {
+        if (subDepartmentId == null) {
+            return UNMAPPED_SUB_DEPARTMENT;
+        }
+
+        return subDepartmentNameById.getOrDefault(subDepartmentId, "Sub-Department " + subDepartmentId);
+    }
+
     private HrDepartmentApplicationResourceRequirementView toRequirementView(
             DepartmentProjectResourceRequirementEntity requirementEntity) {
         return HrDepartmentApplicationResourceRequirementView.builder()
@@ -448,6 +631,10 @@ public class HrDepartmentRequestServiceImpl implements HrDepartmentRequestServic
                 .requiredQuantity(requirementEntity.getRequiredQuantity())
                 .durationInMonths(requirementEntity.getDurationInMonths())
                 .totalCost(requirementEntity.getTotalCost())
+                .agencyCommissionAmount(requirementEntity.getAgencyCommissionAmount())
+                .mahaItCommissionAmount(requirementEntity.getMahaItCommissionAmount())
+                .taxableAmount(requirementEntity.getTaxableAmount())
+                .gstAmount(requirementEntity.getGstAmount())
                 .build();
     }
 

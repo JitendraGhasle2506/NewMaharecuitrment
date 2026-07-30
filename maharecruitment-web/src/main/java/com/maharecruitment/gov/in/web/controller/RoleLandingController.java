@@ -4,7 +4,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import com.maharecruitment.gov.in.web.service.dashboard.AgencyDashboardService;
+import com.maharecruitment.gov.in.web.service.dashboard.MDDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.RoleLandingService;
+import com.maharecruitment.gov.in.web.service.dashboard.model.MDDashboardView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.RoleDashboardView;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,9 +16,16 @@ import jakarta.servlet.http.HttpServletRequest;
 public class RoleLandingController {
 
     private final RoleLandingService roleLandingService;
+    private final AgencyDashboardService agencyDashboardService;
+    private final MDDashboardService mdDashboardService;
 
-    public RoleLandingController(RoleLandingService roleLandingService) {
+    public RoleLandingController(
+            RoleLandingService roleLandingService,
+            AgencyDashboardService agencyDashboardService,
+            MDDashboardService mdDashboardService) {
         this.roleLandingService = roleLandingService;
+        this.agencyDashboardService = agencyDashboardService;
+        this.mdDashboardService = mdDashboardService;
     }
 
     @GetMapping({
@@ -27,7 +37,7 @@ public class RoleLandingController {
             "/hod1/dashboard",
             "/hod2/dashboard",
             "/coo/dashboard",
-            "/employee/dashboard",
+            "/md/dashboard",
             "/pension",
             "/hrms",
             "/payroll"
@@ -37,6 +47,24 @@ public class RoleLandingController {
         String contextPath = request.getContextPath();
         if (contextPath != null && !contextPath.isBlank() && path.startsWith(contextPath)) {
             path = path.substring(contextPath.length());
+        }
+
+        if ("/agency/dashboard".equals(path)) {
+            com.maharecruitment.gov.in.web.service.dashboard.model.AgencyDashboardView agencyDashboard = agencyDashboardService.getDashboard();
+            model.addAttribute("agencyName", agencyDashboard.agencyName());
+            model.addAttribute("totalOpenings", agencyDashboard.totalOpenings());
+            model.addAttribute("candidatesSubmitted", agencyDashboard.candidatesSubmitted());
+            model.addAttribute("interviewsScheduled", agencyDashboard.interviewsScheduled());
+            model.addAttribute("onboardedEmployees", agencyDashboard.onboardedEmployees());
+            model.addAttribute("status", agencyDashboard.status());
+            model.addAttribute("recentNotifications", agencyDashboard.recentNotifications());
+            return "agency/agency_dashboard";
+        }
+
+        if ("/md/dashboard".equals(path)) {
+            MDDashboardView dashboard = mdDashboardService.getDashboard();
+            model.addAttribute("dashboard", dashboard);
+            return "md/md_dashboard";
         }
 
         RoleDashboardView dashboard = roleLandingService.getDashboardByPath(path);

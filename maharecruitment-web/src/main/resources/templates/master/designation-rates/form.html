@@ -16,10 +16,17 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-2 mb-3">
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/resource-levels}">Resource Levels</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/resource-levels}">Resource
+                            Levels</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
-                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/designation-rates}">Designation
+                            Rates</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/commission-rates}">Commission
+                            Rates</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/projects}">Projects</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/wings}">Wing Master</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/cell}">Cell Master</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/locations}">Location Master</a>
                     </div>
 
                     <form th:object="${designationRateForm}"
@@ -29,9 +36,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Designation</label>
-                            <select id="designationSelect"
-                                class="form-select"
-                                th:field="*{designationId}"
+                            <select id="designationSelect" class="form-select" th:field="*{designationId}"
                                 th:attr="data-levels-base-url=@{/master/designation-rates/designations}">
                                 <option value="">Select designation</option>
                                 <option th:each="d : ${availableDesignations}" th:value="${d.designationId}"
@@ -48,13 +53,15 @@
                                 <option th:each="l : ${availableLevels}" th:value="${l.levelCode}"
                                     th:text="${l.levelCode + ' - ' + l.levelName}"></option>
                             </select>
-                            <div class="text-danger small" th:if="${#fields.hasErrors('levelCode')}" th:errors="*{levelCode}"></div>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('levelCode')}"
+                                th:errors="*{levelCode}"></div>
                             <div class="text-danger small" id="levelLoadMessage"></div>
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label">Gross Monthly CTC</label>
-                            <input type="number" th:field="*{grossMonthlyCtc}" class="form-control" step="0.01" min="0.01">
+                            <input type="number" th:field="*{grossMonthlyCtc}" class="form-control" step="0.01"
+                                min="0.01">
                             <div class="text-danger small" th:if="${#fields.hasErrors('grossMonthlyCtc')}"
                                 th:errors="*{grossMonthlyCtc}"></div>
                         </div>

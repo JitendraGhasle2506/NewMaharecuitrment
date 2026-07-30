@@ -2,6 +2,9 @@ package com.maharecruitment.gov.in.web.service.agency;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardedEmployeeView;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
@@ -12,11 +15,14 @@ public interface AgencyOnboardingPageService {
 
     void savePreOnboarding(String actorEmail, Long recruitmentInterviewDetailId, AgencyPreOnboardingForm form);
 
-    List<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail);
+    Page<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail, String search, Pageable pageable);
 
-    List<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status);
+    Page<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status, String search, Pageable pageable);
+    Page<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail, Pageable pageable);
 
-    void markEmployeeResigned(String actorEmail, Long employeeId);
+    Page<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status, Pageable pageable);
+
+    void markEmployeeResigned(String actorEmail, Long employeeId, java.time.LocalDate resignationDate);
 
     List<AgencyOnboardingCandidateView> getOnboardingReadyCandidates(String actorEmail);
 }

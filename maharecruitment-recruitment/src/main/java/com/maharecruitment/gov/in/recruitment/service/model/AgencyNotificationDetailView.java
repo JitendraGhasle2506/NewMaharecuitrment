@@ -26,6 +26,8 @@ public class AgencyNotificationDetailView {
 
     private String projectName;
 
+    private boolean internalNotification;
+
     private RecruitmentNotificationStatus notificationStatus;
 
     // Tracking info for the current agency

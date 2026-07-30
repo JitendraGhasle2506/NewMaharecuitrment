@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Wing Master</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Wing Master', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2>Wing Master</h2>
+                    <a class="btn btn-primary btn-sm" th:href="@{/master/wings/new}">Add Wing</a>
+                </div>
+
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/resource-levels}">Resource Levels</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/projects}">Projects</a>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/wings}">Wing Master</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/cell}">Cell Master</a>
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/locations}">Location Master</a>
+                    </div>
+
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <form class="row g-2 mb-3 align-items-end" method="get" th:action="@{/master/wings}">
+                        <div class="col-md-4">
+                            <label class="form-label" for="searchText">Search Wing Name</label>
+                            <input class="form-control form-control-sm" type="text" id="searchText" name="searchText"
+                                th:value="${searchText}" maxlength="100" placeholder="Enter wing name">
+                        </div>
+                        <div class="col-auto form-check mb-1">
+                            <input class="form-check-input" type="checkbox" id="includeInactive" name="includeInactive"
+                                value="true" th:checked="${includeInactive}">
+                            <label class="form-check-label" for="includeInactive">Include inactive</label>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-secondary btn-sm" type="submit">Apply</button>
+                            <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/wings}">Clear</a>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sr.No</th>
+                                    <th>Wing Name</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${wings.isEmpty()}">
+                                    <td colspan="4" class="text-center text-muted">No records found</td>
+                                </tr>
+                                <tr th:each="item, stat : ${wings.content}">
+                                    <td th:text="${wings.number * wings.size + stat.count}">1</td>
+                                    <td th:text="${item.wingName}">Wing</td>
+                                    <td>
+                                        <span class="badge"
+                                            th:classappend="${item.activeFlag == 'Y'} ? ' text-bg-success' : ' text-bg-secondary'"
+                                            th:text="${item.activeFlag == 'Y'} ? 'Active' : 'Inactive'"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                            th:href="@{/master/wings/{id}/edit(id=${item.wingId})}">Edit</a>
+                                        <form th:if="${item.activeFlag == 'Y'}" class="d-inline"
+                                            th:action="@{/master/wings/{id}/deactivate(id=${item.wingId},includeInactive=${includeInactive},searchText=${searchText},page=${wings.number},size=${wings.size})}"
+                                            method="post"
+                                            onsubmit="return confirm('Are you sure you want to deactivate this wing?');">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button class="btn btn-outline-danger btn-sm" type="submit">Deactivate</button>
+                                        </form>
+                                        <form th:if="${item.activeFlag != 'Y'}" class="d-inline"
+                                            th:action="@{/master/wings/{id}/restore(id=${item.wingId},includeInactive=${includeInactive},searchText=${searchText},page=${wings.number},size=${wings.size})}"
+                                            method="post">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button class="btn btn-outline-success btn-sm" type="submit">Restore</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="app-pagination-shell"
+                        th:if="${wings.totalPages > 1}"
+                        th:with="middleStart=${wings.number - 2 > 1 ? wings.number - 2 : 1},
+                                 middleEnd=${wings.number + 2 < wings.totalPages - 2 ? wings.number + 2 : wings.totalPages - 2},
+                                 showingFrom=${wings.totalElements == 0 ? 0 : wings.number * wings.size + 1},
+                                 showingTo=${wings.totalElements == 0 ? 0 : wings.number * wings.size + wings.numberOfElements}">
+                        <div class="app-pagination-summary">
+                            <div class="app-pagination-meta">
+                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
+                                <span th:text="${wings.totalElements}">10</span> entries
+                            </div>
+                            <div class="app-pagination-meta">
+                                Page <span th:text="${wings.number + 1}">1</span> of <span th:text="${wings.totalPages}">1</span>
+                            </div>
+                        </div>
+                        <nav aria-label="Wing master pagination">
+                            <ul class="pagination app-pagination mb-0">
+                                <li class="page-item" th:classappend="${wings.first} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/master/wings(page=${wings.number - 1},size=${wings.size},includeInactive=${includeInactive},searchText=${searchText})}">Previous</a>
+                                </li>
+                                <li class="page-item" th:classappend="${wings.number == 0} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/master/wings(page=0,size=${wings.size},includeInactive=${includeInactive},searchText=${searchText})}">1</a>
+                                </li>
+                                <li class="page-item disabled" th:if="${middleStart > 1}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <th:block th:if="${middleStart <= middleEnd}">
+                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
+                                        th:classappend="${pageIndex == wings.number} ? ' active'">
+                                        <a class="page-link"
+                                            th:href="@{/master/wings(page=${pageIndex},size=${wings.size},includeInactive=${includeInactive},searchText=${searchText})}"
+                                            th:text="${pageIndex + 1}">2</a>
+                                    </li>
+                                </th:block>
+                                <li class="page-item disabled" th:if="${middleEnd < wings.totalPages - 2}">
+                                    <span class="page-link app-pagination-ellipsis">...</span>
+                                </li>
+                                <li class="page-item" th:if="${wings.totalPages > 1}"
+                                    th:classappend="${wings.number == wings.totalPages - 1} ? ' active'">
+                                    <a class="page-link"
+                                        th:href="@{/master/wings(page=${wings.totalPages - 1},size=${wings.size},includeInactive=${includeInactive},searchText=${searchText})}"
+                                        th:text="${wings.totalPages}">2</a>
+                                </li>
+                                <li class="page-item" th:classappend="${wings.last} ? ' disabled'">
+                                    <a class="page-link"
+                                        th:href="@{/master/wings(page=${wings.number + 1},size=${wings.size},includeInactive=${includeInactive},searchText=${searchText})}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

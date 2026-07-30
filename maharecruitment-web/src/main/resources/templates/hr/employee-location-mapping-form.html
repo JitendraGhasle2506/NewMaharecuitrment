@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Employee Location</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}">
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}">
+    <link rel="stylesheet" th:href="@{/css/employee-location-mapping.css}">
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Employee Location Mapping', ~{::section})}">
+        <section th:with="employee=${editView.employee}">
+            <div class="card employee-location-card">
+                <div class="header employee-location-page-header">
+                    <div class="employee-location-heading">
+                        <h2>Manage Employee Location</h2>
+                        <div class="employee-location-page-meta">
+                            <span>
+                                <i class="fa-solid fa-id-badge"></i>
+                                <span th:text="${employee.employeeCode}">EMP000001</span>
+                            </span>
+                            <span>
+                                <i class="fa-solid fa-location-dot"></i>
+                                <span th:text="${#lists.size(editView.selectedLocations) + ' mapped'}">0 mapped</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="employee-location-header-actions">
+                        <a class="btn btn-outline-secondary btn-sm"
+                            th:href="@{/hr/employee-location-mappings(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Back
+                        </a>
+                        <a class="btn btn-outline-primary btn-sm"
+                            th:href="@{/hr/employees/{employeeId}(employeeId=${employee.employeeId},status='ACTIVE',type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                            <i class="fa-regular fa-address-card me-1"></i> View Employee
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="employee-location-profile-band">
+                        <div class="employee-location-profile-main">
+                            <div class="employee-location-profile-avatar"
+                                th:text="${#strings.isEmpty(employee.fullName) ? 'E' : #strings.substring(employee.fullName, 0, 1)}">
+                                E
+                            </div>
+                            <div class="employee-location-profile-copy">
+                                <h3 th:text="${employee.fullName}">Employee Name</h3>
+                                <div class="employee-location-profile-meta">
+                                    <span th:text="${employee.email}">email@domain.com</span>
+                                    <span th:text="${employee.mobile}">9999999999</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="employee-location-profile-facts">
+                            <div>
+                                <span>Project</span>
+                                <strong th:text="${employee.projectName}">Project</strong>
+                            </div>
+                            <div>
+                                <span>Designation</span>
+                                <strong th:text="${employee.designation}">Designation</strong>
+                            </div>
+                            <div>
+                                <span>Department</span>
+                                <strong th:text="${employee.department}">Department</strong>
+                            </div>
+                            <div>
+                                <span>Type</span>
+                                <strong th:text="${employee.recruitmentType != null ? employee.recruitmentType : '-'}">
+                                    INTERNAL
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="employeeLocationMappingForm" method="post" th:object="${mappingForm}"
+                        th:action="@{/hr/employee-location-mappings/{employeeId}(employeeId=${employee.employeeId},type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
+                            th:value="${_csrf.token}">
+
+                        <div class="employee-location-editor">
+                            <div class="employee-location-editor-main">
+                                <div class="employee-location-picker-panel">
+                                    <label class="form-label" for="employeeLocationPicker">
+                                        Location <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="employeeLocationPicker" class="form-select"
+                                        data-placeholder="Search and select location">
+                                        <option value="">Search and select location</option>
+                                        <option th:each="location : ${editView.availableLocations}"
+                                            th:value="${location.locationId}"
+                                            th:attr="data-label=${location.displayName}"
+                                            th:disabled="${!location.active}"
+                                            th:text="${location.displayName}">
+                                            Location
+                                        </option>
+                                    </select>
+                                    <div class="invalid-feedback d-block"
+                                        th:if="${#fields.hasErrors('selectedLocationIds')}"
+                                        th:errors="*{selectedLocationIds}">
+                                        Select at least one employee location.
+                                    </div>
+                                </div>
+                                <div class="employee-location-selected-panel">
+                                    <div class="employee-location-selected-header">
+                                        <label class="form-label mb-0">Selected Locations</label>
+                                        <div class="employee-location-selected-tools">
+                                            <span id="selectedEmployeeLocationCount" class="employee-location-count-pill">0 mapped</span>
+                                            <button type="button" id="clearEmployeeLocations"
+                                                class="employee-location-icon-button" title="Clear selected locations"
+                                                aria-label="Clear selected locations">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="selectedEmployeeLocationInputs">
+                                        <input type="hidden" th:each="location : ${selectedLocationFormItems}"
+                                            name="selectedLocationIds"
+                                            th:value="${location.locationId}"
+                                            th:attr="data-label=${location.displayName}">
+                                    </div>
+                                    <div id="selectedEmployeeLocationBox" class="employee-location-selected-box"
+                                        aria-live="polite">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="employee-location-action-row">
+                                <a class="btn btn-outline-secondary"
+                                    th:href="@{/hr/employee-location-mappings(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                                    Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> Save Location Mapping
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="employee-location-audit-panel">
+                        <div class="audit-header">
+                            <h5>Change Logs</h5>
+                            <span class="employee-location-audit-count"
+                                th:text="${#lists.size(editView.auditLogs) + ' latest'}">0 latest</span>
+                        </div>
+                        <div class="table-responsive" th:if="${!#lists.isEmpty(editView.auditLogs)}">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Actor</th>
+                                        <th>Action</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="audit : ${editView.auditLogs}">
+                                        <td th:text="${audit.occurredAt != null ? #temporals.format(audit.occurredAt, 'dd-MM-yyyy hh:mm a') : '-'}">
+                                            02-07-2026 10:40 AM
+                                        </td>
+                                        <td th:text="${audit.actorLoginId != null ? audit.actorLoginId : '-'}">HR</td>
+                                        <td th:text="${audit.actionType}">UPDATED</td>
+                                        <td>
+                                            <div class="employee-location-strong-text" th:text="${audit.summary}">Employee location mapping updated</div>
+                                            <small class="text-muted" th:text="${audit.details}">Details</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="employee-location-empty-log" th:if="${#lists.isEmpty(editView.auditLogs)}">
+                            <i class="fa-regular fa-clock"></i>
+                            <span>No changes logged yet.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:src="@{/assets/vendor/jquery/jquery-3.7.1.min.js}"></script>
+    <script th:src="@{/assets/vendor/select2/select2.min.js}"></script>
+    <script th:src="@{/js/employee-location-mapping.js}"></script>
+</body>
+
+</html>

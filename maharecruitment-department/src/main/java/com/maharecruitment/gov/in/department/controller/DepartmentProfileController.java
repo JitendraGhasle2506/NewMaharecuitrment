@@ -134,6 +134,8 @@ public class DepartmentProfileController {
         DepartmentProfileUpdateForm loadedForm = departmentProfileService.getProfileForEdit(actorEmail);
         profileForm.setDepartmentName(loadedForm.getDepartmentName());
         profileForm.setSubDepartmentName(loadedForm.getSubDepartmentName());
+        profileForm.setGstNumber(loadedForm.getGstNumber());
+        profileForm.setPanNumber(loadedForm.getPanNumber());
         profileForm.setExistingGstDocumentName(loadedForm.getExistingGstDocumentName());
         profileForm.setExistingPanDocumentName(loadedForm.getExistingPanDocumentName());
         profileForm.setExistingTanDocumentName(loadedForm.getExistingTanDocumentName());

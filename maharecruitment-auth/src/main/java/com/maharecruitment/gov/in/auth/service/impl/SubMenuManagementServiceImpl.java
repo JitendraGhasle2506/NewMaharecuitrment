@@ -1,18 +1,27 @@
 package com.maharecruitment.gov.in.auth.service.impl;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.dto.SubMenuUpsertRequest;
 import com.maharecruitment.gov.in.auth.entity.MstMenu;
 import com.maharecruitment.gov.in.auth.entity.MstSubMenu;
+import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.repository.MstMenuRepository;
 import com.maharecruitment.gov.in.auth.repository.MstSubMenuRepository;
+import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.service.SubMenuManagementService;
+import com.maharecruitment.gov.in.auth.util.InternalNavigationUrlValidator;
 
 @Service
 @Transactional
@@ -24,24 +33,43 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
 
     private final MstSubMenuRepository mstSubMenuRepository;
     private final MstMenuRepository mstMenuRepository;
+    private final RoleRepository roleRepository;
+    private final InternalNavigationUrlValidator navigationUrlValidator;
 
     public SubMenuManagementServiceImpl(
             MstSubMenuRepository mstSubMenuRepository,
-            MstMenuRepository mstMenuRepository) {
+            MstMenuRepository mstMenuRepository,
+            RoleRepository roleRepository,
+            InternalNavigationUrlValidator navigationUrlValidator) {
         this.mstSubMenuRepository = mstSubMenuRepository;
         this.mstMenuRepository = mstMenuRepository;
+        this.roleRepository = roleRepository;
+        this.navigationUrlValidator = navigationUrlValidator;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<MstSubMenu> getAll(Pageable pageable) {
-        return mstSubMenuRepository.findAll(pageable);
+        return getAll(null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MstSubMenu> getAll(String searchTerm, Pageable pageable) {
+        String normalizedSearch = normalizeOptional(searchTerm);
+        if (!StringUtils.hasText(normalizedSearch)) {
+            return mstSubMenuRepository.findAllWithMenuAndRoles(pageable);
+        }
+        return mstSubMenuRepository.searchAllWithMenuAndRoles(
+                normalizedSearch,
+                normalizedSearch.toUpperCase(),
+                pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public MstSubMenu getById(Long subMenuId) {
-        return mstSubMenuRepository.findById(subMenuId)
+        return mstSubMenuRepository.findBySubMenuId(subMenuId)
                 .orElseThrow(() -> new IllegalArgumentException("Submenu not found for id: " + subMenuId));
     }
 
@@ -76,6 +104,10 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
     @Override
     public void delete(Long subMenuId) {
         MstSubMenu existing = getById(subMenuId);
+        if (existing.getRoles() != null) {
+            existing.getRoles().clear();
+            mstSubMenuRepository.save(existing);
+        }
         mstSubMenuRepository.delete(existing);
         log.info("Submenu deleted: id={}, name={}", existing.getSubMenuId(), existing.getSubMenuNameEnglish());
     }
@@ -88,12 +120,15 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
         entity.setUrl(validated.url());
         entity.setIcon(validated.icon());
         entity.setIsActive(validated.isActive());
+        entity.setRoles(validated.roles());
     }
 
     private ValidatedSubMenu validateForCreate(SubMenuUpsertRequest request) {
         MstMenu menu = validateParentMenu(request.getMenuId());
         String nameEnglish = normalizeRequired(request.getSubMenuNameEnglish(), "Submenu name (English)");
-        String normalizedUrl = normalizeRequired(request.getUrl(), "Submenu URL");
+        String normalizedUrl = navigationUrlValidator.normalizeRequiredApplicationPath(
+                request.getUrl(),
+                "Submenu URL");
 
         if (mstSubMenuRepository.existsByMenuMenuIdAndSubMenuNameEnglishIgnoreCase(menu.getMenuId(), nameEnglish)) {
             throw new IllegalArgumentException("Submenu name already exists under selected menu: " + nameEnglish);
@@ -107,6 +142,7 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
         String controllerName = normalizeOptional(request.getControllerName());
         String icon = normalizeOptional(request.getIcon());
         Character isActive = normalizeActiveFlag(request.getIsActive());
+        Set<Role> roles = resolveRoles(menu, request.getRoleIds());
 
         return new ValidatedSubMenu(
                 menu,
@@ -115,13 +151,16 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
                 controllerName != null ? controllerName : nameEnglish,
                 normalizedUrl,
                 icon,
-                isActive);
+                isActive,
+                roles);
     }
 
     private ValidatedSubMenu validateForUpdate(Long subMenuId, SubMenuUpsertRequest request) {
         MstMenu menu = validateParentMenu(request.getMenuId());
         String nameEnglish = normalizeRequired(request.getSubMenuNameEnglish(), "Submenu name (English)");
-        String normalizedUrl = normalizeRequired(request.getUrl(), "Submenu URL");
+        String normalizedUrl = navigationUrlValidator.normalizeRequiredApplicationPath(
+                request.getUrl(),
+                "Submenu URL");
 
         if (mstSubMenuRepository.existsByMenuMenuIdAndSubMenuNameEnglishIgnoreCaseAndSubMenuIdNot(
                 menu.getMenuId(),
@@ -138,6 +177,7 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
         String controllerName = normalizeOptional(request.getControllerName());
         String icon = normalizeOptional(request.getIcon());
         Character isActive = normalizeActiveFlag(request.getIsActive());
+        Set<Role> roles = resolveRoles(menu, request.getRoleIds());
 
         return new ValidatedSubMenu(
                 menu,
@@ -146,7 +186,8 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
                 controllerName != null ? controllerName : nameEnglish,
                 normalizedUrl,
                 icon,
-                isActive);
+                isActive,
+                roles);
     }
 
     private MstMenu validateParentMenu(Long menuId) {
@@ -160,6 +201,38 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
             throw new IllegalArgumentException("Submenu can be created only under parent menu.");
         }
         return menu;
+    }
+
+    private Set<Role> resolveRoles(MstMenu parentMenu, List<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            throw new IllegalArgumentException("At least one role is required.");
+        }
+
+        List<Long> normalizedRoleIds = roleIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (normalizedRoleIds.isEmpty()) {
+            throw new IllegalArgumentException("At least one role is required.");
+        }
+
+        List<Role> roles = roleRepository.findAllById(normalizedRoleIds);
+        if (roles.size() != normalizedRoleIds.size()) {
+            throw new IllegalArgumentException("One or more selected roles are invalid.");
+        }
+
+        if (parentMenu.getRoles() == null) {
+            parentMenu.setRoles(new LinkedHashSet<>());
+        }
+        boolean parentMenuUpdated = parentMenu.getRoles().addAll(roles);
+        if (parentMenuUpdated) {
+            mstMenuRepository.save(parentMenu);
+            log.info("Parent menu roles updated while saving submenu: menuId={}, roles={}",
+                    parentMenu.getMenuId(),
+                    roles.stream().map(Role::getName).sorted().toList());
+        }
+
+        return new LinkedHashSet<>(roles);
     }
 
     private String normalizeRequired(String value, String label) {
@@ -194,6 +267,7 @@ public class SubMenuManagementServiceImpl implements SubMenuManagementService {
             String controllerName,
             String url,
             String icon,
-            Character isActive) {
+            Character isActive,
+            Set<Role> roles) {
     }
 }

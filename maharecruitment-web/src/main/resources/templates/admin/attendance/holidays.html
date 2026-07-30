@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Holiday Calendar</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .holiday-metric-card {
+            border: 1px solid rgba(26, 60, 90, 0.12);
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
+            box-shadow: 0 18px 40px rgba(26, 60, 90, 0.08);
+            padding: 1.2rem 1.35rem;
+            height: 100%;
+        }
+
+        .holiday-metric-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #5f7388;
+            margin-bottom: 0.45rem;
+        }
+
+        .holiday-metric-value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #17324d;
+        }
+
+        .holiday-panel {
+            border: 1px solid rgba(26, 60, 90, 0.1);
+            border-radius: 22px;
+            background: #fff;
+            box-shadow: 0 20px 45px rgba(26, 60, 90, 0.08);
+            padding: 1.5rem;
+            height: 100%;
+        }
+
+        .holiday-panel-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #17324d;
+            margin-bottom: 0.35rem;
+        }
+
+        .holiday-panel-copy {
+            color: #5f7388;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-grid {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0.5rem;
+            table-layout: fixed;
+        }
+
+        .calendar-grid th {
+            text-align: center;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #5f7388;
+            padding-bottom: 0.2rem;
+        }
+
+        .calendar-cell {
+            min-height: 118px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 18px;
+            background: #f8fbff;
+            padding: 0.8rem;
+            vertical-align: top;
+        }
+
+        .calendar-cell.is-outside {
+            background: #f2f5f8;
+            opacity: 0.65;
+        }
+
+        .calendar-cell.is-weekend {
+            background: #fff4f4;
+        }
+
+        .calendar-cell.is-holiday {
+            background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+            border-color: rgba(225, 29, 72, 0.24);
+        }
+
+        .calendar-cell.is-working-override {
+            background: linear-gradient(180deg, #f0fdf9 0%, #def7ec 100%);
+            border-color: rgba(8, 145, 178, 0.24);
+        }
+
+        .calendar-cell.is-today {
+            box-shadow: inset 0 0 0 2px rgba(29, 78, 216, 0.18);
+        }
+
+        .calendar-day {
+            font-weight: 800;
+            color: #17324d;
+            margin-bottom: 0.45rem;
+        }
+
+        .calendar-cell.is-holiday .calendar-day,
+        .calendar-cell.is-weekend .calendar-day {
+            color: #b42318;
+        }
+
+        .calendar-cell.is-working-override .calendar-day {
+            color: #0f766e;
+        }
+
+        .calendar-holiday-name {
+            display: block;
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: #b42318;
+            line-height: 1.3;
+        }
+
+        .calendar-holiday-tag,
+        .calendar-working-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.2rem 0.55rem;
+            margin-top: 0.5rem;
+        }
+
+        .calendar-holiday-tag {
+            background: rgba(225, 29, 72, 0.12);
+            color: #b42318;
+        }
+
+        .calendar-working-tag {
+            background: rgba(8, 145, 178, 0.12);
+            color: #0f766e;
+        }
+
+        .calendar-day-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: rgba(29, 78, 216, 0.08);
+            color: #1d4ed8;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.22rem 0.6rem;
+            margin-top: 0.55rem;
+            text-decoration: none;
+        }
+
+        .calendar-day-action:hover {
+            background: rgba(29, 78, 216, 0.14);
+            color: #1e40af;
+        }
+
+        .holiday-entry-highlight {
+            color: #b42318;
+            font-weight: 700;
+        }
+
+        .working-day-entry-highlight {
+            color: #0f766e;
+            font-weight: 700;
+        }
+
+        .file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            border-radius: 999px;
+            padding: 0.24rem 0.7rem;
+            background: rgba(8, 145, 178, 0.08);
+            color: #115e59;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .log-table td,
+        .log-table th,
+        .holiday-table td,
+        .holiday-table th {
+            vertical-align: middle;
+        }
+
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Admin', 'Holiday Calendar', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h2>Holiday Calendar</h2>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/attendance/internal-sync}">
+                            Internal Attendance Sync
+                        </a>
+                        <a class="btn btn-primary btn-sm" th:href="@{/admin/attendance/holidays(month=${selectedMonthValue})}">
+                            Add Holiday
+                        </a>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/admin/attendance/holidays(month=${selectedMonthValue})}">
+                            Add Working Day
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-lg col-md-4">
+                            <div class="holiday-metric-card">
+                                <div class="holiday-metric-label">Selected Month</div>
+                                <div class="holiday-metric-value" th:text="${selectedMonthLabel}">May 2026</div>
+                            </div>
+                        </div>
+                        <div class="col-lg col-md-4">
+                            <div class="holiday-metric-card">
+                                <div class="holiday-metric-label">Holidays In Month</div>
+                                <div class="holiday-metric-value" th:text="${monthlyHolidayCount}">0</div>
+                            </div>
+                        </div>
+                        <div class="col-lg col-md-4">
+                            <div class="holiday-metric-card">
+                                <div class="holiday-metric-label">Working Day Holidays</div>
+                                <div class="holiday-metric-value" th:text="${workingDayHolidayCount}">0</div>
+                            </div>
+                        </div>
+                        <div class="col-lg col-md-4">
+                            <div class="holiday-metric-card">
+                                <div class="holiday-metric-label">Weekend Holidays</div>
+                                <div class="holiday-metric-value" th:text="${weekendHolidayCount}">0</div>
+                            </div>
+                        </div>
+                        <div class="col-lg col-md-4">
+                            <div class="holiday-metric-card">
+                                <div class="holiday-metric-label">Weekend Working Days</div>
+                                <div class="holiday-metric-value" th:text="${monthlyWorkingDayOverrideCount}">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 align-items-start">
+                        <div class="col-xl-8">
+                            <div class="holiday-panel">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                                    <div>
+                                        <div class="holiday-panel-title">Holiday Month View</div>
+                                    </div>
+                                    <form method="get" th:action="@{/admin/attendance/holidays}" class="d-flex align-items-center gap-2">
+                                        <input type="month" name="month" class="form-control" th:value="${selectedMonthValue}">
+                                        <button type="submit" class="btn btn-outline-primary">Load</button>
+                                    </form>
+                                </div>
+
+                                <table class="calendar-grid">
+                                    <thead>
+                                        <tr>
+                                            <th>Mon</th>
+                                            <th>Tue</th>
+                                            <th>Wed</th>
+                                            <th>Thu</th>
+                                            <th>Fri</th>
+                                            <th>Sat</th>
+                                            <th>Sun</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="week : ${calendarWeeks}">
+                                            <td th:each="day : ${week}"
+                                                class="calendar-cell"
+                                                th:classappend="${(!day.currentMonth ? ' is-outside' : '') + (day.weekend ? ' is-weekend' : '') + (day.holiday ? ' is-holiday' : '') + (day.weekOffWorkingDay ? ' is-working-override' : '') + (day.today ? ' is-today' : '')}">
+                                                <div class="calendar-day" th:text="${day.date.dayOfMonth}">1</div>
+                                                <span class="calendar-holiday-name" th:if="${day.holiday}" th:text="${day.holidayName}">Holiday Name</span>
+                                                <span class="calendar-holiday-tag" th:if="${day.holiday}"
+                                                    th:text="${day.workingDayHoliday} ? 'Working day holiday' : 'Weekend holiday'">
+                                                    Working day holiday
+                                                </span>
+                                                <span class="calendar-working-tag" th:if="${day.weekOffWorkingDay}">
+                                                    Weekend working day
+                                                </span>
+                                                <a class="calendar-day-action"
+                                                    th:if="${day.currentMonth and !day.holiday and !day.weekend}"
+                                                    th:href="@{/admin/attendance/holidays(month=${selectedMonthValue},date=${day.date})}">
+                                                    Add Holiday
+                                                </a>
+                                                <a class="calendar-day-action"
+                                                    th:if="${day.currentMonth and day.weekend and !day.holiday and !day.weekOffWorkingDay}"
+                                                    th:href="@{/admin/attendance/holidays(month=${selectedMonthValue},workingDate=${day.date})}">
+                                                    Add Working Day
+                                                </a>
+                                                <a class="calendar-day-action"
+                                                    th:if="${day.currentMonth and day.weekOffWorkingDay}"
+                                                    th:href="@{/admin/attendance/holidays(month=${selectedMonthValue},workingDayId=${day.weekOffWorkingDayId})}">
+                                                    Manage Working Day
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-4">
+                            <div class="holiday-panel mb-4">
+                                <div class="holiday-panel-title"
+                                    th:text="${holidayForm.id != null} ? 'Edit Holiday' : 'Add Holiday'">
+                                    Add Holiday
+                                </div>
+
+                                <form th:object="${holidayForm}" th:action="@{/admin/attendance/holidays}" method="post" class="row g-3">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input type="hidden" th:field="*{id}">
+                                    <input type="hidden" th:field="*{viewMonth}">
+
+                                    <div class="col-12">
+                                        <label class="form-label">Holiday Date <span class="text-danger">*</span></label>
+                                        <input type="date" th:field="*{holidayDate}" class="form-control">
+                                        <div class="text-danger small mt-1"
+                                            th:if="${#fields.hasErrors('holidayDate')}"
+                                            th:errors="*{holidayDate}"></div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Holiday Name <span class="text-danger">*</span></label>
+                                        <input type="text" th:field="*{holidayName}" class="form-control"
+                                            placeholder="Enter holiday name">
+                                        <div class="text-danger small mt-1"
+                                            th:if="${#fields.hasErrors('holidayName')}"
+                                            th:errors="*{holidayName}"></div>
+                                    </div>
+
+                                    <div class="col-12 d-flex flex-wrap gap-2">
+                                        <button type="submit" class="btn btn-primary"
+                                            th:text="${holidayForm.id != null} ? 'Save Holiday' : 'Add Holiday'">
+                                            Add Holiday
+                                        </button>
+                                        <a class="btn btn-outline-secondary" th:href="@{/admin/attendance/holidays(month=${selectedMonthValue})}">
+                                            Reset
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="holiday-panel">
+                                <div class="holiday-panel-title"
+                                    th:text="${workingDayForm.id != null} ? 'Edit Working Day' : 'Add Working Day'">
+                                    Add Working Day
+                                </div>
+
+                                <form th:object="${workingDayForm}" th:action="@{/admin/attendance/holidays/working-days}" method="post" enctype="multipart/form-data" class="row g-3">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input type="hidden" th:field="*{id}">
+                                    <input type="hidden" th:field="*{viewMonth}">
+                                    <input type="hidden" th:field="*{officeOrderOriginalName}">
+                                    <input type="hidden" th:field="*{officeOrderStoredName}">
+                                    <input type="hidden" th:field="*{officeOrderPath}">
+                                    <input type="hidden" th:field="*{officeOrderContentType}">
+                                    <input type="hidden" th:field="*{officeOrderFileSize}">
+
+                                    <div class="col-12">
+                                        <label class="form-label">Working Day Date <span class="text-danger">*</span></label>
+                                        <input type="date" th:field="*{workingDate}" class="form-control">
+                                        <div class="text-danger small mt-1"
+                                            th:if="${#fields.hasErrors('workingDate')}"
+                                            th:errors="*{workingDate}"></div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Office Order <span class="text-danger">*</span></label>
+                                        <input type="file" th:field="*{officeOrderFile}" class="form-control" accept="application/pdf,.pdf">
+                                        <div class="text-danger small mt-1"
+                                            th:if="${#fields.hasErrors('officeOrderFile')}"
+                                            th:errors="*{officeOrderFile}"></div>
+                                        <div class="form-text mt-2" th:if="${workingDayForm.officeOrderPath}">
+                                            Existing file:
+                                            <span class="fw-semibold" th:text="${workingDayForm.officeOrderOriginalName}">office-order.pdf</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12" th:if="${selectedWorkingDayDocumentPathToken != null}">
+                                        <a class="file-chip"
+                                            th:href="@{/documents/view(path=${selectedWorkingDayDocumentPathToken})}"
+                                            target="_blank">
+                                            View Current Office Order
+                                        </a>
+                                    </div>
+
+                                    <div class="col-12 d-flex flex-wrap gap-2">
+                                        <button type="submit" class="btn btn-success"
+                                            th:text="${workingDayForm.id != null} ? 'Save Working Day' : 'Add Working Day'">
+                                            Add Working Day
+                                        </button>
+                                        <a class="btn btn-outline-secondary" th:href="@{/admin/attendance/holidays(month=${selectedMonthValue})}">
+                                            Reset
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mt-1">
+                        <div class="col-xl-6">
+                            <div class="holiday-panel">
+                                <div class="holiday-panel-title">Holiday List For Selected Month</div>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover holiday-table mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Day</th>
+                                                <th>Holiday Name</th>
+                                                <th>Type</th>
+                                                <th class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${#lists.isEmpty(monthHolidays)}">
+                                                <td colspan="5" class="text-center text-muted">No holidays are configured for this month.</td>
+                                            </tr>
+                                            <tr th:each="holiday : ${monthHolidays}">
+                                                <td class="holiday-entry-highlight"
+                                                    th:text="${#temporals.format(holiday.holidayDate, 'dd-MM-yyyy')}">07 May 2026</td>
+                                                <td class="holiday-entry-highlight"
+                                                    th:text="${#temporals.format(holiday.holidayDate, 'EEEE')}">Thursday</td>
+                                                <td class="holiday-entry-highlight" th:text="${holiday.holidayName}">Holiday Name</td>
+                                                <td>
+                                                    <span class="badge text-bg-danger"
+                                                        th:text="${holiday.holidayDate.dayOfWeek.name() == 'SATURDAY' or holiday.holidayDate.dayOfWeek.name() == 'SUNDAY'} ? 'Weekend' : 'Working Day'">
+                                                        Working Day
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <a class="btn btn-outline-primary btn-sm"
+                                                        th:href="@{/admin/attendance/holidays(month=${selectedMonthValue},holidayId=${holiday.id})}">
+                                                        Manage
+                                                    </a>
+                                                    <form class="d-inline"
+                                                        th:action="@{/admin/attendance/holidays/{holidayId}/archive(holidayId=${holiday.id})}"
+                                                        method="post">
+                                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                        <input type="hidden" name="month" th:value="${selectedMonthValue}">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                            onclick="return confirm('Archive this holiday?')">
+                                                            Archive
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <div class="holiday-panel">
+                                <div class="holiday-panel-title">Weekend Working Days For Selected Month</div>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover holiday-table mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Day</th>
+                                                <th>Office Order</th>
+                                                <th class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${#lists.isEmpty(monthWorkingDays)}">
+                                                <td colspan="4" class="text-center text-muted">No weekend working-day overrides are configured for this month.</td>
+                                            </tr>
+                                            <tr th:each="workingDay : ${monthWorkingDays}">
+                                                <td class="working-day-entry-highlight"
+                                                    th:text="${#temporals.format(workingDay.workingDate, 'dd-MM-yyyy')}">09 May 2026</td>
+                                                <td class="working-day-entry-highlight"
+                                                    th:text="${#temporals.format(workingDay.workingDate, 'EEEE')}">Saturday</td>
+                                                <td>
+                                                    <a class="file-chip"
+                                                        th:href="@{/documents/view(path=${workingDay.documentPathToken})}"
+                                                        target="_blank"
+                                                        th:text="${workingDay.officeOrderOriginalName}">
+                                                        office-order.pdf
+                                                    </a>
+                                                </td>
+                                                <td class="text-center">
+                                                    <a class="btn btn-outline-primary btn-sm"
+                                                        th:href="@{/admin/attendance/holidays(month=${selectedMonthValue},workingDayId=${workingDay.id})}">
+                                                        Manage
+                                                    </a>
+                                                    <form class="d-inline"
+                                                        th:action="@{/admin/attendance/holidays/working-days/{workingDayId}/archive(workingDayId=${workingDay.id})}"
+                                                        method="post">
+                                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                        <input type="hidden" name="month" th:value="${selectedMonthValue}">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                            onclick="return confirm('Archive this working-day override?')">
+                                                            Archive
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mt-1">
+                        <div class="col-xl-6">
+                            <div class="holiday-panel">
+                                <div class="holiday-panel-title">Holiday Activity Log</div>
+                                <div class="table-responsive" th:if="${selectedHoliday != null}">
+                                    <table class="table table-sm table-bordered log-table mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>When</th>
+                                                <th>Action</th>
+                                                <th>Actor</th>
+                                                <th>Summary</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${#lists.isEmpty(activityTimeline)}">
+                                                <td colspan="4" class="text-center text-muted">No audit entries found for this holiday.</td>
+                                            </tr>
+                                            <tr th:each="event : ${activityTimeline}">
+                                                <td th:text="${#temporals.format(event.occurredAt, 'dd-MM-yyyy hh:mm a')}">07 May 2026 03:15 PM</td>
+                                                <td>
+                                                    <span class="badge text-bg-light border" th:text="${event.actionType}">UPDATE</span>
+                                                </td>
+                                                <td th:text="${event.actorName != null ? event.actorName : event.actorLoginId}">Admin</td>
+                                                <td>
+                                                    <div class="fw-semibold" th:text="${event.activitySummary}">Holiday updated</div>
+                                                    <div class="text-muted small" th:if="${event.activityDetails}" th:text="${event.activityDetails}"></div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <div class="holiday-panel">
+                                <div class="holiday-panel-title">Working Day Activity Log</div>
+                                <p class="holiday-panel-copy" th:if="${selectedWorkingDay != null and selectedWorkingDayDocumentPathToken != null}">
+                                    <a class="file-chip"
+                                        th:href="@{/documents/view(path=${selectedWorkingDayDocumentPathToken})}"
+                                        target="_blank"
+                                        th:text="${selectedWorkingDay.officeOrderOriginalName}">
+                                        office-order.pdf
+                                    </a>
+                                </p>
+
+                                <div class="table-responsive" th:if="${selectedWorkingDay != null}">
+                                    <table class="table table-sm table-bordered log-table mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>When</th>
+                                                <th>Action</th>
+                                                <th>Actor</th>
+                                                <th>Summary</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${#lists.isEmpty(workingDayActivityTimeline)}">
+                                                <td colspan="4" class="text-center text-muted">No audit entries found for this working-day override.</td>
+                                            </tr>
+                                            <tr th:each="event : ${workingDayActivityTimeline}">
+                                                <td th:text="${#temporals.format(event.occurredAt, 'dd-MM-yyyy hh:mm a')}">07 May 2026 03:15 PM</td>
+                                                <td>
+                                                    <span class="badge text-bg-light border" th:text="${event.actionType}">UPDATE</span>
+                                                </td>
+                                                <td th:text="${event.actorName != null ? event.actorName : event.actorLoginId}">Admin</td>
+                                                <td>
+                                                    <div class="fw-semibold" th:text="${event.activitySummary}">Working day updated</div>
+                                                    <div class="text-muted small" th:if="${event.activityDetails}" th:text="${event.activityDetails}"></div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>
+

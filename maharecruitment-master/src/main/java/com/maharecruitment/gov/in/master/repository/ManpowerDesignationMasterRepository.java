@@ -18,6 +18,10 @@ public interface ManpowerDesignationMasterRepository extends JpaRepository<Manpo
 
     Optional<ManpowerDesignationMaster> findByDesignationIdAndActiveFlagIgnoreCase(Long designationId, String activeFlag);
 
+    Optional<ManpowerDesignationMaster> findFirstByDesignationNameIgnoreCaseAndActiveFlagIgnoreCase(
+            String designationName,
+            String activeFlag);
+
     @Query("""
             SELECT COUNT(d) > 0
             FROM ManpowerDesignationMaster d

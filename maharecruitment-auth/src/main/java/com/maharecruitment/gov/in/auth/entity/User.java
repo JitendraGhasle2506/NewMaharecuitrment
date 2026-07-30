@@ -1,6 +1,6 @@
 package com.maharecruitment.gov.in.auth.entity;
-
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,14 +25,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+@Entity
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "users")
 @ToString
 public class User implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -51,6 +52,10 @@ public class User implements Serializable {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "is_active", nullable = false)
+    private Boolean active = true;
+
+    // ✅ FIXED
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "users_roles",
@@ -64,6 +69,9 @@ public class User implements Serializable {
     @JoinColumn(name = "department_registration_id")
     private DepartmentRegistrationEntity departmentRegistrationId;
 
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
     @Transient
     private String captcha;
 
@@ -72,6 +80,21 @@ public class User implements Serializable {
 
     @Transient
     private String realCaptcha;
+
+    // ✅ CRITICAL FIX
+    public void setRoles(List<Role> roles) {
+        this.roles.clear();
+        if (roles != null) {
+            this.roles.addAll(roles);
+        }
+    }
+
+    // ✅ Helper (BEST PRACTICE)
+    public void addRole(Role role) {
+        if (role != null) {
+            this.roles.add(role);
+        }
+    }
 
     public List<Long> getRoleIds() {
         return roles.stream().map(Role::getId).collect(Collectors.toList());

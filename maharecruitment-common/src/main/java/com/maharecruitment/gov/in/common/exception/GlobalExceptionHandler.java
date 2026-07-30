@@ -2,9 +2,14 @@ package com.maharecruitment.gov.in.common.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+
+import com.maharecruitment.gov.in.common.sms.exception.SmsGatewayException;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -19,6 +24,22 @@ public class GlobalExceptionHandler {
         model.addAttribute("error", "Application Error");
         model.addAttribute("message", ex.getMessage());
         model.addAttribute("icon", "400.svg");
+
+        return "error/custom-error";
+    }
+
+    @ExceptionHandler(SmsGatewayException.class)
+    public String handleSmsGatewayException(
+            SmsGatewayException ex,
+            Model model,
+            HttpServletResponse response) {
+        LOGGER.warn("SMS gateway exception handled: {}", ex.getMessage());
+
+        response.setStatus(HttpStatus.SERVICE_UNAVAILABLE.value());
+        model.addAttribute("status", HttpStatus.SERVICE_UNAVAILABLE.value());
+        model.addAttribute("error", "SMS Delivery Error");
+        model.addAttribute("message", "Unable to send SMS at this time. Please try again later.");
+        model.addAttribute("icon", "500.svg");
 
         return "error/custom-error";
     }

@@ -15,9 +15,13 @@ public interface ProjectMstService {
 
     ProjectResponse getById(Long projectId);
 
-    Page<ProjectResponse> getAll(Pageable pageable);
+    Page<ProjectResponse> getAll(boolean includeInactive, Pageable pageable);
 
-    void delete(Long projectId);
+    Page<ProjectResponse> getAll(Long cellId, boolean includeInactive, Pageable pageable);
+
+    void softDelete(Long projectId);
+
+    void restore(Long projectId);
 
     ProjectResponse upsertFromDepartmentApplication(
             String projectName,

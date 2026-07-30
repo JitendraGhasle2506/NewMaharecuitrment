@@ -33,7 +33,7 @@
                                     th:text="${projectApp.projectName}"></span></p>
                             <p class="mb-0"><strong>Status:</strong>
                                 <span class="badge text-bg-info" th:if="${projectApp.applicationStatus != null}"
-                                    th:text="${projectApp.applicationStatus.getStatusCode() + ' - ' + projectApp.applicationStatus.name()}"></span>
+                                    th:text="${#strings.replace(projectApp.applicationStatus.name(), '_', ' ')}"></span>
                                 <span th:if="${projectApp.applicationStatus == null}">-</span>
                             </p>
                         </div>
@@ -46,8 +46,13 @@
                             <p class="mb-1"><strong>Amount:</strong> INR <span
                                     th:text="${payment.totalAmount != null ? #numbers.formatDecimal(payment.totalAmount, 1, 'COMMA', 2, 'POINT') : '0.00'}"></span>
                             </p>
-                            <p class="mb-0"><strong>PI Reference:</strong> <span
+                            <p class="mb-1"><strong>TI Reference:</strong> <span
                                     th:text="${payment.proformaInvoiceId}"></span></p>
+                            <p class="mb-1"><strong>Payment Mode:</strong> <span
+                                    th:text="${payment.paymentMode}"></span></p>
+                            <p class="mb-0" th:if="${payment.paymentMode == 'CHEQUE'}">
+                                <strong>Cheque No:</strong> <span th:text="${payment.chequeNumber}"></span>
+                            </p>
                         </div>
                     </div>
 
@@ -67,39 +72,25 @@
 
                     <hr />
 
-                    <!-- Review Action block using separate tags for priority -->
-                    <div
-                        th:if="${payment.applicationStatus != null and (payment.applicationStatus.getStatusCode() == 2 or payment.applicationStatus.getStatusCode() == 7)}">
-                        <div class="review-section mt-4" sec:authorize="hasAnyRole('ROLE_HR', 'ROLE_AUDITOR')">
-                            <h5 class="section-title mb-3"
-                                style="color: #2c3e50; border-left: 4px solid #9b59b6; padding-left: 10px;">Review
-                                Action
+                    <!-- Review Action block: Only visible to Auditor when in Auditor Review status -->
+                    <div th:if="${payment.applicationStatus != null and payment.applicationStatus.getStatusCode() == 7}" sec:authorize="hasAuthority('ROLE_AUDITOR')">
+                        <div class="review-section mt-4">
+                            <h5 class="section-title mb-3" style="color: #2c3e50; border-left: 4px solid #9b59b6; padding-left: 10px;">
+                                Auditor Review Action
                             </h5>
                             <form id="reviewForm">
                                 <input type="hidden" id="paymentId" th:value="${payment.id}" />
                                 <div class="row g-3">
-                                    <div class="col-md-4" th:if="${payment.applicationStatus.getStatusCode() == 2}"
-                                        sec:authorize="hasRole('ROLE_HR')">
-                                        <label class="form-label fw-semibold">HR Decision</label>
-                                        <select id="hrDecision" class="form-select">
-                                            <option value="">-- Select Decision --</option>
-                                            <option th:each="d : ${hrDecisions}" th:value="${d}" th:text="${d}">
-                                            </option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4" th:if="${payment.applicationStatus.getStatusCode() == 7}"
-                                        sec:authorize="hasRole('ROLE_AUDITOR')">
+                                    <div class="col-md-4">
                                         <label class="form-label fw-semibold">Auditor Decision</label>
                                         <select id="auditorDecision" class="form-select">
                                             <option value="">-- Select Decision --</option>
-                                            <option th:each="d : ${auditorDecisions}" th:value="${d}" th:text="${d}">
-                                            </option>
+                                            <option th:each="d : ${auditorDecisions}" th:value="${d}" th:text="${d}"></option>
                                         </select>
                                     </div>
                                     <div class="col-md-8">
                                         <label class="form-label fw-semibold">Review Remarks</label>
-                                        <textarea id="remarks" class="form-control" rows="3"
-                                            placeholder="Enter remarks..."></textarea>
+                                        <textarea id="remarks" class="form-control" rows="3" placeholder="Enter remarks..."></textarea>
                                     </div>
                                 </div>
                                 <div class="mt-4 text-center">
@@ -109,6 +100,15 @@
                                 </div>
                             </form>
                         </div>
+                    </div>
+
+                    <!-- Read-only status for HR or others -->
+                    <div th:if="${payment.applicationStatus != null and payment.applicationStatus.getStatusCode() != 1}" sec:authorize="hasAuthority('ROLE_HR')">
+                         <div class="alert alert-info mt-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Current Status:</strong> <span th:text="${payment.applicationStatus.name()}"></span>
+                            <p class="mb-0 small">HR approval is not required for this payment workflow. You are viewing this record for status tracking only.</p>
+                         </div>
                     </div>
 
                     <!-- Activity Timeline -->

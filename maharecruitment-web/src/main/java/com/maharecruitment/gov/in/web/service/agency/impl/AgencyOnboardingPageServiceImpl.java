@@ -3,7 +3,6 @@ package com.maharecruitment.gov.in.web.service.agency.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
@@ -15,17 +14,18 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
-import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
-import com.maharecruitment.gov.in.auth.repository.UserRepository;
-import com.maharecruitment.gov.in.master.entity.AgencyMaster;
-import com.maharecruitment.gov.in.master.repository.AgencyMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEmploymentEntity;
@@ -40,21 +40,25 @@ import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDet
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingEmploymentForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
-import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardedEmployeeView;
+import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
 import com.maharecruitment.gov.in.web.service.agency.AgencyOnboardingPageService;
+import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
+import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardedEmployeeView;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
+import com.maharecruitment.gov.in.web.service.onboarding.CandidateIdentityValidationService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 
 @Service
 @Transactional(readOnly = true)
 public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageService {
 
+    private static final Logger log = LoggerFactory.getLogger(AgencyOnboardingPageServiceImpl.class);
     private static final Pattern AADHAAR_PATTERN = Pattern.compile("^[0-9]{12}$");
     private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
     private static final String DEFAULT_VALUE = "-";
+    private static final List<String> CURRENT_ONBOARDED_STATUSES = List.of("ACTIVE", "RESIGNED");
 
-    private final UserRepository userRepository;
-    private final AgencyMasterRepository agencyMasterRepository;
+    private final AgencyAccessService agencyAccessService;
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
     private final AgencyCandidatePreOnboardingRepository preOnboardingRepository;
     private final EmployeeRepository employeeRepository;
@@ -62,11 +66,11 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     private final DepartmentRegistrationRepository departmentRegistrationRepository;
     private final SubDepartmentRepository subDepartmentRepository;
     private final ResourceLevelExperienceRepository resourceLevelExperienceRepository;
+    private final CandidateIdentityValidationService candidateIdentityValidationService;
     private final FileStorageService fileStorageService;
 
     public AgencyOnboardingPageServiceImpl(
-            UserRepository userRepository,
-            AgencyMasterRepository agencyMasterRepository,
+            AgencyAccessService agencyAccessService,
             RecruitmentInterviewDetailRepository interviewDetailRepository,
             AgencyCandidatePreOnboardingRepository preOnboardingRepository,
             EmployeeRepository employeeRepository,
@@ -74,9 +78,9 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             DepartmentRegistrationRepository departmentRegistrationRepository,
             SubDepartmentRepository subDepartmentRepository,
             ResourceLevelExperienceRepository resourceLevelExperienceRepository,
+            CandidateIdentityValidationService candidateIdentityValidationService,
             FileStorageService fileStorageService) {
-        this.userRepository = userRepository;
-        this.agencyMasterRepository = agencyMasterRepository;
+        this.agencyAccessService = agencyAccessService;
         this.interviewDetailRepository = interviewDetailRepository;
         this.preOnboardingRepository = preOnboardingRepository;
         this.employeeRepository = employeeRepository;
@@ -84,19 +88,23 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.resourceLevelExperienceRepository = resourceLevelExperienceRepository;
+        this.candidateIdentityValidationService = candidateIdentityValidationService;
         this.fileStorageService = fileStorageService;
     }
 
     @Override
     public AgencyPreOnboardingForm loadPreOnboardingForm(String actorEmail, Long recruitmentInterviewDetailId) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        RecruitmentInterviewDetailEntity candidate = loadSelectedCandidate(recruitmentInterviewDetailId, context.agencyId());
+        RecruitmentInterviewDetailEntity candidate = loadSelectedCandidate(recruitmentInterviewDetailId,
+                context.agencyId());
         AgencyCandidatePreOnboardingEntity existing = preOnboardingRepository
                 .findByInterviewDetailIdAndAgencyIdForForm(recruitmentInterviewDetailId, context.agencyId())
                 .orElse(null);
+        assertPreOnboardingEditable(existing);
 
         AgencyPreOnboardingForm form = new AgencyPreOnboardingForm();
-        DepartmentInfo departmentInfo = resolveDepartmentInfo(candidate.getRecruitmentNotification().getDepartmentRegistrationId());
+        DepartmentInfo departmentInfo = resolveDepartmentInfo(
+                candidate.getRecruitmentNotification().getDepartmentRegistrationId());
         BigDecimal minExperienceYears = resolveMinExperienceYears(
                 candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null);
 
@@ -118,8 +126,10 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 && candidate.getDesignationVacancy().getDesignationMst() != null
                         ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
                         : DEFAULT_VALUE);
-        form.setLevelCode(candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null);
-        form.setAgencyName(candidate.getAgency() != null ? candidate.getAgency().getAgencyName() : context.agencyName());
+        form.setLevelCode(
+                candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null);
+        form.setAgencyName(
+                candidate.getAgency() != null ? candidate.getAgency().getAgencyName() : context.agencyName());
         form.setMinExperienceYears(minExperienceYears);
 
         if (existing != null) {
@@ -145,17 +155,36 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             throw new RecruitmentNotificationException("Pre-onboarding form is required.");
         }
 
+        log.info(
+                "Processing agency pre-onboarding submission. candidateId={}, actorEmail={}, preOnboardingId={}",
+                recruitmentInterviewDetailId,
+                actorEmail,
+                form.getPreOnboardingId());
+
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
-        RecruitmentInterviewDetailEntity candidate = loadSelectedCandidate(recruitmentInterviewDetailId, context.agencyId());
+        RecruitmentInterviewDetailEntity candidate = loadSelectedCandidate(recruitmentInterviewDetailId,
+                context.agencyId());
         AgencyCandidatePreOnboardingEntity existing = preOnboardingRepository
                 .findByInterviewDetailIdAndAgencyIdForForm(recruitmentInterviewDetailId, context.agencyId())
                 .orElse(null);
+        assertPreOnboardingEditable(existing);
+        applyExistingCompanyPayrollProofReference(form, existing);
 
         List<NormalizedEmployment> employmentRows = normalizeEmploymentRows(form.getPreviousEmployments());
         BigDecimal minExperienceYears = resolveMinExperienceYears(
                 candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null);
         ExperienceBreakdown experience = calculateExperience(employmentRows);
         validateForm(form, employmentRows, experience, minExperienceYears);
+        String normalizedAadhaar = normalizeAadhaar(form.getAadhaar());
+        String normalizedPan = normalizePan(form.getPan());
+        String normalizedEmail = normalizeEmail(form.getEmail());
+        String normalizedMobile = normalizeMobile(form.getMobile());
+        candidateIdentityValidationService.validateUniqueCandidateDetails(
+                existing != null ? existing.getPreOnboardingId() : null,
+                normalizedAadhaar,
+                normalizedPan,
+                normalizedEmail,
+                normalizedMobile);
 
         List<String> newlyUploadedPaths = new ArrayList<>();
         List<String> replacedPaths = new ArrayList<>();
@@ -173,6 +202,12 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                     form.getExperienceDoc(),
                     "recruitment/agency-pre-onboarding/experience",
                     newlyUploadedPaths);
+            UploadedDocument companyPayrollProof = form.isCompanyPayrollMoreThanThreeMonths()
+                    ? storeOptionalDocument(
+                            form.getCompanyPayrollProof(),
+                            "recruitment/agency-pre-onboarding/company-payroll",
+                            newlyUploadedPaths)
+                    : null;
             UploadedDocument photoDocument = storeOptionalDocument(
                     form.getUploadImage(),
                     "recruitment/agency-pre-onboarding/photo",
@@ -188,14 +223,20 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
 
             entity.setAgencyUserId(context.userId());
             entity.setCandidateName(form.getName().trim());
-            entity.setCandidateEmail(form.getEmail().trim());
-            entity.setCandidateMobile(form.getMobile().trim());
+            entity.setCandidateEmail(normalizedEmail);
+            entity.setCandidateMobile(normalizedMobile);
             entity.setDateOfBirth(form.getDob());
+            entity.setGender(form.getGender() != null ? form.getGender().trim() : null);
+            entity.setBloodGroup(form.getBloodGroup() != null ? form.getBloodGroup().trim() : null);
             entity.setAddress(form.getAddress().trim());
+            entity.setEmergencyContactName(form.getEmergencyContactName() != null ? form.getEmergencyContactName().trim() : null);
+            entity.setEmergencyContactRelation(form.getEmergencyContactRelation() != null ? form.getEmergencyContactRelation().trim() : null);
+            entity.setEmergencyContactMobile(form.getEmergencyContactMobile() != null ? form.getEmergencyContactMobile().trim() : null);
+            entity.setEmergencyContactAltMobile(form.getEmergencyContactAltMobile() != null ? form.getEmergencyContactAltMobile().trim() : null);
             entity.setJoiningDate(form.getJoiningDate());
-            entity.setOnboardingDate(form.getOnboardingDate());
-            entity.setAadhaarNumber(form.getAadhaar().trim());
-            entity.setPanNumber(form.getPan().trim().toUpperCase());
+            entity.setOnboardingDate(null);
+            entity.setAadhaarNumber(normalizedAadhaar);
+            entity.setPanNumber(normalizedPan);
             entity.setTotalExperienceYears(experience.years());
             entity.setTotalExperienceMonths(experience.months());
             entity.setDocEducationalCert(form.isDocEducationalCert());
@@ -209,6 +250,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             entity.setDocPassportPhoto(form.isDocPassportPhoto());
             entity.setDocAadhaar(form.isDocAadhaar());
             entity.setDocPan(form.isDocPan());
+            entity.setCompanyPayrollMoreThanThreeMonths(form.isCompanyPayrollMoreThanThreeMonths());
             entity.setAgencyVerified(form.isAgencyFlag());
             entity.setSubmittedAt(LocalDateTime.now());
             entity.replacePreviousEmployments(toEmploymentEntities(employmentRows));
@@ -237,6 +279,24 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                     entity::setExperienceDocFilePath,
                     entity::setExperienceDocFileType,
                     entity::setExperienceDocFileSize);
+            if (form.isCompanyPayrollMoreThanThreeMonths()) {
+                applyUploadedDocument(
+                        companyPayrollProof,
+                        entity.getCompanyPayrollProofFilePath(),
+                        replacedPaths,
+                        entity::setCompanyPayrollProofOriginalName,
+                        entity::setCompanyPayrollProofFilePath,
+                        entity::setCompanyPayrollProofFileType,
+                        entity::setCompanyPayrollProofFileSize);
+            } else {
+                clearDocument(
+                        entity.getCompanyPayrollProofFilePath(),
+                        replacedPaths,
+                        entity::setCompanyPayrollProofOriginalName,
+                        entity::setCompanyPayrollProofFilePath,
+                        entity::setCompanyPayrollProofFileType,
+                        entity::setCompanyPayrollProofFileSize);
+            }
             applyUploadedDocument(
                     photoDocument,
                     entity.getPhotoFilePath(),
@@ -248,8 +308,19 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
 
             preOnboardingRepository.save(entity);
             replacedPaths.forEach(fileStorageService::deleteQuietly);
+            log.info(
+                    "Agency pre-onboarding saved successfully. candidateId={}, actorEmail={}, preOnboardingId={}",
+                    recruitmentInterviewDetailId,
+                    actorEmail,
+                    entity.getPreOnboardingId());
         } catch (RuntimeException ex) {
             newlyUploadedPaths.forEach(fileStorageService::deleteQuietly);
+            log.warn(
+                    "Agency pre-onboarding save failed. candidateId={}, actorEmail={}, preOnboardingId={}, reason={}",
+                    recruitmentInterviewDetailId,
+                    actorEmail,
+                    existing != null ? existing.getPreOnboardingId() : form.getPreOnboardingId(),
+                    ex.getMessage());
             throw ex;
         }
     }
@@ -266,32 +337,61 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     }
 
     @Override
-    public List<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail) {
-        return getEmployeesByStatus(actorEmail, "ACTIVE");
+    public Page<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail, String search, Pageable pageable) {
+        return getEmployeesByStatus(actorEmail, "ACTIVE", search, pageable);
     }
 
     @Override
-    public List<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status) {
+    public Page<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status, String search, Pageable pageable) {
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "ACTIVE";
-        return employeeRepository.findByAgencyAgencyIdAndStatusOrderByOnboardingDateDescEmployeeIdDesc(
-                        context.agencyId(),
-                        normalizedStatus)
-                .stream()
+        
+        String searchPattern = StringUtils.hasText(search) ? "%" + search.trim().toUpperCase() + "%" : null;
+
+        Page<EmployeeEntity> pagedEntities = employeeRepository.findByAgencyAndStatusWithSearch(
+                context.agencyId(),
+                normalizedStatus,
+                searchPattern,
+                pageable);
+
+        List<AgencyOnboardedEmployeeView> content = pagedEntities.getContent().stream()
                 .map(this::toOnboardedEmployeeView)
                 .toList();
+
+        return new PageImpl<>(content, pageable, pagedEntities.getTotalElements());}
+    public Page<AgencyOnboardedEmployeeView> getOnboardedEmployees(String actorEmail, Pageable pageable) {
+        return getEmployeesByStatuses(actorEmail, CURRENT_ONBOARDED_STATUSES, pageable);
+    }
+
+    @Override
+    public Page<AgencyOnboardedEmployeeView> getEmployeesByStatus(String actorEmail, String status, Pageable pageable) {
+        String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "ACTIVE";
+        return getEmployeesByStatuses(actorEmail, List.of(normalizedStatus), pageable);
     }
 
     @Override
     @Transactional
-    public void markEmployeeResigned(String actorEmail, Long employeeId) {
+    public void markEmployeeResigned(String actorEmail, Long employeeId, LocalDate resignationDate) {
         if (employeeId == null || employeeId < 1) {
             throw new RecruitmentNotificationException("Employee id is required.");
+        }
+        if (resignationDate == null) {
+            throw new RecruitmentNotificationException("Resignation date is required.");
+        }
+        if (resignationDate.isAfter(LocalDate.now())) {
+            throw new RecruitmentNotificationException("Resignation date cannot be in the future.");
         }
 
         AgencyUserContext context = resolveAgencyUserContext(actorEmail);
         EmployeeEntity employee = employeeRepository.findByEmployeeIdAndAgencyAgencyId(employeeId, context.agencyId())
                 .orElseThrow(() -> new RecruitmentNotificationException("Employee not found for this agency."));
+
+        if (employee.getJoiningDate() != null && resignationDate.isBefore(employee.getJoiningDate())) {
+            throw new RecruitmentNotificationException("Resignation date cannot be before joining date (" +
+                    employee.getJoiningDate().format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+                    + ").");
+        }
+
         if ("RESIGNED".equalsIgnoreCase(employee.getStatus())) {
             throw new RecruitmentNotificationException("Employee is already marked as resigned.");
         }
@@ -314,7 +414,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         }
 
         employee.setStatus("RESIGNED");
-        employee.setResignationDate(LocalDate.now());
+        employee.setResignationDate(resignationDate);
         employeeRepository.save(employee);
     }
 
@@ -325,9 +425,14 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         form.setEmail(existing.getCandidateEmail());
         form.setMobile(existing.getCandidateMobile());
         form.setDob(existing.getDateOfBirth());
+        form.setGender(existing.getGender());
+        form.setBloodGroup(existing.getBloodGroup());
         form.setAddress(existing.getAddress());
+        form.setEmergencyContactName(existing.getEmergencyContactName());
+        form.setEmergencyContactRelation(existing.getEmergencyContactRelation());
+        form.setEmergencyContactMobile(existing.getEmergencyContactMobile());
+        form.setEmergencyContactAltMobile(existing.getEmergencyContactAltMobile());
         form.setJoiningDate(existing.getJoiningDate());
-        form.setOnboardingDate(existing.getOnboardingDate());
         form.setAadhaar(existing.getAadhaarNumber());
         form.setPan(existing.getPanNumber());
         form.setTotalExperienceYears(existing.getTotalExperienceYears());
@@ -343,6 +448,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         form.setDocPassportPhoto(Boolean.TRUE.equals(existing.getDocPassportPhoto()));
         form.setDocAadhaar(Boolean.TRUE.equals(existing.getDocAadhaar()));
         form.setDocPan(Boolean.TRUE.equals(existing.getDocPan()));
+        form.setCompanyPayrollMoreThanThreeMonths(Boolean.TRUE.equals(existing.getCompanyPayrollMoreThanThreeMonths()));
         form.setAgencyFlag(Boolean.TRUE.equals(existing.getAgencyVerified()));
         form.setExistingAadhaarFileName(existing.getAadhaarOriginalName());
         form.setExistingAadhaarFilePath(existing.getAadhaarFilePath());
@@ -350,6 +456,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         form.setExistingPanFilePath(existing.getPanFilePath());
         form.setExistingExperienceDocFileName(existing.getExperienceDocOriginalName());
         form.setExistingExperienceDocFilePath(existing.getExperienceDocFilePath());
+        form.setExistingCompanyPayrollProofFileName(existing.getCompanyPayrollProofOriginalName());
+        form.setExistingCompanyPayrollProofFilePath(existing.getCompanyPayrollProofFilePath());
         form.setExistingPhotoFileName(existing.getPhotoOriginalName());
         form.setExistingPhotoFilePath(existing.getPhotoFilePath());
 
@@ -368,6 +476,21 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         form.setPreviousEmployments(new ArrayList<>(employmentForms));
     }
 
+    private void applyExistingCompanyPayrollProofReference(
+            AgencyPreOnboardingForm form,
+            AgencyCandidatePreOnboardingEntity existing) {
+        if (form == null || existing == null) {
+            return;
+        }
+
+        if (!StringUtils.hasText(form.getExistingCompanyPayrollProofFileName())) {
+            form.setExistingCompanyPayrollProofFileName(existing.getCompanyPayrollProofOriginalName());
+        }
+        if (!StringUtils.hasText(form.getExistingCompanyPayrollProofFilePath())) {
+            form.setExistingCompanyPayrollProofFilePath(existing.getCompanyPayrollProofFilePath());
+        }
+    }
+
     private RecruitmentInterviewDetailEntity loadSelectedCandidate(Long recruitmentInterviewDetailId, Long agencyId) {
         if (recruitmentInterviewDetailId == null || recruitmentInterviewDetailId < 1) {
             throw new RecruitmentNotificationException("Selected candidate id is required.");
@@ -378,7 +501,15 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                         "Selected candidate not found or not available for pre-onboarding."));
     }
 
-    private List<NormalizedEmployment> normalizeEmploymentRows(List<AgencyPreOnboardingEmploymentForm> employmentForms) {
+    private void assertPreOnboardingEditable(AgencyCandidatePreOnboardingEntity preOnboarding) {
+        if (preOnboarding != null && preOnboarding.getOnboardedAt() != null) {
+            throw new RecruitmentNotificationException(
+                    "Candidate is already onboarded. Pre-onboarding form cannot be edited.");
+        }
+    }
+
+    private List<NormalizedEmployment> normalizeEmploymentRows(
+            List<AgencyPreOnboardingEmploymentForm> employmentForms) {
         List<NormalizedEmployment> normalizedRows = new ArrayList<>();
         if (employmentForms == null || employmentForms.isEmpty()) {
             return normalizedRows;
@@ -401,13 +532,16 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
 
             int rowNumber = index + 1;
             if (!StringUtils.hasText(row.getCompanyName())) {
-                throw new RecruitmentNotificationException("Company name is required for employment row " + rowNumber + ".");
+                throw new RecruitmentNotificationException(
+                        "Company name is required for employment row " + rowNumber + ".");
             }
             if (row.getStartDate() == null) {
-                throw new RecruitmentNotificationException("Start date is required for employment row " + rowNumber + ".");
+                throw new RecruitmentNotificationException(
+                        "Start date is required for employment row " + rowNumber + ".");
             }
             if (row.getEndDate() == null) {
-                throw new RecruitmentNotificationException("End date is required for employment row " + rowNumber + ".");
+                throw new RecruitmentNotificationException(
+                        "End date is required for employment row " + rowNumber + ".");
             }
             if (row.getEndDate().isBefore(row.getStartDate())) {
                 throw new RecruitmentNotificationException(
@@ -465,17 +599,35 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         if (form.getDob() == null) {
             throw new RecruitmentNotificationException("Date of birth is required.");
         }
+        if (!StringUtils.hasText(form.getGender())) {
+            throw new RecruitmentNotificationException("Gender is required.");
+        }
+        if (!StringUtils.hasText(form.getBloodGroup())) {
+            throw new RecruitmentNotificationException("Blood group is required.");
+        }
         if (!StringUtils.hasText(form.getAddress())) {
             throw new RecruitmentNotificationException("Address is required.");
         }
+        if (!StringUtils.hasText(form.getEmergencyContactName())) {
+            throw new RecruitmentNotificationException("Emergency contact name is required.");
+        }
+        if (!form.getEmergencyContactName().trim().matches("^[a-zA-Z\\s]*$")) {
+            throw new RecruitmentNotificationException("Emergency contact name should not have special characters.");
+        }
+        if (!StringUtils.hasText(form.getEmergencyContactRelation())) {
+            throw new RecruitmentNotificationException("Emergency contact relation is required.");
+        }
+        if (!StringUtils.hasText(form.getEmergencyContactMobile())) {
+            throw new RecruitmentNotificationException("Emergency contact mobile is required.");
+        }
+        if (!form.getEmergencyContactMobile().trim().matches("^[0-9]{10}$")) {
+            throw new RecruitmentNotificationException("Emergency contact mobile number must be exactly 10 digits.");
+        }
+        if (StringUtils.hasText(form.getEmergencyContactAltMobile()) && !form.getEmergencyContactAltMobile().trim().matches("^[0-9]{10}$")) {
+            throw new RecruitmentNotificationException("Emergency contact alternate mobile number must be exactly 10 digits.");
+        }
         if (form.getJoiningDate() == null) {
             throw new RecruitmentNotificationException("Joining date is required.");
-        }
-        if (form.getOnboardingDate() == null) {
-            throw new RecruitmentNotificationException("Onboarding date is required.");
-        }
-        if (form.getOnboardingDate().isBefore(form.getJoiningDate())) {
-            throw new RecruitmentNotificationException("Onboarding date cannot be before joining date.");
         }
         if (!StringUtils.hasText(form.getAadhaar())) {
             throw new RecruitmentNotificationException("Aadhaar number is required.");
@@ -513,6 +665,13 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         if (!form.isDocPan()) {
             throw new RecruitmentNotificationException("PAN document must be verified.");
         }
+        if (form.isCompanyPayrollMoreThanThreeMonths()
+                && isMissingUploadAndExistingFile(
+                        form.getCompanyPayrollProof(),
+                        form.getExistingCompanyPayrollProofFilePath())) {
+            throw new RecruitmentNotificationException(
+                    "Company payroll proof document is required when the employee is on company payroll for more than 3 months.");
+        }
         if (!form.isAgencyFlag()) {
             throw new RecruitmentNotificationException("Agency verification is required before submission.");
         }
@@ -546,6 +705,22 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 uploadResult.size());
     }
 
+    private String normalizeAadhaar(String value) {
+        return StringUtils.hasText(value) ? value.trim().replaceAll("\\s+", "") : null;
+    }
+
+    private String normalizePan(String value) {
+        return StringUtils.hasText(value) ? value.trim().toUpperCase() : null;
+    }
+
+    private String normalizeEmail(String value) {
+        return StringUtils.hasText(value) ? value.trim().toLowerCase() : null;
+    }
+
+    private String normalizeMobile(String value) {
+        return StringUtils.hasText(value) ? value.trim().replaceAll("\\s+", "") : null;
+    }
+
     private void applyUploadedDocument(
             UploadedDocument document,
             String existingFilePath,
@@ -566,6 +741,27 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         pathConsumer.accept(document.filePath());
         typeConsumer.accept(document.fileType());
         sizeConsumer.accept(document.fileSize());
+    }
+
+    private void clearDocument(
+            String existingFilePath,
+            List<String> replacedPaths,
+            Consumer<String> nameConsumer,
+            Consumer<String> pathConsumer,
+            Consumer<String> typeConsumer,
+            Consumer<Long> sizeConsumer) {
+        if (StringUtils.hasText(existingFilePath)) {
+            replacedPaths.add(existingFilePath);
+        }
+
+        nameConsumer.accept(null);
+        pathConsumer.accept(null);
+        typeConsumer.accept(null);
+        sizeConsumer.accept(null);
+    }
+
+    private boolean isMissingUploadAndExistingFile(MultipartFile upload, String existingFilePath) {
+        return (upload == null || upload.isEmpty()) && !StringUtils.hasText(existingFilePath);
     }
 
     private List<AgencyCandidatePreOnboardingEmploymentEntity> toEmploymentEntities(
@@ -647,7 +843,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         if (employee.getPreOnboarding() != null
                 && employee.getPreOnboarding().getInterviewDetail() != null
                 && employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() != null
-                && employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst() != null) {
+                && employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification()
+                        .getProjectMst() != null) {
             projectName = employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification()
                     .getProjectMst().getProjectName();
         }
@@ -701,7 +898,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         String subDepartmentName = registration.getSubDeptId() == null
                 ? DEFAULT_VALUE
                 : subDepartmentRepository.findById(registration.getSubDeptId())
-                        .map(value -> StringUtils.hasText(value.getSubDeptName()) ? value.getSubDeptName() : DEFAULT_VALUE)
+                        .map(value -> StringUtils.hasText(value.getSubDeptName()) ? value.getSubDeptName()
+                                : DEFAULT_VALUE)
                         .orElse(DEFAULT_VALUE);
 
         return new DepartmentInfo(departmentName, subDepartmentName);
@@ -717,22 +915,27 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 .orElse(null);
     }
 
-    private AgencyUserContext resolveAgencyUserContext(String actorEmail) {
-        if (!StringUtils.hasText(actorEmail)) {
-            throw new RecruitmentNotificationException("Authenticated user is required.");
-        }
-
-        User user = userRepository.findByEmailIgnoreCase(actorEmail)
-                .orElseThrow(() -> new RecruitmentNotificationException("Authenticated user not found."));
-
-        AgencyMaster agency = agencyMasterRepository.findByOfficialEmailIgnoreCase(user.getEmail())
-                .orElseThrow(() -> new RecruitmentNotificationException(
-                        "No agency profile is linked with this login user."));
-
-        return new AgencyUserContext(user.getId(), agency.getAgencyId(), agency.getAgencyName());
+    private Page<AgencyOnboardedEmployeeView> getEmployeesByStatuses(
+            String actorEmail,
+            List<String> statuses,
+            Pageable pageable) {
+        AgencyUserContext context = resolveAgencyUserContext(actorEmail);
+        List<String> normalizedStatuses = statuses == null
+                ? CURRENT_ONBOARDED_STATUSES
+                : statuses.stream()
+                        .filter(StringUtils::hasText)
+                        .map(value -> value.trim().toUpperCase())
+                        .distinct()
+                        .toList();
+        return employeeRepository.findPageByAgencyAgencyIdAndStatuses(
+                context.agencyId(),
+                normalizedStatuses.isEmpty() ? CURRENT_ONBOARDED_STATUSES : normalizedStatuses,
+                pageable)
+                .map(this::toOnboardedEmployeeView);
     }
 
-    private record AgencyUserContext(Long userId, Long agencyId, String agencyName) {
+    private AgencyUserContext resolveAgencyUserContext(String actorEmail) {
+        return agencyAccessService.requireActiveAgencyContext(actorEmail);
     }
 
     private record DepartmentInfo(String departmentName, String subDepartmentName) {

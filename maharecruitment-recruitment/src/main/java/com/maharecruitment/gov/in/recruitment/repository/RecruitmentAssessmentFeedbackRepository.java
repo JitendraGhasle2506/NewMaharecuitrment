@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.recruitment.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,10 +18,25 @@ public interface RecruitmentAssessmentFeedbackRepository extends JpaRepository<R
 
     @Query("select feedback "
             + "from RecruitmentAssessmentFeedbackEntity feedback "
+            + "where feedback.recruitmentInterviewDetail.recruitmentInterviewDetailId in :recruitmentInterviewDetailIds")
+    List<RecruitmentAssessmentFeedbackEntity> findByRecruitmentInterviewDetailIds(
+            @Param("recruitmentInterviewDetailIds") List<Long> recruitmentInterviewDetailIds);
+
+    @Query("select feedback "
+            + "from RecruitmentAssessmentFeedbackEntity feedback "
             + "left join fetch feedback.panelMembers panelMember "
             + "where feedback.recruitmentInterviewDetail.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
             + "and feedback.departmentRegistrationId = :departmentRegistrationId")
     Optional<RecruitmentAssessmentFeedbackEntity> findByCandidateForDepartment(
             @Param("departmentRegistrationId") Long departmentRegistrationId,
+            @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId);
+
+    @Query("select feedback "
+            + "from RecruitmentAssessmentFeedbackEntity feedback "
+            + "left join fetch feedback.panelMembers panelMember "
+            + "where feedback.recruitmentInterviewDetail.recruitmentInterviewDetailId = :recruitmentInterviewDetailId "
+            + "and feedback.internalVacancyOpeningId = :internalVacancyOpeningId")
+    Optional<RecruitmentAssessmentFeedbackEntity> findByCandidateForInternalVacancy(
+            @Param("internalVacancyOpeningId") Long internalVacancyOpeningId,
             @Param("recruitmentInterviewDetailId") Long recruitmentInterviewDetailId);
 }

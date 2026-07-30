@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Tax Invoice Preview</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/print.css}" />
+    <style>
+        body.tax-invoice {
+            margin: 0;
+            background: #fff;
+            color: #000;
+            font-size: 11pt;
+            line-height: 1.35;
+        }
+
+        .preview-page {
+            max-width: none;
+            margin: 0 auto;
+            padding: 8px 10px 12px;
+            background: #fff;
+        }
+
+        .preview-sheet {
+            background: #fff;
+            border: 0;
+            padding: 8px 6px 10px;
+            box-shadow: none;
+            font-size: 11pt;
+            line-height: 1.35;
+        }
+
+        .tax-invoice.embedded-mode .preview-page {
+            max-width: none;
+            padding: 0;
+        }
+
+        .tax-invoice.embedded-mode .preview-sheet {
+            padding: 0;
+        }
+
+        .tax-invoice.embedded-mode .invoice-table {
+            margin-bottom: 8px;
+        }
+
+        .preview-banner {
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            color: #9a3412;
+            font-size: 0.95rem;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18px;
+        }
+
+        .invoice-table td,
+        .invoice-table th {
+            border: 1px solid #000;
+            padding: 9px 10px;
+            vertical-align: top;
+            font-size: 10pt;
+        }
+
+        .invoice-table th {
+            background: #fff;
+            font-weight: 700;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .nested-detail-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .nested-detail-table td {
+            border: 0;
+            padding: 3px 0;
+            vertical-align: top;
+        }
+
+        .table-head {
+            background: #f8fafc;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-start {
+            text-align: left;
+        }
+
+        .address-block,
+        .footer-block {
+            white-space: pre-line;
+        }
+
+        .summary-label {
+            font-weight: 700;
+        }
+
+        .invoice-document-title {
+            margin: 0;
+            font-size: 0.92rem;
+            letter-spacing: 0.04em;
+        }
+
+        .signature-row td {
+            height: 120px;
+            vertical-align: bottom;
+        }
+
+        .qr-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 168px;
+        }
+
+        .qr-block {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .qr-code-image {
+            width: 160px;
+            height: 160px;
+            object-fit: contain;
+        }
+
+        .qr-placeholder {
+            width: 160px;
+            height: 160px;
+            border: 1px dashed #64748b;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+
+        .qr-caption {
+            font-size: 8pt;
+            line-height: 1.2;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .terms-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .preview-actions {
+            margin-top: 14px;
+            text-align: center;
+        }
+
+        @media (max-width: 767.98px) {
+            .preview-page {
+                padding: 6px 8px 10px;
+            }
+
+            .preview-sheet {
+                padding: 6px 4px 8px;
+            }
+
+            .invoice-table td,
+            .invoice-table th {
+                padding: 7px;
+                font-size: 9pt;
+            }
+        }
+
+        @media print {
+            .preview-page,
+            .preview-sheet {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .preview-banner,
+            .preview-actions {
+                display: none !important;
+            }
+
+            .invoice-brand-table {
+                margin-bottom: 3px !important;
+            }
+
+            .nested-detail-table td {
+                padding: 0 !important;
+            }
+
+            .terms-list {
+                font-size: 6.5pt;
+                line-height: 1.0;
+            }
+
+            .terms-list li {
+                margin-bottom: 0;
+            }
+
+            .signature-row td {
+                height: 42px !important;
+                padding-top: 1px !important;
+                padding-bottom: 1px !important;
+            }
+
+            .qr-wrapper {
+                min-height: 64px;
+            }
+
+            .footer-block {
+                font-size: 6.1pt !important;
+                line-height: 1 !important;
+            }
+
+            img[alt="MahaIT Logo"] {
+                width: 42px !important;
+            }
+
+            .invoice-document-title {
+                font-size: 7.2pt !important;
+                letter-spacing: 0.05em;
+            }
+        }
+    </style>
+</head>
+
+<body class="tax-invoice" th:classappend="${#bools.isTrue(embeddedPreviewMode)} ? ' embedded-mode' : ''">
+    <div class="preview-page">
+        <div id="print-content" class="preview-sheet">
+            <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}"
+                class="preview-banner">
+                Preview only. This page loads dynamic resource details from the request and does not replace the final
+                tax invoice layout.
+            </div>
+
+            <table class="table bor-0 invoice-brand-table">
+                <tr>
+                    <td class="text-center">
+                        <img th:src="@{/img/mahait_logo.png}" width="70" alt="MahaIT Logo">
+                    </td>
+                    <td colspan="5" style="text-align:center; vertical-align: middle;">
+                        <h3 style="margin:0;" th:text="${invoice.companyName}">
+                            Maharashtra Information Technology Corporation Limited
+                        </h3>
+                        <div th:text="${'CIN : ' + invoice.cinNumber}">CIN : U74999MH1998SGC099591</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="6" style="text-align:center;">
+                        <h3 class="invoice-document-title">PROFORMA INVOICE</h3>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="table table-bordered table-invoice invoice-meta-table">
+                <tr>
+                    <td colspan="3" width="40%">
+                        <b>TI No:</b>
+                        <span th:text="${invoice.tiNumber}">TI-2025-26-00001</span>
+                    </td>
+                    <td colspan="3" rowspan="2" style="padding:8px; vertical-align:top;">
+                        <table class="nested-detail-table invoice-detail-grid">
+                            <tr>
+                                <td width="180"><b>Date:</b></td>
+                                <td th:text="${#temporals.format(invoice.tiDate, 'dd/MM/yyyy')}">10/07/2025</td>
+                            </tr>
+                            <tr>
+                                <td><b>Client / Dept GSTIN:</b></td>
+                                <td th:text="${invoice.clientGstinAvailable ? 'Yes' : 'No'}">Yes</td>
+                            </tr>
+                            <tr>
+                                <td><b>Client GST Number:</b></td>
+                                <td th:text="${invoice.clientGstNumber != null ? invoice.clientGstNumber : '-'}">
+                                    27AABCM3129H1DW</td>
+                            </tr>
+                            <tr>
+                                <td><b>Place Of Supply:</b></td>
+                                <td th:text="${invoice.placeOfSupply}">Maharashtra</td>
+                            </tr>
+                            <tr>
+                                <td><b>Dept Ref/ WO No:</b></td>
+                                <td th:text="${invoice.deptRefNumber != null ? invoice.deptRefNumber : '-'}">Mail</td>
+                            </tr>
+                            <tr>
+                                <td><b>Dept Ref/ WO Date:</b></td>
+                                <td th:text="${#temporals.format(invoice.deptRefDate, 'dd-MM-yyyy')}">25-02-2026</td>
+                            </tr>
+                            <tr>
+                                <td><b>PM Name:</b></td>
+                                <td th:text="${invoice.pmName != null ? invoice.pmName : '-'}"></td>
+                            </tr>
+                            <tr>
+                                <td><b>Project Name:</b></td>
+                                <td th:text="${invoice.projectName}">Manpower Supply</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="invoice-billed-to">
+                        <b>To,</b><br>
+                        <span th:text="${invoice.billedTo}">Department Name</span><br>
+                        <span th:text="${invoice.billingAddress}">Address</span>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="table table-bordered table-invoice invoice-items-table">
+                <colgroup>
+                    <col style="width: 8%;">
+                    <col style="width: 27%;">
+                    <col style="width: 19%;">
+                    <col style="width: 11%;">
+                    <col style="width: 8%;">
+                    <col style="width: 13%;">
+                    <col style="width: 14%;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Sr No.</th>
+                        <th>Description</th>
+                        <th>Required Period</th>
+                        <th>SAC/HSN</th>
+                        <th>Qty</th>
+                        <th>Rate/Month</th>
+                        <th>Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(invoice.lineItems)}">
+                        <td colspan="7" class="text-center">No resource details available.</td>
+                    </tr>
+                    <tr th:each="item, stat : ${invoice.lineItems}">
+                        <td class="text-center" th:text="${stat.count}">1</td>
+                        <td class="text-start" th:text="${item.description}">Business Analyst</td>
+                        <td class="text-center" th:text="${item.requiredPeriodDisplay}">01-12-2025 to 31-12-2025</td>
+                        <td class="text-center" th:text="${item.sacHsn}">998313</td>
+                        <td class="text-center" th:text="${item.quantity}">2</td>
+                        <td class="text-right">&#8377; <span th:text="${item.ratePerMonthDisplay}">1,65,705.00</span>
+                        </td>
+                        <td class="text-right">&#8377; <span th:text="${item.totalAmountDisplay}">3,31,410.00</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="6" class="text-right summary-label">1) BASIC Amount</td>
+                        <td class="text-right">&#8377; <span th:text="${invoice.baseAmountDisplay}">12,28,775.00</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="6" class="text-right summary-label"
+                            th:text="${'2) SGST @ ' + invoice.sgstRateDisplay + '%'}">2) SGST @ 9%</td>
+                        <td class="text-right">&#8377; <span th:text="${invoice.sgstAmountDisplay}">1,10,589.00</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="6" class="text-right summary-label"
+                            th:text="${'3) CGST @ ' + invoice.cgstRateDisplay + '%'}">3) CGST @ 9%</td>
+                        <td class="text-right">&#8377; <span th:text="${invoice.cgstAmountDisplay}">1,10,589.00</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="6" class="text-right summary-label">Total</td>
+                        <td class="text-right summary-label">&#8377; <span
+                                th:text="${invoice.totalAmountDisplay}">14,49,954.00</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table class="table table-bordered table-invoice invoice-account-table">
+                <tr>
+                    <th width="50%">Bank Account Details</th>
+                    <th width="50%">Company Details</th>
+                </tr>
+                <tr>
+                    <td>
+                        Name: <span th:text="${invoice.accountHolderName}">Maharashtra IT</span><br>
+                        Bank: <span th:text="${invoice.bankName}">Bank Name</span><br>
+                        Branch: <span th:text="${invoice.branchName}">Mumbai</span><br>
+                        A/C No: <span th:text="${invoice.accountNumber}">37890205000212</span><br>
+                        IFSC: <span th:text="${invoice.ifscCode}">UBIN0537896</span>
+                    </td>
+                    <td>
+                        PAN: <span th:text="${invoice.panNumber}">AAKCM6988L</span><br>
+                        GST: <span th:text="${invoice.gstNumber}">27AAKCM6988L1ZG</span><br>
+                        CIN: <span th:text="${invoice.cinNumber}">U74999MH2016SGC268591</span>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="table table-bordered table-invoice invoice-terms-table">
+                <tr>
+                    <th class="text-center">Terms &amp; Conditions</th>
+                </tr>
+                <tr>
+                    <td>
+                        <ol class="terms-list">
+                            <li>Validity of Proforma Invoice is for 3 months from the date of issue of the invoice.</li>
+                            <li>MahaIT will start the service only after receipt of 100% advance payment and submission
+                                of RTGS details via email to manpowerfundreceipt@mahait.org.</li>
+                            <li>The resource pay rate shall be revised annually from the commencement date, i.e., 1st
+                                October of every year, with an increment of 8% for each manpower category.</li>
+                            <li>The above prices are inclusive of applicable taxes and MahaIT's operating margin @ 10%.
+                            </li>
+                            <li>Any manpower description change must be intimated within 8 days from the invoice date.
+                            </li>
+                            <li>Before depositing funds, standard deductions such as TDS must be applied wherever
+                                applicable.</li>
+                            <li>If GSTIN is not shared by the department, the transaction will be treated as B2C.</li>
+                            <li>All disputes are subject to Mumbai jurisdiction.</li>
+                        </ol>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="table table-bordered table-invoice invoice-signature-table signature-row">
+                <tr>
+                    <td class="text-center" width="35%">Customer's Seal and Signature</td>
+                    <td class="text-center" width="30%">
+                        <div class="qr-wrapper">
+                            <th:block th:if="${!#strings.isEmpty(invoice.qrCodeDataUrl)}">
+                                <div class="qr-block">
+                                    <img th:src="${invoice.qrCodeDataUrl}" class="qr-code-image"
+                                        alt="Tax Invoice QR Code">
+                                    <div class="qr-caption">Scan for invoice details</div>
+                                </div>
+                            </th:block>
+                            <div th:if="${#strings.isEmpty(invoice.qrCodeDataUrl)}" class="qr-placeholder">QR</div>
+                        </div>
+                    </td>
+                    <td class="text-center" width="35%">
+                        Authorized Signatory<br>
+                        <span th:text="${invoice.companyName}">Maharashtra Information Technology Corporation Ltd</span>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="footer-block invoice-footer text-center small">
+                <span th:text="${invoice.companyAddress}">Corporate Office Address</span><br>
+                Contact: +91 22 22174600 | Website: www.mahait.org
+            </div>
+        </div>
+
+        <div th:if="${!#bools.isTrue(embeddedPreviewMode)}" class="preview-actions no-print">
+            <button id="printBtn" class="btn" onclick="printContent('print-content')">Print</button>
+        </div>
+    </div>
+
+    <script>
+        function printWhenAssetsReady(printWindow) {
+            if (!printWindow) {
+                return;
+            }
+
+            function triggerPrint() {
+                printWindow.focus();
+                window.setTimeout(function () {
+                    printWindow.print();
+                    printWindow.close();
+                }, 250);
+            }
+
+            function waitForImages() {
+                var doc = printWindow.document;
+                var images = Array.from(doc.images || []);
+                var pending = images.filter(function (image) {
+                    return !image.complete;
+                });
+
+                if (!pending.length) {
+                    triggerPrint();
+                    return;
+                }
+
+                var remaining = pending.length;
+                function resolveImage() {
+                    remaining -= 1;
+                    if (remaining <= 0) {
+                        triggerPrint();
+                    }
+                }
+
+                pending.forEach(function (image) {
+                    image.addEventListener('load', resolveImage, { once: true });
+                    image.addEventListener('error', resolveImage, { once: true });
+                });
+            }
+
+            if (printWindow.document.readyState === 'complete') {
+                window.setTimeout(waitForImages, 100);
+                return;
+            }
+
+            printWindow.addEventListener('load', function () {
+                window.setTimeout(waitForImages, 100);
+            }, { once: true });
+        }
+
+        function printContent(id) {
+            var content = document.getElementById(id).innerHTML;
+            var win = window.open('', '_blank');
+            if (!win) {
+                return;
+            }
+            var styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+                .map(function (node) {
+                    return node.outerHTML;
+                })
+                .join('');
+
+            win.document.write('<html><head><title>Tax Invoice Preview</title>' + styles + '</head><body class="tax-invoice">');
+            win.document.write(content);
+            win.document.write('</body></html>');
+            win.document.close();
+            printWhenAssetsReady(win);
+        }
+    </script>
+</body>
+
+</html>
