@@ -93,7 +93,7 @@
                                         <tr>
                                             <th>Employee</th>
                                             <th>Manager</th>
-                                            <th>COO / HOD</th>
+                                            <th>Reporting Authority</th>
                                             <th style="width: 100px;">Action</th>
                                         </tr>
                                     </thead>
@@ -115,7 +115,7 @@
                                 
                                 <!-- Step 1: Reporting Authority -->
                                 <div class="mb-4">
-                                    <label class="form-label d-block">1. Select Reporting Authority (COO or HOD) <span class="text-danger">*</span></label>
+                                    <label class="form-label d-block">1. Select Reporting Authority (COO, HOD, STM or PM) <span class="text-danger">*</span></label>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input authorityTypeOption" type="radio"
                                                name="authorityType" id="authorityTypeCOO" value="COO" required>
@@ -126,6 +126,16 @@
                                                name="authorityType" id="authorityTypeHOD" value="HOD" required>
                                         <label class="form-check-label" for="authorityTypeHOD">Head of Department (HOD)</label>
                                     </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input authorityTypeOption" type="radio"
+                                               name="authorityType" id="authorityTypeSTM" value="STM" required>
+                                        <label class="form-check-label" for="authorityTypeSTM">Senior Technical Manager (STM)</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input authorityTypeOption" type="radio"
+                                               name="authorityType" id="authorityTypePM" value="PM" required>
+                                        <label class="form-check-label" for="authorityTypePM">Project Manager (PM)</label>
+                                    </div>
                                     <div class="mt-3 hidden" id="authorityUserSection">
                                         <label class="form-label" for="authoritySelect" id="authorityUserLabel">Select Reporting Authority <span class="text-danger">*</span></label>
                                         <select class="form-select w-50" id="authoritySelect" name="hodUserId" required disabled>
@@ -135,7 +145,7 @@
                                 </div>
 
                                 <!-- Step 2: Manager Type -->
-                                <div class="mb-4">
+                                <div class="mb-4" id="managerTypeSection">
                                     <label class="form-label d-block">2. Select Manager Type <span class="text-danger">*</span></label>
                                     <div class="form-check form-check-inline hidden" id="hodManagerTypeOption">
                                         <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeHOD" value="HOD" required>
@@ -324,12 +334,29 @@
                 return 'Senior Technical Managers';
             }
 
+            function isDirectManagerAuthority(type) {
+                return type === 'STM' || type === 'PM';
+            }
+
+            function authorityTypeLabel(type) {
+                if(type === 'COO') {
+                    return 'COO';
+                }
+                if(type === 'HOD') {
+                    return 'HOD';
+                }
+                if(type === 'STM') {
+                    return 'STM';
+                }
+                return 'PM';
+            }
+
             function selectedAuthorityType() {
                 return $('input[name="authorityType"]:checked').val() || '';
             }
 
             function populateAuthorityUsers(authorityType, currentSelection) {
-                var authorityLabel = authorityType === 'COO' ? 'COO' : 'HOD';
+                var authorityLabel = authorityTypeLabel(authorityType);
                 var select = $('#authoritySelect');
                 select
                     .html('<option value="">-- Select ' + authorityLabel + ' --</option>')
@@ -358,11 +385,28 @@
             }
 
             function updateManagerTypeOptions() {
-                var isCoo = selectedAuthorityType() === 'COO';
+                var authorityType = selectedAuthorityType();
+                var isCoo = authorityType === 'COO';
+                $('#managerTypeSection').toggleClass(
+                    'hidden', isDirectManagerAuthority(authorityType));
                 $('#hodManagerTypeOption').toggleClass('hidden', !isCoo);
                 if(!isCoo && $('#typeHOD').is(':checked')) {
                     $('#typeHOD').prop('checked', false);
                 }
+            }
+
+            function showDirectAuthorityMapping(authorityType, authorityUserId) {
+                $('input[name="managerType"][value="'+authorityType+'"]').prop('checked', true);
+                $('#managerSection').addClass('hidden');
+                $('#managerSelect').val('').prop('required', false);
+                $('#employeeLabel').html(
+                    '2. Select Internal Employees to Map <span class="text-danger">*</span>');
+                $('#employeeSection, #submitSection').removeClass('hidden');
+                loadInternalEmployees({
+                    hodUserId: authorityUserId,
+                    managerType: authorityType,
+                    includeEmployeeId: editingEmployeeId
+                });
             }
 
             $('.authorityTypeOption').change(function() {
@@ -380,8 +424,13 @@
             });
 
             $('#authoritySelect').change(function() {
+                var authorityType = selectedAuthorityType();
+                var authorityUserId = $(this).val();
                 resetDependentSelections();
                 updateManagerTypeOptions();
+                if(authorityUserId && isDirectManagerAuthority(authorityType)) {
+                    showDirectAuthorityMapping(authorityType, authorityUserId);
+                }
             });
 
             function loadManagers(type, currentSelection) {
@@ -428,7 +477,7 @@
                 $('#submitSection').addClass('hidden');
 
                 if(!authorityUserId) {
-                    alert('Please select a COO or HOD reporting authority first.');
+                    alert('Please select a reporting authority first.');
                     $(this).prop('checked', false);
                     return;
                 }
@@ -488,6 +537,11 @@
                     populateAuthorityUsers(authorityType, hod);
                     updateManagerTypeOptions();
                     $('input[name="managerType"][value="'+mgrType+'"]').prop('checked', true);
+
+                    if(isDirectManagerAuthority(authorityType)) {
+                        showDirectAuthorityMapping(authorityType, hod);
+                        return;
+                    }
 
                     if(mgrType === 'OTHER') {
                         $('#managerSection').addClass('hidden');
@@ -615,7 +669,7 @@
                 var authorityUserId = $('#authoritySelect').val();
                 var managerType = $('input[name="managerType"]:checked').val();
                 if(!authorityType) {
-                    alert('Please select COO or HOD.');
+                    alert('Please select COO, HOD, STM or PM.');
                     e.preventDefault();
                     return;
                 }

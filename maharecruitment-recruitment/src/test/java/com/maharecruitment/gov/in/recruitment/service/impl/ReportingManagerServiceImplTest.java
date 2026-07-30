@@ -57,20 +57,29 @@ class ReportingManagerServiceImplTest {
     private ReportingManagerServiceImpl service;
 
     @Test
-    void getReportingAuthoritiesReturnsHodsAndCoosWithTheirTypes() {
+    void getReportingAuthoritiesReturnsAllSupportedRolesInDisplayOrder() {
         User hod = userWithRole(7L, "Anita Deshmukh", "ROLE_HOD");
         User coo = userWithRole(8L, "Ravi Shah", "ROLE_COO");
+        User stm = userWithRole(9L, "Sanjay Patil", "ROLE_STM");
+        User pm = userWithRole(10L, "Priya Jadhav", "ROLE_PM");
         when(userRepository.findDistinctUserIdsByRoleName("ROLE_HOD")).thenReturn(List.of(7L));
         when(userRepository.findDistinctUserIdsByRoleName("ROLE_COO")).thenReturn(List.of(8L));
-        when(userRepository.findAllById(Set.of(7L, 8L))).thenReturn(List.of(hod, coo));
+        when(userRepository.findDistinctUserIdsByRoleName("ROLE_STM")).thenReturn(List.of(9L));
+        when(userRepository.findDistinctUserIdsByRoleName("ROLE_PM")).thenReturn(List.of(10L));
+        when(userRepository.findAllById(Set.of(7L, 8L, 9L, 10L)))
+                .thenReturn(List.of(pm, stm, hod, coo));
 
         List<Map<String, Object>> result = service.getReportingAuthorities();
 
-        assertEquals(2, result.size());
+        assertEquals(4, result.size());
         assertEquals("COO", result.get(0).get("authorityType"));
         assertEquals(8L, result.get(0).get("id"));
         assertEquals("HOD", result.get(1).get("authorityType"));
         assertEquals(7L, result.get(1).get("id"));
+        assertEquals("STM", result.get(2).get("authorityType"));
+        assertEquals(9L, result.get(2).get("id"));
+        assertEquals("PM", result.get(3).get("authorityType"));
+        assertEquals(10L, result.get(3).get("id"));
     }
 
     @Test
@@ -299,6 +308,48 @@ class ReportingManagerServiceImplTest {
                 captor.getValue().stream().map(EmployeeReportingMappingEntity::getEmployeeId).toList());
         assertTrue(captor.getValue().stream()
                 .allMatch(mapping -> mapping.getManagerEmployeeId() == null && mapping.getProjectId() == null));
+    }
+
+    @Test
+    void stmAuthorityCanReceiveDirectEmployeeMappings() {
+        User stm = userWithRole(9L, "STM Manager", "ROLE_STM");
+        EmployeeEntity employee = employee(101L, "Rahul Patil", "EMP101", "INTERNAL", "ACTIVE");
+        when(userRepository.findById(9L)).thenReturn(Optional.of(stm));
+        when(employeeRepository.findAllById(Set.of(101L))).thenReturn(List.of(employee));
+        when(employeeRepository.findByUser_Id(9L)).thenReturn(Optional.empty());
+        when(mappingRepository.findByEmployeeIdIn(List.of(101L))).thenReturn(List.of());
+
+        service.saveMapping(9L, "STM", null, null, List.of(101L));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<EmployeeReportingMappingEntity>> captor = ArgumentCaptor.forClass(List.class);
+        verify(mappingRepository).saveAll(captor.capture());
+        EmployeeReportingMappingEntity mapping = captor.getValue().get(0);
+        assertEquals(9L, mapping.getHodUserId());
+        assertEquals("STM", mapping.getManagerType());
+        assertEquals(101L, mapping.getEmployeeId());
+        assertNull(mapping.getManagerEmployeeId());
+    }
+
+    @Test
+    void pmAuthorityCanReceiveDirectEmployeeMappings() {
+        User pm = userWithRole(10L, "PM Manager", "ROLE_PM");
+        EmployeeEntity employee = employee(102L, "Asha Patil", "EMP102", "INTERNAL", "ACTIVE");
+        when(userRepository.findById(10L)).thenReturn(Optional.of(pm));
+        when(employeeRepository.findAllById(Set.of(102L))).thenReturn(List.of(employee));
+        when(employeeRepository.findByUser_Id(10L)).thenReturn(Optional.empty());
+        when(mappingRepository.findByEmployeeIdIn(List.of(102L))).thenReturn(List.of());
+
+        service.saveMapping(10L, "PM", null, null, List.of(102L));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<EmployeeReportingMappingEntity>> captor = ArgumentCaptor.forClass(List.class);
+        verify(mappingRepository).saveAll(captor.capture());
+        EmployeeReportingMappingEntity mapping = captor.getValue().get(0);
+        assertEquals(10L, mapping.getHodUserId());
+        assertEquals("PM", mapping.getManagerType());
+        assertEquals(102L, mapping.getEmployeeId());
+        assertNull(mapping.getManagerEmployeeId());
     }
 
     @Test
