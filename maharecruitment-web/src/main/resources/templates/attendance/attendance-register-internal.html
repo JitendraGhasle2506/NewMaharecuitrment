@@ -129,6 +129,43 @@
             font-size: 34px;
         }
 
+        .aadhaar-value-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .aadhaar-toggle-button {
+            display: inline-flex;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            color: var(--primary-color);
+            transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+
+        .aadhaar-toggle-button:hover {
+            border-color: #93c5fd;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .aadhaar-toggle-button:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.28);
+            outline-offset: 2px;
+        }
+
+        .aadhaar-toggle-button:disabled {
+            cursor: wait;
+            opacity: 0.65;
+        }
+
         .profile-chip-row {
             display: flex;
             flex-wrap: wrap;
@@ -1346,9 +1383,15 @@
                     <div class="profile-hero">
                         <div class="profile-identity">
                             <div class="profile-avatar-shell">
-                                <img th:if="${attendance.photoPath != null}" class="profile-avatar" th:src="@{/files/serve(filePath=${attendance.photoPath})}" alt="Profile Photo">
-                                <div th:unless="${attendance.photoPath != null}" class="profile-avatar profile-avatar-fallback">
-                                    <i class="fa fa-user"></i>
+                                <img id="attendanceProfilePhoto"
+                                     class="profile-avatar"
+                                     th:src="@{/employee/profile/photo}"
+                                     th:alt="|Photograph of ${attendance.name ?: 'employee'}|">
+                                <div id="attendanceProfilePhotoFallback"
+                                     class="profile-avatar profile-avatar-fallback d-none"
+                                     role="img"
+                                     th:attr="aria-label=|Generic avatar for ${attendance.name ?: 'employee'}|">
+                                    <i class="fa fa-user" aria-hidden="true"></i>
                                 </div>
                             </div>
                             <div class="profile-headline">
@@ -1442,7 +1485,24 @@
                                     <div class="profile-detail-icon"><i class="fa fa-id-card"></i></div>
                                     <div class="profile-detail-copy">
                                         <span class="profile-detail-label">Aadhaar Number</span>
-                                        <span class="profile-detail-value" th:text="${attendance.aadhaarNumber ?: '-'}">-</span>
+                                        <div class="aadhaar-value-row">
+                                            <span id="aadhaarValue"
+                                                  class="profile-detail-value"
+                                                  aria-live="polite"
+                                                  th:text="${attendance.aadhaarNumber ?: '-'}">XXXXXXXX1234</span>
+                                            <button th:if="${attendance.aadhaarNumber != null}"
+                                                    id="aadhaarToggle"
+                                                    class="aadhaar-toggle-button"
+                                                    type="button"
+                                                    th:attr="data-reveal-url=@{/employee/intAttendance/aadhaar/reveal}"
+                                                    aria-controls="aadhaarValue"
+                                                    aria-label="Show Aadhaar"
+                                                    aria-pressed="false"
+                                                    title="Show Aadhaar">
+                                                <i class="fa fa-eye" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                        <span id="aadhaarStatus" class="visually-hidden" aria-live="polite"></span>
                                     </div>
                                 </div>
                                 <div class="profile-detail-row">
@@ -1974,6 +2034,123 @@
                 $('#dateRangePicker').datepicker('show');
             });
         });
+    </script>
+    <script>
+        (function () {
+            const profilePhoto = document.getElementById('attendanceProfilePhoto');
+            const profilePhotoFallback = document.getElementById('attendanceProfilePhotoFallback');
+
+            function showGenericAvatar() {
+                if (profilePhoto) {
+                    profilePhoto.classList.add('d-none');
+                }
+                if (profilePhotoFallback) {
+                    profilePhotoFallback.classList.remove('d-none');
+                }
+            }
+
+            if (profilePhoto) {
+                profilePhoto.addEventListener('error', showGenericAvatar);
+                if (profilePhoto.complete && profilePhoto.naturalWidth === 0) {
+                    showGenericAvatar();
+                }
+            }
+
+            const aadhaarValue = document.getElementById('aadhaarValue');
+            const aadhaarToggle = document.getElementById('aadhaarToggle');
+            const aadhaarStatus = document.getElementById('aadhaarStatus');
+            if (!aadhaarValue || !aadhaarToggle) {
+                return;
+            }
+
+            const maskedAadhaar = aadhaarValue.textContent;
+            const revealUrl = aadhaarToggle.dataset.revealUrl;
+            const csrfTokenElement = document.querySelector('meta[name="_csrf"]');
+            const csrfHeaderElement = document.querySelector('meta[name="_csrf_header"]');
+            let remaskTimer = null;
+
+            function updateToggle(showing) {
+                const label = showing ? 'Hide Aadhaar' : 'Show Aadhaar';
+                aadhaarToggle.setAttribute('aria-label', label);
+                aadhaarToggle.setAttribute('aria-pressed', String(showing));
+                aadhaarToggle.setAttribute('title', label);
+                const icon = aadhaarToggle.querySelector('i');
+                if (icon) {
+                    icon.className = showing ? 'fa fa-eye-slash' : 'fa fa-eye';
+                }
+            }
+
+            function remask(statusMessage) {
+                if (remaskTimer !== null) {
+                    window.clearTimeout(remaskTimer);
+                    remaskTimer = null;
+                }
+                aadhaarValue.textContent = maskedAadhaar;
+                updateToggle(false);
+                if (aadhaarStatus) {
+                    aadhaarStatus.textContent = statusMessage || '';
+                }
+            }
+
+            async function revealAadhaar() {
+                aadhaarToggle.disabled = true;
+                if (aadhaarStatus) {
+                    aadhaarStatus.textContent = 'Loading Aadhaar.';
+                }
+
+                try {
+                    const headers = { 'Accept': 'text/plain' };
+                    if (csrfTokenElement && csrfHeaderElement) {
+                        headers[csrfHeaderElement.content] = csrfTokenElement.content;
+                    }
+
+                    const response = await fetch(revealUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                        headers: headers
+                    });
+                    if (!response.ok) {
+                        throw new Error('Reveal request failed.');
+                    }
+
+                    const revealedAadhaar = (await response.text()).trim();
+                    if (!/^\d{12}$/.test(revealedAadhaar)) {
+                        throw new Error('Reveal response was invalid.');
+                    }
+
+                    aadhaarValue.textContent = revealedAadhaar;
+                    updateToggle(true);
+                    if (aadhaarStatus) {
+                        aadhaarStatus.textContent = 'Aadhaar shown temporarily.';
+                    }
+                    remaskTimer = window.setTimeout(function () {
+                        remask('Aadhaar hidden automatically.');
+                    }, 30000);
+                } catch (error) {
+                    remask('Unable to show Aadhaar. Please try again.');
+                } finally {
+                    aadhaarToggle.disabled = false;
+                }
+            }
+
+            aadhaarToggle.addEventListener('click', function () {
+                if (aadhaarToggle.getAttribute('aria-pressed') === 'true') {
+                    remask('Aadhaar hidden.');
+                    return;
+                }
+                revealAadhaar();
+            });
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) {
+                    remask();
+                }
+            });
+            window.addEventListener('pagehide', function () {
+                remask();
+            });
+        }());
     </script>
 </body>
 

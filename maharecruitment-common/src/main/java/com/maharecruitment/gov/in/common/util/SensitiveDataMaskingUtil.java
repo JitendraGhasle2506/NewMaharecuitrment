@@ -6,7 +6,11 @@ public final class SensitiveDataMaskingUtil {
     }
 
     public static String maskAadhaar(String aadhaarNumber) {
-        return maskKeepingLastFour(normalizeDigits(aadhaarNumber));
+        return maskKeepingLastFour(normalizeAadhaar(aadhaarNumber));
+    }
+
+    public static String normalizeAadhaar(String aadhaarNumber) {
+        return aadhaarNumber == null ? null : aadhaarNumber.replaceAll("\\D", "");
     }
 
     public static String maskPan(String panNumber) {
@@ -26,10 +30,6 @@ public final class SensitiveDataMaskingUtil {
             return "X".repeat(normalized.length());
         }
         return "X".repeat(normalized.length() - 4) + normalized.substring(normalized.length() - 4);
-    }
-
-    private static String normalizeDigits(String value) {
-        return value == null ? null : value.replaceAll("\\D", "");
     }
 
     private static String normalizeText(String value) {

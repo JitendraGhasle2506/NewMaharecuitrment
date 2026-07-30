@@ -438,7 +438,6 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setAddress(employee.getAddress());
 		dto.setEmployeeCode(employee.getEmployeeCode());
 		dto.setJoiningDate(employee.getJoiningDate() != null ? employee.getJoiningDate().format(DISPLAY_DATE_FORMATTER) : "-");
-		dto.setPhotoPath(employee.getPreOnboarding() != null ? employee.getPreOnboarding().getPhotoFilePath() : null);
 
 		// Populate Reporting HOD and Manager
 		EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository.findByEmployeeId(employeeId);
