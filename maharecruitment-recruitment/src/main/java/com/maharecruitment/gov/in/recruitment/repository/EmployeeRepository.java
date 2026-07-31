@@ -159,6 +159,8 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "and (:recruitmentType is null or upper(employee.recruitmentType) = :recruitmentType) "
             + "and (:searchPattern is null "
             + "or upper(coalesce(employee.requestId, '')) like :searchPattern "
+            + "or upper(coalesce(employee.employeeCode, '')) like :searchPattern "
+            + "or upper(coalesce(employee.fullName, '')) like :searchPattern "
             + "or upper(coalesce(project.projectName, '')) like :searchPattern "
             + "or upper(coalesce(employee.recruitmentType, '')) like :searchPattern)",
             countQuery = "select count(employee) "
@@ -173,6 +175,8 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
                     + "and (:recruitmentType is null or upper(employee.recruitmentType) = :recruitmentType) "
                     + "and (:searchPattern is null "
                     + "or upper(coalesce(employee.requestId, '')) like :searchPattern "
+                    + "or upper(coalesce(employee.employeeCode, '')) like :searchPattern "
+                    + "or upper(coalesce(employee.fullName, '')) like :searchPattern "
                     + "or upper(coalesce(project.projectName, '')) like :searchPattern "
                     + "or upper(coalesce(employee.recruitmentType, '')) like :searchPattern)")
     Page<EmployeeEntity> findPageByStatusAndFilters(
