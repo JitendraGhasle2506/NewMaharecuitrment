@@ -139,7 +139,12 @@ public class EmployeeListController {
             String search,
             int page,
             int size) {
-        var pageRequest = PageRequest.of(page, size, Sort.by("employeeId").descending());
+        var pageRequest = PageRequest.of(
+                page,
+                size,
+                Sort.by(
+                        Sort.Order.asc("fullName").ignoreCase(),
+                        Sort.Order.asc("employeeId")));
         return hrOnboardingPageService.getEmployeesByStatus(type, status, search, pageRequest);
     }
 
