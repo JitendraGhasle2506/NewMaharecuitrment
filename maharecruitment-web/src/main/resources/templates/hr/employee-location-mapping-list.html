@@ -124,9 +124,13 @@
                                             <div class="employee-location-chip-list">
                                                 <span class="employee-location-chip"
                                                     th:each="location : ${employee.mappedLocations}"
-                                                    th:title="${location.displayName}"
-                                                    th:text="${location.displayName}">
-                                                    Location
+                                                    th:title="${location.displayName}">
+                                                    <span th:text="${location.displayName}">Location</span>
+                                                    <span class="employee-location-chip-type"
+                                                        th:classappend="${location.primary} ? ' is-primary' : ' is-secondary'"
+                                                        th:text="${location.primary} ? 'Primary' : 'Secondary'">
+                                                        Primary
+                                                    </span>
                                                 </span>
                                             </div>
                                         </div>

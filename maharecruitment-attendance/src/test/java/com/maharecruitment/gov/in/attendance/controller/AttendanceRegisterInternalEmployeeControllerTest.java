@@ -31,6 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.maharecruitment.gov.in.attendance.dto.AttendanceRegisterDTO;
+import com.maharecruitment.gov.in.attendance.dto.AttendanceLocationDTO;
 import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
 import com.maharecruitment.gov.in.attendance.service.HolidayService;
 import com.maharecruitment.gov.in.attendance.service.WeekOffWorkingDayService;
@@ -127,6 +128,13 @@ class AttendanceRegisterInternalEmployeeControllerTest {
         EmployeeEntity employee = employee(501L, "123456789012");
         AttendanceRegisterDTO attendance = new AttendanceRegisterDTO();
         attendance.setAadhaarNumber("XXXXXXXX9012");
+        AttendanceLocationDTO primaryLocation = new AttendanceLocationDTO(
+                11L, "Head Office", "Mumbai", null, null, 150, true);
+        AttendanceLocationDTO secondaryLocation = new AttendanceLocationDTO(
+                12L, "Regional Office", "Pune", null, null, 100, false);
+        attendance.setPrimaryLocation(primaryLocation);
+        attendance.setSecondaryLocations(List.of(secondaryLocation));
+        attendance.setAllMappedLocations(List.of(primaryLocation, secondaryLocation));
 
         when(employeeRepository.findByUser_Id(41L)).thenReturn(Optional.of(employee));
         when(attendanceService.getInternalAttendanceForEmployee(eq(501L), anyInt(), anyInt()))
@@ -138,7 +146,18 @@ class AttendanceRegisterInternalEmployeeControllerTest {
                 .andExpect(view().name("attendance/attendance-register-internal"))
                 .andExpect(model().attribute(
                         "attendance",
-                        org.hamcrest.Matchers.hasProperty("aadhaarNumber", org.hamcrest.Matchers.is("XXXXXXXX9012"))));
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.hasProperty(
+                                        "aadhaarNumber",
+                                        org.hamcrest.Matchers.is("XXXXXXXX9012")),
+                                org.hamcrest.Matchers.hasProperty(
+                                        "primaryLocation",
+                                        org.hamcrest.Matchers.hasProperty(
+                                                "displayName",
+                                                org.hamcrest.Matchers.is("Head Office - Mumbai"))),
+                                org.hamcrest.Matchers.hasProperty(
+                                        "secondaryLocations",
+                                        org.hamcrest.Matchers.hasSize(1)))));
 
         mockMvc.perform(post("/employee/fetchMyAttendance")
                         .session(session)
@@ -147,7 +166,18 @@ class AttendanceRegisterInternalEmployeeControllerTest {
                 .andExpect(view().name("attendance/attendance-register-internal"))
                 .andExpect(model().attribute(
                         "attendance",
-                        org.hamcrest.Matchers.hasProperty("aadhaarNumber", org.hamcrest.Matchers.is("XXXXXXXX9012"))));
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.hasProperty(
+                                        "aadhaarNumber",
+                                        org.hamcrest.Matchers.is("XXXXXXXX9012")),
+                                org.hamcrest.Matchers.hasProperty(
+                                        "primaryLocation",
+                                        org.hamcrest.Matchers.hasProperty(
+                                                "displayName",
+                                                org.hamcrest.Matchers.is("Head Office - Mumbai"))),
+                                org.hamcrest.Matchers.hasProperty(
+                                        "secondaryLocations",
+                                        org.hamcrest.Matchers.hasSize(1)))));
     }
 
     private MockHttpSession authenticatedSession(Long userId) {

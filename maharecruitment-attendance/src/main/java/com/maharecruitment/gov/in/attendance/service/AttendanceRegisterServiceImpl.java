@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.attendance.dto.AttendanceDayDTO;
+import com.maharecruitment.gov.in.attendance.dto.AttendanceLocationDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceRegisterDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceReportDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceReportProjection;
@@ -39,6 +40,8 @@ import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayReposit
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeLocationMappingEntity;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeLocationMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.attendance.dto.ManualAttendanceRequestDTO;
 import com.maharecruitment.gov.in.attendance.dto.ManualAttendanceSummaryDTO;
@@ -58,6 +61,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 	@Autowired
 	private EmployeeRepository employeeRepository;
+
+	@Autowired
+	private EmployeeLocationMappingRepository employeeLocationMappingRepository;
 
 	public AttendanceRegisterServiceImpl() {
 		// Explicit constructor for CGLIB proxying and debugging
@@ -430,8 +436,10 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 		// New UI Fields
 		dto.setDivision(employee.getSubDepartment() != null ? employee.getSubDepartment().getSubDeptName() : "-");
-		dto.setOfficeLocation(
-				employee.getDepartmentRegistration() != null ? employee.getDepartmentRegistration().getAddress() : "-");
+		populateMappedLocations(dto, employeeId);
+		dto.setOfficeLocation(dto.getPrimaryLocation() != null
+				? dto.getPrimaryLocation().getDisplayName()
+				: "Not mapped");
 		dto.setEmail(employee.getEmail());
 		dto.setAadhaarNumber(SensitiveDataMaskingUtil.maskAadhaar(employee.getAadhaarNumber()));
 		dto.setMobile(employee.getMobile());
@@ -556,6 +564,41 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setPayableDays(calculateRegisterPayableDays(dto));
 
 		return dto;
+	}
+
+	private void populateMappedLocations(AttendanceRegisterDTO dto, Long employeeId) {
+		List<AttendanceLocationDTO> allMappedLocations = employeeLocationMappingRepository
+				.findByEmployeeEmployeeIdOrderByPrimaryLocationDescLocationLocationNameAsc(employeeId)
+				.stream()
+				.filter(mapping -> mapping.getLocation() != null)
+				.map(this::toAttendanceLocation)
+				.toList();
+		AttendanceLocationDTO primaryLocation = allMappedLocations.stream()
+				.filter(AttendanceLocationDTO::isPrimary)
+				.findFirst()
+				.orElse(null);
+		List<AttendanceLocationDTO> secondaryLocations = allMappedLocations.stream()
+				.filter(location -> !location.isPrimary())
+				.toList();
+
+		dto.setPrimaryLocation(primaryLocation);
+		dto.setSecondaryLocations(secondaryLocations);
+		dto.setAllMappedLocations(allMappedLocations);
+	}
+
+	private AttendanceLocationDTO toAttendanceLocation(EmployeeLocationMappingEntity mapping) {
+		return new AttendanceLocationDTO(
+				mapping.getLocation().getLocationId(),
+				textOrNull(mapping.getLocation().getOfficeName()),
+				textOrNull(mapping.getLocation().getLocationName()),
+				mapping.getLocation().getLatitude(),
+				mapping.getLocation().getLongitude(),
+				mapping.getLocation().getRadiusMeters(),
+				Boolean.TRUE.equals(mapping.getPrimaryLocation()));
+	}
+
+	private String textOrNull(String value) {
+		return StringUtils.hasText(value) ? value.trim() : null;
 	}
 
 	private DailyAttendanceInternalEntity pickPreferredInternalAttendanceRow(

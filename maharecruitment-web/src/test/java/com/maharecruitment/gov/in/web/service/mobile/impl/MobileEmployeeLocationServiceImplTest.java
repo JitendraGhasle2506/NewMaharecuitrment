@@ -59,8 +59,9 @@ class MobileEmployeeLocationServiceImplTest {
                 "Y");
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(employeeLocationMappingRepository.findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(101L))
-                .thenReturn(List.of(mapping(employee, location)));
+        when(employeeLocationMappingRepository
+                .findByEmployeeEmployeeIdOrderByPrimaryLocationDescLocationLocationNameAsc(101L))
+                .thenReturn(List.of(mapping(employee, location, true)));
 
         MobileEmployeeLocationResponse response = service().getMappedLocations(101L);
 
@@ -75,6 +76,7 @@ class MobileEmployeeLocationServiceImplTest {
         assertThat(mappedLocation.longitude()).isEqualByComparingTo("72.8777000");
         assertThat(mappedLocation.radiusMeters()).isEqualTo(150);
         assertThat(mappedLocation.displayName()).isEqualTo("Head Office - Mumbai");
+        assertThat(mappedLocation.primary()).isTrue();
     }
 
     @Test
@@ -99,14 +101,18 @@ class MobileEmployeeLocationServiceImplTest {
                 "N");
 
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(employeeLocationMappingRepository.findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(101L))
-                .thenReturn(List.of(mapping(employee, inactiveLocation), mapping(employee, activeLocation)));
+        when(employeeLocationMappingRepository
+                .findByEmployeeEmployeeIdOrderByPrimaryLocationDescLocationLocationNameAsc(101L))
+                .thenReturn(List.of(
+                        mapping(employee, inactiveLocation, true),
+                        mapping(employee, activeLocation, false)));
 
         MobileEmployeeLocationResponse response = service().getMappedLocations(101L);
 
         assertThat(response.locations())
                 .extracting(MobileEmployeeLocationResponse.Location::locationId)
                 .containsExactly(11L);
+        assertThat(response.locations().get(0).primary()).isFalse();
     }
 
     @Test
@@ -114,7 +120,8 @@ class MobileEmployeeLocationServiceImplTest {
         authenticate("employee@example.com");
         EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
         when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
-        when(employeeLocationMappingRepository.findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(101L))
+        when(employeeLocationMappingRepository
+                .findByEmployeeEmployeeIdOrderByPrimaryLocationDescLocationLocationNameAsc(101L))
                 .thenReturn(List.of());
 
         MobileEmployeeLocationResponse response = service().getMappedLocations(101L);
@@ -171,9 +178,17 @@ class MobileEmployeeLocationServiceImplTest {
     }
 
     private EmployeeLocationMappingEntity mapping(EmployeeEntity employee, LocationMaster location) {
+        return mapping(employee, location, false);
+    }
+
+    private EmployeeLocationMappingEntity mapping(
+            EmployeeEntity employee,
+            LocationMaster location,
+            boolean primary) {
         EmployeeLocationMappingEntity mapping = new EmployeeLocationMappingEntity();
         mapping.setEmployee(employee);
         mapping.setLocation(location);
+        mapping.setPrimaryLocation(primary);
         return mapping;
     }
 

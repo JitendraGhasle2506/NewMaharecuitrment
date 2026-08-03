@@ -46,6 +46,23 @@ class InternalAttendancePrivacyTemplateTest {
                 .doesNotContain("type=\"hidden\" id=\"aadhaar");
     }
 
+    @Test
+    void mappedLocationsHavePrimarySecondaryAndSafeFallbackPresentation() throws IOException {
+        String template = template();
+
+        assertThat(template)
+                .contains("Primary Location")
+                .contains("Secondary Locations")
+                .contains("${attendance.primaryLocation.displayName}")
+                .contains("${location.displayName}")
+                .contains("Not mapped")
+                .contains("No secondary locations")
+                .doesNotContain("${attendance.primaryLocation.latitude}")
+                .doesNotContain("${attendance.primaryLocation.longitude}")
+                .doesNotContain("${location.latitude}")
+                .doesNotContain("${location.longitude}");
+    }
+
     private String template() throws IOException {
         ClassPathResource resource =
                 new ClassPathResource("templates/attendance/attendance-register-internal.html");

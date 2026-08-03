@@ -20,6 +20,7 @@ public record MobileEmployeeLocationResponse(
             BigDecimal latitude,
             BigDecimal longitude,
             Integer radiusMeters,
-            String displayName) {
+            String displayName,
+            boolean primary) {
     }
 }

@@ -33,11 +33,10 @@ public class MobileEmployeeLocationServiceImpl implements MobileEmployeeLocation
     public MobileEmployeeLocationResponse getMappedLocations(Long employeeId) {
         EmployeeEntity employee = mobileEmployeeAccessService.requireCurrentActiveEmployee(employeeId);
         List<MobileEmployeeLocationResponse.Location> locations = employeeLocationMappingRepository
-                .findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(employee.getEmployeeId())
+                .findByEmployeeEmployeeIdOrderByPrimaryLocationDescLocationLocationNameAsc(employee.getEmployeeId())
                 .stream()
-                .map(EmployeeLocationMappingEntity::getLocation)
-                .filter(Objects::nonNull)
-                .filter(this::isActive)
+                .filter(mapping -> Objects.nonNull(mapping.getLocation()))
+                .filter(mapping -> isActive(mapping.getLocation()))
                 .map(this::toLocationResponse)
                 .toList();
 
@@ -48,7 +47,8 @@ public class MobileEmployeeLocationServiceImpl implements MobileEmployeeLocation
                 locations);
     }
 
-    private MobileEmployeeLocationResponse.Location toLocationResponse(LocationMaster location) {
+    private MobileEmployeeLocationResponse.Location toLocationResponse(EmployeeLocationMappingEntity mapping) {
+        LocationMaster location = mapping.getLocation();
         return new MobileEmployeeLocationResponse.Location(
                 location.getLocationId(),
                 textOrNull(location.getOfficeName()),
@@ -56,7 +56,8 @@ public class MobileEmployeeLocationServiceImpl implements MobileEmployeeLocation
                 location.getLatitude(),
                 location.getLongitude(),
                 location.getRadiusMeters(),
-                buildDisplayName(location));
+                buildDisplayName(location),
+                Boolean.TRUE.equals(mapping.getPrimaryLocation()));
     }
 
     private boolean isActive(LocationMaster location) {

@@ -167,6 +167,25 @@
     line-height: 1.25;
     overflow: hidden;
     text-overflow: ellipsis;
+    gap: 6px;
+}
+
+.employee-location-chip-type {
+    border-radius: 999px;
+    padding: 2px 6px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.employee-location-chip-type.is-primary {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.employee-location-chip-type.is-secondary {
+    background: #e2e8f0;
+    color: #475569;
 }
 
 .employee-location-count-pill,
@@ -423,11 +442,66 @@
     padding: 9px 10px;
 }
 
+.employee-location-selected-item.is-primary {
+    border-color: #a7d7ba;
+    border-left-color: #198754;
+    background: #f6fff9;
+}
+
+.employee-location-selected-content {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
 .employee-location-selected-label {
     color: #203746;
     font-size: 0.92rem;
     font-weight: 650;
     line-height: 1.35;
+}
+
+.employee-location-type-badge {
+    display: inline-flex;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.employee-location-type-badge.is-primary {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.employee-location-type-badge.is-secondary {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.employee-location-selected-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex: 0 0 auto;
+}
+
+.employee-location-primary-btn {
+    border: 1px solid #9fc5ad;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #166534;
+    padding: 5px 8px;
+    font-size: 0.76rem;
+    font-weight: 750;
+}
+
+.employee-location-primary-btn:hover {
+    background: #ecfdf3;
+    border-color: #6fb087;
 }
 
 .employee-location-remove-btn {
@@ -540,5 +614,10 @@
 
     .employee-location-selected-item {
         flex-direction: column;
+    }
+
+    .employee-location-selected-actions {
+        width: 100%;
+        justify-content: space-between;
     }
 }

@@ -8,8 +8,9 @@
         const selectedBox = document.getElementById("selectedEmployeeLocationBox");
         const selectedCount = document.getElementById("selectedEmployeeLocationCount");
         const clearButton = document.getElementById("clearEmployeeLocations");
+        const primaryInput = document.getElementById("primaryLocationId");
 
-        if (!form || !picker || !inputContainer || !selectedBox) {
+        if (!form || !picker || !inputContainer || !selectedBox || !primaryInput) {
             return;
         }
 
@@ -23,6 +24,18 @@
                     return input.value;
                 })
                 .filter(Boolean);
+        }
+
+        function primaryLocationId() {
+            return primaryInput.value ? String(primaryInput.value) : "";
+        }
+
+        function setPrimary(locationId) {
+            const normalizedId = locationId ? String(locationId) : "";
+            primaryInput.value = normalizedId;
+            selectedInputs().forEach(function (input) {
+                input.dataset.primary = String(input.value === normalizedId);
+            });
         }
 
         function optionFor(locationId) {
@@ -53,10 +66,19 @@
         }
 
         function syncValidity() {
-            const hasLocation = selectedIds().length > 0;
-            picker.setCustomValidity(hasLocation ? "" : "Select at least one employee location.");
-            selectedBox.classList.toggle("is-invalid", !hasLocation);
-            return hasLocation;
+            const ids = selectedIds();
+            const hasLocation = ids.length > 0;
+            const primaryId = primaryLocationId();
+            const hasValidPrimary = primaryId !== "" && ids.includes(primaryId);
+            let validationMessage = "";
+            if (!hasLocation) {
+                validationMessage = "Select at least one employee location.";
+            } else if (!hasValidPrimary) {
+                validationMessage = "Select a primary location before saving.";
+            }
+            picker.setCustomValidity(validationMessage);
+            selectedBox.classList.toggle("is-invalid", Boolean(validationMessage));
+            return !validationMessage;
         }
 
         function addLocation(locationId) {
@@ -75,7 +97,11 @@
             hiddenInput.name = "selectedLocationIds";
             hiddenInput.value = normalizedId;
             hiddenInput.dataset.label = labelFor(normalizedId);
+            hiddenInput.dataset.primary = "false";
             inputContainer.appendChild(hiddenInput);
+            if (selectedInputs().length === 1 && !primaryLocationId()) {
+                setPrimary(normalizedId);
+            }
 
             resetPicker();
             renderSelectedLocations();
@@ -83,11 +109,15 @@
 
         function removeLocation(locationId) {
             const normalizedId = String(locationId);
+            const removedPrimary = primaryLocationId() === normalizedId;
             selectedInputs().forEach(function (input) {
                 if (input.value === normalizedId) {
                     input.remove();
                 }
             });
+            if (removedPrimary) {
+                setPrimary("");
+            }
             renderSelectedLocations();
         }
 
@@ -120,12 +150,41 @@
             }
 
             inputs.forEach(function (input) {
+                const isPrimary = input.value === primaryLocationId();
                 const item = document.createElement("div");
                 item.className = "employee-location-selected-item";
+                item.classList.toggle("is-primary", isPrimary);
+
+                const content = document.createElement("div");
+                content.className = "employee-location-selected-content";
 
                 const label = document.createElement("div");
                 label.className = "employee-location-selected-label";
                 label.textContent = labelFor(input.value, input);
+
+                const indicator = document.createElement("span");
+                indicator.className = isPrimary
+                    ? "employee-location-type-badge is-primary"
+                    : "employee-location-type-badge is-secondary";
+                indicator.textContent = isPrimary ? "Primary" : "Secondary";
+
+                content.appendChild(label);
+                content.appendChild(indicator);
+
+                const actions = document.createElement("div");
+                actions.className = "employee-location-selected-actions";
+
+                if (!isPrimary) {
+                    const primaryButton = document.createElement("button");
+                    primaryButton.type = "button";
+                    primaryButton.className = "employee-location-primary-btn";
+                    primaryButton.textContent = "Set as Primary";
+                    primaryButton.addEventListener("click", function () {
+                        setPrimary(input.value);
+                        renderSelectedLocations();
+                    });
+                    actions.appendChild(primaryButton);
+                }
 
                 const removeButton = document.createElement("button");
                 removeButton.type = "button";
@@ -139,8 +198,9 @@
                     removeLocation(input.value);
                 });
 
-                item.appendChild(label);
-                item.appendChild(removeButton);
+                actions.appendChild(removeButton);
+                item.appendChild(content);
+                item.appendChild(actions);
                 selectedBox.appendChild(item);
             });
             syncValidity();
@@ -178,6 +238,7 @@
                 selectedInputs().forEach(function (input) {
                     input.remove();
                 });
+                setPrimary("");
                 renderSelectedLocations();
             });
         }

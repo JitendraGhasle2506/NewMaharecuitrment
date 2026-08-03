@@ -115,8 +115,11 @@ public class EmployeeLocationMappingController {
             EmployeeLocationMappingEditView editView = employeeLocationMappingPageService.loadMapping(employeeId);
             EmployeeLocationMappingUpdateForm form = new EmployeeLocationMappingUpdateForm();
             form.setSelectedLocationIds(editView.selectedLocations().stream()
-                    .map(location -> location.locationId())
+                    .map(EmployeeLocationOptionView::locationId)
                     .toList());
+            form.setPrimaryLocationId(editView.primaryLocation() != null
+                    ? editView.primaryLocation().locationId()
+                    : null);
             populateEditModel(model, editView, form, type, page, size, search);
             log.info(
                     "Loading employee location mapping edit screen. employeeId={}, actorLoginId={}",
@@ -153,7 +156,11 @@ public class EmployeeLocationMappingController {
                     actorLoginId(principal));
             EmployeeLocationMappingEditView editView = employeeLocationMappingPageService.loadMapping(employeeId);
             populateEditModel(model, editView, form, type, page, size, search);
-            model.addAttribute("errorMessage", "Select at least one employee location.");
+            String errorMsg = bindingResult.getAllErrors().stream()
+                    .findFirst()
+                    .map(e -> e.getDefaultMessage())
+                    .orElse("Select at least one location and designate a primary location.");
+            model.addAttribute("errorMessage", errorMsg);
             return "hr/employee-location-mapping-form";
         }
 
@@ -161,6 +168,7 @@ public class EmployeeLocationMappingController {
             boolean changed = employeeLocationMappingPageService.updateMapping(
                     employeeId,
                     form.getSelectedLocationIds(),
+                    form.getPrimaryLocationId(),
                     actorLoginId(principal));
             redirectAttributes.addFlashAttribute(
                     "successMessage",
@@ -206,6 +214,7 @@ public class EmployeeLocationMappingController {
         editView.availableLocations().forEach(location -> locationById.put(location.locationId(), location));
         editView.selectedLocations().forEach(location -> locationById.put(location.locationId(), location));
 
+        Long primaryId = form.getPrimaryLocationId();
         Set<Long> selectedIds = new LinkedHashSet<>();
         if (form.getSelectedLocationIds() != null) {
             form.getSelectedLocationIds().stream()
@@ -214,16 +223,31 @@ public class EmployeeLocationMappingController {
         }
 
         List<EmployeeLocationOptionView> selectedLocations = new ArrayList<>();
-        selectedIds.forEach(locationId -> selectedLocations.add(locationById.getOrDefault(
-                locationId,
-                new EmployeeLocationOptionView(
+        selectedIds.forEach(locationId -> {
+            boolean isPrimary = locationId.equals(primaryId);
+            EmployeeLocationOptionView base = locationById.get(locationId);
+            if (base != null) {
+                selectedLocations.add(new EmployeeLocationOptionView(
+                        base.locationId(),
+                        base.officeName(),
+                        base.address(),
+                        base.latitude(),
+                        base.longitude(),
+                        base.active(),
+                        base.displayName(),
+                        isPrimary));
+            } else {
+                selectedLocations.add(new EmployeeLocationOptionView(
                         locationId,
                         "",
                         "Location #" + locationId,
                         null,
                         null,
                         true,
-                        "Location #" + locationId))));
+                        "Location #" + locationId,
+                        isPrimary));
+            }
+        });
         return selectedLocations;
     }
 

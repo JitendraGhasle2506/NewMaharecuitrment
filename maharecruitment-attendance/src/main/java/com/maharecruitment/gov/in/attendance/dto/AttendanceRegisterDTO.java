@@ -30,6 +30,9 @@ public class AttendanceRegisterDTO {
     private String projectName;
     private String reportingHOD;
     private String reportingManager;
+    private AttendanceLocationDTO primaryLocation;
+    private List<AttendanceLocationDTO> secondaryLocations = List.of();
+    private List<AttendanceLocationDTO> allMappedLocations = List.of();
 
     // Attendance Filters
     private String dateRange;   // Month-Year (02-2026)

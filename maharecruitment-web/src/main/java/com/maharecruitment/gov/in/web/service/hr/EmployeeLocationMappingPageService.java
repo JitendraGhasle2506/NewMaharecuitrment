@@ -17,5 +17,9 @@ public interface EmployeeLocationMappingPageService {
 
     EmployeeLocationMappingEditView loadMapping(Long employeeId);
 
-    boolean updateMapping(Long employeeId, List<Long> selectedLocationIds, String actorLoginId);
+    boolean updateMapping(
+            Long employeeId,
+            List<Long> selectedLocationIds,
+            Long primaryLocationId,
+            String actorLoginId);
 }

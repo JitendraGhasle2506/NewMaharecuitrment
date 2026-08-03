@@ -85,6 +85,10 @@
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
                             th:value="${_csrf.token}">
 
+                        <!-- Primary location ID - managed by JS -->
+                        <input type="hidden" id="primaryLocationId" name="primaryLocationId"
+                               th:value="${mappingForm.primaryLocationId}">
+
                         <div class="employee-location-editor">
                             <div class="employee-location-editor-main">
                                 <div class="employee-location-picker-panel">
@@ -107,6 +111,11 @@
                                         th:errors="*{selectedLocationIds}">
                                         Select at least one employee location.
                                     </div>
+                                    <div class="invalid-feedback d-block"
+                                        th:if="${#fields.hasErrors('primaryLocationId')}"
+                                        th:errors="*{primaryLocationId}">
+                                        Designate a primary location.
+                                    </div>
                                 </div>
                                 <div class="employee-location-selected-panel">
                                     <div class="employee-location-selected-header">
@@ -120,11 +129,17 @@
                                             </button>
                                         </div>
                                     </div>
+                                    <div class="alert alert-info py-2 px-3 mb-2" style="font-size:12px;">
+                                        <i class="fa-solid fa-circle-info me-1"></i>
+                                        Exactly one location must be marked <strong>Primary</strong>.
+                                        All others are <strong>Secondary</strong>.
+                                        Click <em>Set as Primary</em> to change.
+                                    </div>
                                     <div id="selectedEmployeeLocationInputs">
                                         <input type="hidden" th:each="location : ${selectedLocationFormItems}"
                                             name="selectedLocationIds"
                                             th:value="${location.locationId}"
-                                            th:attr="data-label=${location.displayName}">
+                                            th:attr="data-label=${location.displayName},data-primary=${location.primary}">
                                     </div>
                                     <div id="selectedEmployeeLocationBox" class="employee-location-selected-box"
                                         aria-live="polite">

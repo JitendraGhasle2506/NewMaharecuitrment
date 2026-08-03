@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -81,10 +82,11 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
     public EmployeeLocationMappingEditView loadMapping(Long employeeId) {
         EmployeeEntity employee = loadEligibleEmployee(employeeId);
         List<EmployeeLocationMappingEntity> mappings = employeeLocationMappingRepository
-                .findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(employee.getEmployeeId());
+                .findByEmployeeEmployeeIdOrderByPrimaryLocationDescLocationLocationNameAsc(employee.getEmployeeId());
         List<EmployeeLocationOptionView> selectedLocations = mappings.stream()
-                .map(EmployeeLocationMappingEntity::getLocation)
-                .map(this::toLocationOptionView)
+                .map(mapping -> toLocationOptionView(
+                        mapping.getLocation(),
+                        Boolean.TRUE.equals(mapping.getPrimaryLocation())))
                 .toList();
 
         Set<Long> selectedIds = selectedLocations.stream()
@@ -94,7 +96,7 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
                 .findByActiveFlagIgnoreCaseOrderByLocationNameAsc("Y")
                 .stream()
                 .filter(location -> location.getLocationId() != null)
-                .map(this::toLocationOptionView)
+                .map(location -> toLocationOptionView(location, false))
                 .collect(Collectors.toCollection(ArrayList::new));
         selectedLocations.stream()
                 .filter(location -> !location.active() && selectedIds.contains(location.locationId()))
@@ -115,11 +117,27 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
 
     @Override
     @Transactional
-    public boolean updateMapping(Long employeeId, List<Long> selectedLocationIds, String actorLoginId) {
+    public boolean updateMapping(
+            Long employeeId,
+            List<Long> selectedLocationIds,
+            Long primaryLocationId,
+            String actorLoginId) {
+        if (primaryLocationId == null) {
+            throw new RecruitmentNotificationException("A primary location must be designated.");
+        }
+
         EmployeeEntity employee = loadEligibleEmployee(employeeId);
         List<LocationMaster> selectedLocations = resolveSelectedActiveLocations(selectedLocationIds);
+
+        boolean primaryInSelected = selectedLocations.stream()
+                .anyMatch(loc -> primaryLocationId.equals(loc.getLocationId()));
+        if (!primaryInSelected) {
+            throw new RecruitmentNotificationException(
+                    "The designated primary location must be included in the selected locations.");
+        }
+
         List<EmployeeLocationMappingEntity> existingMappings = employeeLocationMappingRepository
-                .findByEmployeeEmployeeIdOrderByLocationLocationNameAsc(employee.getEmployeeId());
+                .findByEmployeeEmployeeIdOrderByPrimaryLocationDescLocationLocationNameAsc(employee.getEmployeeId());
 
         Set<Long> existingLocationIds = existingMappings.stream()
                 .map(mapping -> mapping.getLocation().getLocationId())
@@ -128,7 +146,16 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
                 .map(LocationMaster::getLocationId)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        if (existingLocationIds.equals(requestedLocationIds)) {
+        Long existingPrimaryLocationId = existingMappings.stream()
+                .filter(m -> Boolean.TRUE.equals(m.getPrimaryLocation()))
+                .map(m -> m.getLocation().getLocationId())
+                .findFirst()
+                .orElse(null);
+
+        boolean locationSetChanged = !existingLocationIds.equals(requestedLocationIds);
+        boolean primaryChanged = !Objects.equals(existingPrimaryLocationId, primaryLocationId);
+
+        if (!locationSetChanged && !primaryChanged) {
             log.info(
                     "Employee location mapping unchanged. employeeId={}, actorLoginId={}, locationIds={}",
                     employee.getEmployeeId(),
@@ -137,6 +164,11 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
             return false;
         }
 
+        // Clear the old primary in the database before assigning the replacement so
+        // PostgreSQL's partial unique index is never violated during a switch.
+        employeeLocationMappingRepository.clearPrimaryForEmployee(employee.getEmployeeId());
+        existingMappings.forEach(m -> m.setPrimaryLocation(false));
+
         Set<Long> removedLocationIds = new LinkedHashSet<>(existingLocationIds);
         removedLocationIds.removeAll(requestedLocationIds);
 
@@ -144,26 +176,38 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
         addedLocationIds.removeAll(existingLocationIds);
 
         List<EmployeeLocationMappingEntity> mappingsToRemove = existingMappings.stream()
-                .filter(mapping -> removedLocationIds.contains(mapping.getLocation().getLocationId()))
+                .filter(m -> removedLocationIds.contains(m.getLocation().getLocationId()))
                 .toList();
         if (!mappingsToRemove.isEmpty()) {
             employeeLocationMappingRepository.deleteAll(mappingsToRemove);
         }
 
         Map<Long, LocationMaster> selectedLocationById = selectedLocations.stream()
-                .collect(Collectors.toMap(LocationMaster::getLocationId, location -> location));
-        List<EmployeeLocationMappingEntity> mappingsToAdd = addedLocationIds.stream()
+                .collect(Collectors.toMap(LocationMaster::getLocationId, l -> l));
+        List<EmployeeLocationMappingEntity> newMappings = addedLocationIds.stream()
                 .map(selectedLocationById::get)
                 .map(location -> {
-                    EmployeeLocationMappingEntity mapping = new EmployeeLocationMappingEntity();
-                    mapping.setEmployee(employee);
-                    mapping.setLocation(location);
-                    return mapping;
+                    EmployeeLocationMappingEntity m = new EmployeeLocationMappingEntity();
+                    m.setEmployee(employee);
+                    m.setLocation(location);
+                    m.setPrimaryLocation(false);
+                    return m;
                 })
                 .toList();
-        if (!mappingsToAdd.isEmpty()) {
-            employeeLocationMappingRepository.saveAll(mappingsToAdd);
+        if (!newMappings.isEmpty()) {
+            employeeLocationMappingRepository.saveAll(newMappings);
         }
+        employeeLocationMappingRepository.flush();
+
+        EmployeeLocationMappingEntity primaryMapping = java.util.stream.Stream
+                .concat(existingMappings.stream(), newMappings.stream())
+                .filter(m -> primaryLocationId.equals(m.getLocation().getLocationId()))
+                .findFirst()
+                .orElseThrow(() -> new RecruitmentNotificationException(
+                        "The designated primary location could not be saved."));
+        primaryMapping.setPrimaryLocation(true);
+        employeeLocationMappingRepository.save(primaryMapping);
+        employeeLocationMappingRepository.flush();
 
         saveAuditLog(
                 employee,
@@ -172,14 +216,18 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
                 requestedLocationIds,
                 addedLocationIds,
                 removedLocationIds,
+                existingPrimaryLocationId,
+                primaryLocationId,
                 selectedLocations,
                 existingMappings);
+
         log.info(
-                "Employee location mapping updated. employeeId={}, actorLoginId={}, addedLocationIds={}, removedLocationIds={}, finalLocationIds={}",
+                "Employee location mapping updated. employeeId={}, actorLoginId={}, added={}, removed={}, primaryLocationId={}, final={}",
                 employee.getEmployeeId(),
                 actorLoginId,
                 addedLocationIds,
                 removedLocationIds,
+                primaryLocationId,
                 requestedLocationIds);
         return true;
     }
@@ -241,13 +289,19 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
 
         Map<Long, List<EmployeeLocationOptionView>> mappedLocations = new HashMap<>();
         employeeLocationMappingRepository
-                .findByEmployeeEmployeeIdInOrderByEmployeeEmployeeIdAscLocationLocationNameAsc(employeeIds)
+                .findByEmployeeEmployeeIdInOrderByEmployeeEmployeeIdAscPrimaryLocationDescLocationLocationNameAsc(
+                        employeeIds)
                 .forEach(mapping -> mappedLocations
                         .computeIfAbsent(mapping.getEmployee().getEmployeeId(), id -> new ArrayList<>())
-                        .add(toLocationOptionView(mapping.getLocation())));
-        mappedLocations.values().forEach(locations -> locations.sort(Comparator.comparing(
-                EmployeeLocationOptionView::displayName,
-                String.CASE_INSENSITIVE_ORDER)));
+                        .add(toLocationOptionView(
+                                mapping.getLocation(),
+                                Boolean.TRUE.equals(mapping.getPrimaryLocation()))));
+        mappedLocations.values().forEach(locations -> locations.sort(
+                Comparator.comparing(EmployeeLocationOptionView::primary)
+                        .reversed()
+                        .thenComparing(
+                                EmployeeLocationOptionView::displayName,
+                                String.CASE_INSENSITIVE_ORDER)));
         return mappedLocations;
     }
 
@@ -258,6 +312,8 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
             Set<Long> newLocationIds,
             Set<Long> addedLocationIds,
             Set<Long> removedLocationIds,
+            Long previousPrimaryLocationId,
+            Long newPrimaryLocationId,
             List<LocationMaster> selectedLocations,
             List<EmployeeLocationMappingEntity> existingMappings) {
         EmployeeLocationMappingAuditLogEntity auditLog = new EmployeeLocationMappingAuditLogEntity();
@@ -272,6 +328,8 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
         auditLog.setDetails(buildAuditDetails(
                 addedLocationIds,
                 removedLocationIds,
+                previousPrimaryLocationId,
+                newPrimaryLocationId,
                 selectedLocations,
                 existingMappings));
         auditLogRepository.save(auditLog);
@@ -280,6 +338,8 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
     private String buildAuditDetails(
             Set<Long> addedLocationIds,
             Set<Long> removedLocationIds,
+            Long previousPrimaryLocationId,
+            Long newPrimaryLocationId,
             List<LocationMaster> selectedLocations,
             List<EmployeeLocationMappingEntity> existingMappings) {
         Map<Long, String> locationNameById = new HashMap<>();
@@ -296,6 +356,18 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
         String removed = removedLocationIds.isEmpty()
                 ? "None"
                 : removedLocationIds.stream().map(locationNameById::get).collect(Collectors.joining(", "));
+
+        boolean primaryChanged = !Objects.equals(previousPrimaryLocationId, newPrimaryLocationId);
+        if (primaryChanged) {
+            String prevName = previousPrimaryLocationId != null
+                    ? locationNameById.getOrDefault(previousPrimaryLocationId, "id:" + previousPrimaryLocationId)
+                    : "None";
+            String newName = newPrimaryLocationId != null
+                    ? locationNameById.getOrDefault(newPrimaryLocationId, "id:" + newPrimaryLocationId)
+                    : "None";
+            return "Added: " + added + " | Removed: " + removed
+                    + " | Primary changed from: " + prevName + " to: " + newName;
+        }
         return "Added: " + added + " | Removed: " + removed;
     }
 
@@ -340,7 +412,7 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
                 List.copyOf(locations));
     }
 
-    private EmployeeLocationOptionView toLocationOptionView(LocationMaster location) {
+    private EmployeeLocationOptionView toLocationOptionView(LocationMaster location, boolean primary) {
         return new EmployeeLocationOptionView(
                 location.getLocationId(),
                 defaultIfBlank(location.getOfficeName(), ""),
@@ -348,7 +420,8 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
                 location.getLatitude(),
                 location.getLongitude(),
                 "Y".equalsIgnoreCase(location.getActiveFlag()),
-                buildLocationDisplayName(location));
+                buildLocationDisplayName(location),
+                primary);
     }
 
     private EmployeeLocationMappingAuditView toAuditView(EmployeeLocationMappingAuditLogEntity entity) {

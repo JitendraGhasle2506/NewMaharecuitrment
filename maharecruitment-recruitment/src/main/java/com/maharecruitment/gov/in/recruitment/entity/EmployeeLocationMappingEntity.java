@@ -46,4 +46,7 @@ public class EmployeeLocationMappingEntity extends RecruitmentAuditable {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "location_id", nullable = false)
     private LocationMaster location;
+
+    @Column(name = "is_primary", nullable = false)
+    private Boolean primaryLocation = false;
 }

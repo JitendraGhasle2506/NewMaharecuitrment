@@ -9,5 +9,6 @@ public record EmployeeLocationOptionView(
         BigDecimal latitude,
         BigDecimal longitude,
         boolean active,
-        String displayName) {
+        String displayName,
+        boolean primary) {
 }
