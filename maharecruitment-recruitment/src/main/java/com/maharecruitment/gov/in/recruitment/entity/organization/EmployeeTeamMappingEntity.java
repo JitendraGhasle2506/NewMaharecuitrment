@@ -51,9 +51,8 @@ public class EmployeeTeamMappingEntity extends RecruitmentAuditable {
     @JoinColumn(name = "team_id", nullable = false)
     private TeamMasterEntity team;
 
-    @NotNull(message = "Position is required")
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "position_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "position_id")
     private PositionMasterEntity position;
 
     @NotNull(message = "Effective date is required")

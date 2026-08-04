@@ -101,6 +101,11 @@
                             th:href="@{/hr/employee-location-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
                             <i class="fa-solid fa-location-dot me-1"></i> Location Mapping
                         </a>
+                        <a class="btn btn-outline-primary btn-sm"
+                            th:if="${currentStatus == 'ACTIVE'}"
+                            th:href="@{/hr/employee-cell-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                            <i class="fa-solid fa-table-cells me-1"></i> Cell Mapping
+                        </a>
                     </div>
                     <div class="d-flex align-items-end gap-2 flex-grow-1 justify-content-end flex-wrap">
                         <div class="filter-group flex-grow-1" style="max-width: 860px;">
@@ -212,11 +217,17 @@
                                             th:text="${emp.status}">ACTIVE</span>
                                     </td>
                                     <td class="text-end pe-4">
-                                        <a class="btn btn-outline-primary btn-sm"
-                                            th:if="${currentStatus == 'ACTIVE'}"
-                                            th:href="@{/hr/employee-location-mappings/{employeeId}(employeeId=${emp.employeeId},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
-                                            <i class="fa-solid fa-location-dot me-1"></i> Locations
-                                        </a>
+                                        <div class="d-inline-flex flex-wrap justify-content-end gap-2"
+                                            th:if="${currentStatus == 'ACTIVE'}">
+                                            <a class="btn btn-outline-primary btn-sm"
+                                                th:href="@{/hr/employee-location-mappings/{employeeId}(employeeId=${emp.employeeId},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                                                <i class="fa-solid fa-location-dot me-1"></i> Locations
+                                            </a>
+                                            <a class="btn btn-outline-primary btn-sm"
+                                                th:href="@{/hr/employee-cell-mappings/{employeeId}(employeeId=${emp.employeeId},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                                                <i class="fa-solid fa-table-cells me-1"></i> Cell
+                                            </a>
+                                        </div>
                                         <span th:if="${currentStatus != 'ACTIVE'}" class="text-muted">-</span>
                                     </td>
                                 </tr>

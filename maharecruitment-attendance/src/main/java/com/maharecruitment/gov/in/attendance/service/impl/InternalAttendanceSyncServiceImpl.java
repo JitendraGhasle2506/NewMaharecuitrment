@@ -131,7 +131,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                 continue;
             }
 
-            if (!entry.getKey().equals(normalizeText(employee.getEmployeeCode()))) {
+            if (!Objects.equals(entry.getKey(), normalizeText(employee.getEmployeeCode()))) {
                 employee.setEmployeeCode(entry.getKey());
                 employeesToUpdate.add(employee);
             }
@@ -624,8 +624,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
             throw new IllegalArgumentException("Aadhaar number must contain at least 4 digits.");
         }
 
-        // return properties.getUniqueCodePrefix() + digitsOnly.substring(digitsOnly.length() - 4);
-        return employee.getEmployeeCode();
+        return properties.getUniqueCodePrefix() + digitsOnly.substring(digitsOnly.length() - 4);
     }
 
     private long elapsedMillis(long startedAtNanos) {

@@ -21,12 +21,10 @@ import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectCellCountProjection;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.master.repository.WingMasterRepository;
-import com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus;
-import com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellCountProjection;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
-import com.maharecruitment.gov.in.recruitment.repository.organization.PositionCellEmployeeCountProjection;
-import com.maharecruitment.gov.in.recruitment.repository.organization.PositionMasterRepository;
 import com.maharecruitment.gov.in.web.service.dashboard.HRDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRCellReportView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.DepartmentOnboardingView;
@@ -50,7 +48,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
     private final WingMasterRepository wingMasterRepository;
     private final CellMasterRepository cellMasterRepository;
     private final EmployeeRepository employeeRepository;
-    private final PositionMasterRepository positionMasterRepository;
+    private final EmployeeCellMappingRepository employeeCellMappingRepository;
     private final DepartmentProjectApplicationRepository departmentProjectApplicationRepository;
     private final DailyAttendanceInternalRepository dailyAttendanceInternalRepository;
     private final AttendanceRegisterRepo attendanceRegisterRepo;
@@ -202,25 +200,23 @@ public class HRDashboardServiceImpl implements HRDashboardService {
     }
 
     private Map<Long, Integer> buildEmployeeCountsByCellId() {
-        return toEmployeeCountMap(positionMasterRepository.summarizeFilledActiveEmployeesByCell(
-                        OrganizationRecordStatus.ACTIVE,
-                        PositionStatus.FILLED,
-                        ACTIVE_EMPLOYEE_STATUS));
+        return toEmployeeCountMap(employeeCellMappingRepository.summarizeActiveEmployeesByCell(
+                ACTIVE_FLAG,
+                ACTIVE_EMPLOYEE_STATUS));
     }
 
     private Map<Long, Integer> buildEmployeeCountsByCellId(Long wingId) {
-        return toEmployeeCountMap(positionMasterRepository.summarizeFilledActiveEmployeesByCellAndWingId(
-                        wingId,
-                        OrganizationRecordStatus.ACTIVE,
-                        PositionStatus.FILLED,
-                        ACTIVE_EMPLOYEE_STATUS));
+        return toEmployeeCountMap(employeeCellMappingRepository.summarizeActiveEmployeesByCellAndWingId(
+                wingId,
+                ACTIVE_FLAG,
+                ACTIVE_EMPLOYEE_STATUS));
     }
 
-    private Map<Long, Integer> toEmployeeCountMap(List<PositionCellEmployeeCountProjection> summaries) {
+    private Map<Long, Integer> toEmployeeCountMap(List<EmployeeCellCountProjection> summaries) {
         return summaries.stream()
                 .filter(summary -> summary.getCellId() != null)
                 .collect(Collectors.toMap(
-                        PositionCellEmployeeCountProjection::getCellId,
+                        EmployeeCellCountProjection::getCellId,
                         summary -> toInt(summary.getEmployeeCount()),
                         Integer::sum));
     }

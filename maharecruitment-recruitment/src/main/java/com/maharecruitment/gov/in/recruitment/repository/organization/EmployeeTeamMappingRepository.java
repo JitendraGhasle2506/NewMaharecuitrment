@@ -87,6 +87,13 @@ public interface EmployeeTeamMappingRepository extends JpaRepository<EmployeeTea
             Long employeeId,
             OrganizationRecordStatus status);
 
+    @EntityGraph(attributePaths = { "employee", "employee.designation", "team", "team.cell", "team.cell.wing" })
+    @Query("select mapping from EmployeeTeamMappingEntity mapping "
+            + "where mapping.status = :status "
+            + "order by mapping.effectiveDate desc, mapping.mappingId desc")
+    List<EmployeeTeamMappingEntity> findAllByStatusWithTeam(
+            @Param("status") OrganizationRecordStatus status);
+
     boolean existsByPosition_PositionIdAndStatusAndMappingIdNot(
             Long positionId,
             OrganizationRecordStatus status,

@@ -1032,15 +1032,19 @@ public class OrganizationManagementServiceImpl implements OrganizationManagement
 
     private void mapMappingRequest(EmployeeTeamMappingRequest request, EmployeeTeamMappingEntity mapping) {
         TeamMasterEntity team = resolveTeamRequired(request.getTeamId());
-        PositionMasterEntity position = getPositionEntity(request.getPositionId());
-        CellMaster positionCell = resolvePositionCell(position);
-        if (positionCell != null && team.getCell() != null
-                && !team.getCell().getCellId().equals(positionCell.getCellId())) {
-            throw new BusinessValidationException("Team cell must match the position cell.");
-        }
+        PositionMasterEntity position = request.getPositionId() == null
+                ? null
+                : getPositionEntity(request.getPositionId());
         EmployeeEntity employee = resolveEmployee(request.getEmployeeId());
-        ensureEmployeeMatchesPosition(employee, position);
-        ensureEmployeeAvailable(employee, position.getPositionId());
+        if (position != null) {
+            CellMaster positionCell = resolvePositionCell(position);
+            if (positionCell != null && team.getCell() != null
+                    && !team.getCell().getCellId().equals(positionCell.getCellId())) {
+                throw new BusinessValidationException("Team cell must match the position cell.");
+            }
+            ensureEmployeeMatchesPosition(employee, position);
+            ensureEmployeeAvailable(employee, position.getPositionId());
+        }
         mapping.setEmployee(employee);
         mapping.setTeam(team);
         mapping.setPosition(position);
@@ -1298,7 +1302,7 @@ public class OrganizationManagementServiceImpl implements OrganizationManagement
     }
 
     private void applyMappingToPosition(EmployeeTeamMappingEntity mapping) {
-        if (mapping.getStatus() != OrganizationRecordStatus.ACTIVE) {
+        if (mapping.getStatus() != OrganizationRecordStatus.ACTIVE || mapping.getPosition() == null) {
             return;
         }
         PositionMasterEntity position = mapping.getPosition();

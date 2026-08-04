@@ -38,4 +38,5 @@ public class EmployeeReportingMappingEntity extends RecruitmentAuditable {
 
     @Column(name = "employee_id", nullable = false)
     private Long employeeId; // The Assigned Internal Employee ID
+
 }

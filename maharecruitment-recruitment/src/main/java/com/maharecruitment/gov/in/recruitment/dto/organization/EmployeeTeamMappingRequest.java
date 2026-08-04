@@ -17,7 +17,6 @@ public class EmployeeTeamMappingRequest {
     @NotNull(message = "Team is required")
     private Long teamId;
 
-    @NotNull(message = "Position is required")
     private Long positionId;
 
     @NotNull(message = "Effective date is required")

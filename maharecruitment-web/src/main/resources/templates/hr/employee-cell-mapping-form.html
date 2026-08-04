@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Employee Cell</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}">
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}">
+    <link rel="stylesheet" th:href="@{/css/employee-location-mapping.css}">
+    <link rel="stylesheet" th:href="@{/css/employee-cell-mapping.css}">
+</head>
+
+<body class="hr-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HR', 'Employee Cell Mapping', ~{::section})}">
+        <section th:with="employee=${editView.employee}">
+            <div class="card employee-location-card employee-cell-card">
+                <div class="header employee-location-page-header">
+                    <div class="employee-location-heading">
+                        <h2>Manage Employee Cell</h2>
+                        <div class="employee-location-page-meta">
+                            <span>
+                                <i class="fa-solid fa-id-badge"></i>
+                                <span th:text="${employee.employeeCode}">EMP000001</span>
+                            </span>
+                            <span>
+                                <i class="fa-solid fa-table-cells"></i>
+                                <span th:text="${editView.selectedCell != null ? editView.selectedCell.cellName : 'Not mapped'}">Not mapped</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="employee-location-header-actions">
+                        <a class="btn btn-outline-secondary btn-sm"
+                            th:href="@{/hr/employee-cell-mappings(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Back
+                        </a>
+                        <a class="btn btn-outline-primary btn-sm"
+                            th:href="@{/hr/employees/{employeeId}(employeeId=${employee.employeeId},status='ACTIVE',type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                            <i class="fa-regular fa-address-card me-1"></i> View Employee
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <div class="employee-location-profile-band">
+                        <div class="employee-location-profile-main">
+                            <div class="employee-location-profile-avatar"
+                                th:text="${#strings.isEmpty(employee.fullName) ? 'E' : #strings.substring(employee.fullName, 0, 1)}">
+                                E
+                            </div>
+                            <div class="employee-location-profile-copy">
+                                <h3 th:text="${employee.fullName}">Employee Name</h3>
+                                <div class="employee-location-profile-meta">
+                                    <span th:text="${employee.email}">email@domain.com</span>
+                                    <span th:text="${employee.mobile}">9999999999</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="employee-location-profile-facts">
+                            <div>
+                                <span>Project</span>
+                                <strong th:text="${employee.projectName}">Project</strong>
+                            </div>
+                            <div>
+                                <span>Designation</span>
+                                <strong th:text="${employee.designation}">Designation</strong>
+                            </div>
+                            <div>
+                                <span>Department</span>
+                                <strong th:text="${employee.department}">Department</strong>
+                            </div>
+                            <div>
+                                <span>Type</span>
+                                <strong th:text="${employee.recruitmentType != null ? employee.recruitmentType : '-'}">
+                                    INTERNAL
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="employeeCellMappingForm" method="post" th:object="${mappingForm}"
+                        th:action="@{/hr/employee-cell-mappings/{employeeId}(employeeId=${employee.employeeId},type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
+                            th:value="${_csrf.token}">
+
+                        <div class="employee-location-editor employee-cell-editor">
+                            <div class="employee-location-editor-main employee-cell-editor-main">
+                                <div class="employee-location-picker-panel">
+                                    <label class="form-label" for="employeeCellPicker">
+                                        Cell <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="employeeCellPicker" name="cellId" class="form-select"
+                                        data-placeholder="Search and select cell" required>
+                                        <option value="">Search and select cell</option>
+                                        <option th:each="cell : ${editView.availableCells}"
+                                            th:value="${cell.cellId}"
+                                            th:attr="data-label=${cell.displayName},data-wing=${cell.wingName},data-cell=${cell.cellName}"
+                                            th:selected="${mappingForm.cellId != null and mappingForm.cellId.equals(cell.cellId)}"
+                                            th:disabled="${!cell.active}"
+                                            th:text="${cell.displayName}">
+                                            Wing - Cell
+                                        </option>
+                                    </select>
+                                    <div class="invalid-feedback d-block"
+                                        th:if="${#fields.hasErrors('cellId')}"
+                                        th:errors="*{cellId}">
+                                        Select a cell to map this employee.
+                                    </div>
+                                </div>
+
+                                <div class="employee-cell-selected-panel">
+                                    <label class="form-label mb-0">Selected Cell</label>
+                                    <div id="selectedEmployeeCellBox" class="employee-cell-selected-box"
+                                        th:classappend="${editView.selectedCell == null} ? ' is-empty' : ''"
+                                        th:attr="data-empty-label='No cell selected.'"
+                                        aria-live="polite">
+                                        <div th:if="${editView.selectedCell != null}" class="employee-cell-selected-content">
+                                            <span class="employee-cell-selected-icon">
+                                                <i class="fa-solid fa-table-cells"></i>
+                                            </span>
+                                            <div>
+                                                <strong th:text="${editView.selectedCell.cellName}">Cell</strong>
+                                                <span th:text="${editView.selectedCell.wingName}">Wing</span>
+                                            </div>
+                                        </div>
+                                        <div th:if="${editView.selectedCell == null}" class="employee-location-empty">
+                                            <i class="fa-regular fa-square"></i>
+                                            <span>No cell selected.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="employee-location-action-row">
+                                <a class="btn btn-outline-secondary"
+                                    th:href="@{/hr/employee-cell-mappings(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                                    Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> Save Cell Mapping
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="employee-location-audit-panel">
+                        <div class="audit-header">
+                            <h5>Change Logs</h5>
+                            <span class="employee-location-audit-count"
+                                th:text="${#lists.size(editView.auditLogs) + ' latest'}">0 latest</span>
+                        </div>
+                        <div class="table-responsive" th:if="${!#lists.isEmpty(editView.auditLogs)}">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Actor</th>
+                                        <th>Action</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="audit : ${editView.auditLogs}">
+                                        <td th:text="${audit.occurredAt != null ? #temporals.format(audit.occurredAt, 'dd-MM-yyyy hh:mm a') : '-'}">
+                                            02-07-2026 10:40 AM
+                                        </td>
+                                        <td th:text="${audit.actorLoginId != null ? audit.actorLoginId : '-'}">HR</td>
+                                        <td th:text="${audit.actionType}">UPDATED</td>
+                                        <td>
+                                            <div class="employee-location-strong-text" th:text="${audit.summary}">Employee cell mapping updated</div>
+                                            <small class="text-muted" th:text="${audit.details}">Details</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="employee-location-empty-log" th:if="${#lists.isEmpty(editView.auditLogs)}">
+                            <i class="fa-regular fa-clock"></i>
+                            <span>No changes logged yet.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:src="@{/assets/vendor/jquery/jquery-3.7.1.min.js}"></script>
+    <script th:src="@{/assets/vendor/select2/select2.min.js}"></script>
+    <script th:src="@{/js/employee-cell-mapping.js}"></script>
+</body>
+
+</html>

@@ -22,6 +22,7 @@ import db.postmigration.R__auth_reference_data;
 import db.postmigration.R__common_mahait_profile_schema;
 import db.postmigration.R__department_and_recruitment_reference_data;
 import db.postmigration.R__department_and_recruitment_schema;
+import db.postmigration.R__hr_employee_cell_mapping_navigation;
 import db.postmigration.R__master_reference_data;
 import db.postmigration.V7__recruitment_pre_onboarding_hr_columns_fix;
 import db.postmigration.V11__pre_onboarding_interview_detail_nullable;
@@ -83,6 +84,7 @@ import db.postmigration.V99__password_reset_request_support;
 import db.postmigration.V100__agency_master_audit_details_text;
 import db.postmigration.V101__employee_master_department_id_support;
 import db.postmigration.V102__employee_location_mapping_primary_support;
+import db.postmigration.V104__employee_cell_mapping_support;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -192,7 +194,9 @@ public class PostSchemaFlywayRunner {
                 new V99__password_reset_request_support(),
                 new V100__agency_master_audit_details_text(),
                 new V101__employee_master_department_id_support(),
-                new V102__employee_location_mapping_primary_support());
+                new V102__employee_location_mapping_primary_support(),
+                new V104__employee_cell_mapping_support(),
+                new R__hr_employee_cell_mapping_navigation());
     }
 
     private boolean hasFailedPostSchemaMigration() {
