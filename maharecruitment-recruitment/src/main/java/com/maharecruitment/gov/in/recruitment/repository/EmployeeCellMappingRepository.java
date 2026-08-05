@@ -22,6 +22,33 @@ public interface EmployeeCellMappingRepository extends JpaRepository<EmployeeCel
     List<EmployeeCellMappingEntity> findByEmployeeEmployeeIdInOrderByEmployeeEmployeeIdAsc(
             Collection<Long> employeeIds);
 
+    @EntityGraph(attributePaths = {
+            "employee",
+            "employee.user",
+            "employee.designation",
+            "cell",
+            "cell.wing"
+    })
+    @Query("""
+            select mapping
+            from EmployeeCellMappingEntity mapping
+            join mapping.employee employee
+            join mapping.cell cell
+            join cell.wing wing
+            where wing.wingId = :wingId
+              and upper(trim(coalesce(employee.status, ''))) = :employeeStatus
+              and trim(coalesce(employee.employeeCode, '')) <> ''
+              and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING'
+              and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%'
+              and upper(coalesce(cell.activeFlag, 'N')) = :activeFlag
+              and upper(coalesce(wing.activeFlag, 'N')) = :activeFlag
+            order by cell.cellName, employee.fullName, employee.employeeId
+            """)
+    List<EmployeeCellMappingEntity> findActiveEmployeeMappingsByWingId(
+            @Param("wingId") Long wingId,
+            @Param("activeFlag") String activeFlag,
+            @Param("employeeStatus") String employeeStatus);
+
     @Query("""
             select cell.cellId as cellId,
                    count(distinct employee.employeeId) as employeeCount

@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.recruitment.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,9 @@ public interface CellReportingAuthorityMappingRepository
 
     @EntityGraph(attributePaths = { "cell", "cell.wing" })
     List<CellReportingAuthorityMappingEntity> findAllByOrderByCellCellNameAsc();
+
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    List<CellReportingAuthorityMappingEntity> findByCellCellIdIn(Collection<Long> cellIds);
 
     @Query("""
             select mapping.cell.cellId

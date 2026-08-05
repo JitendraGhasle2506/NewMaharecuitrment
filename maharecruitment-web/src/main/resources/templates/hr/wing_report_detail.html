@@ -6,6 +6,8 @@
     <title th:text="${wing.wingName} + ' - Wing Report'">Wing Report</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/hr-wing-hierarchy.css}">
+    <script defer th:src="@{/js/hr-wing-hierarchy.js}"></script>
 </head>
 
 <body class="hr-shell">
@@ -29,7 +31,7 @@
                         <div class="wing-detail-copy">
                             <span class="hero-eyebrow">Wing Detail</span>
                             <h1 th:text="${wing.wingName}">Wing Name</h1>
-                            <p>Cell-level project and employee strength for this wing.</p>
+                            <p>Cell, employee and reporting hierarchy for this wing.</p>
                             <span class="wing-hero-chip">
                                 <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
                                 <span>Live operational snapshot</span>
@@ -66,58 +68,143 @@
                         </div>
                     </section>
 
-                    <section class="panel wing-cell-detail-panel">
+                    <section class="panel wing-cell-detail-panel wing-hierarchy-panel">
                         <div class="panel-title wing-report-heading">
                             <div>
-                                <h4>Cell Details</h4>
-                                <span class="panel-subtitle">Project and employee distribution by cell</span>
+                                <h4>Cell &amp; Employee Hierarchy</h4>
+                                <span class="panel-subtitle">Employees appear below their cell; direct reports are nested below their manager</span>
                             </div>
                             <div class="wing-report-legend" aria-label="Report legend">
-                                <span><i class="legend-dot legend-project"></i> Projects</span>
-                                <span><i class="legend-dot legend-employee"></i> Employees</span>
+                                <span><i class="legend-dot hierarchy-legend-direct"></i> Direct mapping</span>
+                                <span><i class="legend-dot hierarchy-legend-cell"></i> Cell authority</span>
+                                <span><i class="legend-dot hierarchy-legend-unmapped"></i> Not mapped</span>
                             </div>
                         </div>
 
-                        <div class="wing-cell-table">
-                            <div class="wing-cell-table-head">
-                                <span>Cell Name</span>
-                                <span>Projects</span>
-                                <span>Employees</span>
-                                <span>Distribution</span>
+                        <div class="wing-hierarchy-toolbar" th:if="${!#lists.isEmpty(wing.cells)}">
+                            <label class="wing-hierarchy-search" for="wingHierarchySearch">
+                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                <input id="wingHierarchySearch" type="search"
+                                    placeholder="Search cell, employee, code or designation"
+                                    autocomplete="off">
+                            </label>
+                            <div class="wing-hierarchy-actions">
+                                <button type="button" id="collapseHierarchy">
+                                    <i class="fa-solid fa-angles-up" aria-hidden="true"></i>
+                                    Collapse current
+                                </button>
                             </div>
-                            <div class="wing-cell-table-row" th:each="cell : ${wing.cells}">
-                                <div class="wing-cell-name">
-                                    <span class="wing-cell-icon">
-                                        <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                        </div>
+
+                        <div class="wing-hierarchy-canvas" id="wingHierarchyCanvas"
+                            th:if="${!#lists.isEmpty(wing.cells)}">
+                            <div class="wing-hierarchy-root-wrap">
+                                <div class="wing-hierarchy-root">
+                                    <span class="wing-hierarchy-root-icon">
+                                        <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
                                     </span>
-                                    <span class="wing-cell-copy">
-                                        <strong th:text="${cell.cellName}">Cell Name</strong>
-                                        <small th:text="${cell.projectCount + ' projects / ' + cell.employeeCount + ' employees'}">0 projects / 0 employees</small>
+                                    <span>
+                                        <small>Wing</small>
+                                        <strong th:text="${wing.wingName}">Wing Name</strong>
                                     </span>
-                                </div>
-                                <div class="wing-cell-count wing-cell-metric">
-                                    <span>Projects</span>
-                                    <strong th:text="${cell.projectCount}">0</strong>
-                                </div>
-                                <div class="wing-cell-count wing-cell-metric wing-cell-employee-count">
-                                    <span>Employees</span>
-                                    <strong th:text="${cell.employeeCount}">0</strong>
-                                </div>
-                                <div class="wing-cell-bars" aria-hidden="true">
-                                    <span class="wing-cell-bar-line">
-                                        <span class="cell-bar-fill cell-bar-project"
-                                            th:style="'width:' + ${cell.projectPercent} + '%'"></span>
-                                    </span>
-                                    <span class="wing-cell-bar-line">
-                                        <span class="cell-bar-fill cell-bar-employee"
-                                            th:style="'width:' + ${cell.employeePercent} + '%'"></span>
-                                    </span>
+                                    <span class="wing-hierarchy-root-count" th:text="${wing.employeeCount}">0</span>
                                 </div>
                             </div>
-                            <div class="project-empty wing-empty-state" th:if="${#lists.isEmpty(wing.cells)}">
-                                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                                <span>No active cells found for this wing.</span>
+
+                            <div class="wing-hierarchy-trunk" aria-hidden="true"></div>
+
+                            <div class="wing-hierarchy-branches">
+                                <article class="wing-hierarchy-branch"
+                                    th:each="cell, cellStatus : ${wing.cells}"
+                                    th:attr="data-cell-search=${#strings.toLowerCase(cell.cellName)}">
+                                    <button class="wing-hierarchy-cell" type="button"
+                                        th:attr="data-hierarchy-target=${'cellEmployees-' + cell.cellId},
+                                                 aria-controls=${'cellEmployees-' + cell.cellId},
+                                                 aria-expanded=${cellStatus.first}">
+                                        <span class="wing-hierarchy-cell-icon">
+                                            <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                                        </span>
+                                        <span class="wing-hierarchy-cell-copy">
+                                            <small>Cell</small>
+                                            <strong th:text="${cell.cellName}">Cell Name</strong>
+                                            <em th:text="${cell.projectCount + ' projects'}">0 projects</em>
+                                        </span>
+                                        <span class="wing-hierarchy-cell-count" th:text="${cell.employeeCount}">0</span>
+                                        <i class="fa-solid fa-chevron-up wing-hierarchy-cell-chevron" aria-hidden="true"></i>
+                                    </button>
+
+                                    <span class="wing-hierarchy-branch-link" aria-hidden="true">
+                                        <span th:text="${cell.employeeCount}">0</span>
+                                    </span>
+
+                                    <div class="wing-hierarchy-employees"
+                                        th:id="${'cellEmployees-' + cell.cellId}"
+                                        th:hidden="${!cellStatus.first}">
+                                        <article class="wing-hierarchy-employee"
+                                            th:each="employee : ${cell.employees}"
+                                            th:classappend="${employee.depth == 0} ? ' wing-hierarchy-employee-root' : ''"
+                                            th:attr="style=|--hierarchy-depth: ${employee.depth}|,
+                                                     data-employee-search=${#strings.toLowerCase(employee.employeeName + ' ' + employee.employeeCode + ' ' + employee.designationName)}">
+                                            <span class="wing-hierarchy-node-line" aria-hidden="true"></span>
+                                            <span class="wing-hierarchy-avatar">
+                                                <img th:if="${!#strings.isEmpty(employee.photoPath)}"
+                                                    th:src="@{${employee.photoPath}}"
+                                                    th:alt="${employee.employeeName}">
+                                                <span class="wing-hierarchy-avatar-fallback"
+                                                    th:classappend="${!#strings.isEmpty(employee.photoPath)} ? ' d-none' : ''"
+                                                    th:text="${employee.initials}">EM</span>
+                                            </span>
+                                            <span class="wing-hierarchy-employee-copy">
+                                                <strong th:text="${employee.employeeName}">Employee Name</strong>
+                                                <small th:text="${employee.designationName}">Designation</small>
+                                                <em>
+                                                    <span th:text="${employee.employeeCode}">EMP001</span>
+                                                    <span th:if="${!#strings.isEmpty(employee.reportsToName)}">
+                                                        <i class="fa-solid fa-arrow-turn-up" aria-hidden="true"></i>
+                                                        Reports to <b th:text="${employee.reportsToName}">Manager</b>
+                                                    </span>
+                                                </em>
+                                            </span>
+                                            <span class="wing-hierarchy-node-meta">
+                                                <span class="wing-hierarchy-source source-direct"
+                                                    th:if="${employee.reportingSource == 'DIRECT'}">
+                                                    Direct
+                                                </span>
+                                                <span class="wing-hierarchy-source source-cell"
+                                                    th:if="${employee.reportingSource == 'CELL'}">
+                                                    Cell authority
+                                                </span>
+                                                <span class="wing-hierarchy-source source-none"
+                                                    th:if="${employee.reportingSource == 'NONE'}">
+                                                    Not mapped
+                                                </span>
+                                                <span class="wing-hierarchy-report-count"
+                                                    th:if="${employee.directReportCount > 0}"
+                                                    th:title="${employee.directReportCount + ' direct reports'}">
+                                                    <i class="fa-solid fa-user-group" aria-hidden="true"></i>
+                                                    <span th:text="${employee.directReportCount}">0</span>
+                                                </span>
+                                            </span>
+                                        </article>
+
+                                        <div class="wing-hierarchy-empty"
+                                            th:if="${#lists.isEmpty(cell.employees)}">
+                                            <i class="fa-solid fa-user-slash" aria-hidden="true"></i>
+                                            <span>No active employees are mapped to this cell.</span>
+                                        </div>
+                                    </div>
+                                </article>
                             </div>
+
+                            <div class="wing-hierarchy-no-results d-none" id="wingHierarchyNoResults">
+                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                <span>No matching cell or employee found.</span>
+                            </div>
+                        </div>
+
+                        <div class="project-empty wing-empty-state" th:if="${#lists.isEmpty(wing.cells)}">
+                            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            <span>No active cells found for this wing.</span>
                         </div>
                     </section>
                 </div>

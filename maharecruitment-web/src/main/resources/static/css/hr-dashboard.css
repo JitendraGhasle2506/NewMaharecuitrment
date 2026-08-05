@@ -535,10 +535,14 @@ button.kpi-card {
 .wing-report-page {
     display: grid;
     gap: 1rem;
+    width: 100%;
+    min-width: 0;
 }
 
 .hr-shell .wing-report-card {
     position: relative;
+    width: 100%;
+    min-width: 0;
     padding: 0.25rem;
 }
 
@@ -548,6 +552,8 @@ button.kpi-card {
 
 .hr-shell .wing-page-toolbar {
     align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
     margin-bottom: 1rem;
 }
 
@@ -573,6 +579,7 @@ button.kpi-card {
 .wing-back-link {
     display: inline-flex;
     align-items: center;
+    flex: 0 0 auto;
     gap: 0.45rem;
     min-height: 38px;
     padding: 0 0.86rem;
@@ -598,7 +605,8 @@ button.kpi-card {
     grid-template-columns: minmax(0, 1fr) minmax(360px, 0.82fr);
     align-items: stretch;
     gap: 1rem;
-    padding: 1.35rem;
+    min-width: 0;
+    padding: clamp(1rem, 2vw, 1.35rem);
     border: 1px solid rgba(31, 79, 120, 0.16);
     border-radius: 8px;
     color: #ffffff;
@@ -629,7 +637,7 @@ button.kpi-card {
 
 .wing-detail-hero h1 {
     margin: 0;
-    font-size: var(--heading-size-main);
+    font-size: clamp(1.3rem, 2.2vw, var(--heading-size-main));
     font-weight: 800;
     line-height: 1.16;
     overflow-wrap: anywhere;
@@ -670,7 +678,7 @@ button.kpi-card {
     flex-direction: column;
     justify-content: space-between;
     gap: 0.78rem;
-    padding: 0.86rem;
+    padding: clamp(0.72rem, 1.4vw, 0.86rem);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.15);
@@ -720,6 +728,7 @@ button.kpi-card {
 }
 
 .wing-cell-detail-panel {
+    min-width: 0;
     border-color: rgba(31, 79, 120, 0.12);
     background: linear-gradient(180deg, #ffffff, #fbfdff);
     overflow: hidden;
@@ -732,9 +741,14 @@ button.kpi-card {
     border-bottom: 1px solid #e6edf4;
 }
 
+.wing-report-heading > div:first-child {
+    min-width: 0;
+}
+
 .wing-report-legend {
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 0.55rem;
     color: var(--hr-muted);
     font-size: 0.78rem;
@@ -1062,7 +1076,9 @@ button.kpi-card {
     }
 
     .hr-shell .wing-page-toolbar {
-        align-items: stretch;
+        align-items: flex-start;
+        flex-direction: column;
+        margin-bottom: 0.8rem;
     }
 
     .panel-title {
@@ -1072,6 +1088,28 @@ button.kpi-card {
 
     .wing-detail-hero {
         grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .wing-detail-summary > div {
+        min-height: 92px;
+    }
+
+    .wing-detail-summary > div:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+
+    .wing-report-heading {
+        gap: 0.65rem;
+    }
+
+    .wing-report-legend {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .wing-report-legend span {
+        flex: 1 1 130px;
     }
 
     .wing-cell-table-head {
@@ -1118,6 +1156,54 @@ button.kpi-card {
     .wing-back-link {
         width: 100%;
         justify-content: center;
+    }
+
+    .hr-shell .wing-report-card {
+        padding: 0;
+    }
+
+    .wing-detail-hero {
+        padding: 0.85rem;
+    }
+
+    .wing-detail-hero h1 {
+        font-size: 1.3rem;
+    }
+
+    .wing-detail-hero p {
+        font-size: 0.84rem;
+        line-height: 1.45;
+    }
+
+    .wing-hero-chip {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .wing-detail-summary > div,
+    .wing-detail-summary > div:last-child:nth-child(odd) {
+        grid-column: auto;
+        min-height: 0;
+    }
+
+    .wing-detail-summary > div {
+        align-items: center;
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 0.7rem;
+        padding: 0.7rem 0.75rem;
+    }
+
+    .wing-summary-copy strong {
+        font-size: 1.32rem;
+    }
+
+    .wing-report-legend span {
+        flex-basis: 100%;
+    }
+
+    .wing-cell-detail-panel {
+        padding: 0.75rem;
     }
 }
 
