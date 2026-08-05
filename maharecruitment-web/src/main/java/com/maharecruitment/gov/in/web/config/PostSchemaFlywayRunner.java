@@ -85,6 +85,7 @@ import db.postmigration.V100__agency_master_audit_details_text;
 import db.postmigration.V101__employee_master_department_id_support;
 import db.postmigration.V102__employee_location_mapping_primary_support;
 import db.postmigration.V104__employee_cell_mapping_support;
+import db.postmigration.V105__cell_reporting_authority_mapping_support;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -196,6 +197,7 @@ public class PostSchemaFlywayRunner {
                 new V101__employee_master_department_id_support(),
                 new V102__employee_location_mapping_primary_support(),
                 new V104__employee_cell_mapping_support(),
+                new V105__cell_reporting_authority_mapping_support(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

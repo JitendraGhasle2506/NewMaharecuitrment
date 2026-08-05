@@ -19,12 +19,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.master.entity.CellMaster;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
+import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
+import com.maharecruitment.gov.in.recruitment.entity.CellReportingAuthorityMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus;
 import com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus;
+import com.maharecruitment.gov.in.recruitment.repository.CellReportingAuthorityMappingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellCountProjection;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingHodProjection;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
@@ -76,6 +82,15 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     private ProjectMstRepository projectRepository;
 
     @Autowired
+    private CellMasterRepository cellMasterRepository;
+
+    @Autowired
+    private EmployeeCellMappingRepository employeeCellMappingRepository;
+
+    @Autowired
+    private CellReportingAuthorityMappingRepository cellAuthorityMappingRepository;
+
+    @Autowired
     private EmployeeReportingMappingRepository mappingRepository;
 
     @Override
@@ -119,6 +134,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
     private List<Map<String, Object>> toAuthorityOptions(Map<Long, String> authorityTypesByUserId) {
         return userRepository.findAllById(authorityTypesByUserId.keySet()).stream()
+                .filter(user -> Boolean.TRUE.equals(user.getActive()))
                 .sorted(Comparator
                         .comparingInt((User user) ->
                                 authorityTypeRank(authorityTypesByUserId.get(user.getId())))
@@ -487,6 +503,60 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getCellReportingMappings() {
+        List<CellMaster> cells = cellMasterRepository
+                .findByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCaseOrderByCellNameAsc(
+                        ACTIVE_FLAG_Y, ACTIVE_FLAG_Y);
+        if (cells.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Long> employeeCounts = toEmployeeCounts(
+                employeeCellMappingRepository.summarizeActiveEmployeesByCell(ACTIVE_FLAG_Y, ACTIVE));
+        Map<Long, Long> fallbackEmployeeCounts = toEmployeeCounts(
+                employeeCellMappingRepository.summarizeActiveEmployeesWithoutExplicitReportingByCell(
+                        ACTIVE_FLAG_Y, ACTIVE));
+        Map<Long, CellReportingAuthorityMappingEntity> mappingsByCellId =
+                cellAuthorityMappingRepository.findAllByOrderByCellCellNameAsc().stream()
+                        .collect(Collectors.toMap(
+                                mapping -> mapping.getCell().getCellId(),
+                                mapping -> mapping));
+
+        Set<Long> authorityUserIds = mappingsByCellId.values().stream()
+                .map(CellReportingAuthorityMappingEntity::getAuthorityUserId)
+                .collect(Collectors.toSet());
+        Map<Long, User> authoritiesById = userRepository.findAllById(authorityUserIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+
+        return cells.stream().map(cell -> {
+            CellReportingAuthorityMappingEntity mapping = mappingsByCellId.get(cell.getCellId());
+            User authority = mapping == null ? null : authoritiesById.get(mapping.getAuthorityUserId());
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("cellId", cell.getCellId());
+            row.put("cellName", cell.getCellName());
+            row.put("wingName", cell.getWing() == null ? "" : cell.getWing().getWingName());
+            row.put("employeeCount", employeeCounts.getOrDefault(cell.getCellId(), 0L));
+            row.put("fallbackEmployeeCount", fallbackEmployeeCounts.getOrDefault(cell.getCellId(), 0L));
+            row.put("mapped", mapping != null);
+            row.put("mappingId", mapping == null ? null : mapping.getMappingId());
+            row.put("authorityUserId", mapping == null ? null : mapping.getAuthorityUserId());
+            row.put("authorityName", authority == null ? "" : formatAuthorityName(authority));
+            row.put("authorityType", authority == null ? "" : resolveAuthorityType(authority));
+            return row;
+        }).toList();
+    }
+
+    private Map<Long, Long> toEmployeeCounts(List<EmployeeCellCountProjection> projections) {
+        if (projections == null || projections.isEmpty()) {
+            return Map.of();
+        }
+        return projections.stream().collect(Collectors.toMap(
+                EmployeeCellCountProjection::getCellId,
+                projection -> projection.getEmployeeCount() == null ? 0L : projection.getEmployeeCount()));
+    }
+
+    @Override
     @Transactional
     public void saveMapping(Long hodUserId, String managerType, Long managerEmployeeId, Long projectId, List<Long> employeeIds) {
         MappingRequest request = validateRequest(
@@ -530,6 +600,50 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
         mappingRepository.save(toEntity(mapping, request, employeeId));
         log.info("Updated reporting mappingId={} for employeeId={}", mappingId, employeeId);
+    }
+
+    @Override
+    @Transactional
+    public void saveCellReportingMapping(Long cellId, Long authorityUserId) {
+        if (cellId == null) {
+            throw new IllegalArgumentException("Cell selection is required.");
+        }
+        if (authorityUserId == null) {
+            throw new IllegalArgumentException("Reporting authority selection is required.");
+        }
+
+        CellMaster cell = cellMasterRepository.findByCellId(cellId)
+                .orElseThrow(() -> new IllegalArgumentException("Selected cell was not found."));
+        if (!ACTIVE_FLAG_Y.equalsIgnoreCase(cell.getActiveFlag())
+                || cell.getWing() == null
+                || !ACTIVE_FLAG_Y.equalsIgnoreCase(cell.getWing().getActiveFlag())) {
+            throw new IllegalArgumentException("Only an active cell in an active wing can be mapped.");
+        }
+        requireReportingAuthority(authorityUserId);
+
+        CellReportingAuthorityMappingEntity mapping = cellAuthorityMappingRepository.findByCellCellId(cellId)
+                .orElseGet(CellReportingAuthorityMappingEntity::new);
+        mapping.setCell(cell);
+        mapping.setAuthorityUserId(authorityUserId);
+        cellAuthorityMappingRepository.save(mapping);
+        log.info("Mapped cellId={} to reporting authority userId={}", cellId, authorityUserId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> getEffectiveEmployeeIdsForAuthority(Long authorityUserId) {
+        if (authorityUserId == null) {
+            return List.of();
+        }
+
+        LinkedHashSet<Long> employeeIds = new LinkedHashSet<>(
+                mappingRepository.findEmployeeIdsByAuthorityUserId(authorityUserId));
+        List<Long> cellIds = cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(authorityUserId);
+        if (!cellIds.isEmpty()) {
+            employeeIds.addAll(employeeCellMappingRepository.findEmployeeIdsWithoutExplicitReportingMapping(
+                    cellIds, authorityUserId));
+        }
+        return List.copyOf(employeeIds);
     }
 
     @Override
@@ -632,6 +746,9 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     private User requireReportingAuthority(Long userId) {
         User authority = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Selected reporting authority was not found."));
+        if (!Boolean.TRUE.equals(authority.getActive())) {
+            throw new IllegalArgumentException("Selected reporting authority must be active.");
+        }
         if (resolveAuthorityType(authority) == null) {
             throw new IllegalArgumentException(
                     "Selected user must have the COO, HOD, STM, or PM role.");

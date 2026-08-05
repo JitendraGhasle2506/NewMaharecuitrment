@@ -26,10 +26,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.master.entity.CellMaster;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
+import com.maharecruitment.gov.in.master.entity.WingMaster;
+import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
+import com.maharecruitment.gov.in.recruitment.entity.CellReportingAuthorityMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
+import com.maharecruitment.gov.in.recruitment.repository.CellReportingAuthorityMappingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingHodProjection;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
@@ -52,6 +58,15 @@ class ReportingManagerServiceImplTest {
 
     @Mock
     private EmployeeReportingMappingRepository mappingRepository;
+
+    @Mock
+    private CellMasterRepository cellMasterRepository;
+
+    @Mock
+    private EmployeeCellMappingRepository employeeCellMappingRepository;
+
+    @Mock
+    private CellReportingAuthorityMappingRepository cellAuthorityMappingRepository;
 
     @InjectMocks
     private ReportingManagerServiceImpl service;
@@ -491,6 +506,44 @@ class ReportingManagerServiceImplTest {
         mapping.setManagerEmployeeId(null);
 
         assertEquals(7L, service.resolveDirectReportingUserId(mapping));
+    }
+
+    @Test
+    void effectiveAuthorityEmployeesIncludeCellFallbackWithoutReplacingExplicitMappings() {
+        when(mappingRepository.findEmployeeIdsByAuthorityUserId(7L)).thenReturn(List.of(101L, 102L));
+        when(cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(7L)).thenReturn(List.of(11L));
+        when(employeeCellMappingRepository.findEmployeeIdsWithoutExplicitReportingMapping(List.of(11L), 7L))
+                .thenReturn(List.of(103L, 104L));
+
+        List<Long> employeeIds = service.getEffectiveEmployeeIdsForAuthority(7L);
+
+        assertEquals(List.of(101L, 102L, 103L, 104L), employeeIds);
+    }
+
+    @Test
+    void saveCellReportingMappingCreatesFallbackForActiveCellAndAuthority() {
+        WingMaster wing = WingMaster.builder()
+                .wingId(3L)
+                .wingName("Technology")
+                .activeFlag("Y")
+                .build();
+        CellMaster cell = CellMaster.builder()
+                .cellId(11L)
+                .cellName("Applications")
+                .wing(wing)
+                .activeFlag("Y")
+                .build();
+        when(cellMasterRepository.findByCellId(11L)).thenReturn(Optional.of(cell));
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
+        when(cellAuthorityMappingRepository.findByCellCellId(11L)).thenReturn(Optional.empty());
+
+        service.saveCellReportingMapping(11L, 7L);
+
+        ArgumentCaptor<CellReportingAuthorityMappingEntity> captor =
+                ArgumentCaptor.forClass(CellReportingAuthorityMappingEntity.class);
+        verify(cellAuthorityMappingRepository).save(captor.capture());
+        assertEquals(11L, captor.getValue().getCell().getCellId());
+        assertEquals(7L, captor.getValue().getAuthorityUserId());
     }
 
     @Test

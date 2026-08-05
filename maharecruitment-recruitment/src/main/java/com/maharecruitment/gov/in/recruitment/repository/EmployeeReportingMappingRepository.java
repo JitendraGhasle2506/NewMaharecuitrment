@@ -27,6 +27,14 @@ public interface EmployeeReportingMappingRepository extends JpaRepository<Employ
     Optional<EmployeeReportingMappingEntity> findFirstByEmployeeIdOrderByMappingIdDesc(Long employeeId);
 
     @Query("""
+            select distinct mapping.employeeId
+            from EmployeeReportingMappingEntity mapping
+            where mapping.hodUserId = :authorityUserId
+            order by mapping.employeeId
+            """)
+    List<Long> findEmployeeIdsByAuthorityUserId(@Param("authorityUserId") Long authorityUserId);
+
+    @Query("""
             select mapping.employeeId as employeeId,
                    mapping.hodUserId as hodUserId,
                    mapping.mappingId as mappingId

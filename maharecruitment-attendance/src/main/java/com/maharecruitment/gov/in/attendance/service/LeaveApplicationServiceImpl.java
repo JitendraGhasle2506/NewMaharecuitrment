@@ -20,9 +20,8 @@ import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalR
 import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
-import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
-import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
+import com.maharecruitment.gov.in.recruitment.service.ReportingManagerService;
 
 @Service
 @Transactional
@@ -43,7 +42,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     private TourApplicationRepository tourApplicationRepository;
 
     @Autowired
-    private EmployeeReportingMappingRepository employeeReportingMappingRepository;
+    private ReportingManagerService reportingManagerService;
 
     @Autowired
     private EmployeeRepository employeeRepository;
@@ -180,14 +179,11 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
     @Override
     public List<LeaveApplicationHODDTO> getPendingLeavesForHOD(Long hodUserId, String search) {
-        List<EmployeeReportingMappingEntity> mappings = employeeReportingMappingRepository.findByHodUserId(hodUserId);
-        if (mappings.isEmpty()) {
+        List<Long> employeeIds = reportingManagerService.getEffectiveEmployeeIdsForAuthority(hodUserId);
+        if (employeeIds.isEmpty()) {
             return List.of();
         }
-        List<Long> employeeIds = mappings.stream()
-                .map(EmployeeReportingMappingEntity::getEmployeeId)
-                .collect(Collectors.toList());
-        
+
         List<LeaveApplicationEntity> leaves = leaveApplicationRepository.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(employeeIds, "PENDING");
         
         if (leaves.isEmpty()) {
@@ -199,14 +195,11 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
     @Override
     public List<LeaveApplicationHODDTO> getProcessedLeavesForHOD(Long hodUserId, String search) {
-        List<EmployeeReportingMappingEntity> mappings = employeeReportingMappingRepository.findByHodUserId(hodUserId);
-        if (mappings.isEmpty()) {
+        List<Long> employeeIds = reportingManagerService.getEffectiveEmployeeIdsForAuthority(hodUserId);
+        if (employeeIds.isEmpty()) {
             return List.of();
         }
-        List<Long> employeeIds = mappings.stream()
-                .map(EmployeeReportingMappingEntity::getEmployeeId)
-                .collect(Collectors.toList());
-        
+
         List<LeaveApplicationEntity> leaves = leaveApplicationRepository.findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(employeeIds, List.of("APPROVED", "REJECTED"));
         
         if (leaves.isEmpty()) {

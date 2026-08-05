@@ -83,10 +83,40 @@
                         <!-- Existing Mappings Card -->
                         <div class="card add-emp-card mb-4" id="gridCard">
                             <div class="header d-flex justify-content-between align-items-center">
-                                <h2>Reporting Manager Mapping</h2>
-                                <button type="button" class="btn btn-primary btn-sm" id="addMappingBtn">Add Mapping</button>
+                                <h2>Reporting Authority Mapping</h2>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="mapCellBtn">
+                                        <i class="fa fa-sitemap me-1"></i> Map Cell
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-sm" id="addMappingBtn">
+                                        <i class="fa fa-user-plus me-1"></i> Add Employee Mapping
+                                    </button>
+                                </div>
                             </div>
                             <div class="card-body">
+                                <div class="alert alert-info py-2">
+                                    <i class="fa fa-info-circle me-1"></i>
+                                    A cell authority approves leave only for employees who do not already have an
+                                    individual reporting mapping. Individual mappings always take precedence.
+                                </div>
+
+                                <h5 class="mb-3">Cell Reporting Authorities</h5>
+                                <div class="table-responsive mb-4">
+                                    <table id="cellMappingsTable" class="table table-bordered table-hover align-middle w-100">
+                                        <thead>
+                                            <tr>
+                                                <th>Wing</th>
+                                                <th>Cell</th>
+                                                <th>Employees Using Cell Rule</th>
+                                                <th>Reporting Authority</th>
+                                                <th style="width: 110px;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+
+                                <h5 class="mb-3">Individual Employee Mappings (Overrides)</h5>
                                 <div class="table-responsive">
                                     <table id="mappingsTable" class="table table-bordered table-hover align-middle w-100">
                                     <thead>
@@ -101,6 +131,48 @@
                                     </tbody>
                                 </table>
                             </div>
+                            </div>
+                        </div>
+
+                        <div class="card add-emp-card mb-4" id="cellFormCard" style="display: none;">
+                            <div class="header d-flex justify-content-between align-items-center">
+                                <h2 id="cellFormTitle">Map Cell to Reporting Authority</h2>
+                            </div>
+                            <div class="card-body">
+                                <form th:action="@{/hr/saveCellReportingMapping}" method="post" id="cellMappingForm">
+                                    <input type="hidden" th:if="${_csrf != null}"
+                                           th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <div class="alert alert-light border">
+                                        This mapping is a fallback for leave approval. Employees with an individual
+                                        reporting mapping will continue to report to their individually assigned authority.
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-lg-6">
+                                            <label class="form-label" for="cellSelect">
+                                                Select Cell <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-select" id="cellSelect" name="cellId" required>
+                                                <option value="">-- Select Cell --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <label class="form-label" for="cellAuthoritySelect">
+                                                Select Reporting Authority <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-select" id="cellAuthoritySelect"
+                                                    name="authorityUserId" required>
+                                                <option value="">-- Select Reporting Authority --</option>
+                                            </select>
+                                            <div class="form-text">COO, HOD, STM, and PM authorities are available.</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end border-top pt-3 mt-4">
+                                        <button type="button" class="btn btn-secondary me-2" id="cancelCellBtn">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa fa-save me-1"></i> Save Cell Mapping
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
 
@@ -217,19 +289,32 @@
             if(!contextPath.endsWith('/')) contextPath += '/';
             
             var allEmployees = [];
+            var allCells = [];
             var editingEmployeeId = null;
+
+            function escapeHtml(value) {
+                return $('<div>').text(value == null ? '' : value).html();
+            }
 
             // View toggle logic
             function showForm() {
                 $('#gridCard').hide();
+                $('#cellFormCard').hide();
                 $('#formCard').show();
             }
 
+            function showCellForm() {
+                $('#gridCard, #formCard').hide();
+                $('#cellFormCard').show();
+            }
+
             function showGrid() {
-                $('#formCard').hide();
+                $('#formCard, #cellFormCard').hide();
                 $('#gridCard').show();
                 editingEmployeeId = null;
                 $('#mappingForm')[0].reset();
+                $('#cellMappingForm')[0].reset();
+                $('#cellFormTitle').text('Map Cell to Reporting Authority');
                 $('#mappingId').val('');
                 $('#authorityUserSection').addClass('hidden');
                 $('#authoritySelect')
@@ -250,11 +335,130 @@
                 showForm();
             });
 
+            $('#mapCellBtn').click(function() {
+                openCellMappingForm(null, null);
+            });
+
             $('#cancelBtn').click(function() {
                 showGrid();
             });
 
-            // Initialize DataTable
+            $('#cancelCellBtn').click(function() {
+                showGrid();
+            });
+
+            function populateCellMappingForm(cellId, authorityUserId) {
+                var cellSelect = $('#cellSelect').html('<option value="">-- Select Cell --</option>');
+                allCells.forEach(function(cell) {
+                    var label = cell.wingName
+                        ? cell.wingName + ' / ' + cell.cellName
+                        : cell.cellName;
+                    $('<option>', { value: cell.cellId, text: label }).appendTo(cellSelect);
+                });
+
+                var authoritySelect = $('#cellAuthoritySelect')
+                    .html('<option value="">-- Select Reporting Authority --</option>');
+                reportingAuthorities.forEach(function(authority) {
+                    $('<option>', {
+                        value: authority.id,
+                        text: '[' + authority.authorityType + '] ' + authority.name
+                    }).appendTo(authoritySelect);
+                });
+
+                if(cellId) {
+                    cellSelect.val(String(cellId));
+                }
+                if(authorityUserId) {
+                    authoritySelect.val(String(authorityUserId));
+                }
+            }
+
+            function openCellMappingForm(cellId, authorityUserId) {
+                showCellForm();
+                $('#cellSelect, #cellAuthoritySelect').prop('disabled', true);
+                $('#cellSelect').html('<option value="">-- Loading cells... --</option>');
+                $('#cellAuthoritySelect').html('<option value="">-- Loading authorities... --</option>');
+                $('#cellFormTitle').text(cellId
+                    ? 'Change Cell Reporting Authority'
+                    : 'Map Cell to Reporting Authority');
+
+                $.when(cellMappingsRequest, reportingAuthoritiesRequest).done(function() {
+                    populateCellMappingForm(cellId, authorityUserId);
+                    $('#cellSelect, #cellAuthoritySelect').prop('disabled', false);
+                }).fail(function() {
+                    $('#cellSelect').html('<option value="">-- Unable to load cells --</option>');
+                    $('#cellAuthoritySelect')
+                        .html('<option value="">-- Unable to load reporting authorities --</option>');
+                });
+            }
+
+            var cellMappingsTable = $('#cellMappingsTable').DataTable({
+                data: [],
+                order: [ [0, 'asc'], [1, 'asc'] ],
+                columns: [
+                    { data: 'wingName', render: $.fn.dataTable.render.text() },
+                    { data: 'cellName', render: $.fn.dataTable.render.text() },
+                    {
+                        data: null,
+                        render: function(data, type, row) {
+                            if(type !== 'display') {
+                                return row.fallbackEmployeeCount;
+                            }
+                            return '<span class="fw-semibold">' + Number(row.fallbackEmployeeCount || 0) + '</span>'
+                                + ' of ' + Number(row.employeeCount || 0)
+                                + '<div class="small text-muted">No individual override</div>';
+                        }
+                    },
+                    {
+                        data: null,
+                        render: function(data, type, row) {
+                            if(type !== 'display') {
+                                return row.authorityName || '';
+                            }
+                            if(!row.mapped) {
+                                return '<span class="badge bg-warning text-dark">Not mapped</span>';
+                            }
+                            return '<span class="badge bg-primary me-1">'
+                                + escapeHtml(row.authorityType) + '</span>'
+                                + escapeHtml(row.authorityName);
+                        }
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            if(type !== 'display') {
+                                return '';
+                            }
+                            return '<button type="button" class="btn btn-sm '
+                                + (row.mapped ? 'btn-outline-primary' : 'btn-primary')
+                                + ' edit-cell-mapping-btn" data-cell="' + Number(row.cellId)
+                                + '" data-authority="' + (row.authorityUserId == null
+                                    ? '' : Number(row.authorityUserId)) + '">'
+                                + '<i class="fa fa-edit me-1"></i>'
+                                + (row.mapped ? 'Change' : 'Map') + '</button>';
+                        }
+                    }
+                ],
+                language: {
+                    emptyTable: 'No active cells found.'
+                }
+            });
+
+            var cellMappingsRequest = $.ajax({
+                url: contextPath + 'hr/api/cell-reporting-mappings',
+                method: 'GET'
+            }).done(function(data) {
+                allCells = data || [];
+                cellMappingsTable.clear().rows.add(allCells).draw();
+            });
+
+            $(document).on('click', '.edit-cell-mapping-btn', function() {
+                openCellMappingForm($(this).data('cell'), $(this).data('authority'));
+            });
+
+            // Initialize individual employee mapping table
             var mappingsTable = $('#mappingsTable').DataTable({
                 ajax: {
                     url: contextPath + 'hr/api/mappings',
@@ -661,6 +865,13 @@
             });
             $('#deselectAllBtn').click(function() {
                 $('.emp-checkbox:not(:disabled)').prop('checked', false);
+            });
+
+            $('#cellMappingForm').submit(function(e) {
+                if(!$('#cellSelect').val() || !$('#cellAuthoritySelect').val()) {
+                    alert('Please select both a cell and a reporting authority.');
+                    e.preventDefault();
+                }
             });
 
             // Form validation

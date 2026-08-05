@@ -75,6 +75,35 @@ public class ReportingManagerMappingController {
         return ResponseEntity.ok(reportingManagerService.getAllMappings());
     }
 
+    @GetMapping("/api/cell-reporting-mappings")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getCellReportingMappings() {
+        return ResponseEntity.ok(reportingManagerService.getCellReportingMappings());
+    }
+
+    @PostMapping("/saveCellReportingMapping")
+    public String saveCellReportingMapping(
+            @RequestParam Long cellId,
+            @RequestParam Long authorityUserId,
+            RedirectAttributes redirectAttributes) {
+        try {
+            reportingManagerService.saveCellReportingMapping(cellId, authorityUserId);
+            redirectAttributes.addFlashAttribute(
+                    "successMessage", "Cell reporting authority mapped successfully.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("Cell reporting mapping validation failed for cellId={} and authorityUserId={}: {}",
+                    cellId, authorityUserId, e.getMessage());
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage", "Error mapping cell reporting authority: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected cell reporting mapping failure for cellId={} and authorityUserId={}",
+                    cellId, authorityUserId, e);
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage", "Unable to save the cell reporting authority. Please try again.");
+        }
+        return "redirect:/hr/reportingManager";
+    }
+
     @PostMapping("/saveReportingMapping")
     public String saveReportingMapping(
             @RequestParam Long hodUserId,
