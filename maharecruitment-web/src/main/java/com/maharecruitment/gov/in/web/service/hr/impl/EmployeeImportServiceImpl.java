@@ -62,7 +62,7 @@ import com.maharecruitment.gov.in.web.service.hr.EmployeeImportService;
 @Service
 public class EmployeeImportServiceImpl implements EmployeeImportService {
 
-    private static final int MAX_IMPORT_ROWS = 1_000;
+    private static final int MAX_IMPORT_ROWS = 3_000;
     private static final String EMPLOYEE_ROLE_NAME = "ROLE_EMPLOYEE";
     private static final String ACTIVE_FLAG = "Y";
     private static final String ACTIVE_STATUS = "ACTIVE";
