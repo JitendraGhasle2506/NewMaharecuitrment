@@ -7,53 +7,204 @@
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <!-- Include DataTables API for grid if needed -->
     <link rel="stylesheet" th:href="@{/assets/vendor/datatables/dataTables.bootstrap5.min.css}">
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2/select2.min.css}">
+    <link rel="stylesheet" th:href="@{/assets/vendor/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css}">
     <style>
-        .mapping-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 25px;
-            background: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .section-title {
-            color: #1976d2;
-            font-size: 16px;
-            font-weight: 600;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+        .reporting-manager-page {
+            color: #1f2937;
         }
         .form-label {
+            font-weight: 600;
+            color: #344054;
+        }
+        .page-helper-text {
+            color: #667085;
+            font-size: 14px;
+            margin: 0;
+        }
+        .mapping-overview {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            margin-bottom: 18px;
+        }
+        .summary-tile {
+            background: #fff;
+            border: 1px solid #e4e7ec;
+            border-radius: 8px;
+            padding: 14px 16px;
+        }
+        .summary-tile-label {
+            color: #667085;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        .summary-tile-value {
+            color: #101828;
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.15;
+        }
+        .mapping-tabs {
+            background: #f8fafc;
+            border: 1px solid #e4e7ec;
+            border-radius: 8px;
+            display: inline-flex;
+            gap: 4px;
+            margin-bottom: 18px;
+            padding: 4px;
+        }
+        .mapping-tab {
+            border-radius: 6px;
+            color: #475467;
+            font-weight: 600;
+        }
+        .mapping-tab.active {
+            background: #fff;
+            color: #0d6efd;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+        }
+        .mapping-table-panel {
+            min-height: 260px;
+        }
+        .section-heading {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .section-heading h5 {
+            margin: 0;
+        }
+        .workflow-panel {
+            background: #f8fafc;
+            border: 1px solid #e4e7ec;
+            border-radius: 8px;
+            padding: 18px;
+        }
+        .workflow-panel + .workflow-panel {
+            margin-top: 16px;
+        }
+        .option-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+        .choice-pill {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #d0d5dd;
+            border-radius: 8px;
+            display: flex;
+            min-height: 50px;
+            padding: 12px 14px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .choice-pill:hover {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08);
+        }
+        .choice-pill.selected {
+            background: #eef6ff;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08);
+        }
+        .choice-pill .form-check-input {
+            margin-top: 0;
+        }
+        .choice-pill .form-check-label {
+            cursor: pointer;
             font-weight: 500;
-            color: #424242;
+            margin-left: 8px;
+        }
+        .select-wrap {
+            max-width: 720px;
+        }
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: 38px;
+        }
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            line-height: 1.5;
         }
         .employee-list-container {
-            max-height: 400px;
+            background: #fff;
+            max-height: 430px;
             overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 1px solid #d0d5dd;
+            border-radius: 8px;
         }
         .employee-row {
-            padding: 10px 15px;
-            border-bottom: 1px solid #eee;
             display: flex;
             align-items: center;
+            gap: 12px;
+            min-height: 48px;
+            padding: 11px 15px;
+            border-bottom: 1px solid #eef2f6;
         }
         .employee-row:last-child {
             border-bottom: none;
         }
         .employee-row:hover {
-            background-color: #f5f5f5;
+            background-color: #f8fbff;
         }
         .employee-row.already-mapped {
             background-color: #f1f3f5;
         }
         .emp-checkbox {
-            margin-right: 15px;
             transform: scale(1.2);
+        }
+        .employee-toolbar {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .employee-toolbar .input-group {
+            flex: 1 1 320px;
+            max-width: 520px;
+        }
+        .employee-selection-summary {
+            color: #475467;
+            font-size: 13px;
+        }
+        .form-actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .form-actions .btn {
+            min-width: 120px;
         }
         .hidden {
             display: none !important;
+        }
+        @media (max-width: 767.98px) {
+            .header {
+                align-items: flex-start !important;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .header .d-flex {
+                width: 100%;
+            }
+            .header .btn {
+                flex: 1 1 auto;
+            }
+            .mapping-tabs {
+                display: flex;
+                width: 100%;
+            }
+            .mapping-tab {
+                flex: 1 1 0;
+            }
+            .form-actions .btn {
+                flex: 1 1 100%;
+            }
         }
     </style>
 </head>
@@ -61,7 +212,7 @@
 <body>
     <th:block th:replace="~{header/header :: var-sidebar-header('Reporting Manager Mapping', 'Human Resources', ~{::section})}">
         <section>
-            <div class="page-main-content">
+            <div class="page-main-content reporting-manager-page">
                 <ul class="breadcrumb breadcrumb-style" style="background: none; padding: 0; display: inline-flex;">
                     <li class="breadcrumb-item"><i class="fa fa-home"></i> Home</li>
                     <li class="breadcrumb-item">Human Resources</li>
@@ -83,7 +234,10 @@
                         <!-- Existing Mappings Card -->
                         <div class="card add-emp-card mb-4" id="gridCard">
                             <div class="header d-flex justify-content-between align-items-center">
-                                <h2>Reporting Authority Mapping</h2>
+                                <div>
+                                    <h2 class="mb-1">Reporting Authority Mapping</h2>
+                                    <p class="page-helper-text">Manage cell defaults and employee-level overrides from one screen.</p>
+                                </div>
                                 <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-outline-primary btn-sm" id="mapCellBtn">
                                         <i class="fa fa-sitemap me-1"></i> Map Cell
@@ -100,43 +254,84 @@
                                     individual reporting mapping. Individual mappings always take precedence.
                                 </div>
 
-                                <h5 class="mb-3">Cell Reporting Authorities</h5>
-                                <div class="table-responsive mb-4">
-                                    <table id="cellMappingsTable" class="table table-bordered table-hover align-middle w-100">
-                                        <thead>
-                                            <tr>
-                                                <th>Wing</th>
-                                                <th>Cell</th>
-                                                <th>Employees Using Cell Rule</th>
-                                                <th>Reporting Authority</th>
-                                                <th style="width: 110px;">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                                <div class="mapping-overview" aria-live="polite">
+                                    <div class="summary-tile">
+                                        <div class="summary-tile-label">Active Cells</div>
+                                        <div class="summary-tile-value" id="activeCellCount">0</div>
+                                    </div>
+                                    <div class="summary-tile">
+                                        <div class="summary-tile-label">Cells Pending Authority</div>
+                                        <div class="summary-tile-value" id="unmappedCellCount">0</div>
+                                    </div>
+                                    <div class="summary-tile">
+                                        <div class="summary-tile-label">Individual Overrides</div>
+                                        <div class="summary-tile-value" id="employeeOverrideCount">0</div>
+                                    </div>
                                 </div>
 
-                                <h5 class="mb-3">Individual Employee Mappings (Overrides)</h5>
-                                <div class="table-responsive">
-                                    <table id="mappingsTable" class="table table-bordered table-hover align-middle w-100">
-                                    <thead>
-                                        <tr>
-                                            <th>Employee</th>
-                                            <th>Manager</th>
-                                            <th>Reporting Authority</th>
-                                            <th style="width: 100px;">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
+                                <div class="mapping-tabs" role="tablist" aria-label="Reporting mapping views">
+                                    <button type="button" class="btn btn-sm mapping-tab active"
+                                            data-target="#cellMappingsPanel" role="tab" aria-selected="true">
+                                        Cell Authority Rules
+                                    </button>
+                                    <button type="button" class="btn btn-sm mapping-tab"
+                                            data-target="#employeeMappingsPanel" role="tab" aria-selected="false">
+                                        Employee Overrides
+                                    </button>
+                                </div>
+
+                                <div id="cellMappingsPanel" class="mapping-table-panel">
+                                    <div class="section-heading">
+                                        <h5>Cell Reporting Authorities</h5>
+                                        <span class="text-muted small">Fallback approval owner for each cell</span>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="cellMappingsTable" class="table table-bordered table-hover align-middle w-100">
+                                            <thead>
+                                                <tr>
+                                                    <th>Wing</th>
+                                                    <th>Cell</th>
+                                                    <th>Employees Using Cell Rule</th>
+                                                    <th>Reporting Authority</th>
+                                                    <th style="width: 110px;">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div id="employeeMappingsPanel" class="mapping-table-panel hidden">
+                                    <div class="section-heading">
+                                        <h5>Individual Employee Mappings</h5>
+                                        <span class="text-muted small">Overrides that take priority over cell rules</span>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="mappingsTable" class="table table-bordered table-hover align-middle w-100">
+                                            <thead>
+                                                <tr>
+                                                    <th>Employee</th>
+                                                    <th>Manager</th>
+                                                    <th>Reporting Authority</th>
+                                                    <th style="width: 100px;">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <div class="card add-emp-card mb-4" id="cellFormCard" style="display: none;">
                             <div class="header d-flex justify-content-between align-items-center">
-                                <h2 id="cellFormTitle">Map Cell to Reporting Authority</h2>
+                                <div>
+                                    <h2 id="cellFormTitle" class="mb-1">Map Cell to Reporting Authority</h2>
+                                    <p class="page-helper-text">Search and select a cell, then assign its fallback authority.</p>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="backFromCellBtn">
+                                    <i class="fa fa-arrow-left me-1"></i> Back to List
+                                </button>
                             </div>
                             <div class="card-body">
                                 <form th:action="@{/hr/saveCellReportingMapping}" method="post" id="cellMappingForm">
@@ -151,7 +346,8 @@
                                             <label class="form-label" for="cellSelect">
                                                 Select Cell <span class="text-danger">*</span>
                                             </label>
-                                            <select class="form-select" id="cellSelect" name="cellId" required>
+                                            <select class="form-select searchable-select" id="cellSelect" name="cellId"
+                                                    data-placeholder="Search cell by wing or cell name" required>
                                                 <option value="">-- Select Cell --</option>
                                             </select>
                                         </div>
@@ -159,15 +355,16 @@
                                             <label class="form-label" for="cellAuthoritySelect">
                                                 Select Reporting Authority <span class="text-danger">*</span>
                                             </label>
-                                            <select class="form-select" id="cellAuthoritySelect"
-                                                    name="authorityUserId" required>
+                                            <select class="form-select searchable-select" id="cellAuthoritySelect"
+                                                    name="authorityUserId"
+                                                    data-placeholder="Search authority by role or name" required>
                                                 <option value="">-- Select Reporting Authority --</option>
                                             </select>
                                             <div class="form-text">COO, HOD, STM, and PM authorities are available.</div>
                                         </div>
                                     </div>
-                                    <div class="text-end border-top pt-3 mt-4">
-                                        <button type="button" class="btn btn-secondary me-2" id="cancelCellBtn">Cancel</button>
+                                    <div class="form-actions border-top pt-3 mt-4">
+                                        <button type="button" class="btn btn-secondary" id="cancelCellBtn">Cancel</button>
                                         <button type="submit" class="btn btn-primary">
                                             <i class="fa fa-save me-1"></i> Save Cell Mapping
                                         </button>
@@ -178,7 +375,13 @@
 
                         <div class="card add-emp-card mb-4" id="formCard" style="display: none;">
                             <div class="header d-flex justify-content-between align-items-center">
-                                <h2>Map Employees to Reporting Managers</h2>
+                                <div>
+                                    <h2 class="mb-1" id="employeeFormTitle">Map Employees to Reporting Managers</h2>
+                                    <p class="page-helper-text">Choose the authority first, then select the employees or managers to map.</p>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="backFromEmployeeBtn">
+                                    <i class="fa fa-arrow-left me-1"></i> Back to List
+                                </button>
                             </div>
                             <div class="card-body">
                                  <form th:action="@{/hr/saveReportingMapping}" method="post" id="mappingForm">
@@ -186,72 +389,83 @@
                                  <input type="hidden" id="mappingId" name="mappingId" value="">
                                 
                                 <!-- Step 1: Reporting Authority -->
-                                <div class="mb-4">
+                                <div class="workflow-panel">
                                     <label class="form-label d-block">1. Select Reporting Authority (COO, HOD, STM or PM) <span class="text-danger">*</span></label>
-                                    <div class="form-check form-check-inline">
+                                    <div class="option-grid">
+                                    <div class="form-check choice-pill">
                                         <input class="form-check-input authorityTypeOption" type="radio"
                                                name="authorityType" id="authorityTypeCOO" value="COO" required>
                                         <label class="form-check-label" for="authorityTypeCOO">Chief Operating Officer (COO)</label>
                                     </div>
-                                    <div class="form-check form-check-inline">
+                                    <div class="form-check choice-pill">
                                         <input class="form-check-input authorityTypeOption" type="radio"
                                                name="authorityType" id="authorityTypeHOD" value="HOD" required>
                                         <label class="form-check-label" for="authorityTypeHOD">Head of Department (HOD)</label>
                                     </div>
-                                    <div class="form-check form-check-inline">
+                                    <div class="form-check choice-pill">
                                         <input class="form-check-input authorityTypeOption" type="radio"
                                                name="authorityType" id="authorityTypeSTM" value="STM" required>
                                         <label class="form-check-label" for="authorityTypeSTM">Senior Technical Manager (STM)</label>
                                     </div>
-                                    <div class="form-check form-check-inline">
+                                    <div class="form-check choice-pill">
                                         <input class="form-check-input authorityTypeOption" type="radio"
                                                name="authorityType" id="authorityTypePM" value="PM" required>
                                         <label class="form-check-label" for="authorityTypePM">Project Manager (PM)</label>
                                     </div>
-                                    <div class="mt-3 hidden" id="authorityUserSection">
+                                    </div>
+                                    <div class="mt-3 hidden select-wrap" id="authorityUserSection">
                                         <label class="form-label" for="authoritySelect" id="authorityUserLabel">Select Reporting Authority <span class="text-danger">*</span></label>
-                                        <select class="form-select w-50" id="authoritySelect" name="hodUserId" required disabled>
+                                        <select class="form-select searchable-select" id="authoritySelect" name="hodUserId"
+                                                data-placeholder="Search reporting authority" required disabled>
                                             <option value="">-- Select Reporting Authority --</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <!-- Step 2: Manager Type -->
-                                <div class="mb-4" id="managerTypeSection">
+                                <div class="workflow-panel" id="managerTypeSection">
                                     <label class="form-label d-block">2. Select Manager Type <span class="text-danger">*</span></label>
-                                    <div class="form-check form-check-inline hidden" id="hodManagerTypeOption">
+                                    <div class="option-grid">
+                                    <div class="form-check choice-pill hidden" id="hodManagerTypeOption">
                                         <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeHOD" value="HOD" required>
                                         <label class="form-check-label" for="typeHOD">Head of Department (HOD)</label>
                                     </div>
-                                    <div class="form-check form-check-inline">
+                                    <div class="form-check choice-pill">
                                         <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeSTM" value="STM" required>
                                         <label class="form-check-label" for="typeSTM">Senior Technical Manager (STM)</label>
                                     </div>
-                                    <div class="form-check form-check-inline">
+                                    <div class="form-check choice-pill">
                                         <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typePM" value="PM" required>
                                         <label class="form-check-label" for="typePM">Project Manager (PM)</label>
                                     </div>
-                                    <div class="form-check form-check-inline">
+                                    <div class="form-check choice-pill">
                                         <input class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeOther" value="OTHER" required>
                                         <label class="form-check-label" for="typeOther">Other Employees</label>
+                                    </div>
                                     </div>
                                 </div>
 
                                 <!-- Step 3: Specific Manager -->
-                                <div class="mb-4 hidden" id="managerSection">
+                                <div class="workflow-panel hidden" id="managerSection">
                                     <label class="form-label" for="managerSelect" id="managerLabel">3. Select Manager <span class="text-danger">*</span></label>
-                                    <select class="form-select w-50" id="managerSelect" name="managerEmployeeId" required>
+                                    <select class="form-select searchable-select select-wrap" id="managerSelect"
+                                            name="managerEmployeeId" data-placeholder="Search manager by name" required>
                                         <option value="">-- Select Manager --</option>
                                     </select>
                                 </div>
 
                                 <!-- Mapping targets -->
-                                <div class="mb-4 hidden" id="employeeSection">
+                                <div class="workflow-panel hidden" id="employeeSection">
                                     <label class="form-label" id="employeeLabel">3. Select Internal Employees to Map <span class="text-danger">*</span></label>
                                     
-                                    <div class="input-group mb-2 w-50">
-                                        <span class="input-group-text"><i class="fa fa-search"></i></span>
-                                        <input type="text" id="employeeSearch" class="form-control" placeholder="Search employees...">
+                                    <div class="employee-toolbar">
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fa fa-search"></i></span>
+                                            <input type="text" id="employeeSearch" class="form-control" placeholder="Search employees...">
+                                        </div>
+                                        <div class="employee-selection-summary" id="employeeSelectionSummary">
+                                            0 selected
+                                        </div>
                                     </div>
 
                                     <div class="employee-list-container bg-light" id="employeeListContainer">
@@ -265,8 +479,8 @@
                                     </div>
                                 </div>
 
-                                <div class="text-end border-top pt-3 mt-4 hidden" id="submitSection">
-                                    <button type="button" class="btn btn-secondary me-2" id="cancelBtn">Cancel</button>
+                                <div class="form-actions border-top pt-3 mt-4 hidden" id="submitSection">
+                                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
                                     <button type="submit" class="btn btn-primary" id="saveMappingBtn"><i class="fa fa-save me-1"></i> Save Mapping</button>
                                 </div>
                             </form>
@@ -280,6 +494,7 @@
     </th:block>
 
     <script th:src="@{/assets/vendor/jquery/jquery-3.6.0.min.js}"></script>
+    <script th:src="@{/assets/vendor/select2/select2.min.js}"></script>
     <script th:src="@{/assets/vendor/datatables/jquery.dataTables.min.js}"></script>
     <script th:src="@{/assets/vendor/datatables/dataTables.bootstrap5.min.js}"></script>
     
@@ -291,9 +506,140 @@
             var allEmployees = [];
             var allCells = [];
             var editingEmployeeId = null;
+            var employeeOverrideTotal = 0;
+            var activeEmployeeRequest = null;
+            var activeManagerTargetsRequest = null;
+            var searchableSelectSelector = '#cellSelect, #cellAuthoritySelect, #authoritySelect, #managerSelect';
 
             function escapeHtml(value) {
                 return $('<div>').text(value == null ? '' : value).html();
+            }
+
+            function syncSearchableSelect(target) {
+                if(!$.fn.select2) {
+                    return;
+                }
+
+                $(target || searchableSelectSelector).each(function() {
+                    var select = $(this);
+                    var placeholder = select.data('placeholder')
+                        || select.find('option:first').text()
+                        || 'Select an option';
+
+                    if(select.data('select2')) {
+                        select.trigger('change.select2');
+                        return;
+                    }
+
+                    select.select2({
+                        theme: 'bootstrap-5',
+                        width: '100%',
+                        placeholder: placeholder,
+                        minimumResultsForSearch: 0,
+                        dropdownParent: select.closest('.card-body')
+                    });
+                });
+            }
+
+            function updateSearchableSelect(target) {
+                syncSearchableSelect(target);
+            }
+
+            function replaceSelectOptions(target, placeholder, options) {
+                var select = $(target);
+                var fragment = document.createDocumentFragment();
+
+                fragment.appendChild(new Option(placeholder, ''));
+                (options || []).forEach(function(option) {
+                    var node = new Option(option.text, option.value);
+                    node.disabled = option.disabled === true;
+                    fragment.appendChild(node);
+                });
+
+                select.empty().append(fragment);
+                updateSearchableSelect(select);
+            }
+
+            function updateEmployeeSelectionSummary() {
+                var rows = $('#employeeListContainer .employee-row');
+                var visibleRows = rows.filter(':visible').length;
+                var selected = rows.find('.emp-checkbox:checked:not(:disabled)').length;
+                var locked = rows.find('.emp-checkbox:checked:disabled').length;
+                var summary = selected + ' selected';
+
+                if(locked > 0) {
+                    summary += ' | ' + locked + ' already mapped';
+                }
+                if(rows.length > 0) {
+                    summary += ' | ' + visibleRows + ' visible of ' + rows.length;
+                }
+
+                $('#employeeSelectionSummary').text(summary);
+            }
+
+            function syncChoiceState() {
+                $('.choice-pill').each(function() {
+                    $(this).toggleClass('selected', $(this).find('.form-check-input').is(':checked'));
+                });
+            }
+
+            function debounce(callback, delay) {
+                var timer = null;
+                return function() {
+                    var context = this;
+                    var args = arguments;
+                    clearTimeout(timer);
+                    timer = setTimeout(function() {
+                        callback.apply(context, args);
+                    }, delay);
+                };
+            }
+
+            syncSearchableSelect();
+            syncChoiceState();
+
+            function isMappedCell(row) {
+                return row && (row.mapped === true || String(row.mapped).toLowerCase() === 'true');
+            }
+
+            function updateMappingSummaries() {
+                var activeCells = allCells.length;
+                var unmappedCells = allCells.filter(function(cell) {
+                    return !isMappedCell(cell);
+                }).length;
+
+                $('#activeCellCount').text(activeCells);
+                $('#unmappedCellCount').text(unmappedCells);
+                $('#employeeOverrideCount').text(employeeOverrideTotal);
+            }
+
+            function showMappingPanel(target) {
+                $('.mapping-tab')
+                    .removeClass('active')
+                    .attr('aria-selected', 'false');
+                $('.mapping-tab[data-target="' + target + '"]')
+                    .addClass('active')
+                    .attr('aria-selected', 'true');
+                $('.mapping-table-panel').addClass('hidden');
+                $(target).removeClass('hidden');
+
+                if($.fn.dataTable) {
+                    setTimeout(function() {
+                        if(target === '#cellMappingsPanel' && $.fn.DataTable.isDataTable('#cellMappingsTable')) {
+                            cellMappingsTable.columns.adjust();
+                        }
+                        if(target === '#employeeMappingsPanel' && $.fn.DataTable.isDataTable('#mappingsTable')) {
+                            mappingsTable.columns.adjust();
+                        }
+                    }, 0);
+                }
+            }
+
+            function scrollToCard(cardSelector) {
+                var card = $(cardSelector).get(0);
+                if(card && card.scrollIntoView) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             }
 
             // View toggle logic
@@ -301,11 +647,15 @@
                 $('#gridCard').hide();
                 $('#cellFormCard').hide();
                 $('#formCard').show();
+                syncSearchableSelect('#authoritySelect, #managerSelect');
+                scrollToCard('#formCard');
             }
 
             function showCellForm() {
                 $('#gridCard, #formCard').hide();
                 $('#cellFormCard').show();
+                syncSearchableSelect('#cellSelect, #cellAuthoritySelect');
+                scrollToCard('#cellFormCard');
             }
 
             function showGrid() {
@@ -315,23 +665,32 @@
                 $('#mappingForm')[0].reset();
                 $('#cellMappingForm')[0].reset();
                 $('#cellFormTitle').text('Map Cell to Reporting Authority');
+                $('#employeeFormTitle').text('Map Employees to Reporting Managers');
                 $('#mappingId').val('');
                 $('#authorityUserSection').addClass('hidden');
-                $('#authoritySelect')
-                    .html('<option value="">-- Select Reporting Authority --</option>')
-                    .prop('disabled', true);
+                replaceSelectOptions('#authoritySelect', '-- Select Reporting Authority --', []);
+                $('#authoritySelect').prop('disabled', true);
                 $('#managerSelect').prop('required', false);
                 $('#managerSection, #employeeSection, #submitSection').addClass('hidden');
                 $('#employeeListContainer').empty();
+                updateEmployeeSelectionSummary();
+                syncSearchableSelect(searchableSelectSelector);
                 
                 // Also reset standard labels
                 $('#managerLabel').text('3. Select Manager *');
                 $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
                 updateManagerTypeOptions();
+                syncChoiceState();
+                scrollToCard('#gridCard');
             }
+
+            $('.mapping-tab').click(function() {
+                showMappingPanel($(this).data('target'));
+            });
 
             $('#addMappingBtn').click(function() {
                 $('#mappingId').val('');
+                $('#employeeFormTitle').text('Map Employees to Reporting Managers');
                 showForm();
             });
 
@@ -347,23 +706,30 @@
                 showGrid();
             });
 
-            function populateCellMappingForm(cellId, authorityUserId) {
-                var cellSelect = $('#cellSelect').html('<option value="">-- Select Cell --</option>');
-                allCells.forEach(function(cell) {
-                    var label = cell.wingName
-                        ? cell.wingName + ' / ' + cell.cellName
-                        : cell.cellName;
-                    $('<option>', { value: cell.cellId, text: label }).appendTo(cellSelect);
-                });
+            $('#backFromCellBtn, #backFromEmployeeBtn').click(function() {
+                showGrid();
+            });
 
-                var authoritySelect = $('#cellAuthoritySelect')
-                    .html('<option value="">-- Select Reporting Authority --</option>');
-                reportingAuthorities.forEach(function(authority) {
-                    $('<option>', {
-                        value: authority.id,
-                        text: '[' + authority.authorityType + '] ' + authority.name
-                    }).appendTo(authoritySelect);
-                });
+            $(document).on('change', '.authorityTypeOption, .managerTypeOption', syncChoiceState);
+
+            function populateCellMappingForm(cellId, authorityUserId) {
+                var cellSelect = $('#cellSelect');
+                var authoritySelect = $('#cellAuthoritySelect');
+                replaceSelectOptions(cellSelect, '-- Select Cell --', allCells.map(function(cell) {
+                    return {
+                        value: cell.cellId,
+                        text: cell.wingName
+                            ? cell.wingName + ' / ' + cell.cellName
+                            : cell.cellName
+                    };
+                }));
+                replaceSelectOptions(authoritySelect, '-- Select Reporting Authority --',
+                    reportingAuthorities.map(function(authority) {
+                        return {
+                            value: authority.id,
+                            text: '[' + authority.authorityType + '] ' + authority.name
+                        };
+                    }));
 
                 if(cellId) {
                     cellSelect.val(String(cellId));
@@ -371,13 +737,14 @@
                 if(authorityUserId) {
                     authoritySelect.val(String(authorityUserId));
                 }
+                updateSearchableSelect('#cellSelect, #cellAuthoritySelect');
             }
 
             function openCellMappingForm(cellId, authorityUserId) {
                 showCellForm();
                 $('#cellSelect, #cellAuthoritySelect').prop('disabled', true);
-                $('#cellSelect').html('<option value="">-- Loading cells... --</option>');
-                $('#cellAuthoritySelect').html('<option value="">-- Loading authorities... --</option>');
+                replaceSelectOptions('#cellSelect', '-- Loading cells... --', []);
+                replaceSelectOptions('#cellAuthoritySelect', '-- Loading authorities... --', []);
                 $('#cellFormTitle').text(cellId
                     ? 'Change Cell Reporting Authority'
                     : 'Map Cell to Reporting Authority');
@@ -385,16 +752,24 @@
                 $.when(cellMappingsRequest, reportingAuthoritiesRequest).done(function() {
                     populateCellMappingForm(cellId, authorityUserId);
                     $('#cellSelect, #cellAuthoritySelect').prop('disabled', false);
+                    updateSearchableSelect('#cellSelect, #cellAuthoritySelect');
                 }).fail(function() {
-                    $('#cellSelect').html('<option value="">-- Unable to load cells --</option>');
-                    $('#cellAuthoritySelect')
-                        .html('<option value="">-- Unable to load reporting authorities --</option>');
+                    replaceSelectOptions('#cellSelect', '-- Unable to load cells --', []);
+                    replaceSelectOptions(
+                        '#cellAuthoritySelect',
+                        '-- Unable to load reporting authorities --',
+                        []);
                 });
             }
 
             var cellMappingsTable = $('#cellMappingsTable').DataTable({
                 data: [],
+                autoWidth: false,
+                deferRender: true,
+                pageLength: 10,
+                lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'All'] ],
                 order: [ [0, 'asc'], [1, 'asc'] ],
+                searchDelay: 250,
                 columns: [
                     { data: 'wingName', render: $.fn.dataTable.render.text() },
                     { data: 'cellName', render: $.fn.dataTable.render.text() },
@@ -406,7 +781,7 @@
                             }
                             return '<span class="fw-semibold">' + Number(row.fallbackEmployeeCount || 0) + '</span>'
                                 + ' of ' + Number(row.employeeCount || 0)
-                                + '<div class="small text-muted">No individual override</div>';
+                                + '<div class="small text-muted">Using cell default</div>';
                         }
                     },
                     {
@@ -442,7 +817,9 @@
                     }
                 ],
                 language: {
-                    emptyTable: 'No active cells found.'
+                    emptyTable: 'No active cells found.',
+                    search: '',
+                    searchPlaceholder: 'Search wing, cell, or authority'
                 }
             });
 
@@ -452,6 +829,7 @@
             }).done(function(data) {
                 allCells = data || [];
                 cellMappingsTable.clear().rows.add(allCells).draw();
+                updateMappingSummaries();
             });
 
             $(document).on('click', '.edit-cell-mapping-btn', function() {
@@ -460,16 +838,35 @@
 
             // Initialize individual employee mapping table
             var mappingsTable = $('#mappingsTable').DataTable({
+                autoWidth: false,
+                deferRender: true,
+                pageLength: 10,
+                lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'All'] ],
+                searchDelay: 250,
                 ajax: {
                     url: contextPath + 'hr/api/mappings',
-                    dataSrc: ''
+                    dataSrc: function(data) {
+                        employeeOverrideTotal = Array.isArray(data) ? data.length : 0;
+                        updateMappingSummaries();
+                        return data || [];
+                    }
                 },
                 columns: [
-                    { data: 'employeeName' },
+                    { data: 'employeeName', render: $.fn.dataTable.render.text() },
                     { data: 'managerType', render: function(data, type, row) {
-                        return data + ' - ' + row.managerName;
+                        var managerName = row.managerName || '';
+                        var managerType = data || '';
+                        if(type !== 'display') {
+                            return managerName ? managerType + ' - ' + managerName : managerType + ' direct';
+                        }
+                        if(!managerName) {
+                            return '<span class="badge bg-light text-dark border me-1">'
+                                + escapeHtml(managerType) + '</span>Direct authority';
+                        }
+                        return '<span class="badge bg-light text-dark border me-1">'
+                            + escapeHtml(managerType) + '</span>' + escapeHtml(managerName);
                     }},
-                    { data: 'authorityName' },
+                    { data: 'authorityName', render: $.fn.dataTable.render.text() },
                     {
                         data: null,
                         orderable: false,
@@ -483,7 +880,12 @@
                                 '</button>';
                         }
                     }
-                ]
+                ],
+                language: {
+                    emptyTable: 'No individual employee mappings found.',
+                    search: '',
+                    searchPlaceholder: 'Search employee, manager, or authority'
+                }
             });
 
             // 1. Load reporting authorities on init
@@ -504,15 +906,14 @@
 
             function resetDependentSelections() {
                 $('input[name="managerType"]').prop('checked', false);
-                $('#managerSelect')
-                    .html('<option value="">-- Select Manager --</option>')
-                    .val('')
-                    .prop('required', false);
+                replaceSelectOptions('#managerSelect', '-- Select Manager --', []);
+                $('#managerSelect').val('').prop('required', false);
                 $('#managerSection, #employeeSection, #submitSection').addClass('hidden');
                 $('#employeeListContainer').empty();
                 $('#employeeSearch').val('');
                 $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
                 allEmployees = [];
+                updateEmployeeSelectionSummary();
             }
 
             function managerTypeLabel(type) {
@@ -562,30 +963,35 @@
             function populateAuthorityUsers(authorityType, currentSelection) {
                 var authorityLabel = authorityTypeLabel(authorityType);
                 var select = $('#authoritySelect');
-                select
-                    .html('<option value="">-- Select ' + authorityLabel + ' --</option>')
-                    .prop('disabled', false);
-                $('#authorityUserLabel').html(
-                    'Select ' + authorityLabel + ' <span class="text-danger">*</span>');
-
-                reportingAuthorities
+                var options = reportingAuthorities
                     .filter(function(authority) {
                         return authority.authorityType === authorityType;
                     })
-                    .forEach(function(authority) {
-                        $('<option>', {
+                    .map(function(authority) {
+                        return {
                             value: authority.id,
                             text: authority.name
-                        }).appendTo(select);
+                        };
                     });
 
-                if(select.children('option').length === 1) {
-                    select.append('<option disabled>No ' + authorityLabel + ' users found</option>');
+                if(options.length === 0) {
+                    options.push({
+                        value: '',
+                        text: 'No ' + authorityLabel + ' users found',
+                        disabled: true
+                    });
                 }
+
+                replaceSelectOptions(select, '-- Select ' + authorityLabel + ' --', options);
+                select.prop('disabled', false);
+                $('#authorityUserLabel').html(
+                    'Select ' + authorityLabel + ' <span class="text-danger">*</span>');
+
                 if(currentSelection) {
                     select.val(String(currentSelection));
                 }
                 $('#authorityUserSection').removeClass('hidden');
+                updateSearchableSelect(select);
             }
 
             function updateManagerTypeOptions() {
@@ -601,8 +1007,10 @@
 
             function showDirectAuthorityMapping(authorityType, authorityUserId) {
                 $('input[name="managerType"][value="'+authorityType+'"]').prop('checked', true);
+                syncChoiceState();
                 $('#managerSection').addClass('hidden');
                 $('#managerSelect').val('').prop('required', false);
+                updateSearchableSelect('#managerSelect');
                 $('#employeeLabel').html(
                     '2. Select Internal Employees to Map <span class="text-danger">*</span>');
                 $('#employeeSection, #submitSection').removeClass('hidden');
@@ -620,9 +1028,11 @@
                     populateAuthorityUsers(authorityType, null);
                 }).fail(function() {
                     $('#authorityUserSection').removeClass('hidden');
-                    $('#authoritySelect')
-                        .html('<option value="">-- Unable to load reporting authorities --</option>')
-                        .prop('disabled', true);
+                    replaceSelectOptions(
+                        '#authoritySelect',
+                        '-- Unable to load reporting authorities --',
+                        []);
+                    $('#authoritySelect').prop('disabled', true);
                 });
                 updateManagerTypeOptions();
             });
@@ -638,22 +1048,30 @@
             });
 
             function loadManagers(type, currentSelection) {
-                $('#managerSelect').html('<option value="">-- Loading... --</option>');
+                replaceSelectOptions('#managerSelect', '-- Loading... --', []);
                 return loadManagersDeferred(type).done(function(data) {
                     var select = $('#managerSelect');
-                    select.html('<option value="">-- Select Manager --</option>');
-                    if(data.length === 0) {
-                        select.append('<option disabled>No managers found</option>');
-                    } else {
-                        data.forEach(function(mgr) {
-                            select.append('<option value="'+mgr.id+'">'+mgr.name+'</option>');
+                    var options = (data || []).map(function(mgr) {
+                        return {
+                            value: mgr.id,
+                            text: mgr.name
+                        };
+                    });
+
+                    if(options.length === 0) {
+                        options.push({
+                            value: '',
+                            text: 'No managers found',
+                            disabled: true
                         });
                     }
+                    replaceSelectOptions(select, '-- Select Manager --', options);
                     if(currentSelection) {
                         select.val(currentSelection);
                     }
+                    updateSearchableSelect(select);
                 }).fail(function() {
-                    $('#managerSelect').html('<option value="">-- Unable to load managers --</option>');
+                    replaceSelectOptions('#managerSelect', '-- Unable to load managers --', []);
                     alert('Unable to load managers. Please try again.');
                 });
             }
@@ -662,13 +1080,27 @@
                 allEmployees = [];
                 $('#employeeListContainer').html(
                     '<div class="text-center p-3 text-muted">Loading managers...</div>');
-                return loadManagersDeferred(type).done(function(data) {
-                    allEmployees = data;
+                if(activeManagerTargetsRequest && activeManagerTargetsRequest.readyState !== 4) {
+                    activeManagerTargetsRequest.abort();
+                }
+                var managerTargetsRequest = loadManagersDeferred(type);
+                activeManagerTargetsRequest = managerTargetsRequest;
+                managerTargetsRequest.done(function(data) {
+                    allEmployees = data || [];
                     renderEmployees(allEmployees);
-                }).fail(function() {
+                }).fail(function(xhr, status) {
+                    if(status === 'abort') {
+                        return;
+                    }
                     $('#employeeListContainer').html(
                         '<div class="p-3 text-danger text-center">Unable to load managers. Please try again.</div>');
+                    updateEmployeeSelectionSummary();
+                }).always(function() {
+                    if(activeManagerTargetsRequest === managerTargetsRequest) {
+                        activeManagerTargetsRequest = null;
+                    }
                 });
+                return managerTargetsRequest;
             }
 
             // 2. On selecting a manager type
@@ -676,6 +1108,7 @@
                 var type = $(this).val();
                 var authorityUserId = $('#authoritySelect').val();
                 $('#managerSelect').val('').prop('required', false);
+                updateSearchableSelect('#managerSelect');
                 $('#managerSection').addClass('hidden');
                 $('#employeeSection').addClass('hidden');
                 $('#submitSection').addClass('hidden');
@@ -733,6 +1166,7 @@
                 editingEmployeeId = $(this).data('emp');
 
                 showForm();
+                $('#employeeFormTitle').text('Edit Employee Reporting Mapping');
 
                 reportingAuthoritiesRequest.done(function() {
                     // Populate form dynamically after authority options are available.
@@ -741,6 +1175,7 @@
                     populateAuthorityUsers(authorityType, hod);
                     updateManagerTypeOptions();
                     $('input[name="managerType"][value="'+mgrType+'"]').prop('checked', true);
+                    syncChoiceState();
 
                     if(isDirectManagerAuthority(authorityType)) {
                         showDirectAuthorityMapping(authorityType, hod);
@@ -750,6 +1185,7 @@
                     if(mgrType === 'OTHER') {
                         $('#managerSection').addClass('hidden');
                         $('#managerSelect').val('').prop('required', false);
+                        updateSearchableSelect('#managerSelect');
                         $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
                         $('#employeeSection, #submitSection').removeClass('hidden');
                         loadInternalEmployees({
@@ -775,6 +1211,7 @@
 
                     $('#managerSection').addClass('hidden');
                     $('#managerSelect').val('').prop('required', false);
+                    updateSearchableSelect('#managerSelect');
                     $('#employeeLabel').html(
                         '3. Select ' + managerTypePluralLabel(mgrType)
                         + ' to Map <span class="text-danger">*</span>');
@@ -795,37 +1232,56 @@
                 $('#employeeListContainer').html(
                     '<div class="text-center p-3 text-muted">Loading employees...</div>');
 
-                return $.ajax({
+                if(activeEmployeeRequest && activeEmployeeRequest.readyState !== 4) {
+                    activeEmployeeRequest.abort();
+                }
+                var employeeRequest = $.ajax({
                     url: contextPath + 'hr/api/employees',
                     method: 'GET',
                     data: requestParams
-                }).done(function(data) {
-                    allEmployees = data;
+                });
+                activeEmployeeRequest = employeeRequest;
+                employeeRequest.done(function(data) {
+                    allEmployees = data || [];
                     renderEmployees(allEmployees);
                     if(editingEmployeeId) {
                         $('#emp_' + editingEmployeeId).prop('checked', true);
                         $('.emp-checkbox').not('#emp_' + editingEmployeeId).prop('disabled', true);
+                        updateEmployeeSelectionSummary();
                     }
-                }).fail(function(xhr) {
+                }).fail(function(xhr, status) {
+                    if(status === 'abort') {
+                        return;
+                    }
                     var message = xhr.responseJSON && xhr.responseJSON.message
                         ? xhr.responseJSON.message
                         : 'Unable to load internal employees. Please try again.';
                     $('#employeeListContainer').html(
-                        '<div class="p-3 text-danger text-center">' + message + '</div>');
+                        '<div class="p-3 text-danger text-center">' + escapeHtml(message) + '</div>');
+                    updateEmployeeSelectionSummary();
+                }).always(function() {
+                    if(activeEmployeeRequest === employeeRequest) {
+                        activeEmployeeRequest = null;
+                    }
                 });
+                return employeeRequest;
             }
 
             // Render Employee Checkboxes
             function renderEmployees(list) {
+                list = list || [];
                 var container = $('#employeeListContainer');
                 container.empty();
                 
                 if(list.length === 0) {
-                    container.append('<div class="p-3 text-muted text-center">No unassigned internal employees found.</div>');
+                    container.html('<div class="p-3 text-muted text-center">No unassigned internal employees found.</div>');
+                    updateEmployeeSelectionSummary();
                     return;
                 }
 
-                list.forEach(function(emp) {
+                var rows = list.map(function(emp) {
+                    var employeeId = emp.id == null ? '' : String(emp.id);
+                    var employeeName = escapeHtml(emp.name);
                     var isMapped = emp.mapped === true;
                     var isCurrentMapping = isMapped
                         && String(emp.mappedAuthorityUserId) === String($('#authoritySelect').val())
@@ -837,35 +1293,45 @@
                             ? '<span class="badge bg-success ms-2">Already mapped</span>'
                             : '<span class="badge bg-secondary ms-2">Already mapped elsewhere</span>';
                     }
-                    var row = '<div class="employee-row'+(isMapped ? ' already-mapped' : '')+'">' +
-                              '<input class="form-check-input emp-checkbox" type="checkbox" name="employeeIds" value="'+emp.id+'" id="emp_'+emp.id+'"'
-                              +(isMapped ? ' checked disabled' : '')+'>' +
-                              '<label class="form-check-label w-100" style="cursor:pointer;" for="emp_'+emp.id+'">'+emp.name+mappingStatus+'</label>' +
-                              '</div>';
-                    container.append(row);
+
+                    return '<div class="employee-row'+(isMapped ? ' already-mapped' : '')+'">' +
+                           '<input class="form-check-input emp-checkbox" type="checkbox" name="employeeIds" value="'+employeeId+'" id="emp_'+employeeId+'"'
+                           +(isMapped ? ' checked disabled' : '')+'>' +
+                           '<label class="form-check-label w-100" style="cursor:pointer;" for="emp_'+employeeId+'">'+employeeName+mappingStatus+'</label>' +
+                           '</div>';
                 });
+
+                container.html(rows.join(''));
                 if(editingEmployeeId) {
                     $('#emp_' + editingEmployeeId).prop('checked', true).prop('disabled', false);
                     $('.emp-checkbox').not('#emp_' + editingEmployeeId).prop('disabled', true);
                 }
+                updateEmployeeSelectionSummary();
             }
 
             // Client side search filter
-            $('#employeeSearch').on('keyup', function() {
+            $('#employeeSearch').on('input', debounce(function() {
                 var term = $(this).val().toLowerCase();
                 $('#employeeListContainer .employee-row').each(function() {
                     var employeeName = $(this).find('label').text().toLowerCase();
                     $(this).toggle(employeeName.indexOf(term) > -1);
                 });
-            });
+                updateEmployeeSelectionSummary();
+            }, 150));
 
             // Select / Deselect All
             $('#selectAllBtn').click(function() {
-                $('.emp-checkbox:not(:disabled)').prop('checked', true);
+                $('#employeeListContainer .employee-row:visible .emp-checkbox:not(:disabled)')
+                    .prop('checked', true);
+                updateEmployeeSelectionSummary();
             });
             $('#deselectAllBtn').click(function() {
-                $('.emp-checkbox:not(:disabled)').prop('checked', false);
+                $('#employeeListContainer .employee-row:visible .emp-checkbox:not(:disabled)')
+                    .prop('checked', false);
+                updateEmployeeSelectionSummary();
             });
+
+            $(document).on('change', '.emp-checkbox', updateEmployeeSelectionSummary);
 
             $('#cellMappingForm').submit(function(e) {
                 if(!$('#cellSelect').val() || !$('#cellAuthoritySelect').val()) {
