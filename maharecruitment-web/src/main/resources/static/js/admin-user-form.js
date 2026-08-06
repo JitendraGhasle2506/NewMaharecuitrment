@@ -8,6 +8,7 @@
 		}
 
 		const rolePicker = document.getElementById('rolePicker');
+		const rolePickerHelp = document.getElementById('rolePickerHelp');
 		const roleEmptyState = document.getElementById('roleEmptyState');
 		const selectedRoleCount = document.getElementById('selectedRoleCount');
 		const affiliationEmptyState = document.getElementById('affiliationEmptyState');
@@ -20,13 +21,14 @@
 		const roleCheckboxes = Array.from(form.querySelectorAll('.selected-role-checkbox'));
 		const roleById = new Map(roleCheckboxes.map((checkbox) => [checkbox.value, checkbox]));
 
-		if (!rolePicker || !roleEmptyState || !selectedRoleCount || !affiliationEmptyState
+		if (!rolePicker || !rolePickerHelp || !roleEmptyState || !selectedRoleCount || !affiliationEmptyState
 				|| !departmentFieldGroup || !agencyFieldGroup || !departmentSelect || !agencySelect) {
 			return;
 		}
 
 		const departmentRoleName = form.dataset.departmentRoleName || 'ROLE_DEPARTMENT';
 		const agencyRoleName = form.dataset.agencyRoleName || 'ROLE_AGENCY';
+		const exclusiveRoleNames = new Set([departmentRoleName, agencyRoleName]);
 
 		const selectedRoles = () => roleCheckboxes.filter((checkbox) => checkbox.checked && !checkbox.disabled);
 
@@ -35,16 +37,27 @@
 			select.disabled = !visible;
 		};
 
+		const removeRole = (checkbox) => {
+			checkbox.checked = false;
+			checkbox.disabled = true;
+			checkbox.closest('.selected-role-item')?.classList.add('d-none');
+		};
+
 		const synchronizeFormState = () => {
 			const selected = selectedRoles();
 			const selectedIds = new Set(selected.map((checkbox) => checkbox.value));
 			const selectedNames = new Set(selected.map((checkbox) => checkbox.dataset.roleName));
+			const hasExclusiveRole = selected.some((checkbox) => exclusiveRoleNames.has(checkbox.dataset.roleName));
 
 			for (const option of rolePicker.options) {
 				if (option.value) {
-					option.disabled = selectedIds.has(option.value);
+					option.disabled = hasExclusiveRole || selectedIds.has(option.value);
 				}
 			}
+			rolePicker.disabled = hasExclusiveRole;
+			rolePickerHelp.textContent = hasExclusiveRole
+				? 'Remove the Agency or Department role before selecting another role.'
+				: 'Already selected roles are disabled in the dropdown.';
 
 			const roleCount = selected.length;
 			selectedRoleCount.textContent = `${roleCount} selected`;
@@ -62,18 +75,24 @@
 		const addRole = (roleId) => {
 			const checkbox = roleById.get(roleId);
 			if (!checkbox) {
-				return;
+				return false;
+			}
+
+			const currentRoles = selectedRoles();
+			const roleIsExclusive = exclusiveRoleNames.has(checkbox.dataset.roleName);
+			const exclusiveRoleAlreadySelected = currentRoles.some((selectedRole) =>
+				exclusiveRoleNames.has(selectedRole.dataset.roleName));
+			if (!roleIsExclusive && exclusiveRoleAlreadySelected) {
+				return false;
+			}
+			if (roleIsExclusive) {
+				currentRoles.forEach(removeRole);
 			}
 
 			checkbox.disabled = false;
 			checkbox.checked = true;
 			checkbox.closest('.selected-role-item')?.classList.remove('d-none');
-		};
-
-		const removeRole = (checkbox) => {
-			checkbox.checked = false;
-			checkbox.disabled = true;
-			checkbox.closest('.selected-role-item')?.classList.add('d-none');
+			return true;
 		};
 
 		rolePicker.addEventListener('change', () => {

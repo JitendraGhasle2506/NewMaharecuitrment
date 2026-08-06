@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.web.controller.admin;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -278,7 +279,7 @@ public class AdminUserPageController {
         Set<Long> selectedRoleIds = new HashSet<>(form.getRoleIds());
         return roleManagementService.getAll().stream()
                 .filter(role -> selectedRoleIds.contains(role.getId()))
-                .map(role -> role.getName().toUpperCase())
+                .map(role -> role.getName().toUpperCase(Locale.ROOT))
                 .collect(Collectors.toUnmodifiableSet());
     }
 

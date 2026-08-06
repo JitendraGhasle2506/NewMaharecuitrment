@@ -5,7 +5,7 @@
 	<meta charset="UTF-8">
 	<title th:text="${isEdit} ? 'Edit User' : 'Create User'">User Form</title>
 	<th:block th:replace="~{header/header :: var-files-header}"></th:block>
-	<link rel="stylesheet" th:href="@{/css/admin-user-form.css(v='20260806')}">
+	<link rel="stylesheet" th:href="@{/css/admin-user-form.css(v='20260806-2')}">
 </head>
 
 <body>
@@ -143,12 +143,15 @@
 										</div>
 
 										<div class="role-picker-wrap">
-											<select class="form-select" id="rolePicker" aria-describedby="rolePickerHelp roleValidationMessage">
+											<select class="form-select" id="rolePicker" aria-describedby="rolePickerHelp exclusiveRoleHelp roleValidationMessage">
 												<option value="">Select a role to add</option>
 												<option th:each="role : ${availableRoles}" th:value="${role.id}" th:text="${role.name}"></option>
 											</select>
 										</div>
 										<div class="form-text" id="rolePickerHelp">Already selected roles are disabled in the dropdown.</div>
+										<div class="exclusive-role-note" id="exclusiveRoleHelp">
+											<strong>Single-role rule:</strong> Agency and Department roles cannot be combined with another role.
+										</div>
 
 										<div class="selected-role-list" id="selectedRoleList" aria-live="polite">
 											<div class="selected-role-item" th:each="role : ${availableRoles}"
@@ -238,7 +241,7 @@
 			</div>
 		</section>
 	</th:block>
-	<script th:src="@{/js/admin-user-form.js(v='20260806')}" defer></script>
+	<script th:src="@{/js/admin-user-form.js(v='20260806-2')}" defer></script>
 </body>
 
 </html>
