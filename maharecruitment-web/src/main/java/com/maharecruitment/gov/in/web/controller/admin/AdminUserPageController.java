@@ -1,8 +1,10 @@
 package com.maharecruitment.gov.in.web.controller.admin;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,8 +111,10 @@ public class AdminUserPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
-        normalizeAffiliationSelection(form);
+        Set<String> selectedRoleNames = resolveSelectedRoleNames(form);
+        normalizeAffiliationSelection(form, selectedRoleNames);
         validateRoleSelection(form, bindingResult);
+        validateExclusiveRoleSelection(selectedRoleNames, bindingResult);
         validateAffiliationSelection(form, bindingResult);
         if (form.getPassword() == null || form.getPassword().isBlank()) {
             bindingResult.rejectValue("password", "user.password", "Password is required.");
@@ -142,8 +146,10 @@ public class AdminUserPageController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
-        normalizeAffiliationSelection(form);
+        Set<String> selectedRoleNames = resolveSelectedRoleNames(form);
+        normalizeAffiliationSelection(form, selectedRoleNames);
         validateRoleSelection(form, bindingResult);
+        validateExclusiveRoleSelection(selectedRoleNames, bindingResult);
         validateAffiliationSelection(form, bindingResult);
         if (bindingResult.hasErrors()) {
             clearSensitiveFields(form);
@@ -228,6 +234,17 @@ public class AdminUserPageController {
         }
     }
 
+    private void validateExclusiveRoleSelection(Set<String> selectedRoleNames, BindingResult bindingResult) {
+        boolean hasExclusiveRole = selectedRoleNames.contains(ROLE_DEPARTMENT)
+                || selectedRoleNames.contains(ROLE_AGENCY);
+        if (hasExclusiveRole && selectedRoleNames.size() > 1) {
+            bindingResult.rejectValue(
+                    "roleIds",
+                    "user.roles.exclusive",
+                    "Agency and Department users can have only one role.");
+        }
+    }
+
     private void validateAffiliationSelection(UserForm form, BindingResult bindingResult) {
         Long departmentRegistrationId = form.getDepartmentRegistrationId();
         if (departmentRegistrationId != null && !departmentRegistrationRepository.existsById(departmentRegistrationId)) {
@@ -243,24 +260,26 @@ public class AdminUserPageController {
         }
     }
 
-    private void normalizeAffiliationSelection(UserForm form) {
-        if (!hasSelectedRole(form, ROLE_DEPARTMENT)) {
+    private void normalizeAffiliationSelection(UserForm form, Set<String> selectedRoleNames) {
+        if (!selectedRoleNames.contains(ROLE_DEPARTMENT)) {
             form.setDepartmentRegistrationId(null);
         }
 
-        if (!hasSelectedRole(form, ROLE_AGENCY)) {
+        if (!selectedRoleNames.contains(ROLE_AGENCY)) {
             form.setAgencyId(null);
         }
     }
 
-    private boolean hasSelectedRole(UserForm form, String roleName) {
+    private Set<String> resolveSelectedRoleNames(UserForm form) {
         if (form.getRoleIds() == null || form.getRoleIds().isEmpty()) {
-            return false;
+            return Set.of();
         }
 
+        Set<Long> selectedRoleIds = new HashSet<>(form.getRoleIds());
         return roleManagementService.getAll().stream()
-                .filter(role -> form.getRoleIds().contains(role.getId()))
-                .anyMatch(role -> roleName.equalsIgnoreCase(role.getName()));
+                .filter(role -> selectedRoleIds.contains(role.getId()))
+                .map(role -> role.getName().toUpperCase())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private void clearSensitiveFields(UserForm form) {
