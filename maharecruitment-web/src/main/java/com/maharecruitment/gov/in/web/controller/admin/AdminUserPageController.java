@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.web.controller.admin;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ import jakarta.validation.Valid;
 public class AdminUserPageController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminUserPageController.class);
+    private static final Set<Integer> ALLOWED_PAGE_SIZES = Set.of(10, 25, 50, 100);
     private static final String ROLE_DEPARTMENT = "ROLE_DEPARTMENT";
     private static final String ROLE_AGENCY = "ROLE_AGENCY";
 
@@ -65,11 +67,14 @@ public class AdminUserPageController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(name = "search", required = false) String search,
             Model model) {
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        int normalizedSize = normalizePageSize(size);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), normalizedSize,
+                Sort.by(Sort.Direction.ASC, "name"));
         String normalizedSearch = normalizeSearch(search);
         Page<User> users = userManagementService.getAll(normalizedSearch, pageable);
         if (users.getTotalPages() > 0 && page >= users.getTotalPages()) {
-            pageable = PageRequest.of(users.getTotalPages() - 1, Math.max(size, 1));
+            pageable = PageRequest.of(users.getTotalPages() - 1, normalizedSize,
+                    Sort.by(Sort.Direction.ASC, "name"));
             users = userManagementService.getAll(normalizedSearch, pageable);
         }
         model.addAttribute("users", users);
@@ -173,7 +178,7 @@ public class AdminUserPageController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         redirectAttributes.addAttribute("page", Math.max(page, 0));
-        redirectAttributes.addAttribute("size", Math.max(size, 1));
+        redirectAttributes.addAttribute("size", normalizePageSize(size));
         if (StringUtils.hasText(search)) {
             redirectAttributes.addAttribute("search", search.trim());
         }
@@ -264,5 +269,9 @@ public class AdminUserPageController {
 
     private String normalizeSearch(String search) {
         return StringUtils.hasText(search) ? search.trim() : null;
+    }
+
+    private int normalizePageSize(int size) {
+        return ALLOWED_PAGE_SIZES.contains(size) ? size : 10;
     }
 }

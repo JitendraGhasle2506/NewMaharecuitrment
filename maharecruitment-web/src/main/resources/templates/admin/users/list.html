@@ -1,145 +1,197 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Users</title>
-    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+	<meta charset="UTF-8">
+	<title>User Management</title>
+	<th:block th:replace="~{header/header :: var-files-header}"></th:block>
+	<link rel="stylesheet" th:href="@{/css/admin-management.css(v='20260806')}">
 </head>
 
 <body>
-    <th:block th:replace="~{header/header :: var-sidebar-header('Admin', 'Users', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
-                    <h2>User Management</h2>
-                    <a class="btn btn-primary btn-sm" th:href="@{/admin/users/new}">Add User</a>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2 mb-3">
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/roles}">Roles</a>
-                        <a class="btn btn-outline-primary btn-sm" th:href="@{/admin/users}">Users</a>
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/role-menu-mappings}">Role Menu Mapping</a>
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/menus}">Menus</a>
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/submenus}">Submenus</a>
-                    </div>
+	<th:block th:replace="~{header/header :: var-sidebar-header('Admin', 'Users', ~{::section})}">
+		<section class="admin-management-page">
+			<div class="card add-emp-card management-card">
+				<header class="management-header">
+					<div class="management-title-wrap">
+						<span class="management-title-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
+						<div>
+							<div class="management-eyebrow">Access administration</div>
+							<h2>User management</h2>
+							<p>Search user accounts, review assigned roles and manage access.</p>
+						</div>
+					</div>
+					<a class="btn btn-light management-primary-action" th:href="@{/admin/users/new}">
+						<i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+						<span>Add user</span>
+					</a>
+				</header>
 
-                    <form class="row g-2 align-items-center mb-3" method="get" th:action="@{/admin/users}">
-                        <input type="hidden" name="size" th:value="${pageSize}">
-                        <div class="col-md-6 col-lg-5">
-                            <input type="search"
-                                class="form-control"
-                                name="search"
-                                th:value="${searchTerm}"
-                                placeholder="Search by name, email, mobile, role or department">
-                        </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-primary btn-sm">Search</button>
-                            <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/users(size=${pageSize})}">Clear</a>
-                        </div>
-                    </form>
+				<div class="card-body management-body">
+					<nav class="admin-quick-links" aria-label="User administration links">
+						<span class="admin-quick-links-label">Quick links</span>
+						<a class="admin-quick-link active" th:href="@{/admin/users}" aria-current="page">
+							<i class="fa-solid fa-users" aria-hidden="true"></i> Users
+						</a>
+						<a class="admin-quick-link" th:href="@{/admin/roles}">
+							<i class="fa-solid fa-user-shield" aria-hidden="true"></i> Roles
+						</a>
+						<a class="admin-quick-link" th:href="@{/admin/role-menu-mappings}">
+							<i class="fa-solid fa-diagram-project" aria-hidden="true"></i> Role menu mapping
+						</a>
+					</nav>
 
-                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+					<div class="management-alert alert alert-success" role="status" th:if="${successMessage}">
+						<i class="fa-solid fa-circle-check" aria-hidden="true"></i><span th:text="${successMessage}"></span>
+					</div>
+					<div class="management-alert alert alert-danger" role="alert" th:if="${errorMessage}">
+						<i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span th:text="${errorMessage}"></span>
+					</div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Mobile</th>
-                                    <th>Roles</th>
-                                    <th>Department</th>
-                                    <th class="text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:if="${users.isEmpty()}">
-                                    <td colspan="7" class="text-center text-muted"
-                                        th:text="${#strings.isEmpty(searchTerm)} ? 'No records found' : 'No users matched your search'">No records found</td>
-                                </tr>
-                                <tr th:each="user : ${users.content}">
-                                    <td th:text="${user.id}"></td>
-                                    <td th:text="${user.name}"></td>
-                                    <td th:text="${user.email}"></td>
-                                    <td th:text="${user.mobileNo} ?: '-'"></td>
-                                    <td>
-                                        <span th:if="${user.roles == null or user.roles.isEmpty()}" class="text-muted">-</span>
-                                        <span th:each="role : ${user.roles}" class="badge text-bg-light border me-1 mb-1"
-                                            th:text="${role.name}"></span>
-                                    </td>
-                                    <td th:text="${user.departmentRegistrationId != null ? user.departmentRegistrationId.departmentName : '-'}"></td>
-                                    <td class="text-center">
-                                        <a class="btn btn-outline-primary btn-sm"
-                                            th:href="@{/admin/users/{id}/edit(id=${user.id})}">Edit</a>
-                                        <form class="d-inline"
-                                            th:action="@{/admin/users/{id}/delete(id=${user.id},page=${users.number},size=${users.size},search=${searchTerm})}" method="post">
-                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <button type="submit" class="btn btn-outline-danger btn-sm"
-                                                onclick="return confirm('Deactivate this user?')">Deactivate</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+					<div class="management-summary-grid">
+						<div class="management-summary-card">
+							<span class="summary-icon summary-icon-blue" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
+							<div><span class="summary-label">Total users</span><strong th:text="${users.totalElements}">0</strong></div>
+						</div>
+						<div class="management-summary-card">
+							<span class="summary-icon summary-icon-green" aria-hidden="true"><i class="fa-solid fa-list-check"></i></span>
+							<div><span class="summary-label">On this page</span><strong th:text="${users.numberOfElements}">0</strong></div>
+						</div>
+						<div class="management-summary-card" th:if="${!#strings.isEmpty(searchTerm)}">
+							<span class="summary-icon summary-icon-amber" aria-hidden="true"><i class="fa-solid fa-magnifying-glass"></i></span>
+							<div><span class="summary-label">Filtered by</span><strong class="summary-search-value" th:text="${searchTerm}">Search</strong></div>
+						</div>
+					</div>
 
-                    <div class="app-pagination-shell"
-                        th:if="${users.totalPages > 1}"
-                        th:with="middleStart=${users.number - 2 > 1 ? users.number - 2 : 1},
-                                 middleEnd=${users.number + 2 < users.totalPages - 2 ? users.number + 2 : users.totalPages - 2},
-                                 showingFrom=${users.totalElements == 0 ? 0 : users.number * users.size + 1},
-                                 showingTo=${users.totalElements == 0 ? 0 : users.number * users.size + users.numberOfElements}">
-                        <div class="app-pagination-summary">
-                            <div class="app-pagination-meta">
-                                Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of
-                                <span th:text="${users.totalElements}">10</span> entries
-                            </div>
-                            <div class="app-pagination-meta">
-                                Page <span th:text="${users.number + 1}">1</span> of <span th:text="${users.totalPages}">1</span>
-                            </div>
-                        </div>
-                        <nav aria-label="User management pagination">
-                            <ul class="pagination app-pagination mb-0">
-                                <li class="page-item" th:classappend="${users.first} ? ' disabled'">
-                                    <a class="page-link" th:href="@{/admin/users(page=${users.number - 1},size=${users.size},search=${searchTerm})}">Previous</a>
-                                </li>
-                                <li class="page-item" th:classappend="${users.number == 0} ? ' active'">
-                                    <a class="page-link" th:href="@{/admin/users(page=0,size=${users.size},search=${searchTerm})}">1</a>
-                                </li>
-                                <li class="page-item disabled" th:if="${middleStart > 1}">
-                                    <span class="page-link app-pagination-ellipsis">...</span>
-                                </li>
-                                <th:block th:if="${middleStart <= middleEnd}">
-                                    <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
-                                        th:classappend="${pageIndex == users.number} ? ' active'">
-                                        <a class="page-link"
-                                            th:href="@{/admin/users(page=${pageIndex},size=${users.size},search=${searchTerm})}"
-                                            th:text="${pageIndex + 1}">2</a>
-                                    </li>
-                                </th:block>
-                                <li class="page-item disabled" th:if="${middleEnd < users.totalPages - 2}">
-                                    <span class="page-link app-pagination-ellipsis">...</span>
-                                </li>
-                                <li class="page-item" th:if="${users.totalPages > 1}"
-                                    th:classappend="${users.number == users.totalPages - 1} ? ' active'">
-                                    <a class="page-link"
-                                        th:href="@{/admin/users(page=${users.totalPages - 1},size=${users.size},search=${searchTerm})}"
-                                        th:text="${users.totalPages}">2</a>
-                                </li>
-                                <li class="page-item" th:classappend="${users.last} ? ' disabled'">
-                                    <a class="page-link" th:href="@{/admin/users(page=${users.number + 1},size=${users.size},search=${searchTerm})}">Next</a>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </th:block>
+					<form class="management-toolbar" method="get" th:action="@{/admin/users}" role="search">
+						<div class="management-search-group">
+							<label class="management-control-label" for="userSearch">Search users</label>
+							<div class="management-search-field">
+							<input id="userSearch" type="search" class="form-control" name="search"
+								th:value="${searchTerm}" autocomplete="off">
+							</div>
+						</div>
+						<div class="management-toolbar-actions">
+							<label class="page-size-control" for="userPageSize">
+								<span>Show</span>
+								<select id="userPageSize" class="form-select" name="size" data-auto-submit aria-label="Users per page">
+									<option value="10" th:selected="${pageSize == 10}">10</option>
+									<option value="25" th:selected="${pageSize == 25}">25</option>
+									<option value="50" th:selected="${pageSize == 50}">50</option>
+									<option value="100" th:selected="${pageSize == 100}">100</option>
+								</select>
+							</label>
+							<button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Search</button>
+							<a class="btn btn-outline-secondary" th:if="${!#strings.isEmpty(searchTerm)}"
+								th:href="@{/admin/users(size=${pageSize})}"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Clear</a>
+						</div>
+					</form>
+
+					<div class="management-table-shell">
+						<div class="management-table-heading">
+							<div><h3>User accounts</h3><p th:text="${#strings.isEmpty(searchTerm)} ? 'All available user accounts' : 'Users matching your search'">All available user accounts</p></div>
+							<span class="record-count"><span th:text="${users.totalElements}">0</span> records</span>
+						</div>
+						<div class="table-responsive">
+							<table class="table management-table align-middle mb-0">
+								<thead>
+									<tr>
+										<th scope="col">Sr. No.</th>
+										<th scope="col">User</th>
+										<th scope="col">Contact</th>
+										<th scope="col">Roles</th>
+										<th scope="col">Department</th>
+										<th scope="col" class="text-end">Actions</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr class="management-empty-row" th:if="${users.isEmpty()}">
+										<td colspan="6">
+											<div class="management-empty-state">
+												<span aria-hidden="true"><i class="fa-solid fa-user-slash"></i></span>
+												<strong th:text="${#strings.isEmpty(searchTerm)} ? 'No users found' : 'No matching users'">No users found</strong>
+												<p th:text="${#strings.isEmpty(searchTerm)} ? 'Create the first user account to get started.' : 'Try a different name, email, role or department.'">No records found.</p>
+												<a class="btn btn-primary btn-sm" th:if="${#strings.isEmpty(searchTerm)}" th:href="@{/admin/users/new}">Add user</a>
+												<a class="btn btn-outline-secondary btn-sm" th:unless="${#strings.isEmpty(searchTerm)}" th:href="@{/admin/users(size=${pageSize})}">Clear search</a>
+											</div>
+										</td>
+									</tr>
+									<tr th:each="user, userStat : ${users.content}">
+										<td><span class="serial-number" th:text="${users.number * users.size + userStat.index + 1}">1</span></td>
+										<td>
+											<div class="entity-identity">
+												<span class="entity-avatar" aria-hidden="true"
+													th:text="${user.name != null and !#strings.isEmpty(user.name) ? #strings.substring(user.name, 0, 1) : '?'}">U</span>
+												<div><strong th:text="${user.name}">User Name</strong><span th:text="${user.email}">email@example.com</span></div>
+											</div>
+										</td>
+										<td>
+											<div class="contact-cell"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i><span th:text="${user.mobileNo} ?: 'Not provided'">Not provided</span></div>
+										</td>
+										<td>
+											<span th:if="${user.roles == null or user.roles.isEmpty()}" class="empty-value">No role</span>
+											<span th:each="role : ${user.roles}" class="role-badge" th:text="${role.name}">ROLE_USER</span>
+										</td>
+										<td>
+											<span class="department-value" th:if="${user.departmentRegistrationId != null}">
+												<i class="fa-regular fa-building" aria-hidden="true"></i>
+												<span th:text="${user.departmentRegistrationId.departmentName}">Department</span>
+											</span>
+											<span class="empty-value" th:unless="${user.departmentRegistrationId != null}">Not assigned</span>
+										</td>
+										<td class="text-end">
+											<div class="table-actions">
+												<a class="btn btn-outline-primary btn-sm" th:href="@{/admin/users/{id}/edit(id=${user.id})}" th:attr="aria-label=${'Edit ' + user.name}">
+													<i class="fa-regular fa-pen-to-square" aria-hidden="true"></i><span>Edit</span>
+												</a>
+												<form class="d-inline js-confirm-action"
+													th:action="@{/admin/users/{id}/delete(id=${user.id},page=${users.number},size=${users.size},search=${searchTerm})}"
+													method="post" data-confirm-message="Deactivate this user account?">
+													<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+													<button type="submit" class="btn btn-outline-danger btn-sm" th:attr="aria-label=${'Deactivate ' + user.name}">
+														<i class="fa-solid fa-user-slash" aria-hidden="true"></i><span>Deactivate</span>
+													</button>
+												</form>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+
+					<div class="app-pagination-shell" th:if="${users.totalPages > 1}"
+						th:with="middleStart=${users.number - 2 > 1 ? users.number - 2 : 1},
+							middleEnd=${users.number + 2 < users.totalPages - 2 ? users.number + 2 : users.totalPages - 2},
+							showingFrom=${users.totalElements == 0 ? 0 : users.number * users.size + 1},
+							showingTo=${users.totalElements == 0 ? 0 : users.number * users.size + users.numberOfElements}">
+						<div class="app-pagination-summary">
+							<div class="app-pagination-meta">Showing <span th:text="${showingFrom}">1</span> to <span th:text="${showingTo}">10</span> of <span th:text="${users.totalElements}">10</span> users</div>
+							<div class="app-pagination-meta">Page <span th:text="${users.number + 1}">1</span> of <span th:text="${users.totalPages}">1</span></div>
+						</div>
+						<nav aria-label="User management pagination">
+							<ul class="pagination app-pagination mb-0">
+								<li class="page-item" th:classappend="${users.first} ? ' disabled'"><a class="page-link" th:href="@{/admin/users(page=${users.number - 1},size=${users.size},search=${searchTerm})}" th:attr="aria-disabled=${users.first}">Previous</a></li>
+								<li class="page-item" th:classappend="${users.number == 0} ? ' active'"><a class="page-link" th:href="@{/admin/users(page=0,size=${users.size},search=${searchTerm})}">1</a></li>
+								<li class="page-item disabled" th:if="${middleStart > 1}"><span class="page-link app-pagination-ellipsis">...</span></li>
+								<th:block th:if="${middleStart <= middleEnd}">
+									<li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}" th:classappend="${pageIndex == users.number} ? ' active'">
+										<a class="page-link" th:href="@{/admin/users(page=${pageIndex},size=${users.size},search=${searchTerm})}" th:text="${pageIndex + 1}">2</a>
+									</li>
+								</th:block>
+								<li class="page-item disabled" th:if="${middleEnd < users.totalPages - 2}"><span class="page-link app-pagination-ellipsis">...</span></li>
+								<li class="page-item" th:if="${users.totalPages > 1}" th:classappend="${users.number == users.totalPages - 1} ? ' active'">
+									<a class="page-link" th:href="@{/admin/users(page=${users.totalPages - 1},size=${users.size},search=${searchTerm})}" th:text="${users.totalPages}">2</a>
+								</li>
+								<li class="page-item" th:classappend="${users.last} ? ' disabled'"><a class="page-link" th:href="@{/admin/users(page=${users.number + 1},size=${users.size},search=${searchTerm})}" th:attr="aria-disabled=${users.last}">Next</a></li>
+							</ul>
+						</nav>
+					</div>
+				</div>
+			</div>
+		</section>
+	</th:block>
+	<script th:src="@{/js/admin-management.js(v='20260806')}" defer></script>
 </body>
 
 </html>
-

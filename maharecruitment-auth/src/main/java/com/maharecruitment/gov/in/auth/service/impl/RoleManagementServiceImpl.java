@@ -19,19 +19,21 @@ import com.maharecruitment.gov.in.auth.service.RoleManagementService;
 public class RoleManagementServiceImpl implements RoleManagementService {
 
     private static final Logger log = LoggerFactory.getLogger(RoleManagementServiceImpl.class);
-    private static final Set<String> CANONICAL_ROLE_NAMES = Set.of(
-            "ROLE_DEPARTMENT",
-            "ROLE_HR",
-            "ROLE_AGENCY",
+    private static final List<String> ALLOWED_ROLE_NAMES = List.of(
             "ROLE_ADMIN",
-            "ROLE_USER",
-            "ROLE_STM",
-            "ROLE_HOD",
+            "ROLE_AGENCY",
+            "ROLE_AUDITOR",
             "ROLE_COO",
+            "ROLE_DEPARTMENT",
+            "ROLE_EMPLOYEE",
+            "ROLE_HR",
+            "ROLE_HOD",
+            "ROLE_INFRA",
             "ROLE_MD",
             "ROLE_PM",
-            "ROLE_AUDITOR",
-            "ROLE_EMPLOYEE","ROLE_INFRA");
+            "ROLE_STM",
+            "ROLE_USER");
+    private static final Set<String> ALLOWED_ROLE_NAME_SET = Set.copyOf(ALLOWED_ROLE_NAMES);
 
     private final RoleRepository roleRepository;
 
@@ -47,8 +49,22 @@ public class RoleManagementServiceImpl implements RoleManagementService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<Role> getAll(String searchTerm, Pageable pageable) {
+        if (searchTerm == null || searchTerm.isBlank()) {
+            return roleRepository.findAll(pageable);
+        }
+        return roleRepository.findByNameContainingIgnoreCase(searchTerm.trim(), pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Role> getAll() {
         return roleRepository.findAllByOrderByNameAsc();
+    }
+
+    @Override
+    public List<String> getAllowedRoleNames() {
+        return ALLOWED_ROLE_NAMES;
     }
 
     @Override
@@ -90,7 +106,7 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     @Override
     public void delete(Long id) {
         Role existing = getById(id);
-        if (CANONICAL_ROLE_NAMES.contains(existing.getName())) {
+        if (ALLOWED_ROLE_NAME_SET.contains(existing.getName())) {
             throw new IllegalArgumentException("Canonical system roles cannot be deleted.");
         }
         if (existing.getUsers() != null && !existing.getUsers().isEmpty()) {
@@ -107,7 +123,7 @@ public class RoleManagementServiceImpl implements RoleManagementService {
         }
 
         String normalizedName = name.trim().toUpperCase();
-        if (!CANONICAL_ROLE_NAMES.contains(normalizedName)) {
+        if (!ALLOWED_ROLE_NAME_SET.contains(normalizedName)) {
             throw new IllegalArgumentException("Only canonical ROLE_* names are allowed.");
         }
 

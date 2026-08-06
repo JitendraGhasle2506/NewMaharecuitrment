@@ -1,52 +1,96 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <meta charset="UTF-8">
-    <title th:text="${isEdit} ? 'Edit Role' : 'Create Role'">Role Form</title>
-    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+	<meta charset="UTF-8">
+	<title th:text="${isEdit} ? 'Edit Role' : 'Create Role'">Role Form</title>
+	<th:block th:replace="~{header/header :: var-files-header}"></th:block>
+	<link rel="stylesheet" th:href="@{/css/admin-management.css(v='20260806')}">
 </head>
 
 <body>
-    <th:block th:replace="~{header/header :: var-sidebar-header('Admin', 'Roles', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header">
-                    <h2 th:text="${isEdit} ? 'Edit Role' : 'Create Role'"></h2>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2 mb-3">
-                        <a class="btn btn-outline-primary btn-sm" th:href="@{/admin/roles}">Roles</a>
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/users}">Users</a>
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/role-menu-mappings}">Role Menu Mapping</a>
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/menus}">Menus</a>
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/submenus}">Submenus</a>
-                    </div>
+	<th:block th:replace="~{header/header :: var-sidebar-header('Admin', 'Roles', ~{::section})}">
+		<section class="admin-management-page role-form-page">
+			<div class="card add-emp-card management-card">
+				<header class="management-header role-management-header">
+					<div class="management-title-wrap">
+						<span class="management-title-icon" aria-hidden="true"><i class="fa-solid" th:classappend="${isEdit} ? ' fa-pen-to-square' : ' fa-shield-halved'"></i></span>
+						<div>
+							<div class="management-eyebrow">Access administration</div>
+							<h2 th:text="${isEdit} ? 'Edit role' : 'Create a new role'">Create a new role</h2>
+							<p th:text="${isEdit} ? 'Update the system role used to group user permissions.' : 'Add an available system role before assigning it to users and menus.'">Add an available system role.</p>
+						</div>
+					</div>
+					<a class="btn btn-light management-primary-action" th:href="@{/admin/roles}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>Back to roles</span></a>
+				</header>
 
-                    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+				<div class="card-body management-body">
+					<nav class="admin-quick-links" aria-label="Role administration links">
+						<span class="admin-quick-links-label">Quick links</span>
+						<a class="admin-quick-link" th:href="@{/admin/users}"><i class="fa-solid fa-users" aria-hidden="true"></i> Users</a>
+						<a class="admin-quick-link active" th:href="@{/admin/roles}" aria-current="page"><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Roles</a>
+						<a class="admin-quick-link" th:href="@{/admin/role-menu-mappings}"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i> Role menu mapping</a>
+					</nav>
 
-                    <form th:object="${roleForm}"
-                        th:action="${isEdit} ? @{/admin/roles/{id}(id=${roleId})} : @{/admin/roles}"
-                        method="post" class="row g-3">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+					<div class="management-alert alert alert-danger" role="alert" th:if="${errorMessage}">
+						<i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span th:text="${errorMessage}"></span>
+					</div>
 
-                        <div class="col-md-6">
-                            <label class="form-label">Role Name <span class="text-danger">*</span></label>
-                            <input type="text" th:field="*{name}" class="form-control" maxlength="100" autocomplete="off">
-                            <div class="text-danger small" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-                        </div>
+					<div class="role-form-layout">
+						<form id="adminRoleForm" class="role-form-card" th:object="${roleForm}"
+							th:action="${isEdit} ? @{/admin/roles/{id}(id=${roleId})} : @{/admin/roles}" method="post">
+							<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+							<div class="role-form-heading">
+								<span aria-hidden="true"><i class="fa-solid fa-fingerprint"></i></span>
+								<div><h3>Role identity</h3><p>Select one of the available system role names.</p></div>
+							</div>
 
-                        <div class="col-12 d-flex gap-2">
-                            <button type="submit" class="btn btn-primary"
-                                th:text="${isEdit} ? 'Update' : 'Save'"></button>
-                            <a class="btn btn-outline-secondary" th:href="@{/admin/roles}">Cancel</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </section>
-    </th:block>
+							<div class="mb-4">
+								<label class="form-label" for="name">Role name <span class="text-danger">*</span></label>
+								<select class="form-select role-name-select" th:field="*{name}" required
+									th:disabled="${availableRoleNames.isEmpty()}"
+									th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'" aria-describedby="roleNameHelp">
+									<option value="">Select a system role</option>
+									<option th:each="roleName : ${availableRoleNames}" th:value="${roleName}" th:text="${roleName}"></option>
+								</select>
+								<div class="form-text" id="roleNameHelp">Only roles not already configured are shown.</div>
+								<div class="invalid-feedback d-block" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+							</div>
+
+							<div class="no-role-options" th:if="${availableRoleNames.isEmpty()}">
+								<i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+								<div><strong>All system roles are already configured</strong><span>Return to the role list to review or edit an existing role.</span></div>
+							</div>
+
+							<div class="role-preview" th:unless="${availableRoleNames.isEmpty()}">
+								<span class="role-preview-icon" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
+								<div><span class="role-preview-label">Selected role</span><strong id="rolePreviewName">Choose a role</strong><code id="rolePreviewCode">No role selected</code></div>
+							</div>
+
+							<div class="role-form-actions">
+								<a class="btn btn-outline-secondary" th:href="@{/admin/roles}">Cancel</a>
+								<button type="submit" class="btn btn-primary" th:disabled="${availableRoleNames.isEmpty()}">
+									<i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+									<span th:text="${isEdit} ? 'Update role' : 'Create role'">Create role</span>
+								</button>
+							</div>
+						</form>
+
+						<aside class="role-guidance-card" aria-labelledby="roleGuidanceHeading">
+							<div class="guidance-heading"><span aria-hidden="true"><i class="fa-regular fa-lightbulb"></i></span><h3 id="roleGuidanceHeading">How roles work</h3></div>
+							<ol class="role-guidance-steps">
+								<li><span>1</span><div><strong>Create the role</strong><p>Select an available system role name.</p></div></li>
+								<li><span>2</span><div><strong>Map menus</strong><p>Choose which menus this role can access.</p></div></li>
+								<li><span>3</span><div><strong>Assign users</strong><p>Add the role to one or more user accounts.</p></div></li>
+							</ol>
+							<a class="guidance-link" th:href="@{/admin/role-menu-mappings}">Open role menu mapping <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+						</aside>
+					</div>
+				</div>
+			</div>
+		</section>
+	</th:block>
+	<script th:src="@{/js/admin-management.js(v='20260806')}" defer></script>
 </body>
 
 </html>
-

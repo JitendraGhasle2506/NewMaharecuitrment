@@ -11,7 +11,11 @@ public interface RoleManagementService {
 
     Page<Role> getAll(Pageable pageable);
 
+    Page<Role> getAll(String searchTerm, Pageable pageable);
+
     List<Role> getAll();
+
+    List<String> getAllowedRoleNames();
 
     Role getById(Long id);
 
