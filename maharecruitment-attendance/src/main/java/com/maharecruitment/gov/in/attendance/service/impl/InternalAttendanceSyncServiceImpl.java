@@ -3,10 +3,8 @@ package com.maharecruitment.gov.in.attendance.service.impl;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -31,6 +29,8 @@ import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntit
 import com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.attendance.repository.ManualAttendanceRequestRepository;
+import com.maharecruitment.gov.in.attendance.service.AttendanceEventTimeResolver;
+import com.maharecruitment.gov.in.attendance.service.AttendanceEventTimeResolver.AttendanceEventWindow;
 import com.maharecruitment.gov.in.attendance.service.InternalAttendanceSyncService;
 import com.maharecruitment.gov.in.attendance.service.model.InternalAttendanceSyncResult;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
@@ -40,6 +40,7 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSyncService {
 
     private static final Logger log = LoggerFactory.getLogger(InternalAttendanceSyncServiceImpl.class);
+    private static final String PRESENT = "PRESENT";
 
     private final EmployeeRepository employeeRepository;
     private final DailyAttendanceInternalRepository dailyAttendanceInternalRepository;
@@ -317,7 +318,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                 .collect(Collectors.toMap(
                         InternalAttendanceDayRecord::getAttendanceDate,
                         record -> record,
-                        this::pickPreferredApiRecord,
+                        this::mergeApiRecords,
                         LinkedHashMap::new));
 
         List<DailyAttendanceInternalEntity> entitiesToSave = new ArrayList<>();
@@ -435,12 +436,16 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
             entity.setOutTime(outTime);
             updatedFields.add("out_time");
         }
-        String totalHours = calculateTotalHours(entity.getInTime(), entity.getOutTime());
+        AttendanceEventWindow eventWindow = AttendanceEventTimeResolver.resolve(entity);
+        String totalHours = AttendanceEventTimeResolver.calculateTotalHours(eventWindow);
         if (StringUtils.hasText(totalHours)) {
             entity.setTotalHours(totalHours);
             updatedFields.add("total_hours");
         }
-        if (StringUtils.hasText(mappedStatus)) {
+        if (eventWindow.hasAttendanceEvent()) {
+            entity.setStatus(PRESENT);
+            updatedFields.add("status");
+        } else if (StringUtils.hasText(mappedStatus)) {
             entity.setStatus(mappedStatus);
             updatedFields.add("status");
         }
@@ -486,7 +491,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         return leftId >= rightId ? left : right;
     }
 
-    private InternalAttendanceDayRecord pickPreferredApiRecord(
+    private InternalAttendanceDayRecord mergeApiRecords(
             InternalAttendanceDayRecord left,
             InternalAttendanceDayRecord right) {
         if (left == null) {
@@ -495,23 +500,25 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
         if (right == null) {
             return left;
         }
-        int leftScore = scoreApiRecord(left);
-        int rightScore = scoreApiRecord(right);
-        return rightScore >= leftScore ? right : left;
+        AttendanceEventWindow eventWindow = AttendanceEventTimeResolver.resolve(
+                AttendanceEventTimeResolver.parse(left.getInTime()),
+                AttendanceEventTimeResolver.parse(left.getOutTime()),
+                AttendanceEventTimeResolver.parse(right.getInTime()),
+                AttendanceEventTimeResolver.parse(right.getOutTime()));
+        String status = eventWindow.hasAttendanceEvent()
+                ? PRESENT
+                : preferText(right.getStatus(), left.getStatus());
+        return new InternalAttendanceDayRecord(
+                preferText(right.getEmployeeName(), left.getEmployeeName()),
+                preferText(right.getUniqueCode(), left.getUniqueCode()),
+                left.getAttendanceDate() != null ? left.getAttendanceDate() : right.getAttendanceDate(),
+                AttendanceEventTimeResolver.format(eventWindow.inTime()),
+                AttendanceEventTimeResolver.format(eventWindow.outTime()),
+                status);
     }
 
-    private int scoreApiRecord(InternalAttendanceDayRecord record) {
-        int score = 0;
-        if (StringUtils.hasText(record.getInTime())) {
-            score += 1;
-        }
-        if (StringUtils.hasText(record.getOutTime())) {
-            score += 1;
-        }
-        if (StringUtils.hasText(record.getStatus())) {
-            score += 1;
-        }
-        return score;
+    private String preferText(String preferred, String fallback) {
+        return StringUtils.hasText(preferred) ? preferred.trim() : normalizeText(fallback);
     }
 
     private boolean isFutureJoining(EmployeeEntity employee, LocalDate endDate) {
@@ -580,29 +587,6 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
                 return "TOUR";
             default:
                 return status;
-        }
-    }
-
-    private String calculateTotalHours(String inTime, String outTime) {
-        String normalizedInTime = normalizeText(inTime);
-        String normalizedOutTime = normalizeText(outTime);
-        if (!StringUtils.hasText(normalizedInTime) || !StringUtils.hasText(normalizedOutTime)) {
-            return null;
-        }
-
-        try {
-            LocalTime in = LocalTime.parse(normalizedInTime);
-            LocalTime out = LocalTime.parse(normalizedOutTime);
-            if (out.isBefore(in)) {
-                return null;
-            }
-
-            Duration duration = Duration.between(in, out);
-            long hours = duration.toHours();
-            long minutes = duration.toMinutesPart();
-            return "%02d:%02d".formatted(hours, minutes);
-        } catch (DateTimeParseException ex) {
-            return null;
         }
     }
 

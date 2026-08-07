@@ -3,7 +3,11 @@ package com.maharecruitment.gov.in.attendance.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.time.LocalTime;
+
 import org.junit.jupiter.api.Test;
+
+import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntity;
 
 class AttendanceStatusResolverTest {
 
@@ -23,5 +27,15 @@ class AttendanceStatusResolverTest {
     void resolveDisplayStatusFallsBackToPunchTimesWhenStatusIsBlank() {
         assertEquals("PRESENT", AttendanceStatusResolver.resolveDisplayStatus(null, "09:00", null));
         assertNull(AttendanceStatusResolver.resolveDisplayStatus(null, null, null));
+    }
+
+    @Test
+    void resolveDisplayStatusTreatsMobileEventAsPresentWhenApiStatusIsAbsent() {
+        DailyAttendanceInternalEntity attendance = new DailyAttendanceInternalEntity();
+        attendance.setStatus("ABSENT");
+        attendance.setCheckInTime(LocalTime.of(9, 52));
+
+        assertEquals("PRESENT", AttendanceStatusResolver.resolveDisplayStatus(attendance));
+        assertEquals("P", AttendanceStatusResolver.resolveStatusCode(attendance));
     }
 }

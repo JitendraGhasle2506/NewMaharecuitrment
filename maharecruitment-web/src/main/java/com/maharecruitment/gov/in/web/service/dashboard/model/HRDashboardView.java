@@ -13,6 +13,7 @@ public record HRDashboardView(
         int presentEmployees,
         int absentEmployees,
         int presentPercent,
+        HRAttendanceSummaryView attendanceSummary,
         int pendingApprovals,
         int totalWings,
         int totalCells,

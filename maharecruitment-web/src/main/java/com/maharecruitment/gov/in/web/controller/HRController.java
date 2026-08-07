@@ -35,6 +35,10 @@ public class HRController {
         model.addAttribute("presentEmployees", dashboard.presentEmployees());
         model.addAttribute("absentEmployees", dashboard.absentEmployees());
         model.addAttribute("presentPercent", dashboard.presentPercent());
+        model.addAttribute("checkedInEmployees", dashboard.attendanceSummary().checkedInEmployees());
+        model.addAttribute("earlyCheckIns", dashboard.attendanceSummary().earlyCheckIns());
+        model.addAttribute("standardCheckIns", dashboard.attendanceSummary().standardCheckIns());
+        model.addAttribute("lateCheckIns", dashboard.attendanceSummary().lateCheckIns());
         model.addAttribute("pendingApprovals", dashboard.pendingApprovals());
         model.addAttribute("totalWings", dashboard.totalWings());
         model.addAttribute("totalCells", dashboard.totalCells());

@@ -353,9 +353,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 					dayDTO.setStatus("TOUR");
 				} else if (holidayDates.contains(date)) {
 					if (daily != null) {
-						dayDTO.setInTime(daily.getInTime());
-						dayDTO.setOutTime(daily.getOutTime());
-						dayDTO.setStayHours(daily.getTotalHours());
+						applyEffectiveEventTimes(dayDTO, daily);
 					}
 					dayDTO.setStatus("HOLIDAY");
 				} else if (StringUtils.hasText(resolveInternalDailyDisplayStatus(
@@ -364,9 +362,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 					String resolvedStatus = resolveInternalDailyDisplayStatus(
 							daily,
 							workingDayOverrideDates.contains(date));
-					dayDTO.setInTime(daily.getInTime());
-					dayDTO.setOutTime(daily.getOutTime());
-					dayDTO.setStayHours(daily.getTotalHours());
+					applyEffectiveEventTimes(dayDTO, daily);
 					dayDTO.setStatus(resolvedStatus);
 				} else if (date.isAfter(today)) {
 					dayDTO.setStatus("FUTURE");
@@ -461,8 +457,10 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		DailyAttendanceInternalEntity todayAttendance = dailyAttendanceInternalRepository
 				.findByEmployeeIdAndAttendanceDate(employeeId, today).orElse(null);
 		if (todayAttendance != null) {
-			dto.setTodayInTime(todayAttendance.getInTime());
-			dto.setTodayOutTime(todayAttendance.getOutTime());
+			AttendanceEventTimeResolver.AttendanceEventWindow eventWindow =
+					AttendanceEventTimeResolver.resolve(todayAttendance);
+			dto.setTodayInTime(AttendanceEventTimeResolver.format(eventWindow.inTime()));
+			dto.setTodayOutTime(AttendanceEventTimeResolver.format(eventWindow.outTime()));
 			dto.setTodayStatus(AttendanceStatusResolver.resolveDisplayStatus(todayAttendance));
 		} else {
 			dto.setTodayInTime("-");
@@ -510,22 +508,16 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			if (onLeave) {
 				dayDTO.setStatus(isCompOffLeave(matchingLeave.get()) ? "COMP_OFF" : "LEAVE");
 				if (daily != null) {
-					dayDTO.setInTime(daily.getInTime());
-					dayDTO.setOutTime(daily.getOutTime());
-					dayDTO.setStayHours(daily.getTotalHours());
+					applyEffectiveEventTimes(dayDTO, daily);
 				}
 			} else if (onTour) {
 				dayDTO.setStatus("TOUR");
 				if (daily != null) {
-					dayDTO.setInTime(daily.getInTime());
-					dayDTO.setOutTime(daily.getOutTime());
-					dayDTO.setStayHours(daily.getTotalHours());
+					applyEffectiveEventTimes(dayDTO, daily);
 				}
 			} else if (holidayDates.contains(date)) {
 				if (daily != null) {
-					dayDTO.setInTime(daily.getInTime());
-					dayDTO.setOutTime(daily.getOutTime());
-					dayDTO.setStayHours(daily.getTotalHours());
+					applyEffectiveEventTimes(dayDTO, daily);
 				}
 				dayDTO.setStatus("HOLIDAY");
 			} else if (StringUtils.hasText(resolveInternalDailyDisplayStatus(
@@ -534,9 +526,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 				String resolvedStatus = resolveInternalDailyDisplayStatus(
 						daily,
 						workingDayOverrideDates.contains(date));
-				dayDTO.setInTime(daily.getInTime());
-				dayDTO.setOutTime(daily.getOutTime());
-				dayDTO.setStayHours(daily.getTotalHours());
+				applyEffectiveEventTimes(dayDTO, daily);
 				dayDTO.setStatus(resolvedStatus);
 			} else if (pendingDates.contains(date)) {
 				dayDTO.setStatus("PENDING");
@@ -634,10 +624,11 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		}
 
 		int score = 0;
-		if (StringUtils.hasText(daily.getInTime())) {
+		AttendanceEventTimeResolver.AttendanceEventWindow eventWindow = AttendanceEventTimeResolver.resolve(daily);
+		if (eventWindow.inTime() != null) {
 			score += 2;
 		}
-		if (StringUtils.hasText(daily.getOutTime())) {
+		if (eventWindow.outTime() != null) {
 			score += 2;
 		}
 		if (StringUtils.hasText(daily.getTotalHours())) {
@@ -654,9 +645,16 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	}
 
 	private boolean hasCompletePunchTime(DailyAttendanceInternalEntity daily) {
-		return daily != null
-				&& StringUtils.hasText(daily.getInTime())
-				&& StringUtils.hasText(daily.getOutTime());
+		AttendanceEventTimeResolver.AttendanceEventWindow eventWindow = AttendanceEventTimeResolver.resolve(daily);
+		return eventWindow.inTime() != null && eventWindow.outTime() != null;
+	}
+
+	private void applyEffectiveEventTimes(AttendanceDayDTO day, DailyAttendanceInternalEntity attendance) {
+		AttendanceEventTimeResolver.AttendanceEventWindow eventWindow = AttendanceEventTimeResolver.resolve(attendance);
+		day.setInTime(AttendanceEventTimeResolver.format(eventWindow.inTime()));
+		day.setOutTime(AttendanceEventTimeResolver.format(eventWindow.outTime()));
+		String effectiveHours = AttendanceEventTimeResolver.calculateTotalHours(eventWindow);
+		day.setStayHours(effectiveHours != null ? effectiveHours : attendance.getTotalHours());
 	}
 
 	private long calculateRegisterPayableDays(AttendanceRegisterDTO dto) {

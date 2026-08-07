@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -38,6 +37,7 @@ import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
 import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
+import com.maharecruitment.gov.in.attendance.service.AttendanceEventTimeResolver;
 import com.maharecruitment.gov.in.attendance.service.AttendanceStatusResolver;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
@@ -183,7 +183,8 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
 
         applyBaseAttendance(attendance, employee, attendanceDate);
         attendance.setCheckOutTime(checkOutTime);
-        attendance.setTotalHours(calculateTotalHours(attendance.getCheckInTime(), checkOutTime));
+        attendance.setTotalHours(AttendanceEventTimeResolver.calculateTotalHours(
+                AttendanceEventTimeResolver.resolve(attendance)));
         attendance.setCheckOutLatitude(normalizedLatitude);
         attendance.setCheckOutLongitude(normalizedLongitude);
         attendance.setCheckOutLocationAddress(normalizedAddress);
@@ -502,7 +503,8 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
     }
 
     private String resolveTotalHours(DailyAttendanceInternalEntity attendance) {
-        String calculatedTotalHours = calculateTotalHours(attendance.getCheckInTime(), attendance.getCheckOutTime());
+        String calculatedTotalHours = AttendanceEventTimeResolver.calculateTotalHours(
+                AttendanceEventTimeResolver.resolve(attendance));
         return calculatedTotalHours != null ? calculatedTotalHours : attendance.getTotalHours();
     }
 
@@ -651,17 +653,6 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
             throw badRequest("LOCATION_ADDRESS_TOO_LONG", "Location address must not exceed 1000 characters.");
         }
         return normalized;
-    }
-
-    private String calculateTotalHours(LocalTime checkInTime, LocalTime checkOutTime) {
-        if (checkInTime == null || checkOutTime == null || checkOutTime.isBefore(checkInTime)) {
-            return null;
-        }
-
-        Duration duration = Duration.between(checkInTime, checkOutTime);
-        long hours = duration.toHours();
-        long minutes = duration.toMinutesPart();
-        return "%02d:%02d".formatted(hours, minutes);
     }
 
     private String currentUsername() {

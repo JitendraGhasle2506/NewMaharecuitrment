@@ -15,6 +15,9 @@ public final class AttendanceStatusResolver {
         if (attendance == null) {
             return null;
         }
+        if (AttendanceEventTimeResolver.resolve(attendance).hasAttendanceEvent()) {
+            return "PRESENT";
+        }
         return resolveDisplayStatus(attendance.getStatus(), attendance.getInTime(), attendance.getOutTime());
     }
 
@@ -33,7 +36,7 @@ public final class AttendanceStatusResolver {
         if (attendance == null) {
             return "";
         }
-        return resolveStatusCode(attendance.getStatus(), attendance.getInTime(), attendance.getOutTime());
+        return toStatusCode(resolveDisplayStatus(attendance));
     }
 
     public static String resolveStatusCode(String rawStatus) {
@@ -41,7 +44,10 @@ public final class AttendanceStatusResolver {
     }
 
     public static String resolveStatusCode(String rawStatus, String inTime, String outTime) {
-        String displayStatus = resolveDisplayStatus(rawStatus, inTime, outTime);
+        return toStatusCode(resolveDisplayStatus(rawStatus, inTime, outTime));
+    }
+
+    private static String toStatusCode(String displayStatus) {
         if (!StringUtils.hasText(displayStatus)) {
             return "";
         }

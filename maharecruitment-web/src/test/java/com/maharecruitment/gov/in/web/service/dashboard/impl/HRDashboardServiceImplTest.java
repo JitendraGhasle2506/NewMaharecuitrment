@@ -1,10 +1,14 @@
 package com.maharecruitment.gov.in.web.service.dashboard.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
+import com.maharecruitment.gov.in.attendance.repository.AttendanceCheckInSummaryProjection;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
@@ -31,6 +36,7 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepo
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRWingReportView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRDashboardView;
 
 @ExtendWith(MockitoExtension.class)
 class HRDashboardServiceImplTest {
@@ -64,6 +70,44 @@ class HRDashboardServiceImplTest {
 
     @Mock
     private AttendanceRegisterRepo attendanceRegisterRepo;
+
+    @Mock
+    private AttendanceCheckInSummaryProjection attendanceSummary;
+
+    @Test
+    void getDashboardBuildsSingleQueryCheckInBreakdown() {
+        when(projectMstRepository.findByProjectScopeTypeOrderByProjectNameAsc(any())).thenReturn(List.of());
+        when(wingMasterRepository.findByActiveFlagIgnoreCaseOrderByWingNameAsc("Y")).thenReturn(List.of());
+        when(cellMasterRepository.findByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCaseOrderByCellNameAsc("Y", "Y"))
+                .thenReturn(List.of());
+        when(projectMstRepository.summarizeProjectCountsByCell()).thenReturn(List.of());
+        when(employeeCellMappingRepository.summarizeActiveEmployeesByCell("Y", "ACTIVE")).thenReturn(List.of());
+        when(employeeRepository.summarizeEmployeeCountsByDepartment()).thenReturn(List.of());
+        when(dailyAttendanceInternalRepository.summarizeAttendanceByDate(
+                any(LocalDate.class),
+                eq(LocalTime.of(9, 45)),
+                eq(LocalTime.of(10, 15))))
+                .thenReturn(attendanceSummary);
+        when(attendanceSummary.getPresentCount()).thenReturn(9L);
+        when(attendanceSummary.getCheckedInCount()).thenReturn(8L);
+        when(attendanceSummary.getEarlyCount()).thenReturn(3L);
+        when(attendanceSummary.getStandardCount()).thenReturn(4L);
+        when(attendanceSummary.getLateCount()).thenReturn(1L);
+        when(attendanceRegisterRepo.countExternalPresentByMonthYearDay(any(), any(), any())).thenReturn(2L);
+
+        HRDashboardView result = service().getDashboard();
+
+        assertThat(result.presentEmployees()).isEqualTo(11);
+        assertThat(result.attendanceSummary().checkedInEmployees()).isEqualTo(8);
+        assertThat(result.attendanceSummary().earlyCheckIns()).isEqualTo(3);
+        assertThat(result.attendanceSummary().standardCheckIns()).isEqualTo(4);
+        assertThat(result.attendanceSummary().lateCheckIns()).isEqualTo(1);
+        verify(dailyAttendanceInternalRepository).summarizeAttendanceByDate(
+                any(LocalDate.class),
+                eq(LocalTime.of(9, 45)),
+                eq(LocalTime.of(10, 15)));
+        verify(employeeRepository).summarizeEmployeeCountsByDepartment();
+    }
 
     @Test
     void getWingReportCountsEmployeesFromEmployeeCellMappings() {

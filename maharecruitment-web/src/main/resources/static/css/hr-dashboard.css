@@ -128,6 +128,22 @@ body.hr-shell {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
+button.attendance-summary {
+    appearance: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+button.attendance-summary:hover,
+button.attendance-summary.is-active {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.42);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 12px 24px rgba(7, 31, 51, 0.2);
+}
+
 .attendance-summary span,
 .attendance-summary em {
     display: block;
@@ -152,6 +168,18 @@ body.hr-shell {
 .attendance-summary small {
     color: rgba(255, 255, 255, 0.7);
     font-size: 1rem;
+}
+
+.attendance-summary .attendance-summary-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    margin-top: 0.55rem;
+    color: #ffffff;
+    font-size: 0.75rem;
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .kpi-grid {
@@ -199,6 +227,8 @@ button.kpi-card {
 }
 
 .kpi-card:focus-visible,
+.attendance-summary:focus-visible,
+.attendance-detail-button:focus-visible,
 .project-panel-close:focus-visible,
 .wing-load-btn:focus-visible {
     outline: 3px solid rgba(15, 139, 141, 0.28);
@@ -936,6 +966,199 @@ button.kpi-card {
     gap: 0.5rem;
 }
 
+.section-eyebrow {
+    display: block;
+    margin-bottom: 0.18rem;
+    color: var(--hr-brand);
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.attendance-breakdown-panel {
+    position: relative;
+    overflow: hidden;
+    border-color: rgba(31, 79, 120, 0.18);
+    background:
+        radial-gradient(circle at 100% 0, rgba(15, 139, 141, 0.08), transparent 32%),
+        linear-gradient(180deg, #ffffff, #fbfdff);
+}
+
+.attendance-breakdown-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--hr-brand), var(--hr-external), var(--hr-warning));
+}
+
+.attendance-breakdown-heading {
+    align-items: center;
+    padding-left: 0.25rem;
+}
+
+.attendance-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.attendance-total-pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    min-height: 36px;
+    padding: 0.45rem 0.72rem;
+    border: 1px solid rgba(45, 138, 87, 0.2);
+    border-radius: 999px;
+    color: #256f49;
+    background: #f0faf4;
+    white-space: nowrap;
+}
+
+.attendance-total-pill strong {
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.attendance-total-pill span {
+    font-size: 0.76rem;
+    font-weight: 800;
+}
+
+.attendance-breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.8rem;
+    padding-left: 0.25rem;
+}
+
+.check-in-card {
+    --check-in-color: var(--hr-brand);
+    --check-in-soft: #edf5fb;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 0.72rem;
+    min-width: 0;
+    padding: 0.9rem;
+    border: 1px solid #dce6ef;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #ffffff, var(--check-in-soft));
+}
+
+.check-in-standard {
+    --check-in-color: var(--hr-success);
+    --check-in-soft: #eff9f3;
+}
+
+.check-in-late {
+    --check-in-color: var(--hr-warning);
+    --check-in-soft: #fff8ed;
+}
+
+.check-in-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    color: #ffffff;
+    background: var(--check-in-color);
+    box-shadow: 0 8px 16px rgba(18, 39, 67, 0.14);
+}
+
+.check-in-copy {
+    min-width: 0;
+}
+
+.check-in-copy > span,
+.check-in-copy > strong,
+.check-in-copy > small {
+    display: block;
+}
+
+.check-in-copy > span {
+    color: var(--hr-muted);
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+}
+
+.check-in-copy > strong {
+    margin-top: 0.16rem;
+    color: var(--check-in-color);
+    font-size: 1.75rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.check-in-copy > small {
+    margin-top: 0.3rem;
+    color: var(--hr-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.check-in-share {
+    grid-column: 1 / -1;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(93, 114, 135, 0.12);
+}
+
+.check-in-share span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--check-in-color);
+}
+
+.attendance-data-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.8rem 0 0 0.25rem;
+    padding: 0.68rem 0.75rem;
+    border-radius: 8px;
+    color: var(--hr-muted);
+    background: #f3f7fa;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.attendance-data-note i {
+    margin-top: 0.16rem;
+    color: var(--hr-brand);
+}
+
+.attendance-detail-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 36px;
+    padding: 0 0.72rem;
+    border: 1px solid rgba(31, 79, 120, 0.2);
+    border-radius: 8px;
+    color: var(--hr-brand-strong);
+    background: #f4f8fb;
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.attendance-detail-button:hover,
+.attendance-detail-button.is-active {
+    border-color: rgba(15, 139, 141, 0.42);
+    color: #0b6f71;
+    background: #edf9f9;
+}
+
 .attendance-panel-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1068,6 +1291,15 @@ button.kpi-card {
     }
 
     .attendance-summary {
+        width: 100%;
+    }
+
+    .attendance-breakdown-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .attendance-heading-actions {
+        justify-content: space-between;
         width: 100%;
     }
 

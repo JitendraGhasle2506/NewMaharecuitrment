@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.web.service.dashboard.impl;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
+import com.maharecruitment.gov.in.attendance.repository.AttendanceCheckInSummaryProjection;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
@@ -35,10 +37,12 @@ import com.maharecruitment.gov.in.recruitment.entity.CellReportingAuthorityMappi
 import com.maharecruitment.gov.in.recruitment.repository.CellReportingAuthorityMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellCountProjection;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeDepartmentCountProjection;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.web.service.dashboard.HRDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRCellReportView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceSummaryView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.DepartmentOnboardingView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HREmployeeHierarchyView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRDashboardView;
@@ -55,7 +59,8 @@ public class HRDashboardServiceImpl implements HRDashboardService {
     private static final String ACTIVE_EMPLOYEE_STATUS = "ACTIVE";
     private static final String INTERNAL = "INTERNAL";
     private static final String EXTERNAL = "EXTERNAL";
-    private static final String PRESENT = "PRESENT";
+    private static final LocalTime EARLY_CHECK_IN_CUTOFF = LocalTime.of(9, 45);
+    private static final LocalTime LATE_CHECK_IN_CUTOFF = LocalTime.of(10, 15);
     private static final String REPORTING_SOURCE_DIRECT = "DIRECT";
     private static final String REPORTING_SOURCE_CELL = "CELL";
     private static final String REPORTING_SOURCE_NONE = "NONE";
@@ -88,8 +93,16 @@ public class HRDashboardServiceImpl implements HRDashboardService {
         long totalEmployees = employeeRepository.count();
 
         LocalDate today = LocalDate.now();
-        long presentEmployees = countPresentEmployees(today);
+        AttendanceCheckInSummaryProjection attendance = dailyAttendanceInternalRepository
+                .summarizeAttendanceByDate(today, EARLY_CHECK_IN_CUTOFF, LATE_CHECK_IN_CUTOFF);
+        long internalPresentEmployees = projectionCount(attendance == null ? null : attendance.getPresentCount());
+        long presentEmployees = internalPresentEmployees + countExternalPresentEmployees(today);
         long absentEmployees = Math.max(totalEmployees - presentEmployees, 0);
+        HRAttendanceSummaryView attendanceSummary = new HRAttendanceSummaryView(
+                toInt(projectionCount(attendance == null ? null : attendance.getCheckedInCount())),
+                toInt(projectionCount(attendance == null ? null : attendance.getEarlyCount())),
+                toInt(projectionCount(attendance == null ? null : attendance.getStandardCount())),
+                toInt(projectionCount(attendance == null ? null : attendance.getLateCount())));
 
         LocalDate firstDayOfMonth = today.withDayOfMonth(1);
         LocalDate lastDayOfMonth = today.withDayOfMonth(today.lengthOfMonth());
@@ -102,22 +115,19 @@ public class HRDashboardServiceImpl implements HRDashboardService {
         int externalPercent = totalEmployees > 0 ? (int) ((externalEmployees * 100) / totalEmployees) : 0;
         int presentPercent = totalEmployees > 0 ? (int) ((presentEmployees * 100) / totalEmployees) : 0;
 
-        List<EmployeeEntity> allEmployees = employeeRepository.findAll();
-        Map<String, Long> deptCounts = allEmployees.stream()
-                .filter(employee -> employee.getDepartmentRegistration() != null
-                        && hasText(employee.getDepartmentRegistration().getDepartmentName()))
-                .collect(Collectors.groupingBy(
-                        employee -> employee.getDepartmentRegistration().getDepartmentName().trim(),
-                        Collectors.counting()));
-
-        List<DepartmentOnboardingView> departmentOnboarding = deptCounts.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER))
-                .map(entry -> {
-                    int count = toInt(entry.getValue());
-                    return new DepartmentOnboardingView(entry.getKey(), count, count + 10);
+        List<DepartmentOnboardingView> departmentOnboarding = employeeRepository
+                .summarizeEmployeeCountsByDepartment()
+                .stream()
+                .filter(summary -> hasText(summary.getDepartment()))
+                .sorted(Comparator.comparing(
+                        EmployeeDepartmentCountProjection::getDepartment,
+                        String.CASE_INSENSITIVE_ORDER))
+                .map(summary -> {
+                    int count = toInt(projectionCount(summary.getEmployeeCount()));
+                    return new DepartmentOnboardingView(summary.getDepartment().trim(), count, count + 10);
                 })
                 .limit(5)
-                .collect(Collectors.toList());
+                .toList();
 
         if (departmentOnboarding.isEmpty()) {
             departmentOnboarding = List.of(new DepartmentOnboardingView("No Data", 0, 0));
@@ -134,6 +144,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 (int) presentEmployees,
                 (int) absentEmployees,
                 presentPercent,
+                attendanceSummary,
                 (int) pendingApprovals,
                 wingReports.size(),
                 totalCells,
@@ -578,11 +589,14 @@ public class HRDashboardServiceImpl implements HRDashboardService {
         return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
     }
 
-    private long countPresentEmployees(LocalDate today) {
-        return dailyAttendanceInternalRepository.countByAttendanceDateAndStatusIgnoreCase(today, PRESENT)
-                + attendanceRegisterRepo.countExternalPresentByMonthYearDay(
-                        today.getMonthValue(),
-                        today.getYear(),
-                        today.getDayOfMonth());
+    private long countExternalPresentEmployees(LocalDate today) {
+        return attendanceRegisterRepo.countExternalPresentByMonthYearDay(
+                today.getMonthValue(),
+                today.getYear(),
+                today.getDayOfMonth());
+    }
+
+    private long projectionCount(Long value) {
+        return value == null ? 0 : Math.max(value, 0);
     }
 }

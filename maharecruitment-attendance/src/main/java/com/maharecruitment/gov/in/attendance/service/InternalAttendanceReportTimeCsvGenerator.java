@@ -70,6 +70,9 @@ public class InternalAttendanceReportTimeCsvGenerator {
                 if (!shouldExport(status, attendance)) {
                     continue;
                 }
+                AttendanceEventTimeResolver.AttendanceEventWindow eventWindow =
+                        AttendanceEventTimeResolver.resolve(attendance);
+                String totalHours = AttendanceEventTimeResolver.calculateTotalHours(eventWindow);
 
                 appendRow(
                         csv,
@@ -80,9 +83,9 @@ public class InternalAttendanceReportTimeCsvGenerator {
                         DATE_FORMAT.format(calendarDay),
                         calendarDay.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH),
                         status,
-                        attendance != null ? attendance.getInTime() : null,
-                        attendance != null ? attendance.getOutTime() : null,
-                        attendance != null ? attendance.getTotalHours() : null);
+                        AttendanceEventTimeResolver.format(eventWindow.inTime()),
+                        AttendanceEventTimeResolver.format(eventWindow.outTime()),
+                        totalHours != null ? totalHours : (attendance != null ? attendance.getTotalHours() : null));
             }
         }
 
@@ -139,9 +142,10 @@ public class InternalAttendanceReportTimeCsvGenerator {
     }
 
     private boolean shouldExport(String status, DailyAttendanceInternalEntity attendance) {
+        AttendanceEventTimeResolver.AttendanceEventWindow eventWindow =
+                AttendanceEventTimeResolver.resolve(attendance);
         return StringUtils.hasText(status)
-                || hasText(attendance != null ? attendance.getInTime() : null)
-                || hasText(attendance != null ? attendance.getOutTime() : null)
+                || eventWindow.hasAttendanceEvent()
                 || hasText(attendance != null ? attendance.getTotalHours() : null);
     }
 

@@ -497,6 +497,16 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     long countByOnboardingDateBetween(java.time.LocalDate startDate, java.time.LocalDate endDate);
 
+    @Query("""
+            select trim(department.departmentName) as department,
+                   count(employee.employeeId) as employeeCount
+            from EmployeeEntity employee
+            join employee.departmentRegistration department
+            where trim(coalesce(department.departmentName, '')) <> ''
+            group by trim(department.departmentName)
+            """)
+    List<EmployeeDepartmentCountProjection> summarizeEmployeeCountsByDepartment();
+
     long countByAgencyAgencyId(Long agencyId);
 
     List<EmployeeEntity> findByDepartmentRegistration_DepartmentRegistrationId(Long id);
