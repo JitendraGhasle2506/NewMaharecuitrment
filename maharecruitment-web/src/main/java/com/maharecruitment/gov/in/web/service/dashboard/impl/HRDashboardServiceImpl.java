@@ -15,11 +15,14 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.attendance.repository.AttendanceCellSummaryProjection;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceCheckInSummaryProjection;
+import com.maharecruitment.gov.in.attendance.repository.AttendanceEmployeeDetailProjection;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.department.entity.DepartmentApplicationStatus;
@@ -43,6 +46,9 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.web.service.dashboard.HRDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.model.DepartmentOnboardingView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceDetailCategory;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceDetailView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceEmployeeView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceSummaryView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRCellAttendanceView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRCellReportView;
@@ -66,6 +72,9 @@ public class HRDashboardServiceImpl implements HRDashboardService {
     private static final String EXTERNAL = "EXTERNAL";
     private static final LocalTime EARLY_CHECK_IN_CUTOFF = LocalTime.of(9, 45);
     private static final LocalTime LATE_CHECK_IN_CUTOFF = LocalTime.of(10, 15);
+    private static final LocalTime AFTER_ELEVEN_CUTOFF = LocalTime.of(11, 0);
+    private static final int DEFAULT_ATTENDANCE_DETAIL_PAGE_SIZE = 25;
+    private static final int MAX_ATTENDANCE_DETAIL_PAGE_SIZE = 50;
     private static final String REPORTING_SOURCE_DIRECT = "DIRECT";
     private static final String REPORTING_SOURCE_CELL = "CELL";
     private static final String REPORTING_SOURCE_NONE = "NONE";
@@ -154,7 +163,9 @@ public class HRDashboardServiceImpl implements HRDashboardService {
     @Transactional(readOnly = true)
     public HRTodayAttendanceView getTodayAttendance() {
         LocalDate today = LocalDate.now();
-        AttendanceSnapshot attendance = loadAttendanceSnapshot(today, employeeRepository.count());
+        AttendanceSnapshot attendance = loadAttendanceSnapshot(
+                today,
+                employeeRepository.countActiveAttendanceEmployees());
         return new HRTodayAttendanceView(
                 today,
                 attendance.totalEmployees(),
@@ -163,6 +174,53 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 attendance.presentPercent(),
                 attendance.checkIns(),
                 buildCellAttendance(today));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HRAttendanceDetailView getTodayAttendanceDetails(
+            String category,
+            Long cellId,
+            int page,
+            int size) {
+        HRAttendanceDetailCategory resolvedCategory = HRAttendanceDetailCategory.from(category)
+                .orElseThrow(() -> new IllegalArgumentException("Valid attendance category is required."));
+        Long resolvedCellId = cellId != null && cellId > 0 ? cellId : null;
+        String cellName = null;
+        if (resolvedCellId != null) {
+            CellMaster cell = cellMasterRepository.findById(resolvedCellId)
+                    .orElseThrow(() -> new IllegalArgumentException("Attendance cell was not found."));
+            cellName = defaultText(cell.getCellName(), "Unnamed Cell");
+        }
+
+        int resolvedPage = Math.max(page, 0);
+        int resolvedSize = size <= 0
+                ? DEFAULT_ATTENDANCE_DETAIL_PAGE_SIZE
+                : Math.min(size, MAX_ATTENDANCE_DETAIL_PAGE_SIZE);
+        LocalDate attendanceDate = LocalDate.now();
+        Slice<AttendanceEmployeeDetailProjection> employeeSlice = dailyAttendanceInternalRepository
+                .findAttendanceEmployeeDetails(
+                        attendanceDate,
+                        attendanceDate.getMonthValue(),
+                        attendanceDate.getYear(),
+                        attendanceDate.getDayOfMonth(),
+                        resolvedCategory.name(),
+                        resolvedCellId,
+                        EARLY_CHECK_IN_CUTOFF,
+                        LATE_CHECK_IN_CUTOFF,
+                        AFTER_ELEVEN_CUTOFF,
+                        PageRequest.of(resolvedPage, resolvedSize));
+
+        return new HRAttendanceDetailView(
+                attendanceDate,
+                resolvedCategory,
+                resolvedCellId,
+                cellName,
+                employeeSlice.getContent().stream().map(this::toAttendanceEmployeeView).toList(),
+                employeeSlice.getNumber(),
+                employeeSlice.getSize(),
+                employeeSlice.hasPrevious(),
+                employeeSlice.hasNext());
     }
 
     @Override
@@ -635,7 +693,8 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 .summarizeAttendanceByDate(
                         attendanceDate,
                         EARLY_CHECK_IN_CUTOFF,
-                        LATE_CHECK_IN_CUTOFF);
+                        LATE_CHECK_IN_CUTOFF,
+                        AFTER_ELEVEN_CUTOFF);
         long rawPresentCount = projectionCount(projection == null ? null : projection.getPresentCount())
                 + countExternalPresentEmployees(attendanceDate);
         int totalEmployees = toInt(Math.max(totalEmployeeCount, 0));
@@ -644,7 +703,8 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 toInt(projectionCount(projection == null ? null : projection.getCheckedInCount())),
                 toInt(projectionCount(projection == null ? null : projection.getEarlyCount())),
                 toInt(projectionCount(projection == null ? null : projection.getStandardCount())),
-                toInt(projectionCount(projection == null ? null : projection.getLateCount())));
+                toInt(projectionCount(projection == null ? null : projection.getLateCount())),
+                toInt(projectionCount(projection == null ? null : projection.getAfterElevenCount())));
         return new AttendanceSnapshot(
                 totalEmployees,
                 presentEmployees,
@@ -679,6 +739,16 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 presentEmployees,
                 totalEmployees - presentEmployees,
                 percent(presentEmployees, totalEmployees));
+    }
+
+    private HRAttendanceEmployeeView toAttendanceEmployeeView(AttendanceEmployeeDetailProjection employee) {
+        return new HRAttendanceEmployeeView(
+                employee.getEmployeeId(),
+                defaultText(employee.getEmployeeCode(), "-"),
+                defaultText(employee.getFullName(), "Unnamed Employee"),
+                defaultText(employee.getRecruitmentType(), "-"),
+                defaultText(employee.getAttendanceStatus(), "ABSENT"),
+                employee.getCheckInTime());
     }
 
     private long projectionCount(Long value) {

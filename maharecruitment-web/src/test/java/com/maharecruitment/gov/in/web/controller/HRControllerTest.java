@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ui.ExtendedModelMap;
 
 import com.maharecruitment.gov.in.web.service.dashboard.HRDashboardService;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceDetailView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRDashboardView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRTodayAttendanceView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRWingReportsView;
@@ -25,6 +26,9 @@ class HRControllerTest {
 
     @Mock
     private HRTodayAttendanceView attendance;
+
+    @Mock
+    private HRAttendanceDetailView attendanceDetail;
 
     @Mock
     private HRWingReportsView wingDirectory;
@@ -49,6 +53,20 @@ class HRControllerTest {
 
         assertThat(view).isEqualTo("hr/hr_attendance_today");
         assertThat(model).containsOnlyKeys("attendance").containsEntry("attendance", attendance);
+    }
+
+    @Test
+    void attendanceEmployeeDetailsLoadOnlyAfterCountNavigation() {
+        when(dashboardService.getTodayAttendanceDetails("LATE", 27L, 0, 25))
+                .thenReturn(attendanceDetail);
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        String view = controller().todayAttendanceDetails("LATE", 27L, 0, 25, model);
+
+        assertThat(view).isEqualTo("hr/hr_attendance_details");
+        assertThat(model)
+                .containsOnlyKeys("attendanceDetail")
+                .containsEntry("attendanceDetail", attendanceDetail);
     }
 
     @Test

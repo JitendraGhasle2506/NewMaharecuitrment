@@ -18,9 +18,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.SliceImpl;
 
 import com.maharecruitment.gov.in.attendance.repository.AttendanceCellSummaryProjection;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceCheckInSummaryProjection;
+import com.maharecruitment.gov.in.attendance.repository.AttendanceEmployeeDetailProjection;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.auth.entity.User;
@@ -80,6 +84,9 @@ class HRDashboardServiceImplTest {
     @Mock
     private AttendanceCellSummaryProjection cellAttendanceSummary;
 
+    @Mock
+    private AttendanceEmployeeDetailProjection attendanceEmployeeDetail;
+
     @Test
     void getDashboardBuildsSingleQueryCheckInBreakdown() {
         when(projectMstRepository.findByProjectScopeTypeOrderByProjectNameAsc(any())).thenReturn(List.of());
@@ -91,27 +98,31 @@ class HRDashboardServiceImplTest {
         when(dailyAttendanceInternalRepository.summarizeAttendanceByDate(
                 any(LocalDate.class),
                 eq(LocalTime.of(9, 45)),
-                eq(LocalTime.of(10, 15))))
+                eq(LocalTime.of(10, 15)),
+                eq(LocalTime.of(11, 0))))
                 .thenReturn(attendanceSummary);
         when(attendanceSummary.getPresentCount()).thenReturn(9L);
         when(attendanceSummary.getCheckedInCount()).thenReturn(8L);
         when(attendanceSummary.getEarlyCount()).thenReturn(3L);
-        when(attendanceSummary.getStandardCount()).thenReturn(4L);
+        when(attendanceSummary.getStandardCount()).thenReturn(3L);
         when(attendanceSummary.getLateCount()).thenReturn(1L);
+        when(attendanceSummary.getAfterElevenCount()).thenReturn(1L);
         when(attendanceRegisterRepo.countExternalPresentByMonthYearDay(any(), any(), any())).thenReturn(2L);
         HRDashboardView result = service().getDashboard();
 
         assertThat(result.presentEmployees()).isEqualTo(11);
         assertThat(result.attendanceSummary().checkedInEmployees()).isEqualTo(8);
         assertThat(result.attendanceSummary().earlyCheckIns()).isEqualTo(3);
-        assertThat(result.attendanceSummary().standardCheckIns()).isEqualTo(4);
+        assertThat(result.attendanceSummary().standardCheckIns()).isEqualTo(3);
         assertThat(result.attendanceSummary().lateCheckIns()).isEqualTo(1);
+        assertThat(result.attendanceSummary().afterElevenCheckIns()).isEqualTo(1);
         assertThat(result.totalWings()).isEqualTo(3);
         assertThat(result.totalCells()).isEqualTo(12);
         verify(dailyAttendanceInternalRepository).summarizeAttendanceByDate(
                 any(LocalDate.class),
                 eq(LocalTime.of(9, 45)),
-                eq(LocalTime.of(10, 15)));
+                eq(LocalTime.of(10, 15)),
+                eq(LocalTime.of(11, 0)));
         verify(employeeRepository).summarizeEmployeeCountsByDepartment();
         verify(dailyAttendanceInternalRepository, never()).summarizeAttendanceByCell(
                 any(LocalDate.class),
@@ -127,17 +138,19 @@ class HRDashboardServiceImplTest {
 
     @Test
     void getTodayAttendanceLoadsCellDetailsOnlyForDedicatedPage() {
-        when(employeeRepository.count()).thenReturn(20L);
+        when(employeeRepository.countActiveAttendanceEmployees()).thenReturn(20L);
         when(dailyAttendanceInternalRepository.summarizeAttendanceByDate(
                 any(LocalDate.class),
                 eq(LocalTime.of(9, 45)),
-                eq(LocalTime.of(10, 15))))
+                eq(LocalTime.of(10, 15)),
+                eq(LocalTime.of(11, 0))))
                 .thenReturn(attendanceSummary);
         when(attendanceSummary.getPresentCount()).thenReturn(9L);
         when(attendanceSummary.getCheckedInCount()).thenReturn(8L);
         when(attendanceSummary.getEarlyCount()).thenReturn(3L);
-        when(attendanceSummary.getStandardCount()).thenReturn(4L);
+        when(attendanceSummary.getStandardCount()).thenReturn(3L);
         when(attendanceSummary.getLateCount()).thenReturn(1L);
+        when(attendanceSummary.getAfterElevenCount()).thenReturn(1L);
         when(attendanceRegisterRepo.countExternalPresentByMonthYearDay(any(), any(), any())).thenReturn(2L);
         when(dailyAttendanceInternalRepository.summarizeAttendanceByCell(
                 any(LocalDate.class),
@@ -159,12 +172,51 @@ class HRDashboardServiceImplTest {
         assertThat(result.presentEmployees()).isEqualTo(11);
         assertThat(result.absentEmployees()).isEqualTo(9);
         assertThat(result.checkIns().checkedInEmployees()).isEqualTo(8);
+        assertThat(result.checkIns().lateCheckIns()).isEqualTo(1);
+        assertThat(result.checkIns().afterElevenCheckIns()).isEqualTo(1);
         assertThat(result.cells()).singleElement().satisfies(cell -> {
             assertThat(cell.cellName()).isEqualTo("Network Infra Cell");
             assertThat(cell.presentEmployees()).isEqualTo(9);
             assertThat(cell.absentEmployees()).isEqualTo(3);
             assertThat(cell.presentPercent()).isEqualTo(75);
         });
+    }
+
+    @Test
+    void getTodayAttendanceDetailsLoadsSelectedBucketOnDemand() {
+        CellMaster cell = cell(27L, "Network Infra Cell", wing(2L, "Operations"));
+        when(cellMasterRepository.findById(27L)).thenReturn(Optional.of(cell));
+        when(attendanceEmployeeDetail.getEmployeeId()).thenReturn(101L);
+        when(attendanceEmployeeDetail.getEmployeeCode()).thenReturn("EMP-101");
+        when(attendanceEmployeeDetail.getFullName()).thenReturn("Asha Employee");
+        when(attendanceEmployeeDetail.getRecruitmentType()).thenReturn("INTERNAL");
+        when(attendanceEmployeeDetail.getAttendanceStatus()).thenReturn("PRESENT");
+        when(attendanceEmployeeDetail.getCheckInTime()).thenReturn(LocalTime.of(10, 32));
+        when(dailyAttendanceInternalRepository.findAttendanceEmployeeDetails(
+                any(LocalDate.class),
+                anyInt(),
+                anyInt(),
+                anyInt(),
+                eq("LATE"),
+                eq(27L),
+                eq(LocalTime.of(9, 45)),
+                eq(LocalTime.of(10, 15)),
+                eq(LocalTime.of(11, 0)),
+                any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(
+                        List.of(attendanceEmployeeDetail),
+                        PageRequest.of(0, 25),
+                        false));
+
+        var result = service().getTodayAttendanceDetails("late", 27L, 0, 25);
+
+        assertThat(result.category().name()).isEqualTo("LATE");
+        assertThat(result.cellName()).isEqualTo("Network Infra Cell");
+        assertThat(result.employees()).singleElement().satisfies(employee -> {
+            assertThat(employee.fullName()).isEqualTo("Asha Employee");
+            assertThat(employee.checkInTime()).isEqualTo(LocalTime.of(10, 32));
+        });
+        assertThat(result.hasNext()).isFalse();
     }
 
     @Test

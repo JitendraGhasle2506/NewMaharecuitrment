@@ -501,6 +501,13 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     long countByRecruitmentType(String recruitmentType);
 
+    @Query("select count(employee.employeeId) from EmployeeEntity employee "
+            + "where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE' "
+            + "and trim(coalesce(employee.employeeCode, '')) <> '' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%'")
+    long countActiveAttendanceEmployees();
+
     long countByOnboardingDateBetween(java.time.LocalDate startDate, java.time.LocalDate endDate);
 
     @Query("""

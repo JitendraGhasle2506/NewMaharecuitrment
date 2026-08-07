@@ -135,10 +135,14 @@ public interface AttendanceRegisterRepo extends JpaRepository<AttendanceRegister
 	boolean existsByDeptRegIdAndMonthAndYear(@Param("regId") Long regId, @Param("month") Integer month, @Param("year") Integer year);
 
 	@Query(value = """
-			select count(*)
+			select count(distinct em.employee_id)
 			from attendance_daily ad
 			join employee_master em on em.employee_id = ad.user_id
 			where upper(trim(coalesce(em.recruitment_type, ''))) = 'EXTERNAL'
+			  and upper(trim(coalesce(em.status, ''))) = 'ACTIVE'
+			  and trim(coalesce(em.employee_code, '')) <> ''
+			  and upper(trim(coalesce(em.employee_code, ''))) <> 'PENDING'
+			  and upper(trim(coalesce(em.employee_code, ''))) not like 'TMP-%'
 			  and ad.month = :month
 			  and ad.year = :year
 			  and upper(trim(coalesce(

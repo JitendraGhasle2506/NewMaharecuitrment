@@ -5,6 +5,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.maharecruitment.gov.in.web.service.dashboard.HRDashboardService;
@@ -29,6 +30,23 @@ public class HRController {
     public String todayAttendance(Model model) {
         model.addAttribute("attendance", hrDashboardService.getTodayAttendance());
         return "hr/hr_attendance_today";
+    }
+
+    @GetMapping("/hr/attendance-today/details")
+    public String todayAttendanceDetails(
+            @RequestParam String category,
+            @RequestParam(required = false) Long cellId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            Model model) {
+        try {
+            model.addAttribute(
+                    "attendanceDetail",
+                    hrDashboardService.getTodayAttendanceDetails(category, cellId, page, size));
+            return "hr/hr_attendance_details";
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
     }
 
     @GetMapping("/hr/wing-reports")

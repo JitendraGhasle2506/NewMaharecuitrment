@@ -4,6 +4,7 @@ public record HRAttendanceSummaryView(
         int checkedInEmployees,
         int earlyCheckIns,
         int standardCheckIns,
-        int lateCheckIns
+        int lateCheckIns,
+        int afterElevenCheckIns
 ) {
 }

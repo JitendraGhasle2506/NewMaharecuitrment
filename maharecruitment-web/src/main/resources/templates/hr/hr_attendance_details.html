@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Details</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/hr-attendance.css(v='20260807-2')}">
+</head>
+
+<body class="hr-shell">
+
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Attendance Details', ~{::section})}">
+        <section class="attendance-page attendance-detail-page">
+            <div class="card add-emp-card attendance-page-card">
+                <div class="header attendance-page-toolbar">
+                    <div class="attendance-page-title">
+                        <span>Daily workforce register</span>
+                        <h2>Attendance Details</h2>
+                    </div>
+                    <a class="attendance-back-link" th:href="@{/hr/attendance-today}">
+                        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                        <span>Back to Attendance</span>
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <section class="attendance-detail-heading-card">
+                        <div>
+                            <span class="section-eyebrow">Employee check-in register</span>
+                            <h1 th:text="${attendanceDetail.category.title()}">Attendance Category</h1>
+                            <p th:text="${attendanceDetail.category.description()}">Attendance category description.</p>
+                        </div>
+                        <div class="attendance-detail-context">
+                            <span class="attendance-detail-scope" th:if="${attendanceDetail.cellName != null}">
+                                <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
+                                <span th:text="${attendanceDetail.cellName}">Cell</span>
+                            </span>
+                            <time th:attr="datetime=${#temporals.format(attendanceDetail.attendanceDate, 'yyyy-MM-dd')}"
+                                th:text="${#temporals.format(attendanceDetail.attendanceDate, 'dd MMM yyyy')}">
+                                07 Aug 2026
+                            </time>
+                        </div>
+                    </section>
+
+                    <section class="attendance-detail-table-card" aria-labelledby="attendanceEmployeeListTitle">
+                        <div class="attendance-detail-table-header">
+                            <div>
+                                <h2 id="attendanceEmployeeListTitle">Employee Check-in Times</h2>
+                                <p>Check-in shows the earliest biometric, API, or mobile event recorded for the day.</p>
+                            </div>
+                            <span>Page <strong th:text="${attendanceDetail.pageNumber + 1}">1</strong></span>
+                        </div>
+
+                        <div class="attendance-detail-table-wrap" th:if="${!#lists.isEmpty(attendanceDetail.employees)}">
+                            <table class="attendance-detail-table">
+                                <caption class="visually-hidden">Employee names and check-in times for the selected attendance category</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Employee Information</th>
+                                        <th scope="col">Employee Code</th>
+                                        <th scope="col">Type</th>
+                                        <th scope="col">Attendance</th>
+                                        <th scope="col">First Check-in</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="employee : ${attendanceDetail.employees}">
+                                        <td>
+                                            <div class="attendance-employee-identity">
+                                                <span class="attendance-employee-avatar"
+                                                    th:text="${#strings.substring(employee.fullName, 0, 1)}">E</span>
+                                                <strong th:text="${employee.fullName}">Employee Name</strong>
+                                            </div>
+                                        </td>
+                                        <td><span class="attendance-employee-code" th:text="${employee.employeeCode}">EMP001</span></td>
+                                        <td>
+                                            <span class="attendance-employee-type"
+                                                th:classappend="${employee.recruitmentType == 'INTERNAL'} ? ' is-internal' : ' is-external'"
+                                                th:text="${employee.recruitmentType}">INTERNAL</span>
+                                        </td>
+                                        <td>
+                                            <span class="attendance-employee-status"
+                                                th:classappend="${employee.attendanceStatus == 'PRESENT'} ? ' is-present' : ' is-absent'"
+                                                th:text="${employee.attendanceStatus}">PRESENT</span>
+                                        </td>
+                                        <td>
+                                            <time class="attendance-check-in-time" th:if="${employee.checkInTime != null}"
+                                                th:attr="datetime=${employee.checkInTime}"
+                                                th:text="${#temporals.format(employee.checkInTime, 'hh:mm a')}">09:30 AM</time>
+                                            <span class="attendance-check-in-missing" th:if="${employee.checkInTime == null}">Not recorded</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="attendance-detail-empty" th:if="${#lists.isEmpty(attendanceDetail.employees)}">
+                            <i class="fa-regular fa-clipboard" aria-hidden="true"></i>
+                            <strong>No employee records found</strong>
+                            <span>There are no employees in this attendance category for the selected date.</span>
+                        </div>
+
+                        <nav class="attendance-detail-pagination"
+                            th:if="${attendanceDetail.hasPrevious or attendanceDetail.hasNext}"
+                            aria-label="Attendance employee pagination">
+                            <a class="attendance-page-link"
+                                th:classappend="${!attendanceDetail.hasPrevious} ? ' is-disabled'"
+                                th:href="${attendanceDetail.hasPrevious} ? @{/hr/attendance-today/details(category=${attendanceDetail.category.name()},cellId=${attendanceDetail.cellId},page=${attendanceDetail.pageNumber - 1},size=${attendanceDetail.pageSize})} : '#'"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Previous</a>
+                            <span>Page <strong th:text="${attendanceDetail.pageNumber + 1}">1</strong></span>
+                            <a class="attendance-page-link"
+                                th:classappend="${!attendanceDetail.hasNext} ? ' is-disabled'"
+                                th:href="${attendanceDetail.hasNext} ? @{/hr/attendance-today/details(category=${attendanceDetail.category.name()},cellId=${attendanceDetail.cellId},page=${attendanceDetail.pageNumber + 1},size=${attendanceDetail.pageSize})} : '#'">Next <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+                        </nav>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+</body>
+
+</html>

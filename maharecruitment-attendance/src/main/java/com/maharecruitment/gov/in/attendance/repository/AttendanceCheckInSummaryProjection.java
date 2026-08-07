@@ -11,4 +11,6 @@ public interface AttendanceCheckInSummaryProjection {
     Long getStandardCount();
 
     Long getLateCount();
+
+    Long getAfterElevenCount();
 }
