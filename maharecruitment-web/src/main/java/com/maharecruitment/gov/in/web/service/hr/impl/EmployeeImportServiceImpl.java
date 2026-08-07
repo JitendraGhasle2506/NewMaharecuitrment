@@ -348,11 +348,15 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         if (StringUtils.hasText(row.employeeCode())) {
             return;
         }
-        String aadhaarEmployeeCode = generateEmployeeCodeFromAadhaar(row.aadhaarNumber());
-        if (!StringUtils.hasText(aadhaarEmployeeCode) || !canReplaceEmployeeCode(employee, newEmployee)) {
+        if (!canReplaceEmployeeCode(employee, newEmployee)) {
             return;
         }
-        validateGeneratedEmployeeCodeAvailable(aadhaarEmployeeCode, employee.getEmployeeId());
+
+        String aadhaarEmployeeCode = resolveAvailableAadhaarEmployeeCode(
+                row.aadhaarNumber(), employee.getEmployeeId());
+        if (!StringUtils.hasText(aadhaarEmployeeCode)) {
+            return;
+        }
         employee.setEmployeeCode(aadhaarEmployeeCode);
     }
 
@@ -372,25 +376,42 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         return !StringUtils.hasText(currentCode) || currentCode.startsWith(TEMPORARY_EMPLOYEE_CODE_PREFIX);
     }
 
-    private String generateEmployeeCodeFromAadhaar(String aadhaarNumber) {
+    private String generateEmployeeCodeFromAadhaar(String aadhaarNumber, int suffixLength) {
         String aadhaarDigits = digitsOnly(aadhaarNumber);
-        if (aadhaarDigits.length() < 4) {
+        if (aadhaarDigits.length() < suffixLength) {
             return null;
         }
-        return AADHAAR_EMPLOYEE_CODE_PREFIX + aadhaarDigits.substring(aadhaarDigits.length() - 4);
+        return AADHAAR_EMPLOYEE_CODE_PREFIX
+                + aadhaarDigits.substring(aadhaarDigits.length() - suffixLength);
     }
 
     private String digitsOnly(String value) {
         return StringUtils.hasText(value) ? value.replaceAll("\\D", "") : "";
     }
 
-    private void validateGeneratedEmployeeCodeAvailable(String employeeCode, Long employeeId) {
-        employeeRepository.findByEmployeeCodeIgnoreCase(employeeCode)
-                .filter(existing -> !Objects.equals(existing.getEmployeeId(), employeeId))
-                .ifPresent(existing -> {
-                    throw new IllegalArgumentException(
-                            "Generated employee code " + employeeCode + " already exists for another employee.");
-                });
+    private String resolveAvailableAadhaarEmployeeCode(String aadhaarNumber, Long employeeId) {
+        String fourDigitCode = generateEmployeeCodeFromAadhaar(aadhaarNumber, 4);
+        if (!StringUtils.hasText(fourDigitCode)) {
+            return null;
+        }
+        if (isEmployeeCodeAvailable(fourDigitCode, employeeId)) {
+            return fourDigitCode;
+        }
+
+        String threeDigitCode = generateEmployeeCodeFromAadhaar(aadhaarNumber, 3);
+        if (isEmployeeCodeAvailable(threeDigitCode, employeeId)) {
+            return threeDigitCode;
+        }
+
+        throw new IllegalArgumentException(
+                "Generated employee codes " + fourDigitCode + " and " + threeDigitCode
+                        + " already exist for other employees.");
+    }
+
+    private boolean isEmployeeCodeAvailable(String employeeCode, Long employeeId) {
+        return employeeRepository.findByEmployeeCodeIgnoreCase(employeeCode)
+                .map(existing -> Objects.equals(existing.getEmployeeId(), employeeId))
+                .orElse(true);
     }
 
     private void validateEmployeeUniqueness(EmployeeImportRow row, EmployeeEntity employee) {
