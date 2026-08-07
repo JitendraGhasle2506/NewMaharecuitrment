@@ -1,8 +1,8 @@
 package com.maharecruitment.gov.in.web.controller.hr;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,8 +15,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
-import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
+import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 import com.maharecruitment.gov.in.workorder.service.HrWorkOrderService;
 
 @Controller
@@ -40,21 +40,23 @@ public class EmployeeListController {
     @GetMapping
     public String employeeList(
             @RequestParam(required = false, defaultValue = "ALL") String type,
+            @RequestParam(required = false) Long agencyId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(name = "search", required = false) String search,
             Model model) {
-        return renderEmployeeList(type, "ACTIVE", page, size, search, model);
+        return renderEmployeeList(type, "ACTIVE", agencyId, page, size, search, model);
     }
 
     @GetMapping("/resigned")
     public String resignedEmployeeList(
             @RequestParam(required = false, defaultValue = "ALL") String type,
+            @RequestParam(required = false) Long agencyId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(name = "search", required = false) String search,
             Model model) {
-        return renderEmployeeList(type, "RESIGNED", page, size, search, model);
+        return renderEmployeeList(type, "RESIGNED", agencyId, page, size, search, model);
     }
 
     @GetMapping("/{employeeId}")
@@ -62,6 +64,7 @@ public class EmployeeListController {
             @PathVariable Long employeeId,
             @RequestParam(required = false, defaultValue = "ACTIVE") String status,
             @RequestParam(required = false, defaultValue = "ALL") String type,
+            @RequestParam(required = false) Long agencyId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(name = "search", required = false) String search,
@@ -69,6 +72,7 @@ public class EmployeeListController {
             RedirectAttributes redirectAttributes) {
         String normalizedStatus = normalizeStatus(status);
         String normalizedType = normalizeType(type);
+        Long normalizedAgencyId = normalizeAgencyId(agencyId);
         int resolvedPage = Math.max(page, 0);
         int resolvedSize = resolvePageSize(size);
         String normalizedSearch = normalizeSearch(search);
@@ -79,12 +83,22 @@ public class EmployeeListController {
             model.addAttribute("employeeWorkOrders", hrWorkOrderService.getEmployeeWorkOrders(employeeId));
             model.addAttribute("currentStatus", normalizedStatus);
             model.addAttribute("currentType", normalizedType);
+            model.addAttribute("currentAgencyId", normalizedAgencyId);
             model.addAttribute("currentPage", resolvedPage);
             model.addAttribute("pageSize", resolvedSize);
             model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
             return "hr/employee-onboarding-detail";
         } catch (RecruitmentNotificationException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            redirectAttributes.addAttribute("type", normalizedType);
+            redirectAttributes.addAttribute("page", resolvedPage);
+            redirectAttributes.addAttribute("size", resolvedSize);
+            if (normalizedAgencyId != null) {
+                redirectAttributes.addAttribute("agencyId", normalizedAgencyId);
+            }
+            if (normalizedSearch != null) {
+                redirectAttributes.addAttribute("search", normalizedSearch);
+            }
             return "redirect:" + ("RESIGNED".equals(normalizedStatus) ? "/hr/employees/resigned" : "/hr/employees");
         }
     }
@@ -92,6 +106,7 @@ public class EmployeeListController {
     private String renderEmployeeList(
             String type,
             String status,
+            Long agencyId,
             int page,
             int size,
             String search,
@@ -99,12 +114,14 @@ public class EmployeeListController {
         int resolvedPage = Math.max(page, 0);
         int resolvedSize = resolvePageSize(size);
         String normalizedType = normalizeType(type);
+        Long normalizedAgencyId = normalizeAgencyId(agencyId);
         String normalizedSearch = normalizeSearch(search);
 
         Page<EmployeeListView> employeePage = loadEmployeePage(
                 normalizedType,
                 status,
                 normalizedSearch,
+                normalizedAgencyId,
                 resolvedPage,
                 resolvedSize);
         if (employeePage.getTotalPages() > 0 && resolvedPage >= employeePage.getTotalPages()) {
@@ -112,6 +129,7 @@ public class EmployeeListController {
                     normalizedType,
                     status,
                     normalizedSearch,
+                    normalizedAgencyId,
                     employeePage.getTotalPages() - 1,
                     resolvedSize);
         }
@@ -120,6 +138,8 @@ public class EmployeeListController {
         model.addAttribute("employeePage", employeePage);
         model.addAttribute("currentType", normalizedType);
         model.addAttribute("currentStatus", status);
+        model.addAttribute("currentAgencyId", normalizedAgencyId);
+        model.addAttribute("agencyOptions", hrOnboardingPageService.getAgencyFilterOptions(status));
         model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
         model.addAttribute("pageSize", employeePage.getSize());
         if ("RESIGNED".equalsIgnoreCase(status)) {
@@ -137,6 +157,7 @@ public class EmployeeListController {
             String type,
             String status,
             String search,
+            Long agencyId,
             int page,
             int size) {
         var pageRequest = PageRequest.of(
@@ -145,7 +166,7 @@ public class EmployeeListController {
                 Sort.by(
                         Sort.Order.asc("fullName").ignoreCase(),
                         Sort.Order.asc("employeeId")));
-        return hrOnboardingPageService.getEmployeesByStatus(type, status, search, pageRequest);
+        return hrOnboardingPageService.getEmployeesByStatus(type, status, search, agencyId, pageRequest);
     }
 
     private int resolvePageSize(int size) {
@@ -168,6 +189,10 @@ public class EmployeeListController {
 
     private String normalizeSearch(String search) {
         return StringUtils.hasText(search) ? search.trim() : null;
+    }
+
+    private Long normalizeAgencyId(Long agencyId) {
+        return agencyId != null && agencyId > 0 ? agencyId : null;
     }
 
     private String normalizeStatus(String status) {

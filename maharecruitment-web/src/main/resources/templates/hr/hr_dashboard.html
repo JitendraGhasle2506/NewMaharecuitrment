@@ -133,12 +133,11 @@
                                 <h4>Wing Reports</h4>
                                 <span class="panel-subtitle">Wing and cell overview</span>
                             </div>
-                            <button type="button" class="wing-load-btn" id="hrWingReportLoad"
-                                aria-controls="hrWingReportDetails"
-                                aria-expanded="false">
+                            <a class="wing-load-btn" th:href="@{/hr/wing-reports}">
                                 <i class="fa-solid fa-chart-simple" aria-hidden="true"></i>
-                                <span data-wing-load-label>Load Wing Details</span>
-                            </button>
+                                <span>Open Wing Reports</span>
+                                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                            </a>
                         </div>
 
                         <div class="wing-summary-grid">
@@ -149,26 +148,6 @@
                             <div>
                                 <span>Total Cells</span>
                                 <strong th:text="${dashboard.totalCells}">0</strong>
-                            </div>
-                        </div>
-
-                        <div class="wing-report-details d-none" id="hrWingReportDetails">
-                            <div class="wing-directory-grid">
-                                <a class="wing-directory-card" th:each="wing : ${dashboard.wingReports}"
-                                    th:href="@{/hr/wing-report/{wingId}(wingId=${wing.wingId})}">
-                                    <span class="wing-directory-icon">
-                                        <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
-                                    </span>
-                                    <span class="wing-directory-copy">
-                                        <strong th:text="${wing.wingName}">Wing Name</strong>
-                                        <small th:text="${wing.cellCount} + ' cells'">0 cells</small>
-                                    </span>
-                                    <span class="wing-directory-action">
-                                        <span>Open</span>
-                                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                                    </span>
-                                </a>
-                                <p class="project-empty" th:if="${#lists.isEmpty(dashboard.wingReports)}">No active wing reports found.</p>
                             </div>
                         </div>
                     </section>
@@ -258,9 +237,6 @@
             const count = document.getElementById('hrProjectScopeCount');
             const close = document.getElementById('hrProjectScopeClose');
             const lists = Array.from(document.querySelectorAll('[data-project-list]'));
-            const wingLoad = document.getElementById('hrWingReportLoad');
-            const wingDetails = document.getElementById('hrWingReportDetails');
-            const wingLoadLabel = wingLoad ? wingLoad.querySelector('[data-wing-load-label]') : null;
 
             function pluralizeProjects(value) {
                 return value === '1' ? '1 project' : `${value} projects`;
@@ -303,21 +279,6 @@
                         button.classList.remove('is-active');
                         button.setAttribute('aria-expanded', 'false');
                     });
-                });
-            }
-
-            if (wingLoad && wingDetails) {
-                wingLoad.addEventListener('click', () => {
-                    const show = wingDetails.classList.contains('d-none');
-                    wingDetails.classList.toggle('d-none', !show);
-                    wingLoad.classList.toggle('is-active', show);
-                    wingLoad.setAttribute('aria-expanded', String(show));
-                    if (wingLoadLabel) {
-                        wingLoadLabel.textContent = show ? 'Hide Wing Details' : 'Load Wing Details';
-                    }
-                    if (show) {
-                        wingDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }
                 });
             }
 

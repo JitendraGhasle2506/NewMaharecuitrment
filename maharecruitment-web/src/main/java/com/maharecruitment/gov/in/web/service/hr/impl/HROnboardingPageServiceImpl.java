@@ -12,7 +12,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,14 +44,17 @@ import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboa
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeLocationMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
+import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeAgencyFilterProjection;
+import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeListProjection;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingEmploymentForm;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
-import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
+import com.maharecruitment.gov.in.web.service.hr.model.EmployeeAgencyFilterView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
+import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 import com.maharecruitment.gov.in.web.service.onboarding.CandidateIdentityValidationService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
@@ -373,21 +375,37 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             String status,
             String searchText,
             Pageable pageable) {
+        return getEmployeesByStatus(recruitmentType, status, searchText, null, pageable);
+    }
+
+    @Override
+    public Page<EmployeeListView> getEmployeesByStatus(
+            String recruitmentType,
+            String status,
+            String searchText,
+            Long agencyId,
+            Pageable pageable) {
         String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "ACTIVE";
         String normalizedRecruitmentType = normalizeRecruitmentType(recruitmentType);
+        Long normalizedAgencyId = agencyId != null && agencyId > 0 ? agencyId : null;
         String searchPattern = buildEmployeeSearchPattern(searchText);
 
-        Page<EmployeeEntity> employees = employeeRepository.findPageByStatusAndFilters(
+        Page<EmployeeListProjection> employees = employeeRepository.findEmployeeListPageByStatusAndFilters(
                 normalizedStatus,
                 normalizedRecruitmentType,
+                normalizedAgencyId,
                 searchPattern,
                 pageable);
+        return employees.map(this::toEmployeeListView);
+    }
 
-        List<EmployeeListView> dtos = employees.getContent().stream()
-                .map(this::toEmployeeListView)
+    @Override
+    public List<EmployeeAgencyFilterView> getAgencyFilterOptions(String status) {
+        String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "ACTIVE";
+        return employeeRepository.findAgencyFilterOptionsByEmployeeStatus(normalizedStatus)
+                .stream()
+                .map(this::toEmployeeAgencyFilterView)
                 .toList();
-        
-        return new PageImpl<>(dtos, pageable, employees.getTotalElements());
     }
 
     @Override
@@ -398,11 +416,10 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
 
         EmployeeEntity employee = employeeRepository.findDetailedByEmployeeId(employeeId)
                 .orElseThrow(() -> new RecruitmentNotificationException("Employee not found."));
-        if (employee.getPreOnboarding() == null || employee.getPreOnboarding().getPreOnboardingId() == null) {
-            throw new RecruitmentNotificationException("Employee onboarding details are not available.");
-        }
-
-        AgencyPreOnboardingForm onboardingForm = loadOnboardingForm(employee.getPreOnboarding().getPreOnboardingId());
+        AgencyPreOnboardingForm onboardingForm = employee.getPreOnboarding() != null
+                && employee.getPreOnboarding().getPreOnboardingId() != null
+                        ? loadOnboardingForm(employee.getPreOnboarding().getPreOnboardingId())
+                        : toEmployeeDetailForm(employee);
         onboardingForm.setAadhaar(SensitiveDataMaskingUtil.maskAadhaar(onboardingForm.getAadhaar()));
         return new EmployeeOnboardingDetailView(
                 employee.getEmployeeId(),
@@ -647,36 +664,63 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         return "TMP-" + UUID.randomUUID().toString().replace("-", "");
     }
 
-    private EmployeeListView toEmployeeListView(EmployeeEntity entity) {
-        String deptName = entity.getDepartmentRegistration() != null ? entity.getDepartmentRegistration().getDepartmentName() : "-";
-        String designationName = entity.getDesignation() != null ? entity.getDesignation().getDesignationName() : "-";
-        String projectName = "-";
-        if (entity.getPreOnboarding() != null
-                && entity.getPreOnboarding().getInterviewDetail() != null
-                && entity.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() != null
-                && entity.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst() != null
-                && StringUtils.hasText(entity.getPreOnboarding().getInterviewDetail().getRecruitmentNotification()
-                        .getProjectMst().getProjectName())) {
-            projectName = entity.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst()
-                    .getProjectName();
-        }
-
+    private EmployeeListView toEmployeeListView(EmployeeListProjection employee) {
         return new EmployeeListView(
-                entity.getEmployeeId(),
-                entity.getEmployeeCode(),
-                entity.getRequestId(),
-                projectName,
-                entity.getFullName(),
-                entity.getEmail(),
-                entity.getMobile(),
-                designationName,
-                deptName,
-                entity.getJoiningDate(),
-                entity.getOnboardingDate(),
-                entity.getRecruitmentType(),
-                entity.getAgency() != null ? entity.getAgency().getAgencyName() : "-",
-                entity.getStatus(),
-                entity.getPreOnboarding() != null && entity.getPreOnboarding().getPreOnboardingId() != null);
+                employee.getEmployeeId(),
+                employee.getEmployeeCode(),
+                employee.getFullName(),
+                employee.getEmail(),
+                displayValue(employee.getDesignation()),
+                employee.getMahaitJoiningDate(),
+                employee.getRecruitmentType(),
+                displayValue(employee.getAgencyName()),
+                employee.getStatus());
+    }
+
+    private EmployeeAgencyFilterView toEmployeeAgencyFilterView(EmployeeAgencyFilterProjection agency) {
+        return new EmployeeAgencyFilterView(agency.getAgencyId(), agency.getAgencyName());
+    }
+
+    private AgencyPreOnboardingForm toEmployeeDetailForm(EmployeeEntity employee) {
+        AgencyPreOnboardingForm form = new AgencyPreOnboardingForm();
+        form.setHrFlow(true);
+        form.setRequestId(employee.getRequestId());
+        form.setDepartment(employee.getDepartmentRegistration() != null
+                ? employee.getDepartmentRegistration().getDepartmentName()
+                : employee.getDepartment() != null ? employee.getDepartment().getDepartmentName() : null);
+        form.setSubDeptName(employee.getSubDepartment() != null
+                ? employee.getSubDepartment().getSubDeptName()
+                : null);
+        form.setDesignation(employee.getDesignation() != null
+                ? employee.getDesignation().getDesignationName()
+                : null);
+        form.setLevelCode(employee.getLevelCode());
+        form.setAgencyName(employee.getAgency() != null ? employee.getAgency().getAgencyName() : null);
+        form.setName(employee.getFullName());
+        form.setEmail(employee.getEmail());
+        form.setMobile(employee.getMobile());
+        form.setDob(employee.getDateOfBirth());
+        form.setGender(employee.getGender());
+        form.setBloodGroup(employee.getBloodGroup());
+        form.setAddress(employee.getAddress());
+        form.setEmergencyContactName(employee.getEmergencyContactName());
+        form.setEmergencyContactRelation(employee.getEmergencyContactRelation());
+        form.setEmergencyContactMobile(employee.getEmergencyContactMobile());
+        form.setEmergencyContactAltMobile(employee.getEmergencyContactAltMobile());
+        form.setJoiningDate(employee.getJoiningDate());
+        form.setOnboardingDate(employee.getOnboardingDate());
+        form.setHrOnboardingDate(employee.getOnboardingDate());
+        form.setAadhaar(employee.getAadhaarNumber());
+        form.setPan(employee.getPanNumber());
+        form.setCompanyPayrollMoreThanThreeMonths(
+                Boolean.TRUE.equals(employee.getCompanyPayrollMoreThanThreeMonths()));
+        form.setExistingPhotoFileName(StringUtils.getFilename(employee.getPhotoPath()));
+        form.setExistingPhotoFilePath(employee.getPhotoPath());
+        return form;
+    }
+
+    private String displayValue(String value) {
+        return StringUtils.hasText(value) ? value : "-";
     }
 
     private String normalizeRecruitmentType(String recruitmentType) {

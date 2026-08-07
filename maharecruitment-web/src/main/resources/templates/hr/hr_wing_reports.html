@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Wing Reports</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/hr-wing-reports.css}">
+    <script defer th:src="@{/js/hr-wing-reports.js}"></script>
+</head>
+
+<body class="hr-shell">
+
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Wing Reports', ~{::section})}">
+        <section class="wing-directory-page">
+            <div class="card add-emp-card wing-directory-page-card">
+                <div class="header wing-directory-toolbar">
+                    <div class="wing-directory-title">
+                        <span>HR Operations</span>
+                        <h2>Wing Reports</h2>
+                    </div>
+                    <a class="wing-directory-back" th:href="@{/hr/dashboard}">
+                        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <section class="wing-directory-hero">
+                        <div>
+                            <span class="hero-eyebrow">Organization overview</span>
+                            <h1>Wing Performance Directory</h1>
+                            <p>Select a wing to view its cells, employees, projects, and reporting hierarchy.</p>
+                        </div>
+                        <span class="wing-directory-hero-chip">
+                            <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                            <span th:text="${wingDirectory.totalWings} + ' active wings'">0 active wings</span>
+                        </span>
+                    </section>
+
+                    <section class="wing-directory-metrics" aria-label="Wing report summary">
+                        <article>
+                            <span class="wing-metric-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
+                            <div><small>Wings</small><strong th:text="${wingDirectory.totalWings}">0</strong></div>
+                        </article>
+                        <article>
+                            <span class="wing-metric-icon"><i class="fa-solid fa-sitemap" aria-hidden="true"></i></span>
+                            <div><small>Cells</small><strong th:text="${wingDirectory.totalCells}">0</strong></div>
+                        </article>
+                        <article>
+                            <span class="wing-metric-icon"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i></span>
+                            <div><small>Projects</small><strong th:text="${wingDirectory.totalProjects}">0</strong></div>
+                        </article>
+                        <article>
+                            <span class="wing-metric-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+                            <div><small>Employees</small><strong th:text="${wingDirectory.totalEmployees}">0</strong></div>
+                        </article>
+                    </section>
+
+                    <section class="panel wing-directory-panel">
+                        <div class="wing-directory-panel-heading">
+                            <div>
+                                <span class="section-eyebrow">Report directory</span>
+                                <h4>Choose a Wing</h4>
+                                <p>Open a wing for its cell and employee hierarchy.</p>
+                            </div>
+                            <span class="wing-directory-visible-count" data-wing-count
+                                th:text="${#lists.size(wingDirectory.wings)} + ' wings'">0 wings</span>
+                        </div>
+
+                        <label class="wing-directory-search" for="wingDirectorySearch"
+                            th:if="${!#lists.isEmpty(wingDirectory.wings)}">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <input id="wingDirectorySearch" type="search" placeholder="Search by wing name"
+                                autocomplete="off" data-wing-search>
+                        </label>
+
+                        <div class="wing-directory-page-grid" th:if="${!#lists.isEmpty(wingDirectory.wings)}">
+                            <a class="wing-report-card" th:each="wing : ${wingDirectory.wings}"
+                                th:href="@{/hr/wing-report/{wingId}(wingId=${wing.wingId})}"
+                                th:attr="data-wing-row=${#strings.toLowerCase(wing.wingName)}">
+                                <span class="wing-report-card-icon">
+                                    <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                                </span>
+                                <span class="wing-report-card-copy">
+                                    <small>Wing report</small>
+                                    <strong th:text="${wing.wingName}">Wing Name</strong>
+                                </span>
+                                <span class="wing-report-card-stats">
+                                    <span><b th:text="${wing.cellCount}">0</b> Cells</span>
+                                    <span><b th:text="${wing.projectCount}">0</b> Projects</span>
+                                    <span><b th:text="${wing.employeeCount}">0</b> Employees</span>
+                                </span>
+                                <span class="wing-report-card-action">
+                                    View report
+                                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                                </span>
+                            </a>
+                        </div>
+
+                        <p class="wing-directory-empty" th:if="${#lists.isEmpty(wingDirectory.wings)}">
+                            <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                            No active wing reports are available.
+                        </p>
+                        <p class="wing-directory-empty d-none" data-wing-no-results>
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            No wing matches your search.
+                        </p>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

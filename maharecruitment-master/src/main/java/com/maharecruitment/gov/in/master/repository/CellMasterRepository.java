@@ -38,6 +38,10 @@ public interface CellMasterRepository extends JpaRepository<CellMaster, Long> {
             String activeFlag,
             String wingActiveFlag);
 
+    long countByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCase(
+            String activeFlag,
+            String wingActiveFlag);
+
     @EntityGraph(attributePaths = "wing")
     List<CellMaster> findByWing_WingIdAndActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCaseOrderByCellNameAsc(
             Long wingId,

@@ -13,6 +13,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeAgencyFilterProjection;
+import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeListProjection;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> {
@@ -140,51 +142,55 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             @Param("recruitmentType") String recruitmentType,
             @Param("status") String status);
 
-    @EntityGraph(attributePaths = {
-            "agency",
-            "departmentRegistration",
-            "designation",
-            "preOnboarding",
-            "preOnboarding.interviewDetail",
-            "preOnboarding.interviewDetail.recruitmentNotification",
-            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
-    @Query(value = "select employee "
+    @Query(value = "select employee.employeeId as employeeId, "
+            + "employee.employeeCode as employeeCode, "
+            + "employee.fullName as fullName, "
+            + "employee.email as email, "
+            + "designation.designationName as designation, "
+            + "employee.onboardingDate as mahaitJoiningDate, "
+            + "employee.recruitmentType as recruitmentType, "
+            + "agency.agencyName as agencyName, "
+            + "employee.status as status "
             + "from EmployeeEntity employee "
-            + "left join employee.preOnboarding preOnboarding "
-            + "left join preOnboarding.interviewDetail interviewDetail "
-            + "left join interviewDetail.recruitmentNotification notification "
-            + "left join notification.projectMst project "
+            + "left join employee.agency agency "
+            + "left join employee.designation designation "
             + "where upper(trim(coalesce(employee.status, ''))) = :status "
             + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
             + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
             + "and (:recruitmentType is null or upper(employee.recruitmentType) = :recruitmentType) "
+            + "and (:agencyId is null or agency.agencyId = :agencyId) "
             + "and (:searchPattern is null "
-            + "or upper(coalesce(employee.requestId, '')) like :searchPattern "
             + "or upper(coalesce(employee.employeeCode, '')) like :searchPattern "
             + "or upper(coalesce(employee.fullName, '')) like :searchPattern "
-            + "or upper(coalesce(project.projectName, '')) like :searchPattern "
-            + "or upper(coalesce(employee.recruitmentType, '')) like :searchPattern)",
+            + "or upper(coalesce(employee.email, '')) like :searchPattern)",
             countQuery = "select count(employee) "
                     + "from EmployeeEntity employee "
-                    + "left join employee.preOnboarding preOnboarding "
-                    + "left join preOnboarding.interviewDetail interviewDetail "
-                    + "left join interviewDetail.recruitmentNotification notification "
-                    + "left join notification.projectMst project "
                     + "where upper(trim(coalesce(employee.status, ''))) = :status "
                     + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
                     + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
                     + "and (:recruitmentType is null or upper(employee.recruitmentType) = :recruitmentType) "
+                    + "and (:agencyId is null or employee.agency.agencyId = :agencyId) "
                     + "and (:searchPattern is null "
-                    + "or upper(coalesce(employee.requestId, '')) like :searchPattern "
                     + "or upper(coalesce(employee.employeeCode, '')) like :searchPattern "
                     + "or upper(coalesce(employee.fullName, '')) like :searchPattern "
-                    + "or upper(coalesce(project.projectName, '')) like :searchPattern "
-                    + "or upper(coalesce(employee.recruitmentType, '')) like :searchPattern)")
-    Page<EmployeeEntity> findPageByStatusAndFilters(
+                    + "or upper(coalesce(employee.email, '')) like :searchPattern)")
+    Page<EmployeeListProjection> findEmployeeListPageByStatusAndFilters(
             @Param("status") String status,
             @Param("recruitmentType") String recruitmentType,
+            @Param("agencyId") Long agencyId,
             @Param("searchPattern") String searchPattern,
             Pageable pageable);
+
+    @Query("select agency.agencyId as agencyId, agency.agencyName as agencyName "
+            + "from EmployeeEntity employee "
+            + "join employee.agency agency "
+            + "where upper(trim(coalesce(employee.status, ''))) = :status "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING' "
+            + "and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%' "
+            + "group by agency.agencyId, agency.agencyName "
+            + "order by lower(agency.agencyName), agency.agencyId")
+    List<EmployeeAgencyFilterProjection> findAgencyFilterOptionsByEmployeeStatus(
+            @Param("status") String status);
 
     @EntityGraph(attributePaths = {
             "agency",

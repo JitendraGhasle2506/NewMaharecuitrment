@@ -31,6 +31,12 @@ public class HRController {
         return "hr/hr_attendance_today";
     }
 
+    @GetMapping("/hr/wing-reports")
+    public String wingReports(Model model) {
+        model.addAttribute("wingDirectory", hrDashboardService.getWingReports());
+        return "hr/hr_wing_reports";
+    }
+
     @GetMapping("/hr/wing-report/{wingId}")
     public String wingReportDetail(@PathVariable Long wingId, Model model) {
         HRWingReportView wing = hrDashboardService.getWingReport(wingId)

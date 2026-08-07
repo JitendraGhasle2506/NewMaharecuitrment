@@ -264,7 +264,7 @@
                             <i class="fa-solid fa-location-dot me-1"></i> Manage Locations
                         </a>
                         <a th:if="${showBackButton == null or showBackButton}" class="btn btn-outline-secondary btn-sm"
-                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})} : @{/hr/employees(type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
+                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned(type=${currentType},agencyId=${currentAgencyId},search=${searchTerm},page=${currentPage},size=${pageSize})} : @{/hr/employees(type=${currentType},agencyId=${currentAgencyId},search=${searchTerm},page=${currentPage},size=${pageSize})}">
                             Back to Employees
                         </a>
                     </div>

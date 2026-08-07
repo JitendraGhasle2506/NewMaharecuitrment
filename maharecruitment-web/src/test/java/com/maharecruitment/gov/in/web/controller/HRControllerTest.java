@@ -12,6 +12,7 @@ import org.springframework.ui.ExtendedModelMap;
 import com.maharecruitment.gov.in.web.service.dashboard.HRDashboardService;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRDashboardView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRTodayAttendanceView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRWingReportsView;
 
 @ExtendWith(MockitoExtension.class)
 class HRControllerTest {
@@ -24,6 +25,9 @@ class HRControllerTest {
 
     @Mock
     private HRTodayAttendanceView attendance;
+
+    @Mock
+    private HRWingReportsView wingDirectory;
 
     @Test
     void dashboardUsesSingleViewModel() {
@@ -45,6 +49,17 @@ class HRControllerTest {
 
         assertThat(view).isEqualTo("hr/hr_attendance_today");
         assertThat(model).containsOnlyKeys("attendance").containsEntry("attendance", attendance);
+    }
+
+    @Test
+    void wingReportsUseDedicatedEndpointAndViewModel() {
+        when(dashboardService.getWingReports()).thenReturn(wingDirectory);
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        String view = controller().wingReports(model);
+
+        assertThat(view).isEqualTo("hr/hr_wing_reports");
+        assertThat(model).containsOnlyKeys("wingDirectory").containsEntry("wingDirectory", wingDirectory);
     }
 
     private HRController controller() {

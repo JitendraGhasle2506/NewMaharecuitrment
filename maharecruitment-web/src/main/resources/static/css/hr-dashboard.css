@@ -418,11 +418,13 @@ button.kpi-card {
     background: linear-gradient(135deg, var(--hr-brand), var(--hr-brand-strong));
     font-size: 0.84rem;
     font-weight: 800;
+    text-decoration: none;
     box-shadow: 0 9px 18px rgba(18, 39, 67, 0.14);
 }
 
 .wing-load-btn:hover,
 .wing-load-btn.is-active {
+    color: #ffffff;
     border-color: rgba(15, 139, 141, 0.52);
     background: linear-gradient(135deg, var(--hr-external), #0b6f71);
 }

@@ -83,11 +83,9 @@ class HRDashboardServiceImplTest {
     @Test
     void getDashboardBuildsSingleQueryCheckInBreakdown() {
         when(projectMstRepository.findByProjectScopeTypeOrderByProjectNameAsc(any())).thenReturn(List.of());
-        when(wingMasterRepository.findByActiveFlagIgnoreCaseOrderByWingNameAsc("Y")).thenReturn(List.of());
-        when(cellMasterRepository.findByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCaseOrderByCellNameAsc("Y", "Y"))
-                .thenReturn(List.of());
-        when(projectMstRepository.summarizeProjectCountsByCell()).thenReturn(List.of());
-        when(employeeCellMappingRepository.summarizeActiveEmployeesByCell("Y", "ACTIVE")).thenReturn(List.of());
+        when(wingMasterRepository.countByActiveFlagIgnoreCase("Y")).thenReturn(3L);
+        when(cellMasterRepository.countByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCase("Y", "Y"))
+                .thenReturn(12L);
         when(employeeRepository.summarizeEmployeeCountsByDepartment()).thenReturn(List.of());
         when(employeeRepository.count()).thenReturn(20L);
         when(dailyAttendanceInternalRepository.summarizeAttendanceByDate(
@@ -108,6 +106,8 @@ class HRDashboardServiceImplTest {
         assertThat(result.attendanceSummary().earlyCheckIns()).isEqualTo(3);
         assertThat(result.attendanceSummary().standardCheckIns()).isEqualTo(4);
         assertThat(result.attendanceSummary().lateCheckIns()).isEqualTo(1);
+        assertThat(result.totalWings()).isEqualTo(3);
+        assertThat(result.totalCells()).isEqualTo(12);
         verify(dailyAttendanceInternalRepository).summarizeAttendanceByDate(
                 any(LocalDate.class),
                 eq(LocalTime.of(9, 45)),
@@ -120,6 +120,9 @@ class HRDashboardServiceImplTest {
                 anyInt(),
                 eq("Y"),
                 eq("ACTIVE"));
+        verify(wingMasterRepository, never()).findByActiveFlagIgnoreCaseOrderByWingNameAsc("Y");
+        verify(cellMasterRepository, never())
+                .findByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCaseOrderByCellNameAsc("Y", "Y");
     }
 
     @Test
@@ -161,6 +164,29 @@ class HRDashboardServiceImplTest {
             assertThat(cell.presentEmployees()).isEqualTo(9);
             assertThat(cell.absentEmployees()).isEqualTo(3);
             assertThat(cell.presentPercent()).isEqualTo(75);
+        });
+    }
+
+    @Test
+    void getWingReportsLoadsDirectoryDataOnlyForDedicatedPage() {
+        WingMaster wing = wing(2L, "MAHAIT Project Cells");
+        CellMaster networkCell = cell(27L, "Network Infra Cell", wing);
+        CellMaster fieldCell = cell(30L, "Field Operations Cell", wing);
+        when(wingMasterRepository.findByActiveFlagIgnoreCaseOrderByWingNameAsc("Y")).thenReturn(List.of(wing));
+        when(cellMasterRepository.findByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCaseOrderByCellNameAsc("Y", "Y"))
+                .thenReturn(List.of(fieldCell, networkCell));
+        when(projectMstRepository.summarizeProjectCountsByCell()).thenReturn(List.of());
+        when(employeeCellMappingRepository.summarizeActiveEmployeesByCell("Y", "ACTIVE")).thenReturn(List.of());
+
+        var result = service().getWingReports();
+
+        assertThat(result.totalWings()).isEqualTo(1);
+        assertThat(result.totalCells()).isEqualTo(2);
+        assertThat(result.wings()).singleElement().satisfies(item -> {
+            assertThat(item.wingName()).isEqualTo("MAHAIT Project Cells");
+            assertThat(item.cellCount()).isEqualTo(2);
+            assertThat(item.projectCount()).isZero();
+            assertThat(item.employeeCount()).isZero();
         });
     }
 

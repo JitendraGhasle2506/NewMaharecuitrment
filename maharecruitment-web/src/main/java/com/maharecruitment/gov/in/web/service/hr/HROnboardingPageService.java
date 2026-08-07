@@ -1,13 +1,16 @@
 package com.maharecruitment.gov.in.web.service.hr;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import java.util.List;
+
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
-import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 import com.maharecruitment.gov.in.web.service.agency.model.AgencyOnboardingCandidateView;
+import com.maharecruitment.gov.in.web.service.hr.model.EmployeeAgencyFilterView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
+import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 
 public interface HROnboardingPageService {
 
@@ -24,6 +27,15 @@ public interface HROnboardingPageService {
     Page<EmployeeListView> getOnboardedEmployees(String recruitmentType, String searchText, Pageable pageable);
 
     Page<EmployeeListView> getEmployeesByStatus(String recruitmentType, String status, String searchText, Pageable pageable);
+
+    Page<EmployeeListView> getEmployeesByStatus(
+            String recruitmentType,
+            String status,
+            String searchText,
+            Long agencyId,
+            Pageable pageable);
+
+    List<EmployeeAgencyFilterView> getAgencyFilterOptions(String status);
 
     EmployeeOnboardingDetailView loadEmployeeDetail(Long employeeId);
 

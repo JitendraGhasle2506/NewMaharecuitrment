@@ -49,7 +49,9 @@ import com.maharecruitment.gov.in.web.service.dashboard.model.HRCellReportView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRDashboardView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HREmployeeHierarchyView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRTodayAttendanceView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRWingDirectoryItemView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRWingReportView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRWingReportsView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.ProjectScopeListItemView;
 
 import lombok.RequiredArgsConstructor;
@@ -84,13 +86,12 @@ public class HRDashboardServiceImpl implements HRDashboardService {
     public HRDashboardView getDashboard() {
         List<ProjectScopeListItemView> internalProjectList = buildProjectList(ProjectScopeType.INTERNAL);
         List<ProjectScopeListItemView> externalProjectList = buildProjectList(ProjectScopeType.EXTERNAL);
-        List<HRWingReportView> wingReports = buildWingReports();
         int internalProjects = internalProjectList.size();
         int externalProjects = externalProjectList.size();
         int totalProjects = internalProjects + externalProjects;
-        int totalCells = wingReports.stream().mapToInt(HRWingReportView::cellCount).sum();
-        int wingProjectCount = wingReports.stream().mapToInt(HRWingReportView::projectCount).sum();
-        int wingEmployeeCount = wingReports.stream().mapToInt(HRWingReportView::employeeCount).sum();
+        int totalWings = toInt(wingMasterRepository.countByActiveFlagIgnoreCase(ACTIVE_FLAG));
+        int totalCells = toInt(cellMasterRepository
+                .countByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCase(ACTIVE_FLAG, ACTIVE_FLAG));
         long internalEmployees = employeeRepository.countByRecruitmentType(INTERNAL);
         long externalEmployees = employeeRepository.countByRecruitmentType(EXTERNAL);
         long totalEmployees = employeeRepository.count();
@@ -139,16 +140,13 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 attendance.presentPercent(),
                 attendance.checkIns(),
                 (int) pendingApprovals,
-                wingReports.size(),
+                totalWings,
                 totalCells,
-                wingProjectCount,
-                wingEmployeeCount,
                 internalPercent,
                 externalPercent,
                 departmentOnboarding,
                 internalProjectList,
-                externalProjectList,
-                wingReports
+                externalProjectList
         );
     }
 
@@ -165,6 +163,18 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 attendance.presentPercent(),
                 attendance.checkIns(),
                 buildCellAttendance(today));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HRWingReportsView getWingReports() {
+        List<HRWingDirectoryItemView> wings = buildWingDirectory();
+        return new HRWingReportsView(
+                wings.size(),
+                wings.stream().mapToInt(HRWingDirectoryItemView::cellCount).sum(),
+                wings.stream().mapToInt(HRWingDirectoryItemView::projectCount).sum(),
+                wings.stream().mapToInt(HRWingDirectoryItemView::employeeCount).sum(),
+                wings);
     }
 
     @Override
@@ -202,7 +212,7 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 });
     }
 
-    private List<HRWingReportView> buildWingReports() {
+    private List<HRWingDirectoryItemView> buildWingDirectory() {
         List<WingMaster> wings = wingMasterRepository.findByActiveFlagIgnoreCaseOrderByWingNameAsc(ACTIVE_FLAG);
         List<CellMaster> cells = cellMasterRepository
                 .findByActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCaseOrderByCellNameAsc(ACTIVE_FLAG, ACTIVE_FLAG);
@@ -213,19 +223,28 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                         Collectors.toList()));
         Map<Long, Integer> projectCountsByCellId = buildProjectCountsByCellId();
         Map<Long, Integer> employeeCountsByCellId = buildEmployeeCountsByCellId();
-        int maxProjectCount = maxCount(cells, projectCountsByCellId);
-        int maxEmployeeCount = maxCount(cells, employeeCountsByCellId);
-
         return wings.stream()
-                .map(wing -> toWingReportView(
+                .map(wing -> toWingDirectoryItem(
                         wing,
                         cellsByWingId.getOrDefault(wing.getWingId(), List.of()),
                         projectCountsByCellId,
-                         employeeCountsByCellId,
-                         maxProjectCount,
-                         maxEmployeeCount,
-                         Map.of()))
+                        employeeCountsByCellId))
                 .toList();
+    }
+
+    private HRWingDirectoryItemView toWingDirectoryItem(
+            WingMaster wing,
+            List<CellMaster> cells,
+            Map<Long, Integer> projectCountsByCellId,
+            Map<Long, Integer> employeeCountsByCellId) {
+        int projectCount = sumCounts(cells, projectCountsByCellId);
+        int employeeCount = sumCounts(cells, employeeCountsByCellId);
+        return new HRWingDirectoryItemView(
+                wing.getWingId(),
+                defaultText(wing.getWingName(), "Unnamed Wing"),
+                cells.size(),
+                projectCount,
+                employeeCount);
     }
 
     private Map<Long, Integer> buildProjectCountsByCellId() {
@@ -602,6 +621,13 @@ public class HRDashboardServiceImpl implements HRDashboardService {
                 today.getMonthValue(),
                 today.getYear(),
                 today.getDayOfMonth());
+    }
+
+    private int sumCounts(List<CellMaster> cells, Map<Long, Integer> countsByCellId) {
+        return cells.stream()
+                .filter(cell -> cell.getCellId() != null)
+                .mapToInt(cell -> countsByCellId.getOrDefault(cell.getCellId(), 0))
+                .sum();
     }
 
     private AttendanceSnapshot loadAttendanceSnapshot(LocalDate attendanceDate, long totalEmployeeCount) {

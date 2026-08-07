@@ -17,13 +17,10 @@ public record HRDashboardView(
         int pendingApprovals,
         int totalWings,
         int totalCells,
-        int wingProjectCount,
-        int wingEmployeeCount,
         int internalPercent,
         int externalPercent,
         List<DepartmentOnboardingView> departmentOnboarding,
         List<ProjectScopeListItemView> internalProjectList,
-        List<ProjectScopeListItemView> externalProjectList,
-        List<HRWingReportView> wingReports
+        List<ProjectScopeListItemView> externalProjectList
 ) {
 }
