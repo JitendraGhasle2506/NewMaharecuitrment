@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Today's Attendance</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/hr-attendance.css}">
+    <script defer th:src="@{/js/hr-attendance.js}"></script>
+</head>
+
+<body class="hr-shell">
+
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Attendance Today', ~{::section})}">
+        <section class="attendance-page">
+            <div class="card add-emp-card attendance-page-card">
+                <div class="header attendance-page-toolbar">
+                    <div class="attendance-page-title">
+                        <span>HR Operations</span>
+                        <h2>Today's Attendance</h2>
+                    </div>
+                    <a class="attendance-back-link" th:href="@{/hr/dashboard}">
+                        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                        <span>Back to Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <section class="attendance-page-hero">
+                        <div>
+                            <span class="hero-eyebrow">Live workforce snapshot</span>
+                            <h1>Attendance Overview</h1>
+                            <p>Present, absent, and check-in activity for the current working day.</p>
+                        </div>
+                        <span class="attendance-date-chip">
+                            <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                            <span th:text="${#temporals.format(attendance.attendanceDate, 'dd MMM yyyy')}">07 Aug 2026</span>
+                        </span>
+                    </section>
+
+                    <section class="attendance-metric-grid" aria-label="Attendance summary">
+                        <article class="attendance-metric metric-total">
+                            <span class="attendance-metric-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+                            <div>
+                                <small>Total Employees</small>
+                                <strong th:text="${attendance.totalEmployees}">0</strong>
+                            </div>
+                        </article>
+                        <article class="attendance-metric metric-present">
+                            <span class="attendance-metric-icon"><i class="fa-solid fa-user-check" aria-hidden="true"></i></span>
+                            <div>
+                                <small>Present</small>
+                                <strong th:text="${attendance.presentEmployees}">0</strong>
+                            </div>
+                        </article>
+                        <article class="attendance-metric metric-absent">
+                            <span class="attendance-metric-icon"><i class="fa-solid fa-user-xmark" aria-hidden="true"></i></span>
+                            <div>
+                                <small>Absent / Not Marked</small>
+                                <strong th:text="${attendance.absentEmployees}">0</strong>
+                            </div>
+                        </article>
+                        <article class="attendance-metric metric-rate">
+                            <span class="attendance-metric-icon"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span>
+                            <div>
+                                <small>Attendance Rate</small>
+                                <strong th:text="${attendance.presentPercent} + '%'">0%</strong>
+                            </div>
+                        </article>
+                    </section>
+
+                    <section class="panel attendance-breakdown-panel attendance-page-panel">
+                        <div class="panel-title attendance-breakdown-heading">
+                            <div>
+                                <span class="section-eyebrow">Internal attendance</span>
+                                <h4>Check-in Time Breakdown</h4>
+                                <span class="panel-subtitle">Employees grouped by their earliest biometric or mobile check-in.</span>
+                            </div>
+                            <span class="attendance-total-pill">
+                                <strong th:text="${attendance.checkIns.checkedInEmployees}">0</strong>
+                                <span>checked in</span>
+                            </span>
+                        </div>
+
+                        <div class="attendance-breakdown-grid">
+                            <article class="check-in-card check-in-early">
+                                <span class="check-in-icon"><i class="fa-solid fa-sun" aria-hidden="true"></i></span>
+                                <div class="check-in-copy">
+                                    <span>Early Check-ins</span>
+                                    <strong th:text="${attendance.checkIns.earlyCheckIns}">0</strong>
+                                    <small>Before 9:45 AM</small>
+                                </div>
+                                <div class="check-in-share" aria-hidden="true">
+                                    <span th:style="'width:' + ${attendance.checkIns.checkedInEmployees > 0 ? (attendance.checkIns.earlyCheckIns * 100) / attendance.checkIns.checkedInEmployees : 0} + '%'">
+                                    </span>
+                                </div>
+                            </article>
+
+                            <article class="check-in-card check-in-standard">
+                                <span class="check-in-icon"><i class="fa-solid fa-clock" aria-hidden="true"></i></span>
+                                <div class="check-in-copy">
+                                    <span>Regular Check-ins</span>
+                                    <strong th:text="${attendance.checkIns.standardCheckIns}">0</strong>
+                                    <small>9:45 AM to 10:15 AM</small>
+                                </div>
+                                <div class="check-in-share" aria-hidden="true">
+                                    <span th:style="'width:' + ${attendance.checkIns.checkedInEmployees > 0 ? (attendance.checkIns.standardCheckIns * 100) / attendance.checkIns.checkedInEmployees : 0} + '%'">
+                                    </span>
+                                </div>
+                            </article>
+
+                            <article class="check-in-card check-in-late">
+                                <span class="check-in-icon"><i class="fa-solid fa-person-walking-arrow-right" aria-hidden="true"></i></span>
+                                <div class="check-in-copy">
+                                    <span>Late Check-ins</span>
+                                    <strong th:text="${attendance.checkIns.lateCheckIns}">0</strong>
+                                    <small>After 10:15 AM</small>
+                                </div>
+                                <div class="check-in-share" aria-hidden="true">
+                                    <span th:style="'width:' + ${attendance.checkIns.checkedInEmployees > 0 ? (attendance.checkIns.lateCheckIns * 100) / attendance.checkIns.checkedInEmployees : 0} + '%'">
+                                    </span>
+                                </div>
+                            </article>
+                        </div>
+
+                        <p class="attendance-data-note">
+                            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            Each employee appears in one check-in bucket based on their earliest recorded event.
+                        </p>
+                    </section>
+
+                    <section class="panel attendance-page-panel cell-attendance-panel">
+                        <div class="cell-attendance-title">
+                            <div>
+                                <span class="section-eyebrow">Cell-wise attendance</span>
+                                <h4>Present and Absent</h4>
+                                <span>Active employees mapped to each cell for the current day.</span>
+                            </div>
+                            <span class="cell-attendance-count" data-cell-count
+                                th:text="${#lists.size(attendance.cells)} + ' cells'">0 cells</span>
+                        </div>
+
+                        <label class="cell-attendance-search" for="cellAttendanceSearch"
+                            th:if="${!#lists.isEmpty(attendance.cells)}">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <input id="cellAttendanceSearch" type="search" placeholder="Search by cell name"
+                                autocomplete="off" data-cell-search>
+                        </label>
+
+                        <div class="cell-attendance-table-wrap" th:if="${!#lists.isEmpty(attendance.cells)}">
+                            <table class="cell-attendance-table">
+                                <caption class="visually-hidden">Current-day Present and Absent employee counts by cell</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Cell</th>
+                                        <th scope="col" class="attendance-number-heading">Present</th>
+                                        <th scope="col" class="attendance-number-heading">Absent</th>
+                                        <th scope="col" class="attendance-number-heading">Total</th>
+                                        <th scope="col">Attendance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="cell : ${attendance.cells}"
+                                        th:attr="data-cell-row=${#strings.toLowerCase(cell.cellName)}">
+                                        <td><strong class="cell-name" th:text="${cell.cellName}">Cell</strong></td>
+                                        <td class="attendance-number-cell">
+                                            <span class="attendance-status-count is-present" th:text="${cell.presentEmployees}">0</span>
+                                        </td>
+                                        <td class="attendance-number-cell">
+                                            <span class="attendance-status-count is-absent" th:text="${cell.absentEmployees}">0</span>
+                                        </td>
+                                        <td class="attendance-number-cell"><strong th:text="${cell.totalEmployees}">0</strong></td>
+                                        <td>
+                                            <div class="cell-attendance-progress" role="img"
+                                                th:attr="aria-label=${cell.presentPercent} + '% present'">
+                                                <span th:style="'width:' + ${cell.presentPercent} + '%'"></span>
+                                            </div>
+                                            <small class="cell-attendance-percent" th:text="${cell.presentPercent} + '% present'">0% present</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p class="cell-attendance-empty" th:if="${#lists.isEmpty(attendance.cells)}">
+                            <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
+                            No active cells are available for today's attendance summary.
+                        </p>
+                        <p class="cell-attendance-empty d-none" data-cell-no-results>
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            No cell matches your search.
+                        </p>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+</body>
+
+</html>

@@ -1,0 +1,222 @@
+.attendance-page-card > .card-body {
+    gap: 1rem;
+}
+
+.attendance-page-toolbar {
+    align-items: center;
+}
+
+.attendance-page-title span {
+    display: block;
+    margin-bottom: 0.12rem;
+    color: var(--hr-muted);
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.attendance-page-title h2 {
+    margin: 0;
+}
+
+.attendance-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 38px;
+    padding: 0 0.8rem;
+    border: 1px solid rgba(31, 79, 120, 0.2);
+    border-radius: 8px;
+    color: var(--hr-brand-strong);
+    background: #f4f8fb;
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-decoration: none;
+}
+
+.attendance-back-link:hover {
+    color: #0b6f71;
+    background: #edf9f9;
+}
+
+.attendance-page-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.2rem 1.3rem;
+    border-radius: 10px;
+    color: #ffffff;
+    background:
+        radial-gradient(circle at 90% 20%, rgba(255, 255, 255, 0.18), transparent 26%),
+        linear-gradient(125deg, var(--hr-brand-strong), var(--hr-brand) 54%, #0b7779);
+    box-shadow: 0 14px 28px rgba(18, 56, 87, 0.2);
+}
+
+.attendance-page-hero h1 {
+    margin: 0;
+    font-size: clamp(1.35rem, 2.6vw, 2rem);
+    font-weight: 900;
+}
+
+.attendance-page-hero p {
+    margin: 0.35rem 0 0;
+    color: rgba(255, 255, 255, 0.84);
+    font-size: 0.9rem;
+}
+
+.attendance-date-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 0 0 auto;
+    padding: 0.62rem 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 0.8rem;
+    font-weight: 900;
+}
+
+.attendance-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.attendance-metric {
+    --metric-color: var(--hr-brand);
+    --metric-soft: #edf5fb;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 96px;
+    padding: 0.85rem;
+    border: 1px solid #dae5ee;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #ffffff, var(--metric-soft));
+    box-shadow: 0 8px 18px rgba(18, 39, 67, 0.08);
+}
+
+.attendance-metric-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 10px;
+    color: #ffffff;
+    background: var(--metric-color);
+}
+
+.attendance-metric small,
+.attendance-metric strong {
+    display: block;
+}
+
+.attendance-metric small {
+    color: var(--hr-muted);
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+}
+
+.attendance-metric strong {
+    margin-top: 0.15rem;
+    color: var(--metric-color);
+    font-size: 1.55rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.metric-present {
+    --metric-color: var(--hr-success);
+    --metric-soft: #eef8f2;
+}
+
+.metric-absent {
+    --metric-color: #b54b45;
+    --metric-soft: #fff1f0;
+}
+
+.metric-rate {
+    --metric-color: var(--hr-external);
+    --metric-soft: #effafa;
+}
+
+.attendance-page-panel {
+    margin: 0;
+    border-radius: 10px;
+}
+
+.cell-attendance-panel .cell-attendance-title {
+    margin-bottom: 0;
+}
+
+.cell-attendance-title h4 {
+    margin: 0;
+    color: var(--hr-ink);
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.cell-attendance-search {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    width: min(100%, 390px);
+    margin: 0.85rem 0;
+    padding: 0 0.75rem;
+    border: 1px solid #cedbe5;
+    border-radius: 9px;
+    color: var(--hr-muted);
+    background: #ffffff;
+}
+
+.cell-attendance-search:focus-within {
+    border-color: var(--hr-external);
+    box-shadow: 0 0 0 3px rgba(15, 139, 141, 0.12);
+}
+
+.cell-attendance-search input {
+    width: 100%;
+    min-height: 40px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    color: var(--hr-ink);
+    background: transparent;
+    font-size: 0.82rem;
+}
+
+@media (max-width: 991.98px) {
+    .attendance-metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .attendance-page-toolbar,
+    .attendance-page-hero {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .attendance-back-link {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .attendance-metric-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .attendance-date-chip {
+        align-self: stretch;
+        justify-content: center;
+    }
+}

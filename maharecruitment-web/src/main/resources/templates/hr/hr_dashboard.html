@@ -23,157 +23,79 @@
                             <h1>Human Resources Dashboard</h1>
                             <p>Operational overview for attendance, projects, onboarding, and workforce mix.</p>
                         </div>
-                        <button type="button" class="attendance-summary attendance-summary-button"
-                            data-attendance-toggle
-                            th:style="'--present:' + ${presentPercent} + '%'"
-                            aria-label="View today's attendance check-in breakdown"
-                            aria-controls="hrAttendanceDetails"
-                            aria-expanded="false">
+                        <a class="attendance-summary attendance-summary-link"
+                            th:href="@{/hr/attendance-today}"
+                            th:style="'--present:' + ${dashboard.presentPercent} + '%'"
+                            aria-label="Open today's attendance details">
                             <span>Present Today</span>
                             <strong>
-                                <b th:text="${presentEmployees}">0</b>
+                                <b th:text="${dashboard.presentEmployees}">0</b>
                                 <small>/</small>
-                                <b th:text="${totalEmployees}">0</b>
+                                <b th:text="${dashboard.totalEmployees}">0</b>
                             </strong>
-                            <em th:text="${presentPercent} + '% marked present'">0% marked present</em>
+                            <em th:text="${dashboard.presentPercent} + '% marked present'">0% marked present</em>
                             <span class="attendance-summary-action">
-                                View check-in breakdown
+                                Open attendance details
                                 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                             </span>
-                        </button>
+                        </a>
                     </section>
 
                     <section class="kpi-grid">
                         <article class="kpi-card kpi-brand">
                             <p>Total Projects</p>
-                            <h3 th:text="${totalProjects}">0</h3>
+                            <h3 th:text="${dashboard.totalProjects}">0</h3>
                         </article>
                         <article class="kpi-card kpi-success">
                             <p>Total Wings</p>
-                            <h3 th:text="${totalWings}">0</h3>
+                            <h3 th:text="${dashboard.totalWings}">0</h3>
                         </article>
                         <button type="button" class="kpi-card kpi-brand kpi-clickable"
                             data-project-scope="internal"
                             data-project-title="Internal Projects"
                             aria-label="View internal project names"
-                            th:attr="data-project-count=${internalProjects}"
+                            th:attr="data-project-count=${dashboard.internalProjects}"
                             aria-controls="hrProjectScopePanel"
                             aria-expanded="false">
                             <p>Internal Projects</p>
-                            <h3 th:text="${internalProjects}">0</h3>
+                            <h3 th:text="${dashboard.internalProjects}">0</h3>
                             <span class="kpi-action">Project Names</span>
                         </button>
                         <button type="button" class="kpi-card kpi-accent kpi-clickable"
                             data-project-scope="external"
                             data-project-title="External Projects"
                             aria-label="View external project names"
-                            th:attr="data-project-count=${externalProjects}"
+                            th:attr="data-project-count=${dashboard.externalProjects}"
                             aria-controls="hrProjectScopePanel"
                             aria-expanded="false">
                             <p>External Projects</p>
-                            <h3 th:text="${externalProjects}">0</h3>
+                            <h3 th:text="${dashboard.externalProjects}">0</h3>
                             <span class="kpi-action">Project Names</span>
                         </button>
                         <article class="kpi-card kpi-accent">
                             <p>Onboarding This Month</p>
-                            <h3 th:text="${onboardingThisMonth}">0</h3>
+                            <h3 th:text="${dashboard.onboardingThisMonth}">0</h3>
                         </article>
                         <article class="kpi-card kpi-brand">
                             <p>Total Employees</p>
-                            <h3 th:text="${totalEmployees}">0</h3>
+                            <h3 th:text="${dashboard.totalEmployees}">0</h3>
                         </article>
-                        <button type="button" class="kpi-card kpi-success kpi-clickable"
-                            data-attendance-toggle
-                            aria-label="View today's attendance check-in breakdown"
-                            aria-controls="hrAttendanceDetails"
-                            aria-expanded="false">
+                        <a class="kpi-card kpi-success kpi-clickable kpi-link"
+                            th:href="@{/hr/attendance-today}"
+                            aria-label="Open today's attendance details">
                             <p>Attendance Today</p>
                             <h3>
-                                <span th:text="${presentEmployees}">0</span>
-                                <small th:text="'/ ' + ${totalEmployees}">/ 0</small>
+                                <span th:text="${dashboard.presentEmployees}">0</span>
+                                <small th:text="'/ ' + ${dashboard.totalEmployees}">/ 0</small>
                             </h3>
-                            <span class="kpi-action" th:text="${checkedInEmployees} + ' recorded check-ins'">
+                            <span class="kpi-action" th:text="${dashboard.attendanceSummary.checkedInEmployees} + ' recorded check-ins'">
                                 0 recorded check-ins
                             </span>
-                        </button>
+                        </a>
                         <article class="kpi-card kpi-warning">
                             <p>Pending Department Requests</p>
-                            <h3 th:text="${pendingApprovals}">0</h3>
+                            <h3 th:text="${dashboard.pendingApprovals}">0</h3>
                         </article>
-                    </section>
-
-                    <section class="panel attendance-breakdown-panel d-none" id="hrAttendanceDetails"
-                        aria-live="polite">
-                        <div class="panel-title attendance-breakdown-heading">
-                            <div>
-                                <span class="section-eyebrow">Today's attendance</span>
-                                <h4>Check-in Time Breakdown</h4>
-                                <span class="panel-subtitle">Internal employees grouped by their earliest recorded check-in.</span>
-                            </div>
-                            <div class="attendance-heading-actions">
-                                <span class="attendance-total-pill">
-                                    <strong th:text="${checkedInEmployees}">0</strong>
-                                    <span>checked in</span>
-                                </span>
-                                <button type="button" class="project-panel-close" id="hrAttendanceDetailsClose"
-                                    aria-label="Close attendance check-in breakdown">
-                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="attendance-breakdown-grid">
-                            <article class="check-in-card check-in-early">
-                                <span class="check-in-icon">
-                                    <i class="fa-solid fa-sun" aria-hidden="true"></i>
-                                </span>
-                                <div class="check-in-copy">
-                                    <span>Early Check-ins</span>
-                                    <strong th:text="${earlyCheckIns}">0</strong>
-                                    <small>Before 9:45 AM</small>
-                                </div>
-                                <div class="check-in-share" aria-hidden="true">
-                                    <span th:style="'width:' + ${checkedInEmployees > 0 ? (earlyCheckIns * 100) / checkedInEmployees : 0} + '%'">
-                                    </span>
-                                </div>
-                            </article>
-
-                            <article class="check-in-card check-in-standard">
-                                <span class="check-in-icon">
-                                    <i class="fa-solid fa-clock" aria-hidden="true"></i>
-                                </span>
-                                <div class="check-in-copy">
-                                    <span>Regular Check-ins</span>
-                                    <strong th:text="${standardCheckIns}">0</strong>
-                                    <small>9:45 AM to 10:15 AM</small>
-                                </div>
-                                <div class="check-in-share" aria-hidden="true">
-                                    <span th:style="'width:' + ${checkedInEmployees > 0 ? (standardCheckIns * 100) / checkedInEmployees : 0} + '%'">
-                                    </span>
-                                </div>
-                            </article>
-
-                            <article class="check-in-card check-in-late">
-                                <span class="check-in-icon">
-                                    <i class="fa-solid fa-person-walking-arrow-right" aria-hidden="true"></i>
-                                </span>
-                                <div class="check-in-copy">
-                                    <span>Late Check-ins</span>
-                                    <strong th:text="${lateCheckIns}">0</strong>
-                                    <small>After 10:15 AM</small>
-                                </div>
-                                <div class="check-in-share" aria-hidden="true">
-                                    <span th:style="'width:' + ${checkedInEmployees > 0 ? (lateCheckIns * 100) / checkedInEmployees : 0} + '%'">
-                                    </span>
-                                </div>
-                            </article>
-                        </div>
-
-                        <p class="attendance-data-note">
-                            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                            Total checked in: <strong th:text="${checkedInEmployees}">0</strong>.
-                            Each employee appears in exactly one bucket, using their earliest event from the biometric machine or mobile app.
-                        </p>
                     </section>
 
                     <section class="panel project-scope-panel d-none" id="hrProjectScopePanel" aria-live="polite">
@@ -189,19 +111,19 @@
                         </div>
 
                         <div class="project-list" data-project-list="internal">
-                            <div class="project-list-item" th:each="project : ${internalProjectList}">
+                            <div class="project-list-item" th:each="project : ${dashboard.internalProjectList}">
                                 <strong th:text="${project.name}">Project Name</strong>
                                 <span class="project-code" th:if="${project.code != null}" th:text="${project.code}">CODE</span>
                             </div>
-                            <p class="project-empty" th:if="${#lists.isEmpty(internalProjectList)}">No internal projects found.</p>
+                            <p class="project-empty" th:if="${#lists.isEmpty(dashboard.internalProjectList)}">No internal projects found.</p>
                         </div>
 
                         <div class="project-list d-none" data-project-list="external">
-                            <div class="project-list-item" th:each="project : ${externalProjectList}">
+                            <div class="project-list-item" th:each="project : ${dashboard.externalProjectList}">
                                 <strong th:text="${project.name}">Project Name</strong>
                                 <span class="project-code" th:if="${project.code != null}" th:text="${project.code}">CODE</span>
                             </div>
-                            <p class="project-empty" th:if="${#lists.isEmpty(externalProjectList)}">No external projects found.</p>
+                            <p class="project-empty" th:if="${#lists.isEmpty(dashboard.externalProjectList)}">No external projects found.</p>
                         </div>
                     </section>
 
@@ -222,17 +144,17 @@
                         <div class="wing-summary-grid">
                             <div>
                                 <span>Total Wings</span>
-                                <strong th:text="${totalWings}">0</strong>
+                                <strong th:text="${dashboard.totalWings}">0</strong>
                             </div>
                             <div>
                                 <span>Total Cells</span>
-                                <strong th:text="${totalCells}">0</strong>
+                                <strong th:text="${dashboard.totalCells}">0</strong>
                             </div>
                         </div>
 
                         <div class="wing-report-details d-none" id="hrWingReportDetails">
                             <div class="wing-directory-grid">
-                                <a class="wing-directory-card" th:each="wing : ${wingReports}"
+                                <a class="wing-directory-card" th:each="wing : ${dashboard.wingReports}"
                                     th:href="@{/hr/wing-report/{wingId}(wingId=${wing.wingId})}">
                                     <span class="wing-directory-icon">
                                         <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
@@ -246,7 +168,7 @@
                                         <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                                     </span>
                                 </a>
-                                <p class="project-empty" th:if="${#lists.isEmpty(wingReports)}">No active wing reports found.</p>
+                                <p class="project-empty" th:if="${#lists.isEmpty(dashboard.wingReports)}">No active wing reports found.</p>
                             </div>
                         </div>
                     </section>
@@ -257,34 +179,31 @@
                                 <div class="panel-title">
                                     <div>
                                         <h4>Attendance Today</h4>
-                                        <span class="panel-subtitle" th:text="${presentPercent} + '% of employees marked present'">
+                                        <span class="panel-subtitle" th:text="${dashboard.presentPercent} + '% of employees marked present'">
                                             0% of employees marked present
                                         </span>
                                     </div>
-                                    <button type="button" class="attendance-detail-button"
-                                        data-attendance-toggle
-                                        aria-controls="hrAttendanceDetails"
-                                        aria-expanded="false">
-                                        <i class="fa-solid fa-clock" aria-hidden="true"></i>
-                                        Check-in details
-                                    </button>
+                                    <a class="attendance-detail-button" th:href="@{/hr/attendance-today}">
+                                        <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                                        View details
+                                    </a>
                                 </div>
                                 <div class="attendance-panel-grid">
                                     <div>
-                                        <strong th:text="${presentEmployees}">0</strong>
+                                        <strong th:text="${dashboard.presentEmployees}">0</strong>
                                         <span>Present Employees</span>
                                     </div>
                                     <div>
-                                        <strong th:text="${absentEmployees}">0</strong>
+                                        <strong th:text="${dashboard.absentEmployees}">0</strong>
                                         <span>Not Marked / Absent</span>
                                     </div>
                                 </div>
                                 <div class="attendance-track">
-                                    <span th:style="'width:' + ${presentPercent} + '%'"></span>
+                                    <span th:style="'width:' + ${dashboard.presentPercent} + '%'"></span>
                                 </div>
                                 <p class="attendance-note">
-                                    <strong th:text="${presentEmployees}">0</strong>
-                                    <span th:text="' out of ' + ${totalEmployees} + ' employees are present today.'">
+                                    <strong th:text="${dashboard.presentEmployees}">0</strong>
+                                    <span th:text="' out of ' + ${dashboard.totalEmployees} + ' employees are present today.'">
                                         out of 0 employees are present today.
                                     </span>
                                 </p>
@@ -293,15 +212,15 @@
                             <section class="panel mt-4">
                                 <div class="panel-title">
                                     <h4>Employee Mix</h4>
-                                    <span th:text="${totalEmployees} + ' employees'">0 employees</span>
+                                    <span th:text="${dashboard.totalEmployees} + ' employees'">0 employees</span>
                                 </div>
                                 <div class="mix-bar">
-                                    <span class="mix-internal" th:style="'width:' + ${internalPercent} + '%'"></span>
-                                    <span class="mix-external" th:style="'width:' + ${externalPercent} + '%'"></span>
+                                    <span class="mix-internal" th:style="'width:' + ${dashboard.internalPercent} + '%'"></span>
+                                    <span class="mix-external" th:style="'width:' + ${dashboard.externalPercent} + '%'"></span>
                                 </div>
                                 <div class="d-flex justify-content-between mt-2 small">
-                                    <span>Internal: <strong th:text="${internalEmployees}">0</strong></span>
-                                    <span>External: <strong th:text="${externalEmployees}">0</strong></span>
+                                    <span>Internal: <strong th:text="${dashboard.internalEmployees}">0</strong></span>
+                                    <span>External: <strong th:text="${dashboard.externalEmployees}">0</strong></span>
                                 </div>
                             </section>
 
@@ -311,7 +230,7 @@
                             <section class="panel h-100">
                                 <h4>Department Onboarding</h4>
                                 <div class="dept-list">
-                                    <div class="dept-row" th:each="dept : ${departmentOnboarding}">
+                                    <div class="dept-row" th:each="dept : ${dashboard.departmentOnboarding}">
                                         <div class="d-flex justify-content-between">
                                             <span th:text="${dept.department}">Department</span>
                                             <span><strong th:text="${dept.count}">0</strong>/<span
@@ -342,9 +261,6 @@
             const wingLoad = document.getElementById('hrWingReportLoad');
             const wingDetails = document.getElementById('hrWingReportDetails');
             const wingLoadLabel = wingLoad ? wingLoad.querySelector('[data-wing-load-label]') : null;
-            const attendanceButtons = Array.from(document.querySelectorAll('[data-attendance-toggle]'));
-            const attendanceDetails = document.getElementById('hrAttendanceDetails');
-            const attendanceClose = document.getElementById('hrAttendanceDetailsClose');
 
             function pluralizeProjects(value) {
                 return value === '1' ? '1 project' : `${value} projects`;
@@ -388,33 +304,6 @@
                         button.setAttribute('aria-expanded', 'false');
                     });
                 });
-            }
-
-            function setAttendanceDetailsVisible(show, shouldScroll) {
-                if (!attendanceDetails) {
-                    return;
-                }
-
-                attendanceDetails.classList.toggle('d-none', !show);
-                attendanceButtons.forEach((button) => {
-                    button.classList.toggle('is-active', show);
-                    button.setAttribute('aria-expanded', String(show));
-                });
-
-                if (show && shouldScroll) {
-                    attendanceDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            }
-
-            attendanceButtons.forEach((button) => {
-                button.addEventListener('click', () => {
-                    const show = attendanceDetails && attendanceDetails.classList.contains('d-none');
-                    setAttendanceDetailsVisible(Boolean(show), Boolean(show));
-                });
-            });
-
-            if (attendanceClose) {
-                attendanceClose.addEventListener('click', () => setAttendanceDetailsVisible(false, false));
             }
 
             if (wingLoad && wingDetails) {
