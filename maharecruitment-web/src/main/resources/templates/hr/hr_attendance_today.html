@@ -6,8 +6,8 @@
     <title>Today's Attendance</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
-    <link rel="stylesheet" th:href="@{/css/hr-attendance.css(v='20260807-2')}">
-    <script defer th:src="@{/js/hr-attendance.js}"></script>
+    <link rel="stylesheet" th:href="@{/css/hr-attendance.css(v='20260807-4')}">
+    <script defer th:src="@{/js/hr-attendance.js(v='20260807-4')}"></script>
 </head>
 
 <body class="hr-shell">
@@ -169,7 +169,37 @@
                         </p>
                     </section>
 
-                    <section class="panel attendance-page-panel cell-attendance-panel">
+                    <section class="attendance-grouping-bar" aria-labelledby="attendanceGroupingTitle">
+                        <div>
+                            <span class="section-eyebrow">Attendance breakdown</span>
+                            <h3 id="attendanceGroupingTitle">View attendance by</h3>
+                            <p>Load only the workforce grouping you need.</p>
+                        </div>
+                        <nav class="attendance-grouping-switch" aria-label="Attendance breakdown view">
+                            <a th:href="@{/hr/attendance-today(groupBy='CELL')}"
+                                th:classappend="${attendance.grouping.name() == 'CELL'} ? ' is-active'"
+                                th:attr="aria-current=${attendance.grouping.name() == 'CELL'} ? 'page' : null">
+                                <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
+                                <span>Cell-wise</span>
+                            </a>
+                            <a th:href="@{/hr/attendance-today(groupBy='DESIGNATION')}"
+                                th:classappend="${attendance.grouping.name() == 'DESIGNATION'} ? ' is-active'"
+                                th:attr="aria-current=${attendance.grouping.name() == 'DESIGNATION'} ? 'page' : null">
+                                <i class="fa-solid fa-id-badge" aria-hidden="true"></i>
+                                <span>Designation-wise</span>
+                            </a>
+                            <a th:href="@{/hr/attendance-today(groupBy='DEPARTMENT')}"
+                                th:classappend="${attendance.grouping.name() == 'DEPARTMENT'} ? ' is-active'"
+                                th:attr="aria-current=${attendance.grouping.name() == 'DEPARTMENT'} ? 'page' : null"
+                                title="Department attendance for external employees">
+                                <i class="fa-solid fa-building-user" aria-hidden="true"></i>
+                                <span>Department-wise</span>
+                            </a>
+                        </nav>
+                    </section>
+
+                    <section class="panel attendance-page-panel cell-attendance-panel"
+                        th:if="${attendance.grouping.name() == 'CELL'}">
                         <div class="cell-attendance-title attendance-section-heading">
                             <div>
                                 <span class="section-eyebrow">Cell-wise attendance</span>
@@ -177,13 +207,14 @@
                                 <span>Active employees mapped to each cell for the current day.</span>
                             </div>
                             <div class="cell-attendance-controls">
-                                <span class="cell-attendance-count" data-cell-count aria-live="polite"
+                                <span class="cell-attendance-count" data-attendance-count
+                                    data-count-singular="cell" data-count-plural="cells" aria-live="polite"
                                     th:text="${#lists.size(attendance.cells)} + ' cells'">0 cells</span>
                                 <label class="cell-attendance-search" for="cellAttendanceSearch"
                                     th:if="${!#lists.isEmpty(attendance.cells)}">
                                     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                                     <input id="cellAttendanceSearch" type="search" placeholder="Search cell"
-                                        autocomplete="off" data-cell-search>
+                                        autocomplete="off" data-attendance-search>
                                 </label>
                             </div>
                         </div>
@@ -202,7 +233,7 @@
                                 </thead>
                                 <tbody>
                                     <tr th:each="cell : ${attendance.cells}"
-                                        th:attr="data-cell-row=${#strings.toLowerCase(cell.cellName)}">
+                                        th:attr="data-attendance-row=${#strings.toLowerCase(cell.cellName)}">
                                         <td><strong class="cell-name" th:text="${cell.cellName}">Cell</strong></td>
                                         <td class="attendance-number-cell">
                                             <a class="attendance-status-count attendance-count-link is-present"
@@ -238,9 +269,165 @@
                             <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
                             No active cells are available for today's attendance summary.
                         </p>
-                        <p class="cell-attendance-empty d-none" data-cell-no-results>
+                        <p class="cell-attendance-empty d-none" data-attendance-no-results>
                             <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                             No cell matches your search.
+                        </p>
+                    </section>
+
+                    <section class="panel attendance-page-panel cell-attendance-panel"
+                        th:if="${attendance.grouping.name() == 'DESIGNATION'}">
+                        <div class="cell-attendance-title attendance-section-heading">
+                            <div>
+                                <span class="section-eyebrow">Designation-wise attendance</span>
+                                <h4>Present and Absent</h4>
+                                <span>Current-day attendance for active employees grouped by designation.</span>
+                            </div>
+                            <div class="cell-attendance-controls">
+                                <span class="cell-attendance-count" data-attendance-count
+                                    data-count-singular="designation" data-count-plural="designations" aria-live="polite"
+                                    th:text="${#lists.size(attendance.designations)} + ' designations'">0 designations</span>
+                                <label class="cell-attendance-search" for="designationAttendanceSearch"
+                                    th:if="${!#lists.isEmpty(attendance.designations)}">
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                    <input id="designationAttendanceSearch" type="search" placeholder="Search designation"
+                                        autocomplete="off" data-attendance-search>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="cell-attendance-table-wrap" th:if="${!#lists.isEmpty(attendance.designations)}">
+                            <table class="cell-attendance-table">
+                                <caption class="visually-hidden">Current-day Present and Absent employee counts by designation</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Designation</th>
+                                        <th scope="col" class="attendance-number-heading">Present</th>
+                                        <th scope="col" class="attendance-number-heading">Absent</th>
+                                        <th scope="col" class="attendance-number-heading">Total</th>
+                                        <th scope="col">Attendance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="designation : ${attendance.designations}"
+                                        th:attr="data-attendance-row=${#strings.toLowerCase(designation.designationName)}">
+                                        <td><strong class="cell-name" th:text="${designation.designationName}">Designation</strong></td>
+                                        <td class="attendance-number-cell">
+                                            <a class="attendance-status-count attendance-count-link is-present"
+                                                th:href="@{/hr/attendance-today/details(category='PRESENT',designationId=${designation.designationId})}"
+                                                th:attr="aria-label=|View present ${designation.designationName} employees|"
+                                                th:text="${designation.presentEmployees}">0</a>
+                                        </td>
+                                        <td class="attendance-number-cell">
+                                            <a class="attendance-status-count attendance-count-link is-absent"
+                                                th:href="@{/hr/attendance-today/details(category='ABSENT',designationId=${designation.designationId})}"
+                                                th:attr="aria-label=|View absent ${designation.designationName} employees|"
+                                                th:text="${designation.absentEmployees}">0</a>
+                                        </td>
+                                        <td class="attendance-number-cell">
+                                            <a class="cell-total-link"
+                                                th:href="@{/hr/attendance-today/details(category='TOTAL',designationId=${designation.designationId})}"
+                                                th:attr="aria-label=|View all ${designation.designationName} employees|"
+                                                th:text="${designation.totalEmployees}">0</a>
+                                        </td>
+                                        <td>
+                                            <div class="cell-attendance-progress" role="img"
+                                                th:attr="aria-label=${designation.presentPercent} + '% present'">
+                                                <span th:style="'width:' + ${designation.presentPercent} + '%'"></span>
+                                            </div>
+                                            <small class="cell-attendance-percent"
+                                                th:text="${designation.presentPercent} + '% present'">0% present</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p class="cell-attendance-empty" th:if="${#lists.isEmpty(attendance.designations)}">
+                            <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
+                            No active designations are available for today's attendance summary.
+                        </p>
+                        <p class="cell-attendance-empty d-none" data-attendance-no-results>
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            No designation matches your search.
+                        </p>
+                    </section>
+
+                    <section class="panel attendance-page-panel cell-attendance-panel"
+                        th:if="${attendance.grouping.name() == 'DEPARTMENT'}">
+                        <div class="cell-attendance-title attendance-section-heading">
+                            <div>
+                                <span class="section-eyebrow">Department-wise attendance</span>
+                                <h4>External Employee Attendance</h4>
+                                <span>Present and absent counts include active external employees only.</span>
+                            </div>
+                            <div class="cell-attendance-controls">
+                                <span class="cell-attendance-count" data-attendance-count
+                                    data-count-singular="department" data-count-plural="departments" aria-live="polite"
+                                    th:text="${#lists.size(attendance.departments)} + ' departments'">0 departments</span>
+                                <label class="cell-attendance-search" for="departmentAttendanceSearch"
+                                    th:if="${!#lists.isEmpty(attendance.departments)}">
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                    <input id="departmentAttendanceSearch" type="search" placeholder="Search department"
+                                        autocomplete="off" data-attendance-search>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="cell-attendance-table-wrap" th:if="${!#lists.isEmpty(attendance.departments)}">
+                            <table class="cell-attendance-table">
+                                <caption class="visually-hidden">Current-day Present and Absent employee counts by department</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Department</th>
+                                        <th scope="col" class="attendance-number-heading">Present</th>
+                                        <th scope="col" class="attendance-number-heading">Absent</th>
+                                        <th scope="col" class="attendance-number-heading">Total</th>
+                                        <th scope="col">Attendance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="department : ${attendance.departments}"
+                                        th:attr="data-attendance-row=${#strings.toLowerCase(department.departmentName)}">
+                                        <td><strong class="cell-name" th:text="${department.departmentName}">Department</strong></td>
+                                        <td class="attendance-number-cell">
+                                            <a class="attendance-status-count attendance-count-link is-present"
+                                                th:href="@{/hr/attendance-today/details(category='PRESENT',departmentId=${department.departmentId})}"
+                                                th:attr="aria-label=|View present employees in ${department.departmentName}|"
+                                                th:text="${department.presentEmployees}">0</a>
+                                        </td>
+                                        <td class="attendance-number-cell">
+                                            <a class="attendance-status-count attendance-count-link is-absent"
+                                                th:href="@{/hr/attendance-today/details(category='ABSENT',departmentId=${department.departmentId})}"
+                                                th:attr="aria-label=|View absent employees in ${department.departmentName}|"
+                                                th:text="${department.absentEmployees}">0</a>
+                                        </td>
+                                        <td class="attendance-number-cell">
+                                            <a class="cell-total-link"
+                                                th:href="@{/hr/attendance-today/details(category='TOTAL',departmentId=${department.departmentId})}"
+                                                th:attr="aria-label=|View all employees in ${department.departmentName}|"
+                                                th:text="${department.totalEmployees}">0</a>
+                                        </td>
+                                        <td>
+                                            <div class="cell-attendance-progress" role="img"
+                                                th:attr="aria-label=${department.presentPercent} + '% present'">
+                                                <span th:style="'width:' + ${department.presentPercent} + '%'"></span>
+                                            </div>
+                                            <small class="cell-attendance-percent"
+                                                th:text="${department.presentPercent} + '% present'">0% present</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p class="cell-attendance-empty" th:if="${#lists.isEmpty(attendance.departments)}">
+                            <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
+                            No departments are available for today's attendance summary.
+                        </p>
+                        <p class="cell-attendance-empty d-none" data-attendance-no-results>
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            No department matches your search.
                         </p>
                     </section>
                 </div>

@@ -6,7 +6,7 @@
     <title>Attendance Details</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/hr-dashboard.css}">
-    <link rel="stylesheet" th:href="@{/css/hr-attendance.css(v='20260807-2')}">
+    <link rel="stylesheet" th:href="@{/css/hr-attendance.css(v='20260807-4')}">
 </head>
 
 <body class="hr-shell">
@@ -19,7 +19,8 @@
                         <span>Daily workforce register</span>
                         <h2>Attendance Details</h2>
                     </div>
-                    <a class="attendance-back-link" th:href="@{/hr/attendance-today}">
+                    <a class="attendance-back-link"
+                        th:href="@{/hr/attendance-today(groupBy=${attendanceDetail.departmentId != null ? 'DEPARTMENT' : (attendanceDetail.designationId != null ? 'DESIGNATION' : 'CELL')})}">
                         <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
                         <span>Back to Attendance</span>
                     </a>
@@ -36,6 +37,15 @@
                             <span class="attendance-detail-scope" th:if="${attendanceDetail.cellName != null}">
                                 <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
                                 <span th:text="${attendanceDetail.cellName}">Cell</span>
+                            </span>
+                            <span class="attendance-detail-scope" th:if="${attendanceDetail.designationName != null}">
+                                <i class="fa-solid fa-id-badge" aria-hidden="true"></i>
+                                <span th:text="${attendanceDetail.designationName}">Designation</span>
+                            </span>
+                            <span class="attendance-detail-scope" th:if="${attendanceDetail.departmentName != null}">
+                                <i class="fa-solid fa-building-user" aria-hidden="true"></i>
+                                <span th:text="${attendanceDetail.departmentName}">Department</span>
+                                <small>External employees</small>
                             </span>
                             <time th:attr="datetime=${#temporals.format(attendanceDetail.attendanceDate, 'yyyy-MM-dd')}"
                                 th:text="${#temporals.format(attendanceDetail.attendanceDate, 'dd MMM yyyy')}">
@@ -107,11 +117,11 @@
                             aria-label="Attendance employee pagination">
                             <a class="attendance-page-link"
                                 th:classappend="${!attendanceDetail.hasPrevious} ? ' is-disabled'"
-                                th:href="${attendanceDetail.hasPrevious} ? @{/hr/attendance-today/details(category=${attendanceDetail.category.name()},cellId=${attendanceDetail.cellId},page=${attendanceDetail.pageNumber - 1},size=${attendanceDetail.pageSize})} : '#'"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Previous</a>
+                                th:href="${attendanceDetail.hasPrevious} ? @{/hr/attendance-today/details(category=${attendanceDetail.category.name()},cellId=${attendanceDetail.cellId},designationId=${attendanceDetail.designationId},departmentId=${attendanceDetail.departmentId},page=${attendanceDetail.pageNumber - 1},size=${attendanceDetail.pageSize})} : '#'"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Previous</a>
                             <span>Page <strong th:text="${attendanceDetail.pageNumber + 1}">1</strong></span>
                             <a class="attendance-page-link"
                                 th:classappend="${!attendanceDetail.hasNext} ? ' is-disabled'"
-                                th:href="${attendanceDetail.hasNext} ? @{/hr/attendance-today/details(category=${attendanceDetail.category.name()},cellId=${attendanceDetail.cellId},page=${attendanceDetail.pageNumber + 1},size=${attendanceDetail.pageSize})} : '#'">Next <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+                                th:href="${attendanceDetail.hasNext} ? @{/hr/attendance-today/details(category=${attendanceDetail.category.name()},cellId=${attendanceDetail.cellId},designationId=${attendanceDetail.designationId},departmentId=${attendanceDetail.departmentId},page=${attendanceDetail.pageNumber + 1},size=${attendanceDetail.pageSize})} : '#'">Next <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
                         </nav>
                     </section>
                 </div>

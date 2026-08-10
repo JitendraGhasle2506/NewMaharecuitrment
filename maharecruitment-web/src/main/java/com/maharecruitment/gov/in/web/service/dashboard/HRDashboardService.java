@@ -11,9 +11,15 @@ import com.maharecruitment.gov.in.web.service.dashboard.model.HRWingReportsView;
 public interface HRDashboardService {
     HRDashboardView getDashboard();
 
-    HRTodayAttendanceView getTodayAttendance();
+    HRTodayAttendanceView getTodayAttendance(String grouping);
 
-    HRAttendanceDetailView getTodayAttendanceDetails(String category, Long cellId, int page, int size);
+    HRAttendanceDetailView getTodayAttendanceDetails(
+            String category,
+            Long cellId,
+            Long designationId,
+            Long departmentId,
+            int page,
+            int size);
 
     HRWingReportsView getWingReports();
 

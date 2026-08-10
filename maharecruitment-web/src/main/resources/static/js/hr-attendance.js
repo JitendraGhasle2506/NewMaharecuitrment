@@ -1,30 +1,32 @@
 (function () {
     'use strict';
 
-    const search = document.querySelector('[data-cell-search]');
+    const search = document.querySelector('[data-attendance-search]');
     if (!search) {
         return;
     }
 
-    const rows = Array.from(document.querySelectorAll('[data-cell-row]'));
-    const count = document.querySelector('[data-cell-count]');
-    const noResults = document.querySelector('[data-cell-no-results]');
+    const rows = Array.from(document.querySelectorAll('[data-attendance-row]'));
+    const count = document.querySelector('[data-attendance-count]');
+    const noResults = document.querySelector('[data-attendance-no-results]');
 
     search.addEventListener('input', () => {
         const query = search.value.trim().toLowerCase();
-        let visibleCells = 0;
+        let visibleRows = 0;
 
         rows.forEach((row) => {
-            const matches = !query || (row.dataset.cellRow || '').includes(query);
+            const matches = !query || (row.dataset.attendanceRow || '').includes(query);
             row.classList.toggle('d-none', !matches);
-            visibleCells += matches ? 1 : 0;
+            visibleRows += matches ? 1 : 0;
         });
 
         if (count) {
-            count.textContent = `${visibleCells} ${visibleCells === 1 ? 'cell' : 'cells'}`;
+            const singular = count.dataset.countSingular || 'item';
+            const plural = count.dataset.countPlural || 'items';
+            count.textContent = `${visibleRows} ${visibleRows === 1 ? singular : plural}`;
         }
         if (noResults) {
-            noResults.classList.toggle('d-none', visibleCells > 0);
+            noResults.classList.toggle('d-none', visibleRows > 0);
         }
     });
 })();

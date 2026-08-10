@@ -46,10 +46,10 @@ class HRControllerTest {
 
     @Test
     void attendanceDetailsUseDedicatedEndpointAndViewModel() {
-        when(dashboardService.getTodayAttendance()).thenReturn(attendance);
+        when(dashboardService.getTodayAttendance("CELL")).thenReturn(attendance);
         ExtendedModelMap model = new ExtendedModelMap();
 
-        String view = controller().todayAttendance(model);
+        String view = controller().todayAttendance("CELL", model);
 
         assertThat(view).isEqualTo("hr/hr_attendance_today");
         assertThat(model).containsOnlyKeys("attendance").containsEntry("attendance", attendance);
@@ -57,11 +57,11 @@ class HRControllerTest {
 
     @Test
     void attendanceEmployeeDetailsLoadOnlyAfterCountNavigation() {
-        when(dashboardService.getTodayAttendanceDetails("LATE", 27L, 0, 25))
+        when(dashboardService.getTodayAttendanceDetails("LATE", 27L, null, null, 0, 25))
                 .thenReturn(attendanceDetail);
         ExtendedModelMap model = new ExtendedModelMap();
 
-        String view = controller().todayAttendanceDetails("LATE", 27L, 0, 25, model);
+        String view = controller().todayAttendanceDetails("LATE", 27L, null, null, 0, 25, model);
 
         assertThat(view).isEqualTo("hr/hr_attendance_details");
         assertThat(model)

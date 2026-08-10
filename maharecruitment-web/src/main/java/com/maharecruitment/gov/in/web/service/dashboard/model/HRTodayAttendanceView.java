@@ -10,6 +10,9 @@ public record HRTodayAttendanceView(
         int absentEmployees,
         int presentPercent,
         HRAttendanceSummaryView checkIns,
-        List<HRCellAttendanceView> cells
+        HRAttendanceGrouping grouping,
+        List<HRCellAttendanceView> cells,
+        List<HRDesignationAttendanceView> designations,
+        List<HRDepartmentAttendanceView> departments
 ) {
 }

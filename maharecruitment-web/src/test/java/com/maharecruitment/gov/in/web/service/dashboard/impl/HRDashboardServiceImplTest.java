@@ -24,14 +24,20 @@ import org.springframework.data.domain.SliceImpl;
 
 import com.maharecruitment.gov.in.attendance.repository.AttendanceCellSummaryProjection;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceCheckInSummaryProjection;
+import com.maharecruitment.gov.in.attendance.repository.AttendanceDepartmentSummaryProjection;
+import com.maharecruitment.gov.in.attendance.repository.AttendanceDesignationSummaryProjection;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceEmployeeDetailProjection;
 import com.maharecruitment.gov.in.attendance.repository.AttendanceRegisterRepo;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
 import com.maharecruitment.gov.in.master.entity.CellMaster;
+import com.maharecruitment.gov.in.master.entity.DepartmentMst;
+import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.entity.WingMaster;
 import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
+import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
+import com.maharecruitment.gov.in.master.repository.ManpowerDesignationMasterRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.master.repository.WingMasterRepository;
 import com.maharecruitment.gov.in.recruitment.entity.CellReportingAuthorityMappingEntity;
@@ -56,6 +62,12 @@ class HRDashboardServiceImplTest {
 
     @Mock
     private CellMasterRepository cellMasterRepository;
+
+    @Mock
+    private DepartmentMstRepository departmentRepository;
+
+    @Mock
+    private ManpowerDesignationMasterRepository designationRepository;
 
     @Mock
     private EmployeeRepository employeeRepository;
@@ -83,6 +95,12 @@ class HRDashboardServiceImplTest {
 
     @Mock
     private AttendanceCellSummaryProjection cellAttendanceSummary;
+
+    @Mock
+    private AttendanceDesignationSummaryProjection designationAttendanceSummary;
+
+    @Mock
+    private AttendanceDepartmentSummaryProjection departmentAttendanceSummary;
 
     @Mock
     private AttendanceEmployeeDetailProjection attendanceEmployeeDetail;
@@ -166,7 +184,7 @@ class HRDashboardServiceImplTest {
         when(cellAttendanceSummary.getTotalEmployees()).thenReturn(12L);
         when(cellAttendanceSummary.getPresentEmployees()).thenReturn(9L);
 
-        var result = service().getTodayAttendance();
+        var result = service().getTodayAttendance("CELL");
 
         assertThat(result.totalEmployees()).isEqualTo(20);
         assertThat(result.presentEmployees()).isEqualTo(11);
@@ -199,6 +217,8 @@ class HRDashboardServiceImplTest {
                 anyInt(),
                 eq("LATE"),
                 eq(27L),
+                eq(null),
+                eq(null),
                 eq(LocalTime.of(9, 45)),
                 eq(LocalTime.of(10, 15)),
                 eq(LocalTime.of(11, 0)),
@@ -208,7 +228,7 @@ class HRDashboardServiceImplTest {
                         PageRequest.of(0, 25),
                         false));
 
-        var result = service().getTodayAttendanceDetails("late", 27L, 0, 25);
+        var result = service().getTodayAttendanceDetails("late", 27L, null, null, 0, 25);
 
         assertThat(result.category().name()).isEqualTo("LATE");
         assertThat(result.cellName()).isEqualTo("Network Infra Cell");
@@ -217,6 +237,136 @@ class HRDashboardServiceImplTest {
             assertThat(employee.checkInTime()).isEqualTo(LocalTime.of(10, 32));
         });
         assertThat(result.hasNext()).isFalse();
+    }
+
+    @Test
+    void getTodayAttendanceLoadsDesignationSummaryOnlyWhenSelected() {
+        when(employeeRepository.countActiveAttendanceEmployees()).thenReturn(10L);
+        when(dailyAttendanceInternalRepository.summarizeAttendanceByDate(
+                any(LocalDate.class),
+                eq(LocalTime.of(9, 45)),
+                eq(LocalTime.of(10, 15)),
+                eq(LocalTime.of(11, 0))))
+                .thenReturn(attendanceSummary);
+        when(attendanceSummary.getPresentCount()).thenReturn(6L);
+        when(dailyAttendanceInternalRepository.summarizeAttendanceByDesignation(
+                any(LocalDate.class),
+                anyInt(),
+                anyInt(),
+                anyInt(),
+                eq("Y"),
+                eq("ACTIVE")))
+                .thenReturn(List.of(designationAttendanceSummary));
+        when(designationAttendanceSummary.getDesignationId()).thenReturn(9L);
+        when(designationAttendanceSummary.getDesignationName()).thenReturn("Software Developer");
+        when(designationAttendanceSummary.getTotalEmployees()).thenReturn(8L);
+        when(designationAttendanceSummary.getPresentEmployees()).thenReturn(6L);
+
+        var result = service().getTodayAttendance("designation");
+
+        assertThat(result.grouping().name()).isEqualTo("DESIGNATION");
+        assertThat(result.cells()).isEmpty();
+        assertThat(result.designations()).singleElement().satisfies(designation -> {
+            assertThat(designation.designationName()).isEqualTo("Software Developer");
+            assertThat(designation.presentEmployees()).isEqualTo(6);
+            assertThat(designation.absentEmployees()).isEqualTo(2);
+            assertThat(designation.presentPercent()).isEqualTo(75);
+        });
+        verify(dailyAttendanceInternalRepository, never()).summarizeAttendanceByCell(
+                any(LocalDate.class), anyInt(), anyInt(), anyInt(), eq("Y"), eq("ACTIVE"));
+    }
+
+    @Test
+    void getTodayAttendanceDetailsFiltersByDesignationOnDemand() {
+        ManpowerDesignationMaster designation = new ManpowerDesignationMaster();
+        designation.setDesignationId(9L);
+        designation.setDesignationName("Software Developer");
+        designation.setActiveFlag("Y");
+        when(designationRepository.findByDesignationIdAndActiveFlagIgnoreCase(9L, "Y"))
+                .thenReturn(Optional.of(designation));
+        when(dailyAttendanceInternalRepository.findAttendanceEmployeeDetails(
+                any(LocalDate.class),
+                anyInt(),
+                anyInt(),
+                anyInt(),
+                eq("PRESENT"),
+                eq(null),
+                eq(9L),
+                eq(null),
+                eq(LocalTime.of(9, 45)),
+                eq(LocalTime.of(10, 15)),
+                eq(LocalTime.of(11, 0)),
+                any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(List.of(), PageRequest.of(0, 25), false));
+
+        var result = service().getTodayAttendanceDetails("PRESENT", null, 9L, null, 0, 25);
+
+        assertThat(result.designationId()).isEqualTo(9L);
+        assertThat(result.designationName()).isEqualTo("Software Developer");
+        assertThat(result.cellId()).isNull();
+    }
+
+    @Test
+    void getTodayAttendanceLoadsExternalDepartmentSummaryOnlyWhenSelected() {
+        when(employeeRepository.countActiveAttendanceEmployees()).thenReturn(10L);
+        when(dailyAttendanceInternalRepository.summarizeAttendanceByDate(
+                any(LocalDate.class),
+                eq(LocalTime.of(9, 45)),
+                eq(LocalTime.of(10, 15)),
+                eq(LocalTime.of(11, 0))))
+                .thenReturn(attendanceSummary);
+        when(dailyAttendanceInternalRepository.summarizeAttendanceByDepartment(
+                anyInt(), anyInt(), anyInt(), eq("ACTIVE")))
+                .thenReturn(List.of(departmentAttendanceSummary));
+        when(departmentAttendanceSummary.getDepartmentId()).thenReturn(4L);
+        when(departmentAttendanceSummary.getDepartmentName()).thenReturn("Finance Department");
+        when(departmentAttendanceSummary.getTotalEmployees()).thenReturn(8L);
+        when(departmentAttendanceSummary.getPresentEmployees()).thenReturn(5L);
+
+        var result = service().getTodayAttendance("department");
+
+        assertThat(result.grouping().name()).isEqualTo("DEPARTMENT");
+        assertThat(result.cells()).isEmpty();
+        assertThat(result.designations()).isEmpty();
+        assertThat(result.departments()).singleElement().satisfies(department -> {
+            assertThat(department.departmentName()).isEqualTo("Finance Department");
+            assertThat(department.presentEmployees()).isEqualTo(5);
+            assertThat(department.absentEmployees()).isEqualTo(3);
+            assertThat(department.presentPercent()).isEqualTo(62);
+        });
+        verify(dailyAttendanceInternalRepository, never()).summarizeAttendanceByCell(
+                any(LocalDate.class), anyInt(), anyInt(), anyInt(), eq("Y"), eq("ACTIVE"));
+        verify(dailyAttendanceInternalRepository, never()).summarizeAttendanceByDesignation(
+                any(LocalDate.class), anyInt(), anyInt(), anyInt(), eq("Y"), eq("ACTIVE"));
+    }
+
+    @Test
+    void getTodayAttendanceDetailsFiltersExternalEmployeesByDepartmentOnDemand() {
+        DepartmentMst department = new DepartmentMst();
+        department.setDepartmentId(4L);
+        department.setDepartmentName("Finance Department");
+        when(departmentRepository.findById(4L)).thenReturn(Optional.of(department));
+        when(dailyAttendanceInternalRepository.findAttendanceEmployeeDetails(
+                any(LocalDate.class),
+                anyInt(),
+                anyInt(),
+                anyInt(),
+                eq("ABSENT"),
+                eq(null),
+                eq(null),
+                eq(4L),
+                eq(LocalTime.of(9, 45)),
+                eq(LocalTime.of(10, 15)),
+                eq(LocalTime.of(11, 0)),
+                any(Pageable.class)))
+                .thenReturn(new SliceImpl<>(List.of(), PageRequest.of(0, 25), false));
+
+        var result = service().getTodayAttendanceDetails("ABSENT", null, null, 4L, 0, 25);
+
+        assertThat(result.departmentId()).isEqualTo(4L);
+        assertThat(result.departmentName()).isEqualTo("Finance Department");
+        assertThat(result.cellId()).isNull();
+        assertThat(result.designationId()).isNull();
     }
 
     @Test
@@ -329,6 +479,8 @@ class HRDashboardServiceImplTest {
                 projectMstRepository,
                 wingMasterRepository,
                 cellMasterRepository,
+                departmentRepository,
+                designationRepository,
                 employeeRepository,
                 employeeCellMappingRepository,
                 employeeReportingMappingRepository,

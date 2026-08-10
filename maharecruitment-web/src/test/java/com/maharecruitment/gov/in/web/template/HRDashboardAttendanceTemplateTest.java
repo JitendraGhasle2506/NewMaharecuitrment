@@ -17,8 +17,11 @@ import com.maharecruitment.gov.in.web.service.dashboard.model.HRCellAttendanceVi
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceDetailCategory;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceDetailView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceEmployeeView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceGrouping;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRAttendanceSummaryView;
 import com.maharecruitment.gov.in.web.service.dashboard.model.HRTodayAttendanceView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRDepartmentAttendanceView;
+import com.maharecruitment.gov.in.web.service.dashboard.model.HRDesignationAttendanceView;
 
 class HRDashboardAttendanceTemplateTest {
 
@@ -55,6 +58,7 @@ class HRDashboardAttendanceTemplateTest {
                 9,
                 55,
                 new HRAttendanceSummaryView(8, 3, 3, 1, 1),
+                HRAttendanceGrouping.CELL,
                 List.of(new HRCellAttendanceView(
                         27L,
                         "Network Infra Cell",
@@ -62,7 +66,9 @@ class HRDashboardAttendanceTemplateTest {
                         12,
                         9,
                         3,
-                        75))));
+                        75)),
+                List.of(),
+                List.of()));
 
         String rendered = engine.process(page, context);
 
@@ -127,6 +133,10 @@ class HRDashboardAttendanceTemplateTest {
                 HRAttendanceDetailCategory.LATE,
                 27L,
                 "Network Infra Cell",
+                null,
+                null,
+                null,
+                null,
                 List.of(new HRAttendanceEmployeeView(
                         101L,
                         "EMP-101",
@@ -149,6 +159,98 @@ class HRDashboardAttendanceTemplateTest {
                 .contains("EMP-101")
                 .contains("10:32 am")
                 .doesNotContain("Wing");
+    }
+
+    @Test
+    void dedicatedAttendancePageRendersDesignationWisePresentAttendance() throws Exception {
+        String template = Files.readString(TEMPLATE_PATH);
+        int pageStart = template.indexOf("<section class=\"attendance-page\"");
+        int pageEnd = template.indexOf("</th:block>", pageStart);
+        String page = template.substring(pageStart, pageEnd)
+                .replaceAll("\\s+th:href=\"[^\"]+\"", "");
+
+        StringTemplateResolver resolver = new StringTemplateResolver();
+        resolver.setTemplateMode(TemplateMode.HTML);
+        resolver.setCacheable(false);
+        SpringTemplateEngine engine = new SpringTemplateEngine();
+        engine.setTemplateResolver(resolver);
+        Context context = new Context();
+        context.setVariable("attendance", new HRTodayAttendanceView(
+                LocalDate.of(2026, 8, 7),
+                10,
+                6,
+                4,
+                60,
+                new HRAttendanceSummaryView(5, 1, 2, 1, 1),
+                HRAttendanceGrouping.DESIGNATION,
+                List.of(),
+                List.of(new HRDesignationAttendanceView(
+                        9L,
+                        "Software Developer",
+                        8,
+                        6,
+                        2,
+                        75)),
+                List.of()));
+
+        String rendered = engine.process(page, context);
+
+        assertThat(rendered)
+                .contains("View attendance by")
+                .contains("Designation-wise")
+                .contains("Designation-wise attendance")
+                .contains("Software Developer")
+                .contains("75% present")
+                .doesNotContain("No active designations");
+        assertThat(template)
+                .contains("groupBy='DESIGNATION'")
+                .contains("designationId=${designation.designationId}");
+    }
+
+    @Test
+    void dedicatedAttendancePageRendersExternalDepartmentAttendance() throws Exception {
+        String template = Files.readString(TEMPLATE_PATH);
+        int pageStart = template.indexOf("<section class=\"attendance-page\"");
+        int pageEnd = template.indexOf("</th:block>", pageStart);
+        String page = template.substring(pageStart, pageEnd)
+                .replaceAll("\\s+th:href=\"[^\"]+\"", "");
+
+        StringTemplateResolver resolver = new StringTemplateResolver();
+        resolver.setTemplateMode(TemplateMode.HTML);
+        resolver.setCacheable(false);
+        SpringTemplateEngine engine = new SpringTemplateEngine();
+        engine.setTemplateResolver(resolver);
+        Context context = new Context();
+        context.setVariable("attendance", new HRTodayAttendanceView(
+                LocalDate.of(2026, 8, 7),
+                10,
+                6,
+                4,
+                60,
+                new HRAttendanceSummaryView(5, 1, 2, 1, 1),
+                HRAttendanceGrouping.DEPARTMENT,
+                List.of(),
+                List.of(),
+                List.of(new HRDepartmentAttendanceView(
+                        4L,
+                        "Finance Department",
+                        8,
+                        5,
+                        3,
+                        62))));
+
+        String rendered = engine.process(page, context);
+
+        assertThat(rendered)
+                .contains("Department-wise")
+                .contains("Department-wise attendance")
+                .contains("External Employee Attendance")
+                .contains("external employees only")
+                .contains("Finance Department")
+                .contains("62% present");
+        assertThat(template)
+                .contains("groupBy='DEPARTMENT'")
+                .contains("departmentId=${department.departmentId}");
     }
 
     @Test

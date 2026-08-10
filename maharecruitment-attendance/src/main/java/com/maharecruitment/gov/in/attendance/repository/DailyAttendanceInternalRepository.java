@@ -225,7 +225,8 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
                        employee.full_name,
                        upper(trim(coalesce(employee.recruitment_type, ''))) as recruitment_type,
                        internal_attendance.effective_check_in_time,
-                       cell_mapping.cell_id,
+                       employee.designation_id,
+                       employee.department_id,
                        case
                            when upper(trim(coalesce(employee.recruitment_type, ''))) = 'INTERNAL'
                                 and (
@@ -243,8 +244,6 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
                        on internal_attendance.employee_id = employee.employee_id
                 left join external_present external_attendance
                        on external_attendance.employee_id = employee.employee_id
-                left join employee_cell_mapping cell_mapping
-                       on cell_mapping.employee_id = employee.employee_id
                 where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
                   and trim(coalesce(employee.employee_code, '')) <> ''
                   and upper(trim(coalesce(employee.employee_code, ''))) <> 'PENDING'
@@ -257,7 +256,23 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
                    case when present then 'PRESENT' else 'ABSENT' end as attendanceStatus,
                    effective_check_in_time as checkInTime
             from employee_attendance
-            where (:cellId is null or cell_id = :cellId)
+            where (
+                    :cellId is null
+                    or exists (
+                        select 1
+                        from employee_cell_mapping mapping
+                        where mapping.employee_id = employee_attendance.employee_id
+                          and mapping.cell_id = :cellId
+                    )
+                  )
+              and (:designationId is null or designation_id = :designationId)
+              and (
+                    :departmentId is null
+                    or (
+                        department_id = :departmentId
+                        and recruitment_type = 'EXTERNAL'
+                    )
+                  )
               and (
                     :category = 'TOTAL'
                     or (:category = 'PRESENT' and present)
@@ -286,6 +301,8 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
             @Param("day") Integer day,
             @Param("category") String category,
             @Param("cellId") Long cellId,
+            @Param("designationId") Long designationId,
+            @Param("departmentId") Long departmentId,
             @Param("earlyCutoff") LocalTime earlyCutoff,
             @Param("lateCutoff") LocalTime lateCutoff,
             @Param("afterElevenCutoff") LocalTime afterElevenCutoff,
@@ -380,5 +397,158 @@ public interface DailyAttendanceInternalRepository extends JpaRepository<DailyAt
             @Param("year") Integer year,
             @Param("day") Integer day,
             @Param("activeFlag") String activeFlag,
+            @Param("employeeStatus") String employeeStatus);
+
+    @Query(value = """
+            with internal_present as (
+                select distinct attendance.employee_id
+                from daily_attendance_internal_employee attendance
+                where attendance.attendance_date = :attendanceDate
+                  and (
+                        upper(trim(coalesce(attendance.status, ''))) = 'PRESENT'
+                        or attendance.check_in_time is not null
+                        or attendance.check_out_time is not null
+                        or trim(coalesce(attendance.in_time, ''))
+                            ~ '^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9]([.][0-9]+)?)?$'
+                        or trim(coalesce(attendance.out_time, ''))
+                            ~ '^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9]([.][0-9]+)?)?$'
+                  )
+            ), external_present as (
+                select distinct attendance.user_id as employee_id
+                from attendance_daily attendance
+                where attendance.month = :month
+                  and attendance.year = :year
+                  and upper(trim(coalesce(
+                        case :day
+                            when 1 then attendance.d1
+                            when 2 then attendance.d2
+                            when 3 then attendance.d3
+                            when 4 then attendance.d4
+                            when 5 then attendance.d5
+                            when 6 then attendance.d6
+                            when 7 then attendance.d7
+                            when 8 then attendance.d8
+                            when 9 then attendance.d9
+                            when 10 then attendance.d10
+                            when 11 then attendance.d11
+                            when 12 then attendance.d12
+                            when 13 then attendance.d13
+                            when 14 then attendance.d14
+                            when 15 then attendance.d15
+                            when 16 then attendance.d16
+                            when 17 then attendance.d17
+                            when 18 then attendance.d18
+                            when 19 then attendance.d19
+                            when 20 then attendance.d20
+                            when 21 then attendance.d21
+                            when 22 then attendance.d22
+                            when 23 then attendance.d23
+                            when 24 then attendance.d24
+                            when 25 then attendance.d25
+                            when 26 then attendance.d26
+                            when 27 then attendance.d27
+                            when 28 then attendance.d28
+                            when 29 then attendance.d29
+                            when 30 then attendance.d30
+                            when 31 then attendance.d31
+                        end, ''))) in ('P', 'PRESENT')
+            )
+            select designation.designation_id as designationId,
+                   designation.designation_name as designationName,
+                   count(distinct employee.employee_id) as totalEmployees,
+                   count(distinct employee.employee_id) filter (
+                       where (
+                           upper(trim(coalesce(employee.recruitment_type, ''))) = 'INTERNAL'
+                           and ip.employee_id is not null
+                       ) or (
+                           upper(trim(coalesce(employee.recruitment_type, ''))) = 'EXTERNAL'
+                           and ep.employee_id is not null
+                       )
+                   ) as presentEmployees
+            from manpower_designation_master designation
+            left join employee_master employee
+                   on employee.designation_id = designation.designation_id
+                  and upper(trim(coalesce(employee.status, ''))) = :employeeStatus
+                  and trim(coalesce(employee.employee_code, '')) <> ''
+                  and upper(trim(coalesce(employee.employee_code, ''))) <> 'PENDING'
+                  and upper(trim(coalesce(employee.employee_code, ''))) not like 'TMP-%'
+            left join internal_present ip on ip.employee_id = employee.employee_id
+            left join external_present ep on ep.employee_id = employee.employee_id
+            where upper(coalesce(designation.active_flag, 'N')) = :activeFlag
+            group by designation.designation_id, designation.designation_name
+            order by lower(designation.designation_name), designation.designation_id
+            """, nativeQuery = true)
+    List<AttendanceDesignationSummaryProjection> summarizeAttendanceByDesignation(
+            @Param("attendanceDate") LocalDate attendanceDate,
+            @Param("month") Integer month,
+            @Param("year") Integer year,
+            @Param("day") Integer day,
+            @Param("activeFlag") String activeFlag,
+            @Param("employeeStatus") String employeeStatus);
+
+    @Query(value = """
+            with external_present as (
+                select distinct attendance.user_id as employee_id
+                from attendance_daily attendance
+                where attendance.month = :month
+                  and attendance.year = :year
+                  and upper(trim(coalesce(
+                        case :day
+                            when 1 then attendance.d1
+                            when 2 then attendance.d2
+                            when 3 then attendance.d3
+                            when 4 then attendance.d4
+                            when 5 then attendance.d5
+                            when 6 then attendance.d6
+                            when 7 then attendance.d7
+                            when 8 then attendance.d8
+                            when 9 then attendance.d9
+                            when 10 then attendance.d10
+                            when 11 then attendance.d11
+                            when 12 then attendance.d12
+                            when 13 then attendance.d13
+                            when 14 then attendance.d14
+                            when 15 then attendance.d15
+                            when 16 then attendance.d16
+                            when 17 then attendance.d17
+                            when 18 then attendance.d18
+                            when 19 then attendance.d19
+                            when 20 then attendance.d20
+                            when 21 then attendance.d21
+                            when 22 then attendance.d22
+                            when 23 then attendance.d23
+                            when 24 then attendance.d24
+                            when 25 then attendance.d25
+                            when 26 then attendance.d26
+                            when 27 then attendance.d27
+                            when 28 then attendance.d28
+                            when 29 then attendance.d29
+                            when 30 then attendance.d30
+                            when 31 then attendance.d31
+                        end, ''))) in ('P', 'PRESENT')
+            )
+            select department.department_id as departmentId,
+                   department.department_name as departmentName,
+                   count(distinct employee.employee_id) as totalEmployees,
+                   count(distinct employee.employee_id) filter (
+                       where ep.employee_id is not null
+                   ) as presentEmployees
+            from department_mst department
+            left join employee_master employee
+                   on employee.department_id = department.department_id
+                  and upper(trim(coalesce(employee.status, ''))) = :employeeStatus
+                  and upper(trim(coalesce(employee.recruitment_type, ''))) = 'EXTERNAL'
+                  and trim(coalesce(employee.employee_code, '')) <> ''
+                  and upper(trim(coalesce(employee.employee_code, ''))) <> 'PENDING'
+                  and upper(trim(coalesce(employee.employee_code, ''))) not like 'TMP-%'
+            left join external_present ep on ep.employee_id = employee.employee_id
+            group by department.department_id, department.department_name
+            having count(distinct employee.employee_id) > 0
+            order by lower(department.department_name), department.department_id
+            """, nativeQuery = true)
+    List<AttendanceDepartmentSummaryProjection> summarizeAttendanceByDepartment(
+            @Param("month") Integer month,
+            @Param("year") Integer year,
+            @Param("day") Integer day,
             @Param("employeeStatus") String employeeStatus);
 }
