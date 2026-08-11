@@ -270,6 +270,25 @@ class InternalAttendanceSyncServiceImplTest {
     }
 
     @Test
+    void syncEmployeeAttendanceMapsWofStatusToWeekOff() {
+        LocalDate attendanceDate = LocalDate.of(2026, 8, 8);
+        EmployeeEntity employee = buildEmployee(205L);
+        apiResponse = List.of(new InternalAttendanceDayRecord(
+                "Test Employee",
+                "MahaIT1234",
+                attendanceDate,
+                null,
+                null,
+                "WOF"));
+
+        InternalAttendanceSyncServiceImpl.AttendancePersistenceResult persistenceResult =
+                service.syncEmployeeAttendance(employee, apiResponse, attendanceDate, attendanceDate);
+
+        assertEquals(1, persistenceResult.upsertedRows());
+        assertEquals("WEEK_OFF", savedEntities.get().get(0).getStatus());
+    }
+
+    @Test
     void syncEmployeeAttendanceUsesEarliestAndLatestAcrossDuplicateApiEvents() {
         LocalDate attendanceDate = LocalDate.of(2026, 8, 7);
         EmployeeEntity employee = buildEmployee(204L);

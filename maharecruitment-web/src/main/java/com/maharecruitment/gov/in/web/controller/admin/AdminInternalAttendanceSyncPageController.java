@@ -143,9 +143,7 @@ public class AdminInternalAttendanceSyncPageController {
 
     private String buildUpstreamApiExample(LocalDate startDate, LocalDate endDate) {
         return internalAttendanceSyncProperties.getApiUrl()
-                + "?organization_code="
-                + internalAttendanceSyncProperties.getOrganizationCode()
-                + "&start_date="
+                + "?start_date="
                 + UPSTREAM_DATE_FORMAT.format(startDate)
                 + "&end_date="
                 + UPSTREAM_DATE_FORMAT.format(endDate);

@@ -13,8 +13,6 @@ public class InternalAttendanceSyncProperties {
 
     private String apiUrl = "https://mahaitattendance.espltestingsite.in/api/third-party/attendance-report-org";
 
-    private String organizationCode = "ALL";
-
     private String uniqueCodePrefix = "MahaIT";
 
     private String schedulerCron = "0 5 11,23 * * *";
@@ -53,14 +51,6 @@ public class InternalAttendanceSyncProperties {
 
     public void setApiUrl(String apiUrl) {
         this.apiUrl = apiUrl;
-    }
-
-    public String getOrganizationCode() {
-        return organizationCode;
-    }
-
-    public void setOrganizationCode(String organizationCode) {
-        this.organizationCode = organizationCode;
     }
 
     public String getUniqueCodePrefix() {

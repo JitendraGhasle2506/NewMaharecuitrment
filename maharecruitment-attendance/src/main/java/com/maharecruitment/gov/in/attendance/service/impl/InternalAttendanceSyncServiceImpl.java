@@ -573,6 +573,7 @@ public class InternalAttendanceSyncServiceImpl implements InternalAttendanceSync
             case "ABSENT":
                 return "ABSENT";
             case "WO":
+            case "WOF":
             case "W":
             case "WEEK_OFF":
                 return "WEEK_OFF";

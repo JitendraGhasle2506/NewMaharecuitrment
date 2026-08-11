@@ -63,17 +63,14 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
             throw ex;
         } catch (ResourceAccessException ex) {
             throw new InternalAttendanceReportClientUnavailableException(
-                    "Internal attendance API is unreachable for organization code "
-                            + properties.getOrganizationCode()
-                            + " at "
+                    "Internal attendance API is unreachable at "
                             + properties.getApiUrl()
                             + ". "
                             + resolveRootCauseMessage(ex),
                     ex);
         } catch (RestClientResponseException ex) {
             log.warn(
-                    "Attendance API HTTP error. method=POST, organizationCode={}, startDate={}, endDate={}, status={}, responseHeaders={}, responseBody={}",
-                    properties.getOrganizationCode(),
+                    "Attendance API HTTP error. method=POST, startDate={}, endDate={}, status={}, responseHeaders={}, responseBody={}",
                     REQUEST_DATE_FORMAT.format(startDate),
                     REQUEST_DATE_FORMAT.format(endDate),
                     ex.getStatusCode().value(),
@@ -84,9 +81,7 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
                     ex);
         } catch (Exception ex) {
             throw new InternalAttendanceReportClientException(
-                    "Failed to fetch internal attendance from API for organization code "
-                            + properties.getOrganizationCode()
-                            + ".",
+                    "Failed to fetch internal attendance from API.",
                     ex);
         }
     }
@@ -105,8 +100,7 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
 
                 Duration retryDelay = resolveRateLimitRetryDelay(ex);
                 log.warn(
-                        "Attendance API rate limit hit for organizationCode={}. retryAttempt={}/{}, retryDelayMs={}",
-                        properties.getOrganizationCode(),
+                        "Attendance API rate limit hit. retryAttempt={}/{}, retryDelayMs={}",
                         attempt,
                         maxAttempts - 1,
                         retryDelay.toMillis());
@@ -115,9 +109,7 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
         }
 
         throw new InternalAttendanceReportClientException(
-                "Attendance API retry loop ended unexpectedly for organization code "
-                        + properties.getOrganizationCode()
-                        + ".");
+                "Attendance API retry loop ended unexpectedly.");
     }
 
     private List<InternalAttendanceDayRecord> fetchAttendanceReportOnce(
@@ -126,9 +118,8 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
         String requestUrl = buildRequestUrl(startDate, endDate);
         long startedAtNanos = System.nanoTime();
         log.info(
-                "Calling attendance API. method=POST, url={}, organizationCode={}, startDate={}, endDate={}, requestHeaders={}",
+                "Calling attendance API. method=POST, url={}, startDate={}, endDate={}, requestHeaders={}",
                 requestUrl,
-                properties.getOrganizationCode(),
                 REQUEST_DATE_FORMAT.format(startDate),
                 REQUEST_DATE_FORMAT.format(endDate),
                 "{Accept=[application/json]}");
@@ -139,29 +130,28 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
                 .retrieve()
                 .toEntity(String.class);
         long elapsedMillis = Duration.ofNanos(System.nanoTime() - startedAtNanos).toMillis();
+        List<InternalAttendanceDayRecord> attendanceRecords = parseAttendanceRecords(responseEntity.getBody());
 
         log.info(
-                "Attendance API response received. method=POST, organizationCode={}, status={}, responseHeaders={}, responseBody={}, elapsedMs={}",
-                properties.getOrganizationCode(),
+                "Attendance API response received. method=POST, status={}, responseHeaders={}, recordCount={}, elapsedMs={}",
                 responseEntity.getStatusCode().value(),
                 sanitizeHeaders(responseEntity.getHeaders()),
-                responseEntity.getBody(),
+                attendanceRecords.size(),
                 elapsedMillis);
 
-        InternalAttendanceReportApiResponse response = parseResponse(responseEntity.getBody());
+        return attendanceRecords;
+    }
 
+    List<InternalAttendanceDayRecord> parseAttendanceRecords(String responseBody) {
+        InternalAttendanceReportApiResponse response = parseResponse(responseBody);
         if (response == null) {
             throw new InternalAttendanceReportClientException(
-                    "Attendance API returned an empty response for organization code "
-                            + properties.getOrganizationCode()
-                            + ".");
+                    "Attendance API returned an empty response.");
         }
 
         if (!response.isStatus()) {
             throw new InternalAttendanceReportClientException(
-                    "Attendance API rejected the request for organization code "
-                            + properties.getOrganizationCode()
-                            + ": "
+                    "Attendance API rejected the request: "
                             + safeMessage(response.getMessage()));
         }
 
@@ -216,16 +206,13 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new InternalAttendanceReportClientUnavailableException(
-                    "Attendance API retry was interrupted for organization code "
-                            + properties.getOrganizationCode()
-                            + ".",
+                    "Attendance API retry was interrupted.",
                     ex);
         }
     }
 
-    private String buildRequestUrl(LocalDate startDate, LocalDate endDate) {
+    String buildRequestUrl(LocalDate startDate, LocalDate endDate) {
         return UriComponentsBuilder.fromHttpUrl(properties.getApiUrl())
-                .queryParam("organization_code", properties.getOrganizationCode())
                 .queryParam("start_date", REQUEST_DATE_FORMAT.format(startDate))
                 .queryParam("end_date", REQUEST_DATE_FORMAT.format(endDate))
                 .toUriString();
@@ -237,7 +224,24 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
         }
 
         try {
-            return objectMapper.readValue(responseBody, InternalAttendanceReportApiResponse.class);
+            JsonNode root = objectMapper.readTree(responseBody);
+            if (root == null || root.isNull()) {
+                return null;
+            }
+            if (root.isArray()) {
+                InternalAttendanceReportApiResponse response = new InternalAttendanceReportApiResponse();
+                response.setStatus(true);
+                response.setCount(root.size());
+                response.setData(root);
+                return response;
+            }
+            if (root.isObject()) {
+                return objectMapper.treeToValue(root, InternalAttendanceReportApiResponse.class);
+            }
+            throw new InternalAttendanceReportClientException(
+                    "Attendance API response must be a JSON array or object.");
+        } catch (InternalAttendanceReportClientException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new InternalAttendanceReportClientException(
                     "Attendance API returned a response that could not be parsed as JSON.",
@@ -319,9 +323,6 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
     }
 
     private void validateRequest(LocalDate startDate, LocalDate endDate) {
-        if (!StringUtils.hasText(properties.getOrganizationCode())) {
-            throw new IllegalArgumentException("Organization code is required to fetch attendance data.");
-        }
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("Start date and end date are required to fetch attendance data.");
         }
@@ -342,7 +343,7 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
         int status = ex.getStatusCode().value();
         String statusText = safeMessage(ex.getStatusText());
         String guidance = switch (status) {
-            case 400 -> "Bad request. Verify organization_code, start_date, and end_date query parameters.";
+            case 400 -> "Bad request. Verify start_date and end_date query parameters.";
             case 401 -> "Unauthorized. Verify the attendance API authentication configuration.";
             case 403 -> "Forbidden. The configured credentials are not allowed to access attendance data.";
             case 404 -> "Endpoint not found. Verify the attendance API URL.";
@@ -356,8 +357,6 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
         };
         return "Attendance API returned HTTP "
                 + status
-                + " for organization code "
-                + properties.getOrganizationCode()
                 + ". "
                 + guidance
                 + " "
