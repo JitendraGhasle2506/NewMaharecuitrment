@@ -35,7 +35,9 @@ import com.maharecruitment.gov.in.attendance.dto.AttendanceLocationDTO;
 import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
 import com.maharecruitment.gov.in.attendance.service.HolidayService;
 import com.maharecruitment.gov.in.attendance.service.WeekOffWorkingDayService;
+import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
+import com.maharecruitment.gov.in.master.entity.SubDepartment;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 
@@ -144,6 +146,7 @@ class AttendanceRegisterInternalEmployeeControllerTest {
         mockMvc.perform(get("/employee/intAttendance").session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("attendance/attendance-register-internal"))
+                .andExpect(model().attribute("externalEmployee", false))
                 .andExpect(model().attribute(
                         "attendance",
                         org.hamcrest.Matchers.allOf(
@@ -164,6 +167,7 @@ class AttendanceRegisterInternalEmployeeControllerTest {
                         .param("dateRange", "06-2026"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("attendance/attendance-register-internal"))
+                .andExpect(model().attribute("externalEmployee", false))
                 .andExpect(model().attribute(
                         "attendance",
                         org.hamcrest.Matchers.allOf(
@@ -178,6 +182,30 @@ class AttendanceRegisterInternalEmployeeControllerTest {
                                 org.hamcrest.Matchers.hasProperty(
                                         "secondaryLocations",
                                         org.hamcrest.Matchers.hasSize(1)))));
+    }
+
+    @Test
+    void externalEmployeeAttendanceShowsTheirDepartment() throws Exception {
+        MockHttpSession session = authenticatedSession(41L);
+        EmployeeEntity employee = employee(501L, "123456789012");
+        employee.setRecruitmentType("external");
+        DepartmentRegistrationEntity department = new DepartmentRegistrationEntity();
+        department.setDepartmentName("Finance Department");
+        employee.setDepartmentRegistration(department);
+        SubDepartment subDepartment = new SubDepartment();
+        subDepartment.setSubDeptName("Accounts");
+        employee.setSubDepartment(subDepartment);
+
+        when(employeeRepository.findByUser_Id(41L)).thenReturn(Optional.of(employee));
+        when(attendanceService.getInternalAttendanceForEmployee(eq(501L), anyInt(), anyInt()))
+                .thenReturn(new AttendanceRegisterDTO());
+        when(attendanceService.getMyManualRequests(501L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/employee/intAttendance").session(session))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("externalEmployee", true))
+                .andExpect(model().attribute("employeeDepartment", "Finance Department"))
+                .andExpect(model().attribute("employeeSubDepartment", "Accounts"));
     }
 
     private MockHttpSession authenticatedSession(Long userId) {

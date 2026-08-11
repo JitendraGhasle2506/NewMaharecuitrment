@@ -161,6 +161,11 @@ public class AttendanceRegisterInternalEmployeeController {
         model.addAttribute("today", today);
         model.addAttribute("attendanceTimeRows", extractAttendanceTimeRows(attendance));
 
+        boolean externalEmployee = "EXTERNAL".equalsIgnoreCase(employee.getRecruitmentType());
+        model.addAttribute("externalEmployee", externalEmployee);
+        model.addAttribute("employeeDepartment", externalEmployee ? resolveDepartmentName(employee) : null);
+        model.addAttribute("employeeSubDepartment", externalEmployee ? resolveSubDepartmentName(employee) : null);
+
         YearMonth yearMonth = YearMonth.of(year, month);
         model.addAttribute("daysInMonth", yearMonth.lengthOfMonth());
 
@@ -214,6 +219,26 @@ public class AttendanceRegisterInternalEmployeeController {
         return attendance.getAttendanceDays().stream()
                 .filter(day -> day != null && (StringUtils.hasText(day.getInTime()) || StringUtils.hasText(day.getOutTime())))
                 .collect(Collectors.toList());
+    }
+
+    private String resolveDepartmentName(EmployeeEntity employee) {
+        if (employee.getDepartmentRegistration() != null
+                && StringUtils.hasText(employee.getDepartmentRegistration().getDepartmentName())) {
+            return employee.getDepartmentRegistration().getDepartmentName();
+        }
+        if (employee.getDepartment() != null
+                && StringUtils.hasText(employee.getDepartment().getDepartmentName())) {
+            return employee.getDepartment().getDepartmentName();
+        }
+        return "-";
+    }
+
+    private String resolveSubDepartmentName(EmployeeEntity employee) {
+        if (employee.getSubDepartment() == null
+                || !StringUtils.hasText(employee.getSubDepartment().getSubDeptName())) {
+            return null;
+        }
+        return employee.getSubDepartment().getSubDeptName();
     }
 
     private Map<Integer, String> getMonthNames() {

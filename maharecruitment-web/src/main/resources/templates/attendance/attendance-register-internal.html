@@ -1627,6 +1627,21 @@
                                         <span class="profile-detail-value" th:text="${attendance.projectName ?: '-'}">-</span>
                                     </div>
                                 </div>
+                                <div class="profile-detail-row" th:if="${externalEmployee}">
+                                    <div class="profile-detail-icon"><i class="fa fa-building"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Department</span>
+                                        <span class="profile-detail-value" th:text="${employeeDepartment ?: '-'}">-</span>
+                                    </div>
+                                </div>
+                                <div class="profile-detail-row"
+                                     th:if="${externalEmployee && employeeSubDepartment != null}">
+                                    <div class="profile-detail-icon"><i class="fa fa-sitemap"></i></div>
+                                    <div class="profile-detail-copy">
+                                        <span class="profile-detail-label">Sub Department</span>
+                                        <span class="profile-detail-value" th:text="${employeeSubDepartment}">-</span>
+                                    </div>
+                                </div>
                                 <div class="profile-detail-row">
                                     <div class="profile-detail-icon"><i class="fa fa-user-tie"></i></div>
                                     <div class="profile-detail-copy">

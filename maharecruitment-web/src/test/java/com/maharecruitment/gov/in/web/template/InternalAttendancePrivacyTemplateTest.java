@@ -63,6 +63,17 @@ class InternalAttendancePrivacyTemplateTest {
                 .doesNotContain("${location.longitude}");
     }
 
+    @Test
+    void departmentIsShownOnlyForExternalEmployees() throws IOException {
+        assertThat(template())
+                .contains("th:if=\"${externalEmployee}\"")
+                .contains(">Department</span>")
+                .contains("th:text=\"${employeeDepartment ?: '-'}\"")
+                .contains("th:if=\"${externalEmployee && employeeSubDepartment != null}\"")
+                .contains(">Sub Department</span>")
+                .contains("th:text=\"${employeeSubDepartment}\"");
+    }
+
     private String template() throws IOException {
         ClassPathResource resource =
                 new ClassPathResource("templates/attendance/attendance-register-internal.html");
