@@ -1,11 +1,13 @@
 # Mobile API Documentation
 
-Version: 1.4  
-Last updated: 2026-07-22
+Version: 1.5  
+Last updated: 2026-08-11
 
 ## 1. Overview
 
 This document describes the mobile APIs used by the Android and iOS applications.
+
+Machine-readable leave-management contract: [OpenAPI 3.1 specification](mobile-leave-api-openapi.yaml).
 
 Base path:
 
@@ -72,11 +74,12 @@ Common HTTP status codes:
 | Status | Meaning |
 | --- | --- |
 | 200 | Success |
+| 201 | Resource created successfully |
 | 400 | Invalid request or validation failed |
 | 401 | Missing, invalid, or expired access/refresh token |
 | 403 | User is not allowed to access the requested employee |
-| 404 | Employee, profile, or mapping not found |
-| 409 | Duplicate email or mobile number |
+| 404 | Requested employee, profile, mapping, or application not found |
+| 409 | Duplicate data or request conflicts with the resource's current state |
 | 500 | Server configuration or unexpected error |
 
 ## 3. Endpoint Summary
@@ -99,6 +102,14 @@ Common HTTP status codes:
 | Check out | POST | `/api/mobile/attendance/check-out` | Yes |
 | Mark attendance | POST | `/api/mobile/attendance/mark` | Yes |
 | Attendance history | GET | `/api/mobile/attendance/history` | Yes |
+| Get leave types/categories | GET | `/api/mobile/leaves/options?employeeId={employeeId}` | Yes |
+| Submit leave application | POST | `/api/mobile/leaves` | Yes |
+| Get employee leave history | GET | `/api/mobile/leaves?employeeId={employeeId}` | Yes |
+| Validate comp-off worked date | GET | `/api/mobile/leaves/comp-off/validate` | Yes |
+| Cancel pending leave | POST | `/api/mobile/leaves/{leaveId}/cancel` | Yes |
+| Get leave approval queues | GET | `/api/mobile/leaves/approvals` | Yes, HOD only |
+| Approve leave | POST | `/api/mobile/leaves/approvals/{leaveId}/approve` | Yes, HOD only |
+| Reject leave | POST | `/api/mobile/leaves/approvals/{leaveId}/reject` | Yes, HOD only |
 
 ## 4. Login
 
@@ -966,7 +977,227 @@ Common attendance errors:
 | `INVALID_ATTENDANCE_FLAG` | Attendance flag is invalid |
 | `ATTENDANCE_FLAG_REQUIRED` | Attendance flag is required |
 
-## 9. Mobile App Implementation Notes
+## 10. Leave Management
+
+These APIs expose the same leave workflows used by the employee and HOD web portal. All endpoints require a bearer access token. The supplied `employeeId` must belong to the logged-in token user.
+
+For Swagger UI, Postman import, contract testing, or SDK generation, use the [OpenAPI 3.1 leave specification](mobile-leave-api-openapi.yaml) as the authoritative machine-readable contract.
+
+### GET `/api/mobile/leaves/options?employeeId={employeeId}`
+
+Returns the leave types maintained in `leave_master`, the comp-off option, and the allowed leave categories. Use the returned `code` values when submitting leave.
+
+Success response:
+
+```json
+{
+  "success": true,
+  "message": "Leave application options fetched successfully.",
+  "employeeId": 20,
+  "leaveTypes": [
+    {
+      "leaveId": 1,
+      "code": "CL",
+      "name": "Casual Leave",
+      "compOff": false
+    },
+    {
+      "leaveId": 5,
+      "code": "CO",
+      "name": "Comp Off",
+      "compOff": true
+    }
+  ],
+  "leaveCategories": [
+    { "code": "FULL_DAY", "name": "Full Day" },
+    { "code": "FIRST_HALF", "name": "First Half" },
+    { "code": "SECOND_HALF", "name": "Second Half" }
+  ]
+}
+```
+
+### POST `/api/mobile/leaves`
+
+Submits a leave request for the logged-in employee.
+
+Request:
+
+```json
+{
+  "employeeId": 20,
+  "leaveType": "CL",
+  "leaveCategory": "FULL_DAY",
+  "startDate": "2026-08-15",
+  "endDate": "2026-08-16",
+  "compOffWorkDate": null,
+  "description": "Personal work"
+}
+```
+
+Rules:
+
+- `leaveType` must be a code returned by the options API. A returned leave name is also accepted.
+- `leaveCategory` must be `FULL_DAY`, `FIRST_HALF`, or `SECOND_HALF`.
+- `endDate` cannot be earlier than `startDate`.
+- `description` and HOD remarks are limited to 500 characters.
+- For a comp-off request, `compOffWorkDate` is required, cannot be in the future, must be earlier than `startDate`, must have qualifying attendance or an approved tour, and cannot already be used by a pending/approved comp-off request.
+
+Success: `201 Created`, with a `Location` header such as `/api/mobile/leaves/901`.
+
+```json
+{
+  "success": true,
+  "message": "Leave application submitted successfully.",
+  "leaveApplication": {
+    "leaveId": 901,
+    "employeeId": 20,
+    "leaveType": "CL",
+    "leaveCategory": "Full Day",
+    "startDate": "2026-08-15",
+    "endDate": "2026-08-16",
+    "compOffWorkDate": null,
+    "description": "Personal work",
+    "applicationDate": "2026-08-11T14:30:00",
+    "status": "PENDING",
+    "hodRemarks": null,
+    "managerRemarks": null,
+    "cancellable": true
+  }
+}
+```
+
+### GET `/api/mobile/leaves?employeeId={employeeId}`
+
+Returns all applications for the employee, newest first. Each item uses the `leaveApplication` fields shown above. Possible portal statuses include `PENDING`, `APPROVED`, `REJECTED`, and `CANCELLED`. Only a `PENDING` item has `cancellable: true`.
+
+```json
+{
+  "success": true,
+  "message": "Leave applications fetched successfully.",
+  "employeeId": 20,
+  "leaveApplications": []
+}
+```
+
+### GET `/api/mobile/leaves/comp-off/validate`
+
+Query parameters:
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `employeeId` | Yes | Logged-in employee ID |
+| `workedDate` | Yes | Date in `yyyy-MM-dd` format |
+
+Example:
+
+```text
+GET /api/mobile/leaves/comp-off/validate?employeeId=20&workedDate=2026-08-09
+```
+
+```json
+{
+  "success": true,
+  "message": "Worked date verified.",
+  "employeeId": 20,
+  "workedDate": "2026-08-09",
+  "valid": true
+}
+```
+
+### POST `/api/mobile/leaves/{leaveId}/cancel`
+
+Cancels the logged-in employee's own pending leave. Approved, rejected, cancelled, missing, or another employee's application cannot be cancelled.
+
+Request:
+
+```json
+{
+  "employeeId": 20
+}
+```
+
+The success response uses the standard `leaveApplication` object with `status: "CANCELLED"` and `cancellable: false`.
+
+### GET `/api/mobile/leaves/approvals`
+
+HOD-only endpoint. It uses the same effective reporting-manager/cell mapping as the web portal and returns both pending and processed leave lists.
+
+Query parameters:
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `employeeId` | Yes | Logged-in HOD employee ID |
+| `query` | No | Employee-name or designation search |
+
+```json
+{
+  "success": true,
+  "message": "Leave approvals fetched successfully.",
+  "employeeId": 50,
+  "query": null,
+  "pendingLeaves": [
+    {
+      "leaveId": 901,
+      "applicantEmployeeId": 20,
+      "employeeCode": "EMP020",
+      "employeeName": "Example Employee",
+      "designation": "Assistant",
+      "leaveType": "CL",
+      "leaveCategory": "Full Day",
+      "startDate": "2026-08-15",
+      "endDate": "2026-08-16",
+      "compOffWorkDate": null,
+      "description": "Personal work",
+      "applicationDate": "2026-08-11T14:30:00",
+      "status": "PENDING",
+      "hodRemarks": null
+    }
+  ],
+  "processedLeaves": []
+}
+```
+
+### POST `/api/mobile/leaves/approvals/{leaveId}/approve`
+
+HOD-only endpoint. The leave must be pending and its employee must be inside the logged-in HOD's effective reporting authority.
+
+```json
+{
+  "employeeId": 50,
+  "remarks": "Approved"
+}
+```
+
+### POST `/api/mobile/leaves/approvals/{leaveId}/reject`
+
+Uses the same authorization rules as approval. A non-blank `remarks` value is required.
+
+```json
+{
+  "employeeId": 50,
+  "remarks": "Insufficient leave notice"
+}
+```
+
+Both decision endpoints return the standard `leaveApplication` response with status `APPROVED` or `REJECTED`. Processing uses a database write lock so concurrent decisions cannot process the same pending request twice.
+
+Common leave errors:
+
+| HTTP | Code | Meaning |
+| --- | --- | --- |
+| 400 | `INVALID_LEAVE_TYPE` | Leave type was not returned by the options API |
+| 400 | `INVALID_LEAVE_CATEGORY` | Leave category is invalid |
+| 400 | `INVALID_LEAVE_APPLICATION` | Dates or comp-off business rules failed |
+| 400 | `REJECTION_REMARKS_REQUIRED` | Rejection remarks are blank |
+| 403 | `EMPLOYEE_MISMATCH` | Requested employee does not match the token user |
+| 403 | `HOD_ACCESS_REQUIRED` | Logged-in user does not have HOD access |
+| 403 | `LEAVE_CANCELLATION_FORBIDDEN` | Employee tried to cancel another employee's leave |
+| 403 | `LEAVE_APPROVAL_FORBIDDEN` | Leave is outside the HOD's reporting authority |
+| 404 | `LEAVE_NOT_FOUND` | Leave application does not exist |
+| 409 | `LEAVE_NOT_CANCELLABLE` | Leave is no longer pending |
+| 409 | `LEAVE_ALREADY_PROCESSED` | Approval/rejection was already completed |
+
+## 11. Mobile App Implementation Notes
 
 Android and iOS app should follow these rules:
 
@@ -981,7 +1212,7 @@ Android and iOS app should follow these rules:
 - Do not store passwords in the app.
 - For forgot password without login, use a separate OTP/token API. Do not use the authenticated reset endpoint.
 
-## 10. Suggested Future APIs
+## 12. Suggested Future APIs
 
 These APIs are not part of the current implementation but are recommended for a complete mobile app flow.
 

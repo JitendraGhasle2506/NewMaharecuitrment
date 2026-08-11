@@ -29,6 +29,7 @@ import jakarta.validation.ConstraintViolationException;
         MobileAuthenticationController.class,
         MobileAttendanceController.class,
         MobileEmployeeLocationController.class,
+        MobileLeaveController.class,
         MobileNotificationController.class,
         MobilePasswordResetController.class,
         MobileProfileController.class

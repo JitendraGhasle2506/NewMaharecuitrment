@@ -1,0 +1,1152 @@
+openapi: 3.1.0
+info:
+  title: MahaRecruitment Mobile Leave Management API
+  summary: Mobile leave application and HOD approval APIs
+  description: |
+    REST API contract for the leave-management workflows available in the
+    MahaRecruitment web portal.
+
+    All operations require a mobile bearer access token. The `employeeId`
+    supplied by the client must belong to the authenticated token user.
+    Approval operations additionally require the `ROLE_HOD` authority and
+    access to the leave applicant through the effective reporting hierarchy.
+
+    Dates use ISO 8601 calendar-date format (`yyyy-MM-dd`). Date-time values
+    use ISO 8601 local date-time format.
+  version: 1.0.0
+
+servers:
+  - url: /maharecruitment
+    description: Deployed application context
+  - url: http://localhost:8777/maharecruitment
+    description: Local development
+
+tags:
+  - name: Employee Leave
+    description: Leave options, application, history, comp-off validation, and cancellation
+  - name: HOD Leave Approval
+    description: HOD approval queue and decision operations
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/mobile/leaves/options:
+    get:
+      tags:
+        - Employee Leave
+      summary: Get leave application options
+      description: |
+        Returns leave-master values exposed by the portal, a comp-off
+        fallback when required, and the supported full-day/half-day categories.
+        Submit the returned leave type and category codes when applying.
+      operationId: getMobileLeaveOptions
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      responses:
+        '200':
+          description: Leave options fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveOptionsResponse'
+              examples:
+                success:
+                  $ref: '#/components/examples/LeaveOptionsSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/mobile/leaves:
+    get:
+      tags:
+        - Employee Leave
+      summary: Get employee leave history
+      description: Returns all leave applications for the logged-in employee, newest first.
+      operationId: getMobileLeaveApplications
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      responses:
+        '200':
+          description: Leave applications fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveHistoryResponse'
+              examples:
+                success:
+                  $ref: '#/components/examples/LeaveHistorySuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Employee Leave
+      summary: Submit a leave application
+      description: |
+        Creates a pending leave application for the logged-in employee.
+
+        Business rules:
+          * The leave type must be returned by the options operation.
+          * The end date must be on or after the start date.
+          * Comp-off requires a non-future qualifying worked date before the
+            leave start date.
+          * A worked date cannot already be used by another pending or approved
+            comp-off request.
+      operationId: createMobileLeaveApplication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveApplyRequest'
+            examples:
+              casualLeave:
+                summary: Full-day casual leave
+                value:
+                  employeeId: 20
+                  leaveType: CL
+                  leaveCategory: FULL_DAY
+                  startDate: '2026-08-15'
+                  endDate: '2026-08-16'
+                  compOffWorkDate: null
+                  description: Personal work
+              compOff:
+                summary: Comp-off leave
+                value:
+                  employeeId: 20
+                  leaveType: CO
+                  leaveCategory: FULL_DAY
+                  startDate: '2026-08-15'
+                  endDate: '2026-08-15'
+                  compOffWorkDate: '2026-08-09'
+                  description: Compensatory leave for weekend duty
+      responses:
+        '201':
+          description: Leave application created successfully
+          headers:
+            Location:
+              description: Relative URI of the newly created leave application
+              schema:
+                type: string
+              example: /api/mobile/leaves/901
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveApplicationResponse'
+              examples:
+                success:
+                  $ref: '#/components/examples/LeaveApplicationCreated'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/mobile/leaves/comp-off/validate:
+    get:
+      tags:
+        - Employee Leave
+      summary: Validate a comp-off worked date
+      description: |
+        Checks that the worked date is not in the future and that the employee
+        was present or had an approved tour on that date. Final submission also
+        validates date ordering and prior use of the worked date.
+      operationId: validateMobileCompOffWorkedDate
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+        - $ref: '#/components/parameters/WorkedDate'
+      responses:
+        '200':
+          description: Validation completed; inspect the `valid` property
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompOffValidationResponse'
+              examples:
+                valid:
+                  value:
+                    success: true
+                    message: Worked date verified.
+                    employeeId: 20
+                    workedDate: '2026-08-09'
+                    valid: true
+                invalid:
+                  value:
+                    success: true
+                    message: Comp-off worked date is allowed only for a non-future date when you were present or had an approved tour.
+                    employeeId: 20
+                    workedDate: '2026-08-10'
+                    valid: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/mobile/leaves/{leaveId}/cancel:
+    post:
+      tags:
+        - Employee Leave
+      summary: Cancel a pending leave application
+      description: Cancels only the logged-in employee's own pending leave application.
+      operationId: cancelMobileLeaveApplication
+      parameters:
+        - $ref: '#/components/parameters/LeaveId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeRequest'
+            example:
+              employeeId: 20
+      responses:
+        '200':
+          description: Leave application cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveApplicationResponse'
+              example:
+                success: true
+                message: Leave application cancelled successfully.
+                leaveApplication:
+                  leaveId: 901
+                  employeeId: 20
+                  leaveType: CL
+                  leaveCategory: Full Day
+                  startDate: '2026-08-15'
+                  endDate: '2026-08-16'
+                  compOffWorkDate: null
+                  description: Personal work
+                  applicationDate: '2026-08-11T14:30:00'
+                  status: CANCELLED
+                  hodRemarks: null
+                  managerRemarks: Cancelled by employee before approval.
+                  cancellable: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Token employee does not own the requested employee ID or leave application
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                code: LEAVE_CANCELLATION_FORBIDDEN
+                message: You can cancel only your own leave application.
+                timestamp: '2026-08-11T09:10:00Z'
+                fieldErrors: []
+        '404':
+          $ref: '#/components/responses/LeaveNotFound'
+        '409':
+          description: Leave application is no longer pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                code: LEAVE_NOT_CANCELLABLE
+                message: Only pending leave applications can be cancelled.
+                timestamp: '2026-08-11T09:10:00Z'
+                fieldErrors: []
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/mobile/leaves/approvals:
+    get:
+      tags:
+        - HOD Leave Approval
+      summary: Get HOD leave approval queues
+      description: |
+        Returns pending and processed leave applications for employees inside
+        the logged-in HOD's effective reporting authority. The optional search
+        matches employee names and designations.
+      operationId: getMobileLeaveApprovals
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+        - $ref: '#/components/parameters/SearchQuery'
+      responses:
+        '200':
+          description: Leave approval queues fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveApprovalsResponse'
+              examples:
+                success:
+                  $ref: '#/components/examples/LeaveApprovalsSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/HodAccessRequired'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/mobile/leaves/approvals/{leaveId}/approve:
+    post:
+      tags:
+        - HOD Leave Approval
+      summary: Approve a pending leave application
+      description: |
+        Approves a pending application only when its employee is within the
+        logged-in HOD's effective reporting authority.
+      operationId: approveMobileLeaveApplication
+      parameters:
+        - $ref: '#/components/parameters/LeaveId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveDecisionRequest'
+            example:
+              employeeId: 50
+              remarks: Approved
+      responses:
+        '200':
+          description: Leave application approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveApplicationResponse'
+              examples:
+                approved:
+                  $ref: '#/components/examples/LeaveApplicationApproved'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/LeaveApprovalForbidden'
+        '404':
+          $ref: '#/components/responses/LeaveNotFound'
+        '409':
+          $ref: '#/components/responses/LeaveAlreadyProcessed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/mobile/leaves/approvals/{leaveId}/reject:
+    post:
+      tags:
+        - HOD Leave Approval
+      summary: Reject a pending leave application
+      description: |
+        Rejects a pending application only when its employee is within the
+        logged-in HOD's effective reporting authority. Non-blank remarks are
+        required.
+      operationId: rejectMobileLeaveApplication
+      parameters:
+        - $ref: '#/components/parameters/LeaveId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveDecisionRequest'
+            example:
+              employeeId: 50
+              remarks: Insufficient leave notice
+      responses:
+        '200':
+          description: Leave application rejected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveApplicationResponse'
+              examples:
+                rejected:
+                  $ref: '#/components/examples/LeaveApplicationRejected'
+        '400':
+          description: Invalid request or blank rejection remarks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                remarksRequired:
+                  value:
+                    code: REJECTION_REMARKS_REQUIRED
+                    message: Remarks are required when rejecting leave.
+                    timestamp: '2026-08-11T09:10:00Z'
+                    fieldErrors: []
+                validationFailed:
+                  $ref: '#/components/examples/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/LeaveApprovalForbidden'
+        '404':
+          $ref: '#/components/responses/LeaveNotFound'
+        '409':
+          $ref: '#/components/responses/LeaveAlreadyProcessed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token returned by `POST /api/mobile/auth/login` or the refresh operation
+
+  parameters:
+    EmployeeId:
+      name: employeeId
+      in: query
+      required: true
+      description: Employee ID mapped to the authenticated mobile user
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      example: 20
+    LeaveId:
+      name: leaveId
+      in: path
+      required: true
+      description: Leave application identifier
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      example: 901
+    WorkedDate:
+      name: workedDate
+      in: query
+      required: true
+      description: Date worked to earn comp-off, in ISO `yyyy-MM-dd` format
+      schema:
+        type: string
+        format: date
+      example: '2026-08-09'
+    SearchQuery:
+      name: query
+      in: query
+      required: false
+      description: Case-insensitive partial employee-name or designation search
+      schema:
+        type: string
+      example: Assistant
+
+  schemas:
+    LeaveApplyRequest:
+      type: object
+      required:
+        - employeeId
+        - leaveType
+        - leaveCategory
+        - startDate
+        - endDate
+      properties:
+        employeeId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Employee ID mapped to the bearer token
+          example: 20
+        leaveType:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Code returned by the leave options operation; the returned name is also accepted
+          example: CL
+        leaveCategory:
+          $ref: '#/components/schemas/LeaveCategoryCode'
+        startDate:
+          type: string
+          format: date
+          example: '2026-08-15'
+        endDate:
+          type: string
+          format: date
+          example: '2026-08-16'
+        compOffWorkDate:
+          type:
+            - string
+            - 'null'
+          format: date
+          description: Required only for comp-off leave
+          example: null
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 500
+          example: Personal work
+
+    EmployeeRequest:
+      type: object
+      required:
+        - employeeId
+      properties:
+        employeeId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Employee ID mapped to the bearer token
+          example: 20
+
+    LeaveDecisionRequest:
+      type: object
+      required:
+        - employeeId
+      properties:
+        employeeId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Logged-in HOD employee ID mapped to the bearer token
+          example: 50
+        remarks:
+          type:
+            - string
+            - 'null'
+          maxLength: 500
+          description: Optional for approval and required, after trimming, for rejection
+          example: Approved
+
+    LeaveCategoryCode:
+      type: string
+      enum:
+        - FULL_DAY
+        - FIRST_HALF
+        - SECOND_HALF
+      example: FULL_DAY
+
+    LeaveStatus:
+      type: string
+      description: Current leave workflow status
+      enum:
+        - PENDING
+        - APPROVED
+        - ACCEPTED
+        - REJECTED
+        - CANCELLED
+      example: PENDING
+
+    LeaveApplication:
+      type: object
+      required:
+        - leaveId
+        - employeeId
+        - leaveType
+        - leaveCategory
+        - startDate
+        - endDate
+        - compOffWorkDate
+        - description
+        - applicationDate
+        - status
+        - hodRemarks
+        - managerRemarks
+        - cancellable
+      properties:
+        leaveId:
+          type: integer
+          format: int64
+          example: 901
+        employeeId:
+          type: integer
+          format: int64
+          example: 20
+        leaveType:
+          type: string
+          example: CL
+        leaveCategory:
+          type: string
+          description: Portal display value
+          enum:
+            - Full Day
+            - First Half
+            - Second Half
+          example: Full Day
+        startDate:
+          type: string
+          format: date
+          example: '2026-08-15'
+        endDate:
+          type: string
+          format: date
+          example: '2026-08-16'
+        compOffWorkDate:
+          type:
+            - string
+            - 'null'
+          format: date
+          example: null
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 500
+          example: Personal work
+        applicationDate:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          example: '2026-08-11T14:30:00'
+        status:
+          $ref: '#/components/schemas/LeaveStatus'
+        hodRemarks:
+          type:
+            - string
+            - 'null'
+          example: null
+        managerRemarks:
+          type:
+            - string
+            - 'null'
+          example: null
+        cancellable:
+          type: boolean
+          description: True only while the application is pending
+          example: true
+
+    LeaveApplicationResponse:
+      type: object
+      required:
+        - success
+        - message
+        - leaveApplication
+      properties:
+        success:
+          type: boolean
+          const: true
+        message:
+          type: string
+          example: Leave application submitted successfully.
+        leaveApplication:
+          $ref: '#/components/schemas/LeaveApplication'
+
+    LeaveHistoryResponse:
+      type: object
+      required:
+        - success
+        - message
+        - employeeId
+        - leaveApplications
+      properties:
+        success:
+          type: boolean
+          const: true
+        message:
+          type: string
+          example: Leave applications fetched successfully.
+        employeeId:
+          type: integer
+          format: int64
+          example: 20
+        leaveApplications:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveApplication'
+
+    LeaveType:
+      type: object
+      required:
+        - leaveId
+        - code
+        - name
+        - compOff
+      properties:
+        leaveId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+          description: Null only for the generated comp-off fallback
+          example: 1
+        code:
+          type: string
+          example: CL
+        name:
+          type: string
+          example: Casual Leave
+        compOff:
+          type: boolean
+          example: false
+
+    LeaveCategory:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          $ref: '#/components/schemas/LeaveCategoryCode'
+        name:
+          type: string
+          enum:
+            - Full Day
+            - First Half
+            - Second Half
+          example: Full Day
+
+    LeaveOptionsResponse:
+      type: object
+      required:
+        - success
+        - message
+        - employeeId
+        - leaveTypes
+        - leaveCategories
+      properties:
+        success:
+          type: boolean
+          const: true
+        message:
+          type: string
+          example: Leave application options fetched successfully.
+        employeeId:
+          type: integer
+          format: int64
+          example: 20
+        leaveTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveType'
+        leaveCategories:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveCategory'
+
+    CompOffValidationResponse:
+      type: object
+      required:
+        - success
+        - message
+        - employeeId
+        - workedDate
+        - valid
+      properties:
+        success:
+          type: boolean
+          const: true
+        message:
+          type: string
+        employeeId:
+          type: integer
+          format: int64
+          example: 20
+        workedDate:
+          type: string
+          format: date
+          example: '2026-08-09'
+        valid:
+          type: boolean
+          example: true
+
+    ApprovalItem:
+      type: object
+      required:
+        - leaveId
+        - applicantEmployeeId
+        - employeeCode
+        - employeeName
+        - designation
+        - leaveType
+        - leaveCategory
+        - startDate
+        - endDate
+        - compOffWorkDate
+        - description
+        - applicationDate
+        - status
+        - hodRemarks
+      properties:
+        leaveId:
+          type: integer
+          format: int64
+          example: 901
+        applicantEmployeeId:
+          type: integer
+          format: int64
+          example: 20
+        employeeCode:
+          type: string
+          example: EMP020
+        employeeName:
+          type: string
+          example: Example Employee
+        designation:
+          type: string
+          example: Assistant
+        leaveType:
+          type: string
+          example: CL
+        leaveCategory:
+          type: string
+          example: Full Day
+        startDate:
+          type: string
+          format: date
+          example: '2026-08-15'
+        endDate:
+          type: string
+          format: date
+          example: '2026-08-16'
+        compOffWorkDate:
+          type:
+            - string
+            - 'null'
+          format: date
+          example: null
+        description:
+          type:
+            - string
+            - 'null'
+          example: Personal work
+        applicationDate:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          example: '2026-08-11T14:30:00'
+        status:
+          $ref: '#/components/schemas/LeaveStatus'
+        hodRemarks:
+          type:
+            - string
+            - 'null'
+          example: null
+
+    LeaveApprovalsResponse:
+      type: object
+      required:
+        - success
+        - message
+        - employeeId
+        - query
+        - pendingLeaves
+        - processedLeaves
+      properties:
+        success:
+          type: boolean
+          const: true
+        message:
+          type: string
+          example: Leave approvals fetched successfully.
+        employeeId:
+          type: integer
+          format: int64
+          example: 50
+        query:
+          type:
+            - string
+            - 'null'
+          example: null
+        pendingLeaves:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovalItem'
+        processedLeaves:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovalItem'
+
+    FieldError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          example: employeeId
+        message:
+          type: string
+          example: Employee ID is required.
+
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: VALIDATION_FAILED
+        message:
+          type: string
+          example: Please provide valid request details.
+        timestamp:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Present for controller and business errors; authentication-filter responses may omit it
+          example: '2026-08-11T09:10:00Z'
+        fieldErrors:
+          type: array
+          description: Present for controller and business errors; authentication-filter responses may omit it
+          items:
+            $ref: '#/components/schemas/FieldError'
+          default: []
+
+  responses:
+    BadRequest:
+      description: Invalid request, validation failure, or leave business-rule failure
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            validationFailed:
+              $ref: '#/components/examples/ValidationFailed'
+            invalidLeaveType:
+              value:
+                code: INVALID_LEAVE_TYPE
+                message: Select a valid leave type returned by the leave options API.
+                timestamp: '2026-08-11T09:10:00Z'
+                fieldErrors: []
+            invalidLeaveApplication:
+              value:
+                code: INVALID_LEAVE_APPLICATION
+                message: End date must be greater than or equal to start date.
+                timestamp: '2026-08-11T09:10:00Z'
+                fieldErrors: []
+    Unauthorized:
+      description: Bearer access token is missing, invalid, or expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            missingToken:
+              value:
+                code: UNAUTHORIZED
+                message: Authentication is required.
+            invalidToken:
+              value:
+                code: INVALID_TOKEN
+                message: Invalid or expired token.
+    Forbidden:
+      description: Authenticated user cannot access the requested employee
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: EMPLOYEE_MISMATCH
+            message: You can access only the logged-in employee details.
+            timestamp: '2026-08-11T09:10:00Z'
+            fieldErrors: []
+    HodAccessRequired:
+      description: Logged-in user does not have HOD authority
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: HOD_ACCESS_REQUIRED
+            message: HOD access is required for leave approvals.
+            timestamp: '2026-08-11T09:10:00Z'
+            fieldErrors: []
+    LeaveApprovalForbidden:
+      description: HOD access is missing or the applicant is outside the HOD's reporting authority
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            hodRoleRequired:
+              value:
+                code: HOD_ACCESS_REQUIRED
+                message: HOD access is required for leave approvals.
+                timestamp: '2026-08-11T09:10:00Z'
+                fieldErrors: []
+            outsideReportingAuthority:
+              value:
+                code: LEAVE_APPROVAL_FORBIDDEN
+                message: This leave application is outside your reporting authority.
+                timestamp: '2026-08-11T09:10:00Z'
+                fieldErrors: []
+    LeaveNotFound:
+      description: Leave application was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: LEAVE_NOT_FOUND
+            message: Leave application not found.
+            timestamp: '2026-08-11T09:10:00Z'
+            fieldErrors: []
+    LeaveAlreadyProcessed:
+      description: Leave application is no longer pending
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: LEAVE_ALREADY_PROCESSED
+            message: Only pending leave applications can be processed.
+            timestamp: '2026-08-11T09:10:00Z'
+            fieldErrors: []
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: INTERNAL_SERVER_ERROR
+            message: An unexpected error occurred.
+            timestamp: '2026-08-11T09:10:00Z'
+            fieldErrors: []
+
+  examples:
+    ValidationFailed:
+      value:
+        code: VALIDATION_FAILED
+        message: Please provide valid request details.
+        timestamp: '2026-08-11T09:10:00Z'
+        fieldErrors:
+          - field: employeeId
+            message: Employee ID is required.
+
+    LeaveOptionsSuccess:
+      value:
+        success: true
+        message: Leave application options fetched successfully.
+        employeeId: 20
+        leaveTypes:
+          - leaveId: 1
+            code: CL
+            name: Casual Leave
+            compOff: false
+          - leaveId: 5
+            code: CO
+            name: Comp Off
+            compOff: true
+        leaveCategories:
+          - code: FULL_DAY
+            name: Full Day
+          - code: FIRST_HALF
+            name: First Half
+          - code: SECOND_HALF
+            name: Second Half
+
+    LeaveApplicationCreated:
+      value:
+        success: true
+        message: Leave application submitted successfully.
+        leaveApplication:
+          leaveId: 901
+          employeeId: 20
+          leaveType: CL
+          leaveCategory: Full Day
+          startDate: '2026-08-15'
+          endDate: '2026-08-16'
+          compOffWorkDate: null
+          description: Personal work
+          applicationDate: '2026-08-11T14:30:00'
+          status: PENDING
+          hodRemarks: null
+          managerRemarks: null
+          cancellable: true
+
+    LeaveHistorySuccess:
+      value:
+        success: true
+        message: Leave applications fetched successfully.
+        employeeId: 20
+        leaveApplications:
+          - leaveId: 901
+            employeeId: 20
+            leaveType: CL
+            leaveCategory: Full Day
+            startDate: '2026-08-15'
+            endDate: '2026-08-16'
+            compOffWorkDate: null
+            description: Personal work
+            applicationDate: '2026-08-11T14:30:00'
+            status: PENDING
+            hodRemarks: null
+            managerRemarks: null
+            cancellable: true
+
+    LeaveApprovalsSuccess:
+      value:
+        success: true
+        message: Leave approvals fetched successfully.
+        employeeId: 50
+        query: null
+        pendingLeaves:
+          - leaveId: 901
+            applicantEmployeeId: 20
+            employeeCode: EMP020
+            employeeName: Example Employee
+            designation: Assistant
+            leaveType: CL
+            leaveCategory: Full Day
+            startDate: '2026-08-15'
+            endDate: '2026-08-16'
+            compOffWorkDate: null
+            description: Personal work
+            applicationDate: '2026-08-11T14:30:00'
+            status: PENDING
+            hodRemarks: null
+        processedLeaves: []
+
+    LeaveApplicationApproved:
+      value:
+        success: true
+        message: Leave application approved successfully.
+        leaveApplication:
+          leaveId: 901
+          employeeId: 20
+          leaveType: CL
+          leaveCategory: Full Day
+          startDate: '2026-08-15'
+          endDate: '2026-08-16'
+          compOffWorkDate: null
+          description: Personal work
+          applicationDate: '2026-08-11T14:30:00'
+          status: APPROVED
+          hodRemarks: Approved
+          managerRemarks: null
+          cancellable: false
+
+    LeaveApplicationRejected:
+      value:
+        success: true
+        message: Leave application rejected successfully.
+        leaveApplication:
+          leaveId: 901
+          employeeId: 20
+          leaveType: CL
+          leaveCategory: Full Day
+          startDate: '2026-08-15'
+          endDate: '2026-08-16'
+          compOffWorkDate: null
+          description: Personal work
+          applicationDate: '2026-08-11T14:30:00'
+          status: REJECTED
+          hodRemarks: Insufficient leave notice
+          managerRemarks: null
+          cancellable: false
