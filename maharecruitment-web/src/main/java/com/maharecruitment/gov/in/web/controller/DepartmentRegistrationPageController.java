@@ -22,7 +22,6 @@ import com.maharecruitment.gov.in.master.dto.SubDepartmentResponse;
 import com.maharecruitment.gov.in.master.service.DepartmentMstService;
 import com.maharecruitment.gov.in.master.service.SubDepartmentService;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
-import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationResult;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
@@ -83,11 +82,9 @@ public class DepartmentRegistrationPageController {
         }
 
         try {
-            DepartmentRegistrationResult result = registrationPageService.register(form);
+            registrationPageService.register(form);
             otpVerificationService.clear(session, VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
             redirectAttributes.addAttribute("registered", "true");
-            redirectAttributes.addFlashAttribute("generatedUsername", result.username());
-            redirectAttributes.addFlashAttribute("generatedPassword", result.temporaryPassword());
             return "redirect:/login";
         } catch (RuntimeException ex) {
             if (!applyRegistrationError(bindingResult, form, ex)) {

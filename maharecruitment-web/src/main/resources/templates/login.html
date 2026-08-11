@@ -87,16 +87,10 @@
                         </div>
                         <div th:if="${param.accessDenied}" class="alert alert-danger">Access denied for requested
                             module.</div>
-                        <div th:if="${generatedUsername != null and generatedPassword != null}"
-                            class="alert alert-success">
-                            Department registration submitted successfully.<br>
-                            Username: <strong th:text="${generatedUsername}"></strong><br>
-                            Temporary Password: <strong th:text="${generatedPassword}"></strong><br>
-                            Credentials have also been sent to your registered email and mobile number.
+                        <div th:if="${param.registered != null}" class="alert alert-success">
+                            Department registration submitted successfully. Login credentials have been sent to your
+                            registered email and mobile number.
                         </div>
-                        <div th:if="${param.registered != null and generatedUsername == null}"
-                            class="alert alert-success">Department registration submitted successfully. Please wait for
-                            approval.</div>
                         <div th:if="${otpErrorMessage != null}" class="alert alert-danger" th:text="${otpErrorMessage}">
                             OTP login failed.
                         </div>
