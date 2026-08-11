@@ -4,10 +4,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -19,7 +20,8 @@ import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 public class OtpRateLimiter {
 
     private final OtpVerificationProperties properties;
-    private final Map<String, RateLimitState> requestStore = new ConcurrentHashMap<>();
+    private final Map<String, RateLimitState> requestStore = new HashMap<>();
+    private final ReentrantLock reservationLock = new ReentrantLock();
 
     public OtpRateLimiter(OtpVerificationProperties properties) {
         this.properties = properties;
@@ -37,11 +39,13 @@ public class OtpRateLimiter {
                         new RateLimitRule(
                                 buildReferenceKey("send", purpose, channel, reference),
                                 Math.max(1, properties.getResendLimit()),
-                                sendWindow),
+                                sendWindow,
+                                Duration.ofSeconds(Math.max(0, properties.getResendCooldownSeconds()))),
                         new RateLimitRule(
                                 buildIpKey("send", context),
                                 Math.max(properties.getSendIpLimit(), properties.getResendLimit()),
-                                sendWindow)));
+                                sendWindow,
+                                Duration.ZERO)));
     }
 
     public void checkVerifyAllowed(
@@ -55,41 +59,47 @@ public class OtpRateLimiter {
                         new RateLimitRule(
                                 buildReferenceKey("verify", purpose, channel, reference),
                                 Math.max(1, properties.getVerifyRateLimit()),
-                                Duration.ofSeconds(Math.max(1, properties.getVerifyRateWindowSeconds()))),
+                                Duration.ofSeconds(Math.max(1, properties.getVerifyRateWindowSeconds())),
+                                Duration.ZERO),
                         new RateLimitRule(
                                 buildIpKey("verify", context),
                                 Math.max(1, properties.getVerifyRateLimit()),
-                                Duration.ofSeconds(Math.max(1, properties.getVerifyRateWindowSeconds())))));
+                                Duration.ofSeconds(Math.max(1, properties.getVerifyRateWindowSeconds())),
+                                Duration.ZERO)));
     }
 
     public void releaseSendReservation(SendReservation reservation) {
         if (reservation == null) {
             return;
         }
-        reservation.attempts.forEach(attempt -> {
-            RateLimitState state = attempt.state();
-            synchronized (state) {
+        reservationLock.lock();
+        try {
+            reservation.attempts.forEach(attempt -> {
+                RateLimitState state = attempt.state();
                 state.requestTimes.removeLastOccurrence(attempt.reservedAt());
                 if (state.requestTimes.isEmpty()) {
                     requestStore.remove(attempt.key(), state);
                 }
-            }
-        });
+            });
+        } finally {
+            reservationLock.unlock();
+        }
     }
 
     private SendReservation checkAllowed(String action, List<RateLimitRule> rules) {
-        Instant now = Instant.now();
-        List<RateLimitCheck> checks = rules.stream()
-                .map(rule -> new RateLimitCheck(
-                        rule,
-                        requestStore.computeIfAbsent(rule.key(), ignored -> new RateLimitState())))
-                .toList();
+        reservationLock.lock();
+        try {
+            Instant now = Instant.now();
+            List<RateLimitCheck> checks = rules.stream()
+                    .map(rule -> new RateLimitCheck(
+                            rule,
+                            requestStore.computeIfAbsent(rule.key(), ignored -> new RateLimitState())))
+                    .toList();
 
-        long retryAfterSeconds = 0;
-        for (RateLimitCheck check : checks) {
-            RateLimitRule rule = check.rule();
-            RateLimitState state = check.state();
-            synchronized (state) {
+            long retryAfterSeconds = 0;
+            for (RateLimitCheck check : checks) {
+                RateLimitRule rule = check.rule();
+                RateLimitState state = check.state();
                 prune(state, now, rule.window());
                 if (state.requestTimes.size() >= rule.limit()) {
                     Instant oldestRequest = state.requestTimes.peekFirst();
@@ -97,26 +107,35 @@ public class OtpRateLimiter {
                             retryAfterSeconds,
                             secondsUntil(now, oldestRequest.plus(rule.window())));
                 }
+                Instant latestRequest = state.requestTimes.peekLast();
+                if (latestRequest != null && !rule.minimumInterval().isZero()) {
+                    Instant nextAllowedAt = latestRequest.plus(rule.minimumInterval());
+                    if (now.isBefore(nextAllowedAt)) {
+                        retryAfterSeconds = Math.max(
+                                retryAfterSeconds,
+                                secondsUntil(now, nextAllowedAt));
+                    }
+                }
             }
-        }
 
-        if (retryAfterSeconds > 0) {
-            throw new OtpRateLimitException(
-                    "OTP " + action + " rate limit exceeded.",
-                    retryAfterSeconds);
-        }
+            if (retryAfterSeconds > 0) {
+                throw new OtpRateLimitException(
+                        "OTP " + action + " rate limit exceeded.",
+                        retryAfterSeconds);
+            }
 
-        List<ReservedAttempt> reservedAttempts = new java.util.ArrayList<>(checks.size());
-        for (RateLimitCheck check : checks) {
-            RateLimitRule rule = check.rule();
-            RateLimitState state = check.state();
-            synchronized (state) {
+            List<ReservedAttempt> reservedAttempts = new java.util.ArrayList<>(checks.size());
+            for (RateLimitCheck check : checks) {
+                RateLimitRule rule = check.rule();
+                RateLimitState state = check.state();
                 prune(state, now, rule.window());
                 state.requestTimes.addLast(now);
                 reservedAttempts.add(new ReservedAttempt(rule.key(), state, now));
             }
+            return new SendReservation(List.copyOf(reservedAttempts));
+        } finally {
+            reservationLock.unlock();
         }
-        return new SendReservation(List.copyOf(reservedAttempts));
     }
 
     private String buildReferenceKey(
@@ -156,7 +175,7 @@ public class OtpRateLimiter {
         private final Deque<Instant> requestTimes = new ArrayDeque<>();
     }
 
-    private record RateLimitRule(String key, int limit, Duration window) {
+    private record RateLimitRule(String key, int limit, Duration window, Duration minimumInterval) {
     }
 
     private record RateLimitCheck(RateLimitRule rule, RateLimitState state) {

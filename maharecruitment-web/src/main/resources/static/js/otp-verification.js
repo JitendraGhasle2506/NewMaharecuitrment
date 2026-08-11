@@ -35,12 +35,15 @@
         const state = {
             verified: Boolean(config.initialVerified),
             captchaId: "",
-            locked: false
+            locked: false,
+            sendInProgress: false
         };
         let captchaSection = null;
         let captchaQuestion = null;
         let captchaInput = null;
         let lockTimerId = null;
+        let resendTimerId = null;
+        const initialSendButtonLabel = config.sendButton.textContent;
 
         const setStatus = (message, mode) => {
             if (!config.statusElement) {
@@ -115,6 +118,37 @@
             const minutesPart = Math.floor(seconds / 60);
             const secondsPart = seconds % 60;
             return String(minutesPart).padStart(2, "0") + ":" + String(secondsPart).padStart(2, "0");
+        };
+
+        const stopResendCooldown = () => {
+            if (resendTimerId) {
+                window.clearInterval(resendTimerId);
+                resendTimerId = null;
+            }
+            config.sendButton.textContent = initialSendButtonLabel;
+            config.sendButton.disabled = state.sendInProgress;
+        };
+
+        const startResendCooldown = (seconds) => {
+            stopResendCooldown();
+            let remaining = Math.max(0, Number(seconds || 0));
+            if (remaining <= 0) {
+                return;
+            }
+
+            const render = () => {
+                config.sendButton.disabled = true;
+                config.sendButton.textContent = "Resend OTP (" + formatDuration(remaining) + ")";
+            };
+            render();
+            resendTimerId = window.setInterval(() => {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    stopResendCooldown();
+                    return;
+                }
+                render();
+            }, 1000);
         };
 
         const ensureCaptchaElements = () => {
@@ -227,6 +261,7 @@
         const reset = () => {
             state.verified = false;
             stopLockCountdown();
+            stopResendCooldown();
             hideCaptcha();
             if (config.otpInput) {
                 config.otpInput.value = "";
@@ -240,6 +275,9 @@
         };
 
         const sendOtp = async () => {
+            if (state.sendInProgress || resendTimerId) {
+                return;
+            }
             const reference = config.referenceInput.value.trim();
             if (!validateReference || !validateReference(reference)) {
                 setStatus(defaults.invalidReference, "is-error");
@@ -247,6 +285,7 @@
                 return;
             }
 
+            state.sendInProgress = true;
             config.sendButton.disabled = true;
             setStatus("Sending OTP...", "is-pending");
 
@@ -265,13 +304,20 @@
                     config.otpInput.disabled = false;
                 }
                 setStatus(data.message, "is-pending");
+                startResendCooldown(
+                    data.resendAvailableInSeconds || data.retryAfterSeconds || config.resendCooldownSeconds || 60
+                );
                 if (config.otpInput) {
                     config.otpInput.focus();
                 }
             } catch (error) {
                 applySecurityState(error.response, error.message);
+                if (error.response && error.response.retryAfterSeconds > 0) {
+                    startResendCooldown(error.response.retryAfterSeconds);
+                }
             } finally {
-                config.sendButton.disabled = false;
+                state.sendInProgress = false;
+                config.sendButton.disabled = Boolean(resendTimerId);
             }
         };
 

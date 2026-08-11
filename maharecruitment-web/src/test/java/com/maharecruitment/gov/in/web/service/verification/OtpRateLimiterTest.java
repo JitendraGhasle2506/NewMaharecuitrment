@@ -1,7 +1,15 @@
 package com.maharecruitment.gov.in.web.service.verification;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +41,7 @@ class OtpRateLimiterTest {
         properties.setResendLimit(2);
         properties.setSendIpLimit(100);
         properties.setResendWindowMinutes(5);
+        properties.setResendCooldownSeconds(0);
         OtpRateLimiter limiter = new OtpRateLimiter(properties);
         OtpRequestContext context = new OtpRequestContext("127.0.0.1");
 
@@ -84,5 +93,49 @@ class OtpRateLimiterTest {
                 VerificationChannel.EMAIL,
                 "user@example.com",
                 context)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void concurrentEmailRequestsReserveOnlyOneSendDuringCooldown() throws Exception {
+        OtpVerificationProperties properties = new OtpVerificationProperties();
+        properties.setResendLimit(20);
+        properties.setSendIpLimit(100);
+        properties.setResendWindowMinutes(5);
+        properties.setResendCooldownSeconds(60);
+        OtpRateLimiter limiter = new OtpRateLimiter(properties);
+        OtpRequestContext context = new OtpRequestContext("127.0.0.1");
+        int concurrentRequests = 12;
+        ExecutorService executor = Executors.newFixedThreadPool(concurrentRequests);
+        CountDownLatch start = new CountDownLatch(1);
+
+        try {
+            List<Future<Boolean>> results = new ArrayList<>();
+            for (int index = 0; index < concurrentRequests; index++) {
+                results.add(executor.submit(() -> {
+                    start.await();
+                    try {
+                        limiter.checkSendAllowed(
+                                "department-registration",
+                                VerificationChannel.EMAIL,
+                                "user@example.com",
+                                context);
+                        return true;
+                    } catch (OtpRateLimitException ex) {
+                        return false;
+                    }
+                }));
+            }
+
+            start.countDown();
+            long acceptedRequests = 0;
+            for (Future<Boolean> result : results) {
+                if (result.get()) {
+                    acceptedRequests++;
+                }
+            }
+            assertThat(acceptedRequests).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 }

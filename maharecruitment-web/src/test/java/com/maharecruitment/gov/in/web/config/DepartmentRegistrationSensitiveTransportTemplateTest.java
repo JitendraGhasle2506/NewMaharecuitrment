@@ -39,6 +39,14 @@ class DepartmentRegistrationSensitiveTransportTemplateTest {
                 .contains("Date.now() + published.clockOffset")
                 .contains("\"SENSITIVE:v1\"")
                 .doesNotContain("includes(\"X\")");
+
+        String otpScript = Files.readString(projectPath(
+                "src/main/resources/static/js/otp-verification.js"));
+        assertThat(otpScript)
+                .contains("state.sendInProgress || resendTimerId")
+                .contains("data.resendAvailableInSeconds")
+                .contains("startResendCooldown")
+                .contains("Resend OTP (");
     }
 
     private Path projectPath(String relativePath) {

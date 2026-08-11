@@ -56,6 +56,7 @@
         var isSmsOtpEnabled = form.dataset.smsOtpEnabled === "true";
         var expiryTimerId = null;
         var resendTimerId = null;
+        var sendRequestInProgress = false;
         var hasSentOtpOnce = false;
         var initialSendButtonLabel = "Send OTP";
         var resendButtonLabel = "Resend OTP";
@@ -359,6 +360,9 @@
         identifierInput.addEventListener("input", resetStatus);
 
         sendButton.addEventListener("click", async function () {
+            if (sendRequestInProgress) {
+                return;
+            }
             if (isInsecureTransport()) {
                 showTransportError();
                 return;
@@ -385,6 +389,7 @@
                 return;
             }
 
+            sendRequestInProgress = true;
             sendButton.disabled = true;
             setStatus("Sending OTP...", "is-pending");
 
@@ -451,6 +456,7 @@
                 setStatus(error.message || "Unable to send OTP.", "is-error");
                 setTiming("");
             } finally {
+                sendRequestInProgress = false;
                 if (!resendTimerId) {
                     sendButton.disabled = false;
                 }

@@ -182,6 +182,7 @@ class DatabaseOtpVerificationServiceTest {
         service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
         String oldOtp = emailHandler.lastOtp;
         currentState().setOtpExpiryTime(Instant.now().minusSeconds(1));
+        properties.setResendCooldownSeconds(0);
 
         service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
         String newOtp = emailHandler.lastOtp;
