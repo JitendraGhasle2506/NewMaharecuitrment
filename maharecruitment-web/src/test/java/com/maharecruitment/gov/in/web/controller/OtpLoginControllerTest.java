@@ -23,6 +23,7 @@ import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.login.OtpLoginService;
 import com.maharecruitment.gov.in.web.service.login.UnknownLoginIdentifierException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 
 class OtpLoginControllerTest {
@@ -141,5 +142,29 @@ class OtpLoginControllerTest {
         assertThat(response.getBody().message())
                 .isEqualTo("OTP already sent. Please enter the latest valid OTP. Resend is available after the timer ends.");
         assertThat(response.getBody().retryAfterSeconds()).isEqualTo(240);
+    }
+
+    @Test
+    void emailDeliveryFailureReturnsRetryableServiceUnavailableResponse() {
+        OtpLoginSendRequest request = new OtpLoginSendRequest();
+        request.setIdentifier("hr@mahait.org");
+        request.setChannel("EMAIL");
+        when(otpLoginService.isChannelEnabled(VerificationChannel.EMAIL)).thenReturn(true);
+        when(otpLoginService.sendOtp(any(), any(), any(), any()))
+                .thenThrow(new OtpDeliveryException(
+                        VerificationChannel.EMAIL,
+                        "SMTP unavailable",
+                        new IllegalStateException("connection failed")));
+
+        ResponseEntity<VerificationResponse> response = controller.sendOtp(
+                request,
+                new BeanPropertyBindingResult(request, "request"),
+                new MockHttpServletRequest(),
+                new MockHttpSession());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message())
+                .isEqualTo("Email OTP service is temporarily unavailable. Please try again later.");
     }
 }

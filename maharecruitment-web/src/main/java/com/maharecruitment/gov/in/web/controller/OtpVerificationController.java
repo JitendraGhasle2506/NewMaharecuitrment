@@ -16,6 +16,7 @@ import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
@@ -33,6 +34,10 @@ public class OtpVerificationController {
     private static final String GENERIC_VERIFY_FAILURE = "OTP verification failed. Please try again.";
     private static final String GENERIC_SEND_FAILURE = "Unable to process OTP request. Please try again.";
     private static final String SMS_SEND_FAILURE = "Unable to send OTP at this time. Please try again later.";
+    private static final String EMAIL_SEND_FAILURE =
+            "Email OTP service is temporarily unavailable. Please try again later.";
+    private static final String DELIVERY_SEND_FAILURE =
+            "OTP delivery service is temporarily unavailable. Please try again later.";
     private static final String RATE_LIMIT_MESSAGE = "Too many OTP requests. Please try again later.";
 
     private final OtpVerificationService otpVerificationService;
@@ -102,6 +107,12 @@ public class OtpVerificationController {
         } catch (SmsGatewayException ex) {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new VerificationResponse(
                     SMS_SEND_FAILURE,
+                    false,
+                    request.getPurpose(),
+                    request.getChannel()));
+        } catch (OtpDeliveryException ex) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new VerificationResponse(
+                    deliveryFailureMessage(ex),
                     false,
                     request.getPurpose(),
                     request.getChannel()));
@@ -243,5 +254,11 @@ public class OtpVerificationController {
         return channel != null && channel.isSmsDelivery()
                 ? "Mobile OTP is disabled for department registration in this environment."
                 : "Email OTP is disabled for department registration in this environment.";
+    }
+
+    private String deliveryFailureMessage(OtpDeliveryException exception) {
+        return exception.getChannel() == com.maharecruitment.gov.in.web.dto.verification.VerificationChannel.EMAIL
+                ? EMAIL_SEND_FAILURE
+                : DELIVERY_SEND_FAILURE;
     }
 }

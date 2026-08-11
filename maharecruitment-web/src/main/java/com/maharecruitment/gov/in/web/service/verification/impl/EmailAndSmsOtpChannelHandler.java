@@ -7,6 +7,7 @@ import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.service.verification.OtpChannelHandler;
 import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryReferences;
 import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryReferences.BothReference;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
@@ -62,9 +63,10 @@ public class EmailAndSmsOtpChannelHandler implements OtpChannelHandler {
         }
 
         if (emailFailure != null && smsFailure != null) {
-            IllegalStateException failure = new IllegalStateException(
-                    "Failed to deliver OTP through email and SMS.");
-            failure.addSuppressed(emailFailure);
+            OtpDeliveryException failure = new OtpDeliveryException(
+                    VerificationChannel.BOTH,
+                    "Failed to deliver OTP through email and SMS.",
+                    emailFailure);
             failure.addSuppressed(smsFailure);
             throw failure;
         }

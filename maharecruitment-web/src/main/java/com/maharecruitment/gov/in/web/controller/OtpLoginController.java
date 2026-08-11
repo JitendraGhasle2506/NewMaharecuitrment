@@ -21,6 +21,7 @@ import com.maharecruitment.gov.in.web.dto.login.OtpLoginSendRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
@@ -44,6 +45,10 @@ public class OtpLoginController {
             "OTP already sent. Please enter the latest valid OTP. Resend is available after the timer ends.";
     private static final String SMS_SEND_FAILURE =
             "Unable to send OTP at this time. Please try again later.";
+    private static final String EMAIL_SEND_FAILURE =
+            "Email OTP service is temporarily unavailable. Please try again later.";
+    private static final String DELIVERY_SEND_FAILURE =
+            "OTP delivery service is temporarily unavailable. Please try again later.";
 
     private final OtpLoginService otpLoginService;
     private final MySimpleUrlAuthenticationSuccessHandler successHandler;
@@ -109,6 +114,12 @@ public class OtpLoginController {
         } catch (SmsGatewayException ex) {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new VerificationResponse(
                     SMS_SEND_FAILURE,
+                    false,
+                    VerificationPurposes.LOGIN_AUTHENTICATION,
+                    request.getChannel()));
+        } catch (OtpDeliveryException ex) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new VerificationResponse(
+                    deliveryFailureMessage(ex),
                     false,
                     VerificationPurposes.LOGIN_AUTHENTICATION,
                     request.getChannel()));
@@ -222,5 +233,11 @@ public class OtpLoginController {
         }
 
         return "Too many OTP requests. Please enter the latest valid OTP or try again after the timer ends.";
+    }
+
+    private String deliveryFailureMessage(OtpDeliveryException exception) {
+        return exception.getChannel() == com.maharecruitment.gov.in.web.dto.verification.VerificationChannel.EMAIL
+                ? EMAIL_SEND_FAILURE
+                : DELIVERY_SEND_FAILURE;
     }
 }

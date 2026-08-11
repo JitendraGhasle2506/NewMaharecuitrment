@@ -62,4 +62,27 @@ class OtpRateLimiterTest {
                 .isInstanceOf(OtpRateLimitException.class)
                 .hasMessageContaining("OTP send rate limit exceeded");
     }
+
+    @Test
+    void failedDeliveryReservationCanBeReleasedForImmediateRetry() {
+        OtpVerificationProperties properties = new OtpVerificationProperties();
+        properties.setResendLimit(1);
+        properties.setSendIpLimit(1);
+        properties.setResendWindowMinutes(5);
+        OtpRateLimiter limiter = new OtpRateLimiter(properties);
+        OtpRequestContext context = new OtpRequestContext("127.0.0.1");
+
+        OtpRateLimiter.SendReservation reservation = limiter.checkSendAllowed(
+                "login",
+                VerificationChannel.EMAIL,
+                "user@example.com",
+                context);
+        limiter.releaseSendReservation(reservation);
+
+        assertThatCode(() -> limiter.checkSendAllowed(
+                "login",
+                VerificationChannel.EMAIL,
+                "user@example.com",
+                context)).doesNotThrowAnyException();
+    }
 }

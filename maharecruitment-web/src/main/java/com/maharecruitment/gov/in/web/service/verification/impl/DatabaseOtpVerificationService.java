@@ -27,6 +27,7 @@ import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryReferences
 import com.maharecruitment.gov.in.web.service.verification.OtpFailureReason;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimiter;
+import com.maharecruitment.gov.in.web.service.verification.OtpRateLimiter.SendReservation;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
 import com.maharecruitment.gov.in.web.service.verification.OtpSecurityAuditService;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
@@ -79,7 +80,11 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                 .orElseGet(() -> newState(session, normalizedPurpose, effectiveChannel));
         rejectResendDuringCooldown(state, normalizedReference, now);
 
-        rateLimiter.checkSendAllowed(normalizedPurpose, effectiveChannel, normalizedReference, requestContext);
+        SendReservation sendReservation = rateLimiter.checkSendAllowed(
+                normalizedPurpose,
+                effectiveChannel,
+                normalizedReference,
+                requestContext);
 
         boolean resend = state.getOtpStateId() != null && state.getOtpLastSentAt() != null;
         ResendCounter resendCounter = nextResendCounter(state, now);
@@ -89,7 +94,12 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         String referenceHash = hash(normalizedReference);
         String maskedReference = maskReference(effectiveChannel, normalizedReference);
 
-        handler.dispatchOtp(normalizedPurpose, normalizedReference, otp, otpReferenceId);
+        try {
+            handler.dispatchOtp(normalizedPurpose, normalizedReference, otp, otpReferenceId);
+        } catch (RuntimeException ex) {
+            rateLimiter.releaseSendReservation(sendReservation);
+            throw ex;
+        }
 
         state.setReferenceHash(referenceHash);
         state.setReferenceMasked(maskedReference);

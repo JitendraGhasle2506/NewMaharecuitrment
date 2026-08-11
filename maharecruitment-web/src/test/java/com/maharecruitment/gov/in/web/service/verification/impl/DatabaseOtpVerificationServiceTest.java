@@ -226,6 +226,27 @@ class DatabaseOtpVerificationServiceTest {
     }
 
     @Test
+    void dispatchFailureDoesNotConsumeSendRateLimit() {
+        properties.setResendLimit(1);
+        properties.setSendIpLimit(1);
+        DatabaseOtpVerificationService failingService = new DatabaseOtpVerificationService(
+                List.of(new FailingSmsHandler()),
+                properties,
+                repository,
+                new OtpRateLimiter(properties),
+                mock(OtpSecurityAuditService.class));
+
+        for (int attempt = 0; attempt < 3; attempt++) {
+            assertThrows(IllegalStateException.class, () -> failingService.sendOtp(
+                    session,
+                    PURPOSE,
+                    VerificationChannel.SMS,
+                    "7020186501",
+                    CONTEXT));
+        }
+    }
+
+    @Test
     void bothChannelDispatchesSameOtpToEmailAndSms() {
         service.sendOtp(
                 session,

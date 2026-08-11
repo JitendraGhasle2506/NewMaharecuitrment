@@ -25,13 +25,13 @@ public class OtpRateLimiter {
         this.properties = properties;
     }
 
-    public void checkSendAllowed(
+    public SendReservation checkSendAllowed(
             String purpose,
             VerificationChannel channel,
             String reference,
             OtpRequestContext context) {
         Duration sendWindow = Duration.ofMinutes(Math.max(1, properties.getResendWindowMinutes()));
-        checkAllowed(
+        return checkAllowed(
                 "send",
                 List.of(
                         new RateLimitRule(
@@ -62,7 +62,22 @@ public class OtpRateLimiter {
                                 Duration.ofSeconds(Math.max(1, properties.getVerifyRateWindowSeconds())))));
     }
 
-    private void checkAllowed(String action, List<RateLimitRule> rules) {
+    public void releaseSendReservation(SendReservation reservation) {
+        if (reservation == null) {
+            return;
+        }
+        reservation.attempts.forEach(attempt -> {
+            RateLimitState state = attempt.state();
+            synchronized (state) {
+                state.requestTimes.removeLastOccurrence(attempt.reservedAt());
+                if (state.requestTimes.isEmpty()) {
+                    requestStore.remove(attempt.key(), state);
+                }
+            }
+        });
+    }
+
+    private SendReservation checkAllowed(String action, List<RateLimitRule> rules) {
         Instant now = Instant.now();
         List<RateLimitCheck> checks = rules.stream()
                 .map(rule -> new RateLimitCheck(
@@ -91,14 +106,17 @@ public class OtpRateLimiter {
                     retryAfterSeconds);
         }
 
+        List<ReservedAttempt> reservedAttempts = new java.util.ArrayList<>(checks.size());
         for (RateLimitCheck check : checks) {
             RateLimitRule rule = check.rule();
             RateLimitState state = check.state();
             synchronized (state) {
                 prune(state, now, rule.window());
                 state.requestTimes.addLast(now);
+                reservedAttempts.add(new ReservedAttempt(rule.key(), state, now));
             }
         }
+        return new SendReservation(List.copyOf(reservedAttempts));
     }
 
     private String buildReferenceKey(
@@ -142,5 +160,16 @@ public class OtpRateLimiter {
     }
 
     private record RateLimitCheck(RateLimitRule rule, RateLimitState state) {
+    }
+
+    private record ReservedAttempt(String key, RateLimitState state, Instant reservedAt) {
+    }
+
+    public static final class SendReservation {
+        private final List<ReservedAttempt> attempts;
+
+        private SendReservation(List<ReservedAttempt> attempts) {
+            this.attempts = attempts;
+        }
     }
 }

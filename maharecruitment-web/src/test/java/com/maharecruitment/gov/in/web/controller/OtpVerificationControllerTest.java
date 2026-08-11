@@ -13,15 +13,48 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.validation.BeanPropertyBindingResult;
 
 import com.maharecruitment.gov.in.web.dto.verification.OtpVerifyRequest;
+import com.maharecruitment.gov.in.web.dto.verification.OtpSendRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
 class OtpVerificationControllerTest {
+
+    @Test
+    void sendEmailOtpReturns503WhenEmailServiceIsUnavailable() {
+        OtpVerificationService service = mock(OtpVerificationService.class);
+        OtpVerificationController controller = new OtpVerificationController(
+                service,
+                false,
+                new NotificationChannelProperties(),
+                new TransportSecurityProperties());
+
+        OtpSendRequest request = new OtpSendRequest();
+        request.setPurpose(VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
+        request.setChannel(VerificationChannel.EMAIL);
+        request.setReference("user@example.com");
+        when(service.sendOtp(any(), any(), any(), any(), any()))
+                .thenThrow(new OtpDeliveryException(
+                        VerificationChannel.EMAIL,
+                        "SMTP unavailable",
+                        new IllegalStateException("connection failed")));
+
+        ResponseEntity<VerificationResponse> response = controller.sendOtp(
+                request,
+                new BeanPropertyBindingResult(request, "request"),
+                new MockHttpServletRequest(),
+                new MockHttpSession());
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
+        assertEquals(
+                "Email OTP service is temporarily unavailable. Please try again later.",
+                response.getBody().message());
+    }
 
     @Test
     void verifyOtpReturns429WhenRateLimitExceeded() {

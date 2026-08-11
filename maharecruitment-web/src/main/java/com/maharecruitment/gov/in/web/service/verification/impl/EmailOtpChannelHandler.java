@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.service.verification.OtpChannelHandler;
 import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryReferences;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
 
 @Component
@@ -28,11 +29,20 @@ public class EmailOtpChannelHandler implements OtpChannelHandler {
 
     @Override
     public void dispatchOtp(String purpose, String reference, String otp) {
-        otpDispatchService.sendEmailOtp(reference, otp, purpose);
+        dispatchOtp(purpose, reference, otp, null);
     }
 
     @Override
     public void dispatchOtp(String purpose, String reference, String otp, String otpReferenceId) {
-        otpDispatchService.sendEmailOtp(reference, otp, purpose, otpReferenceId);
+        try {
+            otpDispatchService.sendEmailOtp(reference, otp, purpose, otpReferenceId);
+        } catch (OtpDeliveryException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            throw new OtpDeliveryException(
+                    VerificationChannel.EMAIL,
+                    "Email OTP delivery failed.",
+                    ex);
+        }
     }
 }
