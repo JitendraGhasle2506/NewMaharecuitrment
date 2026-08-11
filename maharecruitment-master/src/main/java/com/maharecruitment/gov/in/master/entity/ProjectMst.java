@@ -23,7 +23,9 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "project_mst", indexes = {
-        @Index(name = "idx_project_mst_cell_id", columnList = "cell_id")
+        @Index(name = "idx_project_mst_cell_id", columnList = "cell_id"),
+        @Index(name = "idx_project_mst_department_id", columnList = "department_id"),
+        @Index(name = "idx_project_mst_sub_department_id", columnList = "sub_department_id")
 })
 @Getter
 @Setter
@@ -56,8 +58,19 @@ public class ProjectMst extends Auditable {
     @Column(name = "project_scope_type", nullable = false, length = 20)
     private ProjectScopeType projectScopeType;
 
-    @Column(name = "department_registration_id")
-    private Long departmentRegistrationId;
+    @Column(name = "department_id")
+    private Long departmentId;
+
+    @Column(name = "sub_department_id")
+    private Long subDepartmentId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id", insertable = false, updatable = false)
+    private DepartmentMst department;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sub_department_id", insertable = false, updatable = false)
+    private SubDepartment subDepartment;
 
     @Column(name = "application_id")
     private Long applicationId;

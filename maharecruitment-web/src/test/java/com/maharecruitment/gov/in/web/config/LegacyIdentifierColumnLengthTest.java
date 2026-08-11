@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import com.maharecruitment.gov.in.common.mahaitprofile.entity.MahaItProfile;
 import com.maharecruitment.gov.in.invoice.entity.DepartmentTaxInvoiceEntity;
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
+import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 
 import jakarta.persistence.Column;
@@ -29,6 +30,8 @@ class LegacyIdentifierColumnLengthTest {
 
         assertLength(EmployeeEntity.class, "panNumber");
         assertLength(EmployeeEntity.class, "aadhaarNumber");
+        assertLength(AgencyCandidatePreOnboardingEntity.class, "panNumber");
+        assertLength(AgencyCandidatePreOnboardingEntity.class, "aadhaarNumber");
 
         assertLength(MahaItProfile.class, "cinNumber");
         assertLength(MahaItProfile.class, "panNumber");

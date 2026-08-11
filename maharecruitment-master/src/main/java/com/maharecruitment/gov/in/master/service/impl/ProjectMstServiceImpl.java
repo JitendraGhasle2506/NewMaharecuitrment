@@ -8,15 +8,19 @@ import org.springframework.transaction.annotation.Transactional;
 import com.maharecruitment.gov.in.master.dto.ProjectRequest;
 import com.maharecruitment.gov.in.master.dto.ProjectResponse;
 import com.maharecruitment.gov.in.master.entity.CellMaster;
+import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 import com.maharecruitment.gov.in.master.entity.ProjectType;
+import com.maharecruitment.gov.in.master.entity.SubDepartment;
 import com.maharecruitment.gov.in.master.exception.BusinessValidationException;
 import com.maharecruitment.gov.in.master.exception.DuplicateResourceException;
 import com.maharecruitment.gov.in.master.exception.ResourceNotFoundException;
 import com.maharecruitment.gov.in.master.mapper.ProjectMapper;
 import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
+import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
+import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.master.service.ProjectMstService;
 
 @Service
@@ -28,14 +32,20 @@ public class ProjectMstServiceImpl implements ProjectMstService {
 
     private final ProjectMstRepository projectRepository;
     private final CellMasterRepository cellMasterRepository;
+    private final DepartmentMstRepository departmentRepository;
+    private final SubDepartmentRepository subDepartmentRepository;
     private final ProjectMapper projectMapper;
 
     public ProjectMstServiceImpl(
             ProjectMstRepository projectRepository,
             CellMasterRepository cellMasterRepository,
+            DepartmentMstRepository departmentRepository,
+            SubDepartmentRepository subDepartmentRepository,
             ProjectMapper projectMapper) {
         this.projectRepository = projectRepository;
         this.cellMasterRepository = cellMasterRepository;
+        this.departmentRepository = departmentRepository;
+        this.subDepartmentRepository = subDepartmentRepository;
         this.projectMapper = projectMapper;
     }
 
@@ -43,12 +53,19 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     @Transactional
     public ProjectResponse create(ProjectRequest request) {
         String projectName = normalizeName(request.getProjectName());
-        ensureUniqueProject(projectName, null, null);
+        DepartmentSelection departmentSelection = resolveDepartmentSelection(
+                request.getDepartmentId(),
+                request.getSubDepartmentId());
+        ensureUniqueProject(
+                projectName,
+                departmentSelection.department().getDepartmentId(),
+                departmentSelection.subDepartmentId(),
+                null);
         String projectCode = normalizeCode(request.getProjectCode());
         ensureUniqueProjectCode(projectCode, null);
 
         ProjectMst entity = new ProjectMst();
-        mapRequestToEntity(request, entity, projectName, projectCode);
+        mapRequestToEntity(request, entity, projectName, projectCode, departmentSelection);
 
         return projectMapper.toResponse(projectRepository.save(entity));
     }
@@ -60,10 +77,17 @@ public class ProjectMstServiceImpl implements ProjectMstService {
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found for id: " + projectId));
 
         String projectName = normalizeName(request.getProjectName());
-        ensureUniqueProject(projectName, entity.getDepartmentRegistrationId(), projectId);
+        DepartmentSelection departmentSelection = resolveDepartmentSelection(
+                request.getDepartmentId(),
+                request.getSubDepartmentId());
+        ensureUniqueProject(
+                projectName,
+                departmentSelection.department().getDepartmentId(),
+                departmentSelection.subDepartmentId(),
+                projectId);
         String projectCode = normalizeCode(request.getProjectCode());
         ensureUniqueProjectCode(projectCode, projectId);
-        mapRequestToEntity(request, entity, projectName, projectCode);
+        mapRequestToEntity(request, entity, projectName, projectCode, departmentSelection);
 
         return projectMapper.toResponse(projectRepository.save(entity));
     }
@@ -117,13 +141,14 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     public ProjectResponse upsertFromDepartmentApplication(
             String projectName,
             ProjectType projectType,
-            Long departmentRegistrationId,
+            Long departmentId,
+            Long subDepartmentId,
             Long applicationId) {
         if (applicationId == null) {
             throw new BusinessValidationException("Application id is required to sync project master.");
         }
-        if (departmentRegistrationId == null) {
-            throw new BusinessValidationException("Department registration id is required to sync project master.");
+        if (departmentId == null) {
+            throw new BusinessValidationException("Department id is required to sync project master.");
         }
         if (projectType == null) {
             throw new BusinessValidationException("Project type is required to sync project master.");
@@ -134,11 +159,14 @@ public class ProjectMstServiceImpl implements ProjectMstService {
             throw new BusinessValidationException("Project name is required to sync project master.");
         }
 
+        DepartmentSelection departmentSelection = resolveDepartmentSelection(departmentId, subDepartmentId);
+
         ProjectMst entity = projectRepository.findFirstByApplicationId(applicationId)
                 .orElseGet(() -> projectRepository
-                        .findFirstByProjectNameIgnoreCaseAndDepartmentRegistrationId(
+                        .findFirstByProjectNameIgnoreCaseAndDepartmentIdAndSubDepartmentId(
                                 normalizedProjectName,
-                                departmentRegistrationId)
+                                departmentId,
+                                subDepartmentId)
                         .orElseGet(ProjectMst::new));
 
         entity.setProjectName(normalizedProjectName);
@@ -147,7 +175,7 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         }
         entity.setProjectType(projectType);
         entity.setProjectScopeType(ProjectScopeType.EXTERNAL);
-        entity.setDepartmentRegistrationId(departmentRegistrationId);
+        applyDepartmentSelection(entity, departmentSelection);
         entity.setApplicationId(applicationId);
         entity.setActiveFlag(ACTIVE);
 
@@ -158,13 +186,40 @@ public class ProjectMstServiceImpl implements ProjectMstService {
             ProjectRequest request,
             ProjectMst entity,
             String normalizedProjectName,
-            String projectCode) {
+            String projectCode,
+            DepartmentSelection departmentSelection) {
         entity.setProjectName(normalizedProjectName);
         entity.setProjectCode(projectCode);
         entity.setProjectDesc(normalizeDescription(request.getProjectDesc()));
         entity.setProjectType(request.getProjectType());
         entity.setProjectScopeType(resolveProjectScopeType(request.getProjectScopeType(), entity.getApplicationId()));
+        applyDepartmentSelection(entity, departmentSelection);
         entity.setCell(resolveActiveCell(request.getCellId()));
+    }
+
+    private DepartmentSelection resolveDepartmentSelection(Long departmentId, Long subDepartmentId) {
+        if (departmentId == null) {
+            throw new BusinessValidationException("Department is required.");
+        }
+
+        DepartmentMst department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + departmentId));
+        if (subDepartmentId == null) {
+            return new DepartmentSelection(department, null);
+        }
+
+        SubDepartment subDepartment = subDepartmentRepository
+                .findBySubDeptIdAndDepartmentDepartmentId(subDepartmentId, departmentId)
+                .orElseThrow(() -> new BusinessValidationException(
+                        "Selected sub-department does not belong to the selected department."));
+        return new DepartmentSelection(department, subDepartment);
+    }
+
+    private void applyDepartmentSelection(ProjectMst entity, DepartmentSelection selection) {
+        entity.setDepartmentId(selection.department().getDepartmentId());
+        entity.setDepartment(selection.department());
+        entity.setSubDepartmentId(selection.subDepartmentId());
+        entity.setSubDepartment(selection.subDepartment());
     }
 
     private CellMaster resolveActiveCell(Long cellId) {
@@ -193,10 +248,15 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         return projectScopeType;
     }
 
-    private void ensureUniqueProject(String projectName, Long departmentRegistrationId, Long excludeId) {
-        if (projectRepository.existsByProjectNameAndDepartmentRegistrationIdExcludingId(
+    private void ensureUniqueProject(
+            String projectName,
+            Long departmentId,
+            Long subDepartmentId,
+            Long excludeId) {
+        if (projectRepository.existsByProjectNameAndDepartmentAndSubDepartmentExcludingId(
                 projectName,
-                departmentRegistrationId,
+                departmentId,
+                subDepartmentId,
                 excludeId)) {
             throw new DuplicateResourceException("Project already exists with name: " + projectName);
         }
@@ -240,5 +300,12 @@ public class ProjectMstServiceImpl implements ProjectMstService {
             prefix = "PRJ";
         }
         return prefix + "-" + applicationId;
+    }
+
+    private record DepartmentSelection(DepartmentMst department, SubDepartment subDepartment) {
+
+        private Long subDepartmentId() {
+            return subDepartment != null ? subDepartment.getSubDeptId() : null;
+        }
     }
 }

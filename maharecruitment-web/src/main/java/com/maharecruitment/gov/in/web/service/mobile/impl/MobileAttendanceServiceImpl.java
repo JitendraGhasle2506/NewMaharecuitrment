@@ -171,9 +171,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         if (!hasMobileCheckIn(attendance)) {
             throw badRequest("CHECK_IN_REQUIRED", "Check-in is required before check-out.");
         }
-        if (hasMobileCheckOut(attendance)) {
-            throw conflict("ALREADY_CHECKED_OUT", "Attendance is already checked out for today.");
-        }
+        boolean updatingExistingCheckOut = hasMobileCheckOut(attendance);
         LocalTime checkOutTime = now.toLocalTime();
         if (checkOutTime.isBefore(attendance.getCheckInTime())) {
             throw badRequest("INVALID_CHECK_OUT_TIME", "Check-out time cannot be before check-in time.");
@@ -192,8 +190,16 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         stampUpdatedBy(attendance);
 
         DailyAttendanceInternalEntity savedAttendance = dailyAttendanceInternalRepository.save(attendance);
-        logAttendanceUpdate(savedAttendance, "MOBILE_APP", checkOutUpdatedFields(), "CHECK_OUT_RECORDED");
-        return toResponse(savedAttendance, "Check-out recorded successfully.");
+        logAttendanceUpdate(
+                savedAttendance,
+                "MOBILE_APP",
+                checkOutUpdatedFields(),
+                updatingExistingCheckOut ? "CHECK_OUT_UPDATED" : "CHECK_OUT_RECORDED");
+        return toResponse(
+                savedAttendance,
+                updatingExistingCheckOut
+                        ? "Check-out updated successfully."
+                        : "Check-out recorded successfully.");
     }
 
     @Override

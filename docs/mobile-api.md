@@ -782,6 +782,10 @@ Success response:
 
 Use this API to mark check-out.
 
+The employee may call this endpoint multiple times on the same day. Each successful
+call updates the same attendance row with the latest check-out time, location,
+image, and total hours while preserving the original check-in.
+
 Headers:
 
 ```http
@@ -804,12 +808,15 @@ JSON request:
 
 Multipart fields are the same as check-in.
 
+The common `/api/mobile/attendance/mark` endpoint has the same behavior when
+`attendanceFlag` is `CHECK_OUT`, `CHECKOUT`, or `OUT`.
+
 Success response:
 
 ```json
 {
   "success": true,
-  "message": "Check-out marked successfully.",
+  "message": "Check-out recorded successfully.",
   "attendanceId": 501,
   "employeeId": 20,
   "employeeCode": "EMP-020",
@@ -821,6 +828,9 @@ Success response:
   "apiStatus": "N"
 }
 ```
+
+For the second and subsequent check-outs on the same day, the response message is
+`Check-out updated successfully.` and the `attendanceId` remains unchanged.
 
 ### POST `/api/mobile/attendance/mark`
 

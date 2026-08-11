@@ -112,7 +112,7 @@ public class AgencyCandidatePreOnboardingEntity extends RecruitmentAuditable {
     @Column(name = "aadhaar_file_size")
     private Long aadhaarFileSize;
 
-    @Column(name = "pan_number", nullable = false, length = 10)
+    @Column(name = "pan_number", nullable = false, length = 255)
     private String panNumber;
 
     @Column(name = "pan_original_name", length = 255)

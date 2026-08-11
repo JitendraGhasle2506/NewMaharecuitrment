@@ -11,7 +11,7 @@ public class InternalAttendanceSyncProperties {
 
     private boolean enabled = true;
 
-    private String apiUrl = "https://mahait.fitechit.in/api/attendance-report-org";
+    private String apiUrl = "https://mahaitattendance.espltestingsite.in/api/third-party/attendance-report-org";
 
     private String organizationCode = "ALL";
 

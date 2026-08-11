@@ -26,6 +26,7 @@ public interface ProjectMstService {
     ProjectResponse upsertFromDepartmentApplication(
             String projectName,
             ProjectType projectType,
-            Long departmentRegistrationId,
+            Long departmentId,
+            Long subDepartmentId,
             Long applicationId);
 }

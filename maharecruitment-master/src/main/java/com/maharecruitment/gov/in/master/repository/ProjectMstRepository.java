@@ -18,24 +18,24 @@ import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
 
     @Override
-    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    @EntityGraph(attributePaths = { "cell", "cell.wing", "department", "subDepartment" })
     List<ProjectMst> findAll();
 
     @Override
-    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    @EntityGraph(attributePaths = { "cell", "cell.wing", "department", "subDepartment" })
     Page<ProjectMst> findAll(Pageable pageable);
 
-    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    @EntityGraph(attributePaths = { "cell", "cell.wing", "department", "subDepartment" })
     Page<ProjectMst> findByCell_CellId(Long cellId, Pageable pageable);
 
-    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    @EntityGraph(attributePaths = { "cell", "cell.wing", "department", "subDepartment" })
     Page<ProjectMst> findByActiveFlagIgnoreCase(String activeFlag, Pageable pageable);
 
-    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    @EntityGraph(attributePaths = { "cell", "cell.wing", "department", "subDepartment" })
     Page<ProjectMst> findByCell_CellIdAndActiveFlagIgnoreCase(Long cellId, String activeFlag, Pageable pageable);
 
     @Override
-    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    @EntityGraph(attributePaths = { "cell", "cell.wing", "department", "subDepartment" })
     Optional<ProjectMst> findById(Long projectId);
 
     Optional<ProjectMst> findFirstByApplicationId(Long applicationId);
@@ -100,9 +100,10 @@ public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
             ProjectScopeType projectScopeType,
             String activeFlag);
 
-    Optional<ProjectMst> findFirstByProjectNameIgnoreCaseAndDepartmentRegistrationId(
+    Optional<ProjectMst> findFirstByProjectNameIgnoreCaseAndDepartmentIdAndSubDepartmentId(
             String projectName,
-            Long departmentRegistrationId);
+            Long departmentId,
+            Long subDepartmentId);
 
     @Query("select count(p) > 0 "
             + "from ProjectMst p "
@@ -115,11 +116,13 @@ public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
     @Query("select count(p) > 0 "
             + "from ProjectMst p "
             + "where lower(p.projectName) = lower(:projectName) "
-            + "and ((:departmentRegistrationId is null and p.departmentRegistrationId is null) "
-            + "or p.departmentRegistrationId = :departmentRegistrationId) "
+            + "and p.departmentId = :departmentId "
+            + "and ((:subDepartmentId is null and p.subDepartmentId is null) "
+            + "or p.subDepartmentId = :subDepartmentId) "
             + "and (:excludeId is null or p.projectId <> :excludeId)")
-    boolean existsByProjectNameAndDepartmentRegistrationIdExcludingId(
+    boolean existsByProjectNameAndDepartmentAndSubDepartmentExcludingId(
             @Param("projectName") String projectName,
-            @Param("departmentRegistrationId") Long departmentRegistrationId,
+            @Param("departmentId") Long departmentId,
+            @Param("subDepartmentId") Long subDepartmentId,
             @Param("excludeId") Long excludeId);
 }

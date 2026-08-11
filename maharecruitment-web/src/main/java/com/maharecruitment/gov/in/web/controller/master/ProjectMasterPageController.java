@@ -1,8 +1,11 @@
 package com.maharecruitment.gov.in.web.controller.master;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -12,14 +15,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.master.dto.ProjectRequest;
 import com.maharecruitment.gov.in.master.dto.ProjectResponse;
+import com.maharecruitment.gov.in.master.dto.SubDepartmentResponse;
 import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
 import com.maharecruitment.gov.in.master.entity.ProjectType;
 import com.maharecruitment.gov.in.master.service.CellMasterService;
+import com.maharecruitment.gov.in.master.service.DepartmentMstService;
 import com.maharecruitment.gov.in.master.service.ProjectMstService;
+import com.maharecruitment.gov.in.master.service.SubDepartmentService;
 
 import jakarta.validation.Valid;
 
@@ -29,10 +36,18 @@ public class ProjectMasterPageController {
 
     private final ProjectMstService projectService;
     private final CellMasterService cellMasterService;
+    private final DepartmentMstService departmentService;
+    private final SubDepartmentService subDepartmentService;
 
-    public ProjectMasterPageController(ProjectMstService projectService, CellMasterService cellMasterService) {
+    public ProjectMasterPageController(
+            ProjectMstService projectService,
+            CellMasterService cellMasterService,
+            DepartmentMstService departmentService,
+            SubDepartmentService subDepartmentService) {
         this.projectService = projectService;
         this.cellMasterService = cellMasterService;
+        this.departmentService = departmentService;
+        this.subDepartmentService = subDepartmentService;
     }
 
     @GetMapping
@@ -61,6 +76,15 @@ public class ProjectMasterPageController {
         return "master/projects/form";
     }
 
+    @GetMapping("/sub-departments")
+    @ResponseBody
+    public List<SubDepartmentResponse> subDepartments(@RequestParam Long departmentId) {
+        return subDepartmentService.getAll(
+                departmentId,
+                Pageable.unpaged(Sort.by(Sort.Direction.ASC, "subDeptName")))
+                .getContent();
+    }
+
     @GetMapping("/{projectId}/edit")
     public String editForm(@PathVariable Long projectId, Model model, RedirectAttributes redirectAttributes) {
         try {
@@ -71,6 +95,8 @@ public class ProjectMasterPageController {
             form.setProjectDesc(existing.getProjectDesc());
             form.setProjectType(existing.getProjectType());
             form.setProjectScopeType(existing.getProjectScopeType());
+            form.setDepartmentId(existing.getDepartmentId());
+            form.setSubDepartmentId(existing.getSubDepartmentId());
             form.setCellId(existing.getCellId());
 
             populateForm(model, form, projectId);
@@ -181,5 +207,12 @@ public class ProjectMasterPageController {
         model.addAttribute("projectTypes", ProjectType.values());
         model.addAttribute("projectScopeTypes", ProjectScopeType.values());
         model.addAttribute("availableCells", cellMasterService.getAll(false));
+        model.addAttribute("availableDepartments", departmentService.getAll(
+                Pageable.unpaged(Sort.by(Sort.Direction.ASC, "departmentName"))).getContent());
+        model.addAttribute("availableSubDepartments", form.getDepartmentId() == null
+                ? List.of()
+                : subDepartmentService.getAll(
+                        form.getDepartmentId(),
+                        Pageable.unpaged(Sort.by(Sort.Direction.ASC, "subDeptName"))).getContent());
     }
 }

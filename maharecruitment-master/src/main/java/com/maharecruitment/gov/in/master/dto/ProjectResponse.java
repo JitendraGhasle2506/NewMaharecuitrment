@@ -18,7 +18,10 @@ public class ProjectResponse {
     private String projectDesc;
     private ProjectType projectType;
     private ProjectScopeType projectScopeType;
-    private Long departmentRegistrationId;
+    private Long departmentId;
+    private String departmentName;
+    private Long subDepartmentId;
+    private String subDepartmentName;
     private Long applicationId;
     private Long cellId;
     private String wingName;

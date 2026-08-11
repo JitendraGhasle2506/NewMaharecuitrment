@@ -978,8 +978,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         if (!StringUtils.hasText(applicationEntity.getProjectName())) {
             throw new DepartmentApplicationException("Project name is required for project master sync.");
         }
-        if (applicationEntity.getDepartmentRegistrationId() == null) {
-            throw new DepartmentApplicationException("Department registration id is required for project master sync.");
+        if (applicationEntity.getDepartmentId() == null) {
+            throw new DepartmentApplicationException("Department id is required for project master sync.");
         }
         if (applicationEntity.getDepartmentProjectApplicationId() == null) {
             throw new DepartmentApplicationException("Application id is required for project master sync.");
@@ -993,7 +993,8 @@ public class DepartmentManpowerApplicationServiceImpl implements DepartmentManpo
         projectMstService.upsertFromDepartmentApplication(
                 applicationEntity.getProjectName(),
                 projectType,
-                applicationEntity.getDepartmentRegistrationId(),
+                applicationEntity.getDepartmentId(),
+                applicationEntity.getSubDepartmentId(),
                 applicationEntity.getDepartmentProjectApplicationId());
     }
 

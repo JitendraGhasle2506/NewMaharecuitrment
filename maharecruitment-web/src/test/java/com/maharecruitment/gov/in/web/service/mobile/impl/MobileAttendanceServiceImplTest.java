@@ -256,6 +256,58 @@ class MobileAttendanceServiceImplTest {
     }
 
     @Test
+    void checkOutAllowsMultipleAttemptsAndKeepsTheLatestDetails() {
+        authenticate("employee@example.com");
+        EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
+        MockMultipartFile image = image();
+
+        DailyAttendanceInternalEntity existing = new DailyAttendanceInternalEntity();
+        existing.setId(700L);
+        existing.setEmployeeId(101L);
+        existing.setEmployeeCode("EMP101");
+        existing.setAttendanceDate(TODAY);
+        existing.setAttendanceSource(AttendanceSource.MOBILE_APP);
+        existing.setMobileAppStatus("Y");
+        existing.setCheckInTime(LocalTime.of(9, 0));
+        existing.setCheckOutTime(LocalTime.of(10, 0));
+        existing.setTotalHours("01:00");
+        existing.setCheckOutLatitude(new BigDecimal("19.0700000"));
+        existing.setCheckOutLongitude(new BigDecimal("72.8700000"));
+        existing.setCheckOutLocationAddress("Old checkout location");
+        existing.setCheckOutImagePath("/uploads/old-check-out.jpg");
+
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
+        when(dailyAttendanceInternalRepository.findByEmployeeIdentityAndAttendanceDateForUpdate(
+                101L,
+                "EMP101",
+                TODAY))
+                .thenReturn(List.of(existing));
+        when(fileStorageService.store(image, "mobile-attendance-photo"))
+                .thenReturn(uploadResult("latest-check-out.jpg", "/uploads/latest-check-out.jpg"));
+        when(dailyAttendanceInternalRepository.save(any(DailyAttendanceInternalEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        MobileAttendanceResponse response = service().checkOut(
+                101L,
+                new BigDecimal("19.0760000"),
+                new BigDecimal("72.8777000"),
+                "Latest checkout location",
+                image);
+
+        verify(dailyAttendanceInternalRepository).save(existing);
+        assertThat(existing.getCheckInTime()).isEqualTo(LocalTime.of(9, 0));
+        assertThat(existing.getCheckOutTime()).isEqualTo(NOW.toLocalTime());
+        assertThat(existing.getTotalHours()).isEqualTo("01:15");
+        assertThat(existing.getCheckOutLatitude()).isEqualByComparingTo("19.0760000");
+        assertThat(existing.getCheckOutLongitude()).isEqualByComparingTo("72.8777000");
+        assertThat(existing.getCheckOutLocationAddress()).isEqualTo("Latest checkout location");
+        assertThat(existing.getCheckOutImagePath()).isEqualTo("/uploads/latest-check-out.jpg");
+        assertThat(response.attendanceId()).isEqualTo(700L);
+        assertThat(response.checkOutTime()).isEqualTo(NOW.toLocalTime());
+        assertThat(response.message()).isEqualTo("Check-out updated successfully.");
+    }
+
+    @Test
     void historyReturnsAttendanceRowsWithCalculatedTotalHours() {
         authenticate("employee@example.com");
         EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");

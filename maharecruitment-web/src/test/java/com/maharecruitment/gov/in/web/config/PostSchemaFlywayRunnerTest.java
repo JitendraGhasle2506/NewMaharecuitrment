@@ -12,6 +12,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import db.postmigration.V104__employee_cell_mapping_support;
 import db.postmigration.V105__cell_reporting_authority_mapping_support;
+import db.postmigration.V106__project_master_department_mapping;
 
 class PostSchemaFlywayRunnerTest {
 
@@ -27,8 +28,11 @@ class PostSchemaFlywayRunnerTest {
         int employeeCellMigrationIndex = indexOf(migrations, V104__employee_cell_mapping_support.class);
         int cellAuthorityMigrationIndex = indexOf(
                 migrations, V105__cell_reporting_authority_mapping_support.class);
+        int projectDepartmentMigrationIndex = indexOf(
+                migrations, V106__project_master_department_mapping.class);
         assertThat(employeeCellMigrationIndex).isGreaterThanOrEqualTo(0);
         assertThat(cellAuthorityMigrationIndex).isGreaterThan(employeeCellMigrationIndex);
+        assertThat(projectDepartmentMigrationIndex).isGreaterThan(cellAuthorityMigrationIndex);
     }
 
     private int indexOf(List<?> migrations, Class<?> migrationType) {

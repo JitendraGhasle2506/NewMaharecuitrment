@@ -61,6 +61,8 @@
                                     <th>Project Name</th>
                                     <th>Code</th>
                                     <!-- <th>Project Description</th> -->
+                                    <th>Department</th>
+                                    <th>Sub Department</th>
                                     <th>Wing / Cell</th>
                                     <th>Project Type</th>
                                     <th>Status</th>
@@ -72,13 +74,15 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${projects.isEmpty()}">
-                                    <td colspan="7" class="text-center text-muted">No records found</td>
+                                    <td colspan="9" class="text-center text-muted">No records found</td>
                                 </tr>
                                 <tr th:each="item : ${projects.content}">
                                     <td th:text="${item.projectId}"></td>
                                     <td th:text="${item.projectName}"></td>
                                     <td th:text="${item.projectCode != null ? item.projectCode : '-'}"></td>
                                     <!-- <td th:text="${item.projectDesc != null ? item.projectDesc : '-'}"></td> -->
+                                    <td th:text="${item.departmentName != null ? item.departmentName : '-'}"></td>
+                                    <td th:text="${item.subDepartmentName != null ? item.subDepartmentName : '-'}"></td>
                                     <td th:text="${item.cellName != null ? (item.wingName != null ? item.wingName + ' - ' + item.cellName : item.cellName) : '-'}"></td>
                                     <!-- <td th:text="${#strings.replace(item.projectType.name(), '_', ' ')}"></td> -->
                                     <td th:text="${#strings.capitalize(#strings.toLowerCase(item.projectScopeType.name()))}"></td>
@@ -87,8 +91,6 @@
                                             th:classappend="${item.activeFlag == 'Y'} ? ' text-bg-success' : ' text-bg-secondary'"
                                             th:text="${item.activeFlag == 'Y'} ? 'Active' : 'Inactive'"></span>
                                     </td>
-                                    <!-- <td th:text="${item.departmentRegistrationId != null ? item.departmentRegistrationId : '-'}"></td>
-                                    <td th:text="${item.applicationId != null ? item.applicationId : '-'}"></td> -->
                                     <td class="text-center">
                                         <a class="btn btn-outline-primary btn-sm"
                                             th:href="@{/master/projects/{id}/edit(id=${item.projectId})}">Edit</a>
