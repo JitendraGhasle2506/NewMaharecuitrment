@@ -64,7 +64,7 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
         } catch (ResourceAccessException ex) {
             throw new InternalAttendanceReportClientUnavailableException(
                     "Internal attendance API is unreachable at "
-                            + properties.getApiUrl()
+                            + properties.reportApiUrl()
                             + ". "
                             + resolveRootCauseMessage(ex),
                     ex);
@@ -212,7 +212,7 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
     }
 
     String buildRequestUrl(LocalDate startDate, LocalDate endDate) {
-        return UriComponentsBuilder.fromHttpUrl(properties.getApiUrl())
+        return UriComponentsBuilder.fromHttpUrl(properties.reportApiUrl())
                 .queryParam("start_date", REQUEST_DATE_FORMAT.format(startDate))
                 .queryParam("end_date", REQUEST_DATE_FORMAT.format(endDate))
                 .toUriString();

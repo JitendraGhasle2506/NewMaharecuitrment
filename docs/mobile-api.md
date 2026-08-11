@@ -737,6 +737,63 @@ Allowed image content types for JSON upload:
 - `image/jpeg`
 - `image/png`
 
+#### Server-side attendance update integration
+
+After a mobile punch is committed locally, the portal sends an HTTP `POST` to
+`https://mahaitattendance.espltestingsite.in/api/third-party/update-attendance`
+with `Content-Type: application/json`. The mobile app does not call this
+third-party endpoint directly.
+
+Both attendance integrations use the single configured base URL
+`attendance.integration.internal.base-url`; the portal appends the appropriate
+fixed endpoint path for report retrieval or mobile attendance updates.
+
+For check-in, the portal sends exactly these fields:
+
+```json
+{
+  "employee_code": "MahaIT0693",
+  "date": "2026-08-11",
+  "in_time": "10:00"
+}
+```
+
+The check-in payload does not contain `out_time`.
+
+For check-out, the portal sends exactly these fields:
+
+```json
+{
+  "employee_code": "MahaIT0693",
+  "date": "2026-08-11",
+  "out_time": "11:01"
+}
+```
+
+The check-out payload does not contain `in_time`. Dates use `yyyy-MM-dd` and
+times use 24-hour `HH:mm` format. If the third-party service is unavailable,
+the committed local mobile punch is retained and the integration failure is
+logged for operations.
+
+The portal applies an earliest-IN/latest-OUT rule across mobile and biometric
+punches. A mobile check-in is sent to the update endpoint only when it is
+earlier than the existing biometric punches. A mobile check-out is sent only
+when it is later than the existing biometric punches. Non-boundary mobile
+punches remain stored locally as source events but do not overwrite the
+effective upstream IN or OUT time.
+
+Example:
+
+| Time | Source | Treatment |
+| --- | --- | --- |
+| `09:42` | Mobile App | IN time |
+| `09:45` | Biometric | Intermediate entry |
+| `13:15` | Biometric | Intermediate entry |
+| `17:55` | Mobile App | Intermediate entry |
+| `18:10` | Biometric | OUT time |
+
+Effective attendance: `IN 09:42 | OUT 18:10`.
+
 ### POST `/api/mobile/attendance/check-in`
 
 Use this API to mark check-in.

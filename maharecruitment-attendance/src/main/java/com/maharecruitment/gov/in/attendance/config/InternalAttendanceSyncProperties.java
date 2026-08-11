@@ -4,14 +4,20 @@ import java.time.LocalDate;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 @ConfigurationProperties(prefix = "attendance.integration.internal")
 public class InternalAttendanceSyncProperties {
 
+    private static final String REPORT_API_PATH = "/third-party/attendance-report-org";
+    private static final String UPDATE_API_PATH = "/third-party/update-attendance";
+
     private boolean enabled = true;
 
-    private String apiUrl = "https://mahaitattendance.espltestingsite.in/api/third-party/attendance-report-org";
+    private String baseUrl = "https://mahaitattendance.espltestingsite.in/api";
+
+    private boolean mobileUpdateEnabled = true;
 
     private String uniqueCodePrefix = "MahaIT";
 
@@ -45,12 +51,28 @@ public class InternalAttendanceSyncProperties {
         this.enabled = enabled;
     }
 
-    public String getApiUrl() {
-        return apiUrl;
+    public String getBaseUrl() {
+        return baseUrl;
     }
 
-    public void setApiUrl(String apiUrl) {
-        this.apiUrl = apiUrl;
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
+    public boolean isMobileUpdateEnabled() {
+        return mobileUpdateEnabled;
+    }
+
+    public void setMobileUpdateEnabled(boolean mobileUpdateEnabled) {
+        this.mobileUpdateEnabled = mobileUpdateEnabled;
+    }
+
+    public String reportApiUrl() {
+        return endpointUrl(REPORT_API_PATH);
+    }
+
+    public String updateApiUrl() {
+        return endpointUrl(UPDATE_API_PATH);
     }
 
     public String getUniqueCodePrefix() {
@@ -147,5 +169,18 @@ public class InternalAttendanceSyncProperties {
 
     public void setRateLimitRetryDelaySeconds(int rateLimitRetryDelaySeconds) {
         this.rateLimitRetryDelaySeconds = rateLimitRetryDelaySeconds;
+    }
+
+    private String endpointUrl(String endpointPath) {
+        if (!StringUtils.hasText(baseUrl)) {
+            throw new IllegalStateException("Internal attendance API base URL is not configured.");
+        }
+
+        String normalizedBaseUrl = baseUrl.trim();
+        int endIndex = normalizedBaseUrl.length();
+        while (endIndex > 0 && normalizedBaseUrl.charAt(endIndex - 1) == '/') {
+            endIndex--;
+        }
+        return normalizedBaseUrl.substring(0, endIndex) + endpointPath;
     }
 }

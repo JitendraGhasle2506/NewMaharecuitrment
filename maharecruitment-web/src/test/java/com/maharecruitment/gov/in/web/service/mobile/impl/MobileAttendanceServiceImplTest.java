@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.mock.web.MockMultipartFile;
@@ -41,11 +42,14 @@ import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
 import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
+import com.maharecruitment.gov.in.attendance.service.AttendanceEventTimeResolver;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileAttendanceHistoryResponse;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileAttendanceResponse;
+import com.maharecruitment.gov.in.web.event.mobile.MobileCheckInRecordedEvent;
+import com.maharecruitment.gov.in.web.event.mobile.MobileCheckOutRecordedEvent;
 import com.maharecruitment.gov.in.web.service.mobile.MobileApiException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileEmployeeAccessService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
@@ -80,6 +84,9 @@ class MobileAttendanceServiceImplTest {
 
     @Mock
     private TourApplicationRepository tourApplicationRepository;
+
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @AfterEach
     void tearDown() {
@@ -118,6 +125,13 @@ class MobileAttendanceServiceImplTest {
                 ArgumentCaptor.forClass(DailyAttendanceInternalEntity.class);
         verify(dailyAttendanceInternalRepository).save(captor.capture());
         DailyAttendanceInternalEntity saved = captor.getValue();
+        ArgumentCaptor<MobileCheckInRecordedEvent> eventCaptor =
+                ArgumentCaptor.forClass(MobileCheckInRecordedEvent.class);
+        verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue()).isEqualTo(new MobileCheckInRecordedEvent(
+                "EMP101",
+                TODAY,
+                NOW.toLocalTime()));
         assertThat(saved.getEmployeeId()).isEqualTo(101L);
         assertThat(saved.getEmployeeCode()).isEqualTo("EMP101");
         assertThat(saved.getMobileAppStatus()).isEqualTo("Y");
@@ -177,6 +191,7 @@ class MobileAttendanceServiceImplTest {
                 image);
 
         verify(dailyAttendanceInternalRepository).save(existing);
+        verifyNoInteractions(applicationEventPublisher);
         assertThat(existing.getMobileAppStatus()).isEqualTo("Y");
         assertThat(existing.getApiStatus()).isEqualTo("Y");
         assertThat(existing.getInTime()).isEqualTo("09:00");
@@ -184,6 +199,48 @@ class MobileAttendanceServiceImplTest {
         assertThat(existing.getCheckInTime()).isEqualTo(NOW.toLocalTime());
         assertThat(response.attendanceSource()).isEqualTo("MOBILE_APP");
         assertThat(response.apiStatus()).isEqualTo("Y");
+    }
+
+    @Test
+    void checkInUpdatesUpstreamWhenMobileEventIsEarlierThanBiometricEvent() {
+        authenticate("employee@example.com");
+        EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
+        MockMultipartFile image = image();
+
+        DailyAttendanceInternalEntity existing = new DailyAttendanceInternalEntity();
+        existing.setId(700L);
+        existing.setEmployeeId(101L);
+        existing.setEmployeeCode("EMP101");
+        existing.setAttendanceDate(TODAY);
+        existing.setAttendanceSource(AttendanceSource.API);
+        existing.setApiStatus("Y");
+        existing.setInTime("10:30");
+
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
+        when(dailyAttendanceInternalRepository.findByEmployeeIdentityAndAttendanceDateForUpdate(
+                101L,
+                "EMP101",
+                TODAY))
+                .thenReturn(List.of(existing));
+        when(fileStorageService.store(image, "mobile-attendance-photo"))
+                .thenReturn(uploadResult("check-in.jpg", "/uploads/check-in.jpg"));
+        when(dailyAttendanceInternalRepository.save(any(DailyAttendanceInternalEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service().checkIn(
+                101L,
+                new BigDecimal("19.0760000"),
+                new BigDecimal("72.8777000"),
+                "Mumbai Office",
+                image);
+
+        ArgumentCaptor<MobileCheckInRecordedEvent> eventCaptor =
+                ArgumentCaptor.forClass(MobileCheckInRecordedEvent.class);
+        verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue()).isEqualTo(new MobileCheckInRecordedEvent(
+                "EMP101",
+                TODAY,
+                NOW.toLocalTime()));
     }
 
     @Test
@@ -241,6 +298,13 @@ class MobileAttendanceServiceImplTest {
                 image);
 
         verify(dailyAttendanceInternalRepository).save(existing);
+        ArgumentCaptor<MobileCheckOutRecordedEvent> eventCaptor =
+                ArgumentCaptor.forClass(MobileCheckOutRecordedEvent.class);
+        verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue()).isEqualTo(new MobileCheckOutRecordedEvent(
+                "EMP101",
+                TODAY,
+                NOW.toLocalTime()));
         assertThat(existing.getCheckOutTime()).isEqualTo(NOW.toLocalTime());
         assertThat(existing.getInTime()).isEqualTo("09:00");
         assertThat(existing.getOutTime()).isNull();
@@ -305,6 +369,50 @@ class MobileAttendanceServiceImplTest {
         assertThat(response.attendanceId()).isEqualTo(700L);
         assertThat(response.checkOutTime()).isEqualTo(NOW.toLocalTime());
         assertThat(response.message()).isEqualTo("Check-out updated successfully.");
+    }
+
+    @Test
+    void checkOutDoesNotUpdateUpstreamWhenBiometricEventIsLater() {
+        authenticate("employee@example.com");
+        EmployeeEntity employee = employee(101L, "EMP101", "employee@example.com");
+        MockMultipartFile image = image();
+
+        DailyAttendanceInternalEntity existing = new DailyAttendanceInternalEntity();
+        existing.setId(700L);
+        existing.setEmployeeId(101L);
+        existing.setEmployeeCode("EMP101");
+        existing.setAttendanceDate(TODAY);
+        existing.setAttendanceSource(AttendanceSource.API);
+        existing.setApiStatus("Y");
+        existing.setMobileAppStatus("Y");
+        existing.setInTime("09:05");
+        existing.setOutTime("18:00");
+        existing.setCheckInTime(LocalTime.of(9, 0));
+
+        when(employeeRepository.findMobileLoginProfileByUserId(10L)).thenReturn(Optional.of(employee));
+        when(dailyAttendanceInternalRepository.findByEmployeeIdentityAndAttendanceDateForUpdate(
+                101L,
+                "EMP101",
+                TODAY))
+                .thenReturn(List.of(existing));
+        when(fileStorageService.store(image, "mobile-attendance-photo"))
+                .thenReturn(uploadResult("check-out.jpg", "/uploads/check-out.jpg"));
+        when(dailyAttendanceInternalRepository.save(any(DailyAttendanceInternalEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        MobileAttendanceResponse response = service().checkOut(
+                101L,
+                new BigDecimal("19.0760000"),
+                new BigDecimal("72.8777000"),
+                "Mumbai Office",
+                image);
+
+        verify(dailyAttendanceInternalRepository).save(existing);
+        verifyNoInteractions(applicationEventPublisher);
+        assertThat(existing.getCheckOutTime()).isEqualTo(NOW.toLocalTime());
+        assertThat(AttendanceEventTimeResolver.resolve(existing).inTime()).isEqualTo(LocalTime.of(9, 0));
+        assertThat(AttendanceEventTimeResolver.resolve(existing).outTime()).isEqualTo(LocalTime.of(18, 0));
+        assertThat(response.success()).isTrue();
     }
 
     @Test
@@ -508,6 +616,7 @@ class MobileAttendanceServiceImplTest {
                 weekOffWorkingDayRepository,
                 leaveApplicationRepository,
                 tourApplicationRepository,
+                applicationEventPublisher,
                 CLOCK);
     }
 

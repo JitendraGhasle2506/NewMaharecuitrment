@@ -92,8 +92,7 @@ class MahaitInternalAttendanceReportClientTest {
 
     private MahaitInternalAttendanceReportClient createClient() {
         InternalAttendanceSyncProperties properties = new InternalAttendanceSyncProperties();
-        properties.setApiUrl(
-                "https://mahaitattendance.espltestingsite.in/api/third-party/attendance-report-org");
+        properties.setBaseUrl("https://mahaitattendance.espltestingsite.in/api/");
         return new MahaitInternalAttendanceReportClient(properties);
     }
 }

@@ -28,6 +28,20 @@ class AttendanceEventTimeResolverTest {
     }
 
     @Test
+    void resolvesTheRequestedMobileAndBiometricTimeline() {
+        AttendanceEventWindow result = AttendanceEventTimeResolver.resolve(
+                LocalTime.of(9, 42),
+                LocalTime.of(9, 45),
+                LocalTime.of(13, 15),
+                LocalTime.of(17, 55),
+                LocalTime.of(18, 10));
+
+        assertEquals(LocalTime.of(9, 42), result.inTime());
+        assertEquals(LocalTime.of(18, 10), result.outTime());
+        assertEquals("08:28", AttendanceEventTimeResolver.calculateTotalHours(result));
+    }
+
+    @Test
     void treatsOneEventAsInWithoutCreatingAnOutTime() {
         AttendanceEventWindow result = AttendanceEventTimeResolver.resolve(LocalTime.of(11, 25));
 

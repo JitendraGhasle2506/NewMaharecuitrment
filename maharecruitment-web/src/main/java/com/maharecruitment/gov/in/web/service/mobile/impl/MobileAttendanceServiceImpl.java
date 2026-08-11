@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,11 +39,14 @@ import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationReposito
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
 import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
 import com.maharecruitment.gov.in.attendance.service.AttendanceEventTimeResolver;
+import com.maharecruitment.gov.in.attendance.service.AttendanceEventTimeResolver.AttendanceEventWindow;
 import com.maharecruitment.gov.in.attendance.service.AttendanceStatusResolver;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileAttendanceHistoryResponse;
 import com.maharecruitment.gov.in.web.dto.mobile.MobileAttendanceResponse;
+import com.maharecruitment.gov.in.web.event.mobile.MobileCheckInRecordedEvent;
+import com.maharecruitment.gov.in.web.event.mobile.MobileCheckOutRecordedEvent;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAttendanceException;
 import com.maharecruitment.gov.in.web.service.mobile.MobileAttendanceService;
 import com.maharecruitment.gov.in.web.service.mobile.MobileEmployeeAccessService;
@@ -69,6 +73,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
     private final WeekOffWorkingDayRepository weekOffWorkingDayRepository;
     private final LeaveApplicationRepository leaveApplicationRepository;
     private final TourApplicationRepository tourApplicationRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final Clock clock;
 
     @Autowired
@@ -79,7 +84,8 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
             HolidayRepository holidayRepository,
             WeekOffWorkingDayRepository weekOffWorkingDayRepository,
             LeaveApplicationRepository leaveApplicationRepository,
-            TourApplicationRepository tourApplicationRepository) {
+            TourApplicationRepository tourApplicationRepository,
+            ApplicationEventPublisher applicationEventPublisher) {
         this(
                 mobileEmployeeAccessService,
                 dailyAttendanceInternalRepository,
@@ -88,6 +94,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
                 weekOffWorkingDayRepository,
                 leaveApplicationRepository,
                 tourApplicationRepository,
+                applicationEventPublisher,
                 Clock.systemDefaultZone());
     }
 
@@ -99,6 +106,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
             WeekOffWorkingDayRepository weekOffWorkingDayRepository,
             LeaveApplicationRepository leaveApplicationRepository,
             TourApplicationRepository tourApplicationRepository,
+            ApplicationEventPublisher applicationEventPublisher,
             Clock clock) {
         this.mobileEmployeeAccessService = mobileEmployeeAccessService;
         this.dailyAttendanceInternalRepository = dailyAttendanceInternalRepository;
@@ -107,6 +115,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         this.weekOffWorkingDayRepository = weekOffWorkingDayRepository;
         this.leaveApplicationRepository = leaveApplicationRepository;
         this.tourApplicationRepository = tourApplicationRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
         this.clock = clock;
     }
 
@@ -145,6 +154,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         stampUpdatedBy(attendance);
 
         DailyAttendanceInternalEntity savedAttendance = dailyAttendanceInternalRepository.save(attendance);
+        publishCheckInUpdateIfEffective(savedAttendance);
         logAttendanceUpdate(savedAttendance, "MOBILE_APP", checkInUpdatedFields(), "CHECK_IN_RECORDED");
         return toResponse(savedAttendance, "Check-in recorded successfully.");
     }
@@ -190,6 +200,7 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
         stampUpdatedBy(attendance);
 
         DailyAttendanceInternalEntity savedAttendance = dailyAttendanceInternalRepository.save(attendance);
+        publishCheckOutUpdateIfEffective(savedAttendance);
         logAttendanceUpdate(
                 savedAttendance,
                 "MOBILE_APP",
@@ -545,6 +556,53 @@ public class MobileAttendanceServiceImpl implements MobileAttendanceService {
 
     private boolean hasMobileCheckOut(DailyAttendanceInternalEntity attendance) {
         return attendance != null && attendance.getCheckOutTime() != null;
+    }
+
+    private void publishCheckInUpdateIfEffective(DailyAttendanceInternalEntity attendance) {
+        AttendanceEventWindow biometricWindow = resolveBiometricWindow(attendance);
+        LocalTime mobileCheckIn = attendance.getCheckInTime();
+        if (biometricWindow.inTime() == null || mobileCheckIn.isBefore(biometricWindow.inTime())) {
+            applicationEventPublisher.publishEvent(new MobileCheckInRecordedEvent(
+                    attendance.getEmployeeCode(),
+                    attendance.getAttendanceDate(),
+                    mobileCheckIn));
+            return;
+        }
+
+        log.info(
+                "Attendance update API call skipped. action=CHECK_IN, employeeCode={}, attendanceDate={}, mobileTime={}, biometricInTime={}, reason=EARLIER_OR_EQUAL_BIOMETRIC_EVENT_EXISTS",
+                attendance.getEmployeeCode(),
+                attendance.getAttendanceDate(),
+                mobileCheckIn,
+                biometricWindow.inTime());
+    }
+
+    private void publishCheckOutUpdateIfEffective(DailyAttendanceInternalEntity attendance) {
+        AttendanceEventWindow biometricWindow = resolveBiometricWindow(attendance);
+        LocalTime latestBiometricTime = biometricWindow.outTime() != null
+                ? biometricWindow.outTime()
+                : biometricWindow.inTime();
+        LocalTime mobileCheckOut = attendance.getCheckOutTime();
+        if (latestBiometricTime == null || mobileCheckOut.isAfter(latestBiometricTime)) {
+            applicationEventPublisher.publishEvent(new MobileCheckOutRecordedEvent(
+                    attendance.getEmployeeCode(),
+                    attendance.getAttendanceDate(),
+                    mobileCheckOut));
+            return;
+        }
+
+        log.info(
+                "Attendance update API call skipped. action=CHECK_OUT, employeeCode={}, attendanceDate={}, mobileTime={}, biometricOutTime={}, reason=LATER_OR_EQUAL_BIOMETRIC_EVENT_EXISTS",
+                attendance.getEmployeeCode(),
+                attendance.getAttendanceDate(),
+                mobileCheckOut,
+                latestBiometricTime);
+    }
+
+    private AttendanceEventWindow resolveBiometricWindow(DailyAttendanceInternalEntity attendance) {
+        return AttendanceEventTimeResolver.resolve(
+                AttendanceEventTimeResolver.parse(attendance.getInTime()),
+                AttendanceEventTimeResolver.parse(attendance.getOutTime()));
     }
 
     private boolean hasMobilePunch(DailyAttendanceInternalEntity attendance) {

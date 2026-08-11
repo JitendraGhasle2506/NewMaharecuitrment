@@ -142,7 +142,7 @@ public class AdminInternalAttendanceSyncPageController {
     }
 
     private String buildUpstreamApiExample(LocalDate startDate, LocalDate endDate) {
-        return internalAttendanceSyncProperties.getApiUrl()
+        return internalAttendanceSyncProperties.reportApiUrl()
                 + "?start_date="
                 + UPSTREAM_DATE_FORMAT.format(startDate)
                 + "&end_date="
