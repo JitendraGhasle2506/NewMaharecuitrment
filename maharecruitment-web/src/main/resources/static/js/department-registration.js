@@ -35,6 +35,51 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const otherOptionValue = "-1";
     const csrfToken = csrfTokenInput ? csrfTokenInput.value : "";
+    const subDepartmentCache = new Map();
+    let activeSubDepartmentRequest = null;
+
+    const initializeEnhancedSelects = () => {
+        if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.select2) {
+            return;
+        }
+        [departmentSelect, subDepartmentSelect].forEach((select) => {
+            const enhancedSelect = window.jQuery(select);
+            if (!enhancedSelect.data("select2")) {
+                enhancedSelect.select2({
+                    theme: "bootstrap-5",
+                    placeholder: select === departmentSelect
+                        ? "Select department"
+                        : "Select sub-department",
+                    width: "100%"
+                });
+            }
+        });
+    };
+
+    const bindDynamicSelectEvents = () => {
+        const handleDepartmentChange = () => {
+            void updateDepartmentState(false, true);
+        };
+
+        if (window.jQuery) {
+            window.jQuery(departmentSelect)
+                .off("change.departmentRegistration")
+                .on("change.departmentRegistration", handleDepartmentChange);
+            window.jQuery(subDepartmentSelect)
+                .off("change.departmentRegistration")
+                .on("change.departmentRegistration", updateSubDepartmentState);
+            return;
+        }
+
+        departmentSelect.addEventListener("change", handleDepartmentChange);
+        subDepartmentSelect.addEventListener("change", updateSubDepartmentState);
+    };
+
+    const refreshSubDepartmentSelect = () => {
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
+            window.jQuery(subDepartmentSelect).trigger("change.select2");
+        }
+    };
 
     const createBypassVerification = (statusElement, message) => {
         if (statusElement) {
@@ -100,22 +145,43 @@ document.addEventListener("DOMContentLoaded", () => {
         const [file] = input.files || [];
         if (!isPdfFile(file)) {
             input.value = "";
+            showSelectedFile(input);
             alert("Only PDF files are allowed for GST, PAN, and TAN documents.");
             return false;
         }
+        showSelectedFile(input);
         return true;
     };
 
+    const showSelectedFile = (input) => {
+        const status = form.querySelector(`[data-selected-file-name="${input.id}"]`);
+        if (!status) {
+            return;
+        }
+        const [file] = input.files || [];
+        status.textContent = file ? `Selected: ${file.name}` : "";
+    };
+
     const enableDeclarationAcceptance = () => {
+        if (!agreeCheckbox.disabled) {
+            declarationBox.removeEventListener("scroll", enableDeclarationAcceptance);
+            return;
+        }
         const reachedBottom = declarationBox.scrollHeight - Math.round(declarationBox.scrollTop)
             <= declarationBox.clientHeight + 2;
         if (reachedBottom) {
             agreeCheckbox.disabled = false;
+            declarationBox.removeEventListener("scroll", enableDeclarationAcceptance);
         }
     };
 
     const renderSubDepartments = (items, selectedValue) => {
-        subDepartmentSelect.innerHTML = '<option value="">Select sub-department</option>';
+        const options = document.createDocumentFragment();
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = "Select sub-department";
+        options.appendChild(defaultOption);
+
         items.forEach((item) => {
             const option = document.createElement("option");
             option.value = item.subDeptId;
@@ -123,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (selectedValue && String(item.subDeptId) === String(selectedValue)) {
                 option.selected = true;
             }
-            subDepartmentSelect.appendChild(option);
+            options.appendChild(option);
         });
 
         const otherOption = document.createElement("option");
@@ -132,19 +198,52 @@ document.addEventListener("DOMContentLoaded", () => {
         if (selectedValue === otherOptionValue) {
             otherOption.selected = true;
         }
-        subDepartmentSelect.appendChild(otherOption);
+        options.appendChild(otherOption);
+        subDepartmentSelect.replaceChildren(options);
+        refreshSubDepartmentSelect();
+    };
+
+    const cacheInitialSubDepartments = () => {
+        const departmentId = departmentSelect.value;
+        if (!departmentId || departmentId === otherOptionValue) {
+            return;
+        }
+        const initialItems = Array.from(subDepartmentSelect.options)
+            .filter((option) => option.value && option.value !== otherOptionValue)
+            .map((option) => ({
+                subDeptId: option.value,
+                subDeptName: option.textContent
+            }));
+        subDepartmentCache.set(departmentId, initialItems);
     };
 
     const loadSubDepartments = async (departmentId, preserveSelection) => {
         if (!departmentId || departmentId === otherOptionValue) {
+            if (activeSubDepartmentRequest) {
+                activeSubDepartmentRequest.abort();
+                activeSubDepartmentRequest = null;
+            }
             renderSubDepartments([], "");
             return;
         }
 
         const selectedValue = preserveSelection ? subDepartmentSelect.value : "";
+        if (subDepartmentCache.has(departmentId)) {
+            renderSubDepartments(subDepartmentCache.get(departmentId), selectedValue);
+            updateSubDepartmentState();
+            return;
+        }
+
+        if (activeSubDepartmentRequest) {
+            activeSubDepartmentRequest.abort();
+        }
+        const requestController = new AbortController();
+        activeSubDepartmentRequest = requestController;
         try {
             const response = await fetch(`${endpoints.subDepartments}?departmentId=${encodeURIComponent(departmentId)}`, {
+                signal: requestController.signal,
                 headers: {
+                    "Accept": "application/json",
                     "X-Requested-With": "XMLHttpRequest"
                 }
             });
@@ -154,15 +253,26 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const items = await response.json();
+            if (requestController !== activeSubDepartmentRequest) {
+                return;
+            }
+            subDepartmentCache.set(departmentId, items);
             renderSubDepartments(items, selectedValue);
             updateSubDepartmentState();
         } catch (error) {
+            if (error && error.name === "AbortError") {
+                return;
+            }
             renderSubDepartments([], "");
             alert("Unable to load sub-departments for the selected department.");
+        } finally {
+            if (requestController === activeSubDepartmentRequest) {
+                activeSubDepartmentRequest = null;
+            }
         }
     };
 
-    const updateDepartmentState = async (preserveSelection) => {
+    const updateDepartmentState = async (preserveSelection, loadOptions = true) => {
         const departmentValue = departmentSelect.value;
         const otherDepartment = departmentValue === otherOptionValue;
 
@@ -177,7 +287,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         toggleField(newSubDepartmentInput, subDepartmentSelect.value === otherOptionValue);
-        await loadSubDepartments(departmentValue, preserveSelection);
+        if (loadOptions) {
+            await loadSubDepartments(departmentValue, preserveSelection);
+        }
     };
 
     const updateSubDepartmentState = () => {
@@ -302,12 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    departmentSelect.addEventListener("change", () => {
-        updateDepartmentState(false);
-    });
-
-    subDepartmentSelect.addEventListener("change", updateSubDepartmentState);
-    declarationBox.addEventListener("scroll", enableDeclarationAcceptance);
+    declarationBox.addEventListener("scroll", enableDeclarationAcceptance, { passive: true });
     agreeCheckbox.addEventListener("change", toggleSubmitState);
     form.addEventListener("submit", (event) => {
         const invalidInput = documentInputs.find((input) => !validatePdfSelection(input));
@@ -335,7 +442,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    cacheInitialSubDepartments();
+    initializeEnhancedSelects();
+    bindDynamicSelectEvents();
     enableDeclarationAcceptance();
     toggleSubmitState();
-    updateDepartmentState(true);
+    updateDepartmentState(true, false);
 });

@@ -1,11 +1,15 @@
 package com.maharecruitment.gov.in.web.controller;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -72,7 +76,7 @@ public class DepartmentRegistrationPageController {
         return "register/department-registration";
     }
 
-    @PostMapping("/department-registration")
+    @PostMapping(value = "/department-registration", headers = "X-Requested-With!=XMLHttpRequest")
     public String register(
             @Valid @ModelAttribute("registrationForm") DepartmentRegistrationForm form,
             BindingResult bindingResult,
@@ -80,9 +84,7 @@ public class DepartmentRegistrationPageController {
             RedirectAttributes redirectAttributes,
             HttpSession session,
             HttpServletRequest request) {
-        rejectPlaintextIdentityParameters(request, bindingResult);
-        validateDynamicSelections(form, bindingResult, session);
-        addGenericSensitiveTransportError(bindingResult);
+        validateRegistrationRequest(form, bindingResult, session, request);
 
         if (bindingResult.hasErrors()) {
             populateForm(model, form, session);
@@ -105,6 +107,38 @@ public class DepartmentRegistrationPageController {
 
         redirectAttributes.addAttribute("registered", "true");
         return "redirect:/login";
+    }
+
+    @PostMapping(value = "/department-registration", headers = "X-Requested-With=XMLHttpRequest")
+    @ResponseBody
+    public ResponseEntity<RegistrationSubmissionResponse> registerAsync(
+            @Valid @ModelAttribute("registrationForm") DepartmentRegistrationForm form,
+            BindingResult bindingResult,
+            HttpSession session,
+            HttpServletRequest request) {
+        validateRegistrationRequest(form, bindingResult, session, request);
+        if (bindingResult.hasErrors()) {
+            form.clearEncryptedSubmission();
+            return validationResponse(bindingResult, HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
+        try {
+            registrationPageService.register(form, session);
+        } catch (RuntimeException ex) {
+            boolean handled = applyRegistrationError(bindingResult, form, ex);
+            if (handled) {
+                log.warn("Department registration was rejected: {}", ex.getMessage());
+                return validationResponse(bindingResult, HttpStatus.UNPROCESSABLE_ENTITY);
+            }
+            log.error("Department registration failed.", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    RegistrationSubmissionResponse.failure(
+                            Map.of(),
+                            List.of("Unable to complete department registration. Please try again.")));
+        }
+
+        return ResponseEntity.ok(RegistrationSubmissionResponse.success(
+                request.getContextPath() + "/login?registered=true"));
     }
 
     @GetMapping("/sub-departments")
@@ -138,6 +172,34 @@ public class DepartmentRegistrationPageController {
         model.addAttribute("emailOtpEnabled", notificationChannelProperties.isEmailEnabled());
         model.addAttribute("otpResendCooldownSeconds", otpVerificationProperties.getResendCooldownSeconds());
         model.addAttribute("verificationPurpose", VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
+    }
+
+    private void validateRegistrationRequest(
+            DepartmentRegistrationForm form,
+            BindingResult bindingResult,
+            HttpSession session,
+            HttpServletRequest request) {
+        rejectPlaintextIdentityParameters(request, bindingResult);
+        validateDynamicSelections(form, bindingResult, session);
+        addGenericSensitiveTransportError(bindingResult);
+    }
+
+    private ResponseEntity<RegistrationSubmissionResponse> validationResponse(
+            BindingResult bindingResult,
+            HttpStatus status) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        bindingResult.getFieldErrors().forEach(error -> fieldErrors.putIfAbsent(
+                error.getField(),
+                StringUtils.hasText(error.getDefaultMessage())
+                        ? error.getDefaultMessage()
+                        : "Invalid value."));
+        List<String> globalErrors = bindingResult.getGlobalErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        return ResponseEntity.status(status).body(
+                RegistrationSubmissionResponse.failure(fieldErrors, globalErrors));
     }
 
     private List<DepartmentResponse> getDepartments() {
@@ -241,12 +303,18 @@ public class DepartmentRegistrationPageController {
         }
 
         if ("A registration already exists for the provided GST number.".equals(message)) {
-            bindingResult.reject("registration.gstDuplicate", message);
+            bindingResult.rejectValue(
+                    "gstNumberEncrypted",
+                    "registration.gstDuplicate",
+                    message);
             return true;
         }
 
         if ("A registration already exists for the provided PAN number.".equals(message)) {
-            bindingResult.reject("registration.panDuplicate", message);
+            bindingResult.rejectValue(
+                    "panNumberEncrypted",
+                    "registration.panDuplicate",
+                    message);
             return true;
         }
 
@@ -293,6 +361,23 @@ public class DepartmentRegistrationPageController {
             bindingResult.reject(
                     "registration.plaintextSensitiveIdentity",
                     "Unable to process the submitted identity information.");
+        }
+    }
+
+    public record RegistrationSubmissionResponse(
+            boolean success,
+            String redirectUrl,
+            Map<String, String> fieldErrors,
+            List<String> globalErrors) {
+
+        static RegistrationSubmissionResponse success(String redirectUrl) {
+            return new RegistrationSubmissionResponse(true, redirectUrl, Map.of(), List.of());
+        }
+
+        static RegistrationSubmissionResponse failure(
+                Map<String, String> fieldErrors,
+                List<String> globalErrors) {
+            return new RegistrationSubmissionResponse(false, null, Map.copyOf(fieldErrors), List.copyOf(globalErrors));
         }
     }
 }

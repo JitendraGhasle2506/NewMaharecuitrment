@@ -5,6 +5,11 @@
     var cachedKeyUrl;
     var defaultKeyUrl = document.documentElement.dataset.sensitiveKeyUrl
         || document.querySelector('meta[name="sensitive-key-url"]')?.content;
+    var fieldIdByServerName = {
+        gstNumberEncrypted: "gstNo",
+        panNumberEncrypted: "panNo",
+        isTermsConditionAccepted: "agreeCheckbox"
+    };
 
     function decode(value) {
         var raw = atob(value), bytes = new Uint8Array(raw.length);
@@ -45,6 +50,19 @@
         return keyPromise;
     }
 
+    function warmEncryptionKey() {
+        var form = document.querySelector('form[data-encrypt-sensitive="true"]');
+        if (!form) return;
+        var keyUrl = form.dataset.sensitiveKeyUrl || defaultKeyUrl;
+        if (keyUrl) getKey(keyUrl).catch(function () { /* Retry during submission. */ });
+    }
+
+    if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(warmEncryptionKey, { timeout: 2000 });
+    } else {
+        window.setTimeout(warmEncryptionKey, 0);
+    }
+
     document.addEventListener("submit", function (event) {
         var form = event.target;
         if (!(form instanceof HTMLFormElement) || form.dataset.encryptSensitive !== "true") return;
@@ -68,6 +86,8 @@
             return;
         }
         form.dataset.sensitiveSubmitting = "true";
+        clearValidationErrors(form);
+        setSubmitting(form, true);
         getKey(keyUrl).then(function (published) {
             var requestTimestamp = Date.now() + published.clockOffset;
             var requestNonce = nonce();
@@ -101,25 +121,148 @@
                 ]).forEach(function (item) {
                     var input = document.createElement("input");
                     input.type = "hidden"; input.name = item.name; input.value = item.value;
+                    input.dataset.sensitiveGenerated = "true";
                     form.appendChild(input);
                 });
+                if (form.dataset.preserveOnValidationError === "true") {
+                    return submitWithoutNavigation(form);
+                }
                 encryptedFields.forEach(function (item) { item.field.value = ""; });
                 HTMLFormElement.prototype.submit.call(form);
             });
-        }).catch(function () {
+        }).catch(function (error) {
+            clearGeneratedFields(form);
             delete form.dataset.sensitiveSubmitting;
-            showError(form, "Unable to secure the submitted identity information. Please refresh and try again.");
+            setSubmitting(form, false);
+            showError(form, error && error.message
+                ? error.message
+                : "Unable to secure the submitted identity information. Please refresh and try again.");
         });
     });
 
+    function submitWithoutNavigation(form) {
+        return fetch(form.action, {
+            method: (form.method || "POST").toUpperCase(),
+            body: new FormData(form),
+            credentials: "same-origin",
+            redirect: "follow",
+            headers: {
+                "Accept": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        }).then(function (response) {
+            if (response.redirected) {
+                window.location.assign(response.url);
+                return;
+            }
+            return response.json().catch(function () { return null; }).then(function (result) {
+                if (response.ok && result && result.success && result.redirectUrl) {
+                    window.location.assign(result.redirectUrl);
+                    return;
+                }
+                if (!renderValidationErrors(form, result)) {
+                    throw new Error(response.ok
+                        ? "Unable to complete registration. Please review the form and try again."
+                        : "Unable to complete registration at this time. Please try again.");
+                }
+            });
+        }).finally(function () {
+            clearGeneratedFields(form);
+            delete form.dataset.sensitiveSubmitting;
+            setSubmitting(form, false);
+        });
+    }
+
+    function renderValidationErrors(form, result) {
+        if (!result || typeof result !== "object") return false;
+        var firstInvalidField = null;
+        Object.entries(result.fieldErrors || {}).forEach(function (entry) {
+            var fieldName = entry[0];
+            var errorMessage = entry[1];
+            var fieldId = fieldIdByServerName[fieldName] || fieldName;
+            var candidate = document.getElementById(fieldId);
+            var field = candidate && form.contains(candidate) ? candidate : null;
+            if (!field || !errorMessage) return;
+
+            var error = document.createElement("div");
+            error.className = "text-danger small registration-async-error";
+            error.dataset.clientFieldError = fieldName;
+            error.textContent = String(errorMessage);
+            var anchor = field.closest(".verification-input-group") || field;
+            anchor.insertAdjacentElement("afterend", error);
+            field.setAttribute("aria-invalid", "true");
+            if (!firstInvalidField) firstInvalidField = field;
+        });
+
+        var globalMessages = Array.isArray(result.globalErrors)
+            ? result.globalErrors.filter(Boolean)
+            : [];
+        if (globalMessages.length) {
+            showError(form, Array.from(new Set(globalMessages)).join(" "));
+        } else {
+            showNotice(form, "Please correct the highlighted errors. Your entered values and selected PDF documents have been kept.");
+        }
+
+        if (firstInvalidField) {
+            firstInvalidField.focus({ preventScroll: true });
+            firstInvalidField.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        return true;
+    }
+
+    function clearGeneratedFields(form) {
+        form.querySelectorAll('[data-sensitive-generated="true"]').forEach(function (field) {
+            field.remove();
+        });
+    }
+
+    function clearValidationErrors(form) {
+        form.querySelectorAll(".registration-async-error").forEach(function (error) { error.remove(); });
+        form.querySelectorAll('[aria-invalid="true"]').forEach(function (field) {
+            field.removeAttribute("aria-invalid");
+        });
+        var status = form.querySelector("[data-sensitive-encryption-status]");
+        if (status) {
+            status.textContent = "";
+            status.classList.add("d-none");
+        }
+    }
+
+    function setSubmitting(form, submitting) {
+        var button = form.querySelector('[type="submit"]');
+        if (!button) return;
+        if (submitting) {
+            button.dataset.originalLabel = button.textContent;
+            button.textContent = "Submitting...";
+            button.disabled = true;
+            return;
+        }
+        button.textContent = button.dataset.originalLabel || "Submit Registration";
+        delete button.dataset.originalLabel;
+        button.disabled = false;
+    }
+
+    function showNotice(form, message) {
+        var element = getStatusElement(form);
+        element.className = "alert alert-warning";
+        element.textContent = message;
+        element.classList.remove("d-none");
+    }
+
     function showError(form, message) {
+        var element = getStatusElement(form);
+        element.className = "alert alert-danger";
+        element.textContent = message;
+        element.classList.remove("d-none");
+    }
+
+    function getStatusElement(form) {
         var element = form.querySelector("[data-sensitive-encryption-status]");
         if (!element) {
             element = document.createElement("div");
-            element.className = "alert alert-danger";
             element.dataset.sensitiveEncryptionStatus = "true";
             form.prepend(element);
         }
-        element.textContent = message;
+        return element;
     }
 }());

@@ -2,13 +2,19 @@ package com.maharecruitment.gov.in.web.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.ui.Model;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -60,6 +66,79 @@ class DepartmentRegistrationPageControllerTest {
         assertThat(view).isEqualTo("redirect:/login");
         verify(registrationService).register(form, session);
         verify(redirectAttributes).addAttribute("registered", "true");
+    }
+
+    @Test
+    void mapsDuplicateGstErrorToVisibleSensitiveFieldWithoutReflectingPlaintext() {
+        DepartmentMstService departmentService = mock(DepartmentMstService.class);
+        SubDepartmentService subDepartmentService = mock(SubDepartmentService.class);
+        DepartmentRegistrationPageService registrationService = mock(DepartmentRegistrationPageService.class);
+        OtpVerificationService otpVerificationService = mock(OtpVerificationService.class);
+        NotificationChannelProperties channelProperties = mock(NotificationChannelProperties.class);
+        DepartmentRegistrationPageController controller = new DepartmentRegistrationPageController(
+                departmentService,
+                subDepartmentService,
+                registrationService,
+                otpVerificationService,
+                channelProperties,
+                new OtpVerificationProperties(),
+                true);
+
+        DepartmentRegistrationForm form = validForm();
+        BindingResult bindingResult = new BeanPropertyBindingResult(form, "registrationForm");
+        HttpSession session = mock(HttpSession.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getParameterMap()).thenReturn(Map.of());
+        when(departmentService.getAll(Pageable.unpaged())).thenReturn(Page.empty());
+        when(subDepartmentService.getAll(1L, Pageable.unpaged())).thenReturn(Page.empty());
+        doThrow(new IllegalArgumentException("A registration already exists for the provided GST number."))
+                .when(registrationService)
+                .register(form, session);
+
+        String view = controller.register(
+                form,
+                bindingResult,
+                mock(Model.class),
+                mock(RedirectAttributes.class),
+                session,
+                request);
+
+        assertThat(view).isEqualTo("register/department-registration");
+        assertThat(bindingResult.getFieldError("gstNumberEncrypted")).isNotNull();
+        assertThat(bindingResult.getFieldError("gstNumberEncrypted").getDefaultMessage())
+                .isEqualTo("A registration already exists for the provided GST number.");
+        assertThat(form.getGstNumberEncrypted()).isNull();
+        assertThat(form.getPanNumberEncrypted()).isNull();
+    }
+
+    @Test
+    void asyncValidationReturnsSmallErrorPayloadWithoutReloadingMasterData() {
+        DepartmentMstService departmentService = mock(DepartmentMstService.class);
+        SubDepartmentService subDepartmentService = mock(SubDepartmentService.class);
+        DepartmentRegistrationPageService registrationService = mock(DepartmentRegistrationPageService.class);
+        DepartmentRegistrationPageController controller = new DepartmentRegistrationPageController(
+                departmentService,
+                subDepartmentService,
+                registrationService,
+                mock(OtpVerificationService.class),
+                mock(NotificationChannelProperties.class),
+                new OtpVerificationProperties(),
+                true);
+        DepartmentRegistrationForm form = validForm();
+        BindingResult bindingResult = new BeanPropertyBindingResult(form, "registrationForm");
+        bindingResult.rejectValue("address", "registration.address", "Office address is required");
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getParameterMap()).thenReturn(Map.of());
+
+        ResponseEntity<DepartmentRegistrationPageController.RegistrationSubmissionResponse> response =
+                controller.registerAsync(form, bindingResult, mock(HttpSession.class), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().success()).isFalse();
+        assertThat(response.getBody().fieldErrors())
+                .containsEntry("address", "Office address is required");
+        verifyNoInteractions(departmentService, subDepartmentService, registrationService);
     }
 
     private DepartmentRegistrationForm validForm() {

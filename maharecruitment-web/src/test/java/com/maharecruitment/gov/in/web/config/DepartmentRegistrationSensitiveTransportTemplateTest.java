@@ -23,8 +23,16 @@ class DepartmentRegistrationSensitiveTransportTemplateTest {
                 .contains("data-sensitive-field=\"gstNumber\"")
                 .contains("data-sensitive-field=\"panNumber\"")
                 .contains("data-sensitive-purpose=\"DEPARTMENT_REGISTRATION\"")
+                .contains("data-preserve-on-validation-error=\"true\"")
+                .contains("data-field-error=\"gstNumberEncrypted\"")
+                .contains("data-field-error=\"panNumberEncrypted\"")
+                .contains("data-selected-file-name=\"gstFile\"")
+                .contains("data-selected-file-name=\"panFile\"")
+                .contains("data-selected-file-name=\"tanFile\"")
                 .contains("data-otp-resend-cooldown-seconds=${otpResendCooldownSeconds}")
-                .contains("@{/js/sensitive-data-encryption.js}")
+                .contains("@{/js/sensitive-data-encryption.js(v='20260812-performance')}")
+                .contains("@{/js/department-registration.js(v='20260812-subdepartment-fix')}")
+                .doesNotContain("MutationObserver")
                 .doesNotContain("th:field=\"*{gstNo}\"")
                 .doesNotContain("th:field=\"*{panNo}\"")
                 .doesNotContain("name=\"gstNo\"")
@@ -39,6 +47,14 @@ class DepartmentRegistrationSensitiveTransportTemplateTest {
                 .contains("algorithm !== \"RSA-OAEP-256\"")
                 .contains("Date.now() + published.clockOffset")
                 .contains("\"SENSITIVE:v1\"")
+                .contains("window.requestIdleCallback(warmEncryptionKey")
+                .contains("submitWithoutNavigation(form)")
+                .contains("body: new FormData(form)")
+                .contains("renderValidationErrors(form, result)")
+                .contains("\"Accept\": \"application/json\"")
+                .contains("Your entered values and selected PDF documents have been kept.")
+                .contains("clearGeneratedFields(form)")
+                .doesNotContain("new DOMParser()")
                 .doesNotContain("includes(\"X\")");
 
         String otpScript = Files.readString(projectPath(
@@ -54,7 +70,15 @@ class DepartmentRegistrationSensitiveTransportTemplateTest {
                 "src/main/resources/static/js/department-registration.js"));
         assertThat(registrationScript)
                 .contains("form.dataset.otpResendCooldownSeconds || \"30\"")
-                .contains("resendCooldownSeconds: otpResendCooldownSeconds");
+                .contains("resendCooldownSeconds: otpResendCooldownSeconds")
+                .contains("Selected: ${file.name}")
+                .contains("const subDepartmentCache = new Map()")
+                .contains("const requestController = new AbortController()")
+                .contains("subDepartmentSelect.replaceChildren(options)")
+                .contains("cacheInitialSubDepartments()")
+                .contains(".on(\"change.departmentRegistration\", handleDepartmentChange)")
+                .contains("bindDynamicSelectEvents()")
+                .contains("updateDepartmentState(true, false)");
     }
 
     private Path projectPath(String relativePath) {
