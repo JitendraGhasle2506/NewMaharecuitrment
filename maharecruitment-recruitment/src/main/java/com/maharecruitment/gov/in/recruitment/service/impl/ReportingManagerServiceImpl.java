@@ -104,7 +104,12 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getReportingAuthorities() {
+        return toAuthorityOptions(loadReportingAuthorityTypes());
+    }
+
+    private Map<Long, String> loadReportingAuthorityTypes() {
         Map<Long, String> authorityTypesByUserId = new LinkedHashMap<>();
         addAuthorityUsers(
                 authorityTypesByUserId,
@@ -122,14 +127,50 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 authorityTypesByUserId,
                 userRepository.findDistinctUserIdsByRoleName(ROLE_PM),
                 TYPE_PM);
-        return toAuthorityOptions(authorityTypesByUserId);
+        addDirectManagerAuthorities(authorityTypesByUserId);
+        return authorityTypesByUserId;
+    }
+
+    private Map<Long, String> loadDirectManagerAuthorityTypes() {
+        Map<Long, String> authorityTypesByUserId = new LinkedHashMap<>();
+        addDirectManagerAuthorities(authorityTypesByUserId);
+        return authorityTypesByUserId;
+    }
+
+    private void addDirectManagerAuthorities(Map<Long, String> authorityTypesByUserId) {
+        addAuthorityEmployees(
+                authorityTypesByUserId,
+                getActiveManagers(ROLE_STM, STM_DESIGNATION_NAMES, STM_MANAGER_NAME_PATTERN),
+                TYPE_STM);
+        addAuthorityEmployees(
+                authorityTypesByUserId,
+                getActiveManagers(ROLE_PM, PM_DESIGNATION_NAMES, PM_MANAGER_NAME_PATTERN),
+                TYPE_PM);
     }
 
     private void addAuthorityUsers(
             Map<Long, String> authorityTypesByUserId,
             List<Long> userIds,
             String authorityType) {
-        userIds.forEach(userId -> authorityTypesByUserId.putIfAbsent(userId, authorityType));
+        if (userIds == null) {
+            return;
+        }
+        userIds.stream()
+                .filter(userId -> userId != null)
+                .forEach(userId -> authorityTypesByUserId.putIfAbsent(userId, authorityType));
+    }
+
+    private void addAuthorityEmployees(
+            Map<Long, String> authorityTypesByUserId,
+            List<EmployeeEntity> employees,
+            String authorityType) {
+        if (employees == null) {
+            return;
+        }
+        employees.stream()
+                .map(EmployeeEntity::getUser)
+                .filter(user -> user != null && user.getId() != null)
+                .forEach(user -> authorityTypesByUserId.putIfAbsent(user.getId(), authorityType));
     }
 
     private List<Map<String, Object>> toAuthorityOptions(Map<Long, String> authorityTypesByUserId) {
@@ -399,6 +440,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getInternalEmployees(
             Long includeEmployeeId,
             Long hodUserId,
@@ -443,6 +485,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllMappings() {
         List<EmployeeReportingMappingEntity> mappings = mappingRepository.findAll();
         List<Map<String, Object>> result = new ArrayList<>();
@@ -480,6 +523,12 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
            map.put("hodUserId", m.getHodUserId());
            User authority = userMap.get(m.getHodUserId());
            String authorityType = resolveAuthorityType(authority);
+           String mappedManagerType = m.getManagerType() == null
+                   ? null
+                   : m.getManagerType().trim().toUpperCase(Locale.ROOT);
+           if (authorityType == null && isDirectManagerAuthority(mappedManagerType)) {
+               authorityType = mappedManagerType;
+           }
            String displayAuthorityType = authorityType != null ? authorityType : TYPE_HOD;
            map.put("authorityType", displayAuthorityType);
            map.put("authorityName", authority != null ? authority.getName() : "");
@@ -528,6 +577,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 .collect(Collectors.toSet());
         Map<Long, User> authoritiesById = userRepository.findAllById(authorityUserIds).stream()
                 .collect(Collectors.toMap(User::getId, user -> user));
+        Map<Long, String> authorityTypesByUserId = loadReportingAuthorityTypes();
 
         return cells.stream().map(cell -> {
             CellReportingAuthorityMappingEntity mapping = mappingsByCellId.get(cell.getCellId());
@@ -542,7 +592,8 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             row.put("mappingId", mapping == null ? null : mapping.getMappingId());
             row.put("authorityUserId", mapping == null ? null : mapping.getAuthorityUserId());
             row.put("authorityName", authority == null ? "" : formatAuthorityName(authority));
-            row.put("authorityType", authority == null ? "" : resolveAuthorityType(authority));
+            row.put("authorityType",
+                    authority == null ? "" : resolveAuthorityType(authority, authorityTypesByUserId));
             return row;
         }).toList();
     }
@@ -670,10 +721,9 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         if (hodUserId == null) {
             throw new IllegalArgumentException("Reporting authority selection is required.");
         }
-        User authority = requireReportingAuthority(hodUserId);
+        String authorityType = requireReportingAuthority(hodUserId);
 
         String normalizedType = normalizeManagerType(managerType);
-        String authorityType = resolveAuthorityType(authority);
         boolean directManagerAuthority = isDirectManagerAuthority(authorityType);
         if (directManagerAuthority
                 && (!authorityType.equals(normalizedType) || managerEmployeeId != null)) {
@@ -743,17 +793,29 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 List.copyOf(distinctEmployeeIds));
     }
 
-    private User requireReportingAuthority(Long userId) {
+    private String requireReportingAuthority(Long userId) {
         User authority = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Selected reporting authority was not found."));
         if (!Boolean.TRUE.equals(authority.getActive())) {
             throw new IllegalArgumentException("Selected reporting authority must be active.");
         }
-        if (resolveAuthorityType(authority) == null) {
-            throw new IllegalArgumentException(
-                    "Selected user must have the COO, HOD, STM, or PM role.");
+        String authorityType = resolveAuthorityType(authority);
+        if (authorityType == null) {
+            authorityType = loadDirectManagerAuthorityTypes().get(userId);
         }
-        return authority;
+        if (authorityType == null) {
+            throw new IllegalArgumentException(
+                    "Selected user must be an eligible COO, HOD, STM, or PM reporting authority.");
+        }
+        return authorityType;
+    }
+
+    private String resolveAuthorityType(User user, Map<Long, String> authorityTypesByUserId) {
+        String roleAuthorityType = resolveAuthorityType(user);
+        if (roleAuthorityType != null || user == null) {
+            return roleAuthorityType;
+        }
+        return authorityTypesByUserId.get(user.getId());
     }
 
     private String resolveAuthorityType(User user) {

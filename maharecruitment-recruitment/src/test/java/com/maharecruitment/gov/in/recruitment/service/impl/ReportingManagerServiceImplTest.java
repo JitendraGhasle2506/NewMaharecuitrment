@@ -98,6 +98,50 @@ class ReportingManagerServiceImplTest {
     }
 
     @Test
+    void getReportingAuthoritiesIncludesStmAndPmWithoutAuthorityRoles() {
+        User stm = userWithRole(9L, "Sanjay Patil", "ROLE_EMPLOYEE");
+        User pm = userWithRole(10L, "Priya Jadhav", "ROLE_EMPLOYEE");
+        EmployeeEntity stmEmployee = employee(90L, "Sanjay Patil", "EMP090", "INTERNAL", "ACTIVE");
+        EmployeeEntity pmEmployee = employee(100L, "Priya Jadhav", "EMP100", "INTERNAL", "ACTIVE");
+        stmEmployee.setUser(stm);
+        pmEmployee.setUser(pm);
+
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_STM",
+                Set.of("STM", "SENIOR TECHNICAL MANAGER", "SENIOR TECHNICAL MANAGER (STM)"),
+                "%SENIOR%TECHNICAL%MANAGER%"))
+                .thenReturn(List.of(stmEmployee));
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_PM",
+                Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
+                "%PROJECT%MANAGER%"))
+                .thenReturn(List.of());
+        when(positionRepository.findFilledActiveEmployeesByManagerNames(
+                Set.of("STM", "SENIOR TECHNICAL MANAGER", "SENIOR TECHNICAL MANAGER (STM)"),
+                "%SENIOR%TECHNICAL%MANAGER%",
+                com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus.ACTIVE,
+                com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus.FILLED,
+                "ACTIVE"))
+                .thenReturn(List.of());
+        when(positionRepository.findFilledActiveEmployeesByManagerNames(
+                Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
+                "%PROJECT%MANAGER%",
+                com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus.ACTIVE,
+                com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus.FILLED,
+                "ACTIVE"))
+                .thenReturn(List.of(pmEmployee));
+        when(userRepository.findAllById(Set.of(9L, 10L))).thenReturn(List.of(pm, stm));
+
+        List<Map<String, Object>> result = service.getReportingAuthorities();
+
+        assertEquals(2, result.size());
+        assertEquals("STM", result.get(0).get("authorityType"));
+        assertEquals(9L, result.get(0).get("id"));
+        assertEquals("PM", result.get(1).get("authorityType"));
+        assertEquals(10L, result.get(1).get("id"));
+    }
+
+    @Test
     void getProjectsReturnsActiveProjectsForSelection() {
         when(projectRepository.findByActiveFlagIgnoreCaseOrderByProjectNameAsc("Y"))
                 .thenReturn(List.of(project(12L, "Citizen Services")));
@@ -347,6 +391,37 @@ class ReportingManagerServiceImplTest {
     }
 
     @Test
+    void designationBasedStmAuthorityCanReceiveDirectEmployeeMappings() {
+        User stm = userWithRole(9L, "STM Manager", "ROLE_EMPLOYEE");
+        EmployeeEntity stmEmployee = employee(90L, "STM Manager", "EMP090", "INTERNAL", "ACTIVE");
+        EmployeeEntity employee = employee(101L, "Rahul Patil", "EMP101", "INTERNAL", "ACTIVE");
+        stmEmployee.setUser(stm);
+        when(userRepository.findById(9L)).thenReturn(Optional.of(stm));
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_STM",
+                Set.of("STM", "SENIOR TECHNICAL MANAGER", "SENIOR TECHNICAL MANAGER (STM)"),
+                "%SENIOR%TECHNICAL%MANAGER%"))
+                .thenReturn(List.of(stmEmployee));
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_PM",
+                Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
+                "%PROJECT%MANAGER%"))
+                .thenReturn(List.of());
+        when(employeeRepository.findAllById(Set.of(101L))).thenReturn(List.of(employee));
+        when(employeeRepository.findByUser_Id(9L)).thenReturn(Optional.of(stmEmployee));
+        when(mappingRepository.findByEmployeeIdIn(List.of(101L))).thenReturn(List.of());
+
+        service.saveMapping(9L, "STM", null, null, List.of(101L));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<EmployeeReportingMappingEntity>> captor = ArgumentCaptor.forClass(List.class);
+        verify(mappingRepository).saveAll(captor.capture());
+        assertEquals(9L, captor.getValue().get(0).getHodUserId());
+        assertEquals("STM", captor.getValue().get(0).getManagerType());
+        assertEquals(101L, captor.getValue().get(0).getEmployeeId());
+    }
+
+    @Test
     void pmAuthorityCanReceiveDirectEmployeeMappings() {
         User pm = userWithRole(10L, "PM Manager", "ROLE_PM");
         EmployeeEntity employee = employee(102L, "Asha Patil", "EMP102", "INTERNAL", "ACTIVE");
@@ -496,6 +571,27 @@ class ReportingManagerServiceImplTest {
 
         assertEquals("Directly Reports to HOD - Anita Deshmukh", result.get("managerName"));
         assertNull(result.get("managerEmployeeId"));
+    }
+
+    @Test
+    void designationBasedStmMappingDisplaysStmAsTheAuthorityType() {
+        EmployeeReportingMappingEntity mapping = new EmployeeReportingMappingEntity();
+        mapping.setMappingId(1L);
+        mapping.setEmployeeId(101L);
+        mapping.setHodUserId(9L);
+        mapping.setManagerType("STM");
+        mapping.setManagerEmployeeId(null);
+        when(mappingRepository.findAll()).thenReturn(List.of(mapping));
+        when(employeeRepository.findAll())
+                .thenReturn(List.of(employee(101L, "Rahul Patil", "EMP101", "INTERNAL", "ACTIVE")));
+        when(userRepository.findAll())
+                .thenReturn(List.of(userWithRole(9L, "STM Manager", "ROLE_EMPLOYEE")));
+        when(projectRepository.findAll()).thenReturn(List.of());
+
+        Map<String, Object> result = service.getAllMappings().get(0);
+
+        assertEquals("STM", result.get("authorityType"));
+        assertEquals("Directly Reports to STM - STM Manager", result.get("managerName"));
     }
 
     @Test
