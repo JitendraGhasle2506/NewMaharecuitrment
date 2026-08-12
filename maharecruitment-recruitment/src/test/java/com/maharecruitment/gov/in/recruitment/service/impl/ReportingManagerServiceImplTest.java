@@ -119,6 +119,7 @@ class ReportingManagerServiceImplTest {
         when(positionRepository.findFilledActiveEmployeesByManagerNames(
                 Set.of("STM", "SENIOR TECHNICAL MANAGER", "SENIOR TECHNICAL MANAGER (STM)"),
                 "%SENIOR%TECHNICAL%MANAGER%",
+                "ROLE_STM",
                 com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus.ACTIVE,
                 com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus.FILLED,
                 "ACTIVE"))
@@ -126,6 +127,7 @@ class ReportingManagerServiceImplTest {
         when(positionRepository.findFilledActiveEmployeesByManagerNames(
                 Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
                 "%PROJECT%MANAGER%",
+                "ROLE_PM",
                 com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus.ACTIVE,
                 com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus.FILLED,
                 "ACTIVE"))
@@ -139,6 +141,33 @@ class ReportingManagerServiceImplTest {
         assertEquals(9L, result.get(0).get("id"));
         assertEquals("PM", result.get(1).get("authorityType"));
         assertEquals(10L, result.get(1).get("id"));
+    }
+
+    @Test
+    void getReportingAuthoritiesIncludesPmMatchedToActiveUserByEmail() {
+        User pm = userWithRole(10L, "Priya Jadhav", "ROLE_EMPLOYEE");
+        pm.setEmail("priya.jadhav@example.com");
+        EmployeeEntity pmEmployee = employee(100L, "Priya Jadhav", "EMP100", "INTERNAL", "ACTIVE");
+        pmEmployee.setEmail("Priya.Jadhav@example.com");
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_STM",
+                Set.of("STM", "SENIOR TECHNICAL MANAGER", "SENIOR TECHNICAL MANAGER (STM)"),
+                "%SENIOR%TECHNICAL%MANAGER%"))
+                .thenReturn(List.of());
+        when(employeeRepository.findActiveEmployeesByRoleNameOrDesignationNames(
+                "ROLE_PM",
+                Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
+                "%PROJECT%MANAGER%"))
+                .thenReturn(List.of(pmEmployee));
+        when(userRepository.findActiveUsersByNormalizedEmailIn(Set.of("priya.jadhav@example.com")))
+                .thenReturn(List.of(pm));
+        when(userRepository.findAllById(Set.of(10L))).thenReturn(List.of(pm));
+
+        List<Map<String, Object>> result = service.getReportingAuthorities();
+
+        assertEquals(1, result.size());
+        assertEquals(10L, result.get(0).get("id"));
+        assertEquals("PM", result.get(0).get("authorityType"));
     }
 
     @Test
@@ -260,6 +289,7 @@ class ReportingManagerServiceImplTest {
                 .when(positionRepository).findFilledActiveEmployeesByManagerNames(
                         Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
                         "%PROJECT%MANAGER%",
+                        "ROLE_PM",
                         com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus.ACTIVE,
                         com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus.FILLED,
                         "ACTIVE");
@@ -277,6 +307,7 @@ class ReportingManagerServiceImplTest {
         when(positionRepository.findFilledActiveEmployeesByManagerNames(
                 Set.of("PM", "PROJECT MANAGER", "PROJECT MANAGER (PM)"),
                 "%PROJECT%MANAGER%",
+                "ROLE_PM",
                 com.maharecruitment.gov.in.recruitment.entity.organization.OrganizationRecordStatus.ACTIVE,
                 com.maharecruitment.gov.in.recruitment.entity.organization.PositionStatus.FILLED,
                 "ACTIVE"))

@@ -180,12 +180,14 @@ public interface PositionMasterRepository extends JpaRepository<PositionMasterEn
                 or upper(trim(coalesce(p.positionName, ''))) like :managerNamePattern
                 or upper(trim(coalesce(designation.designationName, ''))) in :managerNames
                 or upper(trim(coalesce(designation.designationName, ''))) like :managerNamePattern
+                or upper(trim(coalesce(designation.roleName, ''))) = upper(trim(:managerRoleName))
               )
             order by lower(employee.fullName), employee.employeeId
             """)
     List<EmployeeEntity> findFilledActiveEmployeesByManagerNames(
             @Param("managerNames") Collection<String> managerNames,
             @Param("managerNamePattern") String managerNamePattern,
+            @Param("managerRoleName") String managerRoleName,
             @Param("activeStatus") OrganizationRecordStatus activeStatus,
             @Param("filledStatus") PositionStatus filledStatus,
             @Param("employeeStatus") String employeeStatus);

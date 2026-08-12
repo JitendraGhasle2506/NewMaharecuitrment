@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Designation Role Assignment</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/admin-management.css(v='20260812')}">
+    <style>
+        .designation-role-form { display: flex; gap: .5rem; align-items: center; min-width: 330px; }
+        .designation-role-form .form-select { min-width: 190px; }
+        .assignment-progress { min-width: 155px; }
+        .employee-detail { border-top: 1px solid #e8edf4; padding: .8rem 1rem; background: #f8fafc; }
+        .employee-detail summary { cursor: pointer; color: #1e5790; font-weight: 600; }
+        .employee-detail-table { margin-top: .75rem; background: #fff; }
+        .role-status { display: inline-flex; gap: .35rem; align-items: center; }
+        .role-status-ok { color: #167247; }
+        .role-status-warning { color: #9a5b00; }
+        .current-role-list { display: flex; flex-wrap: wrap; gap: .3rem; }
+        .role-assignment-panel { border: 1px solid #dbe6f3; border-radius: .8rem; padding: 1rem; margin-bottom: 1rem; background: #f8fbff; }
+        .role-assignment-panel h3 { margin: 0 0 .2rem; font-size: 1.05rem; color: #183b63; }
+        .role-assignment-panel p { margin: 0 0 .85rem; color: #64748b; }
+        .role-assignment-controls { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(220px, .7fr) auto; gap: .75rem; align-items: end; }
+        .role-assignment-control label { display: block; margin-bottom: .35rem; font-weight: 600; color: #334155; }
+        @media (max-width: 992px) { .designation-role-form { min-width: 280px; flex-wrap: wrap; } }
+        @media (max-width: 768px) { .role-assignment-controls { grid-template-columns: 1fr; } }
+    </style>
+</head>
+
+<body>
+<th:block th:replace="~{header/header :: var-sidebar-header('Admin', 'Designation Roles', ~{::section})}">
+    <section class="admin-management-page">
+        <div class="card add-emp-card management-card">
+            <header class="management-header">
+                <div class="management-title-wrap">
+                    <span class="management-title-icon" aria-hidden="true"><i class="fa-solid fa-id-badge"></i></span>
+                    <div>
+                        <div class="management-eyebrow">Access administration</div>
+                        <h2>Designation role assignment</h2>
+                        <p>Configure one workforce role per designation and apply it to linked employee accounts.</p>
+                    </div>
+                </div>
+                <form class="js-confirm-action" method="post"
+                      th:action="@{/admin/designation-role-assignments/assign-all}"
+                      data-confirm-message="Assign every configured designation role to all pending active users?">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="hidden" name="search" th:value="${searchTerm}">
+                    <button type="submit" class="btn btn-light management-primary-action">
+                        <i class="fa-solid fa-users-gear" aria-hidden="true"></i>
+                        <span>Assign all configured roles</span>
+                    </button>
+                </form>
+            </header>
+
+            <div class="card-body management-body">
+                <nav class="admin-quick-links" aria-label="User administration links">
+                    <span class="admin-quick-links-label">Quick links</span>
+                    <a class="admin-quick-link" th:href="@{/admin/users}">
+                        <i class="fa-solid fa-users" aria-hidden="true"></i> Users
+                    </a>
+                    <a class="admin-quick-link" th:href="@{/admin/roles}">
+                        <i class="fa-solid fa-user-shield" aria-hidden="true"></i> Roles
+                    </a>
+                    <a class="admin-quick-link active" th:href="@{/admin/designation-role-assignments}" aria-current="page">
+                        <i class="fa-solid fa-id-badge" aria-hidden="true"></i> Designation roles
+                    </a>
+                    <a class="admin-quick-link" th:href="@{/admin/role-menu-mappings}">
+                        <i class="fa-solid fa-diagram-project" aria-hidden="true"></i> Role menu mapping
+                    </a>
+                </nav>
+
+                <div class="management-alert alert alert-success" role="status" th:if="${successMessage}">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i><span th:text="${successMessage}"></span>
+                </div>
+                <div class="management-alert alert alert-danger" role="alert" th:if="${errorMessage}">
+                    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span th:text="${errorMessage}"></span>
+                </div>
+
+                <div class="role-assignment-panel">
+                    <h3>Assign role by designation</h3>
+                    <p>Select a designation and role. The role will be added to every active linked user in that designation.</p>
+                    <form class="role-assignment-controls js-confirm-action" method="post"
+                          th:action="@{/admin/designation-role-assignments/assign}"
+                          data-confirm-message="Assign the selected role to all active users in this designation?">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input type="hidden" name="search" th:value="${searchTerm}">
+                        <div class="role-assignment-control">
+                            <label for="designationAssignmentSelect">Select designation <span class="text-danger">*</span></label>
+                            <select id="designationAssignmentSelect" class="form-select" name="designationId" required>
+                                <option value="" selected disabled>-- Select designation --</option>
+                                <option th:each="designation : ${designationOptions}"
+                                        th:value="${designation.designationId}"
+                                        th:text="${designation.designationName + (!#strings.isEmpty(designation.category) ? ' (' + designation.category + ')' : '')}">
+                                    Senior Technical Manager
+                                </option>
+                            </select>
+                        </div>
+                        <div class="role-assignment-control">
+                            <label for="designationRoleSelect">Select role <span class="text-danger">*</span></label>
+                            <select id="designationRoleSelect" class="form-select" name="roleName" required>
+                                <option value="" selected disabled>-- Select role --</option>
+                                <option th:each="roleName : ${availableRoleNames}"
+                                        th:value="${roleName}" th:text="${roleName}">ROLE_EMPLOYEE</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-user-check" aria-hidden="true"></i> Assign role
+                        </button>
+                    </form>
+                </div>
+
+                <div class="management-summary-grid">
+                    <div class="management-summary-card">
+                        <span class="summary-icon summary-icon-blue" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></span>
+                        <div><span class="summary-label">Designations</span><strong th:text="${assignments.size()}">0</strong></div>
+                    </div>
+                    <div class="management-summary-card">
+                        <span class="summary-icon summary-icon-green" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
+                        <div><span class="summary-label">Active employees</span><strong th:text="${totalEmployees}">0</strong></div>
+                    </div>
+                    <div class="management-summary-card">
+                        <span class="summary-icon summary-icon-amber" aria-hidden="true"><i class="fa-solid fa-user-clock"></i></span>
+                        <div><span class="summary-label">Pending users</span><strong th:text="${pendingUsers}">0</strong></div>
+                    </div>
+                    <div class="management-summary-card">
+                        <span class="summary-icon summary-icon-amber" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                        <div><span class="summary-label">Need configuration</span><strong th:text="${unconfiguredDesignations}">0</strong></div>
+                    </div>
+                </div>
+
+                <form class="management-toolbar" method="get"
+                      th:action="@{/admin/designation-role-assignments}" role="search">
+                    <div class="management-search-group">
+                        <label class="management-control-label" for="designationRoleSearch">Search designation or employee</label>
+                        <div class="management-search-field">
+                            <input id="designationRoleSearch" type="search" class="form-control" name="search"
+                                   th:value="${searchTerm}" autocomplete="off"
+                                   placeholder="Designation, category, role, employee or code">
+                        </div>
+                    </div>
+                    <div class="management-toolbar-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Search
+                        </button>
+                        <a class="btn btn-outline-secondary" th:if="${!#strings.isEmpty(searchTerm)}"
+                           th:href="@{/admin/designation-role-assignments}">
+                            <i class="fa-solid fa-xmark" aria-hidden="true"></i> Clear
+                        </a>
+                    </div>
+                </form>
+
+                <div class="management-table-shell">
+                    <div class="management-table-heading">
+                        <div>
+                            <h3>Designation access rules</h3>
+                            <p>Role assignment adds the selected role and preserves every existing user role.</p>
+                        </div>
+                        <span class="record-count"><span th:text="${assignments.size()}">0</span> records</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table management-table align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th scope="col">Sr. No.</th>
+                                <th scope="col">Designation</th>
+                                <th scope="col">Configured role</th>
+                                <th scope="col">Assignment progress</th>
+                                <th scope="col">Configure and assign</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr class="management-empty-row" th:if="${assignments.isEmpty()}">
+                                <td colspan="5">
+                                    <div class="management-empty-state">
+                                        <span aria-hidden="true"><i class="fa-solid fa-id-badge"></i></span>
+                                        <strong>No designations found</strong>
+                                        <p>Clear the search or add an active designation in Designation Master.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            <th:block th:each="assignment, assignmentStat : ${assignments}">
+                                <tr>
+                                    <td><span class="serial-number" th:text="${assignmentStat.count}">1</span></td>
+                                    <td>
+                                        <div class="entity-identity">
+                                            <span class="entity-avatar" aria-hidden="true"
+                                                  th:text="${!#strings.isEmpty(assignment.designationName) ? #strings.substring(assignment.designationName, 0, 1) : '?'}">D</span>
+                                            <div>
+                                                <strong th:text="${assignment.designationName}">Designation</strong>
+                                                <span th:text="${assignment.category}">Category</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="role-status role-status-ok" th:if="${assignment.configuredRoleAvailable}">
+                                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                                            <span class="role-badge" th:text="${assignment.configuredRoleName}">ROLE_EMPLOYEE</span>
+                                        </span>
+                                        <span class="role-status role-status-warning" th:unless="${assignment.configuredRoleAvailable}">
+                                            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                                            <span th:text="${#strings.isEmpty(assignment.configuredRoleName) ? 'Not configured' : assignment.configuredRoleName + ' is unavailable'}">Not configured</span>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="assignment-progress">
+                                            <strong><span th:text="${assignment.assignedUserCount}">0</span>/<span th:text="${assignment.linkedUserCount}">0</span> assigned</strong>
+                                            <div class="small text-muted">
+                                                <span th:text="${assignment.activeEmployeeCount}">0</span> employee(s),
+                                                <span th:text="${assignment.pendingUserCount}">0</span> pending
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <form class="designation-role-form js-confirm-action" method="post"
+                                              th:action="@{/admin/designation-role-assignments/{id}/assign(id=${assignment.designationId})}"
+                                              th:attr="data-confirm-message=${'Save this role and assign it to active ' + assignment.designationName + ' employee accounts?'}">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <input type="hidden" name="search" th:value="${searchTerm}">
+                                            <label class="visually-hidden" th:for="${'role-' + assignment.designationId}">Select role</label>
+                                            <select class="form-select form-select-sm" name="roleName" required
+                                                    th:id="${'role-' + assignment.designationId}">
+                                                <option value="" disabled th:selected="${!assignment.configuredRoleAvailable}">-- Select role --</option>
+                                                <option th:each="roleName : ${availableRoleNames}"
+                                                        th:value="${roleName}" th:text="${roleName}"
+                                                        th:selected="${assignment.configuredRoleAvailable and roleName == assignment.configuredRoleName}">
+                                                    ROLE_EMPLOYEE
+                                                </option>
+                                            </select>
+                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                <i class="fa-solid fa-user-check" aria-hidden="true"></i> Save &amp; assign
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <tr th:if="${!assignment.employees.isEmpty()}">
+                                    <td colspan="5" class="p-0">
+                                        <details class="employee-detail">
+                                            <summary>
+                                                View <span th:text="${assignment.activeEmployeeCount}">0</span>
+                                                employee assignment(s)
+                                            </summary>
+                                            <div class="table-responsive employee-detail-table">
+                                                <table class="table table-sm align-middle mb-0">
+                                                    <thead>
+                                                    <tr><th>Employee</th><th>User account</th><th>Current roles</th><th>Status</th></tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <tr th:each="employee : ${assignment.employees}">
+                                                        <td><strong th:text="${employee.employeeName}">Employee</strong><br><span class="small text-muted" th:text="${employee.employeeCode}">CODE</span></td>
+                                                        <td>
+                                                            <span th:if="${employee.userId != null and employee.userActive}">Active</span>
+                                                            <span class="text-warning" th:if="${employee.userId != null and !employee.userActive}">Inactive</span>
+                                                            <span class="text-danger" th:if="${employee.userId == null}">Not linked</span>
+                                                        </td>
+                                                        <td>
+                                                            <div class="current-role-list" th:if="${!employee.currentRoleNames.isEmpty()}">
+                                                                <span class="role-badge" th:each="currentRole : ${employee.currentRoleNames}" th:text="${currentRole}">ROLE_USER</span>
+                                                            </div>
+                                                            <span class="empty-value" th:if="${employee.currentRoleNames.isEmpty()}">No role</span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="text-success" th:if="${employee.configuredRoleAssigned}"><i class="fa-solid fa-circle-check"></i> Assigned</span>
+                                                            <span class="text-warning" th:if="${assignment.configuredRoleAvailable and employee.userId != null and employee.userActive and !employee.configuredRoleAssigned}"><i class="fa-solid fa-clock"></i> Pending</span>
+                                                            <span class="text-muted" th:unless="${assignment.configuredRoleAvailable}">Configure role first</span>
+                                                        </td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </details>
+                                    </td>
+                                </tr>
+                            </th:block>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</th:block>
+</body>
+</html>

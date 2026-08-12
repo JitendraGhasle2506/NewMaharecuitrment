@@ -26,6 +26,24 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     Optional<EmployeeEntity> findByUser_IdAndStatusIgnoreCase(Long userId, String status);
 
+    @EntityGraph(attributePaths = { "designation", "user", "user.roles" })
+    @Query("""
+            select employee
+            from EmployeeEntity employee
+            join employee.designation designation
+            where upper(trim(coalesce(employee.status, ''))) = :status
+              and upper(trim(coalesce(designation.activeFlag, ''))) = :activeFlag
+            order by lower(designation.designationName), lower(employee.fullName), employee.employeeId
+            """)
+    List<EmployeeEntity> findActiveEmployeesForDesignationRoleAssignment(
+            @Param("status") String status,
+            @Param("activeFlag") String activeFlag);
+
+    @EntityGraph(attributePaths = { "designation", "user", "user.roles" })
+    List<EmployeeEntity> findByDesignation_DesignationIdAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
+            Long designationId,
+            String status);
+
     boolean existsByUser_Id(Long userId);
 
     boolean existsByEmailIgnoreCaseAndEmployeeIdNot(String email, Long employeeId);
@@ -535,6 +553,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             + "left join e.designation d "
             + "where upper(trim(coalesce(e.status, ''))) = 'ACTIVE' "
             + "and (upper(trim(coalesce(r.name, ''))) = upper(trim(:roleName)) "
+            + "or upper(trim(coalesce(d.roleName, ''))) = upper(trim(:roleName)) "
             + "or upper(trim(coalesce(d.designationName, ''))) in :designationNames "
             + "or upper(trim(coalesce(d.designationName, ''))) like :designationNamePattern) "
             + "order by lower(e.fullName), e.employeeId")

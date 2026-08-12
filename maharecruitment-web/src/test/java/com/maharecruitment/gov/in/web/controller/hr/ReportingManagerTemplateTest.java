@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.web.controller.hr;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,5 +33,14 @@ class ReportingManagerTemplateTest {
 
         assertThatCode(() -> engine.process(inlineScript, new Context()))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void searchableDropdownsAreNotAttachedToClippingCardContainer() throws Exception {
+        String template = Files.readString(TEMPLATE_PATH);
+
+        assertThat(template)
+                .contains("select.select2({")
+                .doesNotContain("dropdownParent: select.closest('.card-body')");
     }
 }

@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.master.repository;
 
 import java.util.Optional;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,8 @@ import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 public interface ManpowerDesignationMasterRepository extends JpaRepository<ManpowerDesignationMaster, Long> {
 
     Page<ManpowerDesignationMaster> findByActiveFlagIgnoreCase(String activeFlag, Pageable pageable);
+
+    List<ManpowerDesignationMaster> findByActiveFlagIgnoreCaseOrderByDesignationNameAsc(String activeFlag);
 
     Optional<ManpowerDesignationMaster> findByDesignationIdAndActiveFlagIgnoreCase(Long designationId, String activeFlag);
 

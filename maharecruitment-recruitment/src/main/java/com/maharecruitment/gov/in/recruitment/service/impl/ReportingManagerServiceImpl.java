@@ -164,13 +164,76 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             Map<Long, String> authorityTypesByUserId,
             List<EmployeeEntity> employees,
             String authorityType) {
-        if (employees == null) {
+        if (employees == null || employees.isEmpty()) {
             return;
         }
-        employees.stream()
-                .map(EmployeeEntity::getUser)
-                .filter(user -> user != null && user.getId() != null)
-                .forEach(user -> authorityTypesByUserId.putIfAbsent(user.getId(), authorityType));
+
+        List<EmployeeEntity> employeesWithoutLinkedUsers = new ArrayList<>();
+        for (EmployeeEntity employee : employees) {
+            if (employee == null) {
+                continue;
+            }
+            User linkedUser = employee.getUser();
+            if (linkedUser != null && linkedUser.getId() != null) {
+                authorityTypesByUserId.putIfAbsent(linkedUser.getId(), authorityType);
+            } else {
+                employeesWithoutLinkedUsers.add(employee);
+            }
+        }
+        if (employeesWithoutLinkedUsers.isEmpty()) {
+            return;
+        }
+
+        Map<String, User> activeUsersByEmail = new HashMap<>();
+        Set<String> normalizedEmails = employeesWithoutLinkedUsers.stream()
+                .map(EmployeeEntity::getEmail)
+                .map(this::normalizeEmail)
+                .filter(email -> !email.isEmpty())
+                .collect(Collectors.toSet());
+        if (!normalizedEmails.isEmpty()) {
+            userRepository.findActiveUsersByNormalizedEmailIn(normalizedEmails)
+                    .forEach(user -> activeUsersByEmail.putIfAbsent(
+                            normalizeEmail(user.getEmail()),
+                            user));
+        }
+
+        Map<String, User> activeUsersByMobile = new HashMap<>();
+        Set<String> mobileNumbers = employeesWithoutLinkedUsers.stream()
+                .map(EmployeeEntity::getMobile)
+                .map(this::normalizeMobileNumber)
+                .filter(mobile -> !mobile.isEmpty())
+                .collect(Collectors.toSet());
+        if (!mobileNumbers.isEmpty()) {
+            userRepository.findActiveUsersByMobileNumberIn(mobileNumbers)
+                    .forEach(user -> activeUsersByMobile.putIfAbsent(
+                            normalizeMobileNumber(user.getMobileNo()),
+                            user));
+        }
+
+        int unresolvedEmployees = 0;
+        for (EmployeeEntity employee : employeesWithoutLinkedUsers) {
+            User matchedUser = activeUsersByEmail.get(normalizeEmail(employee.getEmail()));
+            if (matchedUser == null) {
+                matchedUser = activeUsersByMobile.get(normalizeMobileNumber(employee.getMobile()));
+            }
+            if (matchedUser != null && matchedUser.getId() != null) {
+                authorityTypesByUserId.putIfAbsent(matchedUser.getId(), authorityType);
+            } else {
+                unresolvedEmployees++;
+            }
+        }
+        if (unresolvedEmployees > 0) {
+            log.debug("Excluded {} {} employee(s) without a linked or matching active user account.",
+                    unresolvedEmployees, authorityType);
+        }
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeMobileNumber(String mobileNumber) {
+        return mobileNumber == null ? "" : mobileNumber.trim();
     }
 
     private List<Map<String, Object>> toAuthorityOptions(Map<Long, String> authorityTypesByUserId) {
@@ -374,7 +437,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         List<EmployeeEntity> roleOrDesignationManagers =
                 findActiveRoleOrDesignationManagers(roleName, managerNames, managerNamePattern);
         List<EmployeeEntity> positionManagers =
-                findFilledActivePositionManagers(managerNames, managerNamePattern);
+                findFilledActivePositionManagers(roleName, managerNames, managerNamePattern);
 
         Map<Long, EmployeeEntity> uniqueManagers = new HashMap<>();
         addManagers(uniqueManagers, roleOrDesignationManagers);
@@ -402,12 +465,14 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     }
 
     private List<EmployeeEntity> findFilledActivePositionManagers(
+            String roleName,
             Set<String> managerNames,
             String managerNamePattern) {
         try {
             return positionRepository.findFilledActiveEmployeesByManagerNames(
                     managerNames,
                     managerNamePattern,
+                    roleName,
                     OrganizationRecordStatus.ACTIVE,
                     PositionStatus.FILLED,
                     ACTIVE);

@@ -23,6 +23,24 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
         Optional<User> findByMobileNoAndActiveTrue(String mobileNo);
 
+        @Query("""
+                        select u
+                        from User u
+                        where u.active = true
+                          and lower(trim(u.email)) in :normalizedEmails
+                        """)
+        List<User> findActiveUsersByNormalizedEmailIn(
+                        @Param("normalizedEmails") Collection<String> normalizedEmails);
+
+        @Query("""
+                        select u
+                        from User u
+                        where u.active = true
+                          and trim(u.mobileNo) in :mobileNumbers
+                        """)
+        List<User> findActiveUsersByMobileNumberIn(
+                        @Param("mobileNumbers") Collection<String> mobileNumbers);
+
         boolean existsByEmailIgnoreCase(String email);
 
         boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id);
