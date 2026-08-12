@@ -26,6 +26,7 @@ import com.maharecruitment.gov.in.master.service.SubDepartmentService;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
+import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
@@ -45,6 +46,7 @@ public class DepartmentRegistrationPageController {
     private final DepartmentRegistrationPageService registrationPageService;
     private final OtpVerificationService otpVerificationService;
     private final NotificationChannelProperties notificationChannelProperties;
+    private final OtpVerificationProperties otpVerificationProperties;
     private final boolean otpBypassEnabled;
 
     public DepartmentRegistrationPageController(
@@ -53,12 +55,14 @@ public class DepartmentRegistrationPageController {
             DepartmentRegistrationPageService registrationPageService,
             OtpVerificationService otpVerificationService,
             NotificationChannelProperties notificationChannelProperties,
+            OtpVerificationProperties otpVerificationProperties,
             @Value("${registration.department.otp-bypass-enabled:false}") boolean otpBypassEnabled) {
         this.departmentService = departmentService;
         this.subDepartmentService = subDepartmentService;
         this.registrationPageService = registrationPageService;
         this.otpVerificationService = otpVerificationService;
         this.notificationChannelProperties = notificationChannelProperties;
+        this.otpVerificationProperties = otpVerificationProperties;
         this.otpBypassEnabled = otpBypassEnabled;
     }
 
@@ -86,7 +90,7 @@ public class DepartmentRegistrationPageController {
         }
 
         try {
-            registrationPageService.register(form);
+            registrationPageService.register(form, session);
         } catch (RuntimeException ex) {
             boolean handled = applyRegistrationError(bindingResult, form, ex);
             if (handled) {
@@ -99,18 +103,8 @@ public class DepartmentRegistrationPageController {
             return "register/department-registration";
         }
 
-        clearRegistrationOtpState(session);
         redirectAttributes.addAttribute("registered", "true");
         return "redirect:/login";
-    }
-
-    private void clearRegistrationOtpState(HttpSession session) {
-        try {
-            otpVerificationService.clear(session, VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
-        } catch (RuntimeException ex) {
-            // Registration has already committed; cleanup must not replace a successful response.
-            log.warn("Department registration succeeded, but OTP verification state cleanup failed.", ex);
-        }
     }
 
     @GetMapping("/sub-departments")
@@ -142,6 +136,7 @@ public class DepartmentRegistrationPageController {
         model.addAttribute("otpBypassEnabled", otpBypassEnabled);
         model.addAttribute("mobileOtpEnabled", notificationChannelProperties.isSmsEnabled());
         model.addAttribute("emailOtpEnabled", notificationChannelProperties.isEmailEnabled());
+        model.addAttribute("otpResendCooldownSeconds", otpVerificationProperties.getResendCooldownSeconds());
         model.addAttribute("verificationPurpose", VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
     }
 

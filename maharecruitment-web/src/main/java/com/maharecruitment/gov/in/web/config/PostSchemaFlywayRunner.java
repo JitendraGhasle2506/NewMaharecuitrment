@@ -87,6 +87,7 @@ import db.postmigration.V102__employee_location_mapping_primary_support;
 import db.postmigration.V104__employee_cell_mapping_support;
 import db.postmigration.V105__cell_reporting_authority_mapping_support;
 import db.postmigration.V106__project_master_department_mapping;
+import db.postmigration.V107__otp_rate_limit_bucket_support;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -200,6 +201,7 @@ public class PostSchemaFlywayRunner {
                 new V104__employee_cell_mapping_support(),
                 new V105__cell_reporting_authority_mapping_support(),
                 new V106__project_master_department_mapping(),
+                new V107__otp_rate_limit_bucket_support(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

@@ -26,6 +26,7 @@ class LoginClientTransportGuardTest {
                 .contains("Enter a valid email address or 10 digit mobile number.")
                 .contains("detectIdentifierChannel")
                 .contains("Math.max(0, otpResendCooldownSeconds)")
+                .contains("form.dataset.otpResendCooldownSeconds || \"30\"")
                 .contains("data.resendAvailableInSeconds")
                 .contains("response.status === 429")
                 .contains("Please enter the latest valid OTP")
@@ -39,7 +40,7 @@ class LoginClientTransportGuardTest {
                 .contains("data-email-otp-enabled=${otpEmailEnabled}")
                 .contains("data-sms-otp-enabled=${otpSmsEnabled}")
                 .contains("data-credential-key-url=@{/security/credential-encryption/public-key}")
-                .contains("@{/js/login-otp.js(v='20260713-auto-otp-channel')}")
+                .contains("@{/js/login-otp.js(v='20260812-otp-30s')}")
                 .doesNotContain("id=\"password\" name=\"password\"");
     }
 

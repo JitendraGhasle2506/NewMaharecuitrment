@@ -19,6 +19,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const otpBypassEnabled = form.dataset.otpBypassEnabled === "true";
     const mobileOtpEnabled = form.dataset.mobileOtpEnabled === "true";
     const emailOtpEnabled = form.dataset.emailOtpEnabled === "true";
+    const configuredOtpCooldown = Number.parseInt(form.dataset.otpResendCooldownSeconds || "30", 10);
+    const otpResendCooldownSeconds = Number.isFinite(configuredOtpCooldown) && configuredOtpCooldown > 0
+        ? configuredOtpCooldown
+        : 30;
 
     const primaryMobileInput = document.getElementById("primaryMobile");
     const primaryEmailInput = document.getElementById("primaryEmail");
@@ -233,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
             sendUrl: endpoints.otpSend,
             verifyUrl: endpoints.otpVerify,
             csrfToken,
+            resendCooldownSeconds: otpResendCooldownSeconds,
             initialVerified: form.dataset.mobileVerified === "true",
             initialVerifiedMessage: "Primary mobile number already verified."
         }, mobileOtpElements.statusElement, "Mobile");
@@ -253,6 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
             sendUrl: endpoints.otpSend,
             verifyUrl: endpoints.otpVerify,
             csrfToken,
+            resendCooldownSeconds: otpResendCooldownSeconds,
             initialVerified: form.dataset.emailVerified === "true",
             initialVerifiedMessage: "Primary email address already verified."
         }, emailOtpElements.statusElement, "Email");

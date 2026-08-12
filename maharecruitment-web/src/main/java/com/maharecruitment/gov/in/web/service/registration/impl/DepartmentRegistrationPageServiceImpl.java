@@ -30,6 +30,10 @@ import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistratio
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.security.CredentialEncryptionService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
+import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
+import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
+
+import jakarta.servlet.http.HttpSession;
 
 @Service
 @Transactional
@@ -42,6 +46,7 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
     private final FileStorageService fileStorageService;
     private final AccountNotificationService accountNotificationService;
     private final CredentialEncryptionService credentialEncryptionService;
+    private final OtpVerificationService otpVerificationService;
     private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
     private static final Pattern GST_PATTERN = Pattern.compile(
             "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$");
@@ -53,7 +58,8 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
             DepartmentUserProvisioningService departmentUserProvisioningService,
             FileStorageService fileStorageService,
             AccountNotificationService accountNotificationService,
-            CredentialEncryptionService credentialEncryptionService) {
+            CredentialEncryptionService credentialEncryptionService,
+            OtpVerificationService otpVerificationService) {
         this.departmentService = departmentService;
         this.subDepartmentService = subDepartmentService;
         this.registrationService = registrationService;
@@ -61,10 +67,11 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
         this.fileStorageService = fileStorageService;
         this.accountNotificationService = accountNotificationService;
         this.credentialEncryptionService = credentialEncryptionService;
+        this.otpVerificationService = otpVerificationService;
     }
 
     @Override
-    public DepartmentRegistrationResult register(DepartmentRegistrationForm form) {
+    public DepartmentRegistrationResult register(DepartmentRegistrationForm form, HttpSession session) {
         validateContactIndependence(form);
         PlainSensitiveIdentity sensitiveIdentity;
         try {
@@ -130,6 +137,9 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
                     form.getPrimaryContactName(),
                     userResult.getEmail(),
                     userResult.getTemporaryPassword());
+            otpVerificationService.clear(
+                    session,
+                    VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
 
             return new DepartmentRegistrationResult(
                     registration.getDepartmentRegistrationId(),

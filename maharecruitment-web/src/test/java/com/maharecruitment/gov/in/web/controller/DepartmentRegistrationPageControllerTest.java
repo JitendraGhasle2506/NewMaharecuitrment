@@ -1,7 +1,6 @@
 package com.maharecruitment.gov.in.web.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,9 +19,9 @@ import com.maharecruitment.gov.in.master.service.DepartmentMstService;
 import com.maharecruitment.gov.in.master.service.SubDepartmentService;
 import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
+import com.maharecruitment.gov.in.web.properties.OtpVerificationProperties;
 import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
-import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -30,7 +29,7 @@ import jakarta.servlet.http.HttpSession;
 class DepartmentRegistrationPageControllerTest {
 
     @Test
-    void redirectsToSuccessWhenOtpCleanupFailsAfterRegistrationCommit() {
+    void redirectsToSuccessAfterTransactionalRegistrationWorkflowCompletes() {
         DepartmentRegistrationPageService registrationService = mock(DepartmentRegistrationPageService.class);
         OtpVerificationService otpVerificationService = mock(OtpVerificationService.class);
         NotificationChannelProperties channelProperties = mock(NotificationChannelProperties.class);
@@ -40,6 +39,7 @@ class DepartmentRegistrationPageControllerTest {
                 registrationService,
                 otpVerificationService,
                 channelProperties,
+                new OtpVerificationProperties(),
                 true);
 
         DepartmentRegistrationForm form = validForm();
@@ -49,10 +49,6 @@ class DepartmentRegistrationPageControllerTest {
         HttpSession session = mock(HttpSession.class);
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getParameterMap()).thenReturn(Map.of());
-        doThrow(new IllegalStateException("OTP cleanup unavailable"))
-                .when(otpVerificationService)
-                .clear(session, VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
-
         String view = controller.register(
                 form,
                 bindingResult,
@@ -62,7 +58,7 @@ class DepartmentRegistrationPageControllerTest {
                 request);
 
         assertThat(view).isEqualTo("redirect:/login");
-        verify(registrationService).register(form);
+        verify(registrationService).register(form, session);
         verify(redirectAttributes).addAttribute("registered", "true");
     }
 

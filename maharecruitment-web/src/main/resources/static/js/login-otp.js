@@ -51,7 +51,7 @@
         var sendUrl = form.dataset.otpSendUrl;
         var csrfToken = form.dataset.csrfToken || "";
         var otpExpirySeconds = parseInt(form.dataset.otpExpirySeconds || "600", 10);
-        var otpResendCooldownSeconds = parseInt(form.dataset.otpResendCooldownSeconds || "60", 10);
+        var otpResendCooldownSeconds = parseInt(form.dataset.otpResendCooldownSeconds || "30", 10);
         var isEmailOtpEnabled = form.dataset.emailOtpEnabled === "true";
         var isSmsOtpEnabled = form.dataset.smsOtpEnabled === "true";
         var expiryTimerId = null;

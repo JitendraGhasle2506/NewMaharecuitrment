@@ -3,24 +3,29 @@ package com.maharecruitment.gov.in.web.dto.verification;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class OtpVerifyRequest {
 
     @NotBlank(message = "Purpose is required")
+    @Size(max = 120, message = "Purpose is invalid")
     private String purpose;
 
     @NotNull(message = "Channel is required")
     private VerificationChannel channel;
 
     @NotBlank(message = "Reference is required")
+    @Size(max = 320, message = "Reference is invalid")
     private String reference;
 
     @NotBlank(message = "OTP is required")
     @Pattern(regexp = "^[0-9]{6}$", message = "Invalid/Incorrect OTP")
     private String otp;
 
+    @Size(max = 64, message = "CAPTCHA identifier is invalid")
     private String captchaId;
 
+    @Size(max = 16, message = "CAPTCHA answer is invalid")
     private String captchaAnswer;
 
     public String getPurpose() {

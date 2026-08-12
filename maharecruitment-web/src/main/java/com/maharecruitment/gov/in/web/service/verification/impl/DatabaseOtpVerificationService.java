@@ -11,6 +11,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -27,12 +28,12 @@ import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryReferences
 import com.maharecruitment.gov.in.web.service.verification.OtpFailureReason;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimiter;
-import com.maharecruitment.gov.in.web.service.verification.OtpRateLimiter.SendReservation;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
 import com.maharecruitment.gov.in.web.service.verification.OtpSecurityAuditService;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
+import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -41,6 +42,10 @@ import jakarta.servlet.http.HttpSession;
 public class DatabaseOtpVerificationService implements OtpVerificationService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final Set<String> SUPPORTED_PURPOSES = Set.of(
+            VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT,
+            VerificationPurposes.LOGIN_AUTHENTICATION,
+            VerificationPurposes.PASSWORD_RESET);
 
     private final Map<VerificationChannel, OtpChannelHandler> handlers;
     private final OtpVerificationProperties properties;
@@ -76,11 +81,11 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         OtpRequestContext requestContext = normalizeContext(context);
 
         Instant now = Instant.now();
-        OtpVerificationStateEntity state = findState(session, normalizedPurpose, effectiveChannel)
+        OtpVerificationStateEntity state = findStateForUpdate(session, normalizedPurpose, effectiveChannel)
                 .orElseGet(() -> newState(session, normalizedPurpose, effectiveChannel));
         rejectResendDuringCooldown(state, normalizedReference, now);
 
-        SendReservation sendReservation = rateLimiter.checkSendAllowed(
+        rateLimiter.checkSendAllowed(
                 normalizedPurpose,
                 effectiveChannel,
                 normalizedReference,
@@ -94,12 +99,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         String referenceHash = hash(normalizedReference);
         String maskedReference = maskReference(effectiveChannel, normalizedReference);
 
-        try {
-            handler.dispatchOtp(normalizedPurpose, normalizedReference, otp, otpReferenceId);
-        } catch (RuntimeException ex) {
-            rateLimiter.releaseSendReservation(sendReservation);
-            throw ex;
-        }
+        handler.dispatchOtp(normalizedPurpose, normalizedReference, otp, otpReferenceId);
 
         state.setReferenceHash(referenceHash);
         state.setReferenceMasked(maskedReference);
@@ -134,6 +134,7 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
     }
 
     @Override
+    @Transactional(noRollbackFor = OtpVerificationException.class)
     public OtpVerificationResult verifyOtp(
             HttpSession session,
             String purpose,
@@ -151,7 +152,10 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
 
         rateLimiter.checkVerifyAllowed(normalizedPurpose, effectiveChannel, normalizedReference, requestContext);
 
-        OtpVerificationStateEntity state = findState(session, normalizedPurpose, effectiveChannel).orElse(null);
+        OtpVerificationStateEntity state = findStateForUpdate(
+                session,
+                normalizedPurpose,
+                effectiveChannel).orElse(null);
         if (state == null) {
             throw failure(
                     OtpFailureReason.NOT_REQUESTED,
@@ -415,6 +419,16 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         return stateRepository.findBySessionIdAndPurposeAndChannel(session.getId(), purpose, channel.name());
     }
 
+    private java.util.Optional<OtpVerificationStateEntity> findStateForUpdate(
+            HttpSession session,
+            String purpose,
+            VerificationChannel channel) {
+        if (session == null) {
+            return java.util.Optional.empty();
+        }
+        return stateRepository.findForUpdate(session.getId(), purpose, channel.name());
+    }
+
     private OtpVerificationStateEntity newState(HttpSession session, String purpose, VerificationChannel channel) {
         OtpVerificationStateEntity state = new OtpVerificationStateEntity();
         state.setSessionId(session.getId());
@@ -616,7 +630,11 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
         if (!StringUtils.hasText(purpose)) {
             throw new IllegalArgumentException("Verification purpose is required.");
         }
-        return purpose.trim().toLowerCase(Locale.ROOT);
+        String normalized = purpose.trim().toLowerCase(Locale.ROOT);
+        if (!SUPPORTED_PURPOSES.contains(normalized)) {
+            throw new IllegalArgumentException("Unsupported verification purpose.");
+        }
+        return normalized;
     }
 
     private OtpRequestContext normalizeContext(OtpRequestContext context) {

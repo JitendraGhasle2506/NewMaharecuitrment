@@ -20,6 +20,7 @@
     };
 
     const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
+    const DEFAULT_RESEND_COOLDOWN_SECONDS = 30;
 
     const createOtpVerification = (config) => {
         if (!config || !config.referenceInput || !config.sendButton || !config.verifyButton) {
@@ -305,7 +306,10 @@
                 }
                 setStatus(data.message, "is-pending");
                 startResendCooldown(
-                    data.resendAvailableInSeconds || data.retryAfterSeconds || config.resendCooldownSeconds || 60
+                    data.resendAvailableInSeconds
+                        || data.retryAfterSeconds
+                        || config.resendCooldownSeconds
+                        || DEFAULT_RESEND_COOLDOWN_SECONDS
                 );
                 if (config.otpInput) {
                     config.otpInput.focus();

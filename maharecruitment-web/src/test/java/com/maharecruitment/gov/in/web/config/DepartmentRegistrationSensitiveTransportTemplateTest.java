@@ -23,6 +23,7 @@ class DepartmentRegistrationSensitiveTransportTemplateTest {
                 .contains("data-sensitive-field=\"gstNumber\"")
                 .contains("data-sensitive-field=\"panNumber\"")
                 .contains("data-sensitive-purpose=\"DEPARTMENT_REGISTRATION\"")
+                .contains("data-otp-resend-cooldown-seconds=${otpResendCooldownSeconds}")
                 .contains("@{/js/sensitive-data-encryption.js}")
                 .doesNotContain("th:field=\"*{gstNo}\"")
                 .doesNotContain("th:field=\"*{panNo}\"")
@@ -45,8 +46,15 @@ class DepartmentRegistrationSensitiveTransportTemplateTest {
         assertThat(otpScript)
                 .contains("state.sendInProgress || resendTimerId")
                 .contains("data.resendAvailableInSeconds")
+                .contains("DEFAULT_RESEND_COOLDOWN_SECONDS = 30")
                 .contains("startResendCooldown")
                 .contains("Resend OTP (");
+
+        String registrationScript = Files.readString(projectPath(
+                "src/main/resources/static/js/department-registration.js"));
+        assertThat(registrationScript)
+                .contains("form.dataset.otpResendCooldownSeconds || \"30\"")
+                .contains("resendCooldownSeconds: otpResendCooldownSeconds");
     }
 
     private Path projectPath(String relativePath) {

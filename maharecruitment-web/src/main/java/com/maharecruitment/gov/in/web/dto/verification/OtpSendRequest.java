@@ -2,16 +2,19 @@ package com.maharecruitment.gov.in.web.dto.verification;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public class OtpSendRequest {
 
     @NotBlank(message = "Purpose is required")
+    @Size(max = 120, message = "Purpose is invalid")
     private String purpose;
 
     @NotNull(message = "Channel is required")
     private VerificationChannel channel;
 
     @NotBlank(message = "Reference is required")
+    @Size(max = 320, message = "Reference is invalid")
     private String reference;
 
     public String getPurpose() {

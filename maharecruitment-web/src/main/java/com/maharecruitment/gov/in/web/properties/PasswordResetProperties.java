@@ -11,7 +11,7 @@ public class PasswordResetProperties {
 
     private int otpValidityMinutes = 5;
     private int maxAttempts = 5;
-    private int resendCooldownSeconds = 60;
+    private int resendCooldownSeconds = 30;
     private int tokenValidityMinutes = 10;
     private int maxOtpRequests = 3;
     private int requestWindowMinutes = 15;

@@ -15,7 +15,11 @@ public class OtpVerificationProperties {
 
     private int resendLimit = 3;
 
-    private int sendIpLimit = 100;
+    private int sendIpLimit = 10;
+
+    private int sendRecipientLimit = 3;
+
+    private int sendRecipientWindowMinutes = 15;
 
     private int resendWindowMinutes = 15;
 
@@ -27,7 +31,7 @@ public class OtpVerificationProperties {
 
     private int otpLength = 6;
 
-    private int resendCooldownSeconds = 60;
+    private int resendCooldownSeconds = 30;
 
     public int getExpirySeconds() {
         return Math.max(1, expiryMinutes) * 60;
@@ -71,6 +75,22 @@ public class OtpVerificationProperties {
 
     public void setSendIpLimit(int sendIpLimit) {
         this.sendIpLimit = sendIpLimit;
+    }
+
+    public int getSendRecipientLimit() {
+        return sendRecipientLimit;
+    }
+
+    public void setSendRecipientLimit(int sendRecipientLimit) {
+        this.sendRecipientLimit = sendRecipientLimit;
+    }
+
+    public int getSendRecipientWindowMinutes() {
+        return sendRecipientWindowMinutes;
+    }
+
+    public void setSendRecipientWindowMinutes(int sendRecipientWindowMinutes) {
+        this.sendRecipientWindowMinutes = sendRecipientWindowMinutes;
     }
 
     public int getResendWindowMinutes() {

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +23,7 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.entity.verification.OtpVerificationStateEntity;
@@ -64,10 +66,15 @@ class DatabaseOtpVerificationServiceTest {
         properties.setVerifyRateWindowSeconds(60);
         properties.setCaptchaThreshold(3);
         properties.setOtpLength(6);
-        properties.setResendCooldownSeconds(60);
+        properties.setResendCooldownSeconds(30);
 
         repository = mock(OtpVerificationStateRepository.class);
         when(repository.findBySessionIdAndPurposeAndChannel(any(), any(), any()))
+                .thenAnswer(invocation -> Optional.ofNullable(stateStore.get(key(
+                        invocation.getArgument(0),
+                        invocation.getArgument(1),
+                        invocation.getArgument(2)))));
+        when(repository.findForUpdate(any(), any(), any()))
                 .thenAnswer(invocation -> Optional.ofNullable(stateStore.get(key(
                         invocation.getArgument(0),
                         invocation.getArgument(1),
@@ -124,10 +131,16 @@ class DatabaseOtpVerificationServiceTest {
 
     @Test
     void sentOtpIncludesUserFacingOtpReferenceId() {
-        service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
+        OtpVerificationResult result = service.sendOtp(
+                session,
+                PURPOSE,
+                VerificationChannel.EMAIL,
+                EMAIL,
+                CONTEXT);
 
         assertNotNull(emailHandler.lastOtpReferenceId);
         assertTrue(emailHandler.lastOtpReferenceId.matches("OTP-[A-Z2-9]{6}"));
+        assertEquals(30, result.resendAvailableInSeconds());
     }
 
     @Test
@@ -227,7 +240,7 @@ class DatabaseOtpVerificationServiceTest {
     }
 
     @Test
-    void dispatchFailureDoesNotConsumeSendRateLimit() {
+    void dispatchFailureConsumesSendRateLimitToPreventGatewayFlooding() {
         properties.setResendLimit(1);
         properties.setSendIpLimit(1);
         DatabaseOtpVerificationService failingService = new DatabaseOtpVerificationService(
@@ -237,14 +250,41 @@ class DatabaseOtpVerificationServiceTest {
                 new OtpRateLimiter(properties),
                 mock(OtpSecurityAuditService.class));
 
-        for (int attempt = 0; attempt < 3; attempt++) {
-            assertThrows(IllegalStateException.class, () -> failingService.sendOtp(
-                    session,
-                    PURPOSE,
-                    VerificationChannel.SMS,
-                    "7020186501",
-                    CONTEXT));
-        }
+        assertThrows(IllegalStateException.class, () -> failingService.sendOtp(
+                session,
+                PURPOSE,
+                VerificationChannel.SMS,
+                "7020186501",
+                CONTEXT));
+        assertThrows(OtpVerificationException.class, () -> failingService.sendOtp(
+                session,
+                PURPOSE,
+                VerificationChannel.SMS,
+                "7020186501",
+                CONTEXT));
+    }
+
+    @Test
+    void rejectsClientSuppliedUnknownPurposeBeforeDispatch() {
+        assertThrows(IllegalArgumentException.class, () -> service.sendOtp(
+                session,
+                "attacker-controlled-purpose",
+                VerificationChannel.EMAIL,
+                EMAIL,
+                CONTEXT));
+        assertNull(emailHandler.lastOtp);
+    }
+
+    @Test
+    void invalidOtpExceptionsDoNotRollBackPersistentAttemptCounters() {
+        Transactional transaction = Arrays.stream(DatabaseOtpVerificationService.class.getDeclaredMethods())
+                .filter(method -> method.getName().equals("verifyOtp"))
+                .findFirst()
+                .orElseThrow()
+                .getAnnotation(Transactional.class);
+
+        assertNotNull(transaction);
+        assertTrue(Arrays.asList(transaction.noRollbackFor()).contains(OtpVerificationException.class));
     }
 
     @Test

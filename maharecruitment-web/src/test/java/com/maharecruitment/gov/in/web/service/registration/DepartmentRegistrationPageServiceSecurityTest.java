@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -38,6 +40,10 @@ import com.maharecruitment.gov.in.web.service.registration.impl.DepartmentRegist
 import com.maharecruitment.gov.in.web.service.security.CredentialEncryptionService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
+import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
+import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
+
+import jakarta.servlet.http.HttpSession;
 
 class DepartmentRegistrationPageServiceSecurityTest {
 
@@ -54,7 +60,7 @@ class DepartmentRegistrationPageServiceSecurityTest {
         saved.setDepartmentRegistrationId(101L);
         when(registrationService.registerDepartment(any())).thenReturn(saved);
 
-        service.register(form);
+        service.register(form, mock(HttpSession.class));
 
         ArgumentCaptor<DepartmentRegistrationRequest> captor =
                 ArgumentCaptor.forClass(DepartmentRegistrationRequest.class);
@@ -77,7 +83,7 @@ class DepartmentRegistrationPageServiceSecurityTest {
         form.setPanFile(new MockMultipartFile("panFile", "pan.pdf", "application/pdf", "test".getBytes()));
         form.setPanNumberEncrypted(CredentialEncryptionService.ENCRYPTED_PREFIX + "invalid");
 
-        assertThatThrownBy(() -> service.register(form))
+        assertThatThrownBy(() -> service.register(form, mock(HttpSession.class)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Unable to process the submitted identity information.");
         assertThat(form.getPanNumberEncrypted()).isNull();
@@ -92,10 +98,43 @@ class DepartmentRegistrationPageServiceSecurityTest {
         DepartmentRegistrationForm form = validForm(transport, "format-validation-request-nonce");
         form.setPanNumberEncrypted(encryptSensitive(transport, form, "panNumber", "INVALID"));
 
-        assertThatThrownBy(() -> service.register(form))
+        assertThatThrownBy(() -> service.register(form, mock(HttpSession.class)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Unable to process the submitted identity information.");
         verify(registrationService, never()).registerDepartment(any());
+    }
+
+    @Test
+    void propagatesOtpCleanupFailureAndDeletesStoredDocumentsBeforeRollback() throws Exception {
+        CredentialEncryptionService transport = new CredentialEncryptionService();
+        DepartmentRegistrationService registrationService = mock(DepartmentRegistrationService.class);
+        DepartmentRegistrationEntity saved = new DepartmentRegistrationEntity();
+        saved.setDepartmentRegistrationId(101L);
+        when(registrationService.registerDepartment(any())).thenReturn(saved);
+
+        FileStorageService files = mock(FileStorageService.class);
+        OtpVerificationService otpVerificationService = mock(OtpVerificationService.class);
+        HttpSession session = mock(HttpSession.class);
+        doThrow(new IllegalStateException("OTP cleanup unavailable"))
+                .when(otpVerificationService)
+                .clear(session, VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
+
+        DepartmentRegistrationPageServiceImpl service = service(
+                transport,
+                registrationService,
+                files,
+                otpVerificationService);
+        DepartmentRegistrationForm form = validForm(transport, "otp-cleanup-failure-nonce");
+
+        assertThatThrownBy(() -> service.register(form, session))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("OTP cleanup unavailable");
+        verify(files).deleteQuietly("department-registration/gst/gst.pdf");
+        verify(files).deleteQuietly("department-registration/pan/pan.pdf");
+        verify(files).deleteQuietly("department-registration/tan/tan.pdf");
+        verify(otpVerificationService).clear(
+                eq(session),
+                eq(VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT));
     }
 
     @SuppressWarnings("unchecked")
@@ -112,6 +151,15 @@ class DepartmentRegistrationPageServiceSecurityTest {
             CredentialEncryptionService transport,
             DepartmentRegistrationService registrationService,
             FileStorageService files) {
+        return service(transport, registrationService, files, mock(OtpVerificationService.class));
+    }
+
+    @SuppressWarnings("unchecked")
+    private DepartmentRegistrationPageServiceImpl service(
+            CredentialEncryptionService transport,
+            DepartmentRegistrationService registrationService,
+            FileStorageService files,
+            OtpVerificationService otpVerificationService) {
         DepartmentMstService departments = mock(DepartmentMstService.class);
         when(departments.getById(1L)).thenReturn(DepartmentResponse.builder()
                 .departmentId(1L).departmentName("Department").build());
@@ -135,7 +183,8 @@ class DepartmentRegistrationPageServiceSecurityTest {
                 provisioning,
                 files,
                 mock(AccountNotificationService.class),
-                transport);
+                transport,
+                otpVerificationService);
     }
 
     private DepartmentRegistrationForm validForm(CredentialEncryptionService transport, String nonce) throws Exception {
