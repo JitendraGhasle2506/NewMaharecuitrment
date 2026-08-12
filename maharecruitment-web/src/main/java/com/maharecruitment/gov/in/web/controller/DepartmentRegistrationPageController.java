@@ -3,6 +3,8 @@ package com.maharecruitment.gov.in.web.controller;
 import java.util.Collections;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -35,6 +37,8 @@ import jakarta.validation.Valid;
 @Controller
 @RequestMapping("/register")
 public class DepartmentRegistrationPageController {
+
+    private static final Logger log = LoggerFactory.getLogger(DepartmentRegistrationPageController.class);
 
     private final DepartmentMstService departmentService;
     private final SubDepartmentService subDepartmentService;
@@ -83,15 +87,29 @@ public class DepartmentRegistrationPageController {
 
         try {
             registrationPageService.register(form);
-            otpVerificationService.clear(session, VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
-            redirectAttributes.addAttribute("registered", "true");
-            return "redirect:/login";
         } catch (RuntimeException ex) {
-            if (!applyRegistrationError(bindingResult, form, ex)) {
+            boolean handled = applyRegistrationError(bindingResult, form, ex);
+            if (handled) {
+                log.warn("Department registration was rejected: {}", ex.getMessage());
+            } else {
+                log.error("Department registration failed.", ex);
                 model.addAttribute("errorMessage", "Unable to complete department registration. Please try again.");
             }
             populateForm(model, form, session);
             return "register/department-registration";
+        }
+
+        clearRegistrationOtpState(session);
+        redirectAttributes.addAttribute("registered", "true");
+        return "redirect:/login";
+    }
+
+    private void clearRegistrationOtpState(HttpSession session) {
+        try {
+            otpVerificationService.clear(session, VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
+        } catch (RuntimeException ex) {
+            // Registration has already committed; cleanup must not replace a successful response.
+            log.warn("Department registration succeeded, but OTP verification state cleanup failed.", ex);
         }
     }
 

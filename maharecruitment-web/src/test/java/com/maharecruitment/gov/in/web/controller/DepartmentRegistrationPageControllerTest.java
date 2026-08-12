@@ -1,0 +1,89 @@
+package com.maharecruitment.gov.in.web.controller;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.ui.Model;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.maharecruitment.gov.in.master.service.DepartmentMstService;
+import com.maharecruitment.gov.in.master.service.SubDepartmentService;
+import com.maharecruitment.gov.in.web.dto.registration.DepartmentRegistrationForm;
+import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
+import com.maharecruitment.gov.in.web.service.registration.DepartmentRegistrationPageService;
+import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
+import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
+class DepartmentRegistrationPageControllerTest {
+
+    @Test
+    void redirectsToSuccessWhenOtpCleanupFailsAfterRegistrationCommit() {
+        DepartmentRegistrationPageService registrationService = mock(DepartmentRegistrationPageService.class);
+        OtpVerificationService otpVerificationService = mock(OtpVerificationService.class);
+        NotificationChannelProperties channelProperties = mock(NotificationChannelProperties.class);
+        DepartmentRegistrationPageController controller = new DepartmentRegistrationPageController(
+                mock(DepartmentMstService.class),
+                mock(SubDepartmentService.class),
+                registrationService,
+                otpVerificationService,
+                channelProperties,
+                true);
+
+        DepartmentRegistrationForm form = validForm();
+        BindingResult bindingResult = new BeanPropertyBindingResult(form, "registrationForm");
+        Model model = mock(Model.class);
+        RedirectAttributes redirectAttributes = mock(RedirectAttributes.class);
+        HttpSession session = mock(HttpSession.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getParameterMap()).thenReturn(Map.of());
+        doThrow(new IllegalStateException("OTP cleanup unavailable"))
+                .when(otpVerificationService)
+                .clear(session, VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
+
+        String view = controller.register(
+                form,
+                bindingResult,
+                model,
+                redirectAttributes,
+                session,
+                request);
+
+        assertThat(view).isEqualTo("redirect:/login");
+        verify(registrationService).register(form);
+        verify(redirectAttributes).addAttribute("registered", "true");
+    }
+
+    private DepartmentRegistrationForm validForm() {
+        DepartmentRegistrationForm form = new DepartmentRegistrationForm();
+        form.setDepartmentId(1L);
+        form.setPrimaryMobile("9876543210");
+        form.setPrimaryEmail("primary@example.test");
+        form.setSecondaryMobile("9876543211");
+        form.setSecondaryEmail("secondary@example.test");
+        form.setGstFile(pdf("gstFile", "gst.pdf"));
+        form.setPanFile(pdf("panFile", "pan.pdf"));
+        form.setTanFile(pdf("tanFile", "tan.pdf"));
+        return form;
+    }
+
+    private MockMultipartFile pdf(String field, String name) {
+        return new MockMultipartFile(
+                field,
+                name,
+                "application/pdf",
+                "%PDF-test".getBytes(StandardCharsets.UTF_8));
+    }
+}
