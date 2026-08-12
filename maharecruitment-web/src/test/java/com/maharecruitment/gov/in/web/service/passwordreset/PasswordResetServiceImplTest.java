@@ -12,6 +12,7 @@ import static org.mockito.Mockito.lenient;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.auth.dto.UserAffiliationView;
 import com.maharecruitment.gov.in.auth.entity.User;
@@ -175,6 +177,7 @@ class PasswordResetServiceImplTest {
         assertThat(response.getExpiresInSeconds()).isEqualTo(600L);
         assertThat(resetRequest.getRequestStatus()).isEqualTo(PasswordResetStatus.OTP_VERIFIED);
         assertThat(resetRequest.isOtpVerified()).isTrue();
+        assertThat(resetRequest.getOtpHash()).isNull();
         assertThat(resetRequest.getResetTokenHash()).hasSize(64).doesNotContain("raw-reset-token");
     }
 
@@ -196,6 +199,65 @@ class PasswordResetServiceImplTest {
 
         assertThat(resetRequest.getFailedAttempts()).isEqualTo(1);
         assertThat(resetRequest.getRequestStatus()).isEqualTo(PasswordResetStatus.OTP_SENT);
+    }
+
+    @Test
+    void fifthIncorrectOtpPersistsTemporaryBlockAndInvalidatesOtp() {
+        User user = activeUser();
+        PasswordResetRequestEntity resetRequest = otpSentRequest(user, "123456");
+        resetRequest.setFailedAttempts(4);
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
+        when(resetRequestRepository.findFirstByUser_IdAndChannelAndRequestStatusInOrderByCreatedOnDesc(
+                eq(user.getId()), eq(ResetPasswordChannel.MOBILE_API), anyCollection()))
+                        .thenReturn(Optional.of(resetRequest));
+        PasswordResetOtpVerifyRequest verifyRequest = new PasswordResetOtpVerifyRequest();
+        verifyRequest.setIdentifier(user.getEmail());
+        verifyRequest.setOtp("000000");
+
+        assertThatThrownBy(() -> service.verifyOtp(verifyRequest, ResetPasswordChannel.MOBILE_API, "127.0.0.1"))
+                .isInstanceOf(OtpAttemptsExceededException.class)
+                .satisfies(exception -> assertThat(((PasswordResetException) exception).getRetryAfterSeconds())
+                        .isEqualTo(900L));
+
+        assertThat(resetRequest.getFailedAttempts()).isEqualTo(5);
+        assertThat(resetRequest.getRequestStatus()).isEqualTo(PasswordResetStatus.BLOCKED);
+        assertThat(resetRequest.getOtpHash()).isNull();
+        assertThat(resetRequest.getOtpLockedUntil()).isAfter(Instant.now());
+    }
+
+    @Test
+    void activePasswordResetBlockCannotBeBypassedByRequestingAnotherOtp() {
+        User user = activeUser();
+        PasswordResetRequestEntity blockedRequest = otpSentRequest(user, "123456");
+        blockedRequest.setRequestStatus(PasswordResetStatus.BLOCKED);
+        blockedRequest.setOtpHash(null);
+        blockedRequest.setOtpLockedUntil(Instant.now().plusSeconds(900));
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
+        when(resetRequestRepository.findFirstByUser_IdAndChannelAndRequestStatusInOrderByCreatedOnDesc(
+                eq(user.getId()), eq(ResetPasswordChannel.WEB), anyCollection()))
+                        .thenReturn(Optional.of(blockedRequest));
+
+        assertThatThrownBy(() -> service.requestOtp(
+                otpRequest(user.getEmail()),
+                ResetPasswordChannel.WEB,
+                "127.0.0.1",
+                "JUnit"))
+                .isInstanceOf(OtpTemporarilyBlockedException.class);
+
+        verify(otpGenerator, never()).generateSixDigitOtp();
+        verify(otpDispatchService, never()).sendEmailOtp(any(), any(), any(), any());
+    }
+
+    @Test
+    void passwordResetOtpFailuresDoNotRollBackAttemptAndBlockState() {
+        Transactional transaction = Arrays.stream(PasswordResetServiceImpl.class.getDeclaredMethods())
+                .filter(method -> method.getName().equals("verifyOtp"))
+                .findFirst()
+                .orElseThrow()
+                .getAnnotation(Transactional.class);
+
+        assertThat(transaction).isNotNull();
+        assertThat(Arrays.asList(transaction.noRollbackFor())).contains(PasswordResetException.class);
     }
 
     @Test

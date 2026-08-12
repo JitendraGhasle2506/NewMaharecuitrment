@@ -29,6 +29,7 @@ import jakarta.persistence.Version;
                 @Index(name = "idx_password_reset_user", columnList = "user_id"),
                 @Index(name = "idx_password_reset_status", columnList = "request_status"),
                 @Index(name = "idx_password_reset_otp_expiry", columnList = "otp_expiry_time"),
+                @Index(name = "idx_password_reset_otp_locked_until", columnList = "otp_locked_until"),
                 @Index(name = "idx_password_reset_token_hash", columnList = "reset_token_hash")
         })
 public class PasswordResetRequestEntity {
@@ -46,7 +47,7 @@ public class PasswordResetRequestEntity {
     @Column(name = "channel", nullable = false, length = 30)
     private ResetPasswordChannel channel;
 
-    @Column(name = "otp_hash", nullable = false, length = 255)
+    @Column(name = "otp_hash", length = 255)
     private String otpHash;
 
     @Column(name = "otp_expiry_time", nullable = false)
@@ -63,6 +64,9 @@ public class PasswordResetRequestEntity {
 
     @Column(name = "max_attempts", nullable = false)
     private int maxAttempts;
+
+    @Column(name = "otp_locked_until")
+    private Instant otpLockedUntil;
 
     @Column(name = "reset_token_hash", length = 64)
     private String resetTokenHash;
@@ -183,6 +187,14 @@ public class PasswordResetRequestEntity {
 
     public void setMaxAttempts(int maxAttempts) {
         this.maxAttempts = maxAttempts;
+    }
+
+    public Instant getOtpLockedUntil() {
+        return otpLockedUntil;
+    }
+
+    public void setOtpLockedUntil(Instant otpLockedUntil) {
+        this.otpLockedUntil = otpLockedUntil;
     }
 
     public String getResetTokenHash() {

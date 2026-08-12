@@ -1,5 +1,8 @@
 package com.maharecruitment.gov.in.web.controller;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -30,6 +33,7 @@ public class PasswordResetPageController {
 
     private static final String IDENTIFIER_SESSION_KEY = "passwordReset.identifier";
     private static final String RESET_TOKEN_SESSION_KEY = "passwordReset.resetToken";
+    private static final String OTP_EXPIRY_SESSION_KEY = "passwordReset.otpExpiresAt";
 
     private final PasswordResetService passwordResetService;
     private final PasswordResetProperties passwordResetProperties;
@@ -70,11 +74,14 @@ public class PasswordResetPageController {
                     clientIp(httpRequest),
                     httpRequest.getHeader("User-Agent"));
             session.setAttribute(IDENTIFIER_SESSION_KEY, request.getIdentifier());
+            rememberOtpExpiry(session);
             session.removeAttribute(RESET_TOKEN_SESSION_KEY);
             redirectAttributes.addFlashAttribute("passwordResetMessage", response.getMessage());
             return "redirect:/forgot-password/verify";
         } catch (PasswordResetException ex) {
             model.addAttribute("passwordResetError", ex.getMessage());
+            model.addAttribute("passwordResetErrorCode", ex.getCode());
+            model.addAttribute("passwordResetRetryAfterSeconds", ex.getRetryAfterSeconds());
             return "forgot-password";
         }
     }
@@ -84,7 +91,7 @@ public class PasswordResetPageController {
         if (!StringUtils.hasText(sessionIdentifier(session))) {
             return "redirect:/forgot-password";
         }
-        populateOtpTiming(model);
+        populateOtpTiming(model, session);
         return "verify-password-reset-otp";
     }
 
@@ -107,9 +114,12 @@ public class PasswordResetPageController {
                     clientIp(httpRequest),
                     httpRequest.getHeader("User-Agent"));
             session.removeAttribute(RESET_TOKEN_SESSION_KEY);
+            rememberOtpExpiry(session);
             redirectAttributes.addFlashAttribute("passwordResetMessage", response.getMessage());
         } catch (PasswordResetException ex) {
             redirectAttributes.addFlashAttribute("passwordResetError", ex.getMessage());
+            redirectAttributes.addFlashAttribute("passwordResetErrorCode", ex.getCode());
+            redirectAttributes.addFlashAttribute("passwordResetRetryAfterSeconds", ex.getRetryAfterSeconds());
         }
         return "redirect:/forgot-password/verify";
     }
@@ -126,7 +136,7 @@ public class PasswordResetPageController {
             return "redirect:/forgot-password";
         }
         if (!StringUtils.hasText(otp) || !otp.matches("\\d{6}")) {
-            populateOtpTiming(model);
+            populateOtpTiming(model, session);
             model.addAttribute("passwordResetError", "OTP must be exactly 6 digits.");
             return "verify-password-reset-otp";
         }
@@ -143,8 +153,10 @@ public class PasswordResetPageController {
             redirectAttributes.addFlashAttribute("passwordResetMessage", "OTP verified successfully.");
             return "redirect:/forgot-password/reset";
         } catch (PasswordResetException ex) {
-            populateOtpTiming(model);
+            populateOtpTiming(model, session);
             model.addAttribute("passwordResetError", ex.getMessage());
+            model.addAttribute("passwordResetErrorCode", ex.getCode());
+            model.addAttribute("passwordResetRetryAfterSeconds", ex.getRetryAfterSeconds());
             return "verify-password-reset-otp";
         }
     }
@@ -210,9 +222,23 @@ public class PasswordResetPageController {
         }
     }
 
-    private void populateOtpTiming(Model model) {
-        model.addAttribute("otpExpirySeconds", passwordResetProperties.getOtpValiditySeconds());
+    private void populateOtpTiming(Model model, HttpSession session) {
+        model.addAttribute("otpExpirySeconds", remainingOtpSeconds(session));
         model.addAttribute("otpResendCooldownSeconds", passwordResetProperties.getResendCooldownSeconds());
+    }
+
+    private void rememberOtpExpiry(HttpSession session) {
+        session.setAttribute(
+                OTP_EXPIRY_SESSION_KEY,
+                Instant.now().plusSeconds(passwordResetProperties.getOtpValiditySeconds()));
+    }
+
+    private long remainingOtpSeconds(HttpSession session) {
+        Object expiry = session.getAttribute(OTP_EXPIRY_SESSION_KEY);
+        if (!(expiry instanceof Instant expiresAt)) {
+            return passwordResetProperties.getOtpValiditySeconds();
+        }
+        return Math.max(0, Duration.between(Instant.now(), expiresAt).getSeconds());
     }
 
     private String clientIp(HttpServletRequest request) {
@@ -233,6 +259,7 @@ public class PasswordResetPageController {
     private void clearResetSession(HttpSession session) {
         session.removeAttribute(IDENTIFIER_SESSION_KEY);
         session.removeAttribute(RESET_TOKEN_SESSION_KEY);
+        session.removeAttribute(OTP_EXPIRY_SESSION_KEY);
     }
 
     private void clearPasswordFields(ResetPasswordRequest request) {

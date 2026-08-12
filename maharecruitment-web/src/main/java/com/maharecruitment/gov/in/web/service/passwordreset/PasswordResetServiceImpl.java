@@ -50,6 +50,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private static final String RESET_COMPLETED_MESSAGE = "Password reset successfully.";
     private static final List<PasswordResetStatus> ACTIVE_STATUSES =
             List.of(PasswordResetStatus.OTP_SENT, PasswordResetStatus.OTP_VERIFIED);
+    private static final List<PasswordResetStatus> OTP_LOOKUP_STATUSES =
+            List.of(PasswordResetStatus.OTP_SENT, PasswordResetStatus.OTP_VERIFIED, PasswordResetStatus.BLOCKED);
 
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
@@ -135,8 +137,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 .findFirstByUser_IdAndChannelAndRequestStatusInOrderByCreatedOnDesc(
                         user.getId(),
                         resetChannel,
-                        ACTIVE_STATUSES);
+                        OTP_LOOKUP_STATUSES);
         latestActive.ifPresent(requestEntity -> expireIfNeeded(requestEntity, now));
+        latestActive.ifPresent(requestEntity -> enforceTemporaryBlock(requestEntity, now));
         latestActive
                 .filter(requestEntity -> requestEntity.getRequestStatus() == PasswordResetStatus.OTP_SENT)
                 .filter(requestEntity -> isOtpStillValid(requestEntity, now))
@@ -188,6 +191,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     }
 
     @Override
+    @Transactional(noRollbackFor = PasswordResetException.class)
     public PasswordResetResponse verifyOtp(
             PasswordResetOtpVerifyRequest request,
             ResetPasswordChannel channel,
@@ -203,10 +207,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 .findFirstByUser_IdAndChannelAndRequestStatusInOrderByCreatedOnDesc(
                         user.getId(),
                         resetChannel,
-                        ACTIVE_STATUSES)
+                        OTP_LOOKUP_STATUSES)
                 .orElseThrow(() -> new InvalidOtpException(properties.getMaxAttempts()));
 
         Instant now = Instant.now();
+        enforceTemporaryBlock(resetRequest, now);
+        if (resetRequest.getRequestStatus() == PasswordResetStatus.BLOCKED) {
+            throw new OtpAttemptsExceededException();
+        }
         if (resetRequest.getRequestStatus() != PasswordResetStatus.OTP_SENT) {
             throw new InvalidOtpException(remainingAttempts(resetRequest));
         }
@@ -222,14 +230,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             throw new OtpExpiredException();
         }
         if (resetRequest.getFailedAttempts() >= resetRequest.getMaxAttempts()) {
-            blockRequest(resetRequest);
-            throw new OtpAttemptsExceededException();
+            blockRequest(resetRequest, now);
+            throw new OtpAttemptsExceededException((long) properties.getLockDurationSeconds());
         }
         if (!StringUtils.hasText(otp) || !passwordEncoder.matches(otp.trim(), resetRequest.getOtpHash())) {
             int failedAttempts = resetRequest.getFailedAttempts() + 1;
             resetRequest.setFailedAttempts(failedAttempts);
             if (failedAttempts >= resetRequest.getMaxAttempts()) {
-                blockRequest(resetRequest);
+                blockRequest(resetRequest, now);
                 auditService.record(
                         "PASSWORD_RESET_OTP_BLOCKED",
                         resetRequest,
@@ -237,7 +245,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                         normalizedIp,
                         "MAX_ATTEMPTS_EXCEEDED",
                         Map.of("failedAttempts", failedAttempts));
-                throw new OtpAttemptsExceededException();
+                throw new OtpAttemptsExceededException((long) properties.getLockDurationSeconds());
             }
             resetRequestRepository.save(resetRequest);
             auditService.record(
@@ -252,7 +260,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         String resetToken = tokenGenerator.generateToken();
         resetRequest.setOtpVerified(true);
+        resetRequest.setOtpHash(null);
         resetRequest.setOtpVerifiedTime(now);
+        resetRequest.setOtpLockedUntil(null);
         resetRequest.setVerifiedIp(normalizedIp);
         resetRequest.setRequestStatus(PasswordResetStatus.OTP_VERIFIED);
         resetRequest.setResetTokenHash(tokenHasher.hashToken(resetToken));
@@ -522,12 +532,28 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
     private void markExpired(PasswordResetRequestEntity requestEntity) {
         requestEntity.setRequestStatus(PasswordResetStatus.EXPIRED);
+        requestEntity.setOtpHash(null);
+        requestEntity.setOtpLockedUntil(null);
         resetRequestRepository.save(requestEntity);
     }
 
-    private void blockRequest(PasswordResetRequestEntity requestEntity) {
+    private void blockRequest(PasswordResetRequestEntity requestEntity, Instant now) {
         requestEntity.setRequestStatus(PasswordResetStatus.BLOCKED);
+        requestEntity.setOtpHash(null);
+        requestEntity.setOtpLockedUntil(now.plusSeconds(properties.getLockDurationSeconds()));
         resetRequestRepository.save(requestEntity);
+    }
+
+    private void enforceTemporaryBlock(PasswordResetRequestEntity requestEntity, Instant now) {
+        if (requestEntity.getRequestStatus() != PasswordResetStatus.BLOCKED
+                || requestEntity.getOtpLockedUntil() == null
+                || !now.isBefore(requestEntity.getOtpLockedUntil())) {
+            return;
+        }
+        long retryAfterSeconds = Math.max(
+                1,
+                Duration.between(now, requestEntity.getOtpLockedUntil()).getSeconds());
+        throw new OtpTemporarilyBlockedException(retryAfterSeconds);
     }
 
     private int remainingAttempts(PasswordResetRequestEntity requestEntity) {

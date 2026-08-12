@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "otp")
 public class OtpVerificationProperties {
 
-    private int expiryMinutes = 10;
+    private int expiryMinutes = 5;
 
     private int maxAttempts = 5;
 

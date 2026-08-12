@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.web.service.verification.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,6 +23,7 @@ import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,8 @@ import com.maharecruitment.gov.in.web.service.verification.OtpSecurityAuditServi
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
+
+import jakarta.persistence.LockModeType;
 
 class DatabaseOtpVerificationServiceTest {
 
@@ -166,7 +170,7 @@ class DatabaseOtpVerificationServiceTest {
         }
 
         assertNotNull(exception);
-        assertEquals(OtpFailureReason.LOCKED, exception.getReason());
+        assertEquals(OtpFailureReason.ATTEMPTS_EXCEEDED, exception.getReason());
         assertEquals(0, exception.getResult().remainingAttempts());
         assertNotNull(currentState().getOtpLockedUntil());
         assertFalse(currentState().isOtpVerified());
@@ -191,6 +195,49 @@ class DatabaseOtpVerificationServiceTest {
     }
 
     @Test
+    void sixthAttemptIsRejectedWithoutReactivatingInvalidatedOtp() {
+        service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
+        for (int i = 0; i < 5; i++) {
+            assertThrows(OtpVerificationException.class, () -> verifyWrongOtpWithCaptchaWhenRequired());
+        }
+
+        OtpVerificationException exception = assertThrows(OtpVerificationException.class, () -> verify("123456"));
+
+        assertEquals(OtpFailureReason.LOCKED, exception.getReason());
+        assertNull(currentState().getOtpHash());
+        assertEquals(5, currentState().getOtpAttemptCount());
+    }
+
+    @Test
+    void activeTemporaryLockAlsoBlocksSendAndResend() {
+        service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
+        for (int i = 0; i < 5; i++) {
+            assertThrows(OtpVerificationException.class, () -> verifyWrongOtpWithCaptchaWhenRequired());
+        }
+        String lastDeliveredOtp = emailHandler.lastOtp;
+
+        OtpVerificationException exception = assertThrows(
+                OtpVerificationException.class,
+                () -> service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT));
+
+        assertEquals(OtpFailureReason.LOCKED, exception.getReason());
+        assertEquals(lastDeliveredOtp, emailHandler.lastOtp);
+        assertNull(currentState().getOtpHash());
+    }
+
+    @Test
+    void successfulOtpIsConsumedAndCannotBeUsedTwice() {
+        service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
+        String otp = emailHandler.lastOtp;
+        assertTrue(verify(otp).verified());
+
+        OtpVerificationException exception = assertThrows(OtpVerificationException.class, () -> verify(otp));
+
+        assertEquals(OtpFailureReason.ALREADY_USED, exception.getReason());
+        assertNull(currentState().getOtpHash());
+    }
+
+    @Test
     void newOtpAfterResendInvalidatesOldOtp() {
         service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
         String oldOtp = emailHandler.lastOtp;
@@ -200,10 +247,25 @@ class DatabaseOtpVerificationServiceTest {
         service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
         String newOtp = emailHandler.lastOtp;
 
+        assertNotEquals(oldOtp, newOtp);
         assertThrows(OtpVerificationException.class, () -> verify(oldOtp));
 
         OtpVerificationResult result = verify(newOtp);
         assertTrue(result.verified());
+    }
+
+    @Test
+    void resendResetsFailedAttemptCounter() {
+        service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
+        assertThrows(OtpVerificationException.class, () -> verify("000000"));
+        assertEquals(1, currentState().getOtpAttemptCount());
+        currentState().setOtpExpiryTime(Instant.now().minusSeconds(1));
+        properties.setResendCooldownSeconds(0);
+
+        service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
+
+        assertEquals(0, currentState().getOtpAttemptCount());
+        assertNull(currentState().getOtpLockedUntil());
     }
 
     @Test
@@ -285,6 +347,16 @@ class DatabaseOtpVerificationServiceTest {
 
         assertNotNull(transaction);
         assertTrue(Arrays.asList(transaction.noRollbackFor()).contains(OtpVerificationException.class));
+    }
+
+    @Test
+    void verificationStateIsLoadedWithPessimisticWriteLockForConcurrentRequests() throws Exception {
+        Lock lock = OtpVerificationStateRepository.class
+                .getMethod("findForUpdate", String.class, String.class, String.class)
+                .getAnnotation(Lock.class);
+
+        assertNotNull(lock);
+        assertEquals(LockModeType.PESSIMISTIC_WRITE, lock.value());
     }
 
     @Test

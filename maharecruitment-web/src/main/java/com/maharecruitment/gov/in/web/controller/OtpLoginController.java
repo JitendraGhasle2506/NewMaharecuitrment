@@ -23,6 +23,7 @@ import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
+import com.maharecruitment.gov.in.web.service.verification.OtpResponseCodes;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 import com.maharecruitment.gov.in.web.service.login.OtpLoginService;
@@ -97,14 +98,27 @@ public class OtpLoginController {
                     false,
                     VerificationPurposes.LOGIN_AUTHENTICATION,
                     request.getChannel(),
-                    result));
+                    result,
+                    true,
+                    OtpResponseCodes.OTP_SENT));
         } catch (OtpRateLimitException ex) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(toResponse(
                     rateLimitMessage(ex),
                     false,
                     VerificationPurposes.LOGIN_AUTHENTICATION,
                     request.getChannel(),
-                    ex.getResult()));
+                    ex.getResult(),
+                    false,
+                    ex.getResponseCode()));
+        } catch (OtpVerificationException ex) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(toResponse(
+                    OtpResponseCodes.messageFor(ex.getReason(), ex.getResult().remainingAttempts()),
+                    false,
+                    VerificationPurposes.LOGIN_AUTHENTICATION,
+                    request.getChannel(),
+                    ex.getResult(),
+                    false,
+                    OtpResponseCodes.forFailure(ex.getReason())));
         } catch (UnknownLoginIdentifierException ex) {
             return ResponseEntity.ok(new VerificationResponse(
                     ex.getMessage(),
@@ -145,7 +159,8 @@ public class OtpLoginController {
                     response,
                     GENERIC_VERIFY_FAILURE,
                     form,
-                    null);
+                    null,
+                    OtpResponseCodes.OTP_REQUEST_REJECTED);
             return;
         }
 
@@ -161,9 +176,23 @@ public class OtpLoginController {
             request.changeSessionId();
             successHandler.onAuthenticationSuccess(request, response, authentication);
         } catch (OtpVerificationException ex) {
-            redirectWithFlash(request, response, GENERIC_VERIFY_FAILURE, form, ex.getResult());
+            redirectWithFlash(
+                    request,
+                    response,
+                    OtpResponseCodes.messageFor(ex.getReason(), ex.getResult().remainingAttempts()),
+                    form,
+                    ex.getResult(),
+                    ex instanceof OtpRateLimitException rateLimitException
+                            ? rateLimitException.getResponseCode()
+                            : OtpResponseCodes.forFailure(ex.getReason()));
         } catch (RuntimeException ex) {
-            redirectWithFlash(request, response, GENERIC_VERIFY_FAILURE, form, null);
+            redirectWithFlash(
+                    request,
+                    response,
+                    GENERIC_VERIFY_FAILURE,
+                    form,
+                    null,
+                    OtpResponseCodes.OTP_REQUEST_REJECTED);
         }
     }
 
@@ -172,11 +201,13 @@ public class OtpLoginController {
             HttpServletResponse response,
             String errorMessage,
             OtpLoginForm form,
-            OtpVerificationResult result) throws IOException {
+            OtpVerificationResult result,
+            String errorCode) throws IOException {
         FlashMap flashMap = RequestContextUtils.getOutputFlashMap(request);
         flashMap.put("otpErrorMessage", errorMessage);
         flashMap.put("otpIdentifier", form.getIdentifier());
         flashMap.put("otpChannel", form.getChannel() != null ? form.getChannel().name() : "");
+        flashMap.put("otpErrorCode", errorCode);
         if (result != null) {
             flashMap.put("otpRemainingAttempts", result.remainingAttempts());
             flashMap.put("otpCaptchaRequired", result.captchaRequired());
@@ -184,6 +215,7 @@ public class OtpLoginController {
             flashMap.put("otpCaptchaQuestion", result.captchaQuestion());
             flashMap.put("otpLockSecondsRemaining", result.lockSecondsRemaining());
             flashMap.put("otpLockedUntil", result.lockedUntil() == null ? null : result.lockedUntil().toString());
+            flashMap.put("otpExpirySecondsRemaining", result.expirySeconds());
         }
 
         if (RequestContextUtils.getFlashMapManager(request) != null) {
@@ -198,7 +230,9 @@ public class OtpLoginController {
             boolean verified,
             String purpose,
             com.maharecruitment.gov.in.web.dto.verification.VerificationChannel channel,
-            OtpVerificationResult result) {
+            OtpVerificationResult result,
+            boolean success,
+            String code) {
         return new VerificationResponse(
                 message,
                 verified,
@@ -216,7 +250,9 @@ public class OtpLoginController {
                 result.deliveryChannel() == null ? channel.name() : result.deliveryChannel().name(),
                 result.maskedDestination(),
                 result.expirySeconds(),
-                result.resendAvailableInSeconds());
+                result.resendAvailableInSeconds(),
+                success,
+                code);
     }
 
     private String validationMessage(BindingResult bindingResult) {
@@ -228,6 +264,12 @@ public class OtpLoginController {
     }
 
     private String rateLimitMessage(OtpRateLimitException exception) {
+        if (OtpResponseCodes.OTP_RESEND_LIMIT_EXCEEDED.equals(exception.getResponseCode())) {
+            return "Maximum OTP resend limit reached. Please try again later.";
+        }
+        if (OtpResponseCodes.OTP_RESEND_COOLDOWN.equals(exception.getResponseCode())) {
+            return RATE_LIMIT_MESSAGE;
+        }
         if (exception.getMessage() != null && exception.getMessage().contains("already valid")) {
             return RATE_LIMIT_MESSAGE;
         }

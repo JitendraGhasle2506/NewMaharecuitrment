@@ -54,9 +54,14 @@
         var otpResendCooldownSeconds = parseInt(form.dataset.otpResendCooldownSeconds || "30", 10);
         var isEmailOtpEnabled = form.dataset.emailOtpEnabled === "true";
         var isSmsOtpEnabled = form.dataset.smsOtpEnabled === "true";
+        var otpErrorCode = form.dataset.otpErrorCode || "";
         var expiryTimerId = null;
         var resendTimerId = null;
+        var lockTimerId = null;
         var sendRequestInProgress = false;
+        var verifyRequestInProgress = false;
+        var otpActive = false;
+        var temporarilyBlocked = false;
         var hasSentOtpOnce = false;
         var initialSendButtonLabel = "Send OTP";
         var resendButtonLabel = "Resend OTP";
@@ -212,6 +217,79 @@
             setTiming(parts.join(" | "));
         };
 
+        var updateOtpControls = function () {
+            var otpComplete = Boolean(otpInput && /^[0-9]{6}$/.test(otpInput.value.trim()));
+            if (otpInput) {
+                otpInput.disabled = !otpActive || temporarilyBlocked;
+            }
+            if (verifyButton) {
+                verifyButton.disabled = verifyRequestInProgress
+                    || temporarilyBlocked
+                    || !otpActive
+                    || !otpComplete;
+            }
+            sendButton.disabled = sendRequestInProgress || temporarilyBlocked || Boolean(resendTimerId);
+        };
+
+        var startSendCooldown = function (seconds) {
+            if (resendTimerId) {
+                window.clearInterval(resendTimerId);
+                resendTimerId = null;
+            }
+            var remaining = Math.max(0, parseInt(seconds || "0", 10));
+            if (remaining <= 0) {
+                updateOtpControls();
+                return;
+            }
+            var render = function () {
+                sendButton.textContent = "Resend OTP (" + formatDuration(remaining) + ")";
+                updateOtpControls();
+            };
+            resendTimerId = window.setInterval(function () {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    window.clearInterval(resendTimerId);
+                    resendTimerId = null;
+                    updateSendButtonLabel();
+                    updateOtpControls();
+                    return;
+                }
+                render();
+            }, 1000);
+            render();
+        };
+
+        var startTemporaryBlock = function (seconds, message) {
+            if (lockTimerId) {
+                window.clearInterval(lockTimerId);
+            }
+            var remaining = Math.max(1, parseInt(seconds || "1", 10));
+            temporarilyBlocked = true;
+            otpActive = false;
+            setOtpSectionVisible(false);
+            var render = function () {
+                setStatus(
+                    (message || "OTP operations are temporarily blocked.")
+                        + " Try again in " + formatDuration(remaining) + ".",
+                    "is-error"
+                );
+            };
+            render();
+            lockTimerId = window.setInterval(function () {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    window.clearInterval(lockTimerId);
+                    lockTimerId = null;
+                    temporarilyBlocked = false;
+                    setStatus("You can request a new OTP now.", "is-pending");
+                    updateOtpControls();
+                    return;
+                }
+                render();
+            }, 1000);
+            updateOtpControls();
+        };
+
         var startLockCountdown = function () {
             if (!lockCountdownElement) {
                 return;
@@ -222,15 +300,23 @@
                 return;
             }
 
+            temporarilyBlocked = true;
+            otpActive = false;
+            setOtpSectionVisible(false);
+            updateOtpControls();
+
             var render = function () {
                 lockCountdownElement.textContent = "OTP verification failed. Please try again in " + formatDuration(remaining) + ".";
             };
             render();
-            var timerId = window.setInterval(function () {
+            lockTimerId = window.setInterval(function () {
                 remaining -= 1;
                 if (remaining <= 0) {
-                    window.clearInterval(timerId);
+                    window.clearInterval(lockTimerId);
+                    lockTimerId = null;
+                    temporarilyBlocked = false;
                     lockCountdownElement.textContent = "You can request a new OTP now.";
+                    updateOtpControls();
                     return;
                 }
                 render();
@@ -242,7 +328,8 @@
 
             var expiryRemaining = otpExpirySeconds;
             var resendRemaining = Math.max(0, otpResendCooldownSeconds);
-            sendButton.disabled = resendRemaining > 0;
+            otpActive = expiryRemaining > 0;
+            updateOtpControls();
             updateTimingMessage(expiryRemaining, resendRemaining);
 
             expiryTimerId = window.setInterval(function () {
@@ -253,22 +340,31 @@
                         window.clearInterval(expiryTimerId);
                         expiryTimerId = null;
                     }
+                    otpActive = false;
+                    if (otpInput) {
+                        otpInput.value = "";
+                    }
+                    setStatus("OTP expired. Please request a new OTP.", "is-error");
+                    updateOtpControls();
                 }
                 updateTimingMessage(expiryRemaining, resendRemaining);
             }, 1000);
 
-            resendTimerId = window.setInterval(function () {
-                resendRemaining -= 1;
-                if (resendRemaining <= 0) {
-                    resendRemaining = 0;
-                    sendButton.disabled = false;
-                    if (resendTimerId) {
-                        window.clearInterval(resendTimerId);
-                        resendTimerId = null;
+            if (resendRemaining > 0) {
+                resendTimerId = window.setInterval(function () {
+                    resendRemaining -= 1;
+                    if (resendRemaining <= 0) {
+                        resendRemaining = 0;
+                        if (resendTimerId) {
+                            window.clearInterval(resendTimerId);
+                            resendTimerId = null;
+                        }
+                        updateOtpControls();
                     }
-                }
-                updateTimingMessage(expiryRemaining, resendRemaining);
-            }, 1000);
+                    updateTimingMessage(expiryRemaining, resendRemaining);
+                }, 1000);
+                updateOtpControls();
+            }
         };
 
         var setOtpSectionVisible = function (visible) {
@@ -277,19 +373,26 @@
             }
             otpSection.classList.toggle("is-visible", visible);
             if (otpInput) {
-                otpInput.disabled = !visible;
                 if (!visible) {
                     otpInput.value = "";
                 }
             }
+            updateOtpControls();
         };
 
         var resetStatus = function () {
             clearTimers();
+            if (lockTimerId) {
+                window.clearInterval(lockTimerId);
+                lockTimerId = null;
+            }
             setStatus("", null);
             setTiming("");
             sendButton.disabled = false;
             hasSentOtpOnce = false;
+            otpActive = false;
+            temporarilyBlocked = false;
+            verifyRequestInProgress = false;
             updateSendButtonLabel();
             setOtpSectionVisible(false);
             updateDetectedChannel();
@@ -414,17 +517,25 @@
                     };
                 });
 
-                if (response.status === 429 && data.retryAfterSeconds && data.retryAfterSeconds > 0) {
-                    otpExpirySeconds = data.expirySeconds && data.expirySeconds > 0
-                        ? data.expirySeconds
-                        : otpExpirySeconds;
-                    otpResendCooldownSeconds = data.retryAfterSeconds;
+                if (response.status === 429
+                        && ((data.retryAfterSeconds && data.retryAfterSeconds > 0)
+                            || (data.lockSecondsRemaining && data.lockSecondsRemaining > 0))) {
+                    otpResendCooldownSeconds = data.retryAfterSeconds || 0;
                     hasSentOtpOnce = true;
                     updateSendButtonLabel();
-                    setOtpSectionVisible(true);
-                    setStatus(data.message || "OTP already sent. Please enter the latest valid OTP.", "is-error");
-                    startOtpTimers();
-                    otpInput.focus();
+                    if (data.code === "OTP_TEMPORARILY_BLOCKED") {
+                        startTemporaryBlock(data.lockSecondsRemaining, data.message);
+                    } else if (!otpActive && data.code === "OTP_RESEND_COOLDOWN") {
+                        otpActive = true;
+                        setOtpSectionVisible(true);
+                    }
+                    if (data.code !== "OTP_TEMPORARILY_BLOCKED") {
+                        setStatus(data.message || "OTP already sent. Please enter the latest valid OTP.", "is-error");
+                        startSendCooldown(data.retryAfterSeconds);
+                    }
+                    if (otpActive) {
+                        otpInput.focus();
+                    }
                     return;
                 }
 
@@ -445,9 +556,15 @@
                 otpResendCooldownSeconds = data.resendAvailableInSeconds && data.resendAvailableInSeconds > 0
                     ? data.resendAvailableInSeconds
                     : otpResendCooldownSeconds;
+                var resend = hasSentOtpOnce;
                 hasSentOtpOnce = true;
                 updateSendButtonLabel();
-                setStatus(data.message || "OTP sent successfully.", "is-success");
+                otpActive = true;
+                otpInput.value = "";
+                setStatus(
+                    resend ? "A new OTP has been sent successfully." : (data.message || "OTP sent successfully."),
+                    "is-success"
+                );
                 setOtpSectionVisible(true);
                 startOtpTimers();
                 otpInput.focus();
@@ -457,13 +574,21 @@
                 setTiming("");
             } finally {
                 sendRequestInProgress = false;
-                if (!resendTimerId) {
-                    sendButton.disabled = false;
-                }
+                updateOtpControls();
             }
         });
 
+        otpInput.addEventListener("input", function () {
+            otpInput.value = otpInput.value.replace(/[^0-9]/g, "").slice(0, 6);
+            updateOtpControls();
+        });
+
         form.addEventListener("submit", function (event) {
+            if (verifyRequestInProgress || !otpActive || !/^[0-9]{6}$/.test(otpInput.value.trim())) {
+                event.preventDefault();
+                setStatus("Enter the complete 6 digit OTP before verification.", "is-error");
+                return;
+            }
             if (isInsecureTransport()) {
                 event.preventDefault();
                 showTransportError();
@@ -493,22 +618,34 @@
             }
 
             if (verifyButton) {
-                verifyButton.disabled = true;
+                verifyRequestInProgress = true;
+                updateOtpControls();
                 verifyButton.textContent = "Verifying...";
             }
         });
 
         var isOtpSentOnLoad = form.dataset.otpSent === "true";
-        if (isOtpSentOnLoad) {
+        var terminalOtpCodes = [
+            "OTP_EXPIRED",
+            "OTP_ATTEMPTS_EXCEEDED",
+            "OTP_ALREADY_USED",
+            "OTP_NOT_FOUND",
+            "OTP_TEMPORARILY_BLOCKED"
+        ];
+        if (isOtpSentOnLoad && terminalOtpCodes.indexOf(otpErrorCode) < 0) {
             hasSentOtpOnce = true;
+            otpActive = true;
             setOtpSectionVisible(true);
+            startOtpTimers();
         } else {
+            otpActive = false;
             setOtpSectionVisible(false);
+            setTiming("");
         }
-        setTiming("");
         updateSendButtonLabel();
         updateDetectedChannel();
         startLockCountdown();
+        updateOtpControls();
 
         // Toggle password visibility
         var togglePasswordButton = document.getElementById("togglePassword");

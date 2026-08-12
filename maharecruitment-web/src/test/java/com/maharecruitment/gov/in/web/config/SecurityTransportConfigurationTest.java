@@ -48,7 +48,7 @@ class SecurityTransportConfigurationTest {
                 .isEqualTo("${SECURITY_ALLOWED_PORT_WILDFLY_HTTP:8080}");
         assertThat(properties.getProperty("otp.resend-limit")).isEqualTo("3");
         assertThat(properties.getProperty("otp.send-ip-limit")).isEqualTo("10");
-        assertThat(properties.getProperty("otp.resend-window-minutes")).isEqualTo("5");
+        assertThat(properties.getProperty("otp.resend-window-minutes")).isEqualTo("15");
         assertThat(properties.getProperty("otp.resend-cooldown-seconds")).isEqualTo("30");
         assertThat(properties.getProperty("security.password-reset.resend-cooldown-seconds")).isEqualTo("30");
         assertThat(properties.getProperty("maharecruitment.sms.acl.resend-cooldown"))

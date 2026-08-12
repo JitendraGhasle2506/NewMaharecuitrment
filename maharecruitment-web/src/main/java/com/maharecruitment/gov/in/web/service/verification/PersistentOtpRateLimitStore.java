@@ -103,9 +103,15 @@ public class PersistentOtpRateLimitStore {
                         : null,
                 bucketKey);
         long retryAfterSeconds = calculateRetryAfter(now, state, rule);
+        boolean requestLimitExceeded = state != null && state.requestCount() >= Math.max(1, rule.limit());
+        boolean cooldownExceeded = state != null
+                && !rule.minimumInterval().isZero()
+                && !rule.minimumInterval().isNegative()
+                && now.isBefore(state.lastRequestAt().plus(rule.minimumInterval()));
         throw new OtpRateLimitException(
                 "OTP " + action + " rate limit exceeded.",
-                Math.max(1, retryAfterSeconds));
+                Math.max(1, retryAfterSeconds),
+                OtpRateLimiter.responseCode(action, requestLimitExceeded, cooldownExceeded));
     }
 
     private long calculateRetryAfter(

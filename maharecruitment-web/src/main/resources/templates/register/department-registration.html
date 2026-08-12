@@ -208,7 +208,7 @@
 											<input type="text" class="form-control" id="mobileOtpInput" maxlength="6"
 												placeholder="Enter mobile OTP" disabled>
 											<button type="button" class="btn btn-primary btn-verify"
-												id="verifyMobileOtpBtn">Verify OTP</button>
+												id="verifyMobileOtpBtn" disabled>Verify OTP</button>
 										</div>
 										<div class="verification-status" id="mobileVerificationStatus"></div>
 										<div class="text-danger small" data-field-error="primaryMobile" th:if="${#fields.hasErrors('primaryMobile')}"
@@ -227,7 +227,7 @@
 											<input type="text" class="form-control" id="emailOtpInput" maxlength="6"
 												placeholder="Enter email OTP" disabled>
 											<button type="button" class="btn btn-primary btn-verify"
-												id="verifyEmailOtpBtn">Verify OTP</button>
+												id="verifyEmailOtpBtn" disabled>Verify OTP</button>
 										</div>
 										<div class="verification-status" id="emailVerificationStatus"></div>
 										<div class="text-danger small" data-field-error="primaryEmail" th:if="${#fields.hasErrors('primaryEmail')}"
@@ -444,7 +444,7 @@
 
 	<script th:src="@{/assets/vendor/jquery/jquery-3.7.1.min.js}"></script>
 	<script th:src="@{/assets/vendor/select2/select2.min.js}"></script>
-	<script th:src="@{/js/otp-verification.js(v='20260812-otp-30s')}"></script>
+	<script th:src="@{/js/otp-verification.js(v='20260812-otp-security')}"></script>
 	<script th:src="@{/js/department-registration.js(v='20260812-subdepartment-fix')}"></script>
 	<script th:src="@{/js/sensitive-data-encryption.js(v='20260812-performance')}"></script>
 </body>

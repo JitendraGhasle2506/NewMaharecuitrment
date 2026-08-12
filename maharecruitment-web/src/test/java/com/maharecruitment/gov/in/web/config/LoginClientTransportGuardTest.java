@@ -40,7 +40,7 @@ class LoginClientTransportGuardTest {
                 .contains("data-email-otp-enabled=${otpEmailEnabled}")
                 .contains("data-sms-otp-enabled=${otpSmsEnabled}")
                 .contains("data-credential-key-url=@{/security/credential-encryption/public-key}")
-                .contains("@{/js/login-otp.js(v='20260812-otp-30s')}")
+                .contains("@{/js/login-otp.js(v='20260812-otp-security')}")
                 .doesNotContain("id=\"password\" name=\"password\"");
     }
 

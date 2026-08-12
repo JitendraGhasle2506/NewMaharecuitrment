@@ -104,11 +104,14 @@ public class OtpRateLimiter {
                     .toList();
 
             long retryAfterSeconds = 0;
+            boolean requestLimitExceeded = false;
+            boolean cooldownExceeded = false;
             for (RateLimitCheck check : checks) {
                 RateLimitRule rule = check.rule();
                 RateLimitState state = check.state();
                 prune(state, now, rule.window());
                 if (state.requestTimes.size() >= rule.limit()) {
+                    requestLimitExceeded = true;
                     Instant oldestRequest = state.requestTimes.peekFirst();
                     retryAfterSeconds = Math.max(
                             retryAfterSeconds,
@@ -118,6 +121,7 @@ public class OtpRateLimiter {
                 if (latestRequest != null && !rule.minimumInterval().isZero()) {
                     Instant nextAllowedAt = latestRequest.plus(rule.minimumInterval());
                     if (now.isBefore(nextAllowedAt)) {
+                        cooldownExceeded = true;
                         retryAfterSeconds = Math.max(
                                 retryAfterSeconds,
                                 secondsUntil(now, nextAllowedAt));
@@ -128,7 +132,8 @@ public class OtpRateLimiter {
             if (retryAfterSeconds > 0) {
                 throw new OtpRateLimitException(
                         "OTP " + action + " rate limit exceeded.",
-                        retryAfterSeconds);
+                        retryAfterSeconds,
+                        responseCode(action, requestLimitExceeded, cooldownExceeded));
             }
 
             for (RateLimitCheck check : checks) {
@@ -184,6 +189,17 @@ public class OtpRateLimiter {
         return Math.max(1, Duration.between(now, target).getSeconds());
     }
 
+    static String responseCode(String action, boolean requestLimitExceeded, boolean cooldownExceeded) {
+        if ("send".equals(action)) {
+            return requestLimitExceeded
+                    ? OtpResponseCodes.OTP_RESEND_LIMIT_EXCEEDED
+                    : cooldownExceeded
+                            ? OtpResponseCodes.OTP_RESEND_COOLDOWN
+                            : OtpResponseCodes.OTP_RATE_LIMITED;
+        }
+        return OtpResponseCodes.OTP_RATE_LIMITED;
+    }
+
     private String normalize(String value) {
         return StringUtils.hasText(value)
                 ? value.trim().toLowerCase(Locale.ROOT)
@@ -194,7 +210,7 @@ public class OtpRateLimiter {
         private final Deque<Instant> requestTimes = new ArrayDeque<>();
     }
 
-    static record RateLimitRule(String key, int limit, Duration window, Duration minimumInterval) {
+    public static record RateLimitRule(String key, int limit, Duration window, Duration minimumInterval) {
     }
 
     private record RateLimitCheck(RateLimitRule rule, RateLimitState state) {

@@ -30,6 +30,7 @@ class DepartmentRegistrationSensitiveTransportTemplateTest {
                 .contains("data-selected-file-name=\"panFile\"")
                 .contains("data-selected-file-name=\"tanFile\"")
                 .contains("data-otp-resend-cooldown-seconds=${otpResendCooldownSeconds}")
+                .contains("@{/js/otp-verification.js(v='20260812-otp-security')}")
                 .contains("@{/js/sensitive-data-encryption.js(v='20260812-performance')}")
                 .contains("@{/js/department-registration.js(v='20260812-subdepartment-fix')}")
                 .doesNotContain("MutationObserver")
@@ -64,7 +65,11 @@ class DepartmentRegistrationSensitiveTransportTemplateTest {
                 .contains("data.resendAvailableInSeconds")
                 .contains("DEFAULT_RESEND_COOLDOWN_SECONDS = 30")
                 .contains("startResendCooldown")
-                .contains("Resend OTP (");
+                .contains("Resend OTP (")
+                .contains("state.verifyInProgress || state.locked || !state.otpActive")
+                .contains("OTP_ATTEMPTS_EXCEEDED")
+                .contains("OTP expired. Please request a new OTP.")
+                .contains("OTP valid for ");
 
         String registrationScript = Files.readString(projectPath(
                 "src/main/resources/static/js/department-registration.js"));

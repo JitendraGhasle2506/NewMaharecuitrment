@@ -37,13 +37,18 @@
             verified: Boolean(config.initialVerified),
             captchaId: "",
             locked: false,
-            sendInProgress: false
+            sendInProgress: false,
+            verifyInProgress: false,
+            otpActive: false,
+            hasSentOtp: false
         };
         let captchaSection = null;
         let captchaQuestion = null;
         let captchaInput = null;
         let lockTimerId = null;
         let resendTimerId = null;
+        let expiryTimerId = null;
+        let timingElement = null;
         const initialSendButtonLabel = config.sendButton.textContent;
 
         const setStatus = (message, mode) => {
@@ -121,13 +126,83 @@
             return String(minutesPart).padStart(2, "0") + ":" + String(secondsPart).padStart(2, "0");
         };
 
+        const updateControls = () => {
+            const otpComplete = Boolean(config.otpInput && /^[0-9]{6}$/.test(config.otpInput.value.trim()));
+            config.sendButton.disabled = state.sendInProgress || state.locked || Boolean(resendTimerId);
+            config.verifyButton.disabled = state.verifyInProgress
+                || state.locked
+                || state.verified
+                || !state.otpActive
+                || !otpComplete;
+            if (config.otpInput) {
+                config.otpInput.disabled = !state.otpActive || state.locked || state.verified;
+            }
+        };
+
+        const ensureTimingElement = () => {
+            if (timingElement || !config.statusElement || !config.statusElement.parentElement) {
+                return;
+            }
+            timingElement = document.createElement("div");
+            timingElement.className = "verification-status otp-validity-timer";
+            timingElement.setAttribute("aria-live", "polite");
+            config.statusElement.parentElement.insertBefore(timingElement, config.statusElement.nextSibling);
+        };
+
+        const setTiming = (message) => {
+            ensureTimingElement();
+            if (timingElement) {
+                timingElement.textContent = message || "";
+            }
+        };
+
+        const stopExpiryCountdown = () => {
+            if (expiryTimerId) {
+                window.clearInterval(expiryTimerId);
+                expiryTimerId = null;
+            }
+            setTiming("");
+        };
+
+        const expireOtpInBrowser = () => {
+            stopExpiryCountdown();
+            state.otpActive = false;
+            hideCaptcha();
+            if (config.otpInput) {
+                config.otpInput.value = "";
+            }
+            updateControls();
+            setStatus("OTP expired. Please request a new OTP.", "is-error");
+        };
+
+        const startExpiryCountdown = (seconds) => {
+            stopExpiryCountdown();
+            let remaining = Math.max(0, Number(seconds || 0));
+            if (remaining <= 0) {
+                expireOtpInBrowser();
+                return;
+            }
+            state.otpActive = true;
+            const render = () => setTiming("OTP valid for " + formatDuration(remaining));
+            render();
+            expiryTimerId = window.setInterval(() => {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    expireOtpInBrowser();
+                    return;
+                }
+                render();
+            }, 1000);
+            updateControls();
+        };
+
         const stopResendCooldown = () => {
             if (resendTimerId) {
                 window.clearInterval(resendTimerId);
                 resendTimerId = null;
             }
-            config.sendButton.textContent = initialSendButtonLabel;
-            config.sendButton.disabled = state.sendInProgress;
+            config.sendButton.textContent = state.hasSentOtp ? "Resend OTP" : initialSendButtonLabel;
+            updateControls();
         };
 
         const startResendCooldown = (seconds) => {
@@ -212,6 +287,7 @@
                 lockTimerId = null;
             }
             state.locked = false;
+            updateControls();
         };
 
         const startLockCountdown = (seconds) => {
@@ -221,9 +297,14 @@
                 return;
             }
             state.locked = true;
-            config.verifyButton.disabled = true;
+            state.otpActive = false;
+            stopExpiryCountdown();
+            if (config.otpInput) {
+                config.otpInput.value = "";
+            }
+            updateControls();
             const render = () => {
-                setStatus("OTP verification failed. Please try again in " + formatDuration(remaining) + ".", "is-error");
+                setStatus("OTP operations are temporarily blocked. Try again in " + formatDuration(remaining) + ".", "is-error");
             };
             render();
             lockTimerId = window.setInterval(() => {
@@ -231,7 +312,7 @@
                 if (remaining <= 0) {
                     stopLockCountdown();
                     setStatus("You can request a new OTP now.", "is-pending");
-                    config.verifyButton.disabled = false;
+                    updateControls();
                     return;
                 }
                 render();
@@ -244,8 +325,30 @@
                 return;
             }
             showCaptcha(data);
-            if (data.lockSecondsRemaining && data.lockSecondsRemaining > 0) {
+            const code = data.code || "";
+            if (code === "OTP_TEMPORARILY_BLOCKED"
+                    || code === "OTP_ATTEMPTS_EXCEEDED"
+                    || (data.lockSecondsRemaining && data.lockSecondsRemaining > 0)) {
                 startLockCountdown(data.lockSecondsRemaining);
+                setStatus(
+                    data.message || "Maximum OTP verification attempts exceeded. Please request a new OTP.",
+                    "is-error"
+                );
+                return;
+            }
+
+            if (["OTP_EXPIRED", "OTP_ALREADY_USED", "OTP_NOT_FOUND"].includes(code)) {
+                state.otpActive = false;
+                stopExpiryCountdown();
+                hideCaptcha();
+                if (config.otpInput) {
+                    config.otpInput.value = "";
+                }
+                updateControls();
+            }
+
+            if (code === "INVALID_OTP") {
+                setStatus(data.message || fallbackMessage, "is-error");
                 return;
             }
 
@@ -263,7 +366,10 @@
             state.verified = false;
             stopLockCountdown();
             stopResendCooldown();
+            stopExpiryCountdown();
             hideCaptcha();
+            state.otpActive = false;
+            state.verifyInProgress = false;
             if (config.otpInput) {
                 config.otpInput.value = "";
                 config.otpInput.disabled = true;
@@ -272,6 +378,7 @@
                 config.otpSection.style.display = "none";
             }
             setStatus("", null);
+            updateControls();
             notify();
         };
 
@@ -298,13 +405,19 @@
                 });
                 stopLockCountdown();
                 hideCaptcha();
+                const resend = state.hasSentOtp;
+                state.hasSentOtp = true;
                 if (config.otpSection) {
                     config.otpSection.style.display = "flex";
                 }
                 if (config.otpInput) {
-                    config.otpInput.disabled = false;
+                    config.otpInput.value = "";
                 }
-                setStatus(data.message, "is-pending");
+                startExpiryCountdown(data.expiresInSeconds || data.expirySeconds);
+                setStatus(
+                    resend ? "A new OTP has been sent successfully." : (data.message || "OTP sent successfully."),
+                    "is-success"
+                );
                 startResendCooldown(
                     data.resendAvailableInSeconds
                         || data.retryAfterSeconds
@@ -321,11 +434,14 @@
                 }
             } finally {
                 state.sendInProgress = false;
-                config.sendButton.disabled = Boolean(resendTimerId);
+                updateControls();
             }
         };
 
         const verifyOtp = async () => {
+            if (state.verifyInProgress || state.locked || !state.otpActive) {
+                return;
+            }
             const otp = config.otpInput ? config.otpInput.value.trim() : "";
             if (!/^[0-9]{6}$/.test(otp)) {
                 setStatus(defaults.invalidOtp, "is-error");
@@ -335,7 +451,8 @@
                 return;
             }
 
-            config.verifyButton.disabled = true;
+            state.verifyInProgress = true;
+            updateControls();
             setStatus("Verifying OTP...", "is-pending");
 
             try {
@@ -351,6 +468,8 @@
                 }
                 const data = await apiPost(config.verifyUrl, payload);
                 state.verified = data.verified === true;
+                state.otpActive = false;
+                stopExpiryCountdown();
                 stopLockCountdown();
                 hideCaptcha();
                 if (config.otpSection) {
@@ -363,13 +482,22 @@
                 applySecurityState(error.response, error.message);
                 notify();
             } finally {
-                config.verifyButton.disabled = state.locked;
+                state.verifyInProgress = false;
+                updateControls();
             }
         };
 
         config.referenceInput.addEventListener("input", reset);
         config.sendButton.addEventListener("click", sendOtp);
         config.verifyButton.addEventListener("click", verifyOtp);
+        if (config.otpInput) {
+            config.otpInput.inputMode = "numeric";
+            config.otpInput.maxLength = 6;
+            config.otpInput.addEventListener("input", () => {
+                config.otpInput.value = config.otpInput.value.replace(/[^0-9]/g, "").slice(0, 6);
+                updateControls();
+            });
+        }
 
         if (config.otpSection) {
             config.otpSection.style.display = "none";
@@ -381,6 +509,7 @@
         if (state.verified) {
             setStatus(config.initialVerifiedMessage || defaults.verified, null);
         }
+        updateControls();
 
         return {
             isVerified: () => state.verified,

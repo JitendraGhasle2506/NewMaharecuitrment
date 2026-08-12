@@ -11,6 +11,7 @@ public class PasswordResetProperties {
 
     private int otpValidityMinutes = 5;
     private int maxAttempts = 5;
+    private int lockDurationMinutes = 15;
     private int resendCooldownSeconds = 30;
     private int tokenValidityMinutes = 10;
     private int maxOtpRequests = 3;
@@ -38,6 +39,18 @@ public class PasswordResetProperties {
 
     public void setMaxAttempts(int maxAttempts) {
         this.maxAttempts = maxAttempts;
+    }
+
+    public int getLockDurationMinutes() {
+        return lockDurationMinutes;
+    }
+
+    public void setLockDurationMinutes(int lockDurationMinutes) {
+        this.lockDurationMinutes = lockDurationMinutes;
+    }
+
+    public int getLockDurationSeconds() {
+        return Math.max(1, lockDurationMinutes) * 60;
     }
 
     public int getResendCooldownSeconds() {

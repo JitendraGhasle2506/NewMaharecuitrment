@@ -18,6 +18,7 @@ import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.service.verification.OtpRateLimitException;
 import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.OtpRequestContext;
+import com.maharecruitment.gov.in.web.service.verification.OtpResponseCodes;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationException;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationResult;
 import com.maharecruitment.gov.in.web.service.verification.OtpVerificationService;
@@ -96,14 +97,27 @@ public class OtpVerificationController {
                     false,
                     request.getPurpose(),
                     request.getChannel(),
-                    result));
+                    result,
+                    true,
+                    OtpResponseCodes.OTP_SENT));
         } catch (OtpRateLimitException ex) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(toResponse(
-                    RATE_LIMIT_MESSAGE,
+                    rateLimitMessage(ex),
                     false,
                     request.getPurpose(),
                     request.getChannel(),
-                    ex.getResult()));
+                    ex.getResult(),
+                    false,
+                    ex.getResponseCode()));
+        } catch (OtpVerificationException ex) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(toResponse(
+                    OtpResponseCodes.messageFor(ex.getReason(), ex.getResult().remainingAttempts()),
+                    false,
+                    request.getPurpose(),
+                    request.getChannel(),
+                    ex.getResult(),
+                    false,
+                    OtpResponseCodes.forFailure(ex.getReason())));
         } catch (SmsGatewayException ex) {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new VerificationResponse(
                     SMS_SEND_FAILURE,
@@ -168,29 +182,27 @@ public class OtpVerificationController {
                     true,
                     request.getPurpose(),
                     request.getChannel(),
-                    result));
+                    result,
+                    true,
+                    OtpResponseCodes.OTP_VERIFIED));
         } catch (OtpRateLimitException ex) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(toResponse(
                     RATE_LIMIT_MESSAGE,
                     false,
                     request.getPurpose(),
                     request.getChannel(),
-                    ex.getResult()));
+                    ex.getResult(),
+                    false,
+                    ex.getResponseCode()));
         } catch (OtpVerificationException ex) {
-            return ResponseEntity.badRequest().body(new VerificationResponse(
-                    GENERIC_VERIFY_FAILURE,
+            return ResponseEntity.badRequest().body(toResponse(
+                    OtpResponseCodes.messageFor(ex.getReason(), ex.getResult().remainingAttempts()),
                     false,
                     request.getPurpose(),
                     request.getChannel(),
-                    ex.getResult().remainingAttempts(),
-                    ex.getResult().captchaRequired(),
-                    ex.getResult().captchaId(),
-                    ex.getResult().captchaQuestion(),
-                    ex.getResult().lockedUntil() == null ? null : ex.getResult().lockedUntil().toString(),
-                    ex.getResult().lockSecondsRemaining(),
-                    ex.getResult().remainingResends(),
-                    ex.getResult().retryAfterSeconds(),
-                    ex.getResult().expirySeconds()));
+                    ex.getResult(),
+                    false,
+                    OtpResponseCodes.forFailure(ex.getReason())));
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(new VerificationResponse(
                     GENERIC_VERIFY_FAILURE,
@@ -205,7 +217,9 @@ public class OtpVerificationController {
             boolean verified,
             String purpose,
             com.maharecruitment.gov.in.web.dto.verification.VerificationChannel channel,
-            OtpVerificationResult result) {
+            OtpVerificationResult result,
+            boolean success,
+            String code) {
         return new VerificationResponse(
                 message,
                 verified,
@@ -223,7 +237,19 @@ public class OtpVerificationController {
                 result.deliveryChannel() == null ? channel.name() : result.deliveryChannel().name(),
                 result.maskedDestination(),
                 result.expirySeconds(),
-                result.resendAvailableInSeconds());
+                result.resendAvailableInSeconds(),
+                success,
+                code);
+    }
+
+    private String rateLimitMessage(OtpRateLimitException exception) {
+        if (OtpResponseCodes.OTP_RESEND_LIMIT_EXCEEDED.equals(exception.getResponseCode())) {
+            return "Maximum OTP resend limit reached. Please try again later.";
+        }
+        if (OtpResponseCodes.OTP_RESEND_COOLDOWN.equals(exception.getResponseCode())) {
+            return "OTP was already sent. Please wait before requesting another OTP.";
+        }
+        return RATE_LIMIT_MESSAGE;
     }
 
     private boolean isDepartmentRegistrationOtpBypassed(String purpose) {

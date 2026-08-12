@@ -51,7 +51,9 @@ class OtpRateLimiterTest {
         assertThatThrownBy(() ->
                 limiter.checkSendAllowed("login", VerificationChannel.SMS, "7020186501", context))
                 .isInstanceOf(OtpRateLimitException.class)
-                .hasMessageContaining("OTP send rate limit exceeded");
+                .hasMessageContaining("OTP send rate limit exceeded")
+                .satisfies(exception -> assertThat(((OtpRateLimitException) exception).getResponseCode())
+                        .isEqualTo(OtpResponseCodes.OTP_RESEND_LIMIT_EXCEEDED));
     }
 
     @Test
