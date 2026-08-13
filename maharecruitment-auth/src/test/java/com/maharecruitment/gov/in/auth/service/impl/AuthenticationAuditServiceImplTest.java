@@ -78,6 +78,33 @@ class AuthenticationAuditServiceImplTest {
         assertThat(captor.getValue().getAuthenticationMethod()).isNull();
     }
 
+    @Test
+    void recordsLoginFailureWithoutCreatingOrPersistingASessionIdentifier() {
+        LoginLogoutAuditHistoryRepository auditRepository = mock(LoginLogoutAuditHistoryRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        when(userRepository.findByEmailIgnoreCase("unknown@example.com")).thenReturn(Optional.empty());
+        AuthenticationAuditServiceImpl service = service(auditRepository, userRepository);
+
+        service.recordLoginFailure(
+                "UNKNOWN@EXAMPLE.COM",
+                "10.10.1.3",
+                "Test Browser",
+                AuthenticationAuditService.METHOD_PASSWORD,
+                "bad_credentials",
+                AuthenticationAuditService.SOURCE_WEB);
+
+        ArgumentCaptor<LoginLogoutAuditHistory> captor =
+                ArgumentCaptor.forClass(LoginLogoutAuditHistory.class);
+        verify(auditRepository).save(captor.capture());
+        LoginLogoutAuditHistory audit = captor.getValue();
+        assertThat(audit.getEventType()).isEqualTo(LoginLogoutAuditEventType.LOGIN_FAILURE);
+        assertThat(audit.getUsername()).isEqualTo("unknown@example.com");
+        assertThat(audit.getUserId()).isNull();
+        assertThat(audit.getSessionIdHash()).isNull();
+        assertThat(audit.getAuthenticationMethod()).isEqualTo("PASSWORD");
+        assertThat(audit.getFailureReason()).isEqualTo("BAD_CREDENTIALS");
+    }
+
     private AuthenticationAuditServiceImpl service(
             LoginLogoutAuditHistoryRepository auditRepository,
             UserRepository userRepository) {

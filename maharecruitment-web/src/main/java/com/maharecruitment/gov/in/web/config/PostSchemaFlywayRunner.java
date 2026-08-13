@@ -91,6 +91,8 @@ import db.postmigration.V107__otp_rate_limit_bucket_support;
 import db.postmigration.V108__password_reset_otp_lock_support;
 import db.postmigration.V109__auth_user_password_change_required;
 import db.postmigration.V110__login_logout_audit_history;
+import db.postmigration.V111__login_failure_audit_support;
+import db.postmigration.V112__login_failure_legacy_constraint_cleanup;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -208,6 +210,8 @@ public class PostSchemaFlywayRunner {
                 new V108__password_reset_otp_lock_support(),
                 new V109__auth_user_password_change_required(),
                 new V110__login_logout_audit_history(),
+                new V111__login_failure_audit_support(),
+                new V112__login_failure_legacy_constraint_cleanup(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 
