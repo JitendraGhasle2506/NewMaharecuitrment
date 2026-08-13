@@ -225,36 +225,69 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
     }
 
     @Override
-    public void sendAgencyCredentials(String email, String contactName, String temporaryPassword) {
-        if (!notificationChannelProperties.isEmailEnabled()) {
+    public void sendAgencyCredentials(
+            String email,
+            String mobileNo,
+            String contactName,
+            String username,
+            String temporaryPassword) {
+        Exception emailFailure = null;
+        Exception smsFailure = null;
+
+        if (notificationChannelProperties.isEmailEnabled()) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(getFromAddress());
+            message.setTo(email);
+            message.setSubject("MahaIT Recruitment Agency Account Created");
+            message.setText("""
+                    Dear %s,
+
+                    Your agency master record has been created successfully and an agency user account has been provisioned.
+
+                    Username: %s
+                    Temporary Password: %s
+
+                    Please sign in at %s and change the password after first login.
+
+                    Regards,
+                    MahaIT Recruitment
+                    """.formatted(contactName, username, temporaryPassword, portalLoginUrl()));
+
+            try {
+                mailSender.send(message);
+            } catch (Exception ex) {
+                emailFailure = ex;
+                log.warn("Failed to send agency credential email to {} from {}. Reason: {}",
+                        email, message.getFrom(), extractFailureReason(ex), ex);
+            }
+        } else {
             log.info("Email dispatch is disabled. Skipping agency credential email for {}.", email);
-            return;
         }
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(getFromAddress());
-        message.setTo(email);
-        message.setSubject("MahaIT Recruitment Agency Account Created");
-        message.setText("""
-                Dear %s,
+        String smsMessage = "MahaIT Recruitment: Agency account created. Username: %s Password: %s. "
+                .formatted(username, temporaryPassword)
+                + "Please change password after first login.";
+        if (notificationChannelProperties.isSmsEnabled()) {
+            try {
+                sendSmsMessage(mobileNo, smsMessage, "agency credentials");
+            } catch (Exception ex) {
+                smsFailure = ex;
+                log.warn("Failed to send agency credential SMS to {}.", mobileNo, ex);
+            }
+        } else {
+            log.info("SMS dispatch is disabled. Skipping agency credential SMS for mobile {}.", mobileNo);
+        }
 
-                Your agency master record has been created successfully and an agency user account has been provisioned.
-
-                Username: %s
-                Temporary Password: %s
-
-                Please sign in at %s and change the password after first login.
-
-                Regards,
-                MahaIT Recruitment
-                """.formatted(contactName, email, temporaryPassword, portalLoginUrl()));
-
-        try {
-            mailSender.send(message);
-        } catch (Exception ex) {
-            log.error("Failed to send agency account credentials to {} from {}. Reason: {}",
-                    email, message.getFrom(), extractFailureReason(ex), ex);
-            throw new IllegalStateException(buildFailureMessage("Failed to send agency account credentials.", ex), ex);
+        if (emailFailure != null || smsFailure != null) {
+            IllegalStateException failure = new IllegalStateException(
+                    "Failed to deliver agency account credentials through all configured channels.");
+            if (emailFailure != null) {
+                failure.addSuppressed(emailFailure);
+            }
+            if (smsFailure != null) {
+                failure.addSuppressed(smsFailure);
+            }
+            throw failure;
         }
     }
 

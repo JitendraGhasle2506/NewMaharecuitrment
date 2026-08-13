@@ -98,6 +98,7 @@ class AgencyMasterPageServiceSecurityTest {
         response.setAgencyUserCreated(true);
         response.setProvisionedUserEmail("agency@example.test");
         response.setContactPersonName("Agency Contact");
+        response.setContactPersonMobileNo("9876543210");
         response.setTemporaryPassword("TemporaryPassword1!");
         when(masterService.create(any())).thenReturn(response);
         AgencyMasterPageServiceImpl service = service(masterService, notifications, transport);
@@ -105,7 +106,11 @@ class AgencyMasterPageServiceSecurityTest {
         AgencyMasterResponse returned = service.create(encryptedForm(transport, "agency-email-sensitive-nonce"));
 
         verify(notifications).sendAgencyCredentials(
-                "agency@example.test", "Agency Contact", "TemporaryPassword1!");
+                "agency@example.test",
+                "9876543210",
+                "Agency Contact",
+                "agency@example.test",
+                "TemporaryPassword1!");
         assertThat(returned.getTemporaryPassword()).isNull();
     }
 

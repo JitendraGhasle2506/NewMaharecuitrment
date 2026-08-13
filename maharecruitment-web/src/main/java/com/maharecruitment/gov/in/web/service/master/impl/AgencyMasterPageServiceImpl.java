@@ -106,7 +106,9 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
                     && StringUtils.hasText(response.getTemporaryPassword())) {
                 accountNotificationService.sendAgencyCredentials(
                         response.getProvisionedUserEmail(),
+                        response.getContactPersonMobileNo(),
                         response.getContactPersonName(),
+                        response.getProvisionedUserEmail(),
                         response.getTemporaryPassword());
                 response.setTemporaryPassword(null);
             }

@@ -397,7 +397,9 @@ public class AgencyMasterPageController {
             String defaultMessage) {
         StringBuilder message = new StringBuilder(defaultMessage);
         if (Boolean.TRUE.equals(response.getAgencyUserCreated())) {
-            message.append(". Agency user created. Login credentials have been sent to the official email address");
+            message.append(". Agency user created. Username: ")
+                    .append(response.getProvisionedUserEmail())
+                    .append(". Username and temporary password have been shared via email and registered mobile SMS");
         }
         redirectAttributes.addFlashAttribute("successMessage", message.toString());
     }

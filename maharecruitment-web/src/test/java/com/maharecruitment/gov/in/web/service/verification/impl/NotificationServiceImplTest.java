@@ -58,7 +58,12 @@ class NotificationServiceImplTest {
                 new NotificationChannelProperties(),
                 applicationUrlService());
 
-        service.sendAgencyCredentials("agency@example.com", "Agency User", "TempPassword123!");
+        service.sendAgencyCredentials(
+                "agency@example.com",
+                "9876543210",
+                "Agency User",
+                "agency@example.com",
+                "TempPassword123!");
 
         ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(messageCaptor.capture());

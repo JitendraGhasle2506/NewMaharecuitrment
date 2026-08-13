@@ -17,12 +17,11 @@ class AgencyCredentialExposureGuardTest {
                 "src/main/resources/templates/master/agencies/list.html"));
 
         assertThat(controller)
-                .contains("Login credentials have been sent to the official email address")
+                .contains("Username and temporary password have been shared via email and registered mobile SMS")
+                .contains("response.getProvisionedUserEmail()")
                 .doesNotContain(
-                        "response.getProvisionedUserEmail()",
                         "response.getTemporaryPassword()",
                         "Agency User Created:",
-                        "Username: ",
                         "Password: ");
         assertThat(listTemplate)
                 .contains("th:text=\"${successMessage}\"")
