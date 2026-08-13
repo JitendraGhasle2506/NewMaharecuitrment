@@ -49,9 +49,10 @@ public class AgencyMasterForm {
     @NotNull(message = "Entity type is required")
     private AgencyEntityType entityType;
 
-    @NotBlank(message = "PAN number is required")
-    @Pattern(regexp = "^[A-Z]{5}[0-9]{4}[A-Z]$", message = "PAN number format is invalid")
     private String panNumber;
+
+    @Size(max = 800, message = "Encrypted PAN number is invalid")
+    private String panNumberEncrypted;
 
     @NotNull(message = "PAN Copy File is Required")
     private MultipartFile panCopyFile;
@@ -63,11 +64,10 @@ public class AgencyMasterForm {
     @NotNull(message = "Certificate Document File is required")
     private MultipartFile certificateDocumentFile;
 
-    @NotBlank(message = "GST number is required")
-    @Pattern(
-            regexp = "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$",
-            message = "GST number format is invalid")
     private String gstNumber;
+
+    @Size(max = 800, message = "Encrypted GST number is invalid")
+    private String gstNumberEncrypted;
 
     @NotNull(message = "GST File is Required")
     private MultipartFile gstDocumentFile;
@@ -97,9 +97,18 @@ public class AgencyMasterForm {
     @Size(max = 150, message = "Bank branch must not exceed 150 characters")
     private String bankBranch;
 
-    @NotBlank(message = "Bank account number is required")
-    @Pattern(regexp = "^[0-9]{9,30}$", message = "Bank account number must be numeric")
     private String bankAccountNumber;
+
+    @Size(max = 800, message = "Encrypted bank account number is invalid")
+    private String bankAccountNumberEncrypted;
+
+    @Size(max = 100, message = "Encryption key identifier is invalid")
+    private String encryptionKeyId;
+
+    private Long timestamp;
+
+    @Pattern(regexp = "^[A-Za-z0-9_-]{22,128}$", message = "Encrypted request nonce is invalid")
+    private String nonce;
 
     @NotNull(message = "Bank account type is required")
     private AgencyBankAccountType bankAccountType;
@@ -115,4 +124,13 @@ public class AgencyMasterForm {
     private String existingCertificateDocumentPath;
     private String existingGstDocumentPath;
     private String existingCancelledChequePath;
+
+    public void clearEncryptedSubmission() {
+        panNumberEncrypted = null;
+        gstNumberEncrypted = null;
+        bankAccountNumberEncrypted = null;
+        encryptionKeyId = null;
+        timestamp = null;
+        nonce = null;
+    }
 }

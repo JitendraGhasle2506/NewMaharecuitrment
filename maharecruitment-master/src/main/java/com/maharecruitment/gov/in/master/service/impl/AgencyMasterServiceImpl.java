@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.dto.AgencyUserProvisioningRequest;
 import com.maharecruitment.gov.in.auth.dto.AgencyUserProvisioningResult;
@@ -57,6 +58,7 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
     @Override
     @Transactional
     public AgencyMasterResponse create(AgencyMasterRequest request) {
+        validateRequiredSensitiveIdentity(request);
         validateBusinessRules(request, null);
 
         AgencyMaster entity = new AgencyMaster();
@@ -171,10 +173,12 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
         if (agencyRepository.existsByOfficialEmailExcludingId(officialEmail, excludeId)) {
             throw new DuplicateResourceException("MSG702: Agency official email id already exists in the system.");
         }
-        if (agencyRepository.existsByPanNumberExcludingId(panNumber, excludeId)) {
+        if (StringUtils.hasText(panNumber)
+                && agencyRepository.existsByPanNumberExcludingId(panNumber, excludeId)) {
             throw new DuplicateResourceException("MSG708: PAN number already exists in the system.");
         }
-        if (agencyRepository.existsByGstNumberExcludingId(gstNumber, excludeId)) {
+        if (StringUtils.hasText(gstNumber)
+                && agencyRepository.existsByGstNumberExcludingId(gstNumber, excludeId)) {
             throw new DuplicateResourceException("MSG712: GST number already exists in the system.");
         }
         if (request.getEscalationMatrixEntries() == null || request.getEscalationMatrixEntries().isEmpty()) {
@@ -194,18 +198,24 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
         entity.setOfficialAddress(normalizeName(request.getOfficialAddress()));
         entity.setPermanentAddress(normalizeName(request.getPermanentAddress()));
         entity.setEntityType(request.getEntityType());
-        entity.setPanNumber(normalizeUppercase(request.getPanNumber()));
+        if (StringUtils.hasText(request.getPanNumber())) {
+            entity.setPanNumber(normalizeUppercase(request.getPanNumber()));
+        }
         entity.setPanCopyPath(normalizePath(request.getPanCopyPath()));
         entity.setCertificateNumber(normalizeName(request.getCertificateNumber()));
         entity.setCertificateDocumentPath(normalizePath(request.getCertificateDocumentPath()));
-        entity.setGstNumber(normalizeUppercase(request.getGstNumber()));
+        if (StringUtils.hasText(request.getGstNumber())) {
+            entity.setGstNumber(normalizeUppercase(request.getGstNumber()));
+        }
         entity.setGstDocumentPath(normalizePath(request.getGstDocumentPath()));
         entity.setContactPersonName(normalizeName(request.getContactPersonName()));
         entity.setContactPersonMobileNo(request.getContactPersonMobileNo().trim());
         entity.setMsmeRegistered(request.getMsmeRegistered());
         entity.setBankName(normalizeName(request.getBankName()));
         entity.setBankBranch(normalizeName(request.getBankBranch()));
-        entity.setBankAccountNumber(request.getBankAccountNumber().trim());
+        if (StringUtils.hasText(request.getBankAccountNumber())) {
+            entity.setBankAccountNumber(request.getBankAccountNumber().trim());
+        }
         entity.setBankAccountType(request.getBankAccountType());
         entity.setIfscCode(normalizeUppercase(request.getIfscCode()));
         entity.setCancelledChequePath(normalizePath(request.getCancelledChequePath()));
@@ -222,6 +232,14 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
         }
         entity.setCreatedUserId(actorUserId);
         entity.setUpdatedUserId(actorUserId);
+    }
+
+    private void validateRequiredSensitiveIdentity(AgencyMasterRequest request) {
+        if (!StringUtils.hasText(request.getPanNumber())
+                || !StringUtils.hasText(request.getGstNumber())
+                || !StringUtils.hasText(request.getBankAccountNumber())) {
+            throw new BusinessValidationException("Agency identity information is required.");
+        }
     }
 
     private void applyAuditMetadataForUpdate(AgencyMaster entity) {

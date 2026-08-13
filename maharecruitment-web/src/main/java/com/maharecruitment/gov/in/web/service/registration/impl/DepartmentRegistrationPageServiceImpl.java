@@ -50,6 +50,7 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
     private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
     private static final Pattern GST_PATTERN = Pattern.compile(
             "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$");
+    private static final Pattern TAN_PATTERN = Pattern.compile("^[A-Z]{4}[0-9]{5}[A-Z]$");
 
     public DepartmentRegistrationPageServiceImpl(
             DepartmentMstService departmentService,
@@ -109,7 +110,7 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
             request.setBillDepartmentName(form.getBillDepartmentName());
             request.setGstNo(sensitiveIdentity.gst());
             request.setPanNo(sensitiveIdentity.pan());
-            request.setTanNo(form.getTanNo());
+            request.setTanNo(sensitiveIdentity.tan());
             request.setBillAddress(form.getBillAddress());
             request.setGstFilePath(gstPath);
             request.setPanFilePath(panPath);
@@ -161,21 +162,25 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
             Map<String, String> decrypted = credentialEncryptionService.decryptSensitivePayloads(
                     Map.of(
                             "panNumber", form.getPanNumberEncrypted(),
-                            "gstNumber", form.getGstNumberEncrypted()),
+                            "gstNumber", form.getGstNumberEncrypted(),
+                            "tanNumber", form.getTanNumberEncrypted()),
                     form.getEncryptionKeyId(),
                     form.getTimestamp(),
                     form.getNonce(),
                     "DEPARTMENT_REGISTRATION");
             String pan = decrypted.get("panNumber");
             String gst = decrypted.get("gstNumber");
+            String tan = decrypted.get("tanNumber");
 
             String panNormalized = pan.trim().toUpperCase(Locale.ROOT);
             String gstNormalized = gst.trim().toUpperCase(Locale.ROOT);
+            String tanNormalized = tan.trim().toUpperCase(Locale.ROOT);
             if (!PAN_PATTERN.matcher(panNormalized).matches()
-                    || !GST_PATTERN.matcher(gstNormalized).matches()) {
+                    || !GST_PATTERN.matcher(gstNormalized).matches()
+                    || !TAN_PATTERN.matcher(tanNormalized).matches()) {
                 throw sensitiveIdentityFailure();
             }
-            return new PlainSensitiveIdentity(gstNormalized, panNormalized);
+            return new PlainSensitiveIdentity(gstNormalized, panNormalized, tanNormalized);
         } catch (RuntimeException ex) {
             throw sensitiveIdentityFailure();
         }
@@ -281,6 +286,6 @@ public class DepartmentRegistrationPageServiceImpl implements DepartmentRegistra
     private record ResolvedSubDepartment(Long subDepartmentId, String subDepartmentName) {
     }
 
-    private record PlainSensitiveIdentity(String gst, String pan) {
+    private record PlainSensitiveIdentity(String gst, String pan, String tan) {
     }
 }

@@ -1,7 +1,11 @@
 package com.maharecruitment.gov.in.web.service.master.impl;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +30,19 @@ import com.maharecruitment.gov.in.web.dto.master.AgencyMasterForm;
 import com.maharecruitment.gov.in.web.service.agency.AgencyAccessService;
 import com.maharecruitment.gov.in.web.service.agency.AgencyUserContext;
 import com.maharecruitment.gov.in.web.service.master.AgencyMasterPageService;
+import com.maharecruitment.gov.in.web.service.security.CredentialEncryptionService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 
 @Service
 @Transactional
 public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
+
+    private static final String SENSITIVE_PURPOSE = "AGENCY_MASTER";
+    private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
+    private static final Pattern GST_PATTERN = Pattern.compile(
+            "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$");
+    private static final Pattern BANK_ACCOUNT_PATTERN = Pattern.compile("^[0-9]{9,30}$");
 	
 	@Autowired
 	AgencyMasterRepository agencyMasterRepository;
@@ -40,16 +51,19 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
     private final FileStorageService fileStorageService;
     private final AccountNotificationService accountNotificationService;
     private final AgencyAccessService agencyAccessService;
+    private final CredentialEncryptionService credentialEncryptionService;
 
     public AgencyMasterPageServiceImpl(
             AgencyMasterService agencyMasterService,
             FileStorageService fileStorageService,
             AccountNotificationService accountNotificationService,
-            AgencyAccessService agencyAccessService) {
+            AgencyAccessService agencyAccessService,
+            CredentialEncryptionService credentialEncryptionService) {
         this.agencyMasterService = agencyMasterService;
         this.fileStorageService = fileStorageService;
         this.accountNotificationService = accountNotificationService;
         this.agencyAccessService = agencyAccessService;
+        this.credentialEncryptionService = credentialEncryptionService;
     }
 
     @Override
@@ -82,7 +96,8 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
     private AgencyMasterResponse save(Long agencyId, AgencyMasterForm form) {
         List<String> newlyStoredFiles = new ArrayList<>();
         try {
-            AgencyMasterRequest request = toRequest(form, newlyStoredFiles);
+            SensitiveAgencyIdentity sensitiveIdentity = secureSensitiveIdentity(form, agencyId != null);
+            AgencyMasterRequest request = toRequest(form, sensitiveIdentity, newlyStoredFiles);
             AgencyMasterResponse response = agencyId == null
                     ? agencyMasterService.create(request)
                     : agencyMasterService.update(agencyId, request);
@@ -93,6 +108,7 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
                         response.getProvisionedUserEmail(),
                         response.getContactPersonName(),
                         response.getTemporaryPassword());
+                response.setTemporaryPassword(null);
             }
 
             return response;
@@ -102,7 +118,10 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
         }
     }
 
-    private AgencyMasterRequest toRequest(AgencyMasterForm form, List<String> newlyStoredFiles) {
+    private AgencyMasterRequest toRequest(
+            AgencyMasterForm form,
+            SensitiveAgencyIdentity sensitiveIdentity,
+            List<String> newlyStoredFiles) {
         AgencyMasterRequest request = new AgencyMasterRequest();
         request.setAgencyName(form.getAgencyName());
         request.setOfficialEmail(form.getOfficialEmail());
@@ -111,7 +130,7 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
         request.setOfficialAddress(form.getOfficialAddress());
         request.setPermanentAddress(form.getPermanentAddress());
         request.setEntityType(form.getEntityType());
-        request.setPanNumber(form.getPanNumber());
+        request.setPanNumber(sensitiveIdentity.panNumber());
         request.setPanCopyPath(resolveDocumentPath(
                 "agency-master/pan",
                 form.getPanCopyFile(),
@@ -125,7 +144,7 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
                 form.getExistingCertificateDocumentPath(),
                 "certificate document",
                 newlyStoredFiles));
-        request.setGstNumber(form.getGstNumber());
+        request.setGstNumber(sensitiveIdentity.gstNumber());
         request.setGstDocumentPath(resolveDocumentPath(
                 "agency-master/gst",
                 form.getGstDocumentFile(),
@@ -140,7 +159,7 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
                 .toList());
         request.setBankName(form.getBankName());
         request.setBankBranch(form.getBankBranch());
-        request.setBankAccountNumber(form.getBankAccountNumber());
+        request.setBankAccountNumber(sensitiveIdentity.bankAccountNumber());
         request.setBankAccountType(form.getBankAccountType());
         request.setIfscCode(form.getIfscCode());
         request.setCancelledChequePath(resolveDocumentPath(
@@ -150,6 +169,73 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
                 "cancelled cheque",
                 newlyStoredFiles));
         return request;
+    }
+
+    private SensitiveAgencyIdentity secureSensitiveIdentity(
+            AgencyMasterForm form,
+            boolean update) {
+        Map<String, String> encryptedValues = new LinkedHashMap<>();
+        addEncryptedValue(encryptedValues, "panNumber", form.getPanNumberEncrypted());
+        addEncryptedValue(encryptedValues, "gstNumber", form.getGstNumberEncrypted());
+        addEncryptedValue(encryptedValues, "bankAccountNumber", form.getBankAccountNumberEncrypted());
+
+        try {
+            if (encryptedValues.isEmpty()) {
+                if (!update) {
+                    throw sensitiveIdentityFailure();
+                }
+                return SensitiveAgencyIdentity.unchanged();
+            }
+
+            Map<String, String> decrypted = Map.of();
+            if (form.getTimestamp() == null) {
+                throw sensitiveIdentityFailure();
+            }
+            decrypted = credentialEncryptionService.decryptSensitivePayloads(
+                    encryptedValues,
+                    form.getEncryptionKeyId(),
+                    form.getTimestamp(),
+                    form.getNonce(),
+                    SENSITIVE_PURPOSE);
+
+            String panNumber = normalizeOptionalUppercase(decrypted.get("panNumber"));
+            String gstNumber = normalizeOptionalUppercase(decrypted.get("gstNumber"));
+            String bankAccountNumber = normalizeOptional(decrypted.get("bankAccountNumber"));
+
+            if ((!update && (panNumber == null || gstNumber == null || bankAccountNumber == null))
+                    || (panNumber != null && !PAN_PATTERN.matcher(panNumber).matches())
+                    || (gstNumber != null && !GST_PATTERN.matcher(gstNumber).matches())
+                    || (bankAccountNumber != null && !BANK_ACCOUNT_PATTERN.matcher(bankAccountNumber).matches())) {
+                throw sensitiveIdentityFailure();
+            }
+            return new SensitiveAgencyIdentity(panNumber, gstNumber, bankAccountNumber);
+        } catch (RuntimeException ex) {
+            throw sensitiveIdentityFailure();
+        } finally {
+            form.clearEncryptedSubmission();
+            form.setPanNumber(null);
+            form.setGstNumber(null);
+            form.setBankAccountNumber(null);
+        }
+    }
+
+    private void addEncryptedValue(Map<String, String> values, String fieldName, String encryptedValue) {
+        if (StringUtils.hasText(encryptedValue)) {
+            values.put(fieldName, encryptedValue.trim());
+        }
+    }
+
+    private String normalizeOptionalUppercase(String value) {
+        String normalized = normalizeOptional(value);
+        return normalized == null ? null : normalized.toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeOptional(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private IllegalArgumentException sensitiveIdentityFailure() {
+        return new IllegalArgumentException("Unable to process the submitted agency identity information.");
     }
 
     private AgencyEscalationMatrixRequest toEscalationRequest(AgencyEscalationMatrixForm form) {
@@ -212,5 +298,15 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
         }
 
         return response;
+    }
+
+    private record SensitiveAgencyIdentity(
+            String panNumber,
+            String gstNumber,
+            String bankAccountNumber) {
+
+        private static SensitiveAgencyIdentity unchanged() {
+            return new SensitiveAgencyIdentity(null, null, null);
+        }
     }
 }

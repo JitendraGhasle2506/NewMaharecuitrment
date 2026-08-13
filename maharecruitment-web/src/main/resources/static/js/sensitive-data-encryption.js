@@ -8,6 +8,7 @@
     var fieldIdByServerName = {
         gstNumberEncrypted: "gstNo",
         panNumberEncrypted: "panNo",
+        tanNumberEncrypted: "tanNo",
         isTermsConditionAccepted: "agreeCheckbox"
     };
 
@@ -79,10 +80,27 @@
             return;
         }
         var keyUrl = form.dataset.sensitiveKeyUrl || defaultKeyUrl;
-        var fields = Array.from(form.querySelectorAll("[data-sensitive-encrypted-name]"))
+        var sensitiveFields = Array.from(form.querySelectorAll("[data-sensitive-encrypted-name]"));
+        var fields = sensitiveFields
             .filter(function (field) { return field.value; });
         if (!fields.length) {
-            showError(form, "Sensitive identity information is required.");
+            if (form.dataset.sensitiveValuesRequired !== "false") {
+                showError(form, "Sensitive identity information is required.");
+                return;
+            }
+            form.dataset.sensitiveSubmitting = "true";
+            clearValidationErrors(form);
+            setSubmitting(form, true);
+            disableSensitiveFields(sensitiveFields);
+            if (form.dataset.preserveOnValidationError === "true") {
+                submitWithoutNavigation(form).catch(function (error) {
+                    showError(form, error && error.message
+                        ? error.message
+                        : "Unable to submit the form securely. Please refresh and try again.");
+                });
+                return;
+            }
+            HTMLFormElement.prototype.submit.call(form);
             return;
         }
         form.dataset.sensitiveSubmitting = "true";
@@ -121,17 +139,21 @@
                 ]).forEach(function (item) {
                     var input = document.createElement("input");
                     input.type = "hidden"; input.name = item.name; input.value = item.value;
+                    input.autocomplete = "off";
                     input.dataset.sensitiveGenerated = "true";
                     form.appendChild(input);
                 });
+                // Disabled controls are omitted from both FormData and native form
+                // serialization, ensuring clear-text values never enter the request.
+                disableSensitiveFields(sensitiveFields);
                 if (form.dataset.preserveOnValidationError === "true") {
                     return submitWithoutNavigation(form);
                 }
-                encryptedFields.forEach(function (item) { item.field.value = ""; });
                 HTMLFormElement.prototype.submit.call(form);
             });
         }).catch(function (error) {
             clearGeneratedFields(form);
+            restoreSensitiveFields(form);
             delete form.dataset.sensitiveSubmitting;
             setSubmitting(form, false);
             showError(form, error && error.message
@@ -168,6 +190,7 @@
             });
         }).finally(function () {
             clearGeneratedFields(form);
+            restoreSensitiveFields(form);
             delete form.dataset.sensitiveSubmitting;
             setSubmitting(form, false);
         });
@@ -213,6 +236,22 @@
     function clearGeneratedFields(form) {
         form.querySelectorAll('[data-sensitive-generated="true"]').forEach(function (field) {
             field.remove();
+        });
+    }
+
+    function disableSensitiveFields(fields) {
+        fields.forEach(function (field) {
+            if (!field.disabled) {
+                field.disabled = true;
+                field.dataset.sensitiveDisabledForSubmission = "true";
+            }
+        });
+    }
+
+    function restoreSensitiveFields(form) {
+        form.querySelectorAll('[data-sensitive-disabled-for-submission="true"]').forEach(function (field) {
+            field.disabled = false;
+            delete field.dataset.sensitiveDisabledForSubmission;
         });
     }
 

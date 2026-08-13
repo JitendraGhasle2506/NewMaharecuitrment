@@ -51,8 +51,12 @@
 
                     <form autocomplete="off" id="agencyMasterForm" th:object="${agencyForm}"
                         th:action="${isEdit} ? @{/master/agencies/{id}(id=${agencyId})} : @{/master/agencies}"
-                        method="post" enctype="multipart/form-data" onsubmit="return validateAgencyForm();">
+                        method="post" enctype="multipart/form-data" onsubmit="return validateAgencyForm();"
+                        data-encrypt-sensitive="true" data-sensitive-purpose="AGENCY_MASTER"
+                        th:attr="data-sensitive-key-url=@{/security/credential-encryption/public-key},
+                                 data-sensitive-values-required=${!isEdit}">
                         <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <div class="alert alert-danger d-none" data-sensitive-encryption-status></div>
 
                         <!-- ============== SECTION 1: AGENCY BASIC DETAILS ============== -->
                         <div class="section-header">1. Agency Basic Details</div>
@@ -166,14 +170,19 @@
                             <div class="col-md-6">
                                 <label class="form-label">PAN Number <span class="required-asterisk">*</span></label>
                                 <div class="input-group">
-                                    <input autocomplete="off" type="text" class="form-control text-uppercase" th:field="*{panNumber}"
-                                        id="panNumber" maxlength="10" placeholder="ABCDE1234F">
+                                    <input autocomplete="off" type="text" class="form-control text-uppercase"
+                                        id="panNumber" maxlength="10"
+                                        data-sensitive-encrypted-name="panNumberEncrypted" data-sensitive-field="panNumber"
+                                        th:required="${!isEdit}"
+                                        th:placeholder="${isEdit} ? 'Leave blank to keep existing PAN' : 'ABCDE1234F'">
                                     <input autocomplete="off" type="file" class="form-control" th:field="*{panCopyFile}" id="panCopyFile"
                                         accept=".pdf,.jpg,.jpeg,.png">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('panCopyFile')}"
                                     th:errors="*{panCopyFile}"></div>
                                 </div>
                                 <small class="text-muted">Format: ABCDE1234F. Upload PDF/Image (Max 5MB).</small>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('panNumber')}"
+                                    th:errors="*{panNumber}"></div>
                                 <div class="text-primary mt-1 d-flex align-items-center gap-2"
                                     th:if="${!#strings.isEmpty(agencyForm.existingPanCopyPath)}">
                                     <i class="bi bi-file-earmark-check"></i>
@@ -189,14 +198,19 @@
                             <div class="col-md-6">
                                 <label class="form-label">GST Number <span class="required-asterisk">*</span></label>
                                 <div class="input-group">
-                                    <input autocomplete="off" type="text" class="form-control text-uppercase" th:field="*{gstNumber}"
-                                        id="gstNumber" maxlength="15" placeholder="22AAAAA0000A1Z5">
+                                    <input autocomplete="off" type="text" class="form-control text-uppercase"
+                                        id="gstNumber" maxlength="15"
+                                        data-sensitive-encrypted-name="gstNumberEncrypted" data-sensitive-field="gstNumber"
+                                        th:required="${!isEdit}"
+                                        th:placeholder="${isEdit} ? 'Leave blank to keep existing GST' : '22AAAAA0000A1Z5'">
                                     <input autocomplete="off" type="file" class="form-control" th:field="*{gstDocumentFile}"
                                         id="gstDocumentFile" accept=".pdf,.jpg,.jpeg,.png">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('gstDocumentFile')}"
                                     th:errors="*{gstDocumentFile}"></div>
                                 </div>
                                 <small class="text-muted">15-digit GST number. Upload PDF/Image (Max 5MB).</small>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('gstNumber')}"
+                                    th:errors="*{gstNumber}"></div>
                                 <div class="text-primary mt-1 d-flex align-items-center gap-2"
                                     th:if="${!#strings.isEmpty(agencyForm.existingGstDocumentPath)}">
                                     <i class="bi bi-file-earmark-check"></i>
@@ -337,7 +351,11 @@
                             <div class="col-md-4">
                                 <label class="form-label">Account Number <span
                                         class="required-asterisk">*</span></label>
-                                <input autocomplete="off" type="text" class="form-control" th:field="*{bankAccountNumber}" maxlength="30">
+                                <input autocomplete="off" type="text" class="form-control"
+                                    id="bankAccountNumber" maxlength="30"
+                                    inputmode="numeric" data-sensitive-encrypted-name="bankAccountNumberEncrypted"
+                                    data-sensitive-field="bankAccountNumber" th:required="${!isEdit}"
+                                    th:placeholder="${isEdit} ? 'Leave blank to keep existing account number' : 'Enter account number'">
                                 <div class="text-danger small" th:if="${#fields.hasErrors('bankAccountNumber')}"
                                     th:errors="*{bankAccountNumber}"></div>
                             </div>
@@ -514,6 +532,7 @@
 
         updateRemoveButtons();
     </script>
+    <script th:src="@{/js/sensitive-data-encryption.js(v='20260813-agency')}"></script>
 </body>
 
 </html>

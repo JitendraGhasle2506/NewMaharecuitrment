@@ -91,6 +91,7 @@ public class AgencyMasterPageController {
 
         sanitizeEscalationEntries(form);
         validateEscalationEntries(form, bindingResult);
+        validateSensitiveSubmission(form, bindingResult, false);
         validateRequiredFiles(form, bindingResult, false);
 
         if (bindingResult.hasErrors()) {
@@ -122,6 +123,7 @@ public class AgencyMasterPageController {
             RedirectAttributes redirectAttributes) {
         sanitizeEscalationEntries(form);
         validateEscalationEntries(form, bindingResult);
+        validateSensitiveSubmission(form, bindingResult, true);
         validateRequiredFiles(form, bindingResult, true);
 
         if (bindingResult.hasErrors()) {
@@ -192,18 +194,15 @@ public class AgencyMasterPageController {
         form.setOfficialAddress(response.getOfficialAddress());
         form.setPermanentAddress(response.getPermanentAddress());
         form.setEntityType(response.getEntityType());
-        form.setPanNumber(response.getPanNumber());
         form.setExistingPanCopyPath(response.getPanCopyPath());
         form.setCertificateNumber(response.getCertificateNumber());
         form.setExistingCertificateDocumentPath(response.getCertificateDocumentPath());
-        form.setGstNumber(response.getGstNumber());
         form.setExistingGstDocumentPath(response.getGstDocumentPath());
         form.setContactPersonName(response.getContactPersonName());
         form.setContactPersonMobileNo(response.getContactPersonMobileNo());
         form.setMsmeRegistered(response.getMsmeRegistered());
         form.setBankName(response.getBankName());
         form.setBankBranch(response.getBankBranch());
-        form.setBankAccountNumber(response.getBankAccountNumber());
         form.setBankAccountType(response.getBankAccountType());
         form.setIfscCode(response.getIfscCode());
         form.setExistingCancelledChequePath(response.getCancelledChequePath());
@@ -282,6 +281,49 @@ public class AgencyMasterPageController {
         }
     }
 
+    private void validateSensitiveSubmission(
+            AgencyMasterForm form,
+            BindingResult bindingResult,
+            boolean editMode) {
+        boolean hasPan = isEncrypted(form.getPanNumberEncrypted());
+        boolean hasGst = isEncrypted(form.getGstNumberEncrypted());
+        boolean hasBankAccount = isEncrypted(form.getBankAccountNumberEncrypted());
+        boolean hasAnyEncryptedValue = hasPan || hasGst || hasBankAccount;
+
+        if (!editMode) {
+            rejectMissingEncryptedField(bindingResult, "panNumber", hasPan, "PAN number is required.");
+            rejectMissingEncryptedField(bindingResult, "gstNumber", hasGst, "GST number is required.");
+            rejectMissingEncryptedField(
+                    bindingResult,
+                    "bankAccountNumber",
+                    hasBankAccount,
+                    "Bank account number is required.");
+        }
+
+        if (hasAnyEncryptedValue
+                && (isBlank(form.getEncryptionKeyId())
+                        || form.getTimestamp() == null
+                        || isBlank(form.getNonce()))) {
+            bindingResult.reject(
+                    "agency.sensitivePayload",
+                    "Unable to process the submitted agency identity information.");
+        }
+    }
+
+    private void rejectMissingEncryptedField(
+            BindingResult bindingResult,
+            String fieldName,
+            boolean encrypted,
+            String message) {
+        if (!encrypted) {
+            bindingResult.rejectValue(fieldName, "agency." + fieldName, message);
+        }
+    }
+
+    private boolean isEncrypted(String value) {
+        return value != null && value.startsWith("ENC:v1:");
+    }
+
     private void validateEscalationEntries(AgencyMasterForm form, BindingResult bindingResult) {
         if (form.getEscalationMatrixEntries() == null || form.getEscalationMatrixEntries().isEmpty()) {
             bindingResult.rejectValue(
@@ -354,10 +396,8 @@ public class AgencyMasterPageController {
             RedirectAttributes redirectAttributes,
             String defaultMessage) {
         StringBuilder message = new StringBuilder(defaultMessage);
-        if (Boolean.TRUE.equals(response.getAgencyUserCreated()) && response.getTemporaryPassword() != null) {
-            message.append(".<br><strong>Agency User Created:</strong><br>")
-                    .append("Username: ").append(response.getProvisionedUserEmail())
-                    .append("<br>Password: ").append(response.getTemporaryPassword());
+        if (Boolean.TRUE.equals(response.getAgencyUserCreated())) {
+            message.append(". Agency user created. Login credentials have been sent to the official email address");
         }
         redirectAttributes.addFlashAttribute("successMessage", message.toString());
     }

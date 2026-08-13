@@ -68,8 +68,10 @@ class DepartmentRegistrationPageServiceSecurityTest {
         DepartmentRegistrationRequest request = captor.getValue();
         assertThat(request.getPanNo()).isEqualTo("ABCDE2546F");
         assertThat(request.getGstNo()).isEqualTo("27ABCDE1234F1Z5");
+        assertThat(request.getTanNo()).isEqualTo("ABCD12345E");
         assertThat(form.getPanNumberEncrypted()).isNull();
         assertThat(form.getGstNumberEncrypted()).isNull();
+        assertThat(form.getTanNumberEncrypted()).isNull();
     }
 
     @Test
@@ -200,7 +202,6 @@ class DepartmentRegistrationPageServiceSecurityTest {
         form.setSecondaryMobile("9876543211");
         form.setSecondaryEmail("secondary@example.test");
         form.setBillDepartmentName("Billing Department");
-        form.setTanNo("ABCD12345E");
         form.setBillAddress("Official billing address");
         form.setGstFile(pdf("gstFile", "gst.pdf"));
         form.setPanFile(pdf("panFile", "pan.pdf"));
@@ -211,6 +212,7 @@ class DepartmentRegistrationPageServiceSecurityTest {
         form.setNonce(nonce);
         form.setPanNumberEncrypted(encryptSensitive(transport, form, "panNumber", "ABCDE2546F"));
         form.setGstNumberEncrypted(encryptSensitive(transport, form, "gstNumber", "27ABCDE1234F1Z5"));
+        form.setTanNumberEncrypted(encryptSensitive(transport, form, "tanNumber", "ABCD12345E"));
         return form;
     }
 

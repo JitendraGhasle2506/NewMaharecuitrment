@@ -76,6 +76,10 @@ public class DepartmentRegistrationForm {
     @Size(max = 800, message = "Encrypted PAN number is invalid")
     private String panNumberEncrypted;
 
+    @NotBlank(message = "Encrypted TAN number is required")
+    @Size(max = 800, message = "Encrypted TAN number is invalid")
+    private String tanNumberEncrypted;
+
     @NotBlank(message = "Encryption key identifier is required")
     @Size(max = 100, message = "Encryption key identifier is invalid")
     private String encryptionKeyId;
@@ -87,8 +91,6 @@ public class DepartmentRegistrationForm {
     @Pattern(regexp = "^[A-Za-z0-9_-]{22,128}$", message = "Encrypted request nonce is invalid")
     private String nonce;
 
-    @NotBlank(message = "TAN number is required")
-    @Pattern(regexp = "^[A-Z]{4}[0-9]{5}[A-Z]$", message = "TAN number must be valid")
     private String tanNo;
 
     @NotBlank(message = "Billing address is required")
@@ -241,6 +243,14 @@ public class DepartmentRegistrationForm {
         this.panNumberEncrypted = panNumberEncrypted;
     }
 
+    public String getTanNumberEncrypted() {
+        return tanNumberEncrypted;
+    }
+
+    public void setTanNumberEncrypted(String tanNumberEncrypted) {
+        this.tanNumberEncrypted = tanNumberEncrypted;
+    }
+
     public String getEncryptionKeyId() {
         return encryptionKeyId;
     }
@@ -268,6 +278,7 @@ public class DepartmentRegistrationForm {
     public void clearEncryptedSubmission() {
         gstNumberEncrypted = null;
         panNumberEncrypted = null;
+        tanNumberEncrypted = null;
         encryptionKeyId = null;
         timestamp = null;
         nonce = null;
