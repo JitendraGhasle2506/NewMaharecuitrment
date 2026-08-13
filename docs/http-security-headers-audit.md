@@ -56,10 +56,11 @@ CDN and `'unsafe-inline'` allowances can then be removed.
 ## HSTS and reverse-proxy finding
 
 HSTS is correctly restricted to requests that the servlet container identifies
-as secure, so local HTTP does not receive HSTS. However,
-`server.forward-headers-strategy=none` is committed in `application.properties`,
-while `docs/security-transport.md` describes `framework`. UAT and production do
-not configure embedded TLS and appear to depend on external TLS termination.
+as secure, so local HTTP does not receive HSTS. UAT and production use
+`server.forward-headers-strategy=framework`, require HTTPS, and trust forwarding
+headers by default because those profiles depend on trusted TLS termination.
+The edge proxy must strip client-supplied forwarding headers before setting its
+authoritative `Forwarded` or `X-Forwarded-*` values.
 
 Before deployment, choose and test one of these models:
 
@@ -68,10 +69,13 @@ Before deployment, choose and test one of these models:
    authoritative forwarded protocol, and configure Spring's forwarded-header
    strategy through secured deployment configuration.
 
-Without that deployment alignment, application HSTS can be omitted behind TLS
-termination. This repository does not contain the edge configuration needed to
-verify that operational control safely, so it was reported rather than blindly
-changed.
+The bare context URL (for example `/maharecruitment` without the trailing slash)
+can be redirected by the servlet container before application filters execute.
+Scan `/maharecruitment/` or a concrete application route such as
+`/maharecruitment/login`. Configure the ingress itself to attach the same headers
+to any redirect or error that it generates outside the application context.
+`docs/nginx-security-headers.conf` provides a reference HTTPS virtual-host
+configuration, including the context-root redirect and invoice framing exception.
 
 ## Verification
 

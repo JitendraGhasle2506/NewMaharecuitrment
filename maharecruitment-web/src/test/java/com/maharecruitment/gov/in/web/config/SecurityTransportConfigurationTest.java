@@ -60,7 +60,7 @@ class SecurityTransportConfigurationTest {
     }
 
     @Test
-    void deployedProfilesAllowHttpOnlyWildFlyDeploymentWithoutCertificate() throws Exception {
+    void deployedProfilesRequireHttpsAndHonorTrustedTlsTermination() throws Exception {
         for (String fileName : List.of(
                 "application-uat.properties",
                 "application-prod.properties")) {
@@ -71,13 +71,16 @@ class SecurityTransportConfigurationTest {
                     .isEqualTo("${APP_SECURITY_COOKIE_SECURE:true}");
             assertThat(properties.getProperty("app.security.transport.require-https"))
                     .as(fileName)
-                    .isEqualTo("${APP_SECURITY_REQUIRE_HTTPS:false}");
+                    .isEqualTo("${APP_SECURITY_REQUIRE_HTTPS:true}");
             assertThat(properties.getProperty("app.security.transport.allow-loopback-http"))
                     .as(fileName)
                     .isEqualTo("false");
             assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers"))
                     .as(fileName)
-                    .isEqualTo("${APP_SECURITY_TRUST_FORWARDED_HEADERS:false}");
+                    .isEqualTo("${APP_SECURITY_TRUST_FORWARDED_HEADERS:true}");
+            assertThat(properties.getProperty("server.forward-headers-strategy"))
+                    .as(fileName)
+                    .isEqualTo("${SERVER_FORWARD_HEADERS_STRATEGY:framework}");
             assertThat(properties.getProperty("security.host-validation.enabled"))
                     .as(fileName)
                     .isEqualTo("${SECURITY_HOST_VALIDATION_ENABLED:false}");
