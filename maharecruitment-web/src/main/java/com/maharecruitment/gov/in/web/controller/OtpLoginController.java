@@ -2,6 +2,8 @@ package com.maharecruitment.gov.in.web.controller;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -15,6 +17,7 @@ import org.springframework.web.servlet.FlashMap;
 import org.springframework.web.servlet.support.RequestContextUtils;
 
 import com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler;
+import com.maharecruitment.gov.in.common.security.AuthenticationAuditService;
 import com.maharecruitment.gov.in.common.sms.exception.SmsGatewayException;
 import com.maharecruitment.gov.in.web.dto.login.OtpLoginForm;
 import com.maharecruitment.gov.in.web.dto.login.OtpLoginSendRequest;
@@ -38,6 +41,7 @@ import jakarta.validation.Valid;
 @Controller
 public class OtpLoginController {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(OtpLoginController.class);
     private static final String GENERIC_VERIFY_FAILURE = "OTP verification failed. Please try again.";
     private static final String GENERIC_SEND_ACCEPTED =
             "OTP request accepted. If the account details are valid, an OTP will be sent.";
@@ -54,14 +58,17 @@ public class OtpLoginController {
     private final OtpLoginService otpLoginService;
     private final MySimpleUrlAuthenticationSuccessHandler successHandler;
     private final TransportSecurityProperties transportSecurityProperties;
+    private final AuthenticationAuditService authenticationAuditService;
 
     public OtpLoginController(
             OtpLoginService otpLoginService,
             MySimpleUrlAuthenticationSuccessHandler successHandler,
-            TransportSecurityProperties transportSecurityProperties) {
+            TransportSecurityProperties transportSecurityProperties,
+            AuthenticationAuditService authenticationAuditService) {
         this.otpLoginService = otpLoginService;
         this.successHandler = successHandler;
         this.transportSecurityProperties = transportSecurityProperties;
+        this.authenticationAuditService = authenticationAuditService;
     }
 
     @PostMapping("/login/otp/send")
@@ -154,6 +161,7 @@ public class OtpLoginController {
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {
         if (bindingResult.hasErrors()) {
+            recordOtpLoginFailure(request, form.getIdentifier(), "INVALID_REQUEST");
             redirectWithFlash(
                     request,
                     response,
@@ -176,16 +184,19 @@ public class OtpLoginController {
             request.changeSessionId();
             successHandler.onAuthenticationSuccess(request, response, authentication);
         } catch (OtpVerificationException ex) {
+            String failureReason = ex instanceof OtpRateLimitException rateLimitException
+                    ? rateLimitException.getResponseCode()
+                    : OtpResponseCodes.forFailure(ex.getReason());
+            recordOtpLoginFailure(request, form.getIdentifier(), failureReason);
             redirectWithFlash(
                     request,
                     response,
                     OtpResponseCodes.messageFor(ex.getReason(), ex.getResult().remainingAttempts()),
                     form,
                     ex.getResult(),
-                    ex instanceof OtpRateLimitException rateLimitException
-                            ? rateLimitException.getResponseCode()
-                            : OtpResponseCodes.forFailure(ex.getReason()));
+                    failureReason);
         } catch (RuntimeException ex) {
+            recordOtpLoginFailure(request, form.getIdentifier(), "AUTHENTICATION_FAILED");
             redirectWithFlash(
                     request,
                     response,
@@ -193,6 +204,26 @@ public class OtpLoginController {
                     form,
                     null,
                     OtpResponseCodes.OTP_REQUEST_REJECTED);
+        }
+    }
+
+    private void recordOtpLoginFailure(
+            HttpServletRequest request,
+            String identifier,
+            String failureReason) {
+        try {
+            authenticationAuditService.recordLoginFailure(
+                    identifier,
+                    request.getRemoteAddr(),
+                    request.getHeader("User-Agent"),
+                    AuthenticationAuditService.METHOD_OTP,
+                    failureReason,
+                    AuthenticationAuditService.SOURCE_WEB);
+        } catch (RuntimeException auditException) {
+            LOGGER.error(
+                    "Unable to persist failed OTP login audit. errorType={}",
+                    auditException.getClass().getSimpleName(),
+                    auditException);
         }
     }
 

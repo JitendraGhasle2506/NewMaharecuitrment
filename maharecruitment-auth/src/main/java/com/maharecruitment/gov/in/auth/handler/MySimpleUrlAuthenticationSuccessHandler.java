@@ -27,6 +27,7 @@ import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.service.UserLoginTrackingService;
 import com.maharecruitment.gov.in.auth.util.AuthorityUtil;
+import com.maharecruitment.gov.in.common.security.AuthenticationAuditService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -40,12 +41,15 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
     private final UserAffiliationService userAffiliationService;
     private final UserLoginTrackingService userLoginTrackingService;
+    private final AuthenticationAuditService authenticationAuditService;
 
     public MySimpleUrlAuthenticationSuccessHandler(
             UserAffiliationService userAffiliationService,
-            UserLoginTrackingService userLoginTrackingService) {
+            UserLoginTrackingService userLoginTrackingService,
+            AuthenticationAuditService authenticationAuditService) {
         this.userAffiliationService = userAffiliationService;
         this.userLoginTrackingService = userLoginTrackingService;
+        this.authenticationAuditService = authenticationAuditService;
     }
 
     @Override
@@ -64,7 +68,7 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
                 securityContext
         );
 
-        boolean passwordChangeRequired = storeUserInSession(session, authentication);
+        boolean passwordChangeRequired = storeUserInSession(request, session, authentication);
         String homepageUrl = determineTargetUrl(authentication);
         session.setAttribute("homepageUrl", homepageUrl);
         String targetUrl = passwordChangeRequired
@@ -73,7 +77,7 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
         handle(request, response, targetUrl);
         clearAuthenticationAttributes(request);
 
-        logger.info("Authentication and SESSION_USER stored successfully. SessionId={}", session.getId());
+        logger.info("Authentication and SESSION_USER stored successfully.");
     }
 
     protected void handle(
@@ -109,7 +113,10 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
         }
     }
 
-    private boolean storeUserInSession(HttpSession session, Authentication authentication) {
+    private boolean storeUserInSession(
+            HttpServletRequest request,
+            HttpSession session,
+            Authentication authentication) {
         String email = authentication.getName();
         User user = userAffiliationService.loadUserByEmail(email);
         UserAffiliationView affiliation = userAffiliationService.getAffiliation(user);
@@ -145,11 +152,38 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
         session.setAttribute(
                 CommonConstant.PASSWORD_CHANGE_REQUIRED_SESSION_ATTRIBUTE,
                 passwordChangeRequired);
+        recordLoginAudit(request, session, user);
         logger.info(
                 "Login routing evaluated. userId={}, firstLogin={}, passwordChangeRequired={}",
                 user.getId(),
                 firstLogin,
                 passwordChangeRequired);
         return passwordChangeRequired;
+    }
+
+    private void recordLoginAudit(HttpServletRequest request, HttpSession session, User user) {
+        try {
+            authenticationAuditService.recordLogin(
+                    user.getId(),
+                    user.getEmail(),
+                    session.getId(),
+                    request.getRemoteAddr(),
+                    request.getHeader("User-Agent"),
+                    resolveAuthenticationMethod(request),
+                    AuthenticationAuditService.SOURCE_WEB);
+        } catch (RuntimeException ex) {
+            logger.error(
+                    "Unable to persist successful login audit. userId={}, errorType={}",
+                    user.getId(),
+                    ex.getClass().getSimpleName(),
+                    ex);
+        }
+    }
+
+    private String resolveAuthenticationMethod(HttpServletRequest request) {
+        String requestPath = request.getRequestURI();
+        return requestPath != null && requestPath.endsWith("/login/otp")
+                ? AuthenticationAuditService.METHOD_OTP
+                : AuthenticationAuditService.METHOD_PASSWORD;
     }
 }

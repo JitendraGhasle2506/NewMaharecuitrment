@@ -16,6 +16,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.validation.BeanPropertyBindingResult;
 
 import com.maharecruitment.gov.in.auth.handler.MySimpleUrlAuthenticationSuccessHandler;
+import com.maharecruitment.gov.in.common.security.AuthenticationAuditService;
 import com.maharecruitment.gov.in.web.dto.login.OtpLoginSendRequest;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.dto.verification.VerificationResponse;
@@ -32,7 +33,8 @@ class OtpLoginControllerTest {
     private final OtpLoginController controller = new OtpLoginController(
             otpLoginService,
             mock(MySimpleUrlAuthenticationSuccessHandler.class),
-            new TransportSecurityProperties());
+            new TransportSecurityProperties(),
+            mock(AuthenticationAuditService.class));
 
     @Test
     void disabledOtpChannelReturnsOkMessageWithoutSendingOtp() {

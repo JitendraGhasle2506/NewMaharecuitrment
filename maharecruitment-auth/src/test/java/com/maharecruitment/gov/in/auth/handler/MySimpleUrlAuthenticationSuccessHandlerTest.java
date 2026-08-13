@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
@@ -22,13 +23,16 @@ import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.service.UserAffiliationService;
 import com.maharecruitment.gov.in.auth.service.UserLoginTrackingService;
+import com.maharecruitment.gov.in.common.security.AuthenticationAuditService;
 
 class MySimpleUrlAuthenticationSuccessHandlerTest {
 
     private final UserAffiliationService affiliationService = mock(UserAffiliationService.class);
     private final UserLoginTrackingService loginTrackingService = mock(UserLoginTrackingService.class);
+    private final AuthenticationAuditService authenticationAuditService = mock(AuthenticationAuditService.class);
     private final MySimpleUrlAuthenticationSuccessHandler handler =
-            new MySimpleUrlAuthenticationSuccessHandler(affiliationService, loginTrackingService);
+            new MySimpleUrlAuthenticationSuccessHandler(
+                    affiliationService, loginTrackingService, authenticationAuditService);
 
     @AfterEach
     void clearSecurityContext() {
@@ -48,6 +52,14 @@ class MySimpleUrlAuthenticationSuccessHandlerTest {
         assertThat(request.getSession().getAttribute(
                 CommonConstant.PASSWORD_CHANGE_REQUIRED_SESSION_ATTRIBUTE)).isEqualTo(true);
         assertThat(request.getSession().getAttribute("homepageUrl")).isEqualTo("/employee/dashboard");
+        verify(authenticationAuditService).recordLogin(
+                eq(41L),
+                eq("first.login@example.com"),
+                eq(request.getSession().getId()),
+                eq("127.0.0.1"),
+                eq(null),
+                eq(AuthenticationAuditService.METHOD_PASSWORD),
+                eq(AuthenticationAuditService.SOURCE_WEB));
     }
 
     @Test

@@ -328,8 +328,9 @@ public class SecurityConfig {
 				 */
 
             .logout(logout -> logout
-            	    .logoutUrl("/logout")
-            	    .logoutSuccessHandler(logoutSuccessHandler)
+	            	    .logoutUrl("/logout")
+	            	    .addLogoutHandler(logoutSuccessHandler)
+	            	    .logoutSuccessHandler(logoutSuccessHandler)
             	    .invalidateHttpSession(true)
             	    .clearAuthentication(true)
             	    .deleteCookies("JSESSIONID")
