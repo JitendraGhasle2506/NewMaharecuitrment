@@ -110,11 +110,11 @@
                     <div class="task-panel">
                         <h4 class="task-panel-title"><i class="fas fa-calendar-alt text-primary me-2"></i> Select Month
                             &amp; Year</h4>
-                        <form th:action="@{/employee/tasks}" method="get"
+                        <form autocomplete="off" th:action="@{/employee/tasks}" method="get"
                             class="d-flex align-items-center gap-3 flex-wrap" id="monthYearForm">
                             <div class="d-flex align-items-center gap-2">
                                 <label class="fw-semibold text-muted mb-0">Month:</label>
-                                <select name="month" id="monthSelect" class="form-select form-select-sm"
+                                <select autocomplete="off" name="month" id="monthSelect" class="form-select form-select-sm"
                                     style="width:160px;">
                                     <option value="1" th:selected="${selectedMonth == 1}">January</option>
                                     <option value="2" th:selected="${selectedMonth == 2}">February</option>
@@ -132,7 +132,7 @@
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <label class="fw-semibold text-muted mb-0">Year:</label>
-                                <select name="year" id="yearSelect" class="form-select form-select-sm"
+                                <select autocomplete="off" name="year" id="yearSelect" class="form-select form-select-sm"
                                     style="width:110px;">
                                     <option value="2024" th:selected="${selectedYear == 2024}">2024</option>
                                     <option value="2025" th:selected="${selectedYear == 2025}">2025</option>
@@ -162,28 +162,28 @@
                         <h4 class="task-panel-title"><i class="fas fa-clipboard-list text-primary me-2"></i> Enter Tasks
                         </h4>
                         <!-- Hidden project select for JS row generation -->
-                        <select id="hiddenProjectSelect" style="display:none;">
+                        <select autocomplete="off" id="hiddenProjectSelect" style="display:none;">
                             <option value="">-- Select Project --</option>
                             <option th:each="proj : ${projectList}" th:value="${proj.projectName}"
                                 th:text="${proj.projectName}"></option>
                         </select>
-                        <form th:action="@{/employee/tasks/save}" th:object="${taskForm}" method="post" id="taskForm">
+                        <form autocomplete="off" th:action="@{/employee/tasks/save}" th:object="${taskForm}" method="post" id="taskForm">
                             <!-- Preserve selected month/year on redirect after save -->
-                            <input type="hidden" name="month" th:value="${selectedMonth}" />
-                            <input type="hidden" name="year" th:value="${selectedYear}" />
+                            <input autocomplete="off" type="hidden" name="month" th:value="${selectedMonth}" />
+                            <input autocomplete="off" type="hidden" name="year" th:value="${selectedYear}" />
 
 
                             <div class="row mb-3 align-items-end g-3">
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold text-secondary">Task From Date <span
                                             class="text-danger">*</span></label>
-                                    <input type="date" id="rangeFromDate" th:attr="min=${minDate},max=${maxDate}"
+                                    <input autocomplete="off" type="date" id="rangeFromDate" th:attr="min=${minDate},max=${maxDate}"
                                         class="form-control form-control-sm" required />
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold text-secondary">Task To Date <span
                                             class="text-danger">*</span></label>
-                                    <input type="date" id="rangeToDate" th:attr="min=${minDate},max=${maxDate}"
+                                    <input autocomplete="off" type="date" id="rangeToDate" th:attr="min=${minDate},max=${maxDate}"
                                         class="form-control form-control-sm" required />
                                 </div>
                                 <div class="col-md-3">
@@ -200,7 +200,7 @@
                                 <table class="table table-bordered table-hover align-middle" id="taskTable">
                                     <thead class="table-light text-center">
                                         <tr>
-                                            <th style="width: 50px;"><input type="checkbox" id="selectAllTasks"
+                                            <th style="width: 50px;"><input autocomplete="off" type="checkbox" id="selectAllTasks"
                                                     class="form-check-input" checked /></th>
                                             <th style="width: 55px;">#</th>
                                             <th>Project Name</th>
@@ -218,17 +218,17 @@
                                         <!-- Thymeleaf loops through existing items in form -->
                                         <tr th:each="task, stat : *{taskList}" class="task-row">
                                             <td class="text-center">
-                                                <input type="hidden" th:field="*{taskList[__${stat.index}__].taskId}" />
-                                                <input type="checkbox"
+                                                <input autocomplete="off" type="hidden" th:field="*{taskList[__${stat.index}__].taskId}" />
+                                                <input autocomplete="off" type="checkbox"
                                                     th:field="*{taskList[__${stat.index}__].selected}"
                                                     class="form-check-input select-row-cb" />
                                             </td>
                                             <td class="text-center fw-semibold text-muted" th:text="${stat.count}"></td>
                                             <td>
-                                                <input type="hidden"
+                                                <input autocomplete="off" type="hidden"
                                                     th:field="*{taskList[__${stat.index}__].projectName}"
                                                     class="project-hidden" />
-                                                <select class="form-select form-select-sm project-select"
+                                                <select autocomplete="off" class="form-select form-select-sm project-select"
                                                     onchange="syncProject(this)" required>
                                                     <option value="">-- Select Project --</option>
                                                     <option th:each="proj : ${projectList}"
@@ -236,38 +236,38 @@
                                                     </option>
                                                     <option value="Other">Other</option>
                                                 </select>
-                                                <input type="text"
+                                                <input autocomplete="off" type="text"
                                                     th:field="*{taskList[__${stat.index}__].otherProjectReason}"
                                                     class="form-control form-control-sm mt-1 other-project-input"
                                                     placeholder="Enter Other Project" style="display:none;" />
                                             </td>
-                                            <td><textarea th:field="*{taskList[__${stat.index}__].moduleName}"
+                                            <td><textarea autocomplete="off" th:field="*{taskList[__${stat.index}__].moduleName}"
                                                     class="form-control form-control-sm" rows="2"
                                                     style="min-width: 150px; resize: vertical;" required></textarea>
                                             </td>
-                                            <td><textarea th:field="*{taskList[__${stat.index}__].taskDescription}"
+                                            <td><textarea autocomplete="off" th:field="*{taskList[__${stat.index}__].taskDescription}"
                                                     class="form-control form-control-sm" rows="2"
                                                     style="min-width: 250px; resize: vertical;" required></textarea>
                                             </td>
                                             <td class="date-col">
-                                                <input type="date" th:field="*{taskList[__${stat.index}__].taskDate}"
+                                                <input autocomplete="off" type="date" th:field="*{taskList[__${stat.index}__].taskDate}"
                                                     th:attr="min=${minDate},max=${maxDate}"
                                                     class="form-control form-control-sm date-input mb-1" />
                                                 <div class="text-center"><span
                                                         class="badge day-label bg-secondary">-</span></div>
                                             </td>
-                                            <td><input type="text" th:field="*{taskList[__${stat.index}__].startTime}"
+                                            <td><input autocomplete="off" type="text" th:field="*{taskList[__${stat.index}__].startTime}"
                                                     class="form-control form-control-sm start-time-input time-input-small"
                                                     placeholder="HH:MM" required /></td>
-                                            <td><input type="text" th:field="*{taskList[__${stat.index}__].endTime}"
+                                            <td><input autocomplete="off" type="text" th:field="*{taskList[__${stat.index}__].endTime}"
                                                     class="form-control form-control-sm end-time-input time-input-small"
                                                     placeholder="HH:MM" required /></td>
-                                            <td><input type="number" step="0.01"
+                                            <td><input autocomplete="off" type="number" step="0.01"
                                                     th:field="*{taskList[__${stat.index}__].hours}"
                                                     class="form-control form-control-sm hours-input bg-light" readonly
                                                     tabindex="-1" required /></td>
                                             <td>
-                                                <select th:field="*{taskList[__${stat.index}__].payableStatus}" class="form-select form-select-sm" required>
+                                                <select autocomplete="off" th:field="*{taskList[__${stat.index}__].payableStatus}" class="form-select form-select-sm" required>
                                                     <option value="">-Select-</option>
                                                     <option value="Payable">Payable</option>
                                                     <option value="Non-Payable">Non-Payable</option>
@@ -308,8 +308,8 @@
                             <h4 class="task-panel-title border-0 mb-0 pb-0"><i
                                     class="fas fa-history text-secondary me-2"></i> Recent Tasks</h4>
 
-                            <form th:action="@{/employee/tasks}" method="get" class="d-flex align-items-center gap-2">
-                                <select name="month" class="form-select form-select-sm" style="width: auto;">
+                            <form autocomplete="off" th:action="@{/employee/tasks}" method="get" class="d-flex align-items-center gap-2">
+                                <select autocomplete="off" name="month" class="form-select form-select-sm" style="width: auto;">
                                     <option value="" th:selected="${selectedMonth == null}">Select Month</option>
                                     <option value="1" th:selected="${selectedMonth == 1}">January</option>
                                     <option value="2" th:selected="${selectedMonth == 2}">February</option>
@@ -324,7 +324,7 @@
                                     <option value="11" th:selected="${selectedMonth == 11}">November</option>
                                     <option value="12" th:selected="${selectedMonth == 12}">December</option>
                                 </select>
-                                <select name="year" class="form-select form-select-sm" style="width: auto;">
+                                <select autocomplete="off" name="year" class="form-select form-select-sm" style="width: auto;">
                                     <option value="" th:selected="${selectedYear == null}">Select Year</option>
                                     <option value="2024" th:selected="${selectedYear == 2024}">2024</option>
                                     <option value="2025" th:selected="${selectedYear == 2025}">2025</option>
@@ -520,29 +520,29 @@
 
                 return '' +
                     '<td class="text-center">' +
-                    '<input type="hidden" id="taskList' + idx + '.taskId" name="taskList[' + idx + '].taskId" value="" />' +
-                    '<input type="checkbox" id="taskList' + idx + '.selected" name="taskList[' + idx + '].selected" class="form-check-input select-row-cb" checked />' +
+                    '<input autocomplete="off" type="hidden" id="taskList' + idx + '.taskId" name="taskList[' + idx + '].taskId" value="" />' +
+                    '<input autocomplete="off" type="checkbox" id="taskList' + idx + '.selected" name="taskList[' + idx + '].selected" class="form-check-input select-row-cb" checked />' +
                     '</td>' +
                     '<td class="text-center fw-semibold text-muted">' + (idx + 1) + '</td>' +
                     '<td>' +
-                    '<input type="hidden" id="taskList' + idx + '.projectName" name="taskList[' + idx + '].projectName" class="project-hidden" />' +
-                    '<select class="form-select form-select-sm project-select" onchange="syncProject(this)" required>' +
+                    '<input autocomplete="off" type="hidden" id="taskList' + idx + '.projectName" name="taskList[' + idx + '].projectName" class="project-hidden" />' +
+                    '<select autocomplete="off" class="form-select form-select-sm project-select" onchange="syncProject(this)" required>' +
                     projectOptionsHtml +
                     '<option value="Other">Other</option>' +
                     '</select>' +
-                    '<input type="text" id="taskList' + idx + '.otherProjectReason" name="taskList[' + idx + '].otherProjectReason" class="form-control form-control-sm mt-1 other-project-input" placeholder="Enter Other Project" style="display:none;" />' +
+                    '<input autocomplete="off" type="text" id="taskList' + idx + '.otherProjectReason" name="taskList[' + idx + '].otherProjectReason" class="form-control form-control-sm mt-1 other-project-input" placeholder="Enter Other Project" style="display:none;" />' +
                     '</td>' +
-                    '<td><textarea id="taskList' + idx + '.moduleName" name="taskList[' + idx + '].moduleName" class="form-control form-control-sm" rows="2" style="min-width: 150px; resize: vertical;" required></textarea></td>' +
-                    '<td><textarea id="taskList' + idx + '.taskDescription" name="taskList[' + idx + '].taskDescription" class="form-control form-control-sm" rows="2" style="min-width: 250px; resize: vertical;" required></textarea></td>' +
+                    '<td><textarea autocomplete="off" id="taskList' + idx + '.moduleName" name="taskList[' + idx + '].moduleName" class="form-control form-control-sm" rows="2" style="min-width: 150px; resize: vertical;" required></textarea></td>' +
+                    '<td><textarea autocomplete="off" id="taskList' + idx + '.taskDescription" name="taskList[' + idx + '].taskDescription" class="form-control form-control-sm" rows="2" style="min-width: 250px; resize: vertical;" required></textarea></td>' +
                     '<td class="date-col">' +
-                    '<input type="date" id="taskList' + idx + '.taskDate" name="taskList[' + idx + '].taskDate" value="' + ds + '" min="' + minD + '" max="' + maxD + '" class="form-control form-control-sm date-input mb-1" required />' +
+                    '<input autocomplete="off" type="date" id="taskList' + idx + '.taskDate" name="taskList[' + idx + '].taskDate" value="' + ds + '" min="' + minD + '" max="' + maxD + '" class="form-control form-control-sm date-input mb-1" required />' +
                     '<div class="text-center"><span class="badge day-label bg-secondary">-</span></div>' +
                     '</td>' +
-                    '<td><input type="text" id="taskList' + idx + '.startTime" name="taskList[' + idx + '].startTime" class="form-control form-control-sm start-time-input time-input-small" placeholder="HH:MM" required/></td>' +
-                    '<td><input type="text" id="taskList' + idx + '.endTime" name="taskList[' + idx + '].endTime" class="form-control form-control-sm end-time-input time-input-small" placeholder="HH:MM" required/></td>' +
-                    '<td><input type="number" step="0.01" id="taskList' + idx + '.hours" name="taskList[' + idx + '].hours" class="form-control form-control-sm hours-input bg-light" readonly tabindex="-1" required/></td>' +
+                    '<td><input autocomplete="off" type="text" id="taskList' + idx + '.startTime" name="taskList[' + idx + '].startTime" class="form-control form-control-sm start-time-input time-input-small" placeholder="HH:MM" required/></td>' +
+                    '<td><input autocomplete="off" type="text" id="taskList' + idx + '.endTime" name="taskList[' + idx + '].endTime" class="form-control form-control-sm end-time-input time-input-small" placeholder="HH:MM" required/></td>' +
+                    '<td><input autocomplete="off" type="number" step="0.01" id="taskList' + idx + '.hours" name="taskList[' + idx + '].hours" class="form-control form-control-sm hours-input bg-light" readonly tabindex="-1" required/></td>' +
                     '<td>' +
-                    '<select id="taskList' + idx + '.payableStatus" name="taskList[' + idx + '].payableStatus" class="form-select form-select-sm" required>' +
+                    '<select autocomplete="off" id="taskList' + idx + '.payableStatus" name="taskList[' + idx + '].payableStatus" class="form-select form-select-sm" required>' +
                     '<option value="">-Select-</option>' +
                     '<option value="Payable">Payable</option>' +
                     '<option value="Non-Payable">Non-Payable</option>' +

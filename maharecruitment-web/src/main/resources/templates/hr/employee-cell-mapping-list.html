@@ -28,19 +28,19 @@
                         </div>
                     </div>
                     <div class="employee-location-toolbar">
-                        <form method="get" class="employee-location-filter-form"
+                        <form autocomplete="off" method="get" class="employee-location-filter-form"
                             th:action="@{/hr/employee-cell-mappings}">
-                            <input type="hidden" name="page" value="0">
+                            <input autocomplete="off" type="hidden" name="page" value="0">
                             <div class="employee-location-filter-field employee-location-filter-search">
                                 <label class="form-label mb-1">Search</label>
-                                <input type="text" name="search" class="form-control form-control-sm"
+                                <input autocomplete="off" type="text" name="search" class="form-control form-control-sm"
                                     th:value="${searchTerm}"
                                     placeholder="Employee, code, email, project, cell, wing"
                                     aria-label="Search employee cell mappings">
                             </div>
                             <div class="employee-location-filter-field">
                                 <label class="form-label mb-1">Type</label>
-                                <select name="type" class="form-select form-select-sm">
+                                <select autocomplete="off" name="type" class="form-select form-select-sm">
                                     <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
                                     <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
                                     <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
@@ -48,7 +48,7 @@
                             </div>
                             <div class="employee-location-filter-field">
                                 <label class="form-label mb-1">Page Size</label>
-                                <select name="size" class="form-select form-select-sm">
+                                <select autocomplete="off" name="size" class="form-select form-select-sm">
                                     <option value="10" th:selected="${pageSize == 10}">10 per page</option>
                                     <option value="25" th:selected="${pageSize == 25}">25 per page</option>
                                     <option value="50" th:selected="${pageSize == 50}">50 per page</option>
@@ -76,21 +76,21 @@
                         Showing 1 to 10 of 10 employees
                     </div>
 
-                    <form id="employeeCellBulkMappingForm" method="post" th:object="${bulkMappingForm}"
+                    <form autocomplete="off" id="employeeCellBulkMappingForm" method="post" th:object="${bulkMappingForm}"
                         th:action="@{/hr/employee-cell-mappings/bulk}">
-                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
+                        <input autocomplete="off" type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
                             th:value="${_csrf.token}">
-                        <input type="hidden" name="type" th:value="${currentType}">
-                        <input type="hidden" name="search" th:value="${searchTerm}">
-                        <input type="hidden" name="page" th:value="${employeePage.number}">
-                        <input type="hidden" name="size" th:value="${employeePage.size}">
+                        <input autocomplete="off" type="hidden" name="type" th:value="${currentType}">
+                        <input autocomplete="off" type="hidden" name="search" th:value="${searchTerm}">
+                        <input autocomplete="off" type="hidden" name="page" th:value="${employeePage.number}">
+                        <input autocomplete="off" type="hidden" name="size" th:value="${employeePage.size}">
 
                         <div class="employee-cell-bulk-panel">
                             <div class="employee-cell-bulk-cell">
                                 <label class="form-label mb-1" for="bulkEmployeeCellPicker">
                                     Target Cell <span class="text-danger">*</span>
                                 </label>
-                                <select id="bulkEmployeeCellPicker" name="cellId"
+                                <select autocomplete="off" id="bulkEmployeeCellPicker" name="cellId"
                                     class="form-select form-select-sm" required>
                                     <option value="">Select target cell</option>
                                     <option th:each="cell : ${availableCells}"
@@ -122,7 +122,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th class="ps-4 employee-cell-selection-col">
-                                        <input type="checkbox" id="employeeCellSelectAll"
+                                        <input autocomplete="off" type="checkbox" id="employeeCellSelectAll"
                                             class="form-check-input" aria-label="Select all employees on this page">
                                     </th>
                                     <th>Employee</th>
@@ -136,7 +136,7 @@
                             <tbody>
                                 <tr th:each="employee : ${employees}">
                                     <td class="ps-4">
-                                        <input type="checkbox" class="form-check-input employee-cell-row-check"
+                                        <input autocomplete="off" type="checkbox" class="form-check-input employee-cell-row-check"
                                             name="employeeIds"
                                             th:value="${employee.employeeId}"
                                             th:checked="${#lists.contains(bulkMappingForm.employeeIds, employee.employeeId)}"

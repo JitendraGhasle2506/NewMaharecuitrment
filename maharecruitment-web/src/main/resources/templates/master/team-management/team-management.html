@@ -12,7 +12,7 @@
 <body>
     <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Cell and Team Mapping', ~{::section})}">
         <section class="team-management-page tm-cell-team-page">
-            <select id="tmCellSource" class="d-none" aria-hidden="true" tabindex="-1">
+            <select autocomplete="off" id="tmCellSource" class="d-none" aria-hidden="true" tabindex="-1">
                 <option th:each="cell : ${cellOptions}"
                         th:value="${cell.id}"
                         th:data-cell="${cell.label}"
@@ -29,7 +29,7 @@
                 <div class="tm-head-actions">
                     <div class="input-group input-group-sm tm-search">
                         <span class="input-group-text"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span>
-                        <input id="tmSearchInput" type="search" class="form-control"
+                        <input autocomplete="off" id="tmSearchInput" type="search" class="form-control"
                                placeholder="Search employee, team, cell">
                     </div>
                     <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/wings}">Wing Master</a>
@@ -80,8 +80,8 @@
                         </div>
 
                         <div class="tm-editor-grid">
-                            <form id="tmMappingForm" class="tm-panel tm-form" novalidate>
-                                <input type="hidden" id="tmEmployeeId">
+                            <form autocomplete="off" id="tmMappingForm" class="tm-panel tm-form" novalidate>
+                                <input autocomplete="off" type="hidden" id="tmEmployeeId">
                                 <div class="tm-panel-header">
                                     <div>
                                         <h2 id="tmMappingFormTitle">Map Employee</h2>
@@ -94,14 +94,14 @@
                                 </div>
 
                                 <label class="form-label" for="tmEmployeeSelect">Employee</label>
-                                <select id="tmEmployeeSelect" class="form-select form-select-sm" required
+                                <select autocomplete="off" id="tmEmployeeSelect" class="form-select form-select-sm" required
                                         aria-describedby="tmEmployeeFeedback">
                                     <option value="">Select Employee</option>
                                 </select>
                                 <div id="tmEmployeeFeedback" class="invalid-feedback">Employee is required.</div>
 
                                 <label class="form-label" for="tmTeamSelect">Team</label>
-                                <select id="tmTeamSelect" class="form-select form-select-sm" required
+                                <select autocomplete="off" id="tmTeamSelect" class="form-select form-select-sm" required
                                         aria-describedby="tmTeamFeedback">
                                     <option value="">Select Team</option>
                                 </select>

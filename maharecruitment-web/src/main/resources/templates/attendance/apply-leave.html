@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -183,8 +183,8 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
 
-                        <form th:action="@{/employee/submitLeave}" th:object="${leaveApplication}" method="post">
-                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <form autocomplete="off" th:action="@{/employee/submitLeave}" th:object="${leaveApplication}" method="post">
+                            <input autocomplete="off" type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                             
                             <div class="row g-4">
                                 <!-- Leave Type -->
@@ -192,7 +192,7 @@
                                     <label for="leaveType" class="form-label">Leave Type <span class="required-star">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-tag"></i></span>
-                                        <select class="form-select" th:field="*{leaveType}" id="leaveType" required>
+                                        <select autocomplete="off" class="form-select" th:field="*{leaveType}" id="leaveType" required>
                                             <option value="">- Select Leave Type -</option>
                                             <option th:each="leave : ${leaveTypes}" th:value="${leave.leaveCode}" th:text="${leave.leaveName}"></option>
                                         </select>
@@ -206,7 +206,7 @@
                                     <label for="leaveCategory" class="form-label">Leave Category <span class="required-star">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-layer-group"></i></span>
-                                        <select class="form-select" th:field="*{leaveCategory}" id="leaveCategory" required>
+                                        <select autocomplete="off" class="form-select" th:field="*{leaveCategory}" id="leaveCategory" required>
                                             <option value="">- Select Category -</option>
                                             <option value="Full Day">Full Day</option>
                                             <option value="First Half">First Half</option>
@@ -256,7 +256,7 @@
                                     <label for="description" class="form-label">Reason / Description</label>
                                     <div class="input-group">
                                         <span class="input-group-text pt-2 align-items-start"><i class="fa fa-comment-dots mt-1"></i></span>
-                                        <textarea class="form-control" th:field="*{description}" id="description" 
+                                        <textarea autocomplete="off" class="form-control" th:field="*{description}" id="description" 
                                                   rows="4" placeholder="Briefly describe the reason for your leave..."></textarea>
                                     </div>
                                     <div class="text-danger small mt-1" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>

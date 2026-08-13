@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -141,11 +141,11 @@
                             <p>Administrative report showing only auditor-approved department payment records, prepared in a formal register-style layout for admin review.</p>
                         </div>
 
-                        <form class="report-filter-card" method="get" th:action="@{/admin/reports/payments}" th:object="${reportFilter}">
+                        <form autocomplete="off" class="report-filter-card" method="get" th:action="@{/admin/reports/payments}" th:object="${reportFilter}">
                             <div class="row g-3 align-items-end">
                                 <div class="col-lg-3 col-md-6">
                                     <label class="form-label">Department</label>
-                                    <select class="form-select" th:field="*{departmentRegistrationId}">
+                                    <select autocomplete="off" class="form-select" th:field="*{departmentRegistrationId}">
                                         <option value="">All Departments</option>
                                         <option th:each="department : ${departmentOptions}"
                                             th:value="${department.departmentRegistrationId}"
@@ -155,7 +155,7 @@
                                 </div>
                                 <div class="col-lg-2 col-md-6">
                                     <label class="form-label">Financial Year</label>
-                                    <select class="form-select" th:field="*{financialYear}">
+                                    <select autocomplete="off" class="form-select" th:field="*{financialYear}">
                                         <option value="">All Financial Years</option>
                                         <option th:each="financialYear : ${financialYearOptions}"
                                             th:value="${financialYear}"
@@ -165,15 +165,15 @@
                                 </div>
                                 <div class="col-lg-2 col-md-6">
                                     <label class="form-label">Approved From</label>
-                                    <input type="date" class="form-control" th:field="*{fromDate}">
+                                    <input autocomplete="off" type="date" class="form-control" th:field="*{fromDate}">
                                 </div>
                                 <div class="col-lg-2 col-md-6">
                                     <label class="form-label">Approved To</label>
-                                    <input type="date" class="form-control" th:field="*{toDate}">
+                                    <input autocomplete="off" type="date" class="form-control" th:field="*{toDate}">
                                 </div>
                                 <div class="col-lg-3 col-md-12">
                                     <label class="form-label">Search</label>
-                                    <input type="text" class="form-control" th:field="*{searchTerm}"
+                                    <input autocomplete="off" type="text" class="form-control" th:field="*{searchTerm}"
                                         placeholder="Request ID, project, receipt, invoice">
                                 </div>
                                 <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">

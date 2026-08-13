@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -146,13 +146,13 @@
                             <p class="mb-0 text-muted small">Please submit your tour application at least 2 days in advance. All tours require HOD approval.</p>
                         </div>
 
-                        <form th:action="@{/employee/submitTour}" th:object="${tourApplication}" method="post" id="tourForm">
+                        <form autocomplete="off" th:action="@{/employee/submitTour}" th:object="${tourApplication}" method="post" id="tourForm">
                             <div class="row g-4">
                                 <div class="col-md-6">
                                     <label class="form-label">Tour Category <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-tags"></i></span>
-                                        <select class="form-select" th:field="*{tourCategory}" id="tourCategory" required>
+                                        <select autocomplete="off" class="form-select" th:field="*{tourCategory}" id="tourCategory" required>
                                             <option value="">- Select -</option>
                                             <option value="Full Day">Full Day</option>
                                             <option value="Half Day">Half Day</option>
@@ -164,7 +164,7 @@
                                     <label class="form-label">Time Period <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-clock"></i></span>
-                                        <select class="form-select" th:field="*{timePeriod}" id="timePeriod">
+                                        <select autocomplete="off" class="form-select" th:field="*{timePeriod}" id="timePeriod">
                                             <option value="">- Select -</option>
                                             <option value="Forenoon">Forenoon</option>
                                             <option value="Afternoon">Afternoon</option>
@@ -176,7 +176,7 @@
                                     <label class="form-label">Application Date</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-calendar-check"></i></span>
-                                        <input type="text" class="form-control bg-light" th:value="${#temporals.format(#temporals.createNow(), 'dd-MM-yyyy')}" readonly>
+                                        <input autocomplete="off" type="text" class="form-control bg-light" th:value="${#temporals.format(#temporals.createNow(), 'dd-MM-yyyy')}" readonly>
                                     </div>
                                 </div>
 
@@ -184,7 +184,7 @@
                                     <label class="form-label" id="startDateLabel">Start Date <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
-                                        <input type="date" class="form-control" th:field="*{startDate}" required id="startDate">
+                                        <input autocomplete="off" type="date" class="form-control" th:field="*{startDate}" required id="startDate">
                                     </div>
                                 </div>
 
@@ -192,7 +192,7 @@
                                     <label class="form-label">End Date <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
-                                        <input type="date" class="form-control" th:field="*{endDate}" required id="endDate">
+                                        <input autocomplete="off" type="date" class="form-control" th:field="*{endDate}" required id="endDate">
                                     </div>
                                 </div>
 
@@ -200,7 +200,7 @@
                                     <label class="form-label">Description / Purpose <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text" style="align-items: flex-start; padding-top: 12px;"><i class="fa fa-align-left"></i></span>
-                                        <textarea class="form-control" th:field="*{description}" rows="3" placeholder="Enter tour details and purpose..." required></textarea>
+                                        <textarea autocomplete="off" class="form-control" th:field="*{description}" rows="3" placeholder="Enter tour details and purpose..." required></textarea>
                                     </div>
                                 </div>
 

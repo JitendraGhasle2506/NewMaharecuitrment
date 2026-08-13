@@ -98,11 +98,11 @@
                     <div th:if="${warningMessage}" class="alert alert-warning" th:text="${warningMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-                    <form method="post" enctype="multipart/form-data" th:action="@{/hr/employees/import}"
+                    <form autocomplete="off" method="post" enctype="multipart/form-data" th:action="@{/hr/employees/import}"
                         class="employee-import-upload mb-4">
                         <div>
                             <label for="file" class="form-label fw-semibold">Upload Employee CSV</label>
-                            <input id="file" type="file" name="file" class="form-control" accept=".csv,text/csv" required>
+                            <input autocomplete="off" id="file" type="file" name="file" class="form-control" accept=".csv,text/csv" required>
                             <div class="form-text">
                                 Maximum 3,000 employee rows per CSV file. For multiple location IDs, use pipe format
                                 like <code>1|2|3</code>.

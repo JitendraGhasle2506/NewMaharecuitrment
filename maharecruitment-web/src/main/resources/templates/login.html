@@ -97,30 +97,30 @@
 
                         <div class="login-mode-switch" role="radiogroup" aria-label="Login method">
                             <label class="login-mode-option">
-                                <input type="radio" name="loginMode" value="otp"
+                                <input autocomplete="off" type="radio" name="loginMode" value="otp"
                                     th:disabled="${otpLoginEnabled != true}"
                                     th:checked="${otpLoginEnabled == true and (param.loginMode == null or param.loginMode[0] != 'password')}">
                                 <span>OTP Login</span>
                             </label>
                             <label class="login-mode-option">
-                                <input type="radio" name="loginMode" value="password"
+                                <input autocomplete="off" type="radio" name="loginMode" value="password"
                                     th:checked="${otpLoginEnabled != true or (param.loginMode != null and param.loginMode[0] == 'password')}">
                                 <span>Password Login</span>
                             </label>
                         </div>
 
-                        <form id="otpLoginForm" method="post" th:action="@{/login/otp}" class="form-horizontal login-mode-panel otp-login-form"
+                        <form autocomplete="off" id="otpLoginForm" method="post" th:action="@{/login/otp}" class="form-horizontal login-mode-panel otp-login-form"
                             th:attr="data-otp-send-url=@{/login/otp/send},data-csrf-token=${_csrf.token},data-login-mode=otp,data-otp-expiry-seconds=${otpExpirySecondsRemaining != null ? otpExpirySecondsRemaining : otpExpirySeconds},data-otp-resend-cooldown-seconds=${otpResendCooldownSeconds},data-otp-sent=${otpErrorMessage != null},data-otp-error-code=${otpErrorCode},data-email-otp-enabled=${otpEmailEnabled},data-sms-otp-enabled=${otpSmsEnabled}">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                            <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                             <div class="form-group mb-3">
                                 <label for="otpIdentifier" class="control-label">Email / Mobile</label>
-                                <input type="text" id="otpIdentifier" name="identifier" class="form-control"
+                                <input autocomplete="off" type="text" id="otpIdentifier" name="identifier" class="form-control"
                                     placeholder="Enter registered email or mobile number"
                                     th:value="${otpIdentifier}" minlength="3" maxlength="100" oninput="this.value=this.value.replace(/\s/g, '');" required />
                             </div>
                             <div class="form-group mb-3">
                                 <label for="otpChannelDisplay" class="control-label">OTP Delivery</label>
-                                <input type="hidden" id="otpChannel" name="channel" th:value="${otpChannel}" />
+                                <input autocomplete="off" type="hidden" id="otpChannel" name="channel" th:value="${otpChannel}" />
                                 <div id="otpChannelDisplay" class="otp-channel-display" aria-live="polite">
                                     Enter Email / Mobile
                                 </div>
@@ -135,7 +135,7 @@
                             </div>
                             <div id="loginOtpSection" class="form-group mb-3 otp-entry-section">
                                 <label for="loginOtp" class="control-label">OTP</label>
-                                <input type="text" id="loginOtp" name="otp" class="form-control"
+                                <input autocomplete="off" type="text" id="loginOtp" name="otp" class="form-control"
                                     placeholder="Enter 6 digit OTP" inputmode="numeric" minlength="6" maxlength="6"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '');" required disabled />
                             </div>
@@ -150,7 +150,7 @@
                                 OTP verification failed. Please try again.
                             </div>
                             <div th:if="${otpCaptchaRequired == true}" id="loginOtpCaptchaSection" class="form-group mb-3 otp-captcha-section is-visible">
-                                <input type="hidden" name="captchaId" th:value="${otpCaptchaId}" />
+                                <input autocomplete="off" type="hidden" name="captchaId" th:value="${otpCaptchaId}" />
                                 <label for="loginOtpCaptchaAnswer" class="control-label" th:text="${otpCaptchaQuestion}">Captcha</label>
                                 <input type="text" id="loginOtpCaptchaAnswer" name="captchaAnswer" class="form-control"
                                     inputmode="numeric" maxlength="3" autocomplete="off"
@@ -165,21 +165,21 @@
                             </div>
                         </form>
 
-                        <form id="loginForm" method="post" th:action="@{/doLogin}" class="form-horizontal login-mode-panel is-hidden"
+                        <form autocomplete="off" id="loginForm" method="post" th:action="@{/doLogin}" class="form-horizontal login-mode-panel is-hidden"
                             data-login-mode="password"
                             th:attr="data-credential-key-url=@{/security/credential-encryption/public-key}">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                            <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                             <input type="hidden" id="encryptedPassword" name="password" autocomplete="off" />
                             <div class="form-group mb-3">
                                 <label for="username" class="control-label">Email / Mobile</label>
-                                <input type="text" id="username" name="username" class="form-control"
+                                <input autocomplete="off" type="text" id="username" name="username" class="form-control"
                                     placeholder="Enter registered email or mobile number"
                                     minlength="3" maxlength="100" oninput="this.value=this.value.replace(/\s/g, '');" required />
                             </div>
                             <div class="form-group mb-3">
                                 <label for="password" class="control-label">Password</label>
                                 <div class="input-group">
-                                    <input type="password" id="password" class="form-control"
+                                    <input autocomplete="off" type="password" id="password" class="form-control"
                                         placeholder="Enter password"
                                         minlength="8" maxlength="20"
                                         pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,20}"

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -24,10 +24,10 @@
                         <a class="btn btn-outline-primary btn-sm" th:href="@{/admin/submenus}">Submenus</a>
                     </div>
 
-                    <form class="row g-2 align-items-center mb-3" method="get" th:action="@{/admin/submenus}">
-                        <input type="hidden" name="size" th:value="${pageSize}">
+                    <form autocomplete="off" class="row g-2 align-items-center mb-3" method="get" th:action="@{/admin/submenus}">
+                        <input autocomplete="off" type="hidden" name="size" th:value="${pageSize}">
                         <div class="col-md-6 col-lg-5">
-                            <input type="search"
+                            <input autocomplete="off" type="search"
                                 class="form-control"
                                 name="search"
                                 th:value="${searchTerm}"
@@ -79,9 +79,9 @@
                                     <td class="text-center">
                                         <a class="btn btn-outline-primary btn-sm"
                                             th:href="@{/admin/submenus/{id}/edit(id=${subMenu.subMenuId})}">Edit</a>
-                                        <form class="d-inline"
+                                        <form autocomplete="off" class="d-inline"
                                             th:action="@{/admin/submenus/{id}/delete(id=${subMenu.subMenuId})}" method="post">
-                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                             <button type="submit" class="btn btn-outline-danger btn-sm"
                                                 onclick="return confirm('Delete this submenu?')">Delete</button>
                                         </form>

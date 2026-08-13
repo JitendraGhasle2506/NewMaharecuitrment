@@ -27,19 +27,19 @@
                         </div>
                     </div>
                     <div class="employee-location-toolbar">
-                        <form method="get" class="employee-location-filter-form"
+                        <form autocomplete="off" method="get" class="employee-location-filter-form"
                             th:action="@{/hr/employee-location-mappings}">
-                            <input type="hidden" name="page" value="0">
+                            <input autocomplete="off" type="hidden" name="page" value="0">
                             <div class="employee-location-filter-field employee-location-filter-search">
                                 <label class="form-label mb-1">Search</label>
-                                <input type="text" name="search" class="form-control form-control-sm"
+                                <input autocomplete="off" type="text" name="search" class="form-control form-control-sm"
                                     th:value="${searchTerm}"
                                     placeholder="Employee, code, email, project, location"
                                     aria-label="Search employee location mappings">
                             </div>
                             <div class="employee-location-filter-field">
                                 <label class="form-label mb-1">Type</label>
-                                <select name="type" class="form-select form-select-sm">
+                                <select autocomplete="off" name="type" class="form-select form-select-sm">
                                     <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
                                     <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
                                     <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
@@ -47,7 +47,7 @@
                             </div>
                             <div class="employee-location-filter-field">
                                 <label class="form-label mb-1">Page Size</label>
-                                <select name="size" class="form-select form-select-sm">
+                                <select autocomplete="off" name="size" class="form-select form-select-sm">
                                     <option value="10" th:selected="${pageSize == 10}">10 per page</option>
                                     <option value="25" th:selected="${pageSize == 25}">25 per page</option>
                                     <option value="50" th:selected="${pageSize == 50}">50 per page</option>

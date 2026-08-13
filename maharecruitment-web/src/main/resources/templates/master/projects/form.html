@@ -28,29 +28,29 @@
 
                     <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
-                    <form th:object="${projectForm}"
+                    <form autocomplete="off" th:object="${projectForm}"
                         th:action="${isEdit} ? @{/master/projects/{id}(id=${projectId})} : @{/master/projects}"
                         th:attr="data-subdepartments-url=@{/master/projects/sub-departments}"
                         method="post"
                         class="row g-3">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <input type="hidden" th:field="*{projectType}">
+                        <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input autocomplete="off" type="hidden" th:field="*{projectType}">
 
                         <div class="col-md-6">
                             <label class="form-label">Project Name <span class="text-danger">*</span></label>
-                            <input type="text" th:field="*{projectName}" class="form-control" maxlength="100">
+                            <input autocomplete="off" type="text" th:field="*{projectName}" class="form-control" maxlength="100">
                             <div class="text-danger small" th:if="${#fields.hasErrors('projectName')}" th:errors="*{projectName}"></div>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Project Code <span class="text-danger">*</span></label>
-                            <input type="text" th:field="*{projectCode}" class="form-control text-uppercase" maxlength="30">
+                            <input autocomplete="off" type="text" th:field="*{projectCode}" class="form-control text-uppercase" maxlength="30">
                             <div class="text-danger small" th:if="${#fields.hasErrors('projectCode')}" th:errors="*{projectCode}"></div>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Project Scope <span class="text-danger">*</span></label>
-                            <select class="form-select" th:field="*{projectScopeType}">
+                            <select autocomplete="off" class="form-select" th:field="*{projectScopeType}">
                                 <option value="">Select Project Scope</option>
                                 <option th:each="scopeType : ${projectScopeTypes}"
                                     th:value="${scopeType}"
@@ -61,7 +61,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label" for="departmentId">Department <span class="text-danger">*</span></label>
-                            <select class="form-select" id="departmentId" th:field="*{departmentId}">
+                            <select autocomplete="off" class="form-select" id="departmentId" th:field="*{departmentId}">
                                 <option value="">Select Department</option>
                                 <option th:each="department : ${availableDepartments}"
                                     th:value="${department.departmentId}"
@@ -72,7 +72,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label" for="subDepartmentId">Sub Department</label>
-                            <select class="form-select" id="subDepartmentId" th:field="*{subDepartmentId}">
+                            <select autocomplete="off" class="form-select" id="subDepartmentId" th:field="*{subDepartmentId}">
                                 <option value="">Select Sub Department (optional)</option>
                                 <option th:each="subDepartment : ${availableSubDepartments}"
                                     th:value="${subDepartment.subDeptId}"
@@ -82,7 +82,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Cell <span class="text-danger">*</span></label>
-                            <select class="form-select" th:field="*{cellId}">
+                            <select autocomplete="off" class="form-select" th:field="*{cellId}">
                                 <option value="">Select Cell</option>
                                 <option th:each="cell : ${availableCells}"
                                     th:value="${cell.cellId}"
@@ -93,7 +93,7 @@
 
                         <div class="col-md-12">
                             <label class="form-label">Project Description</label>
-                            <textarea th:field="*{projectDesc}" class="form-control" maxlength="100" rows="3"></textarea>
+                            <textarea autocomplete="off" th:field="*{projectDesc}" class="form-control" maxlength="100" rows="3"></textarea>
                             <div class="text-danger small" th:if="${#fields.hasErrors('projectDesc')}" th:errors="*{projectDesc}"></div>
                         </div>
 

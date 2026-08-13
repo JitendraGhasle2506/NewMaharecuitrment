@@ -77,7 +77,7 @@
                         </div>
 
                         <div class="relieving-body p-4">
-                            <form th:action="@{/hr/relieving/save}" th:object="${relievingDto}" method="post" id="relievingForm" novalidate>
+                            <form autocomplete="off" th:action="@{/hr/relieving/save}" th:object="${relievingDto}" method="post" id="relievingForm" novalidate>
 
                                 <!-- Row 1: Employee + Reason -->
                                 <div class="row g-3 mb-3">
@@ -85,7 +85,7 @@
                                         <label for="employeeId" class="form-label">
                                             Select Employee <span class="required-star">*</span>
                                         </label>
-                                        <select id="employeeId" th:field="*{employeeId}" class="form-select" required>
+                                        <select autocomplete="off" id="employeeId" th:field="*{employeeId}" class="form-select" required>
                                             <option value="">-- Select Internal Employee --</option>
                                             <option th:each="emp : ${employees}"
                                                     th:value="${emp.employeeId}"
@@ -99,7 +99,7 @@
                                         <label for="reasonOfRelieving" class="form-label">
                                             Reason of Relieving <span class="required-star">*</span>
                                         </label>
-                                        <select id="reasonOfRelieving" th:field="*{reasonOfRelieving}" class="form-select" required>
+                                        <select autocomplete="off" id="reasonOfRelieving" th:field="*{reasonOfRelieving}" class="form-select" required>
                                             <option value="">-- Select Reason --</option>
                                             <option value="Resignation">Resignation</option>
                                             <option value="Released">Released</option>
@@ -115,14 +115,14 @@
                                     <div class="col-md-6">
                                         <label class="form-label">Agency Name</label>
                                         <div class="position-relative">
-                                            <input type="text" class="form-control bg-light text-muted" id="agencyInput" readonly placeholder="Loading..." />
+                                            <input autocomplete="off" type="text" class="form-control bg-light text-muted" id="agencyInput" readonly placeholder="Loading..." />
                                             <span class="spinner-border spinner-border-sm text-primary position-absolute top-50 end-0 translate-middle-y me-3 d-none" role="status" id="agencySpinner"></span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Project Name</label>
                                         <div class="position-relative">
-                                            <input type="text" class="form-control bg-light text-muted" id="projectInput" readonly placeholder="Loading..." />
+                                            <input autocomplete="off" type="text" class="form-control bg-light text-muted" id="projectInput" readonly placeholder="Loading..." />
                                             <span class="spinner-border spinner-border-sm text-primary position-absolute top-50 end-0 translate-middle-y me-3 d-none" role="status" id="projectSpinner"></span>
                                         </div>
                                     </div>
@@ -134,7 +134,7 @@
                                         <label for="resignDate" class="form-label">
                                             Resign Date <span class="required-star" id="resignDateStar">*</span>
                                         </label>
-                                        <input type="date" id="resignDate" th:field="*{resignDate}" class="form-control" />
+                                        <input autocomplete="off" type="date" id="resignDate" th:field="*{resignDate}" class="form-control" />
                                         <div class="invalid-feedback">Please provide the resign date.</div>
                                     </div>
 
@@ -142,7 +142,7 @@
                                         <label for="exitDate" class="form-label">
                                             Exit Date (Last Working Day) <span class="required-star" id="exitDateStar">*</span>
                                         </label>
-                                        <input type="date" id="exitDate" th:field="*{exitDate}" class="form-control" />
+                                        <input autocomplete="off" type="date" id="exitDate" th:field="*{exitDate}" class="form-control" />
                                         <div class="invalid-feedback">Please provide the exit date.</div>
                                     </div>
                                 </div>
@@ -153,14 +153,14 @@
                                         <label for="pipStartDate" class="form-label">
                                             PIP Start Date <span class="required-star">*</span>
                                         </label>
-                                        <input type="date" id="pipStartDate" th:field="*{pipStartDate}" class="form-control" />
+                                        <input autocomplete="off" type="date" id="pipStartDate" th:field="*{pipStartDate}" class="form-control" />
                                         <div class="invalid-feedback">Please provide PIP start date.</div>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="pipDuration" class="form-label">
                                             PIP Duration <span class="required-star">*</span>
                                         </label>
-                                        <select id="pipDuration" th:field="*{pipDuration}" class="form-select">
+                                        <select autocomplete="off" id="pipDuration" th:field="*{pipDuration}" class="form-select">
                                             <option value="">-- Select Duration --</option>
                                             <option value="1 Month">1 Month</option>
                                             <option value="2 Months">2 Months</option>
@@ -174,7 +174,7 @@
                                 <div class="row g-3 mb-3" id="handoverContainer">
                                     <div class="col-md-12">
                                         <label for="handoverGivenToId" class="form-label">Handover Given To</label>
-                                        <select id="handoverGivenToId" th:field="*{handoverGivenToId}" class="form-select">
+                                        <select autocomplete="off" id="handoverGivenToId" th:field="*{handoverGivenToId}" class="form-select">
                                             <option value="">-- Optional: Select Employee --</option>
                                             <option th:each="emp : ${employees}"
                                                     th:value="${emp.employeeId}"
@@ -187,7 +187,7 @@
                                 <!-- Row 3: Remarks -->
                                 <div class="mb-4">
                                     <label for="remarks" class="form-label">Additional Remarks</label>
-                                    <textarea id="remarks" th:field="*{remarks}" class="form-control" rows="3"
+                                    <textarea autocomplete="off" id="remarks" th:field="*{remarks}" class="form-control" rows="3"
                                               placeholder="Any extra notes for the record..."></textarea>
                                 </div>
 
@@ -256,8 +256,8 @@
                                             
                                             <button th:if="${record.reasonOfRelieving == 'PIP'}" type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editPipModal" th:attr="data-relieving-id=${record.relievingId}, data-emp-name=${record.employeeName}, data-start-date=${record.pipStartDate}, data-duration=${record.pipDuration}">Edit PIP</button>
 
-                                            <form th:action="@{/hr/relieving/cancel-record}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this process? The employee will be restored to ACTIVE status.');">
-                                                <input type="hidden" name="relievingId" th:value="${record.relievingId}">
+                                            <form autocomplete="off" th:action="@{/hr/relieving/cancel-record}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this process? The employee will be restored to ACTIVE status.');">
+                                                <input autocomplete="off" type="hidden" name="relievingId" th:value="${record.relievingId}">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel Process">
                                                     <i class="fas fa-times me-1"></i> Cancel
                                                 </button>
@@ -340,17 +340,17 @@
             <div class="modal fade" id="markExitDateModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <form th:action="@{/hr/relieving/mark-exit-date}" method="post">
+                        <form autocomplete="off" th:action="@{/hr/relieving/mark-exit-date}" method="post">
                             <div class="modal-header">
                                 <h5 class="modal-title">Mark Exit Date</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <input type="hidden" id="modalRelievingId" name="relievingId" />
+                                <input autocomplete="off" type="hidden" id="modalRelievingId" name="relievingId" />
                                 <p><strong>Employee:</strong> <span id="modalEmpName"></span></p>
                                 <div class="mb-3">
                                     <label for="modalExitDate" class="form-label">Exit Date <span class="required-star">*</span></label>
-                                    <input type="date" id="modalExitDate" name="exitDate" class="form-control" required />
+                                    <input autocomplete="off" type="date" id="modalExitDate" name="exitDate" class="form-control" required />
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -366,21 +366,21 @@
             <div class="modal fade" id="editPipModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <form th:action="@{/hr/relieving/edit-pip}" method="post">
+                        <form autocomplete="off" th:action="@{/hr/relieving/edit-pip}" method="post">
                             <div class="modal-header">
                                 <h5 class="modal-title">Edit PIP Details</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <input type="hidden" id="editPipRelievingId" name="relievingId" />
+                                <input autocomplete="off" type="hidden" id="editPipRelievingId" name="relievingId" />
                                 <p><strong>Employee:</strong> <span id="editPipEmpName"></span></p>
                                 <div class="mb-3">
                                     <label for="editPipStartDate" class="form-label">PIP Start Date <span class="required-star">*</span></label>
-                                    <input type="date" id="editPipStartDate" name="pipStartDate" class="form-control" required />
+                                    <input autocomplete="off" type="date" id="editPipStartDate" name="pipStartDate" class="form-control" required />
                                 </div>
                                 <div class="mb-3">
                                     <label for="editPipDuration" class="form-label">PIP Duration <span class="required-star">*</span></label>
-                                    <select id="editPipDuration" name="pipDuration" class="form-select" required>
+                                    <select autocomplete="off" id="editPipDuration" name="pipDuration" class="form-select" required>
                                         <option value="">-- Select Duration --</option>
                                         <option value="1 Month">1 Month</option>
                                         <option value="2 Months">2 Months</option>

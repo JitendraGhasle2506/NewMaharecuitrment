@@ -365,7 +365,7 @@
             <!-- Panel Selection Section -->
             <div class="section-card fade-in">
                 <h5 class="section-title"><i class="fas fa-users-cog me-2"></i> Manage Interview Panel</h5>
-                <form th:action="@{/hr/external-interviews/{id}/assign-panel(id=${detail.recruitmentInterviewDetailId})}" method="post" id="panelForm">
+                <form autocomplete="off" th:action="@{/hr/external-interviews/{id}/assign-panel(id=${detail.recruitmentInterviewDetailId})}" method="post" id="panelForm">
                     <div class="panel-management-layout">
                         <div class="panel-control-column">
                             <div class="panel-filter-card">
@@ -388,12 +388,12 @@
                                         <label for="searchField" class="form-label label mb-1">Search Panel Members</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-                                            <input type="text" id="searchField" class="form-control" placeholder="Search by name, email, or role...">
+                                            <input autocomplete="off" type="text" id="searchField" class="form-control" placeholder="Search by name, email, or role...">
                                         </div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="designationFilter" class="form-label label mb-1">Filter by Designation</label>
-                                        <select id="designationFilter" class="form-select form-select-sm">
+                                        <select autocomplete="off" id="designationFilter" class="form-select form-select-sm">
                                             <option value="ALL">All Designations</option>
                                             <option th:each="dsig : ${designations}" th:value="${dsig}" th:text="${dsig}"></option>
                                         </select>
@@ -417,7 +417,7 @@
                             <div class="panel-option-grid" id="userPool" style="display: none;">
                                 <label th:each="user : ${eligiblePanelUsers}" class="panel-option" 
                                        th:attr="data-roles=${user.roleLabelCsv}, data-designation=${user.designationName}, data-name=${#strings.toLowerCase(user.name)}, data-email=${#strings.toLowerCase(user.email)}">
-                                    <input type="checkbox" name="selectedUserIds" th:value="${user.userId}" 
+                                    <input autocomplete="off" type="checkbox" name="selectedUserIds" th:value="${user.userId}" 
                                            class="panel-checkbox"
                                            th:checked="${detail.panelMembers != null && #lists.toList(detail.panelMembers).?[panelUserId == __${user.userId}__].size() > 0}">
                                     <div class="panel-option-body">
@@ -528,13 +528,13 @@
 
                 <!-- Confirm Form -->
                 <div th:if="${detail.finalDecisionStatus == null}">
-                    <form th:action="@{/hr/external-interviews/{id}/final-decision(id=${detail.recruitmentInterviewDetailId})}"
+                    <form autocomplete="off" th:action="@{/hr/external-interviews/{id}/final-decision(id=${detail.recruitmentInterviewDetailId})}"
                           method="post" id="finalDecisionForm">
                         <div class="mb-4">
                             <label class="form-label fw-bold" for="decisionRemarks">
                                 Decision Remarks <span class="text-muted fw-normal">(optional)</span>
                             </label>
-                            <textarea class="form-control" id="decisionRemarks" name="decisionRemarks"
+                            <textarea autocomplete="off" class="form-control" id="decisionRemarks" name="decisionRemarks"
                                       rows="3" maxlength="1000"
                                       placeholder="Add any concluding remarks or observations..."></textarea>
                         </div>

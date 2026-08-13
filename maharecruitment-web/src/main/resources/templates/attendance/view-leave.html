@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -221,11 +221,11 @@
                                             </span>
                                         </td>
                                         <td class="pe-4 text-center">
-                                            <form th:if="${leave.status == 'PENDING'}"
+                                            <form autocomplete="off" th:if="${leave.status == 'PENDING'}"
                                                   th:action="@{/employee/cancelLeave}" method="post"
                                                   onsubmit="return confirm('Are you sure you want to cancel this leave request?');">
-                                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                                <input type="hidden" name="leaveId" th:value="${leave.leaveId}">
+                                                <input autocomplete="off" type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                <input autocomplete="off" type="hidden" name="leaveId" th:value="${leave.leaveId}">
                                                 <button type="submit" class="btn btn-outline-danger btn-sm">
                                                     <i class="fa fa-times me-1"></i>Cancel
                                                 </button>

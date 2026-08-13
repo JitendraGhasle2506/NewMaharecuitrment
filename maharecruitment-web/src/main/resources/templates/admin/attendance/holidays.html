@@ -257,8 +257,8 @@
                                     <div>
                                         <div class="holiday-panel-title">Holiday Month View</div>
                                     </div>
-                                    <form method="get" th:action="@{/admin/attendance/holidays}" class="d-flex align-items-center gap-2">
-                                        <input type="month" name="month" class="form-control" th:value="${selectedMonthValue}">
+                                    <form autocomplete="off" method="get" th:action="@{/admin/attendance/holidays}" class="d-flex align-items-center gap-2">
+                                        <input autocomplete="off" type="month" name="month" class="form-control" th:value="${selectedMonthValue}">
                                         <button type="submit" class="btn btn-outline-primary">Load</button>
                                     </form>
                                 </div>
@@ -318,14 +318,14 @@
                                     Add Holiday
                                 </div>
 
-                                <form th:object="${holidayForm}" th:action="@{/admin/attendance/holidays}" method="post" class="row g-3">
-                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                    <input type="hidden" th:field="*{id}">
-                                    <input type="hidden" th:field="*{viewMonth}">
+                                <form autocomplete="off" th:object="${holidayForm}" th:action="@{/admin/attendance/holidays}" method="post" class="row g-3">
+                                    <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input autocomplete="off" type="hidden" th:field="*{id}">
+                                    <input autocomplete="off" type="hidden" th:field="*{viewMonth}">
 
                                     <div class="col-12">
                                         <label class="form-label">Holiday Date <span class="text-danger">*</span></label>
-                                        <input type="date" th:field="*{holidayDate}" class="form-control">
+                                        <input autocomplete="off" type="date" th:field="*{holidayDate}" class="form-control">
                                         <div class="text-danger small mt-1"
                                             th:if="${#fields.hasErrors('holidayDate')}"
                                             th:errors="*{holidayDate}"></div>
@@ -333,7 +333,7 @@
 
                                     <div class="col-12">
                                         <label class="form-label">Holiday Name <span class="text-danger">*</span></label>
-                                        <input type="text" th:field="*{holidayName}" class="form-control"
+                                        <input autocomplete="off" type="text" th:field="*{holidayName}" class="form-control"
                                             placeholder="Enter holiday name">
                                         <div class="text-danger small mt-1"
                                             th:if="${#fields.hasErrors('holidayName')}"
@@ -358,19 +358,19 @@
                                     Add Working Day
                                 </div>
 
-                                <form th:object="${workingDayForm}" th:action="@{/admin/attendance/holidays/working-days}" method="post" enctype="multipart/form-data" class="row g-3">
-                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                    <input type="hidden" th:field="*{id}">
-                                    <input type="hidden" th:field="*{viewMonth}">
-                                    <input type="hidden" th:field="*{officeOrderOriginalName}">
-                                    <input type="hidden" th:field="*{officeOrderStoredName}">
-                                    <input type="hidden" th:field="*{officeOrderPath}">
-                                    <input type="hidden" th:field="*{officeOrderContentType}">
-                                    <input type="hidden" th:field="*{officeOrderFileSize}">
+                                <form autocomplete="off" th:object="${workingDayForm}" th:action="@{/admin/attendance/holidays/working-days}" method="post" enctype="multipart/form-data" class="row g-3">
+                                    <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input autocomplete="off" type="hidden" th:field="*{id}">
+                                    <input autocomplete="off" type="hidden" th:field="*{viewMonth}">
+                                    <input autocomplete="off" type="hidden" th:field="*{officeOrderOriginalName}">
+                                    <input autocomplete="off" type="hidden" th:field="*{officeOrderStoredName}">
+                                    <input autocomplete="off" type="hidden" th:field="*{officeOrderPath}">
+                                    <input autocomplete="off" type="hidden" th:field="*{officeOrderContentType}">
+                                    <input autocomplete="off" type="hidden" th:field="*{officeOrderFileSize}">
 
                                     <div class="col-12">
                                         <label class="form-label">Working Day Date <span class="text-danger">*</span></label>
-                                        <input type="date" th:field="*{workingDate}" class="form-control">
+                                        <input autocomplete="off" type="date" th:field="*{workingDate}" class="form-control">
                                         <div class="text-danger small mt-1"
                                             th:if="${#fields.hasErrors('workingDate')}"
                                             th:errors="*{workingDate}"></div>
@@ -378,7 +378,7 @@
 
                                     <div class="col-12">
                                         <label class="form-label">Office Order <span class="text-danger">*</span></label>
-                                        <input type="file" th:field="*{officeOrderFile}" class="form-control" accept="application/pdf,.pdf">
+                                        <input autocomplete="off" type="file" th:field="*{officeOrderFile}" class="form-control" accept="application/pdf,.pdf">
                                         <div class="text-danger small mt-1"
                                             th:if="${#fields.hasErrors('officeOrderFile')}"
                                             th:errors="*{officeOrderFile}"></div>
@@ -446,11 +446,11 @@
                                                         th:href="@{/admin/attendance/holidays(month=${selectedMonthValue},holidayId=${holiday.id})}">
                                                         Manage
                                                     </a>
-                                                    <form class="d-inline"
+                                                    <form autocomplete="off" class="d-inline"
                                                         th:action="@{/admin/attendance/holidays/{holidayId}/archive(holidayId=${holiday.id})}"
                                                         method="post">
-                                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                                        <input type="hidden" name="month" th:value="${selectedMonthValue}">
+                                                        <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                        <input autocomplete="off" type="hidden" name="month" th:value="${selectedMonthValue}">
                                                         <button type="submit" class="btn btn-outline-danger btn-sm"
                                                             onclick="return confirm('Archive this holiday?')">
                                                             Archive
@@ -499,11 +499,11 @@
                                                         th:href="@{/admin/attendance/holidays(month=${selectedMonthValue},workingDayId=${workingDay.id})}">
                                                         Manage
                                                     </a>
-                                                    <form class="d-inline"
+                                                    <form autocomplete="off" class="d-inline"
                                                         th:action="@{/admin/attendance/holidays/working-days/{workingDayId}/archive(workingDayId=${workingDay.id})}"
                                                         method="post">
-                                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                                        <input type="hidden" name="month" th:value="${selectedMonthValue}">
+                                                        <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                        <input autocomplete="off" type="hidden" name="month" th:value="${selectedMonthValue}">
                                                         <button type="submit" class="btn btn-outline-danger btn-sm"
                                                             onclick="return confirm('Archive this working-day override?')">
                                                             Archive

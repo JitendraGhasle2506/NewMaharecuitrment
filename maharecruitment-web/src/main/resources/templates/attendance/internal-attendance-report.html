@@ -338,25 +338,25 @@
                         </div>
                     </div>
 
-                    <form class="filter-panel row g-3 align-items-end" method="get"
+                    <form autocomplete="off" class="filter-panel row g-3 align-items-end" method="get"
                         th:action="@{/hr/internal-attendance-report}" th:object="${filter}">
                         <div class="col-lg-2 col-md-4">
                             <label class="form-label">Month</label>
-                            <select class="form-select" th:field="*{month}">
+                            <select autocomplete="off" class="form-select" th:field="*{month}">
                                 <option th:each="entry : ${monthNames}" th:value="${entry.key}"
                                     th:text="${entry.value}">January</option>
                             </select>
                         </div>
                         <div class="col-lg-2 col-md-4">
                             <label class="form-label">Year</label>
-                            <select class="form-select" th:field="*{year}">
+                            <select autocomplete="off" class="form-select" th:field="*{year}">
                                 <option th:each="entry : ${yearOptions}" th:value="${entry.key}"
                                     th:text="${entry.value}">2026</option>
                             </select>
                         </div>
                         <div class="col-lg-2 col-md-4">
                             <label class="form-label">Project</label>
-                            <select class="form-select" th:field="*{projectId}">
+                            <select autocomplete="off" class="form-select" th:field="*{projectId}">
                                 <option value="">All Projects</option>
                                 <option th:each="entry : ${projectOptions}" th:value="${entry.key}"
                                     th:text="${entry.value}">Project</option>
@@ -364,7 +364,7 @@
                         </div>
                         <div class="col-lg-2 col-md-4">
                             <label class="form-label">Agency</label>
-                            <select class="form-select" th:field="*{agencyId}">
+                            <select autocomplete="off" class="form-select" th:field="*{agencyId}">
                                 <option value="">All Agencies</option>
                                 <option th:each="entry : ${agencyOptions}" th:value="${entry.key}"
                                     th:text="${entry.value}">Agency</option>
@@ -372,7 +372,7 @@
                         </div>
                         <div class="col-lg-2 col-md-4">
                             <label class="form-label">Search</label>
-                            <input type="text" class="form-control" th:field="*{searchText}"
+                            <input autocomplete="off" type="text" class="form-control" th:field="*{searchText}"
                                 placeholder="Search employee...">
                         </div>
                         <div class="col-lg-2 col-md-4 d-flex gap-2">

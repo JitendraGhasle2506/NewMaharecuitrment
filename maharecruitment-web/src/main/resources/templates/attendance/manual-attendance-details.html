@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -41,7 +41,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th style="width: 40px; text-align: center;">
-                                        <input type="checkbox" id="selectAll" checked onclick="toggleAll(this)">
+                                        <input autocomplete="off" type="checkbox" id="selectAll" checked onclick="toggleAll(this)">
                                     </th>
                                     <th>Date</th>
                                     <th>In Time</th>
@@ -54,7 +54,7 @@
                             <tbody>
                                 <tr th:each="req : ${pendingRequests}">
                                     <td style="text-align: center;">
-                                        <input type="checkbox" name="rowSelect" th:value="${req.id}" checked>
+                                        <input autocomplete="off" type="checkbox" name="rowSelect" th:value="${req.id}" checked>
                                     </td>
                                     <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
                                     <td th:text="${req.inTime}"></td>
@@ -62,13 +62,13 @@
                                     <td th:text="${req.reason}"></td>
                                     <td th:text="${req.managerName}">-</td>
                                     <td>
-                                        <form th:action="@{/hod1/manual-attendance/action}" method="post" class="d-inline">
-                                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <input type="hidden" name="requestId" th:value="${req.id}">
-                                            <input type="hidden" name="userId" th:value="${targetUserId}">
-                                            <input type="hidden" name="roleType" th:value="${currentRoleType}">
-                                            <input type="hidden" name="status" value="APPROVED">
-                                            <input type="hidden" name="comments" value="Approved">
+                                        <form autocomplete="off" th:action="@{/hod1/manual-attendance/action}" method="post" class="d-inline">
+                                            <input autocomplete="off" type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <input autocomplete="off" type="hidden" name="requestId" th:value="${req.id}">
+                                            <input autocomplete="off" type="hidden" name="userId" th:value="${targetUserId}">
+                                            <input autocomplete="off" type="hidden" name="roleType" th:value="${currentRoleType}">
+                                            <input autocomplete="off" type="hidden" name="status" value="APPROVED">
+                                            <input autocomplete="off" type="hidden" name="comments" value="Approved">
                                             <button type="submit" class="btn btn-sm btn-success me-1" title="Approve"><i class="fa fa-check"></i></button>
                                         </form>
                                         <button class="btn btn-sm btn-outline-danger" title="Reject" data-bs-toggle="modal" th:data-bs-target="'#rejectModal' + ${req.id}">
@@ -79,12 +79,12 @@
                                         <div class="modal fade" th:id="'rejectModal' + ${req.id}" tabindex="-1" aria-hidden="true">
                                             <div class="modal-dialog">
                                                 <div class="modal-content">
-                                                    <form th:action="@{/hod1/manual-attendance/action}" method="post">
-                                                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                                        <input type="hidden" name="requestId" th:value="${req.id}">
-                                                        <input type="hidden" name="userId" th:value="${targetUserId}">
-                                                        <input type="hidden" name="roleType" th:value="${currentRoleType}">
-                                                        <input type="hidden" name="status" value="REJECTED">
+                                                    <form autocomplete="off" th:action="@{/hod1/manual-attendance/action}" method="post">
+                                                        <input autocomplete="off" type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                        <input autocomplete="off" type="hidden" name="requestId" th:value="${req.id}">
+                                                        <input autocomplete="off" type="hidden" name="userId" th:value="${targetUserId}">
+                                                        <input autocomplete="off" type="hidden" name="roleType" th:value="${currentRoleType}">
+                                                        <input autocomplete="off" type="hidden" name="status" value="REJECTED">
                                                         <div class="modal-header">
                                                             <h5 class="modal-title">Reject Request</h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -92,7 +92,7 @@
                                                         <div class="modal-body">
                                                             <div class="mb-3">
                                                                 <label class="form-label">Reason for Rejection</label>
-                                                                <textarea name="comments" class="form-control" required placeholder="Enter rejection reason..."></textarea>
+                                                                <textarea autocomplete="off" name="comments" class="form-control" required placeholder="Enter rejection reason..."></textarea>
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">
@@ -111,12 +111,12 @@
 
                     <!-- Bulk Action Buttons at Bottom -->
                     <div th:if="${not #lists.isEmpty(pendingRequests)}" class="d-flex justify-content-end gap-3 mt-4 border-top pt-4">
-                        <form th:action="@{/hod1/manual-attendance/bulk-action}" method="post" id="bulkActionForm">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <input type="hidden" name="userId" th:value="${targetUserId}">
-                            <input type="hidden" name="roleType" th:value="${currentRoleType}">
-                            <input type="hidden" name="status" id="bulkStatus" value="">
-                            <input type="hidden" name="comments" id="bulkComments" value="">
+                        <form autocomplete="off" th:action="@{/hod1/manual-attendance/bulk-action}" method="post" id="bulkActionForm">
+                            <input autocomplete="off" type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input autocomplete="off" type="hidden" name="userId" th:value="${targetUserId}">
+                            <input autocomplete="off" type="hidden" name="roleType" th:value="${currentRoleType}">
+                            <input autocomplete="off" type="hidden" name="status" id="bulkStatus" value="">
+                            <input autocomplete="off" type="hidden" name="comments" id="bulkComments" value="">
                             
                             <button type="button" class="btn btn-outline-danger" onclick="executeBulkAction('REJECTED')" title="Reject Selected">
                                 <i class="fa fa-times-circle me-1"></i> Bulk Reject

@@ -81,9 +81,9 @@
                         </div>
                     </div>
 
-                    <form id="employeeCellMappingForm" method="post" th:object="${mappingForm}"
+                    <form autocomplete="off" id="employeeCellMappingForm" method="post" th:object="${mappingForm}"
                         th:action="@{/hr/employee-cell-mappings/{employeeId}(employeeId=${employee.employeeId},type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
-                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
+                        <input autocomplete="off" type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
                             th:value="${_csrf.token}">
 
                         <div class="employee-location-editor employee-cell-editor">
@@ -92,7 +92,7 @@
                                     <label class="form-label" for="employeeCellPicker">
                                         Cell <span class="text-danger">*</span>
                                     </label>
-                                    <select id="employeeCellPicker" name="cellId" class="form-select"
+                                    <select autocomplete="off" id="employeeCellPicker" name="cellId" class="form-select"
                                         data-placeholder="Search and select cell" required>
                                         <option value="">Search and select cell</option>
                                         <option th:each="cell : ${editView.availableCells}"

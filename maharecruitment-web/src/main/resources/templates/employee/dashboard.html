@@ -17,8 +17,8 @@
                      data-photo-upload-url=@{/employee/profile/photo/upload},
                      data-photo-url=@{/employee/profile/photo},
                      data-calendar-url=@{/attendance/employee-attendance-calendar}">
-            <input type="hidden" id="csrfToken" th:if="${_csrf != null}" th:value="${_csrf.token}" />
-            <input type="hidden" id="csrfHeader" th:if="${_csrf != null}" th:value="${_csrf.headerName}" />
+            <input autocomplete="off" type="hidden" id="csrfToken" th:if="${_csrf != null}" th:value="${_csrf.token}" />
+            <input autocomplete="off" type="hidden" id="csrfHeader" th:if="${_csrf != null}" th:value="${_csrf.headerName}" />
 
             <div class="dashboard-intro">
                 <div>
@@ -111,31 +111,31 @@
                         </div>
                     </div>
 
-                    <form id="employeeProfileForm" novalidate>
+                    <form autocomplete="off" id="employeeProfileForm" novalidate>
                         <div class="form-grid read-only-grid">
                             <label>
                                 Full Name
-                                <input type="text" th:value="${profile.fullName}" readonly disabled>
+                                <input autocomplete="off" type="text" th:value="${profile.fullName}" readonly disabled>
                             </label>
                             <label>
                                 Email
-                                <input type="email" th:value="${profile.email}" readonly disabled>
+                                <input autocomplete="off" type="email" th:value="${profile.email}" readonly disabled>
                             </label>
                             <label>
                                 Employee Code
-                                <input type="text" th:value="${profile.employeeCode}" readonly disabled>
+                                <input autocomplete="off" type="text" th:value="${profile.employeeCode}" readonly disabled>
                             </label>
                         </div>
 
                         <div class="form-grid">
                             <label>
                                 Date of Birth
-                                <input name="dob" type="date" th:value="${profile.dob}">
+                                <input autocomplete="off" name="dob" type="date" th:value="${profile.dob}">
                                 <small class="field-error" data-error-for="dob"></small>
                             </label>
                             <label>
                                 Gender
-                                <select name="gender">
+                                <select autocomplete="off" name="gender">
                                     <option value="">Select</option>
                                     <option value="Male" th:selected="${profile.gender == 'Male'}">Male</option>
                                     <option value="Female" th:selected="${profile.gender == 'Female'}">Female</option>
@@ -145,23 +145,23 @@
                             </label>
                             <label>
                                 Mobile Number
-                                <input name="mobileNo" type="tel" maxlength="15" th:value="${profile.mobileNo}">
+                                <input autocomplete="off" name="mobileNo" type="tel" maxlength="15" th:value="${profile.mobileNo}">
                                 <small class="field-error" data-error-for="mobileNo"></small>
                             </label>
                             <label>
                                 Alternate Mobile
-                                <input name="alternateMobileNo" type="tel" maxlength="15"
+                                <input autocomplete="off" name="alternateMobileNo" type="tel" maxlength="15"
                                     th:value="${profile.alternateMobileNo}">
                                 <small class="field-error" data-error-for="alternateMobileNo"></small>
                             </label>
                             <label>
                                 PAN Number
-                                <input name="panNo" type="text" maxlength="10" th:value="${profile.panNo}">
+                                <input autocomplete="off" name="panNo" type="text" maxlength="10" th:value="${profile.panNo}">
                                 <small class="field-error" data-error-for="panNo"></small>
                             </label>
                             <label>
                                 Marital Status
-                                <select name="maritalStatus">
+                                <select autocomplete="off" name="maritalStatus">
                                     <option value="">Select</option>
                                     <option value="Single" th:selected="${profile.maritalStatus == 'Single'}">Single</option>
                                     <option value="Married" th:selected="${profile.maritalStatus == 'Married'}">Married</option>
@@ -171,7 +171,7 @@
                             </label>
                             <label>
                                 Blood Group
-                                <select name="bloodGroup">
+                                <select autocomplete="off" name="bloodGroup">
                                     <option value="">Select</option>
                                     <option value="A+" th:selected="${profile.bloodGroup == 'A+'}">A+</option>
                                     <option value="A-" th:selected="${profile.bloodGroup == 'A-'}">A-</option>
@@ -186,13 +186,13 @@
                             </label>
                             <label>
                                 Emergency Contact Name
-                                <input name="emergencyContactName" type="text"
+                                <input autocomplete="off" name="emergencyContactName" type="text"
                                     th:value="${profile.emergencyContactName}">
                                 <small class="field-error" data-error-for="emergencyContactName"></small>
                             </label>
                             <label>
                                 Emergency Contact Number
-                                <input name="emergencyContactNo" type="tel" maxlength="15"
+                                <input autocomplete="off" name="emergencyContactNo" type="tel" maxlength="15"
                                     th:value="${profile.emergencyContactNo}">
                                 <small class="field-error" data-error-for="emergencyContactNo"></small>
                             </label>
@@ -201,13 +201,13 @@
                         <div id="addressFields" class="address-grid">
                             <label>
                                 Current Address
-                                <textarea name="currentAddress" rows="4"
+                                <textarea autocomplete="off" name="currentAddress" rows="4"
                                     th:text="${profile.currentAddress}"></textarea>
                                 <small class="field-error" data-error-for="currentAddress"></small>
                             </label>
                             <label>
                                 Permanent Address
-                                <textarea name="permanentAddress" rows="4"
+                                <textarea autocomplete="off" name="permanentAddress" rows="4"
                                     th:text="${profile.permanentAddress}"></textarea>
                                 <small class="field-error" data-error-for="permanentAddress"></small>
                             </label>
@@ -239,8 +239,8 @@
                             <span>No photo selected</span>
                         </div>
                     </div>
-                    <form id="photoUploadForm" novalidate>
-                        <input id="photoFile" name="file" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                    <form autocomplete="off" id="photoUploadForm" novalidate>
+                        <input autocomplete="off" id="photoFile" name="file" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
                         <small class="upload-note">JPG, JPEG, or PNG only. Maximum 2 MB.</small>
                         <small class="field-error" data-error-for="file"></small>
                         <button type="submit" class="btn btn-outline-primary w-100">

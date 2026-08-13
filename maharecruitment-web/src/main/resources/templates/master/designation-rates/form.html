@@ -29,14 +29,14 @@
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/locations}">Location Master</a>
                     </div>
 
-                    <form th:object="${designationRateForm}"
+                    <form autocomplete="off" th:object="${designationRateForm}"
                         th:action="${isEdit} ? @{/master/designation-rates/{id}(id=${rateId})} : @{/master/designation-rates}"
                         method="post" class="row g-3">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                         <div class="col-md-6">
                             <label class="form-label">Designation</label>
-                            <select id="designationSelect" class="form-select" th:field="*{designationId}"
+                            <select autocomplete="off" id="designationSelect" class="form-select" th:field="*{designationId}"
                                 th:attr="data-levels-base-url=@{/master/designation-rates/designations}">
                                 <option value="">Select designation</option>
                                 <option th:each="d : ${availableDesignations}" th:value="${d.designationId}"
@@ -48,7 +48,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Level Code</label>
-                            <select id="levelCodeSelect" class="form-select" th:field="*{levelCode}">
+                            <select autocomplete="off" id="levelCodeSelect" class="form-select" th:field="*{levelCode}">
                                 <option value="">Select level</option>
                                 <option th:each="l : ${availableLevels}" th:value="${l.levelCode}"
                                     th:text="${l.levelCode + ' - ' + l.levelName}"></option>
@@ -60,7 +60,7 @@
 
                         <div class="col-md-4">
                             <label class="form-label">Gross Monthly CTC</label>
-                            <input type="number" th:field="*{grossMonthlyCtc}" class="form-control" step="0.01"
+                            <input autocomplete="off" type="number" th:field="*{grossMonthlyCtc}" class="form-control" step="0.01"
                                 min="0.01">
                             <div class="text-danger small" th:if="${#fields.hasErrors('grossMonthlyCtc')}"
                                 th:errors="*{grossMonthlyCtc}"></div>
@@ -68,19 +68,19 @@
 
                         <div class="col-md-4">
                             <label class="form-label">Effective From</label>
-                            <input type="date" th:field="*{effectiveFrom}" class="form-control">
+                            <input autocomplete="off" type="date" th:field="*{effectiveFrom}" class="form-control">
                             <div class="text-danger small" th:if="${#fields.hasErrors('effectiveFrom')}"
                                 th:errors="*{effectiveFrom}"></div>
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label">Effective To</label>
-                            <input type="date" th:field="*{effectiveTo}" class="form-control">
+                            <input autocomplete="off" type="date" th:field="*{effectiveTo}" class="form-control">
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label">Status</label>
-                            <select class="form-select" th:field="*{activeFlag}">
+                            <select autocomplete="off" class="form-select" th:field="*{activeFlag}">
                                 <option value="Y">Active</option>
                                 <option value="N">Inactive</option>
                             </select>

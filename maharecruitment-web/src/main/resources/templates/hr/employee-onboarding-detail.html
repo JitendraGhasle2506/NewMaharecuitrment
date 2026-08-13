@@ -384,36 +384,36 @@
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.name}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.name}" readonly>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Email</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.email}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.email}" readonly>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Mobile</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.mobile}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.mobile}" readonly>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Date of Birth</label>
-                                <input type="text" class="form-control readonly-field detail-value"
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value"
                                     th:value="${detail.dob != null ? #temporals.format(detail.dob, 'dd-MM-yyyy') : '-'}" readonly>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Gender</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.gender != null ? detail.gender : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.gender != null ? detail.gender : '-'}" readonly>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Blood Group</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.bloodGroup != null ? detail.bloodGroup : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.bloodGroup != null ? detail.bloodGroup : '-'}" readonly>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-12 form-group">
                                 <label class="form-label">Address</label>
-                                <textarea class="form-control readonly-field detail-value" rows="2" readonly th:text="${detail.address}"></textarea>
+                                <textarea autocomplete="off" class="form-control readonly-field detail-value" rows="2" readonly th:text="${detail.address}"></textarea>
                             </div>
                         </div>
                     </div>
@@ -426,19 +426,19 @@
                         <div class="row">
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Contact Name</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactName != null ? detail.emergencyContactName : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactName != null ? detail.emergencyContactName : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Relation</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactRelation != null ? detail.emergencyContactRelation : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactRelation != null ? detail.emergencyContactRelation : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Mobile Number</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactMobile != null ? detail.emergencyContactMobile : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactMobile != null ? detail.emergencyContactMobile : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Alternate Mobile Number</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactAltMobile != null && detail.emergencyContactAltMobile != '' ? detail.emergencyContactAltMobile : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.emergencyContactAltMobile != null && detail.emergencyContactAltMobile != '' ? detail.emergencyContactAltMobile : '-'}" readonly>
                             </div>
                         </div>
                     </div>
@@ -450,83 +450,83 @@
                         <div class="row">
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Employee Code</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${employeeDetail.employeeCode != null ? employeeDetail.employeeCode : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${employeeDetail.employeeCode != null ? employeeDetail.employeeCode : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Recruitment Type</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${employeeDetail.recruitmentType != null ? employeeDetail.recruitmentType : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${employeeDetail.recruitmentType != null ? employeeDetail.recruitmentType : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Status</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${employeeDetail.status != null ? employeeDetail.status : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${employeeDetail.status != null ? employeeDetail.status : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Resignation Date</label>
-                                <input type="text" class="form-control readonly-field detail-value"
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value"
                                     th:value="${employeeDetail.resignationDate != null ? #temporals.format(employeeDetail.resignationDate, 'dd-MM-yyyy') : '-'}" readonly>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Request ID</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.requestId}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.requestId}" readonly>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Project</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.projectName}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.projectName}" readonly>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Agency Name</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.agencyName}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.agencyName}" readonly>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Department</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.department}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.department}" readonly>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Sub Department</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.subDeptName}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.subDeptName}" readonly>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label class="form-label">Designation</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.designation}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.designation}" readonly>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Level Code</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.levelCode}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.levelCode}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Joining Date</label>
-                                <input type="text" class="form-control readonly-field detail-value"
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value"
                                     th:value="${detail.joiningDate != null ? #temporals.format(detail.joiningDate, 'dd-MM-yyyy') : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Onboarding Date</label>
-                                <input type="text" class="form-control readonly-field detail-value"
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value"
                                     th:value="${detail.onboardingDate != null ? #temporals.format(detail.onboardingDate, 'dd-MM-yyyy') : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">HR Onboarding Date</label>
-                                <input type="text" class="form-control readonly-field detail-value"
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value"
                                     th:value="${detail.hrOnboardingDate != null ? #temporals.format(detail.hrOnboardingDate, 'dd-MM-yyyy') : '-'}" readonly>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 form-group">
                                 <label class="form-label">HR Onboarding Location</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.hrOnboardingLocation != null ? detail.hrOnboardingLocation : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.hrOnboardingLocation != null ? detail.hrOnboardingLocation : '-'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">Agency Verified</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.agencyFlag ? 'Yes' : 'No'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.agencyFlag ? 'Yes' : 'No'}" readonly>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label class="form-label">HR Verified</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.hrVerified ? 'Yes' : 'No'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.hrVerified ? 'Yes' : 'No'}" readonly>
                             </div>
                         </div>
                     </div>
@@ -593,11 +593,11 @@
                         <div class="row">
                             <div class="col-md-6 form-group">
                                 <label class="form-label">Aadhaar Number</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.aadhaar != null ? detail.aadhaar : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.aadhaar != null ? detail.aadhaar : '-'}" readonly>
                             </div>
                             <div class="col-md-6 form-group">
                                 <label class="form-label">PAN Number</label>
-                                <input type="text" class="form-control readonly-field detail-value" th:value="${detail.pan != null ? detail.pan : '-'}" readonly>
+                                <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${detail.pan != null ? detail.pan : '-'}" readonly>
                             </div>
                         </div>
                         <div class="document-actions">
@@ -653,20 +653,20 @@
                                 <div class="row">
                                     <div class="col-md-4 form-group">
                                         <label class="form-label">Company Name</label>
-                                        <input type="text" class="form-control readonly-field detail-value" th:value="${employment.companyName}" readonly>
+                                        <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${employment.companyName}" readonly>
                                     </div>
                                     <div class="col-md-3 form-group">
                                         <label class="form-label">Designation</label>
-                                        <input type="text" class="form-control readonly-field detail-value" th:value="${employment.designation != null ? employment.designation : '-'}" readonly>
+                                        <input autocomplete="off" type="text" class="form-control readonly-field detail-value" th:value="${employment.designation != null ? employment.designation : '-'}" readonly>
                                     </div>
                                     <div class="col-md-2 form-group">
                                         <label class="form-label">Start Date</label>
-                                        <input type="text" class="form-control readonly-field detail-value"
+                                        <input autocomplete="off" type="text" class="form-control readonly-field detail-value"
                                             th:value="${employment.startDate != null ? #temporals.format(employment.startDate, 'dd-MM-yyyy') : '-'}" readonly>
                                     </div>
                                     <div class="col-md-3 form-group">
                                         <label class="form-label">End Date</label>
-                                        <input type="text" class="form-control readonly-field detail-value"
+                                        <input autocomplete="off" type="text" class="form-control readonly-field detail-value"
                                             th:value="${employment.endDate != null ? #temporals.format(employment.endDate, 'dd-MM-yyyy') : '-'}" readonly>
                                     </div>
                                 </div>
@@ -679,17 +679,17 @@
                             <h5 class="section-title">Document Checklist</h5>
                         </div>
                         <div class="row g-3">
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docEducationalCert}" disabled><span>Educational Certificates</span></label></div>
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docExperienceLetter}" disabled><span>Experience Letter</span></label></div>
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docRelievingLetter}" disabled><span>Relieving Letter</span></label></div>
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docPayslips}" disabled><span>Salary Payslips</span></label></div>
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docDeclarationForm}" disabled><span>Declaration Form</span></label></div>
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docNda}" disabled><span>NDA Document</span></label></div>
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docMedicalFitness}" disabled><span>Medical Fitness Cert</span></label></div>
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docAddressProof}" disabled><span>Address Proof</span></label></div>
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docPassportPhoto}" disabled><span>Passport Photo</span></label></div>
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docAadhaar}" disabled><span>Aadhaar Copy</span></label></div>
-                            <div class="col-md-4"><label class="check-card"><input type="checkbox" th:checked="${detail.docPan}" disabled><span>PAN Card Copy</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docEducationalCert}" disabled><span>Educational Certificates</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docExperienceLetter}" disabled><span>Experience Letter</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docRelievingLetter}" disabled><span>Relieving Letter</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docPayslips}" disabled><span>Salary Payslips</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docDeclarationForm}" disabled><span>Declaration Form</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docNda}" disabled><span>NDA Document</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docMedicalFitness}" disabled><span>Medical Fitness Cert</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docAddressProof}" disabled><span>Address Proof</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docPassportPhoto}" disabled><span>Passport Photo</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docAadhaar}" disabled><span>Aadhaar Copy</span></label></div>
+                            <div class="col-md-4"><label class="check-card"><input autocomplete="off" type="checkbox" th:checked="${detail.docPan}" disabled><span>PAN Card Copy</span></label></div>
                         </div>
                     </div>
                 </div>

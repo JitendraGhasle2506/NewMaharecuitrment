@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -31,9 +31,9 @@ button.btn.btn-link.btn-sm.p-0.text-decoration-none.position-absolute {
                     </a> -->
 				</div>
 				<div class="card-body">
-					<form id="agencyProfileForm" th:object="${agencyMasterResponse}"
+					<form autocomplete="off" id="agencyProfileForm" th:object="${agencyMasterResponse}"
 						method="post" enctype="multipart/form-data">
-						<input type="hidden" th:name="${_csrf.parameterName}"
+						<input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}"
 							th:value="${_csrf.token}">
 
 						<!-- ============== SECTION 1: AGENCY BASIC DETAILS ============== -->

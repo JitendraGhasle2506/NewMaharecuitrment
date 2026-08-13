@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -165,10 +165,10 @@
 						</div>
 						<div class="body">
 							<div class="filter-section">
-								<form th:action="@{/hr/attendanceReport}" method="post" class="row">
+								<form autocomplete="off" th:action="@{/hr/attendanceReport}" method="post" class="row">
 									<div class="col-md-2">
 										<label>Department:</label>
-										<select name="regDeptId" id="regDeptId" class="form-control" onchange="fetchProjects(this.value)">
+										<select autocomplete="off" name="regDeptId" id="regDeptId" class="form-control" onchange="fetchProjects(this.value)">
 											<option value="">All Departments</option>
 											<option th:each="dept : ${registrationDepartments}" th:value="${dept.departmentRegistrationId}"
 												th:text="${dept.departmentName}"
@@ -177,7 +177,7 @@
 									</div>
 									<div class="col-md-2">
 										<label>Project:</label>
-										<select name="projectId" id="projectId" class="form-control">
+										<select autocomplete="off" name="projectId" id="projectId" class="form-control">
 											<option value="">All Projects</option>
 											<option th:each="proj : ${projectList}" th:value="${proj.departmentProjectApplicationId}"
 												th:text="${proj.projectName}"
@@ -186,7 +186,7 @@
 									</div>
 									<div class="col-md-2">
 										<label>Agency:</label>
-										<select name="agencyId" class="form-control">
+										<select autocomplete="off" name="agencyId" class="form-control">
 											<option value="">All Agencies</option>
 											<option th:each="agency : ${agencyList}" th:value="${agency.agencyId}"
 												th:text="${agency.agencyName}"
@@ -195,7 +195,7 @@
 									</div>
 									<div class="col-md-2">
 										<label>Month:</label>
-										<select name="month" class="form-control" required>
+										<select autocomplete="off" name="month" class="form-control" required>
 											<option th:each="entry : ${monthNames}" th:value="${entry.key}"
 												th:text="${entry.value}" th:selected="${entry.key == selectedMonth}">
 											</option>
@@ -203,7 +203,7 @@
 									</div>
 									<div class="col-md-2">
 										<label>Year:</label>
-										<select name="year" class="form-control" required>
+										<select autocomplete="off" name="year" class="form-control" required>
 											<option th:each="y : ${#numbers.sequence(2020, 2030)}" th:value="${y}"
 												th:text="${y}" th:selected="${y == selectedYear}"></option>
 										</select>
@@ -253,7 +253,7 @@
 									
 									<div class="search-container">
 										<i class="fas fa-search"></i>
-										<input type="text" id="employeeSearch" placeholder="Search Name or Designation...">
+										<input autocomplete="off" type="text" id="employeeSearch" placeholder="Search Name or Designation...">
 									</div>
 								</div>
 

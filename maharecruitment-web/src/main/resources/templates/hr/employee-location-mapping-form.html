@@ -80,13 +80,13 @@
                         </div>
                     </div>
 
-                    <form id="employeeLocationMappingForm" method="post" th:object="${mappingForm}"
+                    <form autocomplete="off" id="employeeLocationMappingForm" method="post" th:object="${mappingForm}"
                         th:action="@{/hr/employee-location-mappings/{employeeId}(employeeId=${employee.employeeId},type=${currentType},search=${searchTerm},page=${currentPage},size=${pageSize})}">
-                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
+                        <input autocomplete="off" type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
                             th:value="${_csrf.token}">
 
                         <!-- Primary location ID - managed by JS -->
-                        <input type="hidden" id="primaryLocationId" name="primaryLocationId"
+                        <input autocomplete="off" type="hidden" id="primaryLocationId" name="primaryLocationId"
                                th:value="${mappingForm.primaryLocationId}">
 
                         <div class="employee-location-editor">
@@ -95,7 +95,7 @@
                                     <label class="form-label" for="employeeLocationPicker">
                                         Location <span class="text-danger">*</span>
                                     </label>
-                                    <select id="employeeLocationPicker" class="form-select"
+                                    <select autocomplete="off" id="employeeLocationPicker" class="form-select"
                                         data-placeholder="Search and select location">
                                         <option value="">Search and select location</option>
                                         <option th:each="location : ${editView.availableLocations}"
@@ -136,7 +136,7 @@
                                         Click <em>Set as Primary</em> to change.
                                     </div>
                                     <div id="selectedEmployeeLocationInputs">
-                                        <input type="hidden" th:each="location : ${selectedLocationFormItems}"
+                                        <input autocomplete="off" type="hidden" th:each="location : ${selectedLocationFormItems}"
                                             name="selectedLocationIds"
                                             th:value="${location.locationId}"
                                             th:attr="data-label=${location.displayName},data-primary=${location.primary}">

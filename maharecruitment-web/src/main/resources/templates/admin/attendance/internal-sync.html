@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -125,12 +125,12 @@
                                     <code>employee_master.employee_code</code> from Aadhaar, and match rows to internal employees.
                                 </p>
 
-                                <form th:object="${syncForm}" th:action="@{/admin/attendance/internal-sync}" method="post" class="row g-3">
-                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <form autocomplete="off" th:object="${syncForm}" th:action="@{/admin/attendance/internal-sync}" method="post" class="row g-3">
+                                    <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                                     <div class="col-md-6">
                                         <label class="form-label">Start Date <span class="text-danger">*</span></label>
-                                        <input type="date" th:field="*{startDate}" class="form-control"
+                                        <input autocomplete="off" type="date" th:field="*{startDate}" class="form-control"
                                             th:attr="max=${maxSelectableDate}"
                                             th:disabled="${!syncEnabled}">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}"></div>
@@ -138,7 +138,7 @@
 
                                     <div class="col-md-6">
                                         <label class="form-label">End Date <span class="text-danger">*</span></label>
-                                        <input type="date" th:field="*{endDate}" class="form-control"
+                                        <input autocomplete="off" type="date" th:field="*{endDate}" class="form-control"
                                             th:attr="max=${maxSelectableDate}"
                                             th:disabled="${!syncEnabled}">
                                         <div class="text-danger small" th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}"></div>

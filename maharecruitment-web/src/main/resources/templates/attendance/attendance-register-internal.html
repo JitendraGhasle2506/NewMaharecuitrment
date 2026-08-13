@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -1521,13 +1521,13 @@
                             <div class="month-picker-card">
                                 <h6 class="profile-panel-title mb-2">Data for Month</h6>
                                 <p class="month-picker-help">Select a month to refresh the register.</p>
-                                <form th:action="@{/employee/fetchMyAttendance}" method="post">
-                                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <form autocomplete="off" th:action="@{/employee/fetchMyAttendance}" method="post">
+                                    <input autocomplete="off" type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                     <div class="input-group">
                                         <span class="input-group-text datepicker-icon" style="cursor: pointer; border-right: none;">
                                             <i class="fa fa-calendar text-primary"></i>
                                         </span>
-                                        <input type="text" name="dateRange" id="dateRangePicker" class="form-control"
+                                        <input autocomplete="off" type="text" name="dateRange" id="dateRangePicker" class="form-control"
                                                th:value="${attendance.dateRange}" readonly
                                                style="cursor: pointer; border-left: none;">
                                     </div>

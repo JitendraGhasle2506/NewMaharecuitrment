@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -300,7 +300,7 @@
                 <div th:if="${error == null}">
                     <div class="calendar-toolbar">
                         <div class="d-flex flex-wrap justify-content-between gap-3 align-items-end">
-                            <form class="month-picker-card" method="get" th:action="@{/employee/attendance-calendar}">
+                            <form autocomplete="off" class="month-picker-card" method="get" th:action="@{/employee/attendance-calendar}">
                                 <label for="dateRangePicker" class="form-label fw-bold text-muted text-uppercase" style="font-size:12px; letter-spacing:0.08em;">Month</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fa fa-calendar"></i></span>

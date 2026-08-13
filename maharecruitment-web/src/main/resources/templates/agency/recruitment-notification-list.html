@@ -654,7 +654,7 @@
                     </div>
 
                     <div class="filter-bar">
-                        <form class="filter-form" th:action="@{/agency/recruitment-notifications}" method="get">
+                        <form autocomplete="off" class="filter-form" th:action="@{/agency/recruitment-notifications}" method="get">
                             <div class="filter-field filter-search">
                                 <label class="filter-label" for="notificationSearch">
                                     <i class="fa fa-search" aria-hidden="true"></i>
@@ -664,7 +664,7 @@
                                     <span class="filter-input-icon">
                                         <i class="fa fa-search" aria-hidden="true"></i>
                                     </span>
-                                    <input type="text" id="notificationSearch" class="form-control" name="search"
+                                    <input autocomplete="off" type="text" id="notificationSearch" class="form-control" name="search"
                                         th:value="${searchTerm}" placeholder="Search by request ID or project name"
                                         style="padding-left: 38px !important;">
                                 </div>
@@ -674,7 +674,7 @@
                                     <i class="fa fa-list-ol" aria-hidden="true"></i>
                                     Page Size
                                 </label>
-                                <select id="notificationPageSize" name="size" class="form-select">
+                                <select autocomplete="off" id="notificationPageSize" name="size" class="form-select">
                                     <option value="10" th:selected="${pageSize == 10}">10 per page</option>
                                     <option value="25" th:selected="${pageSize == 25}">25 per page</option>
                                     <option value="50" th:selected="${pageSize == 50}">50 per page</option>

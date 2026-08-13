@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -64,15 +64,15 @@
                                 <div class="mb-1"><span class="info-label">Designation</span> <span class="info-value" th:text="${targetEmployee.designation != null ? targetEmployee.designation.designationName : '-'}"></span></div>
                                 
                                 <h6 class="section-title">Select Month</h6>
-                                <form th:action="@{/hod1/team-attendance/view}" method="get">
-                                    <input type="hidden" name="empId" th:value="${targetEmployee.employeeId}">
+                                <form autocomplete="off" th:action="@{/hod1/team-attendance/view}" method="get">
+                                    <input autocomplete="off" type="hidden" name="empId" th:value="${targetEmployee.employeeId}">
                                     <div class="input-group mb-2">
                                         <span class="input-group-text datepicker-icon" style="cursor: pointer;"><i class="fa fa-calendar"></i></span>
-                                        <input type="text" id="dateRangePicker" class="form-control form-control-sm" 
+                                        <input autocomplete="off" type="text" id="dateRangePicker" class="form-control form-control-sm" 
                                                th:value="${attendance.dateRange}" readonly 
                                                style="background-color: #fff; cursor: pointer;">
-                                        <input type="hidden" name="month" id="hiddenMonth" th:value="${selectedMonth}">
-                                        <input type="hidden" name="year" id="hiddenYear" th:value="${selectedYear}">
+                                        <input autocomplete="off" type="hidden" name="month" id="hiddenMonth" th:value="${selectedMonth}">
+                                        <input autocomplete="off" type="hidden" name="year" id="hiddenYear" th:value="${selectedYear}">
                                     </div>
                                 </form>
                             </div>

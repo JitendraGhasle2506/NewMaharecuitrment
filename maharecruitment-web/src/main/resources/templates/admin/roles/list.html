@@ -57,7 +57,7 @@
 						</div>
 					</div>
 
-					<form class="management-toolbar" method="get" th:action="@{/admin/roles}" role="search">
+					<form autocomplete="off" class="management-toolbar" method="get" th:action="@{/admin/roles}" role="search">
 						<div class="management-search-group">
 							<label class="management-control-label" for="roleSearch">Search roles</label>
 							<div class="management-search-field">
@@ -67,7 +67,7 @@
 						</div>
 						<div class="management-toolbar-actions">
 							<label class="page-size-control" for="rolePageSize"><span>Show</span>
-								<select id="rolePageSize" class="form-select" name="size" data-auto-submit aria-label="Roles per page">
+								<select autocomplete="off" id="rolePageSize" class="form-select" name="size" data-auto-submit aria-label="Roles per page">
 									<option value="10" th:selected="${pageSize == 10}">10</option>
 									<option value="25" th:selected="${pageSize == 25}">25</option>
 									<option value="50" th:selected="${pageSize == 50}">50</option>
@@ -110,10 +110,10 @@
 												th:if="${protectedRoleNames.contains(role.name)}" title="Protected system roles cannot be deleted">
 												<i class="fa-solid fa-lock" aria-hidden="true"></i><span>Protected</span>
 											</button>
-											<form class="d-inline js-confirm-action" th:unless="${protectedRoleNames.contains(role.name)}"
+											<form autocomplete="off" class="d-inline js-confirm-action" th:unless="${protectedRoleNames.contains(role.name)}"
 												th:action="@{/admin/roles/{id}/delete(id=${role.id},page=${roles.number},size=${roles.size},search=${searchTerm})}" method="post"
 												data-confirm-message="Delete this role? Roles assigned to users cannot be deleted.">
-												<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+												<input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 												<button type="submit" class="btn btn-outline-danger btn-sm" th:attr="aria-label=${'Delete ' + role.name}"><i class="fa-regular fa-trash-can" aria-hidden="true"></i><span>Delete</span></button>
 											</form>
 										</div></td>

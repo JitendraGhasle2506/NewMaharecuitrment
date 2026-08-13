@@ -40,11 +40,11 @@
                         <p>Configure one workforce role per designation and apply it to linked employee accounts.</p>
                     </div>
                 </div>
-                <form class="js-confirm-action" method="post"
+                <form autocomplete="off" class="js-confirm-action" method="post"
                       th:action="@{/admin/designation-role-assignments/assign-all}"
                       data-confirm-message="Assign every configured designation role to all pending active users?">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                    <input type="hidden" name="search" th:value="${searchTerm}">
+                    <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input autocomplete="off" type="hidden" name="search" th:value="${searchTerm}">
                     <button type="submit" class="btn btn-light management-primary-action">
                         <i class="fa-solid fa-users-gear" aria-hidden="true"></i>
                         <span>Assign all configured roles</span>
@@ -79,14 +79,14 @@
                 <div class="role-assignment-panel">
                     <h3>Assign role by designation</h3>
                     <p>Select a designation and role. The role will be added to every active linked user in that designation.</p>
-                    <form class="role-assignment-controls js-confirm-action" method="post"
+                    <form autocomplete="off" class="role-assignment-controls js-confirm-action" method="post"
                           th:action="@{/admin/designation-role-assignments/assign}"
                           data-confirm-message="Assign the selected role to all active users in this designation?">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <input type="hidden" name="search" th:value="${searchTerm}">
+                        <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input autocomplete="off" type="hidden" name="search" th:value="${searchTerm}">
                         <div class="role-assignment-control">
                             <label for="designationAssignmentSelect">Select designation <span class="text-danger">*</span></label>
-                            <select id="designationAssignmentSelect" class="form-select" name="designationId" required>
+                            <select autocomplete="off" id="designationAssignmentSelect" class="form-select" name="designationId" required>
                                 <option value="" selected disabled>-- Select designation --</option>
                                 <option th:each="designation : ${designationOptions}"
                                         th:value="${designation.designationId}"
@@ -97,7 +97,7 @@
                         </div>
                         <div class="role-assignment-control">
                             <label for="designationRoleSelect">Select role <span class="text-danger">*</span></label>
-                            <select id="designationRoleSelect" class="form-select" name="roleName" required>
+                            <select autocomplete="off" id="designationRoleSelect" class="form-select" name="roleName" required>
                                 <option value="" selected disabled>-- Select role --</option>
                                 <option th:each="roleName : ${availableRoleNames}"
                                         th:value="${roleName}" th:text="${roleName}">ROLE_EMPLOYEE</option>
@@ -128,7 +128,7 @@
                     </div>
                 </div>
 
-                <form class="management-toolbar" method="get"
+                <form autocomplete="off" class="management-toolbar" method="get"
                       th:action="@{/admin/designation-role-assignments}" role="search">
                     <div class="management-search-group">
                         <label class="management-control-label" for="designationRoleSearch">Search designation or employee</label>
@@ -211,13 +211,13 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <form class="designation-role-form js-confirm-action" method="post"
+                                        <form autocomplete="off" class="designation-role-form js-confirm-action" method="post"
                                               th:action="@{/admin/designation-role-assignments/{id}/assign(id=${assignment.designationId})}"
                                               th:attr="data-confirm-message=${'Save this role and assign it to active ' + assignment.designationName + ' employee accounts?'}">
-                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <input type="hidden" name="search" th:value="${searchTerm}">
+                                            <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <input autocomplete="off" type="hidden" name="search" th:value="${searchTerm}">
                                             <label class="visually-hidden" th:for="${'role-' + assignment.designationId}">Select role</label>
-                                            <select class="form-select form-select-sm" name="roleName" required
+                                            <select autocomplete="off" class="form-select form-select-sm" name="roleName" required
                                                     th:id="${'role-' + assignment.designationId}">
                                                 <option value="" disabled th:selected="${!assignment.configuredRoleAvailable}">-- Select role --</option>
                                                 <option th:each="roleName : ${availableRoleNames}"

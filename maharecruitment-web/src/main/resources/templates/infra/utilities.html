@@ -217,15 +217,15 @@
                         <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
                     </div>
                     <div class="asset-body">
-                        <form th:action="@{/infra/utilities/assets/category}" method="post">
+                        <form autocomplete="off" th:action="@{/infra/utilities/assets/category}" method="post">
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Category Name <span class="text-danger">*</span></label>
-                                    <input type="text" name="categoryName" class="form-control" required placeholder="e.g. Laptop, Mobile">
+                                    <input autocomplete="off" type="text" name="categoryName" class="form-control" required placeholder="e.g. Laptop, Mobile">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Description</label>
-                                    <textarea name="description" class="form-control" rows="1"></textarea>
+                                    <textarea autocomplete="off" name="description" class="form-control" rows="1"></textarea>
                                 </div>
                             </div>
                             <hr class="section-divider">
@@ -254,36 +254,36 @@
                         <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
                     </div>
                     <div class="asset-body">
-                        <form th:action="@{/infra/utilities/assets/add}" method="post">
+                        <form autocomplete="off" th:action="@{/infra/utilities/assets/add}" method="post">
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label">Category <span class="text-danger">*</span></label>
-                                    <select name="assetCategory.id" class="form-select" required>
+                                    <select autocomplete="off" name="assetCategory.id" class="form-select" required>
                                         <option value="">Select Category</option>
                                         <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.categoryName}"></option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Asset Code / Serial No <span class="text-danger">*</span></label>
-                                    <input type="text" name="assetCode" class="form-control" required>
+                                    <input autocomplete="off" type="text" name="assetCode" class="form-control" required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Asset Name <span class="text-danger">*</span></label>
-                                    <input type="text" name="assetName" class="form-control" required placeholder="e.g. Dell Latitude 5420">
+                                    <input autocomplete="off" type="text" name="assetName" class="form-control" required placeholder="e.g. Dell Latitude 5420">
                                 </div>
                             </div>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label">Purchase Date</label>
-                                    <input type="date" name="purchaseDate" class="form-control">
+                                    <input autocomplete="off" type="date" name="purchaseDate" class="form-control">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Warranty Expiry</label>
-                                    <input type="date" name="warrantyExpiryDate" class="form-control">
+                                    <input autocomplete="off" type="date" name="warrantyExpiryDate" class="form-control">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Notes</label>
-                                    <textarea name="notes" class="form-control" rows="1"></textarea>
+                                    <textarea autocomplete="off" name="notes" class="form-control" rows="1"></textarea>
                                 </div>
                             </div>
                             <hr class="section-divider">
@@ -312,18 +312,18 @@
                         <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
                     </div>
                     <div class="asset-body">
-                        <form th:action="@{/infra/utilities/assets/allocate}" method="post">
+                        <form autocomplete="off" th:action="@{/infra/utilities/assets/allocate}" method="post">
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Select Employee <span class="text-danger">*</span></label>
-                                    <select name="employeeId" class="form-select" required>
+                                    <select autocomplete="off" name="employeeId" class="form-select" required>
                                         <option value="">-- Choose Employee --</option>
                                         <option th:each="emp : ${employees}" th:value="${emp.employeeId}" th:text="${emp.fullName + ' (' + emp.employeeCode + ')'}"></option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Select Available Asset <span class="text-danger">*</span></label>
-                                    <select name="assetId" class="form-select" required>
+                                    <select autocomplete="off" name="assetId" class="form-select" required>
                                         <option value="">-- Choose Asset --</option>
                                         <option th:each="asset : ${assets}" th:if="${asset.status == 'AVAILABLE'}" th:value="${asset.id}" th:text="${asset.assetName + ' (' + asset.assetCode + ')'}"></option>
                                     </select>
@@ -332,7 +332,7 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-12">
                                     <label class="form-label">Remarks</label>
-                                    <textarea name="remarks" class="form-control" rows="2" placeholder="e.g. Issued fresh charger too"></textarea>
+                                    <textarea autocomplete="off" name="remarks" class="form-control" rows="2" placeholder="e.g. Issued fresh charger too"></textarea>
                                 </div>
                             </div>
                             <hr class="section-divider">
@@ -361,23 +361,23 @@
                         <button type="button" class="btn-close" onclick="toggleView('listView')" aria-label="Close"></button>
                     </div>
                     <div class="asset-body">
-                        <form th:action="@{/infra/utilities/assets/return}" method="post">
-                            <input type="hidden" name="allocationId" id="returnAllocationId">
+                        <form autocomplete="off" th:action="@{/infra/utilities/assets/return}" method="post">
+                            <input autocomplete="off" type="hidden" name="allocationId" id="returnAllocationId">
                             
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Employee</label>
-                                    <input type="text" id="returnEmpName" class="form-control bg-light" readonly>
+                                    <input autocomplete="off" type="text" id="returnEmpName" class="form-control bg-light" readonly>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Asset</label>
-                                    <input type="text" id="returnAssetName" class="form-control bg-light" readonly>
+                                    <input autocomplete="off" type="text" id="returnAssetName" class="form-control bg-light" readonly>
                                 </div>
                             </div>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-12">
                                     <label class="form-label">Return Condition / Remarks <span class="text-danger">*</span></label>
-                                    <textarea name="remarks" class="form-control" required rows="3" placeholder="e.g. Working fine, scratches on top"></textarea>
+                                    <textarea autocomplete="off" name="remarks" class="form-control" required rows="3" placeholder="e.g. Working fine, scratches on top"></textarea>
                                 </div>
                             </div>
                             <hr class="section-divider">

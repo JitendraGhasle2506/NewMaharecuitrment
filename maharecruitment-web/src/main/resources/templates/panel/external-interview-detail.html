@@ -221,11 +221,11 @@
                     if necessary, provided the final department decision hasn't been made yet.
                 </div>
 
-                <form th:action="@{/panel/external-interviews/{id}/feedback(id=${detail.recruitmentInterviewDetailId})}"
+                <form autocomplete="off" th:action="@{/panel/external-interviews/{id}/feedback(id=${detail.recruitmentInterviewDetailId})}"
                     method="post" th:object="${feedbackForm}">
 
                     <div class="table-responsive">
-                        <input type="hidden" name="leadershipQualityMarks" value="0" />
+                        <input autocomplete="off" type="hidden" name="leadershipQualityMarks" value="0" />
                         <table class="assessment-table">
                             <thead>
                                 <tr>
@@ -241,7 +241,7 @@
                                     <td class="criteria-title">COMMUNICATION SKILLS</td>
                                     <td class="text-center fw-bold">5</td>
                                     <td>
-                                        <select th:field="*{communicationSkillMarks}" class="form-select form-select-sm"
+                                        <select autocomplete="off" th:field="*{communicationSkillMarks}" class="form-select form-select-sm"
                                             style="width: 100%;" required>
                                             <option th:each="score : ${#numbers.sequence(0,5)}" th:value="${score}"
                                                 th:text="${score}"></option>
@@ -253,7 +253,7 @@
                                     <td class="criteria-title">TECHNICAL SKILLS</td>
                                     <td class="text-center fw-bold">5</td>
                                     <td>
-                                        <select th:field="*{technicalSkillMarks}" class="form-select form-select-sm"
+                                        <select autocomplete="off" th:field="*{technicalSkillMarks}" class="form-select form-select-sm"
                                             style="width: 100%;" required>
                                             <option th:each="score : ${#numbers.sequence(0,5)}" th:value="${score}"
                                                 th:text="${score}"></option>
@@ -265,7 +265,7 @@
                                     <td class="criteria-title">PROJECT EXPERIENCE</td>
                                     <td class="text-center fw-bold">5</td>
                                     <td>
-                                        <select th:field="*{relevantExperienceMarks}" class="form-select form-select-sm"
+                                        <select autocomplete="off" th:field="*{relevantExperienceMarks}" class="form-select form-select-sm"
                                             style="width: 100%;" required>
                                             <option th:each="score : ${#numbers.sequence(0,5)}" th:value="${score}"
                                                 th:text="${score}"></option>
@@ -275,14 +275,14 @@
                                 <tr class="meta-row border-top border-2">
                                     <td colspan="2">
                                         <label class="meta-label">Remarks:</label>
-                                        <textarea class="form-control" th:field="*{assessmentRemarks}" rows="3"
+                                        <textarea autocomplete="off" class="form-control" th:field="*{assessmentRemarks}" rows="3"
                                             placeholder="Candidate strengths, concerns, and observations"></textarea>
                                         <div th:if="${#fields.hasErrors('assessmentRemarks')}"
                                             th:errors="*{assessmentRemarks}" class="error-message"></div>
                                     </td>
                                     <td>
                                         <label class="meta-label">Grade :</label>
-                                        <select class="form-select" th:field="*{interviewerGrade}" required>
+                                        <select autocomplete="off" class="form-select" th:field="*{interviewerGrade}" required>
                                             <option value="">Select Grade</option>
                                             <option value="A">A</option>
                                             <option value="B">B</option>
@@ -293,7 +293,7 @@
                                     </td>
                                     <td>
                                         <label class="meta-label">Recommendation Status:</label>
-                                        <select class="form-select" th:field="*{recommendationStatus}" required>
+                                        <select autocomplete="off" class="form-select" th:field="*{recommendationStatus}" required>
                                             <option value="" disabled selected>Select Recommendation</option>
                                             <option value="RECOMMENDED" class="text-success fw-bold">Recommended
                                             </option>
@@ -307,7 +307,7 @@
                                 <tr class="meta-row border-top border-2">
                                     <td colspan="4">
                                         <label class="meta-label">Final Remarks:</label>
-                                        <textarea class="form-control" th:field="*{finalRemarks}" rows="3"
+                                        <textarea autocomplete="off" class="form-control" th:field="*{finalRemarks}" rows="3"
                                             placeholder="Final recommendation note for approval flow"></textarea>
                                         <div th:if="${#fields.hasErrors('finalRemarks')}" th:errors="*{finalRemarks}"
                                             class="error-message"></div>

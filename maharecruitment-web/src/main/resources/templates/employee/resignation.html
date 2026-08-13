@@ -43,15 +43,15 @@
                     You have already submitted a resignation request or have an active relieving process.
                 </div>
                 
-                <form th:if="${!hasActiveResignation}" th:action="@{/employee/resignation/submit}" th:object="${relievingDto}" method="post">
+                <form autocomplete="off" th:if="${!hasActiveResignation}" th:action="@{/employee/resignation/submit}" th:object="${relievingDto}" method="post">
                     <div class="row">
                         <div class="col-md-6 form-group">
                             <label for="resignDate">Actual Resignation Date <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="resignDate" th:field="*{resignDate}" required>
+                            <input autocomplete="off" type="date" class="form-control" id="resignDate" th:field="*{resignDate}" required>
                         </div>
                         <div class="col-md-6 form-group">
                             <label for="requestedLastWorkingDate">Requested Last Working Date</label>
-                            <input type="date" class="form-control" id="requestedLastWorkingDate" th:field="*{requestedLastWorkingDate}">
+                            <input autocomplete="off" type="date" class="form-control" id="requestedLastWorkingDate" th:field="*{requestedLastWorkingDate}">
                             <small class="text-muted">Subject to HR and Management approval.</small>
                         </div>
                     </div>
@@ -59,7 +59,7 @@
                     <div class="row">
                         <div class="col-md-12 form-group">
                             <label for="detailedReason">Primary Reason for Leaving</label>
-                            <select class="form-select form-control" id="detailedReason" th:field="*{detailedReason}">
+                            <select autocomplete="off" class="form-select form-control" id="detailedReason" th:field="*{detailedReason}">
                                 <option value="">Select Reason...</option>
                                 <option value="Better Opportunity / Career Growth">Better Opportunity / Career Growth</option>
                                 <option value="Relocation">Relocation</option>
@@ -74,17 +74,17 @@
 
                     <div class="form-group">
                         <label for="activeProjectsHandover">Active Projects / Proposed Handover</label>
-                        <textarea class="form-control" id="activeProjectsHandover" th:field="*{activeProjectsHandover}" rows="3" placeholder="Briefly describe what you are currently working on and who might take it over..."></textarea>
+                        <textarea autocomplete="off" class="form-control" id="activeProjectsHandover" th:field="*{activeProjectsHandover}" rows="3" placeholder="Briefly describe what you are currently working on and who might take it over..."></textarea>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 form-group">
                             <label for="personalEmail">Personal Email <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" id="personalEmail" th:field="*{personalEmail}" placeholder="For future communication" required>
+                            <input autocomplete="off" type="email" class="form-control" id="personalEmail" th:field="*{personalEmail}" placeholder="For future communication" required>
                         </div>
                         <div class="col-md-6 form-group">
                             <label for="alternateMobile">Alternate Mobile Number</label>
-                            <input type="text" class="form-control" id="alternateMobile" th:field="*{alternateMobile}" 
+                            <input autocomplete="off" type="text" class="form-control" id="alternateMobile" th:field="*{alternateMobile}" 
                                    maxlength="10" minlength="10" pattern="[0-9]{10}" title="Please enter exactly 10 digits"
                                    oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                         </div>
@@ -92,17 +92,17 @@
 
                     <div class="form-group">
                         <label for="forwardingAddress">Forwarding Address</label>
-                        <textarea class="form-control" id="forwardingAddress" th:field="*{forwardingAddress}" rows="2" placeholder="For any physical documents (e.g., Form 16)"></textarea>
+                        <textarea autocomplete="off" class="form-control" id="forwardingAddress" th:field="*{forwardingAddress}" rows="2" placeholder="For any physical documents (e.g., Form 16)"></textarea>
                     </div>
 
                     <div class="form-group">
                         <label for="exitFeedback">Exit Feedback / Suggestions</label>
-                        <textarea class="form-control" id="exitFeedback" th:field="*{exitFeedback}" rows="3" placeholder="Any feedback about your time with us..."></textarea>
+                        <textarea autocomplete="off" class="form-control" id="exitFeedback" th:field="*{exitFeedback}" rows="3" placeholder="Any feedback about your time with us..."></textarea>
                     </div>
                     
                     <div class="form-group">
                         <label for="remarks">Additional Remarks</label>
-                        <textarea class="form-control" id="remarks" th:field="*{remarks}" rows="2" placeholder="Optional details..."></textarea>
+                        <textarea autocomplete="off" class="form-control" id="remarks" th:field="*{remarks}" rows="2" placeholder="Optional details..."></textarea>
                     </div>
                     
                     <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to submit your resignation?')">Submit Resignation</button>

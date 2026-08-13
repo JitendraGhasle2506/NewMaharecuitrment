@@ -27,10 +27,10 @@
 
                     <div class="row g-2 mb-4">
                         <div class="col-md-4">
-                            <form th:action="@{/agency/selected-candidates/{id}(id=${selectedRecruitmentNotificationId})}" method="get">
+                            <form autocomplete="off" th:action="@{/agency/selected-candidates/{id}(id=${selectedRecruitmentNotificationId})}" method="get">
                                 <div class="input-group">
                                     <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                    <input type="text" name="search" class="form-control border-start-0" 
+                                    <input autocomplete="off" type="text" name="search" class="form-control border-start-0" 
                                            placeholder="Search by name, email, or designation..." 
                                            th:value="${searchTerm}" />
                                     <button class="btn btn-primary" type="submit">Search</button>
@@ -140,12 +140,12 @@
                                                 th:href="@{/agency/onboarding}">
                                                 Onboarding Ready
                                             </a>
-                                            <form method="post"
+                                            <form autocomplete="off" method="post"
                                                 th:if="${candidate.withdrawAllowed}"
                                                 th:action="@{/agency/selected-candidates/{recruitmentNotificationId}/candidates/{recruitmentInterviewDetailId}/withdraw(
                                                     recruitmentNotificationId=${candidate.recruitmentNotificationId},
                                                     recruitmentInterviewDetailId=${candidate.recruitmentInterviewDetailId})}">
-                                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                                 <button type="submit" class="btn btn-outline-danger btn-sm"
                                                     onclick="return confirm('Withdraw this candidate application?')">
                                                     Withdraw

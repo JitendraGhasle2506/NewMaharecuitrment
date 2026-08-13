@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -25,10 +25,10 @@
 
                     <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
-                    <form th:object="${menuForm}"
+                    <form autocomplete="off" th:object="${menuForm}"
                         th:action="${isEdit} ? @{/admin/menus/{id}(id=${menuId})} : @{/admin/menus}"
                         method="post" class="row g-3" id="menuForm">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                         <div class="col-md-6">
                             <label class="form-label">Menu Name (English) <span class="text-danger">*</span></label>
@@ -44,7 +44,7 @@
 
                         <div class="col-md-4">
                             <label class="form-label">Menu Type <span class="text-danger">*</span></label>
-                            <select class="form-select" th:field="*{isSubMenu}" id="menuType">
+                            <select autocomplete="off" class="form-select" th:field="*{isSubMenu}" id="menuType">
                             <option value="">Select Menu Type</option>
                                 <option th:value="${menuTypeParent}">Parent Menu (has submenus)</option>
                                 <option th:value="${menuTypeDirect}">Direct Link</option>
@@ -61,7 +61,7 @@
 
                         <div class="col-md-4">
                             <label class="form-label">Status</label>
-                            <select class="form-select" th:field="*{isActive}">
+                            <select autocomplete="off" class="form-select" th:field="*{isActive}">
                                 <option value="Y">Active</option>
                                 <option value="N">Inactive</option>
                             </select>
@@ -78,7 +78,7 @@
 
                         <div class="col-12">
                             <label class="form-label">Mapped Roles <span class="text-danger">*</span></label>
-                            <select class="form-select" multiple th:field="*{roleIds}">
+                            <select autocomplete="off" class="form-select" multiple th:field="*{roleIds}">
                                 <option th:each="role : ${availableRoles}" th:value="${role.id}" th:text="${role.name}"></option>
                             </select>
                             <small class="text-muted">Hold Ctrl to select multiple roles.</small>

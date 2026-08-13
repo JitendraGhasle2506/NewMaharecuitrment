@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -15,14 +15,14 @@
                     <h2 class="mb-0">Manual Attendance Approvals (<span th:text="${currentRoleType}"></span>)</h2>
                     
                     <div class="d-flex align-items-center gap-2">
-                        <form th:action="@{/hod1/manual-attendance}" method="get" id="filterForm" class="d-flex align-items-center gap-2">
-                            <input type="hidden" name="roleType" th:value="${currentRoleType}">
+                        <form autocomplete="off" th:action="@{/hod1/manual-attendance}" method="get" id="filterForm" class="d-flex align-items-center gap-2">
+                            <input autocomplete="off" type="hidden" name="roleType" th:value="${currentRoleType}">
                             
-                            <select name="month" class="form-select form-select-sm" style="width: 130px;" onchange="this.form.submit()">
+                            <select autocomplete="off" name="month" class="form-select form-select-sm" style="width: 130px;" onchange="this.form.submit()">
                                 <option th:each="m : ${monthNames}" th:value="${m.key}" th:text="${m.value}" th:selected="${m.key == selectedMonth}"></option>
                             </select>
 
-                            <select name="year" class="form-select form-select-sm" style="width: 100px;" onchange="this.form.submit()">
+                            <select autocomplete="off" name="year" class="form-select form-select-sm" style="width: 100px;" onchange="this.form.submit()">
                                 <option th:each="y : ${yearsList}" th:value="${y}" th:text="${y}" th:selected="${y == selectedYear}"></option>
                             </select>
                         </form>

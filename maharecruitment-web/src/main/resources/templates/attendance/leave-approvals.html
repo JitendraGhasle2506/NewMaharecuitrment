@@ -111,11 +111,11 @@
                     
                     <!-- Filter Section -->
                     <div class="filter-section">
-                        <form th:action="@{/hod1/leaveApprovals}" method="get" id="filterForm" class="row g-3 justify-content-center">
+                        <form autocomplete="off" th:action="@{/hod1/leaveApprovals}" method="get" id="filterForm" class="row g-3 justify-content-center">
                             <div class="col-md-8">
                                 <label class="filter-label text-center d-block">Search Employee Name or Designation</label>
                                 <div class="input-group input-group-sm mb-2">
-                                    <input type="text" name="query" class="form-control search-input" th:value="${searchQuery}" placeholder="Search by name or designation...">
+                                    <input autocomplete="off" type="text" name="query" class="form-control search-input" th:value="${searchQuery}" placeholder="Search by name or designation...">
                                     <button class="btn search-btn px-4" type="submit">
                                         <i class="fa fa-search me-2"></i>Apply Search
                                     </button>
@@ -126,7 +126,7 @@
                                     </a>
                                 </div>
                             </div>
-                            <input type="hidden" name="activeTab" id="activeTabInput" th:value="${param.activeTab}">
+                            <input autocomplete="off" type="hidden" name="activeTab" id="activeTabInput" th:value="${param.activeTab}">
                         </form>
                     </div>
 
@@ -202,7 +202,7 @@
                                                 <small class="text-muted d-block" th:text="${#temporals.format(leave.applicationDate, 'HH:mm')}"></small>
                                             </td>
                                             <td>
-                                                <input type="text" class="form-control form-control-sm remarks-input" th:id="'leave-remarks-' + ${leave.leaveId}" placeholder="Enter remarks...">
+                                                <input autocomplete="off" type="text" class="form-control form-control-sm remarks-input" th:id="'leave-remarks-' + ${leave.leaveId}" placeholder="Enter remarks...">
                                             </td>
                                             <td class="text-center">
                                                 <div class="btn-group">
@@ -270,7 +270,7 @@
                                                 <small class="text-muted d-block" th:text="${#temporals.format(tour.applicationDate, 'HH:mm')}"></small>
                                             </td>
                                             <td>
-                                                <input type="text" class="form-control form-control-sm remarks-input" th:id="'tour-remarks-' + ${tour.tourId}" placeholder="Enter remarks...">
+                                                <input autocomplete="off" type="text" class="form-control form-control-sm remarks-input" th:id="'tour-remarks-' + ${tour.tourId}" placeholder="Enter remarks...">
                                             </td>
                                             <td class="text-center">
                                                 <div class="btn-group">
@@ -424,26 +424,26 @@
             </div>
             
             <!-- Action Forms -->
-            <form id="leaveApproveForm" th:action="@{/hod1/approveLeave}" method="post" style="display:none;">
-                <input type="hidden" name="leaveId" id="leaveApproveId">
-                <input type="hidden" name="remarks" id="leaveApproveRemarks">
-                <input type="hidden" name="query" th:value="${searchQuery}">
+            <form autocomplete="off" id="leaveApproveForm" th:action="@{/hod1/approveLeave}" method="post" style="display:none;">
+                <input autocomplete="off" type="hidden" name="leaveId" id="leaveApproveId">
+                <input autocomplete="off" type="hidden" name="remarks" id="leaveApproveRemarks">
+                <input autocomplete="off" type="hidden" name="query" th:value="${searchQuery}">
             </form>
-            <form id="leaveRejectForm" th:action="@{/hod1/rejectLeave}" method="post" style="display:none;">
-                <input type="hidden" name="leaveId" id="leaveRejectId">
-                <input type="hidden" name="remarks" id="leaveRejectRemarks">
-                <input type="hidden" name="query" th:value="${searchQuery}">
+            <form autocomplete="off" id="leaveRejectForm" th:action="@{/hod1/rejectLeave}" method="post" style="display:none;">
+                <input autocomplete="off" type="hidden" name="leaveId" id="leaveRejectId">
+                <input autocomplete="off" type="hidden" name="remarks" id="leaveRejectRemarks">
+                <input autocomplete="off" type="hidden" name="query" th:value="${searchQuery}">
             </form>
  
-            <form id="tourApproveForm" th:action="@{/hod1/approveTour}" method="post" style="display:none;">
-                <input type="hidden" name="tourId" id="tourApproveId">
-                <input type="hidden" name="remarks" id="tourApproveRemarks">
-                <input type="hidden" name="query" th:value="${searchQuery}">
+            <form autocomplete="off" id="tourApproveForm" th:action="@{/hod1/approveTour}" method="post" style="display:none;">
+                <input autocomplete="off" type="hidden" name="tourId" id="tourApproveId">
+                <input autocomplete="off" type="hidden" name="remarks" id="tourApproveRemarks">
+                <input autocomplete="off" type="hidden" name="query" th:value="${searchQuery}">
             </form>
-            <form id="tourRejectForm" th:action="@{/hod1/rejectTour}" method="post" style="display:none;">
-                <input type="hidden" name="tourId" id="tourRejectId">
-                <input type="hidden" name="remarks" id="tourRejectRemarks">
-                <input type="hidden" name="query" th:value="${searchQuery}">
+            <form autocomplete="off" id="tourRejectForm" th:action="@{/hod1/rejectTour}" method="post" style="display:none;">
+                <input autocomplete="off" type="hidden" name="tourId" id="tourRejectId">
+                <input autocomplete="off" type="hidden" name="remarks" id="tourRejectRemarks">
+                <input autocomplete="off" type="hidden" name="query" th:value="${searchQuery}">
             </form>
         </section>
     </th:block>

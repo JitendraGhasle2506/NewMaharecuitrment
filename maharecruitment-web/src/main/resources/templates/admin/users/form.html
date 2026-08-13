@@ -52,13 +52,13 @@
 						<span th:text="${errorMessage}"></span>
 					</div>
 
-					<form id="adminUserForm" th:object="${userForm}"
+					<form autocomplete="off" id="adminUserForm" th:object="${userForm}"
 						th:action="${isEdit} ? @{/admin/users/{id}(id=${userId})} : @{/admin/users}"
 						method="post" class="user-form" data-encrypt-credentials="true"
 						th:attr="data-credential-key-url=@{/security/credential-encryption/public-key},
 							data-department-role-name=${departmentRoleName},
 							data-agency-role-name=${agencyRoleName}">
-						<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+						<input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
 						<div class="required-note"><span class="text-danger">*</span> Required fields</div>
 
@@ -76,7 +76,7 @@
 									<label class="form-label" for="name">Full name <span class="text-danger">*</span></label>
 									<input type="text" th:field="*{name}" class="form-control"
 										th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'" maxlength="150"
-										autocomplete="name" required autofocus>
+										autocomplete="off" required autofocus>
 									<div class="invalid-feedback d-block" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
 								</div>
 
@@ -84,7 +84,7 @@
 									<label class="form-label" for="email">Email address <span class="text-danger">*</span></label>
 									<input type="email" th:field="*{email}" class="form-control"
 										th:classappend="${#fields.hasErrors('email')} ? ' is-invalid'" maxlength="255"
-										autocomplete="email" required>
+										autocomplete="off" required>
 									<div class="invalid-feedback d-block" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
 								</div>
 
@@ -92,7 +92,7 @@
 									<label class="form-label" for="mobileNo">Mobile number <span class="optional-label">Optional</span></label>
 									<input type="tel" th:field="*{mobileNo}" class="form-control"
 										th:classappend="${#fields.hasErrors('mobileNo')} ? ' is-invalid'" maxlength="15"
-										autocomplete="tel" inputmode="tel">
+										autocomplete="off" inputmode="tel">
 									<div class="invalid-feedback d-block" th:if="${#fields.hasErrors('mobileNo')}" th:errors="*{mobileNo}"></div>
 								</div>
 
@@ -105,7 +105,7 @@
 									<div class="input-group password-field">
 										<input id="adminUserPassword" type="password" name="password" class="form-control"
 											th:classappend="${#fields.hasErrors('password')} ? ' is-invalid'" maxlength="100"
-											autocomplete="new-password" th:required="${!isEdit}"
+											autocomplete="off" th:required="${!isEdit}"
 											aria-describedby="passwordHelp">
 										<button class="btn password-toggle" type="button" id="passwordToggle"
 											aria-label="Show password" aria-pressed="false">
@@ -143,7 +143,7 @@
 										</div>
 
 										<div class="role-picker-wrap">
-											<select class="form-select" id="rolePicker" aria-describedby="rolePickerHelp exclusiveRoleHelp roleValidationMessage">
+											<select autocomplete="off" class="form-select" id="rolePicker" aria-describedby="rolePickerHelp exclusiveRoleHelp roleValidationMessage">
 												<option value="">Select a role to add</option>
 												<option th:each="role : ${availableRoles}" th:value="${role.id}" th:text="${role.name}"></option>
 											</select>
@@ -157,7 +157,7 @@
 											<div class="selected-role-item" th:each="role : ${availableRoles}"
 												th:classappend="${userForm.roleIds != null and userForm.roleIds.contains(role.id)} ? '' : ' d-none'">
 												<div class="selected-role-check-wrap">
-													<input class="form-check-input selected-role-checkbox" type="checkbox" name="roleIds"
+													<input autocomplete="off" class="form-check-input selected-role-checkbox" type="checkbox" name="roleIds"
 														th:id="${'selectedRole_' + role.id}" th:value="${role.id}"
 														th:checked="${userForm.roleIds != null and userForm.roleIds.contains(role.id)}"
 														th:disabled="${userForm.roleIds == null or !userForm.roleIds.contains(role.id)}"
@@ -196,7 +196,7 @@
 
 										<div class="affiliation-field" id="departmentFieldGroup">
 											<label class="form-label" for="departmentRegistrationId">Department</label>
-											<select class="form-select" th:field="*{departmentRegistrationId}"
+											<select autocomplete="off" class="form-select" th:field="*{departmentRegistrationId}"
 												th:classappend="${#fields.hasErrors('departmentRegistrationId')} ? ' is-invalid'">
 												<option th:value="''">Select department</option>
 												<option th:each="dept : ${departments}" th:value="${dept.departmentRegistrationId}"
@@ -209,7 +209,7 @@
 
 										<div class="affiliation-field" id="agencyFieldGroup">
 											<label class="form-label" for="agencyId">Agency</label>
-											<select class="form-select" th:field="*{agencyId}"
+											<select autocomplete="off" class="form-select" th:field="*{agencyId}"
 												th:classappend="${#fields.hasErrors('agencyId')} ? ' is-invalid'">
 												<option th:value="''">Select agency</option>
 												<option th:each="agency : ${agencies}" th:value="${agency.agencyId}"

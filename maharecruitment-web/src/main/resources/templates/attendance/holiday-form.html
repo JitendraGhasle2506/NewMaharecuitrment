@@ -57,23 +57,23 @@
                                     Create Holiday Entry
                                 </div>
 
-                                <form th:action="@{/common/holidays/save}" th:object="${holiday}" method="post" class="row g-3">
-                                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                    <input type="hidden" th:field="*{id}">
+                                <form autocomplete="off" th:action="@{/common/holidays/save}" th:object="${holiday}" method="post" class="row g-3">
+                                    <input autocomplete="off" type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input autocomplete="off" type="hidden" th:field="*{id}">
 
                                     <div class="col-md-6">
                                         <label for="holidayDate" class="form-label">Holiday Date <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control" id="holidayDate" th:field="*{holidayDate}" required>
+                                        <input autocomplete="off" type="date" class="form-control" id="holidayDate" th:field="*{holidayDate}" required>
                                     </div>
 
                                     <div class="col-md-6">
                                         <label class="form-label">Day Preview</label>
-                                        <input type="text" class="form-control" th:value="${holidayDayLabel}" readonly>
+                                        <input autocomplete="off" type="text" class="form-control" th:value="${holidayDayLabel}" readonly>
                                     </div>
 
                                     <div class="col-12">
                                         <label for="holidayName" class="form-label">Holiday Name <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="holidayName" th:field="*{holidayName}" placeholder="Enter holiday name" maxlength="150" required>
+                                        <input autocomplete="off" type="text" class="form-control" id="holidayName" th:field="*{holidayName}" placeholder="Enter holiday name" maxlength="150" required>
                                     </div>
 
                                     <div class="col-12 d-flex flex-wrap justify-content-end gap-2 pt-2">

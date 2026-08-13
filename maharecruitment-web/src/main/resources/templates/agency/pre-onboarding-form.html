@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -92,13 +92,13 @@
                             </div>
                         </div>
                     </div>
-                    <form id="preOnboardingForm"
+                    <form autocomplete="off" id="preOnboardingForm"
                         th:action="@{${preOnboardingForm.hrFlow ? '/hr/onboarding/process/' + preOnboardingForm.preOnboardingId : '/agency/onboarding/pre/' + preOnboardingForm.recruitmentInterviewDetailId}}"
                         method="post" th:object="${preOnboardingForm}" enctype="multipart/form-data">
-                        <input type="hidden" th:field="*{hrFlow}" />
-                        <input type="hidden" th:field="*{preOnboardingId}" />
-                        <input type="hidden" th:field="*{recruitmentInterviewDetailId}" />
-                        <input type="hidden" th:field="*{recruitmentNotificationId}" />
+                        <input autocomplete="off" type="hidden" th:field="*{hrFlow}" />
+                        <input autocomplete="off" type="hidden" th:field="*{preOnboardingId}" />
+                        <input autocomplete="off" type="hidden" th:field="*{recruitmentInterviewDetailId}" />
+                        <input autocomplete="off" type="hidden" th:field="*{recruitmentNotificationId}" />
 
                         <div class="section-block personal-details-section">
                             <h5 class="section-title">Personal Details</h5>
@@ -108,14 +108,14 @@
                                         <div class="form-group personal-field">
                                             <label class="form-label">Full Name <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <input type="text" class="form-control personal-input" th:field="*{name}"
+                                            <input autocomplete="off" type="text" class="form-control personal-input" th:field="*{name}"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                                 placeholder="Enter candidate full name" required />
                                         </div>
                                         <div class="form-group personal-field">
                                             <label class="form-label">Email <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <input type="email" class="form-control personal-input" th:field="*{email}"
+                                            <input autocomplete="off" type="email" class="form-control personal-input" th:field="*{email}"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                                 placeholder="name@example.com" required />
                                             <div class="invalid-feedback" id="emailValidationMessage">Please enter a
@@ -124,7 +124,7 @@
                                         <div class="form-group personal-field">
                                             <label class="form-label">Mobile <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <input type="text" class="form-control personal-input" th:field="*{mobile}"
+                                            <input autocomplete="off" type="text" class="form-control personal-input" th:field="*{mobile}"
                                                 pattern="[0-9]{10}" maxlength="10" th:readonly="*{hrFlow}"
                                                 th:classappend="*{hrFlow} ? 'readonly-field'"
                                                 placeholder="Enter 10-digit mobile number" required />
@@ -134,7 +134,7 @@
                                         <div class="form-group personal-field">
                                             <label class="form-label">Date of Birth <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <input type="date" class="form-control personal-input" th:field="*{dob}" id="dob"
+                                            <input autocomplete="off" type="date" class="form-control personal-input" th:field="*{dob}" id="dob"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                                 required />
                                             <div class="invalid-feedback">Candidate must be at least 18 years old.</div>
@@ -142,19 +142,19 @@
                                         <div class="form-group personal-field">
                                             <label class="form-label">Gender <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <select class="form-select personal-input" th:field="*{gender}"
+                                            <select autocomplete="off" class="form-select personal-input" th:field="*{gender}"
                                                 th:disabled="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required>
                                                 <option value="">Select Gender</option>
                                                 <option value="Male">Male</option>
                                                 <option value="Female">Female</option>
                                                 <option value="Other">Other</option>
                                             </select>
-                                            <input type="hidden" th:if="*{hrFlow}" th:field="*{gender}" />
+                                            <input autocomplete="off" type="hidden" th:if="*{hrFlow}" th:field="*{gender}" />
                                         </div>
                                         <div class="form-group personal-field">
                                             <label class="form-label">Blood Group <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <select class="form-select personal-input" th:field="*{bloodGroup}"
+                                            <select autocomplete="off" class="form-select personal-input" th:field="*{bloodGroup}"
                                                 th:disabled="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" required>
                                                 <option value="">Select Blood Group</option>
                                                 <option value="A+">A+</option>
@@ -166,12 +166,12 @@
                                                 <option value="O+">O+</option>
                                                 <option value="O-">O-</option>
                                             </select>
-                                            <input type="hidden" th:if="*{hrFlow}" th:field="*{bloodGroup}" />
+                                            <input autocomplete="off" type="hidden" th:if="*{hrFlow}" th:field="*{bloodGroup}" />
                                         </div>
                                         <div class="form-group personal-field personal-field-address">
                                             <label class="form-label">Address <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <textarea class="form-control personal-input personal-textarea" th:field="*{address}" rows="2"
+                                            <textarea autocomplete="off" class="form-control personal-input personal-textarea" th:field="*{address}" rows="2"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                                 placeholder="Enter complete residential address" required></textarea>
                                         </div>
@@ -193,7 +193,7 @@
                                             </div>
                                         </div>
 
-                                        <input type="file" class="d-none" th:field="*{uploadImage}" id="uploadImage"
+                                        <input autocomplete="off" type="file" class="d-none" th:field="*{uploadImage}" id="uploadImage"
                                             accept=".jpg,.jpeg,.png" />
 
                                         <div class="passport-photo-actions">
@@ -224,7 +224,7 @@
                                     <div class="form-group personal-field">
                                         <label class="form-label">Contact Name <span class="text-danger"
                                                 th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                        <input type="text" class="form-control personal-input" th:field="*{emergencyContactName}"
+                                        <input autocomplete="off" type="text" class="form-control personal-input" th:field="*{emergencyContactName}"
                                             id="emergencyContactName"
                                             th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                             pattern="^[a-zA-Z\s]*$"
@@ -234,7 +234,7 @@
                                     <div class="form-group personal-field">
                                         <label class="form-label">Relation <span class="text-danger"
                                                 th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                        <input type="text" class="form-control personal-input" th:field="*{emergencyContactRelation}"
+                                        <input autocomplete="off" type="text" class="form-control personal-input" th:field="*{emergencyContactRelation}"
                                             id="emergencyContactRelation"
                                             th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                             placeholder="e.g. Father, Mother, Spouse" required />
@@ -243,7 +243,7 @@
                                     <div class="form-group personal-field">
                                         <label class="form-label">Mobile Number <span class="text-danger"
                                                 th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                        <input type="tel" class="form-control personal-input" th:field="*{emergencyContactMobile}"
+                                        <input autocomplete="off" type="tel" class="form-control personal-input" th:field="*{emergencyContactMobile}"
                                             id="emergencyContactMobile"
                                             th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                             pattern="^[0-9]{10}$"
@@ -252,7 +252,7 @@
                                     </div>
                                     <div class="form-group personal-field">
                                         <label class="form-label">Alternate Mobile Number</label>
-                                        <input type="tel" class="form-control personal-input" th:field="*{emergencyContactAltMobile}"
+                                        <input autocomplete="off" type="tel" class="form-control personal-input" th:field="*{emergencyContactAltMobile}"
                                             id="emergencyContactAltMobile"
                                             th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                             pattern="^[0-9]{10}$"
@@ -267,47 +267,47 @@
                                 <div class="job-details-grid job-details-grid-3">
                                     <div class="form-group job-field">
                                         <label class="form-label">Request ID</label>
-                                        <input type="text" class="form-control job-input readonly-field" th:field="*{requestId}"
+                                        <input autocomplete="off" type="text" class="form-control job-input readonly-field" th:field="*{requestId}"
                                             readonly />
                                     </div>
                                     <div class="form-group job-field">
                                         <label class="form-label">Project</label>
-                                        <input type="text" class="form-control job-input readonly-field" th:field="*{projectName}"
+                                        <input autocomplete="off" type="text" class="form-control job-input readonly-field" th:field="*{projectName}"
                                             readonly />
                                     </div>
                                     <div class="form-group job-field">
                                         <label class="form-label">Agency Name</label>
-                                        <input type="text" class="form-control job-input readonly-field" th:field="*{agencyName}"
+                                        <input autocomplete="off" type="text" class="form-control job-input readonly-field" th:field="*{agencyName}"
                                             readonly />
                                     </div>
                                 </div>
                                 <div class="job-details-grid job-details-grid-3">
                                     <div class="form-group job-field">
                                         <label class="form-label">Department</label>
-                                        <input type="text" class="form-control job-input readonly-field" th:field="*{department}"
+                                        <input autocomplete="off" type="text" class="form-control job-input readonly-field" th:field="*{department}"
                                             readonly />
                                     </div>
                                     <div class="form-group job-field">
                                         <label class="form-label">Sub Department</label>
-                                        <input type="text" class="form-control job-input readonly-field" th:field="*{subDeptName}"
+                                        <input autocomplete="off" type="text" class="form-control job-input readonly-field" th:field="*{subDeptName}"
                                             readonly />
                                     </div>
                                     <div class="form-group job-field">
                                         <label class="form-label">Designation</label>
-                                        <input type="text" class="form-control job-input readonly-field" th:field="*{designation}"
+                                        <input autocomplete="off" type="text" class="form-control job-input readonly-field" th:field="*{designation}"
                                             readonly />
                                     </div>
                                 </div>
                                 <div class="job-details-grid job-details-grid-2">
                                     <div class="form-group job-field">
                                         <label class="form-label">Level Code</label>
-                                        <input type="text" class="form-control job-input readonly-field" th:field="*{levelCode}"
+                                        <input autocomplete="off" type="text" class="form-control job-input readonly-field" th:field="*{levelCode}"
                                             readonly />
                                     </div>
                                     <div class="form-group job-field">
                                         <label class="form-label">Joining Date <span class="text-danger"
                                                 th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                        <input type="date" class="form-control job-input" th:field="*{joiningDate}" id="joiningDate"
+                                        <input autocomplete="off" type="date" class="form-control job-input" th:field="*{joiningDate}" id="joiningDate"
                                             th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'"
                                             required />
                                     </div>
@@ -321,13 +321,13 @@
                                 <div class="form-group kyc-field">
                                     <label class="form-label">Aadhaar Number <span class="text-danger"
                                             th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input th:if="${!preOnboardingForm.hrFlow}" type="text" class="form-control kyc-input" th:field="*{aadhaar}"
+                                    <input autocomplete="off" th:if="${!preOnboardingForm.hrFlow}" type="text" class="form-control kyc-input" th:field="*{aadhaar}"
                                         maxlength="12" minlength="12" inputmode="numeric" pattern="[0-9]{12}"
                                         placeholder="Enter 12-digit Aadhaar number" required />
-                                    <input th:if="${preOnboardingForm.hrFlow}" type="text"
+                                    <input autocomplete="off" th:if="${preOnboardingForm.hrFlow}" type="text"
                                         class="form-control kyc-input readonly-field"
                                         th:value="*{maskedAadhaar}" readonly />
-                                    <input th:if="${preOnboardingForm.hrFlow}" type="hidden" th:field="*{aadhaar}" />
+                                    <input autocomplete="off" th:if="${preOnboardingForm.hrFlow}" type="hidden" th:field="*{aadhaar}" />
                                     <div class="invalid-feedback" id="aadhaarValidationMessage">Aadhaar number must be
                                         exactly 12 digits.</div>
                                 </div>
@@ -335,7 +335,7 @@
                                     th:classappend="${preOnboardingForm.existingAadhaarFilePath == null} ? ' kyc-upload-field--wide'">
                                     <label class="form-label">Upload Aadhaar Document <span class="text-danger"
                                             th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.existingAadhaarFilePath == null}">*</span></label>
-                                    <input type="file" class="form-control kyc-input" th:field="*{aadhaarFile}"
+                                    <input autocomplete="off" type="file" class="form-control kyc-input" th:field="*{aadhaarFile}"
                                         accept=".pdf,.jpg,.jpeg,.png" th:disabled="*{hrFlow}" />
                                     <small class="text-muted kyc-helper" th:if="${!preOnboardingForm.hrFlow}">PDF, JPG,
                                         PNG up to 10MB</small>
@@ -352,7 +352,7 @@
                                 <div class="form-group kyc-field">
                                     <label class="form-label">PAN Number <span class="text-danger"
                                             th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input type="text" class="form-control kyc-input kyc-pan-input" th:field="*{pan}"
+                                    <input autocomplete="off" type="text" class="form-control kyc-input kyc-pan-input" th:field="*{pan}"
                                         id="pan" maxlength="10" th:readonly="*{hrFlow}"
                                         th:classappend="*{hrFlow} ? 'readonly-field'" placeholder="ABCDE1234F"
                                         required />
@@ -363,7 +363,7 @@
                                     th:classappend="${preOnboardingForm.existingPanFilePath == null} ? ' kyc-upload-field--wide'">
                                     <label class="form-label">Upload PAN Document <span class="text-danger"
                                             th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.existingPanFilePath == null}">*</span></label>
-                                    <input type="file" class="form-control kyc-input" th:field="*{panFile}"
+                                    <input autocomplete="off" type="file" class="form-control kyc-input" th:field="*{panFile}"
                                         accept=".pdf,.jpg,.jpeg,.png" th:disabled="*{hrFlow}" />
                                     <small class="text-muted kyc-helper" th:if="${!preOnboardingForm.hrFlow}">PDF, JPG,
                                         PNG up to 10MB</small>
@@ -406,33 +406,33 @@
                                         <button type="button" class="btn btn-outline-danger btn-sm"
                                             data-remove-employment>Remove</button>
                                     </div>
-                                    <input type="hidden"
+                                    <input autocomplete="off" type="hidden"
                                         th:field="*{previousEmployments[__${stat.index}__].preOnboardingEmploymentId}" />
                                     <div class="row">
                                         <div class="col-md-4 form-group">
                                             <label class="form-label">Company Name <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <input type="text" class="form-control"
+                                            <input autocomplete="off" type="text" class="form-control"
                                                 th:field="*{previousEmployments[__${stat.index}__].companyName}"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" />
                                         </div>
                                         <div class="col-md-3 form-group">
                                             <label class="form-label">Designation</label>
-                                            <input type="text" class="form-control"
+                                            <input autocomplete="off" type="text" class="form-control"
                                                 th:field="*{previousEmployments[__${stat.index}__].designation}"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" />
                                         </div>
                                         <div class="col-md-2 form-group">
                                             <label class="form-label">Start Date <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <input type="date" class="form-control experience-date"
+                                            <input autocomplete="off" type="date" class="form-control experience-date"
                                                 th:field="*{previousEmployments[__${stat.index}__].startDate}"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" />
                                         </div>
                                         <div class="col-md-3 form-group">
                                             <label class="form-label">End Date <span class="text-danger"
                                                     th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                            <input type="date" class="form-control experience-date"
+                                            <input autocomplete="off" type="date" class="form-control experience-date"
                                                 th:field="*{previousEmployments[__${stat.index}__].endDate}"
                                                 th:readonly="*{hrFlow}" th:classappend="*{hrFlow} ? 'readonly-field'" />
                                         </div>
@@ -447,30 +447,30 @@
                                         <button type="button" class="btn btn-outline-danger btn-sm"
                                             data-remove-employment>Remove</button>
                                     </div>
-                                    <input type="hidden"
+                                    <input autocomplete="off" type="hidden"
                                         name="previousEmployments[__index__].preOnboardingEmploymentId" />
                                     <div class="row">
                                         <div class="col-md-4 form-group">
                                             <label class="form-label">Company Name <span
                                                     class="text-danger">*</span></label>
-                                            <input type="text" class="form-control"
+                                            <input autocomplete="off" type="text" class="form-control"
                                                 name="previousEmployments[__index__].companyName" />
                                         </div>
                                         <div class="col-md-3 form-group">
                                             <label class="form-label">Designation</label>
-                                            <input type="text" class="form-control"
+                                            <input autocomplete="off" type="text" class="form-control"
                                                 name="previousEmployments[__index__].designation" />
                                         </div>
                                         <div class="col-md-2 form-group">
                                             <label class="form-label">Start Date <span
                                                     class="text-danger">*</span></label>
-                                            <input type="date" class="form-control experience-date"
+                                            <input autocomplete="off" type="date" class="form-control experience-date"
                                                 name="previousEmployments[__index__].startDate" />
                                         </div>
                                         <div class="col-md-3 form-group">
                                             <label class="form-label">End Date <span
                                                     class="text-danger">*</span></label>
-                                            <input type="date" class="form-control experience-date"
+                                            <input autocomplete="off" type="date" class="form-control experience-date"
                                                 name="previousEmployments[__index__].endDate" />
                                         </div>
                                     </div>
@@ -488,12 +488,12 @@
                                 <div class="row g-3 summary-inputs">
                                     <div class="col-md-6">
                                         <label class="form-label">Years</label>
-                                        <input type="number" class="form-control readonly-field"
+                                        <input autocomplete="off" type="number" class="form-control readonly-field"
                                             id="totalExperienceYears" th:field="*{totalExperienceYears}" readonly />
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Months</label>
-                                        <input type="number" class="form-control readonly-field"
+                                        <input autocomplete="off" type="number" class="form-control readonly-field"
                                             id="totalExperienceMonths" th:field="*{totalExperienceMonths}" readonly />
                                     </div>
                                 </div>
@@ -505,7 +505,7 @@
                                         <label class="form-label">Experience / Relieving Documents <span
                                                 class="text-danger"
                                                 th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.existingExperienceDocFilePath == null}">*</span></label>
-                                        <input type="file" class="form-control" th:field="*{experienceDoc}"
+                                        <input autocomplete="off" type="file" class="form-control" th:field="*{experienceDoc}"
                                             accept=".pdf,.jpg,.jpeg,.png" th:disabled="*{hrFlow}" />
                                         <small class="text-muted" th:if="${!preOnboardingForm.hrFlow}">PDF, JPG, or PNG up
                                             to 10MB.</small>
@@ -521,17 +521,17 @@
 
                                 <div class="employment-document-panel company-payroll-proof">
                                     <label class="company-payroll-check">
-                                        <input type="checkbox" id="companyPayrollMoreThanThreeMonths"
+                                        <input autocomplete="off" type="checkbox" id="companyPayrollMoreThanThreeMonths"
                                             th:field="*{companyPayrollMoreThanThreeMonths}" th:disabled="*{hrFlow}" />
                                         <span>On company payroll for more than 3 months</span>
                                     </label>
-                                    <input type="hidden" th:if="*{hrFlow}" th:field="*{companyPayrollMoreThanThreeMonths}" />
+                                    <input autocomplete="off" type="hidden" th:if="*{hrFlow}" th:field="*{companyPayrollMoreThanThreeMonths}" />
 
                                     <div class="company-payroll-upload" id="companyPayrollProofBlock"
                                         th:attr="data-existing-path=${preOnboardingForm.existingCompanyPayrollProofFilePath}">
                                         <label class="form-label">Company Payroll Proof <span class="text-danger"
                                                 th:if="${!preOnboardingForm.hrFlow && preOnboardingForm.companyPayrollMoreThanThreeMonths && preOnboardingForm.existingCompanyPayrollProofFilePath == null}">*</span></label>
-                                        <input type="file" class="form-control" id="companyPayrollProof"
+                                        <input autocomplete="off" type="file" class="form-control" id="companyPayrollProof"
                                             th:field="*{companyPayrollProof}" accept=".pdf,.jpg,.jpeg,.png"
                                             th:disabled="*{hrFlow}" />
                                         <small class="text-muted" th:if="${!preOnboardingForm.hrFlow}">Required when
@@ -560,77 +560,77 @@
                             <div class="document-checklist-grid">
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docEducationalCert}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docEducationalCert}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>Educational Certificates</span>
                                     </label>
                                 </div>
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docExperienceLetter}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docExperienceLetter}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>Experience Letter</span>
                                     </label>
                                 </div>
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docRelievingLetter}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docRelievingLetter}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>Relieving Letter</span>
                                     </label>
                                 </div>
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docPayslips}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docPayslips}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>Salary Payslips</span>
                                     </label>
                                 </div>
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docDeclarationForm}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docDeclarationForm}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>Declaration Form</span>
                                     </label>
                                 </div>
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docNda}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docNda}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>NDA Document</span>
                                     </label>
                                 </div>
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docMedicalFitness}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docMedicalFitness}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>Medical Fitness Cert</span>
                                     </label>
                                 </div>
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docAddressProof}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docAddressProof}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>Address Proof</span>
                                     </label>
                                 </div>
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docPassportPhoto}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docPassportPhoto}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>Passport Photo</span>
                                     </label>
                                 </div>
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docAadhaar}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docAadhaar}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>Aadhaar Copy</span>
                                     </label>
                                 </div>
                                 <div class="document-checklist-item">
                                     <label class="check-card">
-                                        <input type="checkbox" th:field="*{docPan}" th:disabled="*{hrFlow}"
+                                        <input autocomplete="off" type="checkbox" th:field="*{docPan}" th:disabled="*{hrFlow}"
                                             data-required-doc="true" />
                                         <span>PAN Card Copy</span>
                                     </label>
@@ -644,19 +644,19 @@
                                 <div class="form-group hr-verification-field">
                                     <label class="form-label">Onboarding Location <span
                                             class="text-danger">*</span></label>
-                                    <input type="text" class="form-control hr-verification-input" th:field="*{hrOnboardingLocation}"
+                                    <input autocomplete="off" type="text" class="form-control hr-verification-input" th:field="*{hrOnboardingLocation}"
                                         placeholder="Enter physical onboarding location" required />
                                 </div>
                                 <div class="form-group hr-verification-field">
                                     <label class="form-label">Onboarding Date <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control hr-verification-input" th:field="*{hrOnboardingDate}" required />
+                                    <input autocomplete="off" type="date" class="form-control hr-verification-input" th:field="*{hrOnboardingDate}" required />
                                 </div>
                             </div>
                             <div class="form-group hr-verification-field hr-location-mapping-field mt-3">
                                 <label class="form-label" for="employeeLocationPicker">
                                     Employee Location Mapping <span class="text-danger">*</span>
                                 </label>
-                                <select id="employeeLocationPicker"
+                                <select autocomplete="off" id="employeeLocationPicker"
                                     class="form-select hr-verification-input hr-location-mapping-picker"
                                     data-placeholder="Search and select location">
                                     <option value="">Select location</option>
@@ -667,7 +667,7 @@
                                     </option>
                                 </select>
                                 <div id="selectedEmployeeLocationInputs">
-                                    <input type="hidden" th:each="selectedLocationId : *{selectedLocationIds}"
+                                    <input autocomplete="off" type="hidden" th:each="selectedLocationId : *{selectedLocationIds}"
                                         name="selectedLocationIds" th:value="${selectedLocationId}">
                                 </div>
                                 <div id="selectedEmployeeLocationBox" class="hr-selected-location-box"
@@ -681,7 +681,7 @@
                             </div>
                             <div class="verification-box hr-verification-box mt-3">
                                 <label class="check-card verification-card mb-0">
-                                    <input type="checkbox" id="hrVerified" th:field="*{hrVerified}" required />
+                                    <input autocomplete="off" type="checkbox" id="hrVerified" th:field="*{hrVerified}" required />
                                     <span>I confirm that HR has verified all candidate documents and the pre-onboarding
                                         details are accurate. <strong>*</strong></span>
                                 </label>
@@ -690,7 +690,7 @@
 
                         <div class="verification-box agency-verification-box" th:if="${!preOnboardingForm.hrFlow}">
                             <label class="check-card verification-card mb-0">
-                                <input type="checkbox" id="agencyFlag" th:field="*{agencyFlag}" />
+                                <input autocomplete="off" type="checkbox" id="agencyFlag" th:field="*{agencyFlag}" />
                                 <span>I confirm that the agency has verified the candidate details and original
                                     documents for onboarding. <strong>*</strong></span>
                             </label>

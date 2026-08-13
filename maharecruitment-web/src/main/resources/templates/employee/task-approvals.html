@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -103,8 +103,8 @@
                                         <td class="text-center">
                                             <div class="btn-group" role="group">
                                                 <!-- Approve Form -->
-                                                <form th:action="@{/manager/tasks/approve}" method="post" class="d-inline">
-                                                    <input type="hidden" name="taskId" th:value="${task.taskId}"/>
+                                                <form autocomplete="off" th:action="@{/manager/tasks/approve}" method="post" class="d-inline">
+                                                    <input autocomplete="off" type="hidden" name="taskId" th:value="${task.taskId}"/>
                                                     <button type="submit" class="btn btn-sm btn-success" title="Approve">
                                                         <i class="fas fa-check"></i>
                                                     </button>
@@ -132,17 +132,17 @@
             <!-- Reject Modal -->
             <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
                 <div class="modal-dialog">
-                    <form th:action="@{/manager/tasks/reject}" method="post">
+                    <form autocomplete="off" th:action="@{/manager/tasks/reject}" method="post">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title" id="rejectModalLabel">Reject Task</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <input type="hidden" name="taskId" id="rejectTaskId"/>
+                                <input autocomplete="off" type="hidden" name="taskId" id="rejectTaskId"/>
                                 <div class="mb-3">
                                     <label for="remarks" class="form-label">Reason for rejection (Optional)</label>
-                                    <textarea class="form-control" id="remarks" name="remarks" rows="3" placeholder="E.g., Please correct the hours logged."></textarea>
+                                    <textarea autocomplete="off" class="form-control" id="remarks" name="remarks" rows="3" placeholder="E.g., Please correct the hours logged."></textarea>
                                 </div>
                             </div>
                             <div class="modal-footer">

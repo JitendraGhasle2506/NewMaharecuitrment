@@ -25,15 +25,15 @@
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/locations}">Location Master</a>
                     </div>
 
-                    <form th:object="${designationForm}"
+                    <form autocomplete="off" th:object="${designationForm}"
                         th:action="${isEdit} ? @{/master/designations/{id}(id=${designationId})} : @{/master/designations}"
                         method="post" class="row g-3">
     <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                         <div class="col-md-6">
                             <label class="form-label">Category  <span class="text-danger">*</span></label>
-                            <select th:field="*{category}" class="form-select">
+                            <select autocomplete="off" th:field="*{category}" class="form-select">
                                 <option value="">-- Select Category --</option>
                                 <option th:each="cat : ${availableCategories}" 
                                         th:value="${cat.categoryName}" 
@@ -44,21 +44,21 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Designation Name  <span class="text-danger">*</span></label>
-                            <input type="text" th:field="*{designationName}" class="form-control" maxlength="200">
+                            <input autocomplete="off" type="text" th:field="*{designationName}" class="form-control" maxlength="200">
                             <div class="text-danger small" th:if="${#fields.hasErrors('designationName')}"
                                 th:errors="*{designationName}"></div>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Role Name  <span class="text-danger">*</span></label>
-                            <input type="text" th:field="*{roleName}" class="form-control" maxlength="200">
+                            <input autocomplete="off" type="text" th:field="*{roleName}" class="form-control" maxlength="200">
                              <div class="text-danger small" th:if="${#fields.hasErrors('roleName')}"
                                 th:errors="*{roleName}"></div>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Status</label>
-                            <select class="form-select" th:field="*{activeFlag}">
+                            <select autocomplete="off" class="form-select" th:field="*{activeFlag}">
                                 <option value="Y">Active</option>
                                 <option value="N">Inactive</option>
                             </select>
@@ -66,7 +66,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Educational Qualification  <span class="text-danger">*</span></label>
-                            <textarea th:field="*{educationalQualification}" class="form-control" maxlength="500"
+                            <textarea autocomplete="off" th:field="*{educationalQualification}" class="form-control" maxlength="500"
                                 rows="3"></textarea>
                                   <div class="text-danger small" th:if="${#fields.hasErrors('educationalQualification')}"
                                 th:errors="*{educationalQualification}"></div>
@@ -74,12 +74,12 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Certification</label>
-                            <textarea th:field="*{certification}" class="form-control" maxlength="500" rows="3"></textarea>
+                            <textarea autocomplete="off" th:field="*{certification}" class="form-control" maxlength="500" rows="3"></textarea>
                         </div>
 
                         <div class="col-12">
                             <label class="form-label">Applicable Levels</label>
-                            <select class="form-select" multiple th:field="*{levelIds}">
+                            <select autocomplete="off" class="form-select" multiple th:field="*{levelIds}">
                                 <option th:each="level : ${availableLevels}" th:value="${level.levelId}"
                                     th:text="${level.levelCode + ' - ' + level.levelName}"></option>
                             </select>

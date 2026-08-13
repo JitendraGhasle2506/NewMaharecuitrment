@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -109,13 +109,13 @@
                     </div>
                     <div class="d-flex align-items-end gap-2 flex-grow-1 justify-content-end flex-wrap">
                         <div class="filter-group flex-grow-1" style="max-width: 1040px;">
-                            <form method="get"
+                            <form autocomplete="off" method="get"
                                 class="employee-filter-form"
                                 th:action="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
-                                <input type="hidden" name="page" value="0">
+                                <input autocomplete="off" type="hidden" name="page" value="0">
                                 <div class="employee-filter-field employee-filter-search">
                                     <label class="form-label mb-1">Search</label>
-                                    <input type="text"
+                                    <input autocomplete="off" type="text"
                                         name="search"
                                         class="form-control form-control-sm"
                                         th:value="${searchTerm}"
@@ -123,7 +123,7 @@
                                 </div>
                                 <div class="employee-filter-field">
                                     <label class="form-label mb-1" for="employeeAgencyFilter">Agency</label>
-                                    <select id="employeeAgencyFilter" name="agencyId" class="form-select form-select-sm">
+                                    <select autocomplete="off" id="employeeAgencyFilter" name="agencyId" class="form-select form-select-sm">
                                         <option value="" th:selected="${currentAgencyId == null}">All Agencies</option>
                                         <option th:each="agency : ${agencyOptions}"
                                             th:value="${agency.agencyId}"
@@ -135,7 +135,7 @@
                                 </div>
                                 <div class="employee-filter-field">
                                     <label class="form-label mb-1">Type</label>
-                                    <select name="type" class="form-select form-select-sm">
+                                    <select autocomplete="off" name="type" class="form-select form-select-sm">
                                         <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
                                         <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
                                         <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
@@ -143,7 +143,7 @@
                                 </div>
                                 <div class="employee-filter-field">
                                     <label class="form-label mb-1">Page Size</label>
-                                    <select name="size" class="form-select form-select-sm">
+                                    <select autocomplete="off" name="size" class="form-select form-select-sm">
                                         <option value="10" th:selected="${pageSize == 10}">10 per page</option>
                                         <option value="25" th:selected="${pageSize == 25}">25 per page</option>
                                         <option value="50" th:selected="${pageSize == 50}">50 per page</option>

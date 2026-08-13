@@ -53,11 +53,11 @@
 
             <div class="agency-attendance-card">
                 <div class="agency-attendance-toolbar">
-                    <form th:action="@{/agency/attendance-report}" method="get" class="agency-attendance-filter"
+                    <form autocomplete="off" th:action="@{/agency/attendance-report}" method="get" class="agency-attendance-filter"
                         id="agencyAttendanceFilter">
                         <label>
                             <span>Month</span>
-                            <select name="month" class="form-select">
+                            <select autocomplete="off" name="month" class="form-select">
                                 <option th:each="entry : ${monthNames}" th:value="${entry.key}"
                                     th:text="${entry.value}" th:selected="${entry.key == filter.month()}">January
                                 </option>
@@ -65,7 +65,7 @@
                         </label>
                         <label>
                             <span>Year</span>
-                            <select name="year" class="form-select">
+                            <select autocomplete="off" name="year" class="form-select">
                                 <option th:each="reportYear : ${yearOptions}" th:value="${reportYear}"
                                     th:text="${reportYear}" th:selected="${reportYear == filter.year()}">2026
                                 </option>
@@ -76,7 +76,7 @@
                             <div class="agency-attendance-segmented" role="radiogroup"
                                 aria-label="Employee type">
                                 <label th:each="type : ${reportView.employeeTypeOptions()}">
-                                    <input type="radio" name="employeeType" th:value="${type}"
+                                    <input autocomplete="off" type="radio" name="employeeType" th:value="${type}"
                                         th:checked="${type == filter.employeeType()}">
                                     <span th:text="${#strings.capitalize(#strings.toLowerCase(type))}">All</span>
                                 </label>
@@ -86,7 +86,7 @@
                             <span>Search</span>
                             <span class="agency-attendance-searchbox">
                                 <i class="fa-solid fa-magnifying-glass"></i>
-                                <input type="search" name="search" id="agencyAttendanceSearch" class="form-control"
+                                <input autocomplete="off" type="search" name="search" id="agencyAttendanceSearch" class="form-control"
                                     placeholder="Employee, request, project" th:value="${filter.searchText()}">
                                 <button type="button" class="agency-attendance-search-clear"
                                     id="agencyAttendanceSearchClear" aria-label="Clear search" title="Clear search">
