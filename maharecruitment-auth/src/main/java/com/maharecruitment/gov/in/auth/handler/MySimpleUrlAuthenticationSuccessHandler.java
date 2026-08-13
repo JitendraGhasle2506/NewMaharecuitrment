@@ -64,9 +64,12 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
                 securityContext
         );
 
-        storeUserInSession(session, authentication);
-        String targetUrl = determineTargetUrl(authentication);
-        session.setAttribute("homepageUrl", targetUrl);
+        boolean passwordChangeRequired = storeUserInSession(session, authentication);
+        String homepageUrl = determineTargetUrl(authentication);
+        session.setAttribute("homepageUrl", homepageUrl);
+        String targetUrl = passwordChangeRequired
+                ? CommonConstant.PASSWORD_CHANGE_REQUIRED_URL
+                : homepageUrl;
         handle(request, response, targetUrl);
         clearAuthenticationAttributes(request);
 
@@ -106,10 +109,18 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
         }
     }
 
-    private void storeUserInSession(HttpSession session, Authentication authentication) {
+    private boolean storeUserInSession(HttpSession session, Authentication authentication) {
         String email = authentication.getName();
         User user = userAffiliationService.loadUserByEmail(email);
         UserAffiliationView affiliation = userAffiliationService.getAffiliation(user);
+        boolean firstLogin = user.getLastLoginAt() == null;
+        boolean passwordChangeRequired = firstLogin
+                || !Boolean.FALSE.equals(user.getPasswordChangeRequired());
+        if (passwordChangeRequired) {
+            // Persist the requirement before last_login_at is updated so it cannot be
+            // bypassed by closing the first session without changing the password.
+            user.setPasswordChangeRequired(true);
+        }
         LocalDateTime loginTime = LocalDateTime.now();
         LocalDateTime lastLoginTime = userLoginTrackingService.recordSuccessfulLogin(user, loginTime);
 
@@ -131,5 +142,14 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
         );
 
         session.setAttribute("SESSION_USER", sessionUser);
+        session.setAttribute(
+                CommonConstant.PASSWORD_CHANGE_REQUIRED_SESSION_ATTRIBUTE,
+                passwordChangeRequired);
+        logger.info(
+                "Login routing evaluated. userId={}, firstLogin={}, passwordChangeRequired={}",
+                user.getId(),
+                firstLogin,
+                passwordChangeRequired);
+        return passwordChangeRequired;
     }
 }

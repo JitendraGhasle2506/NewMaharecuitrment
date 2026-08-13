@@ -32,6 +32,7 @@ import com.maharecruitment.gov.in.web.filter.AgencyAccountStatusFilter;
 import com.maharecruitment.gov.in.web.filter.CookieAttributeFilter;
 import com.maharecruitment.gov.in.web.filter.HttpMethodPolicyFilter;
 import com.maharecruitment.gov.in.web.filter.MobileBearerTokenAuthenticationFilter;
+import com.maharecruitment.gov.in.web.filter.SecurityResponseHeadersFilter;
 import com.maharecruitment.gov.in.web.properties.TransportSecurityProperties;
 import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
 import com.maharecruitment.gov.in.web.security.host.HostHeaderValidationFilter;
@@ -114,11 +115,32 @@ public class SecurityConfig {
     }
 
     @Bean
+    SecurityResponseHeadersFilter securityResponseHeadersFilter() {
+        return new SecurityResponseHeadersFilter();
+    }
+
+    @Bean
+    FilterRegistrationBean<SecurityResponseHeadersFilter> securityResponseHeadersFilterRegistration(
+            SecurityResponseHeadersFilter securityResponseHeadersFilter) {
+        FilterRegistrationBean<SecurityResponseHeadersFilter> registration = new FilterRegistrationBean<>(
+                securityResponseHeadersFilter);
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        registration.addUrlPatterns("/*");
+        registration.setDispatcherTypes(
+                DispatcherType.REQUEST,
+                DispatcherType.FORWARD,
+                DispatcherType.ERROR,
+                DispatcherType.INCLUDE,
+                DispatcherType.ASYNC);
+        return registration;
+    }
+
+    @Bean
     FilterRegistrationBean<CookieAttributeFilter> cookieAttributeFilterRegistration(
             CookieAttributeFilter cookieAttributeFilter) {
         FilterRegistrationBean<CookieAttributeFilter> registration = new FilterRegistrationBean<>(
                 cookieAttributeFilter);
-        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
         registration.addUrlPatterns("/*");
         registration.setDispatcherTypes(
                 DispatcherType.REQUEST,

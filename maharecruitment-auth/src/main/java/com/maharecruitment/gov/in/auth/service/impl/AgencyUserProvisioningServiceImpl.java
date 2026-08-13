@@ -98,6 +98,7 @@ public class AgencyUserProvisioningServiceImpl implements AgencyUserProvisioning
         user.setEmail(email);
         user.setMobileNo(request.getMobileNo().trim());
         user.setPassword(passwordEncoder.encode(temporaryPassword));
+        user.setPasswordChangeRequired(true);
         user.setRoles(List.of(agencyRole));
 
         User savedUser = userRepository.save(user);

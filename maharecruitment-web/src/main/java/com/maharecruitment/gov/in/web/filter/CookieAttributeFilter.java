@@ -20,7 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class CookieAttributeFilter extends OncePerRequestFilter {
 
     private static final Pattern SECURE_ATTRIBUTE = Pattern.compile("(?i);\\s*Secure\\b");

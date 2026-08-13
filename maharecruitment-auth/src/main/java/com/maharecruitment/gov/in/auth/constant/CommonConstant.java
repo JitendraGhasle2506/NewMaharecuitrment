@@ -5,6 +5,9 @@ import java.util.Map;
 
 public final class CommonConstant {
 
+    public static final String PASSWORD_CHANGE_REQUIRED_SESSION_ATTRIBUTE = "PASSWORD_CHANGE_REQUIRED";
+    public static final String PASSWORD_CHANGE_REQUIRED_URL = "/common/profile?passwordChangeRequired=true#security";
+
     private static final Map<String, String> DASHBOARD_URLS = createDashboardUrls();
 
     private CommonConstant() {

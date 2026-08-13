@@ -83,6 +83,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         user.setActive(true);
         applyCommonFields(user, request);
         user.setPassword(passwordEncoder.encode(UserValidationUtil.validatePassword(request.getPassword())));
+        user.setPasswordChangeRequired(true);
 
         User saved = userRepository.save(user);
         userAffiliationService.synchronizeUserProfile(saved);
@@ -100,6 +101,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         applyCommonFields(existing, request);
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             existing.setPassword(passwordEncoder.encode(UserValidationUtil.validatePassword(request.getPassword())));
+            existing.setPasswordChangeRequired(true);
         }
 
         User saved = userRepository.save(existing);

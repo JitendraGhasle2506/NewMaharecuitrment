@@ -185,6 +185,7 @@ public class MobileProfileServiceImpl implements MobileProfileService {
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordChangeRequired(false);
         userRepository.save(user);
         return new MobilePasswordUpdateResponse(true, message, user.getId(), context.employee().getEmployeeId());
     }

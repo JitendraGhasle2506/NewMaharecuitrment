@@ -60,6 +60,7 @@ public class DepartmentUserProvisioningServiceImpl implements DepartmentUserProv
         user.setEmail(email);
         user.setMobileNo(request.getMobileNo().trim());
         user.setPassword(passwordEncoder.encode(temporaryPassword));
+        user.setPasswordChangeRequired(true);
         user.setDepartmentRegistrationId(request.getDepartmentRegistration());
         user.setRoles(List.of(departmentRole));
 

@@ -72,6 +72,9 @@ public class User implements Serializable {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "password_change_required", nullable = false)
+    private Boolean passwordChangeRequired = true;
+
     @Transient
     private String captcha;
 

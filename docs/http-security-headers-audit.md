@@ -8,13 +8,13 @@ repository-managed deployment/proxy files.
 
 | Header | Status before change | Configured in | Change |
 |---|---|---|---|
-| `X-Content-Type-Options` | Present as `nosniff` | Spring Security default; invalid-host fallback | Reused; no duplicate normal-chain writer |
+| `X-Content-Type-Options` | Present as `nosniff` | Spring Security and outer response-header filter | Enforced for normal, static, redirect, error, and early-rejection responses |
 | `X-Frame-Options` | Present as `SAMEORIGIN` | `SecurityConfig` | Default changed to `DENY`; only known same-origin invoice frame responses retain `SAMEORIGIN` |
-| `Referrer-Policy` | Missing | - | Added as `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | Missing | - | Added with camera, microphone, geolocation, payment, USB, accelerometer, gyroscope, and magnetometer disabled |
-| `Content-Security-Policy` | Missing | - | Added with a compatibility-reviewed enforcing policy |
+| `Referrer-Policy` | Missing | `SecurityResponseHeadersFilter` and Spring Security | Added as `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | Missing | `SecurityResponseHeadersFilter` and Spring Security | Added with camera, microphone, geolocation, payment, USB, accelerometer, gyroscope, and magnetometer disabled |
+| `Content-Security-Policy` | Missing | `SecurityResponseHeadersFilter` and Spring Security | Added with a compatibility-reviewed enforcing policy |
 | `Strict-Transport-Security` | Present on secure requests | `SecurityConfig` | Reused unchanged: one year, include subdomains, no preload |
-| `X-XSS-Protection` | Present as `0` | Spring Security default | Reused unchanged; legacy `1; mode=block` was not enabled because no legacy-browser requirement was found |
+| `X-XSS-Protection` | Present as `0` | Spring Security and outer response-header filter | Explicitly emitted as `0`; legacy `1; mode=block` was not enabled because browser XSS auditors can create vulnerabilities |
 | Cache headers | Present; cache writer registered redundantly | Spring Security default and `SecurityConfig` | Not changed because it is outside the reported vulnerability |
 
 ## Existing implementation inventory
@@ -24,8 +24,10 @@ repository-managed deployment/proxy files.
 - Existing filters include host validation, cookie attributes, credential
   transport enforcement/decryption, mobile bearer authentication, agency account
   status, request logging, and duplicate-context redirect handling.
-- No custom `HeaderWriterFilter`, response-header filter, gateway filter, CSP,
-  referrer policy, or permissions policy existed.
+- `SecurityResponseHeadersFilter` now runs at the outermost servlet-filter order
+  for REQUEST, FORWARD, ERROR, INCLUDE, and ASYNC dispatches. It sets the policy
+  before the chain and restores it after response resets, covering responses
+  completed before Spring Security's `HeaderWriterFilter`.
 - No Nginx, Apache HTTPD, ingress, API gateway, load-balancer, Docker, Kubernetes,
   Helm, or equivalent edge header configuration exists in this repository.
   Headers added outside the repository must therefore be checked in the deployed

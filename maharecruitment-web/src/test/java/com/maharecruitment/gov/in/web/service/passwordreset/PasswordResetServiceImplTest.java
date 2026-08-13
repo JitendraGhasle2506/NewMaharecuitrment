@@ -277,6 +277,7 @@ class PasswordResetServiceImplTest {
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(passwordEncoder.matches("Fresh@Pass123", user.getPassword())).isTrue();
+        assertThat(user.getPasswordChangeRequired()).isFalse();
         assertThat(resetRequest.getRequestStatus()).isEqualTo(PasswordResetStatus.COMPLETED);
         assertThat(resetRequest.getResetTokenHash()).isNull();
         assertThat(resetRequest.getCompletedOn()).isNotNull();

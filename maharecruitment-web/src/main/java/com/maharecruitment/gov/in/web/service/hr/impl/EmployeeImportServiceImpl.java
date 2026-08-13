@@ -476,6 +476,7 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
         existingUser.setDepartmentRegistrationId(departmentRegistration);
         if (StringUtils.hasText(row.temporaryPassword())) {
             existingUser.setPassword(passwordEncoder.encode(UserValidationUtil.validatePassword(row.temporaryPassword())));
+            existingUser.setPasswordChangeRequired(true);
         }
         if (existingUser.getRoles().stream().noneMatch(role -> Objects.equals(role.getId(), employeeRole.getId()))) {
             existingUser.addRole(employeeRole);

@@ -197,6 +197,7 @@ class MobileProfileServiceImplTest {
                 new MobilePasswordUpdateRequest(101L, "OldPass@123", "NewPass@123", "NewPass@123"));
 
         assertThat(user.getPassword()).isEqualTo("encoded-new");
+        assertThat(user.getPasswordChangeRequired()).isFalse();
         assertThat(response.success()).isTrue();
         assertThat(response.employeeId()).isEqualTo(101L);
         verify(userRepository).save(user);

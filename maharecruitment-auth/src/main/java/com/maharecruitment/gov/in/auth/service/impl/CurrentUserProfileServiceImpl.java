@@ -67,6 +67,7 @@ public class CurrentUserProfileServiceImpl implements CurrentUserProfileService 
         }
 
         user.setPassword(passwordEncoder.encode(validatedPassword));
+        user.setPasswordChangeRequired(false);
         userRepository.save(user);
         log.info("Current user password changed. id={}, email={}", user.getId(), user.getEmail());
     }

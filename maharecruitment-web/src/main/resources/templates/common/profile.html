@@ -22,6 +22,10 @@
                 </div>
 
                 <div class="card-body">
+                    <div th:if="${passwordChangeRequired}" class="alert alert-warning" role="alert">
+                        <strong>Password change required.</strong>
+                        You are using a temporary password. Change it now to continue to the application.
+                    </div>
                     <div th:if="${profileSuccessMessage}" class="alert alert-success" th:text="${profileSuccessMessage}"></div>
                     <div th:if="${passwordSuccessMessage}" class="alert alert-success" th:text="${passwordSuccessMessage}"></div>
 
@@ -124,7 +128,8 @@
 
                                             <div class="col-md-6">
                                                 <label class="form-label">Current Password</label>
-                                                <input type="password" name="currentPassword" class="form-control" maxlength="100" autocomplete="current-password">
+                                                <input type="password" name="currentPassword" class="form-control" maxlength="100" autocomplete="current-password"
+                                                    th:autofocus="${passwordChangeRequired}">
                                                 <div class="text-danger small" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></div>
                                             </div>
 

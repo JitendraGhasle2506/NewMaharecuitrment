@@ -325,6 +325,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         User user = resetRequest.getUser();
         String newPassword = validateNewPassword(request, user);
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordChangeRequired(false);
         resetRequest.setRequestStatus(PasswordResetStatus.COMPLETED);
         resetRequest.setCompletedOn(now);
         resetRequest.setResetIp(normalizedIp);

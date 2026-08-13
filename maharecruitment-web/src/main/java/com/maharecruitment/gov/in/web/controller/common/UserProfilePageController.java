@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
+import com.maharecruitment.gov.in.auth.constant.CommonConstant;
 import com.maharecruitment.gov.in.auth.dto.UserPasswordChangeRequest;
 import com.maharecruitment.gov.in.auth.dto.UserProfileView;
 import com.maharecruitment.gov.in.auth.service.CurrentUserProfileService;
@@ -88,6 +89,7 @@ public class UserProfilePageController {
 
         try {
             currentUserProfileService.changePassword(actorEmail, toPasswordChangeRequest(passwordForm));
+            session.setAttribute(CommonConstant.PASSWORD_CHANGE_REQUIRED_SESSION_ATTRIBUTE, false);
             redirectAttributes.addFlashAttribute("passwordSuccessMessage", "Password updated successfully.");
             return PROFILE_REDIRECT;
         } catch (RuntimeException ex) {
@@ -111,6 +113,8 @@ public class UserProfilePageController {
 
         SessionUserDTO sessionUser = extractSessionUser(session);
         model.addAttribute("sessionLoginTime", sessionUser != null ? sessionUser.loginTime() : null);
+        model.addAttribute("passwordChangeRequired", Boolean.TRUE.equals(
+                session.getAttribute(CommonConstant.PASSWORD_CHANGE_REQUIRED_SESSION_ATTRIBUTE)));
     }
 
     private UserProfileForm toProfileForm(UserProfileView profileView) {
