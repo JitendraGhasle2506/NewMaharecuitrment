@@ -14,6 +14,7 @@ public class LocationMasterMapper {
         }
         return LocationMasterDto.builder()
                 .locationId(entity.getLocationId())
+                .departmentName(entity.getDepartmentName())
                 .locationName(entity.getLocationName())
                 .officeName(entity.getOfficeName())
                 .latitude(entity.getLatitude())

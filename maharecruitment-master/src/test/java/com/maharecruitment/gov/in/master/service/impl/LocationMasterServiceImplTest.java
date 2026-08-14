@@ -39,6 +39,7 @@ class LocationMasterServiceImplTest {
     @Test
     void createSavesTrimmedActiveLocation() {
         LocationMasterDto request = LocationMasterDto.builder()
+                .departmentName(" Information Technology ")
                 .officeName(" MahaIT Office ")
                 .locationName(" Mumbai Central ")
                 .latitude(new BigDecimal("18.9690000"))
@@ -59,10 +60,12 @@ class LocationMasterServiceImplTest {
 
         LocationMaster saved = captor.getValue();
         assertThat(saved.getOfficeName()).isEqualTo("MahaIT Office");
+        assertThat(saved.getDepartmentName()).isEqualTo("Information Technology");
         assertThat(saved.getLocationName()).isEqualTo("Mumbai Central");
         assertThat(saved.getRadiusMeters()).isEqualTo(100);
         assertThat(saved.getActiveFlag()).isEqualTo("Y");
         assertThat(response.getLocationId()).isEqualTo(11L);
+        assertThat(response.getDepartmentName()).isEqualTo("Information Technology");
         assertThat(response.getLatitude()).isEqualByComparingTo("18.9690000");
         assertThat(response.getRadiusMeters()).isEqualTo(100);
     }
@@ -105,8 +108,21 @@ class LocationMasterServiceImplTest {
         verify(repository, never()).save(any(LocationMaster.class));
     }
 
+    @Test
+    void createRejectsMissingDepartment() {
+        LocationMasterDto request = validRequest();
+        request.setDepartmentName(null);
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Department name is required");
+
+        verify(repository, never()).save(any(LocationMaster.class));
+    }
+
     private LocationMasterDto validRequest() {
         return LocationMasterDto.builder()
+                .departmentName("Information Technology")
                 .locationName("Mumbai Central")
                 .latitude(new BigDecimal("18.9690000"))
                 .longitude(new BigDecimal("72.8205000"))
@@ -114,4 +130,5 @@ class LocationMasterServiceImplTest {
                 .activeFlag("Y")
                 .build();
     }
+
 }

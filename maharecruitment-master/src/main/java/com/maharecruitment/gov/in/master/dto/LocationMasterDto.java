@@ -25,6 +25,10 @@ public class LocationMasterDto {
 
     private Long locationId;
 
+    @NotBlank(message = "Department name is required")
+    @Size(max = 100, message = "Department name must not exceed 100 characters")
+    private String departmentName;
+
     @NotBlank(message = "Address is required")
     @Size(max = 150, message = "Address must not exceed 150 characters")
     @Pattern(

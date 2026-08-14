@@ -34,6 +34,9 @@ public class LocationMaster extends Auditable {
     @Column(name = "location_id")
     private Long locationId;
 
+    @Column(name = "department_name", length = 100)
+    private String departmentName;
+
     @NotBlank(message = "Address is required")
     @Column(name = "location_name", nullable = false, length = 150)
     private String locationName;
@@ -58,6 +61,9 @@ public class LocationMaster extends Auditable {
     @PrePersist
     @PreUpdate
     void normalizeFields() {
+        if (departmentName != null) {
+            departmentName = departmentName.trim();
+        }
         if (locationName != null) {
             locationName = locationName.trim();
         }

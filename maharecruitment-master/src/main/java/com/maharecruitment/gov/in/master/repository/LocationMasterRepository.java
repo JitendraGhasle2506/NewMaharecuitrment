@@ -31,6 +31,7 @@ public interface LocationMasterRepository extends JpaRepository<LocationMaster, 
             select location from LocationMaster location
             where lower(location.locationName) like lower(concat('%', :searchText, '%'))
                or lower(coalesce(location.officeName, '')) like lower(concat('%', :searchText, '%'))
+               or lower(coalesce(location.departmentName, '')) like lower(concat('%', :searchText, '%'))
             """)
     Page<LocationMaster> searchByLocationNameOrOfficeName(
             @Param("searchText") String searchText,
@@ -42,6 +43,7 @@ public interface LocationMasterRepository extends JpaRepository<LocationMaster, 
               and (
                     lower(location.locationName) like lower(concat('%', :searchText, '%'))
                  or lower(coalesce(location.officeName, '')) like lower(concat('%', :searchText, '%'))
+                 or lower(coalesce(location.departmentName, '')) like lower(concat('%', :searchText, '%'))
               )
             """)
     Page<LocationMaster> searchByActiveFlagAndLocationNameOrOfficeName(

@@ -26,6 +26,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
     private static final String ACTIVE = "Y";
     private static final String INACTIVE = "N";
     private static final int LOCATION_NAME_MAX_LENGTH = 150;
+    private static final int DEPARTMENT_NAME_MAX_LENGTH = 100;
     private static final Pattern LOCATION_NAME_PATTERN = Pattern.compile("^(?=.*[A-Za-z0-9])[A-Za-z0-9\\s\\-/().,]+$");
     private static final Pattern OFFICE_NAME_PATTERN = Pattern.compile("^(?=.*[A-Za-z0-9])[A-Za-z0-9\\s\\-/().,&']+$");
     private static final BigDecimal MIN_LATITUDE = new BigDecimal("-90");
@@ -53,6 +54,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
         }
 
         LocationMaster entity = LocationMaster.builder()
+                .departmentName(normalizeDepartmentName(request.getDepartmentName()))
                 .locationName(locationName)
                 .officeName(normalizeOfficeName(request.getOfficeName()))
                 .latitude(validateLatitude(request.getLatitude()))
@@ -72,6 +74,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
             throw new DuplicateResourceException("Address already exists: " + locationName);
         }
 
+        entity.setDepartmentName(normalizeDepartmentName(request.getDepartmentName()));
         entity.setLocationName(locationName);
         entity.setOfficeName(normalizeOfficeName(request.getOfficeName()));
         entity.setLatitude(validateLatitude(request.getLatitude()));
@@ -157,6 +160,17 @@ public class LocationMasterServiceImpl implements LocationMasterService {
         if (!LOCATION_NAME_PATTERN.matcher(normalized).matches()) {
             throw new BusinessValidationException(
                     "Address can contain alphabets, numbers, spaces, hyphen, slash, brackets, dot and comma only");
+        }
+        return normalized;
+    }
+
+    private String normalizeDepartmentName(String departmentName) {
+        String normalized = departmentName == null ? "" : departmentName.trim();
+        if (normalized.isBlank()) {
+            throw new BusinessValidationException("Department name is required");
+        }
+        if (normalized.length() > DEPARTMENT_NAME_MAX_LENGTH) {
+            throw new BusinessValidationException("Department name must not exceed 100 characters");
         }
         return normalized;
     }
