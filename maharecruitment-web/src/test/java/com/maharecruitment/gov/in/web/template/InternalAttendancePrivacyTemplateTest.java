@@ -47,13 +47,17 @@ class InternalAttendancePrivacyTemplateTest {
     }
 
     @Test
-    void mappedLocationsHavePrimarySecondaryAndSafeFallbackPresentation() throws IOException {
+    void mappedLocationsHavePrimarySecondaryDropdownAndSafeFallbackPresentation() throws IOException {
         String template = template();
 
         assertThat(template)
+                .contains("Mapped Work Locations")
                 .contains("Primary Location")
                 .contains("Secondary Locations")
                 .contains("${attendance.primaryLocation.displayName}")
+                .contains("<details class=\"profile-location-dropdown\"")
+                .contains("th:each=\"location : ${attendance.secondaryLocations}\"")
+                .contains("aria-label=\"Secondary work locations\"")
                 .contains("${location.displayName}")
                 .contains("Not mapped")
                 .contains("No secondary locations")

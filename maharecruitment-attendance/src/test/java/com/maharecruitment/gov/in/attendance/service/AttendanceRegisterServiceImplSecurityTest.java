@@ -63,6 +63,7 @@ class AttendanceRegisterServiceImplSecurityTest {
         employee.setDepartmentRegistration(department);
         LocationMaster primaryLocation = location(11L, " Head Office ", " Mumbai ");
         LocationMaster secondaryLocation = location(12L, "", "Pune");
+        LocationMaster additionalSecondaryLocation = location(13L, "Regional Office", "Nagpur");
 
         LocalDate today = LocalDate.now();
         int month = today.getMonthValue();
@@ -84,7 +85,8 @@ class AttendanceRegisterServiceImplSecurityTest {
                 .findByEmployeeEmployeeIdOrderByPrimaryLocationDescLocationLocationNameAsc(501L))
                 .thenReturn(List.of(
                         mapping(employee, primaryLocation, true),
-                        mapping(employee, secondaryLocation, false)));
+                        mapping(employee, secondaryLocation, false),
+                        mapping(employee, additionalSecondaryLocation, false)));
 
         AttendanceRegisterDTO dto = service.getInternalAttendanceForEmployee(501L, month, year);
 
@@ -97,8 +99,8 @@ class AttendanceRegisterServiceImplSecurityTest {
         assertThat(dto.getPrimaryLocation().getDisplayName()).isEqualTo("Head Office - Mumbai");
         assertThat(dto.getSecondaryLocations())
                 .extracting(location -> location.getDisplayName())
-                .containsExactly("Pune");
-        assertThat(dto.getAllMappedLocations()).hasSize(2);
+                .containsExactly("Pune", "Regional Office - Nagpur");
+        assertThat(dto.getAllMappedLocations()).hasSize(3);
         assertThat(dto.getOfficeLocation()).isEqualTo("Head Office - Mumbai");
         assertThat(dto.getOfficeLocation()).doesNotContain("Legacy department address");
     }
