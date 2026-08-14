@@ -239,7 +239,10 @@
                             <span>No photo selected</span>
                         </div>
                     </div>
-                    <form autocomplete="off" id="photoUploadForm" novalidate>
+                    <form autocomplete="off" id="photoUploadForm" method="post" enctype="multipart/form-data"
+                        th:action="@{/employee/profile/photo/upload}" novalidate>
+                        <input type="hidden" autocomplete="off" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
+                            th:value="${_csrf.token}">
                         <input autocomplete="off" id="photoFile" name="file" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
                         <small class="upload-note">JPG, JPEG, or PNG only. Maximum 2 MB.</small>
                         <small class="field-error" data-error-for="file"></small>
@@ -252,7 +255,7 @@
             </div>
         </section>
     </th:block>
-    <script th:src="@{/js/employee-dashboard.js}"></script>
+    <script th:src="@{/js/employee-dashboard.js(v='20260814')}"></script>
 </body>
 
 </html>

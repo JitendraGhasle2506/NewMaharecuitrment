@@ -93,6 +93,8 @@ import db.postmigration.V109__auth_user_password_change_required;
 import db.postmigration.V110__login_logout_audit_history;
 import db.postmigration.V111__login_failure_audit_support;
 import db.postmigration.V112__login_failure_legacy_constraint_cleanup;
+import db.postmigration.V113__master_location_department_name_support;
+import db.postmigration.V114__employee_profile_insert_compatibility;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -212,6 +214,8 @@ public class PostSchemaFlywayRunner {
                 new V110__login_logout_audit_history(),
                 new V111__login_failure_audit_support(),
                 new V112__login_failure_legacy_constraint_cleanup(),
+                new V113__master_location_department_name_support(),
+                new V114__employee_profile_insert_compatibility(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 

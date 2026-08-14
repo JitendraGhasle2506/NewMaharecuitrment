@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
@@ -22,6 +23,7 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeProfile;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeProfileRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileDTO;
+import com.maharecruitment.gov.in.web.dto.FileUploadResult;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 
 @ExtendWith(MockitoExtension.class)
@@ -119,6 +121,33 @@ class EmployeeProfileServiceImplTest {
                 "employee-profile-photo")).thenReturn(false);
 
         assertThat(service().resolveCurrentEmployeePhoto(user.getEmail())).isEmpty();
+    }
+
+    @Test
+    void failedProfileInsertDeletesNewlyStoredPhoto() {
+        User user = user();
+        EmployeeEntity employee = employee();
+        MockMultipartFile photo = new MockMultipartFile(
+                "file",
+                "photo.jpg",
+                "image/jpeg",
+                new byte[] { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF });
+        String uploadedPath = "D:/uploads/employee-profile-photo/new-photo.jpg";
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
+        when(employeeRepository.findDetailedByUserId(user.getId())).thenReturn(Optional.of(employee));
+        when(employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId())).thenReturn(Optional.empty());
+        when(fileStorageService.store(photo, "employee-profile-photo"))
+                .thenReturn(new FileUploadResult(
+                        "photo.jpg", "new-photo.jpg", uploadedPath, "image/jpeg", photo.getSize()));
+        when(employeeProfileRepository.saveAndFlush(any(EmployeeProfile.class)))
+                .thenThrow(new IllegalStateException("Insert failed"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                service().uploadCurrentEmployeePhoto(user.getEmail(), photo))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Insert failed");
+
+        verify(fileStorageService).deleteQuietly(uploadedPath);
     }
 
     private void preparePhotoLookup(

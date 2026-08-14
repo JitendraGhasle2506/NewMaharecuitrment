@@ -128,7 +128,13 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
 
         profile.setPhotoPath(uploadResult.fullPath());
         profile.setUpdatedBy(user.getEmail());
-        EmployeeProfile savedProfile = employeeProfileRepository.save(profile);
+        EmployeeProfile savedProfile;
+        try {
+            savedProfile = employeeProfileRepository.saveAndFlush(profile);
+        } catch (RuntimeException ex) {
+            fileStorageService.deleteQuietly(uploadResult.fullPath());
+            throw ex;
+        }
         if (StringUtils.hasText(previousPhotoPath) && !Objects.equals(previousPhotoPath, uploadResult.fullPath())) {
             fileStorageService.deleteQuietly(previousPhotoPath);
         }

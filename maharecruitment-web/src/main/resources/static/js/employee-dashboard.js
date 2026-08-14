@@ -15,11 +15,33 @@
     const csrfHeader = document.getElementById('csrfHeader')?.value;
 
     function headers() {
-        const values = {};
+        const values = {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
         if (csrfToken && csrfHeader) {
             values[csrfHeader] = csrfToken;
         }
         return values;
+    }
+
+    async function responsePayload(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.toLowerCase().includes('application/json')) {
+            const payload = await response.json();
+            if (!payload.message && (payload.error === 'SESSION_EXPIRED' || response.status === 401 || response.status === 403)) {
+                payload.message = 'Your session has expired. Please sign in and try again.';
+            }
+            return payload;
+        }
+
+        await response.text();
+        return {
+            success: false,
+            message: response.redirected || response.status === 401 || response.status === 403
+                ? 'Your session has expired. Please sign in and try again.'
+                : `The server could not process the request (HTTP ${response.status}).`
+        };
     }
 
     function showAlert(icon, title, text) {
@@ -195,9 +217,10 @@
             const response = await fetch(root.dataset.saveUrl, {
                 method: 'POST',
                 headers: headers(),
+                credentials: 'same-origin',
                 body: new FormData(form)
             });
-            const payload = await response.json();
+            const payload = await responsePayload(response);
             if (!response.ok || !payload.success) {
                 Object.entries(payload.errors || {}).forEach(([name, message]) => setError(name, message));
                 showAlert('error', 'Unable to save profile', payload.message || 'Please check the form and try again.');
@@ -230,12 +253,13 @@
         }
 
         try {
-            const response = await fetch(root.dataset.photoUploadUrl, {
+            const response = await fetch(photoForm.action || root.dataset.photoUploadUrl, {
                 method: 'POST',
                 headers: headers(),
+                credentials: 'same-origin',
                 body: new FormData(photoForm)
             });
-            const payload = await response.json();
+            const payload = await responsePayload(response);
             if (!response.ok || !payload.success) {
                 setError('file', payload.message || 'Unable to upload photo');
                 showAlert('error', 'Unable to upload photo', payload.message || 'Please try another file.');

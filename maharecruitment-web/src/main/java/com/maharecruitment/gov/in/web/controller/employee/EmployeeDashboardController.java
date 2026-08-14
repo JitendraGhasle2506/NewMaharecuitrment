@@ -32,10 +32,12 @@ import com.maharecruitment.gov.in.web.service.employee.EmployeeProfileService;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 
 @Controller
 @RequestMapping("/employee")
 @PreAuthorize("hasAuthority('ROLE_EMPLOYEE')")
+@Slf4j
 public class EmployeeDashboardController {
 
     private static final String SESSION_USER_KEY = "SESSION_USER";
@@ -121,6 +123,13 @@ public class EmployeeDashboardController {
             return ResponseEntity.badRequest().body(new EmployeeProfileUpdateResponse(
                     false,
                     ex.getMessage(),
+                    null,
+                    Map.of()));
+        } catch (RuntimeException ex) {
+            log.error("Employee profile photo upload failed for login={}", resolveLoginEmail(principal), ex);
+            return ResponseEntity.internalServerError().body(new EmployeeProfileUpdateResponse(
+                    false,
+                    "Unable to upload photo. Please try again after some time.",
                     null,
                     Map.of()));
         }

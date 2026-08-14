@@ -16,6 +16,8 @@ import db.postmigration.V106__project_master_department_mapping;
 import db.postmigration.V107__otp_rate_limit_bucket_support;
 import db.postmigration.V108__password_reset_otp_lock_support;
 import db.postmigration.V109__auth_user_password_change_required;
+import db.postmigration.V113__master_location_department_name_support;
+import db.postmigration.V114__employee_profile_insert_compatibility;
 
 class PostSchemaFlywayRunnerTest {
 
@@ -38,12 +40,18 @@ class PostSchemaFlywayRunnerTest {
                 migrations, V108__password_reset_otp_lock_support.class);
         int requiredPasswordChangeMigrationIndex = indexOf(
                 migrations, V109__auth_user_password_change_required.class);
+        int locationDepartmentMigrationIndex = indexOf(
+                migrations, V113__master_location_department_name_support.class);
+        int employeeProfileCompatibilityMigrationIndex = indexOf(
+                migrations, V114__employee_profile_insert_compatibility.class);
         assertThat(employeeCellMigrationIndex).isGreaterThanOrEqualTo(0);
         assertThat(cellAuthorityMigrationIndex).isGreaterThan(employeeCellMigrationIndex);
         assertThat(projectDepartmentMigrationIndex).isGreaterThan(cellAuthorityMigrationIndex);
         assertThat(otpRateLimitMigrationIndex).isGreaterThan(projectDepartmentMigrationIndex);
         assertThat(passwordResetLockMigrationIndex).isGreaterThan(otpRateLimitMigrationIndex);
         assertThat(requiredPasswordChangeMigrationIndex).isGreaterThan(passwordResetLockMigrationIndex);
+        assertThat(locationDepartmentMigrationIndex).isGreaterThan(requiredPasswordChangeMigrationIndex);
+        assertThat(employeeProfileCompatibilityMigrationIndex).isGreaterThan(locationDepartmentMigrationIndex);
     }
 
     private int indexOf(List<?> migrations, Class<?> migrationType) {
