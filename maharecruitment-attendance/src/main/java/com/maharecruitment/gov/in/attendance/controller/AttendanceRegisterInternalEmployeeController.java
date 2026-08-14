@@ -6,7 +6,9 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -30,9 +32,14 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceCalendarDayDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceDayDTO;
 import com.maharecruitment.gov.in.attendance.dto.AttendanceRegisterDTO;
+import com.maharecruitment.gov.in.attendance.dto.EmployeeAttendanceRequestDTO;
 import com.maharecruitment.gov.in.attendance.dto.ManualAttendanceRequestDTO;
+import com.maharecruitment.gov.in.attendance.entity.LeaveApplicationEntity;
+import com.maharecruitment.gov.in.attendance.entity.TourApplicationEntity;
 import com.maharecruitment.gov.in.attendance.service.AttendanceRegisterService;
 import com.maharecruitment.gov.in.attendance.service.HolidayService;
+import com.maharecruitment.gov.in.attendance.service.LeaveApplicationService;
+import com.maharecruitment.gov.in.attendance.service.TourApplicationService;
 import com.maharecruitment.gov.in.attendance.service.WeekOffWorkingDayService;
 import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
@@ -58,6 +65,12 @@ public class AttendanceRegisterInternalEmployeeController {
 
     @Autowired
     private WeekOffWorkingDayService weekOffWorkingDayService;
+
+    @Autowired
+    private LeaveApplicationService leaveApplicationService;
+
+    @Autowired
+    private TourApplicationService tourApplicationService;
 
     @GetMapping("/intAttendance")
     public String myAttendance(Model model, HttpSession session) {
@@ -169,21 +182,123 @@ public class AttendanceRegisterInternalEmployeeController {
         YearMonth yearMonth = YearMonth.of(year, month);
         model.addAttribute("daysInMonth", yearMonth.lengthOfMonth());
 
-        List<ManualAttendanceRequestDTO> allRequests = attendanceService.getMyManualRequests(employee.getEmployeeId());
-        final int fMonth = month;
-        final int fYear = year;
-        model.addAttribute("pendingRequests", allRequests.stream()
-            .filter(r -> r.getAttendanceDate().getMonthValue() == fMonth && r.getAttendanceDate().getYear() == fYear)
-            .filter(r -> "PENDING".equalsIgnoreCase(r.getHodStatus()))
-            .collect(Collectors.toList()));
-        model.addAttribute("approvedRequests", allRequests.stream()
-            .filter(r -> r.getAttendanceDate().getMonthValue() == fMonth && r.getAttendanceDate().getYear() == fYear)
-            .filter(r -> "APPROVED".equalsIgnoreCase(r.getHodStatus()))
-            .collect(Collectors.toList()));
-        model.addAttribute("rejectedRequests", allRequests.stream()
-            .filter(r -> r.getAttendanceDate().getMonthValue() == fMonth && r.getAttendanceDate().getYear() == fYear)
-            .filter(r -> "REJECTED".equalsIgnoreCase(r.getHodStatus()))
-            .collect(Collectors.toList()));
+        populateEmployeeRequests(model, employee.getEmployeeId());
+    }
+
+    private void populateEmployeeRequests(Model model, Long employeeId) {
+        List<ManualAttendanceRequestDTO> manualRequests =
+                safeList(attendanceService.getMyManualRequests(employeeId));
+        List<LeaveApplicationEntity> leaveRequests =
+                safeList(leaveApplicationService.getLeaveApplicationsByEmployee(employeeId));
+        List<TourApplicationEntity> tourRequests =
+                safeList(tourApplicationService.getTourApplicationsByEmployee(employeeId));
+
+        List<EmployeeAttendanceRequestDTO> requests = new ArrayList<>(
+                manualRequests.size() + leaveRequests.size() + tourRequests.size());
+        manualRequests.forEach(request -> requests.add(toEmployeeRequest(request)));
+        leaveRequests.forEach(request -> requests.add(toEmployeeRequest(request)));
+        tourRequests.forEach(request -> requests.add(toEmployeeRequest(request)));
+        requests.sort(Comparator
+                .comparing(
+                        EmployeeAttendanceRequestDTO::getSubmittedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(
+                        EmployeeAttendanceRequestDTO::getStartDate,
+                        Comparator.nullsLast(Comparator.reverseOrder())));
+
+        List<EmployeeAttendanceRequestDTO> pendingRequests = new ArrayList<>();
+        List<EmployeeAttendanceRequestDTO> approvedRequests = new ArrayList<>();
+        List<EmployeeAttendanceRequestDTO> rejectedRequests = new ArrayList<>();
+        for (EmployeeAttendanceRequestDTO request : requests) {
+            switch (request.getStatus()) {
+                case "APPROVED" -> approvedRequests.add(request);
+                case "REJECTED" -> rejectedRequests.add(request);
+                default -> pendingRequests.add(request);
+            }
+        }
+
+        model.addAttribute("pendingRequests", pendingRequests);
+        model.addAttribute("approvedRequests", approvedRequests);
+        model.addAttribute("rejectedRequests", rejectedRequests);
+    }
+
+    private EmployeeAttendanceRequestDTO toEmployeeRequest(ManualAttendanceRequestDTO request) {
+        EmployeeAttendanceRequestDTO view = new EmployeeAttendanceRequestDTO();
+        view.setRequestType("MANUAL_ATTENDANCE");
+        view.setRequestTypeLabel("Manual Attendance");
+        view.setSubmittedAt(request.getCreatedAt());
+        view.setStartDate(request.getAttendanceDate());
+        view.setEndDate(request.getAttendanceDate());
+        view.setCategory("Attendance correction");
+        view.setDetails(textOrFallback(request.getReason(), "Manual attendance request"));
+        view.setInTime(request.getInTime());
+        view.setOutTime(request.getOutTime());
+        view.setStatus(normalizeRequestStatus(request.getHodStatus()));
+        view.setReviewerRemarks(firstText(request.getHodComments(), request.getManagerComments()));
+        return view;
+    }
+
+    private EmployeeAttendanceRequestDTO toEmployeeRequest(LeaveApplicationEntity request) {
+        EmployeeAttendanceRequestDTO view = new EmployeeAttendanceRequestDTO();
+        view.setRequestType("LEAVE");
+        view.setRequestTypeLabel("Leave");
+        view.setSubmittedAt(request.getApplicationDate());
+        view.setStartDate(request.getStartDate());
+        view.setEndDate(request.getEndDate());
+        view.setCategory(joinLabels(request.getLeaveType(), request.getLeaveCategory(), "Leave request"));
+        view.setDetails(textOrFallback(request.getDescription(), "Leave application"));
+        view.setStatus(normalizeRequestStatus(request.getStatus()));
+        view.setReviewerRemarks(firstText(request.getHodRemarks(), request.getManagerRemarks()));
+        return view;
+    }
+
+    private EmployeeAttendanceRequestDTO toEmployeeRequest(TourApplicationEntity request) {
+        EmployeeAttendanceRequestDTO view = new EmployeeAttendanceRequestDTO();
+        view.setRequestType("TOUR");
+        view.setRequestTypeLabel("Tour");
+        view.setSubmittedAt(request.getApplicationDate());
+        view.setStartDate(request.getStartDate());
+        view.setEndDate(request.getEndDate());
+        view.setCategory(joinLabels(request.getTourCategory(), request.getTimePeriod(), "Tour request"));
+        view.setDetails(textOrFallback(request.getDescription(), "Tour application"));
+        view.setStatus(normalizeRequestStatus(request.getStatus()));
+        view.setReviewerRemarks(textOrFallback(request.getHodRemarks(), null));
+        return view;
+    }
+
+    private String normalizeRequestStatus(String status) {
+        if (!StringUtils.hasText(status)) {
+            return "PENDING";
+        }
+        String normalized = status.trim().toUpperCase(Locale.ROOT);
+        if ("APPROVED".equals(normalized) || "ACCEPTED".equals(normalized)) {
+            return "APPROVED";
+        }
+        if ("REJECTED".equals(normalized) || "CANCELLED".equals(normalized)) {
+            return "REJECTED";
+        }
+        return "PENDING";
+    }
+
+    private String joinLabels(String first, String second, String fallback) {
+        boolean hasFirst = StringUtils.hasText(first);
+        boolean hasSecond = StringUtils.hasText(second);
+        if (hasFirst && hasSecond) {
+            return first.trim() + " / " + second.trim();
+        }
+        return hasFirst ? first.trim() : textOrFallback(second, fallback);
+    }
+
+    private String firstText(String first, String second) {
+        return StringUtils.hasText(first) ? first.trim() : textOrFallback(second, null);
+    }
+
+    private String textOrFallback(String value, String fallback) {
+        return StringUtils.hasText(value) ? value.trim() : fallback;
+    }
+
+    private <T> List<T> safeList(List<T> values) {
+        return values == null ? List.of() : values;
     }
 
     private void populateAttendanceCalendarView(

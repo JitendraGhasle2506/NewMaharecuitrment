@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<body>
+    <div class="panel-table-wrap" th:fragment="requestTable(requests, emptyMessage)">
+        <div class="table-responsive">
+            <table class="table request-table">
+                <thead>
+                    <tr>
+                        <th>Request Type</th>
+                        <th>Requested Period</th>
+                        <th>Request Details</th>
+                        <th>Applied On</th>
+                        <th>Status</th>
+                        <th>Review Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${requests == null || #lists.isEmpty(requests)}">
+                        <td colspan="6" class="empty-state-cell">
+                            <i class="fa fa-inbox me-2" aria-hidden="true"></i>
+                            <span th:text="${emptyMessage}">No requests found.</span>
+                        </td>
+                    </tr>
+                    <tr th:each="req : ${requests}">
+                        <td>
+                            <div class="request-type-cell">
+                                <span class="request-type-icon"
+                                    th:classappend="${' request-kind-' + #strings.toLowerCase(req.requestType)}"
+                                    aria-hidden="true">
+                                    <i th:if="${req.requestType == 'LEAVE'}" class="fa fa-calendar-minus"></i>
+                                    <i th:if="${req.requestType == 'TOUR'}" class="fa fa-route"></i>
+                                    <i th:if="${req.requestType == 'MANUAL_ATTENDANCE'}" class="fa fa-user-clock"></i>
+                                </span>
+                                <span class="request-type-copy">
+                                    <span class="request-type-title" th:text="${req.requestTypeLabel}">Leave</span>
+                                    <span class="request-type-caption" th:text="${req.category ?: '-'}">Casual Leave</span>
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="request-period">
+                                <span class="request-period-value" th:if="${req.startDate != null}">
+                                    <span th:text="${#temporals.format(req.startDate, 'dd-MM-yyyy')}">01-05-2026</span>
+                                    <th:block th:if="${req.endDate != null && !req.endDate.equals(req.startDate)}">
+                                        <span class="request-date-separator">to</span>
+                                        <span th:text="${#temporals.format(req.endDate, 'dd-MM-yyyy')}">02-05-2026</span>
+                                    </th:block>
+                                </span>
+                                <span class="request-period-value" th:if="${req.startDate == null}">-</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="request-detail">
+                                <span class="request-detail-value" th:text="${req.details ?: '-'}">Request details</span>
+                                <span class="request-time-row"
+                                    th:if="${req.requestType == 'MANUAL_ATTENDANCE' && (req.inTime != null || req.outTime != null)}">
+                                    <span class="request-time-chip" th:if="${req.inTime != null}">
+                                        <i class="fa fa-sign-in-alt" aria-hidden="true"></i>
+                                        <span th:text="|In ${req.inTime}|">In 10:00</span>
+                                    </span>
+                                    <span class="request-time-chip" th:if="${req.outTime != null}">
+                                        <i class="fa fa-sign-out-alt" aria-hidden="true"></i>
+                                        <span th:text="|Out ${req.outTime}|">Out 18:00</span>
+                                    </span>
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="request-period-value"
+                                th:text="${req.submittedAt != null ? #temporals.format(req.submittedAt, 'dd-MM-yyyy') : '-'}">
+                                01-05-2026
+                            </span>
+                            <span class="request-applied-time"
+                                th:if="${req.submittedAt != null}"
+                                th:text="${#temporals.format(req.submittedAt, 'hh:mm a')}">
+                                10:30 AM
+                            </span>
+                        </td>
+                        <td>
+                            <span class="request-status-pill"
+                                th:classappend="${' request-status-' + #strings.toLowerCase(req.status)}">
+                                <i th:if="${req.status == 'PENDING'}" class="fa fa-clock" aria-hidden="true"></i>
+                                <i th:if="${req.status == 'APPROVED'}" class="fa fa-check" aria-hidden="true"></i>
+                                <i th:if="${req.status == 'REJECTED'}" class="fa fa-times" aria-hidden="true"></i>
+                                <span th:text="${req.status}">Pending</span>
+                            </span>
+                        </td>
+                        <td>
+                            <div class="request-review-remarks"
+                                th:text="${req.reviewerRemarks != null && !#strings.isEmpty(req.reviewerRemarks)
+                                    ? req.reviewerRemarks
+                                    : (req.status == 'PENDING' ? 'Awaiting review' : '-')}">
+                                Awaiting review
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

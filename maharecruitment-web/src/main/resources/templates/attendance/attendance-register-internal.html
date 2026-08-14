@@ -1322,6 +1322,141 @@
             background: #f8fbff;
         }
 
+        .request-type-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 190px;
+        }
+
+        .request-type-icon {
+            width: 36px;
+            height: 36px;
+            flex: 0 0 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+            border-radius: 11px;
+            font-size: 13px;
+        }
+
+        .request-type-icon.request-kind-leave {
+            border-color: #c4b5fd;
+            background: #f3f0ff;
+            color: #6d28d9;
+        }
+
+        .request-type-icon.request-kind-tour {
+            border-color: #f9a8d4;
+            background: #fdf2f8;
+            color: #be185d;
+        }
+
+        .request-type-icon.request-kind-manual_attendance {
+            border-color: #93c5fd;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .request-type-copy {
+            min-width: 0;
+        }
+
+        .request-type-title,
+        .request-period-value,
+        .request-detail-value {
+            display: block;
+            color: var(--text-main);
+            font-weight: 750;
+            line-height: 1.35;
+        }
+
+        .request-type-caption,
+        .request-applied-time {
+            display: block;
+            margin-top: 2px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.35;
+        }
+
+        .request-period {
+            min-width: 150px;
+        }
+
+        .request-date-separator {
+            padding: 0 4px;
+            color: #94a3b8;
+        }
+
+        .request-detail {
+            min-width: 210px;
+            max-width: 360px;
+        }
+
+        .request-time-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 6px;
+        }
+
+        .request-time-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: #eef5fb;
+            color: #365c7d;
+            font-size: 10px;
+            font-weight: 750;
+        }
+
+        .request-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 9px;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 850;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .request-status-pending {
+            border-color: #f5d78e;
+            background: #fff8e6;
+            color: #92400e;
+        }
+
+        .request-status-approved {
+            border-color: #a7dfbd;
+            background: #eefbf3;
+            color: #166534;
+        }
+
+        .request-status-rejected {
+            border-color: #fecaca;
+            background: #fff1f2;
+            color: #b91c1c;
+        }
+
+        .request-review-remarks {
+            min-width: 160px;
+            max-width: 280px;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.45;
+            white-space: normal;
+        }
+
         .empty-state-cell {
             padding: 28px 18px !important;
             color: var(--text-muted) !important;
@@ -2182,7 +2317,7 @@
                                 <div class="register-panel-header">
                                     <div>
                                         <h4 class="register-panel-title">Pending Requests</h4>
-                                        <p class="register-panel-subtitle">Manual attendance requests waiting for review.</p>
+                                        <p class="register-panel-subtitle">All leave, tour, and manual attendance requests waiting for review.</p>
                                     </div>
                                 </div>
 
@@ -2192,42 +2327,20 @@
                                         <span class="panel-meta-value text-warning" th:text="${pendingRequests != null ? #lists.size(pendingRequests) : 0}">0</span>
                                     </div>
                                     <div class="panel-meta-card">
-                                        <span class="panel-meta-label">Selected Month</span>
-                                        <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
+                                        <span class="panel-meta-label">Leave</span>
+                                        <span class="panel-meta-value" style="color:#6d28d9;" th:text="${pendingRequests != null ? #lists.size(pendingRequests.?[requestType == 'LEAVE']) : 0}">0</span>
                                     </div>
                                     <div class="panel-meta-card">
-                                        <span class="panel-meta-label">Review Stage</span>
-                                        <span class="panel-meta-value" style="font-size:18px; color:#1f4f78;">HOD Review</span>
+                                        <span class="panel-meta-label">Tour</span>
+                                        <span class="panel-meta-value" style="color:#be185d;" th:text="${pendingRequests != null ? #lists.size(pendingRequests.?[requestType == 'TOUR']) : 0}">0</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Manual Attendance</span>
+                                        <span class="panel-meta-value" style="color:#1d4ed8;" th:text="${pendingRequests != null ? #lists.size(pendingRequests.?[requestType == 'MANUAL_ATTENDANCE']) : 0}">0</span>
                                     </div>
                                 </div>
 
-                                <div class="panel-table-wrap">
-                                    <div class="table-responsive">
-                                        <table class="table request-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Request Date</th>
-                                                    <th>In Time</th>
-                                                    <th>Out Time</th>
-                                                    <th>Reason</th>
-                                                    <th>HOD Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr th:if="${pendingRequests == null || pendingRequests.isEmpty()}">
-                                                    <td colspan="5" class="empty-state-cell">You have no pending manual attendance requests.</td>
-                                                </tr>
-                                                <tr th:each="req : ${pendingRequests}">
-                                                    <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
-                                                    <td th:text="${req.inTime}"></td>
-                                                    <td th:text="${req.outTime}"></td>
-                                                    <td th:text="${req.reason}"></td>
-                                                    <td><span class="badge bg-warning text-dark" th:text="${req.hodStatus}"></span></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                <div th:replace="~{attendance/fragments/employee-request-table :: requestTable(${pendingRequests}, 'No pending leave, tour, or manual attendance requests.')}"></div>
                             </div>
                         </div>
                     </div>
@@ -2239,7 +2352,7 @@
                                 <div class="register-panel-header">
                                     <div>
                                         <h4 class="register-panel-title">Approved Requests</h4>
-                                        <p class="register-panel-subtitle">Manual attendance requests that are already approved.</p>
+                                        <p class="register-panel-subtitle">All approved leave, tour, and manual attendance requests.</p>
                                     </div>
                                 </div>
 
@@ -2249,45 +2362,20 @@
                                         <span class="panel-meta-value text-success" th:text="${approvedRequests != null ? #lists.size(approvedRequests) : 0}">0</span>
                                     </div>
                                     <div class="panel-meta-card">
-                                        <span class="panel-meta-label">Selected Month</span>
-                                        <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
+                                        <span class="panel-meta-label">Leave</span>
+                                        <span class="panel-meta-value" style="color:#6d28d9;" th:text="${approvedRequests != null ? #lists.size(approvedRequests.?[requestType == 'LEAVE']) : 0}">0</span>
                                     </div>
                                     <div class="panel-meta-card">
-                                        <span class="panel-meta-label">Final Status</span>
-                                        <span class="panel-meta-value" style="font-size:18px; color:#16a34a;">Approved</span>
+                                        <span class="panel-meta-label">Tour</span>
+                                        <span class="panel-meta-value" style="color:#be185d;" th:text="${approvedRequests != null ? #lists.size(approvedRequests.?[requestType == 'TOUR']) : 0}">0</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Manual Attendance</span>
+                                        <span class="panel-meta-value" style="color:#1d4ed8;" th:text="${approvedRequests != null ? #lists.size(approvedRequests.?[requestType == 'MANUAL_ATTENDANCE']) : 0}">0</span>
                                     </div>
                                 </div>
 
-                                <div class="panel-table-wrap">
-                                    <div class="table-responsive">
-                                        <table class="table request-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Request Date</th>
-                                                    <th>In Time</th>
-                                                    <th>Out Time</th>
-                                                    <th>Reason</th>
-                                                    <th>HOD Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr th:if="${approvedRequests == null || approvedRequests.isEmpty()}">
-                                                    <td colspan="5" class="empty-state-cell">
-                                                        <i class="fa fa-info-circle me-2"></i>
-                                                        No approved manual attendance requests for this month.
-                                                    </td>
-                                                </tr>
-                                                <tr th:each="req : ${approvedRequests}">
-                                                    <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
-                                                    <td th:text="${req.inTime}"></td>
-                                                    <td th:text="${req.outTime}"></td>
-                                                    <td th:text="${req.reason}"></td>
-                                                    <td><span class="badge bg-success" th:text="${req.hodStatus}"></span></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                <div th:replace="~{attendance/fragments/employee-request-table :: requestTable(${approvedRequests}, 'No approved leave, tour, or manual attendance requests.')}"></div>
                             </div>
                         </div>
                     </div>
@@ -2299,7 +2387,7 @@
                                 <div class="register-panel-header">
                                     <div>
                                         <h4 class="register-panel-title">Rejected/History</h4>
-                                        <p class="register-panel-subtitle">Manual attendance requests rejected in the selected month.</p>
+                                        <p class="register-panel-subtitle">Rejected or cancelled leave, tour, and manual attendance requests.</p>
                                     </div>
                                 </div>
 
@@ -2309,44 +2397,20 @@
                                         <span class="panel-meta-value text-danger" th:text="${rejectedRequests != null ? #lists.size(rejectedRequests) : 0}">0</span>
                                     </div>
                                     <div class="panel-meta-card">
-                                        <span class="panel-meta-label">Selected Month</span>
-                                        <span class="panel-meta-value" style="font-size:18px;" th:text="${attendance.dateRange ?: '-'}">05-2026</span>
+                                        <span class="panel-meta-label">Leave</span>
+                                        <span class="panel-meta-value" style="color:#6d28d9;" th:text="${rejectedRequests != null ? #lists.size(rejectedRequests.?[requestType == 'LEAVE']) : 0}">0</span>
                                     </div>
                                     <div class="panel-meta-card">
-                                        <span class="panel-meta-label">Final Status</span>
-                                        <span class="panel-meta-value" style="font-size:18px; color:#dc2626;">Rejected</span>
+                                        <span class="panel-meta-label">Tour</span>
+                                        <span class="panel-meta-value" style="color:#be185d;" th:text="${rejectedRequests != null ? #lists.size(rejectedRequests.?[requestType == 'TOUR']) : 0}">0</span>
+                                    </div>
+                                    <div class="panel-meta-card">
+                                        <span class="panel-meta-label">Manual Attendance</span>
+                                        <span class="panel-meta-value" style="color:#1d4ed8;" th:text="${rejectedRequests != null ? #lists.size(rejectedRequests.?[requestType == 'MANUAL_ATTENDANCE']) : 0}">0</span>
                                     </div>
                                 </div>
 
-                                <div class="panel-table-wrap">
-                                    <div class="table-responsive">
-                                        <table class="table request-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Request Date</th>
-                                                    <th>In Time</th>
-                                                    <th>Out Time</th>
-                                                    <th>Reason</th>
-                                                    <th>HOD Status</th>
-                                                    <th>HOD Comments</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr th:if="${rejectedRequests == null || rejectedRequests.isEmpty()}">
-                                                    <td colspan="6" class="empty-state-cell">No rejected requests in history.</td>
-                                                </tr>
-                                                <tr th:each="req : ${rejectedRequests}">
-                                                    <td th:text="${#temporals.format(req.attendanceDate, 'dd-MM-yyyy')}"></td>
-                                                    <td th:text="${req.inTime}"></td>
-                                                    <td th:text="${req.outTime}"></td>
-                                                    <td th:text="${req.reason}"></td>
-                                                    <td><span class="badge bg-danger" th:text="${req.hodStatus}"></span></td>
-                                                    <td th:text="${req.hodComments}"></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                <div th:replace="~{attendance/fragments/employee-request-table :: requestTable(${rejectedRequests}, 'No rejected or cancelled leave, tour, or manual attendance requests.')}"></div>
                             </div>
                         </div>
                     </div>

@@ -1472,6 +1472,22 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	public List<ManualAttendanceRequestDTO> getMyManualRequests(Long employeeId) {
 		List<com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity> entities = manualAttendanceRequestRepository
 				.findByUserIdOrderByAttendanceDateDesc(employeeId);
+		if (entities.isEmpty()) {
+			return List.of();
+		}
+		EmployeeEntity employee = employeeRepository.findById(employeeId).orElse(null);
+		String employeeName = employee != null ? employee.getFullName() : null;
+		EmployeeReportingMappingEntity reportingMapping = employeeReportingMappingRepository
+				.findByEmployeeId(employeeId);
+		String projectName = reportingMapping != null && reportingMapping.getProjectId() != null
+				? projectRepo.findById(reportingMapping.getProjectId())
+						.map(project -> project.getProjectName())
+						.orElse(null)
+				: null;
+		String managerName = reportingMapping != null
+				? resolveReportingAuthorityName(reportingMapping)
+				: null;
+
 		return entities.stream().map(req -> {
 			ManualAttendanceRequestDTO dto = new ManualAttendanceRequestDTO();
 			dto.setId(req.getId());
@@ -1485,18 +1501,9 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 			dto.setManagerComments(req.getManagerComments());
 			dto.setHodComments(req.getHodComments());
 			dto.setCreatedAt(req.getCreatedAt());
-
-			// Add simple name lookups for employee's own view if possible
-			employeeRepository.findById(req.getUserId()).ifPresent(e -> dto.setEmployeeName(e.getFullName()));
-
-			com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
-					.findByEmployeeId(req.getUserId());
-			if (mapping != null) {
-				if (mapping.getProjectId() != null) {
-					projectRepo.findById(mapping.getProjectId()).ifPresent(p -> dto.setProjectName(p.getProjectName()));
-				}
-				dto.setManagerName(resolveReportingAuthorityName(mapping));
-			}
+			dto.setEmployeeName(employeeName);
+			dto.setProjectName(projectName);
+			dto.setManagerName(managerName);
 
 			return dto;
 		}).collect(Collectors.toList());
