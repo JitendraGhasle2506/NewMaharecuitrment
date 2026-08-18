@@ -70,9 +70,12 @@
 
                     <form autocomplete="off" id="profileForm" th:object="${profileForm}"
                         th:action="${isEdit} ? @{/common/mahait-profile/{id}(id=${profileId})} : @{/common/mahait-profile}"
-                        method="post">
+                        method="post" data-encrypt-sensitive="true" data-sensitive-purpose="MAHAIT_PROFILE"
+                        th:attr="data-sensitive-key-url=@{/security/credential-encryption/public-key},
+                                 data-sensitive-values-required=${!isEdit}">
                         <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <input autocomplete="off" type="hidden" th:field="*{mahaItProfileId}">
+                        <div class="alert alert-danger d-none" data-sensitive-encryption-status></div>
 
                         <div class="section-header">1. Profile Setup</div>
 
@@ -104,23 +107,32 @@
 
                             <div class="col-md-6">
                                 <label class="form-label">CIN Number <span class="required-asterisk">*</span></label>
-                                <input autocomplete="off" type="text" class="form-control text-uppercase" th:field="*{cinNumber}" maxlength="21">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('cinNumber')}"
-                                    th:errors="*{cinNumber}"></div>
+                                <input autocomplete="off" type="text" class="form-control text-uppercase"
+                                    id="cinNumber" maxlength="21" data-sensitive-encrypted-name="cinNumberEncrypted"
+                                    data-sensitive-field="cinNumber" th:required="${!isEdit}"
+                                    th:placeholder="${isEdit} ? 'Leave blank to keep existing CIN' : 'Enter CIN number'">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('cinNumberEncrypted')}"
+                                    th:errors="*{cinNumberEncrypted}"></div>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">PAN Number <span class="required-asterisk">*</span></label>
-                                <input autocomplete="off" type="text" class="form-control text-uppercase" th:field="*{panNumber}" maxlength="10">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('panNumber')}"
-                                    th:errors="*{panNumber}"></div>
+                                <input autocomplete="off" type="text" class="form-control text-uppercase"
+                                    id="panNumber" maxlength="10" data-sensitive-encrypted-name="panNumberEncrypted"
+                                    data-sensitive-field="panNumber" th:required="${!isEdit}"
+                                    th:placeholder="${isEdit} ? 'Leave blank to keep existing PAN' : 'ABCDE1234F'">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('panNumberEncrypted')}"
+                                    th:errors="*{panNumberEncrypted}"></div>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">GST Number <span class="required-asterisk">*</span></label>
-                                <input autocomplete="off" type="text" class="form-control text-uppercase" th:field="*{gstNumber}" maxlength="15">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('gstNumber')}"
-                                    th:errors="*{gstNumber}"></div>
+                                <input autocomplete="off" type="text" class="form-control text-uppercase"
+                                    id="gstNumber" maxlength="15" data-sensitive-encrypted-name="gstNumberEncrypted"
+                                    data-sensitive-field="gstNumber" th:required="${!isEdit}"
+                                    th:placeholder="${isEdit} ? 'Leave blank to keep existing GST' : '27ABCDE1234F1Z5'">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('gstNumberEncrypted')}"
+                                    th:errors="*{gstNumberEncrypted}"></div>
                             </div>
 
                             <div class="col-md-12">
@@ -158,9 +170,13 @@
 
                             <div class="col-md-6">
                                 <label class="form-label">Account Number <span class="required-asterisk">*</span></label>
-                                <input autocomplete="off" type="text" class="form-control" th:field="*{accountNumber}" maxlength="30">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('accountNumber')}"
-                                    th:errors="*{accountNumber}"></div>
+                                <input autocomplete="off" type="text" class="form-control" id="accountNumber"
+                                    maxlength="30" inputmode="numeric"
+                                    data-sensitive-encrypted-name="accountNumberEncrypted"
+                                    data-sensitive-field="accountNumber" th:required="${!isEdit}"
+                                    th:placeholder="${isEdit} ? 'Leave blank to keep existing account number' : 'Enter account number'">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('accountNumberEncrypted')}"
+                                    th:errors="*{accountNumberEncrypted}"></div>
                             </div>
 
                             <div class="col-md-6">
@@ -210,6 +226,7 @@
             </div>
         </section>
     </th:block>
+    <script th:src="@{/js/sensitive-data-encryption.js(v='20260818-mahait-profile')}"></script>
 </body>
 
 </html>

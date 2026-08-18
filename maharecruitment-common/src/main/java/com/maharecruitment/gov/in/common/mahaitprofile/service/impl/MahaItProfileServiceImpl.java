@@ -2,14 +2,18 @@ package com.maharecruitment.gov.in.common.mahaitprofile.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.common.mahaitprofile.dto.MahaItProfileAuditResponse;
 import com.maharecruitment.gov.in.common.mahaitprofile.dto.MahaItProfileRequest;
@@ -21,26 +25,38 @@ import com.maharecruitment.gov.in.common.mahaitprofile.repository.MahaItProfileA
 import com.maharecruitment.gov.in.common.mahaitprofile.repository.MahaItProfileRepository;
 import com.maharecruitment.gov.in.common.mahaitprofile.service.MahaItProfileAuditService;
 import com.maharecruitment.gov.in.common.mahaitprofile.service.MahaItProfileService;
+import com.maharecruitment.gov.in.common.security.SensitivePayloadDecryptor;
 import com.maharecruitment.gov.in.common.service.CurrentActorProvider;
 
 @Service
 @Transactional(readOnly = true)
 public class MahaItProfileServiceImpl implements MahaItProfileService {
 
+    private static final String SENSITIVE_PURPOSE = "MAHAIT_PROFILE";
+    private static final Pattern CIN_PATTERN = Pattern.compile(
+            "^[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$");
+    private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
+    private static final Pattern GST_PATTERN = Pattern.compile(
+            "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$");
+    private static final Pattern ACCOUNT_NUMBER_PATTERN = Pattern.compile("^[0-9]{6,30}$");
+
     private final MahaItProfileRepository profileRepository;
     private final MahaItProfileAuditLogRepository auditLogRepository;
     private final MahaItProfileAuditService auditService;
     private final CurrentActorProvider currentActorProvider;
+    private final SensitivePayloadDecryptor sensitivePayloadDecryptor;
 
     public MahaItProfileServiceImpl(
             MahaItProfileRepository profileRepository,
             MahaItProfileAuditLogRepository auditLogRepository,
             MahaItProfileAuditService auditService,
-            CurrentActorProvider currentActorProvider) {
+            CurrentActorProvider currentActorProvider,
+            SensitivePayloadDecryptor sensitivePayloadDecryptor) {
         this.profileRepository = profileRepository;
         this.auditLogRepository = auditLogRepository;
         this.auditService = auditService;
         this.currentActorProvider = currentActorProvider;
+        this.sensitivePayloadDecryptor = sensitivePayloadDecryptor;
     }
 
     @Override
@@ -57,7 +73,8 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
     @Transactional
     public MahaItProfileResponse create(MahaItProfileRequest request) {
         MahaItProfile entity = new MahaItProfile();
-        applyRequest(entity, request);
+        SensitiveProfileDetails sensitiveDetails = decryptSensitiveDetails(request, false);
+        applyRequest(entity, request, sensitiveDetails);
         applyAuditMetadataForCreate(entity);
 
         MahaItProfile saved = profileRepository.save(entity);
@@ -69,9 +86,10 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
     @Transactional
     public MahaItProfileResponse update(Long mahaitProfileId, MahaItProfileRequest request) {
         MahaItProfile entity = loadProfile(mahaitProfileId);
-        String changeSummary = buildChangeSummary(entity, request);
+        SensitiveProfileDetails sensitiveDetails = decryptSensitiveDetails(request, true);
+        String changeSummary = buildChangeSummary(entity, request, sensitiveDetails);
 
-        applyRequest(entity, request);
+        applyRequest(entity, request, sensitiveDetails);
         applyAuditMetadataForUpdate(entity);
 
         MahaItProfile saved = profileRepository.save(entity);
@@ -91,19 +109,102 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
                 .orElseThrow(() -> new IllegalArgumentException("MahaIT profile not found for id: " + mahaitProfileId));
     }
 
-    private void applyRequest(MahaItProfile entity, MahaItProfileRequest request) {
+    private void applyRequest(
+            MahaItProfile entity,
+            MahaItProfileRequest request,
+            SensitiveProfileDetails sensitiveDetails) {
         entity.setProfileName(normalizeText(request.getProfileName()));
         entity.setCompanyName(normalizeText(request.getCompanyName()));
         entity.setCompanyAddress(normalizeText(request.getCompanyAddress()));
-        entity.setCinNumber(normalizeUppercase(request.getCinNumber()));
-        entity.setPanNumber(normalizeUppercase(request.getPanNumber()));
-        entity.setGstNumber(normalizeUppercase(request.getGstNumber()));
+        if (sensitiveDetails.cinNumber() != null) {
+            entity.setCinNumber(sensitiveDetails.cinNumber());
+        }
+        if (sensitiveDetails.panNumber() != null) {
+            entity.setPanNumber(sensitiveDetails.panNumber());
+        }
+        if (sensitiveDetails.gstNumber() != null) {
+            entity.setGstNumber(sensitiveDetails.gstNumber());
+        }
         entity.setBankName(normalizeText(request.getBankName()));
         entity.setBranchName(normalizeText(request.getBranchName()));
         entity.setAccountHolderName(normalizeText(request.getAccountHolderName()));
-        entity.setAccountNumber(normalizeText(request.getAccountNumber()));
+        if (sensitiveDetails.accountNumber() != null) {
+            entity.setAccountNumber(sensitiveDetails.accountNumber());
+        }
         entity.setIfscCode(normalizeUppercase(request.getIfscCode()));
         entity.setActive(request.getActive());
+    }
+
+    private SensitiveProfileDetails decryptSensitiveDetails(MahaItProfileRequest request, boolean update) {
+        Map<String, String> encryptedValues = new LinkedHashMap<>();
+        addEncryptedValue(encryptedValues, "cinNumber", request.getCinNumberEncrypted());
+        addEncryptedValue(encryptedValues, "panNumber", request.getPanNumberEncrypted());
+        addEncryptedValue(encryptedValues, "gstNumber", request.getGstNumberEncrypted());
+        addEncryptedValue(encryptedValues, "accountNumber", request.getAccountNumberEncrypted());
+
+        try {
+            if (encryptedValues.isEmpty()) {
+                if (!update) {
+                    throw sensitiveDetailsFailure();
+                }
+                return SensitiveProfileDetails.unchanged();
+            }
+            if (request.getTimestamp() == null) {
+                throw sensitiveDetailsFailure();
+            }
+
+            Map<String, String> decrypted = sensitivePayloadDecryptor.decryptSensitivePayloads(
+                    encryptedValues,
+                    request.getEncryptionKeyId(),
+                    request.getTimestamp(),
+                    request.getNonce(),
+                    SENSITIVE_PURPOSE);
+            SensitiveProfileDetails details = new SensitiveProfileDetails(
+                    normalizeOptionalUppercase(decrypted.get("cinNumber")),
+                    normalizeOptionalUppercase(decrypted.get("panNumber")),
+                    normalizeOptionalUppercase(decrypted.get("gstNumber")),
+                    normalizeOptional(decrypted.get("accountNumber")));
+
+            if ((!update && !details.isComplete())
+                    || !isValid(details.cinNumber(), CIN_PATTERN)
+                    || !isValid(details.panNumber(), PAN_PATTERN)
+                    || !isValid(details.gstNumber(), GST_PATTERN)
+                    || !isValid(details.accountNumber(), ACCOUNT_NUMBER_PATTERN)) {
+                throw sensitiveDetailsFailure();
+            }
+            return details;
+        } catch (RuntimeException ex) {
+            throw sensitiveDetailsFailure();
+        } finally {
+            request.clearEncryptedSubmission();
+            request.setCinNumber(null);
+            request.setPanNumber(null);
+            request.setGstNumber(null);
+            request.setAccountNumber(null);
+        }
+    }
+
+    private void addEncryptedValue(Map<String, String> values, String fieldName, String encryptedValue) {
+        if (StringUtils.hasText(encryptedValue)) {
+            values.put(fieldName, encryptedValue.trim());
+        }
+    }
+
+    private boolean isValid(String value, Pattern pattern) {
+        return value == null || pattern.matcher(value).matches();
+    }
+
+    private String normalizeOptionalUppercase(String value) {
+        String normalized = normalizeOptional(value);
+        return normalized == null ? null : normalized.toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeOptional(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private IllegalArgumentException sensitiveDetailsFailure() {
+        return new IllegalArgumentException("Unable to process the submitted MahaIT profile identifiers.");
     }
 
     private void applyAuditMetadataForCreate(MahaItProfile entity) {
@@ -131,27 +232,30 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
     private String buildCreateDetails(MahaItProfile entity) {
         return "MahaIT profile created | profileName=" + entity.getProfileName()
                 + ", companyName=" + entity.getCompanyName()
-                + ", cinNumber=" + entity.getCinNumber()
-                + ", gstNumber=" + entity.getGstNumber()
                 + ", bankName=" + entity.getBankName()
+                + ", sensitiveIdentifiers=provided"
                 + ", active=" + entity.getActive();
     }
 
-    private String buildChangeSummary(MahaItProfile existing, MahaItProfileRequest request) {
+    private String buildChangeSummary(
+            MahaItProfile existing,
+            MahaItProfileRequest request,
+            SensitiveProfileDetails sensitiveDetails) {
         List<String> changes = new ArrayList<>();
 
         appendChange(changes, "profileName", existing.getProfileName(), normalizeText(request.getProfileName()));
         appendChange(changes, "companyName", existing.getCompanyName(), normalizeText(request.getCompanyName()));
         appendChange(changes, "companyAddress", existing.getCompanyAddress(),
                 normalizeText(request.getCompanyAddress()));
-        appendChange(changes, "cinNumber", existing.getCinNumber(), normalizeUppercase(request.getCinNumber()));
-        appendChange(changes, "panNumber", existing.getPanNumber(), normalizeUppercase(request.getPanNumber()));
-        appendChange(changes, "gstNumber", existing.getGstNumber(), normalizeUppercase(request.getGstNumber()));
+        appendSensitiveChange(changes, "cinNumber", existing.getCinNumber(), sensitiveDetails.cinNumber());
+        appendSensitiveChange(changes, "panNumber", existing.getPanNumber(), sensitiveDetails.panNumber());
+        appendSensitiveChange(changes, "gstNumber", existing.getGstNumber(), sensitiveDetails.gstNumber());
         appendChange(changes, "bankName", existing.getBankName(), normalizeText(request.getBankName()));
         appendChange(changes, "branchName", existing.getBranchName(), normalizeText(request.getBranchName()));
         appendChange(changes, "accountHolderName", existing.getAccountHolderName(),
                 normalizeText(request.getAccountHolderName()));
-        appendChange(changes, "accountNumber", existing.getAccountNumber(), normalizeText(request.getAccountNumber()));
+        appendSensitiveChange(
+                changes, "accountNumber", existing.getAccountNumber(), sensitiveDetails.accountNumber());
         appendChange(changes, "ifscCode", existing.getIfscCode(), normalizeUppercase(request.getIfscCode()));
         appendChange(changes, "active", existing.getActive(), request.getActive());
 
@@ -166,6 +270,16 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
             return;
         }
         changes.add(fieldName + ": '" + valueOrDash(previousValue) + "' -> '" + valueOrDash(newValue) + "'");
+    }
+
+    private void appendSensitiveChange(
+            List<String> changes,
+            String fieldName,
+            String previousValue,
+            String submittedValue) {
+        if (submittedValue != null && !Objects.equals(previousValue, submittedValue)) {
+            changes.add(fieldName + ": updated");
+        }
     }
 
     private String valueOrDash(Object value) {
@@ -220,5 +334,20 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized.toUpperCase(Locale.ROOT);
+    }
+
+    private record SensitiveProfileDetails(
+            String cinNumber,
+            String panNumber,
+            String gstNumber,
+            String accountNumber) {
+
+        private static SensitiveProfileDetails unchanged() {
+            return new SensitiveProfileDetails(null, null, null, null);
+        }
+
+        private boolean isComplete() {
+            return cinNumber != null && panNumber != null && gstNumber != null && accountNumber != null;
+        }
     }
 }

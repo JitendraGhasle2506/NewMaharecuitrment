@@ -25,18 +25,20 @@ public class MahaItProfileRequest {
         @Size(max = 1000, message = "Company address must not exceed 1000 characters")
         private String companyAddress;
 
-        @NotBlank(message = "CIN number is required")
-        @Pattern(regexp = "(?i)^[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$", message = "CIN number format is invalid")
-        @Size(max = 21, message = "CIN number must not exceed 21 characters")
         private String cinNumber;
 
-        @NotBlank(message = "PAN number is required")
-        @Pattern(regexp = "(?i)^[A-Z]{5}[0-9]{4}[A-Z]$", message = "PAN number format is invalid")
         private String panNumber;
 
-        @NotBlank(message = "GST number is required")
-        @Pattern(regexp = "(?i)^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$", message = "GST number format is invalid")
         private String gstNumber;
+
+        @Size(max = 800, message = "Encrypted CIN number is invalid")
+        private String cinNumberEncrypted;
+
+        @Size(max = 800, message = "Encrypted PAN number is invalid")
+        private String panNumberEncrypted;
+
+        @Size(max = 800, message = "Encrypted GST number is invalid")
+        private String gstNumberEncrypted;
 
         @NotBlank(message = "Bank name is required")
         @Size(max = 150, message = "Bank name must not exceed 150 characters")
@@ -50,9 +52,18 @@ public class MahaItProfileRequest {
         @Size(max = 150, message = "Account holder name must not exceed 150 characters")
         private String accountHolderName;
 
-        @NotBlank(message = "Account number is required")
-        @Pattern(regexp = "^[0-9]{6,30}$", message = "Account number must be numeric")
         private String accountNumber;
+
+        @Size(max = 800, message = "Encrypted account number is invalid")
+        private String accountNumberEncrypted;
+
+        @Size(max = 100, message = "Encryption key identifier is invalid")
+        private String encryptionKeyId;
+
+        private Long timestamp;
+
+        @Pattern(regexp = "^[A-Za-z0-9_-]{22,128}$", message = "Encrypted request nonce is invalid")
+        private String nonce;
 
         @NotBlank(message = "IFSC code is required")
         @Pattern(regexp = "(?i)^[A-Z]{4}0[A-Z0-9]{6}$", message = "IFSC code format is invalid")
@@ -60,4 +71,14 @@ public class MahaItProfileRequest {
 
         @NotNull(message = "Active flag is required")
         private Boolean active = true;
+
+        public void clearEncryptedSubmission() {
+                cinNumberEncrypted = null;
+                panNumberEncrypted = null;
+                gstNumberEncrypted = null;
+                accountNumberEncrypted = null;
+                encryptionKeyId = null;
+                timestamp = null;
+                nonce = null;
+        }
 }

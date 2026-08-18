@@ -24,8 +24,10 @@ import javax.crypto.spec.PSource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import com.maharecruitment.gov.in.common.security.SensitivePayloadDecryptor;
+
 @Service
-public class CredentialEncryptionService {
+public class CredentialEncryptionService implements SensitivePayloadDecryptor {
 
     public static final String ENCRYPTED_PREFIX = "ENC:v1:";
     public static final String SENSITIVE_PAYLOAD_PREFIX = "SENSITIVE:v1";
@@ -33,6 +35,7 @@ public class CredentialEncryptionService {
     private static final String KEY_ALGORITHM = "RSA";
     private static final int KEY_SIZE_BITS = 2048;
     private static final int MAX_CIPHERTEXT_BYTES = 512;
+    private static final int MAX_SENSITIVE_FIELDS = 10;
     private static final String CIPHER_TRANSFORMATION = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";
     private static final OAEPParameterSpec OAEP_SHA_256 = new OAEPParameterSpec(
             "SHA-256",
@@ -100,9 +103,11 @@ public class CredentialEncryptionService {
     }
 
     /** Validates freshness/replay once, then decrypts every field in the same request. */
+    @Override
     public Map<String, String> decryptSensitivePayloads(Map<String, String> encryptedValues,
             String submittedKeyId, long timestamp, String nonce, String purpose) {
-        if (encryptedValues == null || encryptedValues.isEmpty() || encryptedValues.size() > 3) {
+        if (encryptedValues == null || encryptedValues.isEmpty()
+                || encryptedValues.size() > MAX_SENSITIVE_FIELDS) {
             throw new CredentialDecryptionException("Encrypted request could not be processed.");
         }
         validateRequestMetadata(submittedKeyId, timestamp, nonce, purpose);

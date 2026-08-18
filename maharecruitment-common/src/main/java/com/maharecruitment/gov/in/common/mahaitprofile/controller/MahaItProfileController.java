@@ -80,6 +80,7 @@ public class MahaItProfileController {
             Model model,
             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
+            clearSensitiveSubmission(form);
             populateForm(model, form, null, null, List.of());
             return "common/mahait-profile/form";
         }
@@ -103,6 +104,7 @@ public class MahaItProfileController {
             Model model,
             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
+            clearSensitiveSubmission(form);
             populateForm(
                     model,
                     form,
@@ -147,13 +149,9 @@ public class MahaItProfileController {
         form.setProfileName(response.getProfileName());
         form.setCompanyName(response.getCompanyName());
         form.setCompanyAddress(response.getCompanyAddress());
-        form.setCinNumber(response.getCinNumber());
-        form.setPanNumber(response.getPanNumber());
-        form.setGstNumber(response.getGstNumber());
         form.setBankName(response.getBankName());
         form.setBranchName(response.getBranchName());
         form.setAccountHolderName(response.getAccountHolderName());
-        form.setAccountNumber(response.getAccountNumber());
         form.setIfscCode(response.getIfscCode());
         form.setActive(response.getActive());
         return form;
@@ -165,5 +163,13 @@ public class MahaItProfileController {
         } catch (RuntimeException ex) {
             return null;
         }
+    }
+
+    private void clearSensitiveSubmission(MahaItProfileRequest form) {
+        form.clearEncryptedSubmission();
+        form.setCinNumber(null);
+        form.setPanNumber(null);
+        form.setGstNumber(null);
+        form.setAccountNumber(null);
     }
 }

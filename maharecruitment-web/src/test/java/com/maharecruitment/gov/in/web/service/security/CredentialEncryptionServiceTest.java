@@ -9,6 +9,7 @@ import java.security.PublicKey;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.time.Clock;
 import java.time.Instant;
@@ -87,6 +88,32 @@ class CredentialEncryptionServiceTest {
                 Map.of("panNumber", pan, "gstNumber", gst),
                 service.getPublicKey().keyId(), timestamp, nonce, "DEPARTMENT_REGISTRATION"))
                 .isInstanceOf(CredentialDecryptionException.class);
+    }
+
+    @Test
+    void decryptsAllFourMahaItProfileIdentifiersInOneRequest() throws Exception {
+        String nonce = "fghijklmnopqrstuvwxyza";
+        long timestamp = System.currentTimeMillis();
+        Map<String, String> encrypted = new LinkedHashMap<>();
+        encrypted.put("cinNumber", encryptSensitive(
+                service, "L12345MH2020ABC123456", timestamp, nonce, "MAHAIT_PROFILE", "cinNumber"));
+        encrypted.put("panNumber", encryptSensitive(
+                service, "ABCDE1234F", timestamp, nonce, "MAHAIT_PROFILE", "panNumber"));
+        encrypted.put("gstNumber", encryptSensitive(
+                service, "27ABCDE1234F1Z5", timestamp, nonce, "MAHAIT_PROFILE", "gstNumber"));
+        encrypted.put("accountNumber", encryptSensitive(
+                service, "123456789012", timestamp, nonce, "MAHAIT_PROFILE", "accountNumber"));
+
+        assertThat(service.decryptSensitivePayloads(
+                encrypted,
+                service.getPublicKey().keyId(),
+                timestamp,
+                nonce,
+                "MAHAIT_PROFILE"))
+                .containsEntry("cinNumber", "L12345MH2020ABC123456")
+                .containsEntry("panNumber", "ABCDE1234F")
+                .containsEntry("gstNumber", "27ABCDE1234F1Z5")
+                .containsEntry("accountNumber", "123456789012");
     }
 
     @Test
