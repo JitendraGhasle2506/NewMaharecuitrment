@@ -20,7 +20,7 @@
     };
 
     const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
-    const DEFAULT_RESEND_COOLDOWN_SECONDS = 30;
+    const DEFAULT_RESEND_COOLDOWN_SECONDS = 120;
 
     const createOtpVerification = (config) => {
         if (!config || !config.referenceInput || !config.sendButton || !config.verifyButton) {

@@ -247,6 +247,7 @@ public class OtpLoginController {
             flashMap.put("otpLockSecondsRemaining", result.lockSecondsRemaining());
             flashMap.put("otpLockedUntil", result.lockedUntil() == null ? null : result.lockedUntil().toString());
             flashMap.put("otpExpirySecondsRemaining", result.expirySeconds());
+            flashMap.put("otpResendCooldownSecondsRemaining", result.resendAvailableInSeconds());
         }
 
         if (RequestContextUtils.getFlashMapManager(request) != null) {

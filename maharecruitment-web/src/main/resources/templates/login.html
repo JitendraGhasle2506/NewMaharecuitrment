@@ -110,7 +110,7 @@
                         </div>
 
                         <form autocomplete="off" id="otpLoginForm" method="post" th:action="@{/login/otp}" class="form-horizontal login-mode-panel otp-login-form"
-                            th:attr="data-otp-send-url=@{/login/otp/send},data-csrf-token=${_csrf.token},data-login-mode=otp,data-otp-expiry-seconds=${otpExpirySecondsRemaining != null ? otpExpirySecondsRemaining : otpExpirySeconds},data-otp-resend-cooldown-seconds=${otpResendCooldownSeconds},data-otp-sent=${otpErrorMessage != null},data-otp-error-code=${otpErrorCode},data-email-otp-enabled=${otpEmailEnabled},data-sms-otp-enabled=${otpSmsEnabled}">
+                            th:attr="data-otp-send-url=@{/login/otp/send},data-csrf-token=${_csrf.token},data-login-mode=otp,data-otp-expiry-seconds=${otpExpirySecondsRemaining != null ? otpExpirySecondsRemaining : otpExpirySeconds},data-otp-resend-cooldown-seconds=${otpResendCooldownSecondsRemaining != null ? otpResendCooldownSecondsRemaining : otpResendCooldownSeconds},data-otp-sent=${otpErrorMessage != null},data-otp-error-code=${otpErrorCode},data-email-otp-enabled=${otpEmailEnabled},data-sms-otp-enabled=${otpSmsEnabled}">
                             <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                             <div class="form-group mb-3">
                                 <label for="otpIdentifier" class="control-label">Email / Mobile</label>
@@ -141,7 +141,7 @@
                             </div>
                             <div th:if="${otpRemainingAttempts != null}" class="otp-status"
                                 th:text="'Remaining attempts: ' + ${otpRemainingAttempts}">
-                                Remaining attempts: 5
+                                Remaining attempts: 3
                             </div>
                             <div th:if="${otpLockSecondsRemaining != null and otpLockSecondsRemaining > 0}"
                                 id="otpLoginLockCountdown"
@@ -261,7 +261,7 @@
         });
     </script>
     <script th:src="@{/js/captcha.js}"></script>
-    <script th:src="@{/js/login-otp.js(v='20260812-otp-security')}"></script>
+    <script th:src="@{/js/login-otp.js(v='20260819-otp-policy')}"></script>
 </body>
 
 </html>

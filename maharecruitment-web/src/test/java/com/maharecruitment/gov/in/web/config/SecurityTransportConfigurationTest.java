@@ -46,10 +46,11 @@ class SecurityTransportConfigurationTest {
                 .isEqualTo("${SECURITY_ALLOWED_PORT_HTTPS:443}");
         assertThat(properties.getProperty("security.allowed-ports[4]"))
                 .isEqualTo("${SECURITY_ALLOWED_PORT_WILDFLY_HTTP:8080}");
+        assertThat(properties.getProperty("otp.max-attempts")).isEqualTo("3");
         assertThat(properties.getProperty("otp.resend-limit")).isEqualTo("3");
         assertThat(properties.getProperty("otp.send-ip-limit")).isEqualTo("10");
         assertThat(properties.getProperty("otp.resend-window-minutes")).isEqualTo("15");
-        assertThat(properties.getProperty("otp.resend-cooldown-seconds")).isEqualTo("30");
+        assertThat(properties.getProperty("otp.resend-cooldown-seconds")).isEqualTo("120");
         assertThat(properties.getProperty("security.password-reset.resend-cooldown-seconds")).isEqualTo("30");
         assertThat(properties.getProperty("maharecruitment.sms.acl.resend-cooldown"))
                 .isEqualTo("${SMS_OTP_RESEND_COOLDOWN:30s}");

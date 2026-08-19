@@ -70,7 +70,7 @@ class DatabaseOtpVerificationServiceTest {
         properties.setVerifyRateWindowSeconds(60);
         properties.setCaptchaThreshold(3);
         properties.setOtpLength(6);
-        properties.setResendCooldownSeconds(30);
+        properties.setResendCooldownSeconds(120);
 
         repository = mock(OtpVerificationStateRepository.class);
         when(repository.findBySessionIdAndPurposeAndChannel(any(), any(), any()))
@@ -144,7 +144,7 @@ class DatabaseOtpVerificationServiceTest {
 
         assertNotNull(emailHandler.lastOtpReferenceId);
         assertTrue(emailHandler.lastOtpReferenceId.matches("OTP-[A-Z2-9]{6}"));
-        assertEquals(30, result.resendAvailableInSeconds());
+        assertEquals(120, result.resendAvailableInSeconds());
     }
 
     @Test
@@ -158,6 +158,25 @@ class DatabaseOtpVerificationServiceTest {
         assertEquals(OtpFailureReason.INVALID_OTP, exception.getReason());
         assertEquals(1, currentState().getOtpAttemptCount());
         assertEquals(4, exception.getResult().remainingAttempts());
+        assertTrue(exception.getResult().resendAvailableInSeconds() > 0);
+        assertTrue(exception.getResult().resendAvailableInSeconds() <= 120);
+    }
+
+    @Test
+    void configuredThreeAttemptPolicyLocksOnThirdFailure() {
+        properties.setMaxAttempts(3);
+        service.sendOtp(session, PURPOSE, VerificationChannel.EMAIL, EMAIL, CONTEXT);
+
+        assertThrows(OtpVerificationException.class, () -> verify("000000"));
+        assertThrows(OtpVerificationException.class, () -> verify("000000"));
+        OtpVerificationException thirdFailure = assertThrows(
+                OtpVerificationException.class,
+                () -> verify("000000"));
+
+        assertEquals(OtpFailureReason.ATTEMPTS_EXCEEDED, thirdFailure.getReason());
+        assertEquals(0, thirdFailure.getResult().remainingAttempts());
+        assertEquals(3, currentState().getOtpAttemptCount());
+        assertNull(currentState().getOtpHash());
     }
 
     @Test

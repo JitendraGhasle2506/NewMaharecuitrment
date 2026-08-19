@@ -119,6 +119,35 @@ class OtpRateLimiterTest {
     }
 
     @Test
+    void recipientCooldownCannotBeBypassedFromAnotherSystem() {
+        OtpVerificationProperties properties = new OtpVerificationProperties();
+        properties.setResendLimit(20);
+        properties.setSendRecipientLimit(20);
+        properties.setSendIpLimit(100);
+        properties.setResendCooldownSeconds(120);
+        OtpRateLimiter limiter = new OtpRateLimiter(properties);
+
+        limiter.checkSendAllowed(
+                "login-authentication",
+                VerificationChannel.EMAIL,
+                "user@example.com",
+                new OtpRequestContext("192.0.2.10"));
+
+        assertThatThrownBy(() -> limiter.checkSendAllowed(
+                "department-registration-primary-contact",
+                VerificationChannel.EMAIL,
+                "user@example.com",
+                new OtpRequestContext("198.51.100.20")))
+                .isInstanceOf(OtpRateLimitException.class)
+                .satisfies(exception -> {
+                    OtpRateLimitException rateLimitException = (OtpRateLimitException) exception;
+                    assertThat(rateLimitException.getResponseCode())
+                            .isEqualTo(OtpResponseCodes.OTP_RESEND_COOLDOWN);
+                    assertThat(rateLimitException.getRetryAfterSeconds()).isBetween(1L, 120L);
+                });
+    }
+
+    @Test
     void recipientLimitCannotBeBypassedByChangingPurposeOrChannel() {
         OtpVerificationProperties properties = new OtpVerificationProperties();
         properties.setResendLimit(20);

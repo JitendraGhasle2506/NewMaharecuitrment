@@ -19,10 +19,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const otpBypassEnabled = form.dataset.otpBypassEnabled === "true";
     const mobileOtpEnabled = form.dataset.mobileOtpEnabled === "true";
     const emailOtpEnabled = form.dataset.emailOtpEnabled === "true";
-    const configuredOtpCooldown = Number.parseInt(form.dataset.otpResendCooldownSeconds || "30", 10);
+    const configuredOtpCooldown = Number.parseInt(form.dataset.otpResendCooldownSeconds || "120", 10);
     const otpResendCooldownSeconds = Number.isFinite(configuredOtpCooldown) && configuredOtpCooldown > 0
         ? configuredOtpCooldown
-        : 30;
+        : 120;
 
     const primaryMobileInput = document.getElementById("primaryMobile");
     const primaryEmailInput = document.getElementById("primaryEmail");

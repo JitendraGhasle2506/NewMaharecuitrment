@@ -76,6 +76,22 @@ public record OtpVerificationResult(
             String captchaId,
             String captchaQuestion,
             int expirySeconds) {
+        return failed(
+                remainingAttempts,
+                captchaRequired,
+                captchaId,
+                captchaQuestion,
+                expirySeconds,
+                0);
+    }
+
+    public static OtpVerificationResult failed(
+            int remainingAttempts,
+            boolean captchaRequired,
+            String captchaId,
+            String captchaQuestion,
+            int expirySeconds,
+            int resendAvailableInSeconds) {
         return new OtpVerificationResult(
                 false,
                 Math.max(0, remainingAttempts),
@@ -89,7 +105,7 @@ public record OtpVerificationResult(
                 Math.max(0, expirySeconds),
                 null,
                 null,
-                0);
+                Math.max(0, resendAvailableInSeconds));
     }
 
     public static OtpVerificationResult locked(

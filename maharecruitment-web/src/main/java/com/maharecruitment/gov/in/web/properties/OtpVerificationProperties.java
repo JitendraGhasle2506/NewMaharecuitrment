@@ -9,7 +9,7 @@ public class OtpVerificationProperties {
 
     private int expiryMinutes = 5;
 
-    private int maxAttempts = 5;
+    private int maxAttempts = 3;
 
     private int lockDurationMinutes = 15;
 
@@ -31,7 +31,7 @@ public class OtpVerificationProperties {
 
     private int otpLength = 6;
 
-    private int resendCooldownSeconds = 30;
+    private int resendCooldownSeconds = 120;
 
     public int getExpirySeconds() {
         return Math.max(1, expiryMinutes) * 60;

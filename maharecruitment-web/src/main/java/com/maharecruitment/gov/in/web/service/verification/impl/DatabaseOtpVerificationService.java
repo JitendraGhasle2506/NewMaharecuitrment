@@ -576,8 +576,9 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
     }
 
     private OtpVerificationResult failedResult(OtpVerificationStateEntity state) {
-        if (isLocked(state, Instant.now())) {
-            return lockedResult(state, Instant.now());
+        Instant now = Instant.now();
+        if (isLocked(state, now)) {
+            return lockedResult(state, now);
         }
         if (isCaptchaRequired(state)) {
             ensureCaptchaChallenge(state);
@@ -587,7 +588,8 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
                 isCaptchaRequired(state),
                 state.getCaptchaId(),
                 state.getCaptchaQuestion(),
-                remainingExpirySeconds(state));
+                remainingExpirySeconds(state, now),
+                remainingResendCooldownSeconds(state, now));
     }
 
     private OtpVerificationResult lockedResult(OtpVerificationStateEntity state, Instant now) {
@@ -738,10 +740,27 @@ public class DatabaseOtpVerificationService implements OtpVerificationService {
     }
 
     private int remainingExpirySeconds(OtpVerificationStateEntity state) {
+        return remainingExpirySeconds(state, Instant.now());
+    }
+
+    private int remainingExpirySeconds(OtpVerificationStateEntity state, Instant now) {
         if (state == null || state.getOtpExpiryTime() == null) {
             return 0;
         }
-        return (int) Math.min(Integer.MAX_VALUE, secondsUntil(Instant.now(), state.getOtpExpiryTime()));
+        return now.isBefore(state.getOtpExpiryTime())
+                ? (int) Math.min(Integer.MAX_VALUE, secondsUntil(now, state.getOtpExpiryTime()))
+                : 0;
+    }
+
+    private int remainingResendCooldownSeconds(OtpVerificationStateEntity state, Instant now) {
+        if (state == null || state.getOtpLastSentAt() == null) {
+            return 0;
+        }
+        Instant resendAllowedAt = state.getOtpLastSentAt()
+                .plusSeconds(Math.max(0, properties.getResendCooldownSeconds()));
+        return now.isBefore(resendAllowedAt)
+                ? (int) Math.min(Integer.MAX_VALUE, secondsUntil(now, resendAllowedAt))
+                : 0;
     }
 
     private String hash(String value) {
