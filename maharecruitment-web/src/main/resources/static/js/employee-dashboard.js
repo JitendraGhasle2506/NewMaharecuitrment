@@ -53,7 +53,9 @@
     }
 
     function field(name) {
-        return form?.querySelector(`[name="${name}"]`) || photoForm?.querySelector(`[name="${name}"]`);
+        return form?.querySelector(`[name="${name}"]`)
+            || document.getElementById(name)
+            || photoForm?.querySelector(`[name="${name}"]`);
     }
 
     function setError(name, message) {
@@ -81,7 +83,7 @@
         const formData = new FormData(form);
         const dob = String(formData.get('dob') || '').trim();
         let gender = String(formData.get('gender') || '').trim();
-        let panNo = String(formData.get('panNo') || '').trim().toUpperCase();
+        let panNo = String(field('panNo')?.value || '').trim().toUpperCase();
         let valid = true;
 
         if (dob === '1900-01-01') {
@@ -214,11 +216,15 @@
         }
 
         try {
+            if (!window.SensitiveDataEncryption?.createEncryptedFormData) {
+                throw new Error('Secure identity submission is unavailable.');
+            }
+            const encryptedFormData = await window.SensitiveDataEncryption.createEncryptedFormData(form);
             const response = await fetch(root.dataset.saveUrl, {
                 method: 'POST',
                 headers: headers(),
                 credentials: 'same-origin',
-                body: new FormData(form)
+                body: encryptedFormData
             });
             const payload = await responsePayload(response);
             if (!response.ok || !payload.success) {

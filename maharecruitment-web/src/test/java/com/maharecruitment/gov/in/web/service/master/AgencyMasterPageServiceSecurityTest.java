@@ -35,6 +35,7 @@ import com.maharecruitment.gov.in.web.service.verification.AccountNotificationSe
 
 class AgencyMasterPageServiceSecurityTest {
 
+    private static final String CERTIFICATE_NUMBER = "C".repeat(100);
     private static final OAEPParameterSpec OAEP_SHA_256 = new OAEPParameterSpec(
             "SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT);
 
@@ -53,9 +54,13 @@ class AgencyMasterPageServiceSecurityTest {
         assertThat(request.getValue().getPanNumber()).isEqualTo("ABCDE2546F");
         assertThat(request.getValue().getGstNumber()).isEqualTo("27ABCDE1234F1Z5");
         assertThat(request.getValue().getBankAccountNumber()).isEqualTo("123456789012");
+        assertThat(request.getValue().getIfscCode()).isEqualTo("TEST0001234");
+        assertThat(request.getValue().getCertificateNumber()).isEqualTo(CERTIFICATE_NUMBER);
         assertThat(form.getPanNumberEncrypted()).isNull();
         assertThat(form.getGstNumberEncrypted()).isNull();
         assertThat(form.getBankAccountNumberEncrypted()).isNull();
+        assertThat(form.getIfscCodeEncrypted()).isNull();
+        assertThat(form.getCertificateNumberEncrypted()).isNull();
     }
 
     @Test
@@ -66,6 +71,8 @@ class AgencyMasterPageServiceSecurityTest {
         form.setPanNumber("ABCDE2546F");
         form.setGstNumber("27ABCDE1234F1Z5");
         form.setBankAccountNumber("123456789012");
+        form.setIfscCode("TEST0001234");
+        form.setCertificateNumber("CERT-2026-001");
 
         assertThatThrownBy(() -> service.create(form))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -87,6 +94,8 @@ class AgencyMasterPageServiceSecurityTest {
         assertThat(request.getValue().getPanNumber()).isNull();
         assertThat(request.getValue().getGstNumber()).isNull();
         assertThat(request.getValue().getBankAccountNumber()).isNull();
+        assertThat(request.getValue().getIfscCode()).isNull();
+        assertThat(request.getValue().getCertificateNumber()).isNull();
     }
 
     @Test
@@ -143,6 +152,9 @@ class AgencyMasterPageServiceSecurityTest {
         form.setGstNumberEncrypted(encryptSensitive(transport, form, "gstNumber", "27ABCDE1234F1Z5"));
         form.setBankAccountNumberEncrypted(encryptSensitive(
                 transport, form, "bankAccountNumber", "123456789012"));
+        form.setIfscCodeEncrypted(encryptSensitive(transport, form, "ifscCode", "TEST0001234"));
+        form.setCertificateNumberEncrypted(encryptSensitive(
+                transport, form, "certificateNumber", CERTIFICATE_NUMBER));
         return form;
     }
 

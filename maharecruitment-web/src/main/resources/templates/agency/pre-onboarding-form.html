@@ -94,7 +94,11 @@
                     </div>
                     <form autocomplete="off" id="preOnboardingForm"
                         th:action="@{${preOnboardingForm.hrFlow ? '/hr/onboarding/process/' + preOnboardingForm.preOnboardingId : '/agency/onboarding/pre/' + preOnboardingForm.recruitmentInterviewDetailId}}"
-                        method="post" th:object="${preOnboardingForm}" enctype="multipart/form-data">
+                        method="post" th:object="${preOnboardingForm}" enctype="multipart/form-data"
+                        data-encrypt-sensitive="true" data-sensitive-purpose="AGENCY_PRE_ONBOARDING"
+                        th:attr="data-sensitive-key-url=@{/security/credential-encryption/public-key},
+                                 data-sensitive-values-required=${!preOnboardingForm.hrFlow && preOnboardingForm.preOnboardingId == null}">
+                        <div class="alert alert-danger d-none" data-sensitive-encryption-status role="alert"></div>
                         <input autocomplete="off" type="hidden" th:field="*{hrFlow}" />
                         <input autocomplete="off" type="hidden" th:field="*{preOnboardingId}" />
                         <input autocomplete="off" type="hidden" th:field="*{recruitmentInterviewDetailId}" />
@@ -321,13 +325,14 @@
                                 <div class="form-group kyc-field">
                                     <label class="form-label">Aadhaar Number <span class="text-danger"
                                             th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input autocomplete="off" th:if="${!preOnboardingForm.hrFlow}" type="text" class="form-control kyc-input" th:field="*{aadhaar}"
+                                    <input autocomplete="off" th:if="${!preOnboardingForm.hrFlow}" id="aadhaar" type="password" class="form-control kyc-input"
+                                        data-sensitive-encrypted-name="aadhaarEncrypted" data-sensitive-field="aadhaar"
                                         maxlength="12" minlength="12" inputmode="numeric" pattern="[0-9]{12}"
-                                        placeholder="Enter 12-digit Aadhaar number" required />
+                                        placeholder="Enter 12-digit Aadhaar number"
+                                        th:required="${preOnboardingForm.preOnboardingId == null}" />
                                     <input autocomplete="off" th:if="${preOnboardingForm.hrFlow}" type="text"
-                                        class="form-control kyc-input readonly-field"
+                                        id="maskedAadhaar" class="form-control kyc-input readonly-field"
                                         th:value="*{maskedAadhaar}" readonly />
-                                    <input autocomplete="off" th:if="${preOnboardingForm.hrFlow}" type="hidden" th:field="*{aadhaar}" />
                                     <div class="invalid-feedback" id="aadhaarValidationMessage">Aadhaar number must be
                                         exactly 12 digits.</div>
                                 </div>
@@ -352,10 +357,14 @@
                                 <div class="form-group kyc-field">
                                     <label class="form-label">PAN Number <span class="text-danger"
                                             th:if="${!preOnboardingForm.hrFlow}">*</span></label>
-                                    <input autocomplete="off" type="text" class="form-control kyc-input kyc-pan-input" th:field="*{pan}"
-                                        id="pan" maxlength="10" th:readonly="*{hrFlow}"
-                                        th:classappend="*{hrFlow} ? 'readonly-field'" placeholder="ABCDE1234F"
-                                        required />
+                                    <input autocomplete="off" th:if="${!preOnboardingForm.hrFlow}" type="password"
+                                        class="form-control kyc-input kyc-pan-input" id="pan" maxlength="10"
+                                        data-sensitive-encrypted-name="panEncrypted" data-sensitive-field="pan"
+                                        pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]" placeholder="ABCDE1234F"
+                                        th:required="${preOnboardingForm.preOnboardingId == null}" />
+                                    <input autocomplete="off" th:if="${preOnboardingForm.hrFlow}" type="text"
+                                        id="maskedPan" class="form-control kyc-input readonly-field"
+                                        th:value="*{maskedPan}" readonly />
                                     <div class="invalid-feedback" id="panValidationMessage">Please enter a valid PAN
                                         (e.g., ABCDE1234F).</div>
                                 </div>
@@ -725,6 +734,7 @@
     <script th:src="@{/assets/vendor/jquery/jquery-3.7.1.min.js}"></script>
     <script th:src="@{/assets/vendor/select2/select2.min.js}"></script>
     <script th:src="@{/js/pre-onboarding.js}"></script>
+    <script th:src="@{/js/sensitive-data-encryption.js}"></script>
 </body>
 
 </html>

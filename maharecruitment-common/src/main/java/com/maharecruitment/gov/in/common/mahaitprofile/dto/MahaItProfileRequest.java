@@ -65,9 +65,10 @@ public class MahaItProfileRequest {
         @Pattern(regexp = "^[A-Za-z0-9_-]{22,128}$", message = "Encrypted request nonce is invalid")
         private String nonce;
 
-        @NotBlank(message = "IFSC code is required")
-        @Pattern(regexp = "(?i)^[A-Z]{4}0[A-Z0-9]{6}$", message = "IFSC code format is invalid")
         private String ifscCode;
+
+        @Size(max = 800, message = "Encrypted IFSC code is invalid")
+        private String ifscCodeEncrypted;
 
         @NotNull(message = "Active flag is required")
         private Boolean active = true;
@@ -77,6 +78,7 @@ public class MahaItProfileRequest {
                 panNumberEncrypted = null;
                 gstNumberEncrypted = null;
                 accountNumberEncrypted = null;
+                ifscCodeEncrypted = null;
                 encryptionKeyId = null;
                 timestamp = null;
                 nonce = null;

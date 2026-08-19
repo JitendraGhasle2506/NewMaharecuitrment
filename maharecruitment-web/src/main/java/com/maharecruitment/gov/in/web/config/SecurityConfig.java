@@ -17,7 +17,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
-import org.springframework.security.web.header.writers.ContentSecurityPolicyHeaderWriter;
 import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
@@ -358,13 +357,6 @@ public class SecurityConfig {
                 .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
                         new NegatedRequestMatcher(SecurityHeaderPolicy::allowsSameOriginFraming),
                         new XFrameOptionsHeaderWriter(XFrameOptionsMode.DENY)))
-                .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
-                        SecurityHeaderPolicy::allowsSameOriginFraming,
-                        new ContentSecurityPolicyHeaderWriter(
-                                SecurityHeaderPolicy.SAME_ORIGIN_FRAME_CONTENT_SECURITY_POLICY)))
-                .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
-                        new NegatedRequestMatcher(SecurityHeaderPolicy::allowsSameOriginFraming),
-                        new ContentSecurityPolicyHeaderWriter(SecurityHeaderPolicy.CONTENT_SECURITY_POLICY)))
             );
 
         return http.build();

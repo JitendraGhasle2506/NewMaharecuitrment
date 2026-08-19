@@ -24,7 +24,7 @@ class SecurityResponseHeadersFilterTest {
         filter.doFilter(request, response, (servletRequest, servletResponse) -> {
         });
 
-        assertCompletePolicy(response, "DENY", SecurityHeaderPolicy.CONTENT_SECURITY_POLICY);
+        assertCompletePolicy(response, "DENY", "frame-ancestors 'none'");
         assertThat(response.getHeader("Strict-Transport-Security"))
                 .contains("max-age=31536000")
                 .contains("includeSubDomains");
@@ -37,7 +37,7 @@ class SecurityResponseHeadersFilterTest {
         filter.doFilter(request("/login", false), response, (servletRequest, servletResponse) -> {
         });
 
-        assertCompletePolicy(response, "DENY", SecurityHeaderPolicy.CONTENT_SECURITY_POLICY);
+        assertCompletePolicy(response, "DENY", "frame-ancestors 'none'");
         assertThat(response.getHeader("Strict-Transport-Security")).isNull();
     }
 
@@ -50,7 +50,7 @@ class SecurityResponseHeadersFilterTest {
                 ((HttpServletResponse) servletResponse).sendRedirect("/login"));
 
         assertThat(response.getStatus()).isEqualTo(302);
-        assertCompletePolicy(response, "DENY", SecurityHeaderPolicy.CONTENT_SECURITY_POLICY);
+        assertCompletePolicy(response, "DENY", "frame-ancestors 'none'");
     }
 
     @Test
@@ -65,7 +65,7 @@ class SecurityResponseHeadersFilterTest {
         });
 
         assertThat(response.getStatus()).isEqualTo(500);
-        assertCompletePolicy(response, "DENY", SecurityHeaderPolicy.CONTENT_SECURITY_POLICY);
+        assertCompletePolicy(response, "DENY", "frame-ancestors 'none'");
     }
 
     @Test
@@ -81,7 +81,7 @@ class SecurityResponseHeadersFilterTest {
         assertCompletePolicy(
                 response,
                 "SAMEORIGIN",
-                SecurityHeaderPolicy.SAME_ORIGIN_FRAME_CONTENT_SECURITY_POLICY);
+                "frame-ancestors 'self'");
     }
 
     @Test
@@ -94,12 +94,44 @@ class SecurityResponseHeadersFilterTest {
         assertThat(invoked).isTrue();
     }
 
+    @Test
+    void htmlResponseIsPreservedAndUsesNoncePolicyWithoutBroadInlinePermission() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request("/dashboard", true), response, (servletRequest, servletResponse) -> {
+            HttpServletResponse httpResponse = (HttpServletResponse) servletResponse;
+            httpResponse.setContentType("text/html;charset=UTF-8");
+            httpResponse.getWriter().write("""
+                    <html><head><style>.hidden { display:none; }</style></head>
+                    <body><button style="color:red" onclick="save()">Save</button>
+                    <script>function save() { return true; }</script></body></html>
+                    """);
+        });
+
+        String policy = response.getHeader("Content-Security-Policy");
+        assertThat(response.getContentAsString())
+                .contains("<style>.hidden { display:none; }</style>")
+                .contains("<script>function save() { return true; }</script>");
+        assertThat(policy)
+                .contains("script-src 'self' 'nonce-")
+                .contains("style-src 'self' 'nonce-")
+                .contains("script-src-attr 'none'")
+                .contains("style-src-attr 'none'")
+                .doesNotContain("'unsafe-inline'");
+    }
+
     private void assertCompletePolicy(
             MockHttpServletResponse response,
             String framePolicy,
-            String contentSecurityPolicy) {
+            String frameAncestors) {
         assertThat(response.getHeader("X-XSS-Protection")).isEqualTo("0");
-        assertThat(response.getHeader("Content-Security-Policy")).isEqualTo(contentSecurityPolicy);
+        assertThat(response.getHeader("Content-Security-Policy"))
+                .contains("script-src 'self' 'nonce-")
+                .contains("style-src 'self' 'nonce-")
+                .contains("script-src-attr 'none'")
+                .contains("style-src-attr 'none'")
+                .contains(frameAncestors)
+                .doesNotContain("'unsafe-inline'");
         assertThat(response.getHeader("Referrer-Policy")).isEqualTo("strict-origin-when-cross-origin");
         assertThat(response.getHeader("X-Content-Type-Options")).isEqualTo("nosniff");
         assertThat(response.getHeader("Permissions-Policy")).isEqualTo(SecurityHeaderPolicy.PERMISSIONS_POLICY);

@@ -28,6 +28,24 @@
             margin: 8px 0;
         }
 
+        @media print {
+            body.print-invoice-only * {
+                visibility: hidden !important;
+            }
+
+            body.print-invoice-only #print-content,
+            body.print-invoice-only #print-content * {
+                visibility: visible !important;
+            }
+
+            body.print-invoice-only #print-content {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                margin: 0 !important;
+            }
+        }
+
         .table-invoice,
         .table-invoice th,
         .table-invoice td {
@@ -344,21 +362,14 @@
 
     <script>
         function printContent(id) {
-            var content = document.getElementById(id).innerHTML;
-            var win = window.open('', '_blank');
-            var styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
-                .map(function (node) {
-                    return node.outerHTML;
-                })
-                .join('');
-
-            win.document.write('<html><head><title>Tax Invoice</title>' + styles + '</head><body class="tax-invoice">');
-            win.document.write(content);
-            win.document.write('</body></html>');
-            win.document.close();
-            win.focus();
-            win.print();
-            win.close();
+            if (!document.getElementById(id)) {
+                return;
+            }
+            document.body.classList.add('print-invoice-only');
+            window.addEventListener('afterprint', function () {
+                document.body.classList.remove('print-invoice-only');
+            }, { once: true });
+            window.print();
         }
     </script>
 </body>

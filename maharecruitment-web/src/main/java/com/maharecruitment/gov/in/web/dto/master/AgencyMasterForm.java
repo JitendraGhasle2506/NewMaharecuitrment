@@ -57,9 +57,10 @@ public class AgencyMasterForm {
     @NotNull(message = "PAN Copy File is Required")
     private MultipartFile panCopyFile;
 
-    @NotBlank(message = "Certificate of incorporation number is required")
-    @Size(max = 100, message = "Certificate number must not exceed 100 characters")
     private String certificateNumber;
+
+    @Size(max = 800, message = "Encrypted certificate number is invalid")
+    private String certificateNumberEncrypted;
 
     @NotNull(message = "Certificate Document File is required")
     private MultipartFile certificateDocumentFile;
@@ -113,9 +114,10 @@ public class AgencyMasterForm {
     @NotNull(message = "Bank account type is required")
     private AgencyBankAccountType bankAccountType;
 
-    @NotBlank(message = "IFSC code is required")
-    @Pattern(regexp = "^[A-Z]{4}0[A-Z0-9]{6}$", message = "IFSC code format is invalid")
     private String ifscCode;
+
+    @Size(max = 800, message = "Encrypted IFSC code is invalid")
+    private String ifscCodeEncrypted;
 
     @NotNull(message = "Cancelled Cheque File is required")
     private MultipartFile cancelledChequeFile;
@@ -129,6 +131,8 @@ public class AgencyMasterForm {
         panNumberEncrypted = null;
         gstNumberEncrypted = null;
         bankAccountNumberEncrypted = null;
+        ifscCodeEncrypted = null;
+        certificateNumberEncrypted = null;
         encryptionKeyId = null;
         timestamp = null;
         nonce = null;

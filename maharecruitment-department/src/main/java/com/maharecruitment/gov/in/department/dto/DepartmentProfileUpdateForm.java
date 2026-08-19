@@ -28,9 +28,18 @@ public class DepartmentProfileUpdateForm {
     @JsonIgnore
     private String panNumber;
 
-    @NotBlank(message = "TAN number is required.")
-    @Pattern(regexp = "^[A-Z]{4}[0-9]{5}[A-Z]$", message = "TAN number must be valid.")
     private String tanNumber;
+
+    @Size(max = 800, message = "Encrypted TAN number is invalid.")
+    private String tanNumberEncrypted;
+
+    @Size(max = 100, message = "Encryption key identifier is invalid.")
+    private String encryptionKeyId;
+
+    private Long timestamp;
+
+    @Pattern(regexp = "^[A-Za-z0-9_-]{22,128}$", message = "Encrypted request nonce is invalid.")
+    private String nonce;
 
     @NotBlank(message = "Billing address is required.")
     @Size(max = 500, message = "Billing address must not exceed 500 characters.")
@@ -85,4 +94,12 @@ public class DepartmentProfileUpdateForm {
     private String existingPanDocumentName;
 
     private String existingTanDocumentName;
+
+    public void clearEncryptedSubmission() {
+        tanNumberEncrypted = null;
+        encryptionKeyId = null;
+        timestamp = null;
+        nonce = null;
+        tanNumber = null;
+    }
 }

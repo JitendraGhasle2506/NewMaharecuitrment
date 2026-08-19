@@ -202,7 +202,9 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
             entity.setPanNumber(normalizeUppercase(request.getPanNumber()));
         }
         entity.setPanCopyPath(normalizePath(request.getPanCopyPath()));
-        entity.setCertificateNumber(normalizeName(request.getCertificateNumber()));
+        if (StringUtils.hasText(request.getCertificateNumber())) {
+            entity.setCertificateNumber(normalizeName(request.getCertificateNumber()));
+        }
         entity.setCertificateDocumentPath(normalizePath(request.getCertificateDocumentPath()));
         if (StringUtils.hasText(request.getGstNumber())) {
             entity.setGstNumber(normalizeUppercase(request.getGstNumber()));
@@ -217,7 +219,9 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
             entity.setBankAccountNumber(request.getBankAccountNumber().trim());
         }
         entity.setBankAccountType(request.getBankAccountType());
-        entity.setIfscCode(normalizeUppercase(request.getIfscCode()));
+        if (StringUtils.hasText(request.getIfscCode())) {
+            entity.setIfscCode(normalizeUppercase(request.getIfscCode()));
+        }
         entity.setCancelledChequePath(normalizePath(request.getCancelledChequePath()));
         if (entity.getStatus() == null) {
             entity.setStatus(AgencyStatus.ACTIVE);
@@ -237,7 +241,9 @@ public class AgencyMasterServiceImpl implements AgencyMasterService {
     private void validateRequiredSensitiveIdentity(AgencyMasterRequest request) {
         if (!StringUtils.hasText(request.getPanNumber())
                 || !StringUtils.hasText(request.getGstNumber())
-                || !StringUtils.hasText(request.getBankAccountNumber())) {
+                || !StringUtils.hasText(request.getBankAccountNumber())
+                || !StringUtils.hasText(request.getIfscCode())
+                || !StringUtils.hasText(request.getCertificateNumber())) {
             throw new BusinessValidationException("Agency identity information is required.");
         }
     }

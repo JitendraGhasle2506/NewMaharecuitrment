@@ -22,20 +22,24 @@ class MahaItProfileSensitiveTransportTemplateTest {
                 .contains("data-sensitive-encrypted-name=\"panNumberEncrypted\"")
                 .contains("data-sensitive-encrypted-name=\"gstNumberEncrypted\"")
                 .contains("data-sensitive-encrypted-name=\"accountNumberEncrypted\"")
+                .contains("data-sensitive-encrypted-name=\"ifscCodeEncrypted\"")
                 .contains("data-sensitive-field=\"cinNumber\"")
                 .contains("data-sensitive-field=\"panNumber\"")
                 .contains("data-sensitive-field=\"gstNumber\"")
                 .contains("data-sensitive-field=\"accountNumber\"")
+                .contains("data-sensitive-field=\"ifscCode\"")
                 .contains("@{/js/sensitive-data-encryption.js(v='20260818-mahait-profile')}")
                 .doesNotContain(
                         "th:field=\"*{cinNumber}\"",
                         "th:field=\"*{panNumber}\"",
                         "th:field=\"*{gstNumber}\"",
                         "th:field=\"*{accountNumber}\"",
+                        "th:field=\"*{ifscCode}\"",
                         "name=\"cinNumber\"",
                         "name=\"panNumber\"",
                         "name=\"gstNumber\"",
-                        "name=\"accountNumber\"");
+                        "name=\"accountNumber\"",
+                        "name=\"ifscCode\"");
     }
 
     private Path projectPath(String relativePath) {

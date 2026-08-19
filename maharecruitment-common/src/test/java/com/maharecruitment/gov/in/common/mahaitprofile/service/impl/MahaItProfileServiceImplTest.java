@@ -52,6 +52,7 @@ class MahaItProfileServiceImplTest {
         request.setPanNumber("ATTACKER-PLAINTEXT");
         request.setGstNumber("ATTACKER-PLAINTEXT");
         request.setAccountNumber("000000");
+        request.setIfscCode("PLAIN0000000");
 
         when(decryptor.decryptSensitivePayloads(
                 any(), eq("key-1"), eq(1_000L), eq("abcdefghijklmnopqrstuv"), eq("MAHAIT_PROFILE")))
@@ -59,7 +60,8 @@ class MahaItProfileServiceImplTest {
                         "cinNumber", "l12345mh2020abc123456",
                         "panNumber", "abcde1234f",
                         "gstNumber", "27abcde1234f1z5",
-                        "accountNumber", "123456789012"));
+                        "accountNumber", "123456789012",
+                        "ifscCode", "test0001234"));
         when(currentActorProvider.getCurrentActorEmail()).thenReturn("admin@example.test");
         when(profileRepository.save(any(MahaItProfile.class))).thenAnswer(invocation -> {
             MahaItProfile entity = invocation.getArgument(0);
@@ -76,6 +78,7 @@ class MahaItProfileServiceImplTest {
         assertThat(saved.getPanNumber()).isEqualTo("ABCDE1234F");
         assertThat(saved.getGstNumber()).isEqualTo("27ABCDE1234F1Z5");
         assertThat(saved.getAccountNumber()).isEqualTo("123456789012");
+        assertThat(saved.getIfscCode()).isEqualTo("TEST0001234");
         assertThat(request.getCinNumberEncrypted()).isNull();
         assertThat(request.getEncryptionKeyId()).isNull();
         assertThat(request.getCinNumber()).isNull();
@@ -95,6 +98,7 @@ class MahaItProfileServiceImplTest {
         request.setPanNumber("ABCDE1234F");
         request.setGstNumber("27ABCDE1234F1Z5");
         request.setAccountNumber("123456789012");
+        request.setIfscCode("TEST0001234");
 
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -112,11 +116,11 @@ class MahaItProfileServiceImplTest {
         request.setBankName("Test Bank");
         request.setBranchName("Main Branch");
         request.setAccountHolderName("MahaIT");
-        request.setIfscCode("TEST0001234");
         request.setCinNumberEncrypted("cipher-cin");
         request.setPanNumberEncrypted("cipher-pan");
         request.setGstNumberEncrypted("cipher-gst");
         request.setAccountNumberEncrypted("cipher-account");
+        request.setIfscCodeEncrypted("cipher-ifsc");
         request.setEncryptionKeyId("key-1");
         request.setTimestamp(1_000L);
         request.setNonce("abcdefghijklmnopqrstuv");

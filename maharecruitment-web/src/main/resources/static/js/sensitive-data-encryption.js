@@ -64,6 +64,70 @@
         window.setTimeout(warmEncryptionKey, 0);
     }
 
+    function createEncryptedFormData(form) {
+        if (!(form instanceof HTMLFormElement)) {
+            return Promise.reject(new Error("A valid form is required for secure submission."));
+        }
+        if (location.protocol !== "https:"
+                && !["localhost", "127.0.0.1", "::1", "[::1]"].includes(location.hostname)) {
+            return Promise.reject(new Error("HTTPS is required before submitting identity information."));
+        }
+
+        var sensitiveFields = Array.from(form.querySelectorAll("[data-sensitive-encrypted-name]"));
+        var fields = sensitiveFields.filter(function (field) { return field.value; });
+        if (!fields.length) {
+            if (form.dataset.sensitiveValuesRequired !== "false") {
+                return Promise.reject(new Error("Sensitive identity information is required."));
+            }
+            return Promise.resolve(new FormData(form));
+        }
+
+        var keyUrl = form.dataset.sensitiveKeyUrl || defaultKeyUrl;
+        return getKey(keyUrl).then(function (published) {
+            var requestTimestamp = Date.now() + published.clockOffset;
+            var requestNonce = nonce();
+            var requestPurpose = form.dataset.sensitivePurpose || "DEPARTMENT_REGISTRATION";
+            return Promise.all(fields.map(function (field) {
+                var encryptedName = field.dataset.sensitiveEncryptedName;
+                var logicalName = field.dataset.sensitiveField;
+                if (!encryptedName || !logicalName) throw new Error("Sensitive field configuration is invalid.");
+                var envelope = [
+                    "SENSITIVE:v1",
+                    published.metadata.keyId,
+                    String(requestTimestamp),
+                    requestNonce,
+                    requestPurpose,
+                    logicalName,
+                    field.value
+                ].join("\n");
+                return crypto.subtle.encrypt({ name: "RSA-OAEP" }, published.key,
+                    new TextEncoder().encode(envelope)).then(function (encrypted) {
+                        return {
+                            name: encryptedName,
+                            value: (published.metadata.encryptedPrefix || "ENC:v1:") + encode(encrypted)
+                        };
+                    });
+            })).then(function (encryptedFields) {
+                var formData = new FormData(form);
+                sensitiveFields.forEach(function (field) {
+                    if (field.name) formData.delete(field.name);
+                });
+                encryptedFields.concat([
+                    { name: "encryptionKeyId", value: published.metadata.keyId },
+                    { name: "timestamp", value: requestTimestamp },
+                    { name: "nonce", value: requestNonce }
+                ]).forEach(function (item) {
+                    formData.append(item.name, String(item.value));
+                });
+                return formData;
+            });
+        });
+    }
+
+    window.SensitiveDataEncryption = Object.freeze({
+        createEncryptedFormData: createEncryptedFormData
+    });
+
     document.addEventListener("submit", function (event) {
         var form = event.target;
         if (!(form instanceof HTMLFormElement) || form.dataset.encryptSensitive !== "true") return;

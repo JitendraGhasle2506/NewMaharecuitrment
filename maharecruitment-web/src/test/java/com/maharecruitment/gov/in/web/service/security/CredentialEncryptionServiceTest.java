@@ -91,7 +91,7 @@ class CredentialEncryptionServiceTest {
     }
 
     @Test
-    void decryptsAllFourMahaItProfileIdentifiersInOneRequest() throws Exception {
+    void decryptsAllFiveMahaItProfileIdentifiersInOneRequest() throws Exception {
         String nonce = "fghijklmnopqrstuvwxyza";
         long timestamp = System.currentTimeMillis();
         Map<String, String> encrypted = new LinkedHashMap<>();
@@ -103,6 +103,8 @@ class CredentialEncryptionServiceTest {
                 service, "27ABCDE1234F1Z5", timestamp, nonce, "MAHAIT_PROFILE", "gstNumber"));
         encrypted.put("accountNumber", encryptSensitive(
                 service, "123456789012", timestamp, nonce, "MAHAIT_PROFILE", "accountNumber"));
+        encrypted.put("ifscCode", encryptSensitive(
+                service, "TEST0001234", timestamp, nonce, "MAHAIT_PROFILE", "ifscCode"));
 
         assertThat(service.decryptSensitivePayloads(
                 encrypted,
@@ -113,7 +115,8 @@ class CredentialEncryptionServiceTest {
                 .containsEntry("cinNumber", "L12345MH2020ABC123456")
                 .containsEntry("panNumber", "ABCDE1234F")
                 .containsEntry("gstNumber", "27ABCDE1234F1Z5")
-                .containsEntry("accountNumber", "123456789012");
+                .containsEntry("accountNumber", "123456789012")
+                .containsEntry("ifscCode", "TEST0001234");
     }
 
     @Test

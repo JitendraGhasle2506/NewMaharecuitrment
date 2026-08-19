@@ -2,10 +2,13 @@ package com.maharecruitment.gov.in.web.service.employee.impl;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
@@ -17,6 +20,8 @@ import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.util.UserValidationUtil;
+import com.maharecruitment.gov.in.common.security.SensitivePayloadDecryptor;
+import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeProfile;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
@@ -37,21 +42,26 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     private static final String EMPLOYEE_PHOTO_MODULE = "employee-profile-photo";
     private static final long MAX_PHOTO_SIZE_BYTES = 2L * 1024L * 1024L;
     private static final LocalDate DEFAULT_DOB = LocalDate.of(1900, 1, 1);
+    private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
+    private static final String SENSITIVE_PURPOSE = "EMPLOYEE_PROFILE";
 
     private final EmployeeProfileRepository employeeProfileRepository;
     private final EmployeeRepository employeeRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final SensitivePayloadDecryptor sensitivePayloadDecryptor;
 
     public EmployeeProfileServiceImpl(
             EmployeeProfileRepository employeeProfileRepository,
             EmployeeRepository employeeRepository,
             UserRepository userRepository,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            SensitivePayloadDecryptor sensitivePayloadDecryptor) {
         this.employeeProfileRepository = employeeProfileRepository;
         this.employeeRepository = employeeRepository;
         this.userRepository = userRepository;
         this.fileStorageService = fileStorageService;
+        this.sensitivePayloadDecryptor = sensitivePayloadDecryptor;
     }
 
     @Override
@@ -74,11 +84,12 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
             created.setCreatedBy(user.getEmail());
             return created;
         });
+        String resolvedPan = resolveSensitivePan(profileDTO, profile, employee);
 
         profile.setDob(normalizeDob(profileDTO.getDob()));
         profile.setGender(normalizeText(profileDTO.getGender()));
         profile.setAlternateMobileNo(normalizeText(profileDTO.getAlternateMobileNo()));
-        profile.setPanNo(normalizePan(profileDTO.getPanNo()));
+        profile.setPanNo(resolvedPan);
         profile.setMaritalStatus(normalizeText(profileDTO.getMaritalStatus()));
         profile.setBloodGroup(normalizeText(profileDTO.getBloodGroup()));
         profile.setEmergencyContactName(normalizeText(profileDTO.getEmergencyContactName()));
@@ -185,8 +196,9 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
                 employee != null ? normalizeText(employee.getGender()) : null));
         dto.setAlternateMobileNo(profile != null ? profile.getAlternateMobileNo() : null);
         dto.setEmail(firstText(employee != null ? employee.getEmail() : null, user.getEmail()));
-        dto.setPanNo(firstText(profile != null ? normalizePan(profile.getPanNo()) : null,
-                employee != null ? normalizePanForDisplay(employee.getPanNumber()) : null));
+        dto.setPanNo(SensitiveDataMaskingUtil.maskPan(firstText(
+                profile != null ? normalizePanForDisplay(profile.getPanNo()) : null,
+                employee != null ? normalizePanForDisplay(employee.getPanNumber()) : null)));
         dto.setMaritalStatus(profile != null ? profile.getMaritalStatus() : null);
         dto.setBloodGroup(firstText(profile != null ? normalizeText(profile.getBloodGroup()) : null,
                 employee != null ? normalizeText(employee.getBloodGroup()) : null));
@@ -382,6 +394,47 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
             throw new RecruitmentNotificationException("PAN must match ABCDE1234F format.");
         }
         return normalized;
+    }
+
+    private String resolveSensitivePan(
+            EmployeeProfileDTO profileDTO,
+            EmployeeProfile profile,
+            EmployeeEntity employee) {
+        try {
+            String existingPan = firstText(
+                    profile != null ? normalizePanForDisplay(profile.getPanNo()) : null,
+                    employee != null ? normalizePanForDisplay(employee.getPanNumber()) : null);
+            if (!StringUtils.hasText(profileDTO.getPanNoEncrypted())) {
+                return StringUtils.hasText(existingPan) ? existingPan : null;
+            }
+            if (profileDTO.getTimestamp() == null
+                    || !StringUtils.hasText(profileDTO.getEncryptionKeyId())
+                    || !StringUtils.hasText(profileDTO.getNonce())) {
+                throw sensitivePanFailure();
+            }
+
+            Map<String, String> encryptedValues = new LinkedHashMap<>();
+            encryptedValues.put("panNo", profileDTO.getPanNoEncrypted());
+            Map<String, String> decrypted = sensitivePayloadDecryptor.decryptSensitivePayloads(
+                    encryptedValues,
+                    profileDTO.getEncryptionKeyId(),
+                    profileDTO.getTimestamp(),
+                    profileDTO.getNonce(),
+                    SENSITIVE_PURPOSE);
+            String pan = normalizePan(decrypted.get("panNo"));
+            if (!StringUtils.hasText(pan) || !PAN_PATTERN.matcher(pan).matches()) {
+                throw sensitivePanFailure();
+            }
+            return pan;
+        } catch (RuntimeException ex) {
+            throw sensitivePanFailure();
+        } finally {
+            profileDTO.clearEncryptedSubmission();
+        }
+    }
+
+    private RecruitmentNotificationException sensitivePanFailure() {
+        return new RecruitmentNotificationException("Unable to process the submitted PAN information.");
     }
 
     private String normalizePanForDisplay(String value) {

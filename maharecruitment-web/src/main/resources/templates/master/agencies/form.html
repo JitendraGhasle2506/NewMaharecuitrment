@@ -225,13 +225,18 @@
 
                             <div class="col-md-12">
                                 <label class="form-label">Certificate of Incorporation Number <span
-                                        class="required-asterisk">*</span></label>
+                                        class="required-asterisk" th:if="${!isEdit}">*</span></label>
                                 <div class="input-group">
-                                    <input autocomplete="off" type="text" class="form-control" th:field="*{certificateNumber}"
-                                        maxlength="100">
+                                    <input autocomplete="off" type="password" class="form-control" id="certificateNumber"
+                                        data-sensitive-encrypted-name="certificateNumberEncrypted"
+                                        data-sensitive-field="certificateNumber" maxlength="100"
+                                        th:required="${!isEdit}"
+                                        th:placeholder="${isEdit} ? 'Leave blank to keep existing certificate number' : 'Enter certificate number'">
                                     <input autocomplete="off" type="file" class="form-control" th:field="*{certificateDocumentFile}"
                                         id="certificateDocumentFile" accept=".pdf,.jpg,.jpeg,.png">
                                 </div>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('certificateNumberEncrypted')}"
+                                    th:errors="*{certificateNumberEncrypted}"></div>
                                 <small class="text-muted">Upload PDF/Image (Max 5MB).</small>
                                 <div class="text-danger small" th:if="${#fields.hasErrors('certificateDocumentFile')}"
                                     th:errors="*{certificateDocumentFile}"></div>
@@ -362,11 +367,13 @@
 
                             <div class="col-md-4">
                                 <label class="form-label">IFSC Code <span class="required-asterisk">*</span></label>
-                                <input autocomplete="off" type="text" class="form-control text-uppercase" th:field="*{ifscCode}"
-                                    id="ifscCode" maxlength="11">
+                                <input autocomplete="off" type="text" class="form-control text-uppercase"
+                                    id="ifscCode" maxlength="11" data-sensitive-encrypted-name="ifscCodeEncrypted"
+                                    data-sensitive-field="ifscCode" th:required="${!isEdit}"
+                                    th:placeholder="${isEdit} ? 'Leave blank to keep existing IFSC' : 'ABCD0123456'">
                                 <small class="text-muted">Format: 4 letters, 0, 6 chars (e.g. HDFC0001234)</small>
-                                <div class="text-danger small" th:if="${#fields.hasErrors('ifscCode')}"
-                                    th:errors="*{ifscCode}"></div>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('ifscCodeEncrypted')}"
+                                    th:errors="*{ifscCodeEncrypted}"></div>
                             </div>
 
                             <div class="col-md-4">

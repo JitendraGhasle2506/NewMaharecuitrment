@@ -32,7 +32,13 @@
                     <form th:action="@{/department/profile/update}"
                           th:object="${profileForm}"
                           method="post"
-                          enctype="multipart/form-data">
+                          enctype="multipart/form-data"
+                          data-encrypt-sensitive="true"
+                          data-sensitive-purpose="DEPARTMENT_PROFILE"
+                          data-sensitive-values-required="false"
+                          th:attr="data-sensitive-key-url=@{/security/credential-encryption/public-key}">
+
+                        <div class="alert alert-danger d-none" data-sensitive-encryption-status></div>
 
                         <div class="section-card">
                             <h5>Department Details</h5>
@@ -119,8 +125,11 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">TAN Number <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control text-uppercase" th:field="*{tanNumber}" maxlength="10">
-                                    <div class="text-danger small" th:errors="*{tanNumber}"></div>
+                                    <input type="text" class="form-control text-uppercase" id="tanNumber" maxlength="10"
+                                           autocomplete="off" data-sensitive-encrypted-name="tanNumberEncrypted"
+                                           data-sensitive-field="tanNumber"
+                                           placeholder="Leave blank to keep existing TAN">
+                                    <div class="text-danger small" th:errors="*{tanNumberEncrypted}"></div>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Billing Address <span class="text-danger">*</span></label>
@@ -225,6 +234,7 @@
             });
         })();
     </script>
+    <script th:src="@{/js/sensitive-data-encryption.js(v='20260818-department-profile')}"></script>
 </body>
 
 </html>

@@ -111,7 +111,10 @@
                         </div>
                     </div>
 
-                    <form autocomplete="off" id="employeeProfileForm" novalidate>
+                    <form autocomplete="off" id="employeeProfileForm" novalidate
+                        data-encrypt-sensitive="true" data-sensitive-purpose="EMPLOYEE_PROFILE"
+                        data-sensitive-values-required="false"
+                        th:attr="data-sensitive-key-url=@{/security/credential-encryption/public-key}">
                         <div class="form-grid read-only-grid">
                             <label>
                                 Full Name
@@ -156,7 +159,9 @@
                             </label>
                             <label>
                                 PAN Number
-                                <input autocomplete="off" name="panNo" type="text" maxlength="10" th:value="${profile.panNo}">
+                                <input autocomplete="off" id="panNo" type="password" maxlength="10"
+                                    data-sensitive-encrypted-name="panNoEncrypted" data-sensitive-field="panNo"
+                                    th:placeholder="${#strings.isEmpty(profile.panNo) ? 'ABCDE1234F' : profile.panNo + ' (leave blank to keep)'}">
                                 <small class="field-error" data-error-for="panNo"></small>
                             </label>
                             <label>
@@ -255,7 +260,8 @@
             </div>
         </section>
     </th:block>
-    <script th:src="@{/js/employee-dashboard.js(v='20260814')}"></script>
+    <script th:src="@{/js/sensitive-data-encryption.js}"></script>
+    <script th:src="@{/js/employee-dashboard.js(v='20260818')}"></script>
 </body>
 
 </html>

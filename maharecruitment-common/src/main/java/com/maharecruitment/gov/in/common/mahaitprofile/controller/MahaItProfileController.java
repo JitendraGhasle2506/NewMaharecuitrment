@@ -152,7 +152,6 @@ public class MahaItProfileController {
         form.setBankName(response.getBankName());
         form.setBranchName(response.getBranchName());
         form.setAccountHolderName(response.getAccountHolderName());
-        form.setIfscCode(response.getIfscCode());
         form.setActive(response.getActive());
         return form;
     }
@@ -171,5 +170,6 @@ public class MahaItProfileController {
         form.setPanNumber(null);
         form.setGstNumber(null);
         form.setAccountNumber(null);
+        form.setIfscCode(null);
     }
 }

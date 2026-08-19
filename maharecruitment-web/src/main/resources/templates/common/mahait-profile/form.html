@@ -181,9 +181,12 @@
 
                             <div class="col-md-6">
                                 <label class="form-label">IFSC Code <span class="required-asterisk">*</span></label>
-                                <input autocomplete="off" type="text" class="form-control text-uppercase" th:field="*{ifscCode}" maxlength="11">
-                                <div class="text-danger small" th:if="${#fields.hasErrors('ifscCode')}"
-                                    th:errors="*{ifscCode}"></div>
+                                <input autocomplete="off" type="text" class="form-control text-uppercase" id="ifscCode"
+                                    maxlength="11" data-sensitive-encrypted-name="ifscCodeEncrypted"
+                                    data-sensitive-field="ifscCode" th:required="${!isEdit}"
+                                    th:placeholder="${isEdit} ? 'Leave blank to keep existing IFSC' : 'ABCD0123456'">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('ifscCodeEncrypted')}"
+                                    th:errors="*{ifscCodeEncrypted}"></div>
                             </div>
                         </div>
 

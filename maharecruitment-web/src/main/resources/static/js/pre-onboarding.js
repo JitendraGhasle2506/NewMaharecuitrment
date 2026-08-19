@@ -20,7 +20,7 @@
     const joiningDateInput = document.getElementById("joiningDate");
     const dobInput = document.getElementById("dob");
     const panInput = document.getElementById("pan");
-    const aadhaarInput = form.querySelector("[name='aadhaar']");
+    const aadhaarInput = document.getElementById("aadhaar");
     const emailValidationMessage = document.getElementById("emailValidationMessage");
     const mobileValidationMessage = document.getElementById("mobileValidationMessage");
     const panValidationMessage = document.getElementById("panValidationMessage");
@@ -63,7 +63,7 @@
             input: aadhaarInput,
             messageElement: aadhaarValidationMessage,
             defaultMessage: defaultAadhaarMessage,
-            endpoint: "agency/onboarding/pre/validate-aadhaar",
+            endpoint: null,
             paramName: "aadhaar",
             checkingMessage: "Checking Aadhaar number...",
             requestErrorMessage: "Unable to validate Aadhaar right now. Please try again."
@@ -72,7 +72,7 @@
             input: panInput,
             messageElement: panValidationMessage,
             defaultMessage: panValidationMessage ? panValidationMessage.textContent : "Please enter a valid PAN (e.g., ABCDE1234F).",
-            endpoint: "agency/onboarding/pre/validate-pan",
+            endpoint: null,
             paramName: "pan",
             checkingMessage: "Checking PAN number...",
             requestErrorMessage: "Unable to validate PAN right now. Please try again."
@@ -281,6 +281,14 @@
         const config = validationConfig[fieldKey];
         const state = asyncValidationState[fieldKey];
         if (!config || !config.input || hrFlow || !value) {
+            return;
+        }
+        if (!config.endpoint) {
+            state.checkedValue = value;
+            state.requestedValue = "";
+            state.pending = false;
+            state.duplicate = false;
+            state.message = "";
             return;
         }
         if (state.pending && state.requestedValue === value) {
@@ -652,6 +660,7 @@
             setAsyncFieldValidity("pan", "Invalid PAN format (e.g., ABCDE1234F).");
             return false;
         }
+        if (!validationConfig.pan.endpoint) return true;
         const state = asyncValidationState.pan;
         if (state.pending && state.requestedValue === value) {
             setAsyncFieldValidity("pan", validationConfig.pan.checkingMessage);
@@ -709,6 +718,7 @@
             setAadhaarFieldValidity("Aadhaar must be exactly 12 digits.");
             return false;
         }
+        if (!validationConfig.aadhaar.endpoint) return true;
 
         const state = asyncValidationState.aadhaar;
         if (state.pending && state.requestedValue === value) {

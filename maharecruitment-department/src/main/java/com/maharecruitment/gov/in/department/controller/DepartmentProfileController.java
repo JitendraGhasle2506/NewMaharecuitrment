@@ -84,6 +84,7 @@ public class DepartmentProfileController {
             actorEmail = resolveActorEmail(principal);
 
             if (bindingResult.hasErrors()) {
+                profileForm.clearEncryptedSubmission();
                 populateReadOnlyFields(profileForm, actorEmail);
                 return "department/profile-edit";
             }
@@ -136,6 +137,7 @@ public class DepartmentProfileController {
         profileForm.setSubDepartmentName(loadedForm.getSubDepartmentName());
         profileForm.setGstNumber(loadedForm.getGstNumber());
         profileForm.setPanNumber(loadedForm.getPanNumber());
+        profileForm.clearEncryptedSubmission();
         profileForm.setExistingGstDocumentName(loadedForm.getExistingGstDocumentName());
         profileForm.setExistingPanDocumentName(loadedForm.getExistingPanDocumentName());
         profileForm.setExistingTanDocumentName(loadedForm.getExistingTanDocumentName());

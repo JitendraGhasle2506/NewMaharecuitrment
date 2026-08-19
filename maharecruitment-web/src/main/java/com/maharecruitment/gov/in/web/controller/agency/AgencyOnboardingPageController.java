@@ -127,6 +127,7 @@ public class AgencyOnboardingPageController {
         form.setRecruitmentInterviewDetailId(recruitmentInterviewDetailId);
 
         if (bindingResult.hasErrors()) {
+            form.clearEncryptedSubmission();
             try {
                 AgencyPreOnboardingForm referenceForm = onboardingPageService.loadPreOnboardingForm(
                         actorEmail,
@@ -170,50 +171,6 @@ public class AgencyOnboardingPageController {
                 return "redirect:/agency/selected-candidates";
             }
         }
-    }
-
-    @GetMapping("/pre/validate-aadhaar")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> validateAadhaar(
-            @RequestParam("aadhaar") String aadhaar,
-            @RequestParam(name = "preOnboardingId", required = false) Long preOnboardingId,
-            Principal principal) {
-        String actorEmail = resolveActorEmail(principal);
-        boolean duplicate = candidateIdentityValidationService.isAadhaarDuplicate(preOnboardingId, aadhaar);
-        if (duplicate) {
-            log.info(
-                    "Aadhaar duplicate check failed. actorEmail={}, preOnboardingId={}",
-                    actorEmail,
-                    preOnboardingId);
-        } else {
-            log.debug(
-                    "Aadhaar duplicate check passed. actorEmail={}, preOnboardingId={}",
-                    actorEmail,
-                    preOnboardingId);
-        }
-
-        return ResponseEntity.ok(Map.of(
-                "duplicate", duplicate,
-                "message", duplicate ? "Aadhaar number already exists in the system." : ""));
-    }
-
-    @GetMapping("/pre/validate-pan")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> validatePan(
-            @RequestParam("pan") String pan,
-            @RequestParam(name = "preOnboardingId", required = false) Long preOnboardingId,
-            Principal principal) {
-        String actorEmail = resolveActorEmail(principal);
-        boolean duplicate = candidateIdentityValidationService.isPanDuplicate(preOnboardingId, pan);
-        if (duplicate) {
-            log.info("PAN duplicate check failed. actorEmail={}, preOnboardingId={}", actorEmail, preOnboardingId);
-        } else {
-            log.debug("PAN duplicate check passed. actorEmail={}, preOnboardingId={}", actorEmail, preOnboardingId);
-        }
-
-        return ResponseEntity.ok(Map.of(
-                "duplicate", duplicate,
-                "message", duplicate ? "PAN number already exists in the system." : ""));
     }
 
     @GetMapping("/pre/validate-email")

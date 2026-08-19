@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.web.filter;
 import java.io.IOException;
 
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
 
@@ -37,10 +38,13 @@ public class SecurityResponseHeadersFilter extends OncePerRequestFilter {
         SecurityHeadersResponseWrapper wrappedResponse =
                 new SecurityHeadersResponseWrapper(request, response);
         wrappedResponse.applySecurityHeaders();
-        filterChain.doFilter(request, wrappedResponse);
+        ContentCachingResponseWrapper cachingResponse = new ContentCachingResponseWrapper(wrappedResponse);
+        filterChain.doFilter(request, cachingResponse);
         if (!wrappedResponse.isCommitted()) {
             wrappedResponse.applySecurityHeaders();
         }
+        SecurityHeaderPolicy.writeFinalContentSecurityPolicy(request, cachingResponse);
+        cachingResponse.copyBodyToResponse();
     }
 
     private static final class SecurityHeadersResponseWrapper extends HttpServletResponseWrapper {

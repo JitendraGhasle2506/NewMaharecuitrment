@@ -8,7 +8,9 @@ import java.time.Period;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -26,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.auth.repository.DepartmentRegistrationRepository;
+import com.maharecruitment.gov.in.common.security.SensitivePayloadDecryptor;
 import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEmploymentEntity;
@@ -55,6 +58,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     private static final Logger log = LoggerFactory.getLogger(AgencyOnboardingPageServiceImpl.class);
     private static final Pattern AADHAAR_PATTERN = Pattern.compile("^[0-9]{12}$");
     private static final Pattern PAN_PATTERN = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
+    private static final String SENSITIVE_PURPOSE = "AGENCY_PRE_ONBOARDING";
     private static final String DEFAULT_VALUE = "-";
     private static final List<String> CURRENT_ONBOARDED_STATUSES = List.of("ACTIVE", "RESIGNED");
 
@@ -68,6 +72,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     private final ResourceLevelExperienceRepository resourceLevelExperienceRepository;
     private final CandidateIdentityValidationService candidateIdentityValidationService;
     private final FileStorageService fileStorageService;
+    private final SensitivePayloadDecryptor sensitivePayloadDecryptor;
 
     public AgencyOnboardingPageServiceImpl(
             AgencyAccessService agencyAccessService,
@@ -79,7 +84,8 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
             SubDepartmentRepository subDepartmentRepository,
             ResourceLevelExperienceRepository resourceLevelExperienceRepository,
             CandidateIdentityValidationService candidateIdentityValidationService,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            SensitivePayloadDecryptor sensitivePayloadDecryptor) {
         this.agencyAccessService = agencyAccessService;
         this.interviewDetailRepository = interviewDetailRepository;
         this.preOnboardingRepository = preOnboardingRepository;
@@ -90,6 +96,7 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         this.resourceLevelExperienceRepository = resourceLevelExperienceRepository;
         this.candidateIdentityValidationService = candidateIdentityValidationService;
         this.fileStorageService = fileStorageService;
+        this.sensitivePayloadDecryptor = sensitivePayloadDecryptor;
     }
 
     @Override
@@ -169,14 +176,15 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 .orElse(null);
         assertPreOnboardingEditable(existing);
         applyExistingCompanyPayrollProofReference(form, existing);
+        SensitiveCandidateIdentity sensitiveIdentity = resolveSensitiveIdentity(form, existing);
 
         List<NormalizedEmployment> employmentRows = normalizeEmploymentRows(form.getPreviousEmployments());
         BigDecimal minExperienceYears = resolveMinExperienceYears(
                 candidate.getDesignationVacancy() != null ? candidate.getDesignationVacancy().getLevelCode() : null);
         ExperienceBreakdown experience = calculateExperience(employmentRows);
         validateForm(form, employmentRows, experience, minExperienceYears);
-        String normalizedAadhaar = normalizeAadhaar(form.getAadhaar());
-        String normalizedPan = normalizePan(form.getPan());
+        String normalizedAadhaar = sensitiveIdentity.aadhaar();
+        String normalizedPan = sensitiveIdentity.pan();
         String normalizedEmail = normalizeEmail(form.getEmail());
         String normalizedMobile = normalizeMobile(form.getMobile());
         candidateIdentityValidationService.validateUniqueCandidateDetails(
@@ -629,20 +637,6 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
         if (form.getJoiningDate() == null) {
             throw new RecruitmentNotificationException("Joining date is required.");
         }
-        if (!StringUtils.hasText(form.getAadhaar())) {
-            throw new RecruitmentNotificationException("Aadhaar number is required.");
-        }
-        String aadhaar = form.getAadhaar().trim().replaceAll("\\s+", "");
-        if (!AADHAAR_PATTERN.matcher(aadhaar).matches()) {
-            throw new RecruitmentNotificationException("Aadhaar number must be 12 digits.");
-        }
-        if (!StringUtils.hasText(form.getPan())) {
-            throw new RecruitmentNotificationException("PAN number is required.");
-        }
-        String pan = form.getPan().trim().toUpperCase();
-        if (!PAN_PATTERN.matcher(pan).matches()) {
-            throw new RecruitmentNotificationException("PAN number format is invalid.");
-        }
         if (employmentRows.isEmpty()) {
             throw new RecruitmentNotificationException("At least one previous employment entry is required.");
         }
@@ -705,12 +699,71 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
                 uploadResult.size());
     }
 
-    private String normalizeAadhaar(String value) {
-        return StringUtils.hasText(value) ? value.trim().replaceAll("\\s+", "") : null;
+    private SensitiveCandidateIdentity resolveSensitiveIdentity(
+            AgencyPreOnboardingForm form,
+            AgencyCandidatePreOnboardingEntity existing) {
+        try {
+            boolean hasAadhaar = StringUtils.hasText(form.getAadhaarEncrypted());
+            boolean hasPan = StringUtils.hasText(form.getPanEncrypted());
+            if (!hasAadhaar && !hasPan) {
+                if (existing == null) {
+                    throw sensitiveIdentityFailure();
+                }
+                return validateSensitiveIdentity(existing.getAadhaarNumber(), existing.getPanNumber());
+            }
+
+            if (form.getTimestamp() == null || !StringUtils.hasText(form.getEncryptionKeyId())
+                    || !StringUtils.hasText(form.getNonce())) {
+                throw sensitiveIdentityFailure();
+            }
+
+            Map<String, String> encryptedValues = new LinkedHashMap<>();
+            if (hasAadhaar) {
+                encryptedValues.put("aadhaar", form.getAadhaarEncrypted());
+            }
+            if (hasPan) {
+                encryptedValues.put("pan", form.getPanEncrypted());
+            }
+            Map<String, String> decrypted = sensitivePayloadDecryptor.decryptSensitivePayloads(
+                    encryptedValues,
+                    form.getEncryptionKeyId(),
+                    form.getTimestamp(),
+                    form.getNonce(),
+                    SENSITIVE_PURPOSE);
+
+            String aadhaar = hasAadhaar
+                    ? decrypted.get("aadhaar")
+                    : existing != null ? existing.getAadhaarNumber() : null;
+            String pan = hasPan
+                    ? decrypted.get("pan")
+                    : existing != null ? existing.getPanNumber() : null;
+            return validateSensitiveIdentity(aadhaar, pan);
+        } catch (RuntimeException ex) {
+            throw sensitiveIdentityFailure();
+        } finally {
+            form.clearEncryptedSubmission();
+        }
     }
 
-    private String normalizePan(String value) {
-        return StringUtils.hasText(value) ? value.trim().toUpperCase() : null;
+    private SensitiveCandidateIdentity validateSensitiveIdentity(String aadhaar, String pan) {
+        String normalizedAadhaar = StringUtils.hasText(aadhaar)
+                ? aadhaar.trim().replaceAll("\\s+", "")
+                : null;
+        String normalizedPan = StringUtils.hasText(pan)
+                ? pan.trim().toUpperCase(Locale.ROOT)
+                : null;
+        if (!StringUtils.hasText(normalizedAadhaar)
+                || !AADHAAR_PATTERN.matcher(normalizedAadhaar).matches()
+                || !StringUtils.hasText(normalizedPan)
+                || !PAN_PATTERN.matcher(normalizedPan).matches()) {
+            throw sensitiveIdentityFailure();
+        }
+        return new SensitiveCandidateIdentity(normalizedAadhaar, normalizedPan);
+    }
+
+    private RecruitmentNotificationException sensitiveIdentityFailure() {
+        return new RecruitmentNotificationException(
+                "Unable to process the submitted Aadhaar and PAN information.");
     }
 
     private String normalizeEmail(String value) {
@@ -950,6 +1003,9 @@ public class AgencyOnboardingPageServiceImpl implements AgencyOnboardingPageServ
     }
 
     private record ExperienceBreakdown(int years, int months, int totalMonths) {
+    }
+
+    private record SensitiveCandidateIdentity(String aadhaar, String pan) {
     }
 
     private record UploadedDocument(

@@ -234,113 +234,13 @@
             frame.style.height = targetHeight + 'px';
         }
 
-        function collectPrintableStyles(doc, styleSet) {
-            if (!doc || !styleSet) {
-                return;
-            }
-
-            Array.from(doc.querySelectorAll('link[rel="stylesheet"], style')).forEach(function (node) {
-                styleSet.add(node.outerHTML);
-            });
-        }
-
-        function getPrintableContent(frame) {
-            var doc = getFrameDocument(frame);
-            if (!doc) {
-                return '';
-            }
-
-            var root = doc.getElementById('print-content');
-            return root ? root.outerHTML : doc.body.innerHTML;
-        }
-
-        function printWhenAssetsReady(printWindow) {
-            if (!printWindow) {
-                return;
-            }
-
-            function triggerPrint() {
-                printWindow.focus();
-                window.setTimeout(function () {
-                    printWindow.print();
-                    printWindow.close();
-                }, 250);
-            }
-
-            function waitForImages() {
-                var doc = printWindow.document;
-                var images = Array.from(doc.images || []);
-                var pending = images.filter(function (image) {
-                    return !image.complete;
-                });
-
-                if (!pending.length) {
-                    triggerPrint();
-                    return;
-                }
-
-                var remaining = pending.length;
-                function resolveImage() {
-                    remaining -= 1;
-                    if (remaining <= 0) {
-                        triggerPrint();
-                    }
-                }
-
-                pending.forEach(function (image) {
-                    image.addEventListener('load', resolveImage, { once: true });
-                    image.addEventListener('error', resolveImage, { once: true });
-                });
-            }
-
-            if (printWindow.document.readyState === 'complete') {
-                window.setTimeout(waitForImages, 100);
-                return;
-            }
-
-            printWindow.addEventListener('load', function () {
-                window.setTimeout(waitForImages, 100);
-            }, { once: true });
-        }
-
         function printPreview() {
-            var frames = ['newPreviewFrame']
-                .map(function (frameId) { return document.getElementById(frameId); })
-                .filter(Boolean);
-
-            if (!frames.length) {
+            var frame = document.getElementById('newPreviewFrame');
+            if (!frame || !frame.contentWindow) {
                 return;
             }
-
-            var styleSet = new Set();
-            var printableSections = '';
-
-            frames.forEach(function (frame, index) {
-                var doc = getFrameDocument(frame);
-                collectPrintableStyles(doc, styleSet);
-                printableSections += '<section class="combined-print-section'
-                    + (index < frames.length - 1 ? ' with-break' : '')
-                    + '">'
-                    + getPrintableContent(frame)
-                    + '</section>';
-            });
-
-            var printWindow = window.open('', '_blank');
-            var printStyles = '<style>'
-                + 'body{margin:0;background:#fff;}'
-                + '.combined-print-section{page-break-after:always;}'
-                + '.combined-print-section:last-child{page-break-after:auto;}'
-                + '.no-print{display:none !important;}'
-                + '</style>';
-
-            printWindow.document.write('<html><head><title>Tax Invoice Preview</title>'
-                + Array.from(styleSet).join('')
-                + printStyles
-                + '</head><body>'
-                + printableSections
-                + '</body></html>');
-            printWindow.document.close();
-            printWhenAssetsReady(printWindow);
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
         }
 
         document.addEventListener('DOMContentLoaded', function () {

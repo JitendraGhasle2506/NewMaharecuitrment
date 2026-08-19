@@ -25,22 +25,32 @@ class AgencyMasterSensitiveTransportTemplateTest {
                 .contains("data-sensitive-encrypted-name=\"panNumberEncrypted\"")
                 .contains("data-sensitive-encrypted-name=\"gstNumberEncrypted\"")
                 .contains("data-sensitive-encrypted-name=\"bankAccountNumberEncrypted\"")
+                .contains("data-sensitive-encrypted-name=\"ifscCodeEncrypted\"")
+                .contains("data-sensitive-encrypted-name=\"certificateNumberEncrypted\"")
                 .contains("data-sensitive-field=\"panNumber\"")
                 .contains("data-sensitive-field=\"gstNumber\"")
                 .contains("data-sensitive-field=\"bankAccountNumber\"")
+                .contains("data-sensitive-field=\"ifscCode\"")
+                .contains("data-sensitive-field=\"certificateNumber\"")
                 .contains("type=\"text\" class=\"form-control text-uppercase\"")
                 .contains("id=\"bankAccountNumber\"")
                 .contains("Leave blank to keep existing PAN")
                 .contains("Leave blank to keep existing GST")
                 .contains("Leave blank to keep existing account number")
+                .contains("Leave blank to keep existing IFSC")
+                .contains("Leave blank to keep existing certificate number")
                 .contains("@{/js/sensitive-data-encryption.js(v='20260813-agency')}")
                 .doesNotContain(
                         "th:field=\"*{panNumber}\"",
                         "th:field=\"*{gstNumber}\"",
                         "th:field=\"*{bankAccountNumber}\"",
+                        "th:field=\"*{ifscCode}\"",
+                        "th:field=\"*{certificateNumber}\"",
                         "name=\"panNumber\"",
                         "name=\"gstNumber\"",
-                        "name=\"bankAccountNumber\"");
+                        "name=\"bankAccountNumber\"",
+                        "name=\"ifscCode\"",
+                        "name=\"certificateNumber\"");
 
         assertThat(departmentTemplate)
                 .contains("type=\"password\" class=\"form-control text-uppercase\" id=\"tanNo\"")

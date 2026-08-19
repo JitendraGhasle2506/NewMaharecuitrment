@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.common.security.SensitivePayloadDecryptor;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeProfile;
@@ -40,6 +42,9 @@ class EmployeeProfileServiceImplTest {
 
     @Mock
     private FileStorageService fileStorageService;
+
+    @Mock
+    private SensitivePayloadDecryptor sensitivePayloadDecryptor;
 
     @Test
     void updateProfileSynchronizesChangedEmailToUserAndEmployeeMaster() {
@@ -66,6 +71,42 @@ class EmployeeProfileServiceImplTest {
         assertThat(employee.getEmail()).isEqualTo("new.employee@example.com");
         verify(userRepository).save(user);
         verify(employeeRepository).save(employee);
+    }
+
+    @Test
+    void decryptsPanBeforeSavingAndReturnsOnlyMaskedPan() {
+        User user = user();
+        EmployeeEntity employee = employee();
+        EmployeeProfile profile = new EmployeeProfile();
+        profile.setEmployee(employee);
+        EmployeeProfileDTO dto = new EmployeeProfileDTO();
+        dto.setPanNo("INJECTED1X");
+        dto.setPanNoEncrypted("ENC:v1:ciphertext");
+        dto.setEncryptionKeyId("key-1");
+        dto.setTimestamp(1_700_000_000_000L);
+        dto.setNonce("0123456789abcdefghijklmn");
+
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
+        when(employeeRepository.findDetailedByUserId(user.getId())).thenReturn(Optional.of(employee));
+        when(employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()))
+                .thenReturn(Optional.of(profile));
+        when(sensitivePayloadDecryptor.decryptSensitivePayloads(
+                Map.of("panNo", "ENC:v1:ciphertext"),
+                "key-1",
+                1_700_000_000_000L,
+                "0123456789abcdefghijklmn",
+                "EMPLOYEE_PROFILE"))
+                .thenReturn(Map.of("panNo", "abcde1234f"));
+        when(employeeProfileRepository.save(profile)).thenReturn(profile);
+        when(employeeRepository.save(employee)).thenReturn(employee);
+
+        EmployeeProfileDTO saved = service().updateCurrentEmployeeProfile(user.getEmail(), dto);
+
+        assertThat(profile.getPanNo()).isEqualTo("ABCDE1234F");
+        assertThat(employee.getPanNumber()).isEqualTo("ABCDE1234F");
+        assertThat(saved.getPanNo()).isEqualTo("XXXXXX234F");
+        assertThat(dto.getPanNo()).isNull();
+        assertThat(dto.getPanNoEncrypted()).isNull();
     }
 
     @Test
@@ -169,7 +210,8 @@ class EmployeeProfileServiceImplTest {
                 employeeProfileRepository,
                 employeeRepository,
                 userRepository,
-                fileStorageService);
+                fileStorageService,
+                sensitivePayloadDecryptor);
     }
 
     private User user() {

@@ -6,7 +6,9 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +35,7 @@ import com.maharecruitment.gov.in.department.service.model.StoredDocument;
 import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
+import com.maharecruitment.gov.in.common.security.SensitivePayloadDecryptor;
 
 @Service
 @Transactional(readOnly = true)
@@ -42,6 +45,8 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
     private static final String GST_DOCUMENT_MODULE_PATH = "department-registration/gst";
     private static final String PAN_DOCUMENT_MODULE_PATH = "department-registration/pan";
     private static final String TAN_DOCUMENT_MODULE_PATH = "department-registration/tan";
+    private static final String SENSITIVE_PURPOSE = "DEPARTMENT_PROFILE";
+    private static final Pattern TAN_PATTERN = Pattern.compile("^[A-Z]{4}[0-9]{5}[A-Z]$");
 
     private final UserRepository userRepository;
     private final UserAffiliationService userAffiliationService;
@@ -49,6 +54,7 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
     private final DepartmentMstRepository departmentMstRepository;
     private final SubDepartmentRepository subDepartmentRepository;
     private final DepartmentProfileDocumentStorageService documentStorageService;
+    private final SensitivePayloadDecryptor sensitivePayloadDecryptor;
 
     public DepartmentProfileServiceImpl(
             UserRepository userRepository,
@@ -56,13 +62,15 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
             DepartmentRegistrationRepository departmentRegistrationRepository,
             DepartmentMstRepository departmentMstRepository,
             SubDepartmentRepository subDepartmentRepository,
-            DepartmentProfileDocumentStorageService documentStorageService) {
+            DepartmentProfileDocumentStorageService documentStorageService,
+            SensitivePayloadDecryptor sensitivePayloadDecryptor) {
         this.userRepository = userRepository;
         this.userAffiliationService = userAffiliationService;
         this.departmentRegistrationRepository = departmentRegistrationRepository;
         this.departmentMstRepository = departmentMstRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.documentStorageService = documentStorageService;
+        this.sensitivePayloadDecryptor = sensitivePayloadDecryptor;
     }
 
     @Override
@@ -126,7 +134,6 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
         form.setBillDepartmentName(registration.getBillDepartmentName());
         form.setGstNumber(maskedGst(registration));
         form.setPanNumber(maskedPan(registration));
-        form.setTanNumber(registration.getTanNo());
         form.setBillingAddress(registration.getBillAddress());
 
         form.setPrimaryContactName(primaryContact.map(DepartmentContactEntity::getContactName).orElse(user.getName()));
@@ -154,6 +161,7 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
 
         User user = resolveAuthenticatedUser(actorEmail);
         DepartmentRegistrationEntity registration = resolveRegistration(user);
+        String tanNumber = resolveSensitiveTan(updateForm, registration.getTanNo());
 
         validateContactIndependence(
                 updateForm.getPrimaryMobileNumber(),
@@ -164,8 +172,7 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
 
         registration.setAddress(updateForm.getOfficeAddress());
         registration.setBillDepartmentName(updateForm.getBillDepartmentName());
-        // Sensitive identifiers are preserved here. Replacement uses a dedicated encrypted flow.
-        registration.setTanNo(normalizeUpper(updateForm.getTanNumber()));
+        registration.setTanNo(tanNumber);
         registration.setBillAddress(updateForm.getBillingAddress());
 
         String gstPath = resolveDocumentPath(
@@ -217,6 +224,36 @@ public class DepartmentProfileServiceImpl implements DepartmentProfileService {
                 registration.getDepartmentRegistrationId(),
                 registration.getDepartmentId(),
                 registration.getSubDeptId());
+    }
+
+    private String resolveSensitiveTan(DepartmentProfileUpdateForm form, String existingTan) {
+        try {
+            if (!StringUtils.hasText(form.getTanNumberEncrypted())) {
+                return normalizeUpper(existingTan);
+            }
+            if (form.getTimestamp() == null) {
+                throw sensitiveTanFailure();
+            }
+            String tanNumber = sensitivePayloadDecryptor.decryptSensitivePayloads(
+                    Map.of("tanNumber", form.getTanNumberEncrypted().trim()),
+                    form.getEncryptionKeyId(),
+                    form.getTimestamp(),
+                    form.getNonce(),
+                    SENSITIVE_PURPOSE).get("tanNumber");
+            String normalizedTan = normalizeUpper(tanNumber);
+            if (!StringUtils.hasText(normalizedTan) || !TAN_PATTERN.matcher(normalizedTan).matches()) {
+                throw sensitiveTanFailure();
+            }
+            return normalizedTan;
+        } catch (RuntimeException ex) {
+            throw sensitiveTanFailure();
+        } finally {
+            form.clearEncryptedSubmission();
+        }
+    }
+
+    private DepartmentApplicationException sensitiveTanFailure() {
+        return new DepartmentApplicationException("Unable to process the submitted TAN number.");
     }
 
     @Override

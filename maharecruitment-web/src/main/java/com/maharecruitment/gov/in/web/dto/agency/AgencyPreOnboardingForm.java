@@ -13,6 +13,7 @@ import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -79,11 +80,23 @@ public class AgencyPreOnboardingForm {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate onboardingDate;
 
-    @NotBlank(message = "Aadhaar number is required")
-    @Pattern(regexp = "^[0-9]{12}$", message = "Aadhaar number must be exactly 12 digits")
     private String aadhaar;
 
     private String pan;
+
+    @Size(max = 800, message = "Encrypted Aadhaar number is invalid")
+    private String aadhaarEncrypted;
+
+    @Size(max = 800, message = "Encrypted PAN number is invalid")
+    private String panEncrypted;
+
+    @Size(max = 100, message = "Encryption key identifier is invalid")
+    private String encryptionKeyId;
+
+    private Long timestamp;
+
+    @Pattern(regexp = "^[A-Za-z0-9_-]{22,128}$", message = "Encrypted request nonce is invalid")
+    private String nonce;
 
     private Integer totalExperienceYears = 0;
 
@@ -162,5 +175,19 @@ public class AgencyPreOnboardingForm {
 
     public String getMaskedAadhaar() {
         return SensitiveDataMaskingUtil.maskAadhaar(aadhaar);
+    }
+
+    public String getMaskedPan() {
+        return SensitiveDataMaskingUtil.maskPan(pan);
+    }
+
+    public void clearEncryptedSubmission() {
+        aadhaarEncrypted = null;
+        panEncrypted = null;
+        encryptionKeyId = null;
+        timestamp = null;
+        nonce = null;
+        aadhaar = null;
+        pan = null;
     }
 }

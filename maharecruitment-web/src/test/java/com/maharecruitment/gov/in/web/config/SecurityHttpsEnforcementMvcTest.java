@@ -1,6 +1,9 @@
 package com.maharecruitment.gov.in.web.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -96,7 +99,10 @@ class SecurityHttpsEnforcementMvcTest {
                 .andExpect(header().string("Permissions-Policy", SecurityHeaderPolicy.PERMISSIONS_POLICY))
                 .andExpect(header().string(
                         "Content-Security-Policy",
-                        SecurityHeaderPolicy.CONTENT_SECURITY_POLICY))
+                        allOf(
+                                containsString("script-src 'self' 'nonce-"),
+                                containsString("frame-ancestors 'none'"),
+                                not(containsString("'unsafe-inline'")))))
                 .andExpect(header().string("X-XSS-Protection", "0"));
     }
 
@@ -110,7 +116,9 @@ class SecurityHttpsEnforcementMvcTest {
                 .andExpect(header().string("Permissions-Policy", SecurityHeaderPolicy.PERMISSIONS_POLICY))
                 .andExpect(header().string(
                         "Content-Security-Policy",
-                        SecurityHeaderPolicy.CONTENT_SECURITY_POLICY));
+                        allOf(
+                                containsString("script-src 'self' 'nonce-"),
+                                not(containsString("'unsafe-inline'")))));
     }
 
     @Test
@@ -123,7 +131,9 @@ class SecurityHttpsEnforcementMvcTest {
                 .andExpect(header().string("X-Frame-Options", "SAMEORIGIN"))
                 .andExpect(header().string(
                         "Content-Security-Policy",
-                        SecurityHeaderPolicy.SAME_ORIGIN_FRAME_CONTENT_SECURITY_POLICY));
+                        allOf(
+                                containsString("frame-ancestors 'self'"),
+                                not(containsString("'unsafe-inline'")))));
     }
 
     @Test
@@ -136,7 +146,9 @@ class SecurityHttpsEnforcementMvcTest {
                 .andExpect(header().string("Permissions-Policy", SecurityHeaderPolicy.PERMISSIONS_POLICY))
                 .andExpect(header().string(
                         "Content-Security-Policy",
-                        SecurityHeaderPolicy.CONTENT_SECURITY_POLICY))
+                        allOf(
+                                containsString("frame-ancestors 'none'"),
+                                not(containsString("'unsafe-inline'")))))
                 .andExpect(header().string("Strict-Transport-Security",
                         org.hamcrest.Matchers.containsString("max-age=31536000")));
     }

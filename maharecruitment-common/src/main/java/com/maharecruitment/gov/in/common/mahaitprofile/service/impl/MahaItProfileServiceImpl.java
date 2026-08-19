@@ -39,6 +39,7 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
     private static final Pattern GST_PATTERN = Pattern.compile(
             "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$");
     private static final Pattern ACCOUNT_NUMBER_PATTERN = Pattern.compile("^[0-9]{6,30}$");
+    private static final Pattern IFSC_PATTERN = Pattern.compile("^[A-Z]{4}0[A-Z0-9]{6}$");
 
     private final MahaItProfileRepository profileRepository;
     private final MahaItProfileAuditLogRepository auditLogRepository;
@@ -131,7 +132,9 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
         if (sensitiveDetails.accountNumber() != null) {
             entity.setAccountNumber(sensitiveDetails.accountNumber());
         }
-        entity.setIfscCode(normalizeUppercase(request.getIfscCode()));
+        if (sensitiveDetails.ifscCode() != null) {
+            entity.setIfscCode(sensitiveDetails.ifscCode());
+        }
         entity.setActive(request.getActive());
     }
 
@@ -141,6 +144,7 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
         addEncryptedValue(encryptedValues, "panNumber", request.getPanNumberEncrypted());
         addEncryptedValue(encryptedValues, "gstNumber", request.getGstNumberEncrypted());
         addEncryptedValue(encryptedValues, "accountNumber", request.getAccountNumberEncrypted());
+        addEncryptedValue(encryptedValues, "ifscCode", request.getIfscCodeEncrypted());
 
         try {
             if (encryptedValues.isEmpty()) {
@@ -163,13 +167,15 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
                     normalizeOptionalUppercase(decrypted.get("cinNumber")),
                     normalizeOptionalUppercase(decrypted.get("panNumber")),
                     normalizeOptionalUppercase(decrypted.get("gstNumber")),
-                    normalizeOptional(decrypted.get("accountNumber")));
+                    normalizeOptional(decrypted.get("accountNumber")),
+                    normalizeOptionalUppercase(decrypted.get("ifscCode")));
 
             if ((!update && !details.isComplete())
                     || !isValid(details.cinNumber(), CIN_PATTERN)
                     || !isValid(details.panNumber(), PAN_PATTERN)
                     || !isValid(details.gstNumber(), GST_PATTERN)
-                    || !isValid(details.accountNumber(), ACCOUNT_NUMBER_PATTERN)) {
+                    || !isValid(details.accountNumber(), ACCOUNT_NUMBER_PATTERN)
+                    || !isValid(details.ifscCode(), IFSC_PATTERN)) {
                 throw sensitiveDetailsFailure();
             }
             return details;
@@ -181,6 +187,7 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
             request.setPanNumber(null);
             request.setGstNumber(null);
             request.setAccountNumber(null);
+            request.setIfscCode(null);
         }
     }
 
@@ -256,7 +263,7 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
                 normalizeText(request.getAccountHolderName()));
         appendSensitiveChange(
                 changes, "accountNumber", existing.getAccountNumber(), sensitiveDetails.accountNumber());
-        appendChange(changes, "ifscCode", existing.getIfscCode(), normalizeUppercase(request.getIfscCode()));
+        appendSensitiveChange(changes, "ifscCode", existing.getIfscCode(), sensitiveDetails.ifscCode());
         appendChange(changes, "active", existing.getActive(), request.getActive());
 
         if (changes.isEmpty()) {
@@ -340,14 +347,16 @@ public class MahaItProfileServiceImpl implements MahaItProfileService {
             String cinNumber,
             String panNumber,
             String gstNumber,
-            String accountNumber) {
+            String accountNumber,
+            String ifscCode) {
 
         private static SensitiveProfileDetails unchanged() {
-            return new SensitiveProfileDetails(null, null, null, null);
+            return new SensitiveProfileDetails(null, null, null, null, null);
         }
 
         private boolean isComplete() {
-            return cinNumber != null && panNumber != null && gstNumber != null && accountNumber != null;
+            return cinNumber != null && panNumber != null && gstNumber != null
+                    && accountNumber != null && ifscCode != null;
         }
     }
 }

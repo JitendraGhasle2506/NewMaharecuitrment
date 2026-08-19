@@ -186,6 +186,22 @@
         }
 
         @media print {
+            body.print-invoice-only * {
+                visibility: hidden !important;
+            }
+
+            body.print-invoice-only #print-content,
+            body.print-invoice-only #print-content * {
+                visibility: visible !important;
+            }
+
+            body.print-invoice-only #print-content {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                margin: 0 !important;
+            }
+
             .preview-page,
             .preview-sheet {
                 padding: 0 !important;
@@ -463,72 +479,15 @@
     </div>
 
     <script>
-        function printWhenAssetsReady(printWindow) {
-            if (!printWindow) {
-                return;
-            }
-
-            function triggerPrint() {
-                printWindow.focus();
-                window.setTimeout(function () {
-                    printWindow.print();
-                    printWindow.close();
-                }, 250);
-            }
-
-            function waitForImages() {
-                var doc = printWindow.document;
-                var images = Array.from(doc.images || []);
-                var pending = images.filter(function (image) {
-                    return !image.complete;
-                });
-
-                if (!pending.length) {
-                    triggerPrint();
-                    return;
-                }
-
-                var remaining = pending.length;
-                function resolveImage() {
-                    remaining -= 1;
-                    if (remaining <= 0) {
-                        triggerPrint();
-                    }
-                }
-
-                pending.forEach(function (image) {
-                    image.addEventListener('load', resolveImage, { once: true });
-                    image.addEventListener('error', resolveImage, { once: true });
-                });
-            }
-
-            if (printWindow.document.readyState === 'complete') {
-                window.setTimeout(waitForImages, 100);
-                return;
-            }
-
-            printWindow.addEventListener('load', function () {
-                window.setTimeout(waitForImages, 100);
-            }, { once: true });
-        }
-
         function printContent(id) {
-            var content = document.getElementById(id).innerHTML;
-            var win = window.open('', '_blank');
-            if (!win) {
+            if (!document.getElementById(id)) {
                 return;
             }
-            var styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
-                .map(function (node) {
-                    return node.outerHTML;
-                })
-                .join('');
-
-            win.document.write('<html><head><title>Tax Invoice Preview</title>' + styles + '</head><body class="tax-invoice">');
-            win.document.write(content);
-            win.document.write('</body></html>');
-            win.document.close();
-            printWhenAssetsReady(win);
+            document.body.classList.add('print-invoice-only');
+            window.addEventListener('afterprint', function () {
+                document.body.classList.remove('print-invoice-only');
+            }, { once: true });
+            window.print();
         }
     </script>
 </body>

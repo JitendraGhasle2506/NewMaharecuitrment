@@ -43,6 +43,7 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
     private static final Pattern GST_PATTERN = Pattern.compile(
             "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$");
     private static final Pattern BANK_ACCOUNT_PATTERN = Pattern.compile("^[0-9]{9,30}$");
+    private static final Pattern IFSC_PATTERN = Pattern.compile("^[A-Z]{4}0[A-Z0-9]{6}$");
 	
 	@Autowired
 	AgencyMasterRepository agencyMasterRepository;
@@ -139,7 +140,7 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
                 form.getExistingPanCopyPath(),
                 "PAN copy",
                 newlyStoredFiles));
-        request.setCertificateNumber(form.getCertificateNumber());
+        request.setCertificateNumber(sensitiveIdentity.certificateNumber());
         request.setCertificateDocumentPath(resolveDocumentPath(
                 "agency-master/certificate",
                 form.getCertificateDocumentFile(),
@@ -163,7 +164,7 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
         request.setBankBranch(form.getBankBranch());
         request.setBankAccountNumber(sensitiveIdentity.bankAccountNumber());
         request.setBankAccountType(form.getBankAccountType());
-        request.setIfscCode(form.getIfscCode());
+        request.setIfscCode(sensitiveIdentity.ifscCode());
         request.setCancelledChequePath(resolveDocumentPath(
                 "agency-master/cancelled-cheque",
                 form.getCancelledChequeFile(),
@@ -180,6 +181,8 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
         addEncryptedValue(encryptedValues, "panNumber", form.getPanNumberEncrypted());
         addEncryptedValue(encryptedValues, "gstNumber", form.getGstNumberEncrypted());
         addEncryptedValue(encryptedValues, "bankAccountNumber", form.getBankAccountNumberEncrypted());
+        addEncryptedValue(encryptedValues, "ifscCode", form.getIfscCodeEncrypted());
+        addEncryptedValue(encryptedValues, "certificateNumber", form.getCertificateNumberEncrypted());
 
         try {
             if (encryptedValues.isEmpty()) {
@@ -203,14 +206,24 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
             String panNumber = normalizeOptionalUppercase(decrypted.get("panNumber"));
             String gstNumber = normalizeOptionalUppercase(decrypted.get("gstNumber"));
             String bankAccountNumber = normalizeOptional(decrypted.get("bankAccountNumber"));
+            String ifscCode = normalizeOptionalUppercase(decrypted.get("ifscCode"));
+            String certificateNumber = normalizeOptional(decrypted.get("certificateNumber"));
 
-            if ((!update && (panNumber == null || gstNumber == null || bankAccountNumber == null))
+            if ((!update && (panNumber == null || gstNumber == null
+                    || bankAccountNumber == null || ifscCode == null || certificateNumber == null))
                     || (panNumber != null && !PAN_PATTERN.matcher(panNumber).matches())
                     || (gstNumber != null && !GST_PATTERN.matcher(gstNumber).matches())
-                    || (bankAccountNumber != null && !BANK_ACCOUNT_PATTERN.matcher(bankAccountNumber).matches())) {
+                    || (bankAccountNumber != null && !BANK_ACCOUNT_PATTERN.matcher(bankAccountNumber).matches())
+                    || (ifscCode != null && !IFSC_PATTERN.matcher(ifscCode).matches())
+                    || (certificateNumber != null && certificateNumber.length() > 100)) {
                 throw sensitiveIdentityFailure();
             }
-            return new SensitiveAgencyIdentity(panNumber, gstNumber, bankAccountNumber);
+            return new SensitiveAgencyIdentity(
+                    panNumber,
+                    gstNumber,
+                    bankAccountNumber,
+                    ifscCode,
+                    certificateNumber);
         } catch (RuntimeException ex) {
             throw sensitiveIdentityFailure();
         } finally {
@@ -218,6 +231,8 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
             form.setPanNumber(null);
             form.setGstNumber(null);
             form.setBankAccountNumber(null);
+            form.setIfscCode(null);
+            form.setCertificateNumber(null);
         }
     }
 
@@ -305,10 +320,12 @@ public class AgencyMasterPageServiceImpl implements AgencyMasterPageService {
     private record SensitiveAgencyIdentity(
             String panNumber,
             String gstNumber,
-            String bankAccountNumber) {
+            String bankAccountNumber,
+            String ifscCode,
+            String certificateNumber) {
 
         private static SensitiveAgencyIdentity unchanged() {
-            return new SensitiveAgencyIdentity(null, null, null);
+            return new SensitiveAgencyIdentity(null, null, null, null, null);
         }
     }
 }

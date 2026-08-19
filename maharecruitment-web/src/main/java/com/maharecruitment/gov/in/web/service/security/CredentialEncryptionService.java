@@ -33,7 +33,7 @@ public class CredentialEncryptionService implements SensitivePayloadDecryptor {
     public static final String SENSITIVE_PAYLOAD_PREFIX = "SENSITIVE:v1";
 
     private static final String KEY_ALGORITHM = "RSA";
-    private static final int KEY_SIZE_BITS = 2048;
+    private static final int KEY_SIZE_BITS = 3072;
     private static final int MAX_CIPHERTEXT_BYTES = 512;
     private static final int MAX_SENSITIVE_FIELDS = 10;
     private static final String CIPHER_TRANSFORMATION = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";

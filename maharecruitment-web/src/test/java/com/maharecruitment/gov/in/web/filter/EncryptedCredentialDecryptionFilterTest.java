@@ -20,7 +20,6 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import com.maharecruitment.gov.in.web.service.security.CredentialEncryptionService;
-import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -66,7 +65,8 @@ class EncryptedCredentialDecryptionFilterTest {
         assertThat(response.getContentAsString()).isEqualTo("Encrypted password is required for login.");
         assertThat(response.getHeader("X-Frame-Options")).isEqualTo("DENY");
         assertThat(response.getHeader("Content-Security-Policy"))
-                .isEqualTo(SecurityHeaderPolicy.CONTENT_SECURITY_POLICY);
+                .contains("script-src 'self' 'nonce-")
+                .doesNotContain("'unsafe-inline'");
         assertThat(response.getHeader("Strict-Transport-Security"))
                 .contains("max-age=31536000")
                 .contains("includeSubDomains");

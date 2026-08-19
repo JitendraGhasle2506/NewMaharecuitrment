@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import com.maharecruitment.gov.in.web.security.headers.SecurityHeaderPolicy;
 
 import jakarta.servlet.ServletException;
 
@@ -32,7 +31,8 @@ class DuplicateContextPathRedirectFilterTest {
         assertThat(response.getRedirectedUrl()).isEqualTo(CONTEXT_PATH + "/login?unauthenticated=true");
         assertThat(response.getHeader("X-Frame-Options")).isEqualTo("DENY");
         assertThat(response.getHeader("Content-Security-Policy"))
-                .isEqualTo(SecurityHeaderPolicy.CONTENT_SECURITY_POLICY);
+                .contains("script-src 'self' 'nonce-")
+                .doesNotContain("'unsafe-inline'");
         assertThat(response.getHeader("Strict-Transport-Security")).isNull();
         assertThat(chainInvoked).isFalse();
     }

@@ -77,6 +77,7 @@ public class EmployeeDashboardController {
             @Valid @ModelAttribute EmployeeProfileDTO profileDTO,
             BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
+            profileDTO.clearEncryptedSubmission();
             return ResponseEntity.badRequest().body(new EmployeeProfileUpdateResponse(
                     false,
                     "Please correct the highlighted fields.",

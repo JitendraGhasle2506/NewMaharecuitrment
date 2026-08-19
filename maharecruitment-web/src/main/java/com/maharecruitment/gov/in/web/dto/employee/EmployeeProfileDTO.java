@@ -2,6 +2,8 @@ package com.maharecruitment.gov.in.web.dto.employee;
 
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -24,6 +26,17 @@ public class EmployeeProfileDTO {
     private String email;
 
     private String panNo;
+
+    @Size(max = 800, message = "Encrypted PAN number is invalid")
+    private String panNoEncrypted;
+
+    @Size(max = 100, message = "Encryption key identifier is invalid")
+    private String encryptionKeyId;
+
+    private Long timestamp;
+
+    @Pattern(regexp = "^[A-Za-z0-9_-]{22,128}$", message = "Encrypted request nonce is invalid")
+    private String nonce;
 
     private String maritalStatus;
 
@@ -50,4 +63,12 @@ public class EmployeeProfileDTO {
     private boolean profileAvailable;
 
     private int completionPercentage;
+
+    public void clearEncryptedSubmission() {
+        panNoEncrypted = null;
+        encryptionKeyId = null;
+        timestamp = null;
+        nonce = null;
+        panNo = null;
+    }
 }

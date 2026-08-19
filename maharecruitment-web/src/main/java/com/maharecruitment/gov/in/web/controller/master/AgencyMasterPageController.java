@@ -195,7 +195,6 @@ public class AgencyMasterPageController {
         form.setPermanentAddress(response.getPermanentAddress());
         form.setEntityType(response.getEntityType());
         form.setExistingPanCopyPath(response.getPanCopyPath());
-        form.setCertificateNumber(response.getCertificateNumber());
         form.setExistingCertificateDocumentPath(response.getCertificateDocumentPath());
         form.setExistingGstDocumentPath(response.getGstDocumentPath());
         form.setContactPersonName(response.getContactPersonName());
@@ -204,7 +203,6 @@ public class AgencyMasterPageController {
         form.setBankName(response.getBankName());
         form.setBankBranch(response.getBankBranch());
         form.setBankAccountType(response.getBankAccountType());
-        form.setIfscCode(response.getIfscCode());
         form.setExistingCancelledChequePath(response.getCancelledChequePath());
         form.setEscalationMatrixEntries(toEscalationForms(response.getEscalationMatrixEntries()));
         ensureEscalationRow(form);

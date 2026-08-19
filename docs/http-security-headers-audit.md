@@ -37,21 +37,25 @@ repository-managed deployment/proxy files.
 
 ## CSP compatibility decisions
 
-The application currently contains extensive inline scripts, event handlers,
-inline styles, and style attributes. It also loads Select2/jQuery, Flatpickr, and
-Leaflet from jsDelivr, code.jquery.com, and unpkg.com. The location form connects
-to Nominatim and loads OpenStreetMap tile images. Image previews require `data:`
-and `blob:`. Consequently, the enforcing policy temporarily permits
-`'unsafe-inline'` for scripts and styles and allowlists only those observed
-origins. It does not permit `'unsafe-eval'`.
+The application contains server-rendered script/style blocks plus legacy event
+and style attributes. A Thymeleaf processor adds a cryptographically random
+per-response nonce only to application-owned script/style template nodes and
+records SHA-256 `unsafe-hashes` entries for their final rendered attribute
+values. Dynamically supplied unescaped HTML does not pass through that processor
+and receives no CSP trust. This keeps the existing pages functional without a
+blanket inline-execution permission. The policy does not permit `unsafe-eval`.
+
+Select2/jQuery, Flatpickr, and Leaflet remain allowlisted from jsDelivr,
+code.jquery.com, and unpkg.com. The location form connects to Nominatim and loads
+OpenStreetMap tile images. Image previews require `data:` and `blob:`.
 
 Four invoice flows intentionally use same-origin iframes. Default responses use
 `X-Frame-Options: DENY` and `frame-ancestors 'none'`; only the invoice responses
 that are actually embedded use `SAMEORIGIN` and `frame-ancestors 'self'`.
 
-Longer term, self-host third-party assets and replace inline scripts, event
-handlers, and styles with external resources or per-response nonces. The temporary
-CDN and `'unsafe-inline'` allowances can then be removed.
+Longer term, self-host third-party assets and move legacy event/style attributes
+to external resources so the narrower `unsafe-hashes` compatibility directive
+can also be removed.
 
 ## HSTS and reverse-proxy finding
 
