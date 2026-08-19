@@ -1,7 +1,5 @@
 package com.maharecruitment.gov.in.web.security.headers;
 
-import java.util.Locale;
-
 import org.springframework.web.util.HtmlUtils;
 import org.thymeleaf.context.ITemplateContext;
 import org.thymeleaf.context.IWebContext;
@@ -39,11 +37,22 @@ final class CspTemplateProcessor extends AbstractElementTagProcessor {
         }
 
         for (IAttribute attribute : tag.getAllAttributes()) {
-            String attributeName = attribute.getAttributeCompleteName().toLowerCase(Locale.ROOT);
-            String decodedValue = HtmlUtils.htmlUnescape(attribute.getValue());
-            if (attributeName.startsWith("on")) {
+            String attributeName = attribute.getAttributeCompleteName();
+            boolean scriptAttribute = attributeName.regionMatches(true, 0, "on", 0, 2);
+            boolean styleAttribute = "style".equalsIgnoreCase(attributeName);
+            if (!scriptAttribute && !styleAttribute) {
+                continue;
+            }
+
+            String attributeValue = attribute.getValue();
+            if (attributeValue == null) {
+                continue;
+            }
+
+            String decodedValue = HtmlUtils.htmlUnescape(attributeValue);
+            if (scriptAttribute) {
                 SecurityHeaderPolicy.registerScriptAttributeHash(request, decodedValue);
-            } else if ("style".equals(attributeName)) {
+            } else {
                 SecurityHeaderPolicy.registerStyleAttributeHash(request, decodedValue);
             }
         }

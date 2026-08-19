@@ -17,6 +17,24 @@ import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 class CspTemplateHandlerTest {
 
     @Test
+    void supportsValuelessBooleanAttributes() {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        SpringTemplateEngine engine = new SpringTemplateEngine();
+        engine.setTemplateResolver(new StringTemplateResolver());
+        engine.addDialect(new CspTemplateDialect());
+
+        String rendered = engine.process(
+                "<script src=\"/app.js\" defer></script>",
+                webContext(request, response, Map.of()));
+
+        assertThat(rendered)
+                .contains("src=\"/app.js\"")
+                .contains("defer")
+                .contains("nonce=\"" + SecurityHeaderPolicy.nonce(request) + "\"");
+    }
+
+    @Test
     void trustsOnlyAuthoredTemplateElementsAndFinalAttributeValues() {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/dashboard");
         MockHttpServletResponse response = new MockHttpServletResponse();
