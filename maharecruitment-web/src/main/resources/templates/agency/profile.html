@@ -5,14 +5,100 @@
 <meta charset="UTF-8">
 <title>Agency Profile</title>
 <style>
-button.btn.btn-link.btn-sm.p-0.text-decoration-none.position-absolute {
-	bottom: 15px;
-}
-
 .section-header {
 	margin-top: 1rem;
 	margin-bottom: 1rem;
 	font-weight: 600;
+}
+
+.sensitive-identifier-card {
+	height: 100%;
+	padding: 0.9rem;
+	border: 1px solid var(--panel-border, #d4dee8);
+	border-radius: 0.75rem;
+	background: var(--surface-soft, #f8fafc);
+}
+
+.sensitive-identifier-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 0.45rem;
+}
+
+.sensitive-identifier-heading .form-label {
+	margin-bottom: 0;
+}
+
+.sensitive-identifier-control {
+	display: flex;
+	align-items: center;
+	overflow: hidden;
+	border: 1px solid var(--panel-border, #d4dee8);
+	border-radius: 0.5rem;
+	background: #fff;
+}
+
+.sensitive-identifier-value {
+	min-width: 0;
+	flex: 1;
+	padding: 0.625rem 0.75rem;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	word-break: break-all;
+}
+
+.sensitive-identifier-toggle {
+	width: 42px;
+	height: 42px;
+	display: inline-grid;
+	place-items: center;
+	flex: 0 0 auto;
+	color: var(--primary, #1f4f78);
+	border: 0;
+	border-left: 1px solid var(--panel-border, #d4dee8);
+	background: #f5f8fb;
+}
+
+.sensitive-identifier-toggle:hover,
+.sensitive-identifier-toggle:focus-visible {
+	color: #fff;
+	background: var(--primary, #1f4f78);
+}
+
+.sensitive-identifier-toggle:focus-visible {
+	outline: 2px solid var(--primary, #1f4f78);
+	outline-offset: 2px;
+}
+
+.sensitive-identifier-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	min-height: 1.75rem;
+	margin-top: 0.45rem;
+}
+
+.sensitive-identifier-hint,
+.sensitive-identifier-error {
+	font-size: 0.72rem;
+}
+
+.sensitive-identifier-hint {
+	color: var(--text-muted, #5f7287);
+}
+
+.sensitive-identifier-error {
+	color: var(--danger, #b42318);
+}
+
+.sensitive-document-button {
+	padding: 0;
+	font-size: 0.75rem;
+	font-weight: 700;
 }
 </style>
 <th:block th:replace="~{header/header :: var-files-header}"></th:block>
@@ -32,6 +118,7 @@ button.btn.btn-link.btn-sm.p-0.text-decoration-none.position-absolute {
 				</div>
 				<div class="card-body">
 					<form autocomplete="off" id="agencyProfileForm" th:object="${agencyMasterResponse}"
+						th:data-sensitive-reveal-url="@{/agency/profile/sensitive-identifiers}"
 						method="post" enctype="multipart/form-data">
 						<input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}"
 							th:value="${_csrf.token}">
@@ -93,49 +180,87 @@ button.btn.btn-link.btn-sm.p-0.text-decoration-none.position-absolute {
 
 							<div class="col-md-4"></div>
 
-							<!-- Documents -->
-							<div class="col-md-3 ">
-								<label class="form-label">PAN Number </label> <label
-									class="form-control text-uppercase" th:text="*{panNumber}"></label>
+							<!-- Sensitive identifiers: masked in the initial response and revealed on demand. -->
+							<div class="col-md-4">
+								<div class="sensitive-identifier-card">
+									<div class="sensitive-identifier-heading">
+										<label class="form-label" for="panNumberDisplay">PAN Number</label>
+										<span class="badge text-bg-light border">Protected</span>
+									</div>
+									<div class="sensitive-identifier-control">
+										<span id="panNumberDisplay" class="sensitive-identifier-value text-uppercase"
+											data-sensitive-display="PAN" th:data-masked-value="*{panNumber}"
+											th:text="*{panNumber ?: '-'}" aria-live="polite"></span>
+										<button type="button" class="sensitive-identifier-toggle" data-sensitive-toggle="PAN"
+											aria-controls="panNumberDisplay" aria-pressed="false"
+											aria-label="Show full PAN number" title="Show full PAN number">
+											<i class="fa-solid fa-eye" aria-hidden="true"></i>
+										</button>
+									</div>
+									<div class="sensitive-identifier-footer">
+										<span class="sensitive-identifier-hint">Only the last 4 characters are shown</span>
+										<button type="button" class="btn btn-link sensitive-document-button"
+											th:data-path="*{panCopyPath}" onclick="viewDocument(this.dataset.path)">
+											<i class="fa-solid fa-file-pdf me-1" aria-hidden="true"></i>View document
+										</button>
+									</div>
+									<div class="sensitive-identifier-error" data-sensitive-error="PAN" role="status"></div>
+								</div>
 							</div>
-							<div class="col-md-1 position-relative">
-								<button type="button"
-									class="btn btn-link btn-sm p-0 text-decoration-none position-absolute"
-									th:data-path="*{panCopyPath}"
-									onclick="viewDocument(this.dataset.path)">
-									<i class="bi bi-eye"></i> View
-								</button>
+
+							<div class="col-md-4">
+								<div class="sensitive-identifier-card">
+									<div class="sensitive-identifier-heading">
+										<label class="form-label" for="gstNumberDisplay">GST Number</label>
+										<span class="badge text-bg-light border">Protected</span>
+									</div>
+									<div class="sensitive-identifier-control">
+										<span id="gstNumberDisplay" class="sensitive-identifier-value text-uppercase"
+											data-sensitive-display="GST" th:data-masked-value="*{gstNumber}"
+											th:text="*{gstNumber ?: '-'}" aria-live="polite"></span>
+										<button type="button" class="sensitive-identifier-toggle" data-sensitive-toggle="GST"
+											aria-controls="gstNumberDisplay" aria-pressed="false"
+											aria-label="Show full GST number" title="Show full GST number">
+											<i class="fa-solid fa-eye" aria-hidden="true"></i>
+										</button>
+									</div>
+									<div class="sensitive-identifier-footer">
+										<span class="sensitive-identifier-hint">Only the last 4 characters are shown</span>
+										<button type="button" class="btn btn-link sensitive-document-button"
+											th:data-path="*{gstDocumentPath}" onclick="viewDocument(this.dataset.path)">
+											<i class="fa-solid fa-file-pdf me-1" aria-hidden="true"></i>View document
+										</button>
+									</div>
+									<div class="sensitive-identifier-error" data-sensitive-error="GST" role="status"></div>
+								</div>
 							</div>
-							<div class="col-md-3 ">
-								<label class="form-label">GST Number</label> <label
-									class="form-control text-uppercase" th:text="*{gstNumber}"></label>
-							</div>
-							<div class="col-md-1 position-relative">
 
-								<button type="button"
-									class="btn btn-link btn-sm p-0 text-decoration-none position-absolute"
-									th:data-path="*{gstDocumentPath}"
-									onclick="viewDocument(this.dataset.path)">
-									<i class="bi bi-eye"></i> View
-								</button>
-
-							</div>
-
-							<div class="col-md-3">
-								<label class="form-label">Certificate of Incorporation
-									Number</label> <label class="form-control"
-									th:text="*{certificateNumber}"></label>
-
-							</div>
-							<div class="col-md-1 position-relative">
-
-								<button type="button"
-									class="btn btn-link btn-sm p-0 text-decoration-none position-absolute"
-									th:data-path="*{certificateDocumentPath}"
-									onclick="viewDocument(this.dataset.path)">
-									<i class="bi bi-eye"></i> View
-								</button>
-
+							<div class="col-md-4">
+								<div class="sensitive-identifier-card">
+									<div class="sensitive-identifier-heading">
+										<label class="form-label" for="certificateNumberDisplay">Certificate of Incorporation Number</label>
+										<span class="badge text-bg-light border">Protected</span>
+									</div>
+									<div class="sensitive-identifier-control">
+										<span id="certificateNumberDisplay" class="sensitive-identifier-value"
+											data-sensitive-display="CERTIFICATE" th:data-masked-value="*{certificateNumber}"
+											th:text="*{certificateNumber ?: '-'}" aria-live="polite"></span>
+										<button type="button" class="sensitive-identifier-toggle" data-sensitive-toggle="CERTIFICATE"
+											aria-controls="certificateNumberDisplay" aria-pressed="false"
+											aria-label="Show full Certificate of Incorporation number"
+											title="Show full Certificate of Incorporation number">
+											<i class="fa-solid fa-eye" aria-hidden="true"></i>
+										</button>
+									</div>
+									<div class="sensitive-identifier-footer">
+										<span class="sensitive-identifier-hint">Only the last 4 characters are shown</span>
+										<button type="button" class="btn btn-link sensitive-document-button"
+											th:data-path="*{certificateDocumentPath}" onclick="viewDocument(this.dataset.path)">
+											<i class="fa-solid fa-file-pdf me-1" aria-hidden="true"></i>View document
+										</button>
+									</div>
+									<div class="sensitive-identifier-error" data-sensitive-error="CERTIFICATE" role="status"></div>
+								</div>
 							</div>
 						</div>
 						<div class="col-12">
@@ -274,6 +399,7 @@ button.btn.btn-link.btn-sm.p-0.text-decoration-none.position-absolute {
             window.open(viewUrl, '_blank');
         }
 	  </script>
+	<script th:src="@{/js/agency-profile.js(v='20260820-sensitive-identifiers')}"></script>
 </body>
 
 </html>
