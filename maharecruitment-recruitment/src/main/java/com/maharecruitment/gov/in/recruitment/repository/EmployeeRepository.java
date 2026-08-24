@@ -26,6 +26,11 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
 
     Optional<EmployeeEntity> findByUser_IdAndStatusIgnoreCase(Long userId, String status);
 
+    @EntityGraph(attributePaths = "user")
+    @Query("select employee from EmployeeEntity employee "
+            + "where employee.preOnboarding.preOnboardingId = :preOnboardingId")
+    Optional<EmployeeEntity> findByPreOnboardingId(@Param("preOnboardingId") Long preOnboardingId);
+
     @EntityGraph(attributePaths = { "designation", "user", "user.roles" })
     @Query("""
             select employee

@@ -5,103 +5,221 @@
     <meta charset="UTF-8">
     <title>Designation Rates</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/designation-rates.css(v='20260821-alignment')}">
 </head>
 
 <body>
     <th:block th:replace="~{header/header :: var-sidebar-header('Master', 'Designation Rates', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
-                    <h2>Manpower Designation Rate Master</h2>
-                    <a class="btn btn-primary btn-sm" th:href="@{/master/designation-rates/new}">Add Designation Rate</a>
-                </div>
+        <section class="designation-rate-page">
+            <div class="card add-emp-card designation-rate-card">
+                <header class="header designation-rate-header d-flex justify-content-between align-items-center">
+                    <div class="designation-rate-title-wrap">
+                        <span class="designation-rate-title-icon" aria-hidden="true">
+                            <i class="fa-solid fa-indian-rupee-sign"></i>
+                        </span>
+                        <div>
+                            <h2>Designation Rate Master</h2>
+                            <p>Manage monthly CTC rates by designation, resource level and effective period.</p>
+                        </div>
+                    </div>
+                    <a class="btn designation-rate-primary-action" th:href="@{/master/designation-rates/new}">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                        <span>Add Designation Rate</span>
+                    </a>
+                </header>
 
                 <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2 mb-3">
+                    <nav class="designation-rate-nav mb-3" aria-label="Master data links">
+                        <span class="designation-rate-nav-label">Master data</span>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/resource-levels}">Resource Levels</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designations}">Designations</a>
-                        <a class="btn btn-outline-primary btn-sm" th:href="@{/master/designation-rates}">Designation Rates</a>
+                        <a class="btn btn-primary btn-sm" th:href="@{/master/designation-rates}" aria-current="page">Designation Rates</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/commission-rates}">Commission Rates</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/projects}">Projects</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/wings}">Wing Master</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/cell}">Cell Master</a>
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/locations}">Location Master</a>
+                    </nav>
+
+                    <div th:if="${successMessage}" class="alert alert-success designation-rate-alert" role="status">
+                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                        <span th:text="${successMessage}"></span>
+                    </div>
+                    <div th:if="${errorMessage}" class="alert alert-danger designation-rate-alert" role="alert">
+                        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+                        <span th:text="${errorMessage}"></span>
                     </div>
 
-                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
-
-                    <form autocomplete="off" class="row g-2 mb-3" method="get" th:action="@{/master/designation-rates}">
-                        <div class="col-md-5">
-                            <select autocomplete="off" name="designationId" class="form-select form-select-sm">
-                                <option value="">All Designations</option>
-                                <option th:each="d : ${availableDesignations}" th:value="${d.designationId}"
-                                    th:selected="${designationId != null and designationId == d.designationId}"
-                                    th:text="${d.category + ' - ' + d.designationName}"></option>
-                            </select>
+                    <div class="designation-rate-summary mb-3">
+                        <div class="designation-rate-summary-card">
+                            <span class="designation-rate-summary-icon" aria-hidden="true">
+                                <i class="fa-solid fa-list-check"></i>
+                            </span>
+                            <div>
+                                <span class="designation-rate-summary-label">Matching records</span>
+                                <strong class="designation-rate-summary-value" th:text="${rates.totalElements}">0</strong>
+                            </div>
                         </div>
-                        <div class="col-auto form-check mt-2">
-                            <input autocomplete="off" class="form-check-input" type="checkbox" id="includeInactive" name="includeInactive"
-                                value="true" th:checked="${includeInactive}">
-                            <label class="form-check-label" for="includeInactive">Include inactive</label>
+                        <div class="designation-rate-summary-card">
+                            <span class="designation-rate-summary-icon" aria-hidden="true">
+                                <i class="fa-solid fa-briefcase"></i>
+                            </span>
+                            <div>
+                                <span class="designation-rate-summary-label">Designation</span>
+                                <strong class="designation-rate-summary-value"
+                                    th:text="${designationId != null and designationMap[designationId] != null ? designationMap[designationId].designationName : 'All designations'}">
+                                    All designations
+                                </strong>
+                            </div>
                         </div>
-                        <div class="col-auto">
-                            <button class="btn btn-secondary btn-sm" type="submit">Apply</button>
+                        <div class="designation-rate-summary-card">
+                            <span class="designation-rate-summary-icon" aria-hidden="true">
+                                <i class="fa-solid fa-filter-circle-dollar"></i>
+                            </span>
+                            <div>
+                                <span class="designation-rate-summary-label">Status scope</span>
+                                <strong class="designation-rate-summary-value"
+                                    th:text="${includeInactive ? 'Active and inactive' : 'Active only'}">Active only</strong>
+                            </div>
                         </div>
-                    </form>
-
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Designation</th>
-                                    <th>Level Code</th>
-                                    <th>Gross Monthly CTC</th>
-                                    <th>Effective From</th>
-                                    <th>Effective To</th>
-                                    <th>Status</th>
-                                    <th class="text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:if="${rates.isEmpty()}">
-                                    <td colspan="8" class="text-center text-muted">No records found</td>
-                                </tr>
-                                <tr th:each="item : ${rates.content}">
-                                    <td th:text="${item.rateId}"></td>
-                                    <td th:text="${designationLabelMap[item.designationId] != null ? designationLabelMap[item.designationId] : item.designationId}"></td>
-                                    <td th:text="${item.levelCode}"></td>
-                                    <td th:text="${item.grossMonthlyCtc}"></td>
-                                    <td th:text="${item.effectiveFrom}"></td>
-                                    <td th:text="${item.effectiveTo}"></td>
-                                    <td>
-                                        <span class="badge"
-                                            th:classappend="${item.activeFlag == 'Y'} ? ' text-bg-success' : ' text-bg-secondary'"
-                                            th:text="${item.activeFlag == 'Y'} ? 'Active' : 'Inactive'"></span>
-                                    </td>
-                                    <td class="text-center">
-                                        <a class="btn btn-outline-primary btn-sm"
-                                            th:href="@{/master/designation-rates/{id}/edit(id=${item.rateId})}">Edit</a>
-                                        <form autocomplete="off" th:if="${item.activeFlag == 'Y'}" class="d-inline"
-                                            th:action="@{/master/designation-rates/{id}/delete(id=${item.rateId},designationId=${designationId},includeInactive=${includeInactive},page=${rates.number},size=${rates.size})}" method="post"
-                                            onsubmit="return confirm('Are you sure you want to deactivate this designation rate?');">
-                                            <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <button class="btn btn-outline-danger btn-sm" type="submit">Deactivate</button>
-                                        </form>
-                                        <form autocomplete="off" th:if="${item.activeFlag != 'Y'}" class="d-inline"
-                                            th:action="@{/master/designation-rates/{id}/restore(id=${item.rateId})}" method="post">
-                                            <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <button class="btn btn-outline-success btn-sm" type="submit">Restore</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
 
-                    <div class="app-pagination-shell"
-                        th:if="${rates.totalPages > 1}"
+                    <div class="designation-rate-filter mb-3">
+                        <h3 class="designation-rate-filter-title">
+                            <i class="fa-solid fa-sliders me-1" aria-hidden="true"></i> Filter rate records
+                        </h3>
+                        <form autocomplete="off" class="designation-rate-filter-grid" method="get"
+                            th:action="@{/master/designation-rates}">
+                            <input type="hidden" name="size" th:value="${rates.size}">
+                            <div class="designation-rate-filter-field">
+                                <label class="form-label" for="designationId">Designation</label>
+                                <select autocomplete="off" id="designationId" name="designationId" class="form-select form-select-sm">
+                                    <option value="">All designations</option>
+                                    <option th:each="designation : ${availableDesignations}"
+                                        th:value="${designation.designationId}"
+                                        th:selected="${designationId != null and designationId == designation.designationId}"
+                                        th:text="${designation.designationName + (!#strings.isEmpty(designation.category) ? ' - ' + designation.category : '') + (designation.activeFlag == 'Y' ? '' : ' (Inactive)')}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="form-check designation-rate-status-filter">
+                                <input autocomplete="off" class="form-check-input" type="checkbox" id="includeInactive"
+                                    name="includeInactive" value="true" th:checked="${includeInactive}">
+                                <label class="form-check-label" for="includeInactive">Include inactive rates</label>
+                            </div>
+                            <div class="designation-rate-filter-actions">
+                                <button class="btn btn-primary btn-sm" type="submit">
+                                    <i class="fa-solid fa-filter" aria-hidden="true"></i> Apply filters
+                                </button>
+                                <a class="btn btn-outline-secondary btn-sm" th:href="@{/master/designation-rates(size=${rates.size})}">
+                                    Clear
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="designation-rate-table-shell">
+                        <div class="designation-rate-table-heading">
+                            <div>
+                                <h3>Rate schedule</h3>
+                                <p>Gross monthly CTC and effective period for each mapped designation level.</p>
+                            </div>
+                            <span class="designation-rate-record-count">
+                                <span th:text="${rates.numberOfElements}">0</span> shown
+                            </span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle designation-rate-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col" class="rate-col-serial">Sr. No.</th>
+                                        <th scope="col">Designation</th>
+                                        <th scope="col" class="rate-col-level">Level</th>
+                                        <th scope="col" class="rate-col-amount">Gross Monthly CTC</th>
+                                        <th scope="col" class="rate-col-period">Effective Period</th>
+                                        <th scope="col" class="rate-col-status">Status</th>
+                                        <th scope="col" class="rate-col-actions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${rates.isEmpty()}">
+                                        <td colspan="7">
+                                            <div class="designation-rate-empty">
+                                                <i class="fa-regular fa-folder-open" aria-hidden="true"></i>
+                                                <strong>No designation rates found</strong>
+                                                <span>Adjust the filters or add a new designation rate.</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:each="item, itemStat : ${rates.content}"
+                                        th:with="designation=${designationMap[item.designationId]}">
+                                        <td class="rate-col-serial" th:text="${rates.number * rates.size + itemStat.count}">1</td>
+                                        <td>
+                                            <div class="designation-identity">
+                                                <div>
+                                                    <strong th:text="${designation != null ? designation.designationName : 'Designation unavailable'}">
+                                                        Designation name
+                                                    </strong>
+                                                    <span th:if="${designation != null}"
+                                                        th:text="${!#strings.isEmpty(designation.category) ? designation.category : 'Uncategorised'}">
+                                                        Category
+                                                    </span>
+                                                    <span th:unless="${designation != null}">Reference not found</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="rate-col-level"><span class="badge text-bg-light border" th:text="${item.levelCode}">L1</span></td>
+                                        <td class="rate-col-amount rate-amount">
+                                            <span aria-hidden="true">&#8377;</span>
+                                            <span th:text="${#numbers.formatDecimal(item.grossMonthlyCtc, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                                        </td>
+                                        <td class="rate-col-period">
+                                            <div class="rate-validity">
+                                                <strong th:text="${item.effectiveFrom != null ? #temporals.format(item.effectiveFrom, 'dd MMM yyyy') : '-'}">
+                                                    01 Jan 2026
+                                                </strong>
+                                                <span th:text="${item.effectiveTo != null ? 'to ' + #temporals.format(item.effectiveTo, 'dd MMM yyyy') : 'Ongoing'}">
+                                                    Ongoing
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="rate-col-status">
+                                            <span class="badge"
+                                                th:classappend="${item.activeFlag == 'Y'} ? ' text-bg-success' : ' text-bg-secondary'"
+                                                th:text="${item.activeFlag == 'Y'} ? 'Active' : 'Inactive'">Active</span>
+                                        </td>
+                                        <td class="rate-col-actions">
+                                            <div class="designation-rate-actions">
+                                                <a class="btn btn-outline-primary btn-sm"
+                                                    th:href="@{/master/designation-rates/{id}/edit(id=${item.rateId})}">
+                                                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit
+                                                </a>
+                                                <form autocomplete="off" th:if="${item.activeFlag == 'Y'}"
+                                                    th:action="@{/master/designation-rates/{id}/delete(id=${item.rateId},designationId=${designationId},includeInactive=${includeInactive},page=${rates.number},size=${rates.size})}"
+                                                    method="post"
+                                                    onsubmit="return confirm('Are you sure you want to deactivate this designation rate?');">
+                                                    <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                    <button class="btn btn-outline-danger btn-sm" type="submit">
+                                                        <i class="fa-solid fa-ban" aria-hidden="true"></i> Deactivate
+                                                    </button>
+                                                </form>
+                                                <form autocomplete="off" th:if="${item.activeFlag != 'Y'}"
+                                                    th:action="@{/master/designation-rates/{id}/restore(id=${item.rateId},designationId=${designationId},includeInactive=${includeInactive},page=${rates.number},size=${rates.size})}"
+                                                    method="post">
+                                                    <input autocomplete="off" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                    <button class="btn btn-outline-success btn-sm" type="submit">
+                                                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Restore
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="app-pagination-shell" th:if="${rates.totalPages > 1}"
                         th:with="middleStart=${rates.number - 2 > 1 ? rates.number - 2 : 1},
                                  middleEnd=${rates.number + 2 < rates.totalPages - 2 ? rates.number + 2 : rates.totalPages - 2},
                                  showingFrom=${rates.totalElements == 0 ? 0 : rates.number * rates.size + 1},
@@ -159,4 +277,3 @@
 </body>
 
 </html>
-

@@ -58,8 +58,13 @@ public class HROnboardingPageController {
         try {
             EmployeeOnboardingResult result = hrOnboardingPageService.saveOnboarding(preOnboardingId, form,
                     principal.getName());
-            redirectAttributes.addFlashAttribute("successMessage",
-                    "Candidate onboarded successfully. Employee account created.");
+            boolean credentialsGenerated = result.temporaryPassword() != null
+                    && !result.temporaryPassword().isBlank();
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    credentialsGenerated
+                            ? "Candidate onboarded successfully. Employee account created."
+                            : "Candidate onboarding completed. Existing employee account retained; no duplicate employee was created.");
             redirectAttributes.addFlashAttribute("generatedUsername", result.username());
             redirectAttributes.addFlashAttribute("generatedPassword", result.temporaryPassword());
             if (result.notificationWarning() != null && !result.notificationWarning().isBlank()) {

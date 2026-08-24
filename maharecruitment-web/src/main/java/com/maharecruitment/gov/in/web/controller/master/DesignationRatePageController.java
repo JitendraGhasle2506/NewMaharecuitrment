@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.web.controller.master;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -55,19 +56,19 @@ public class DesignationRatePageController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Model model) {
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
         Page<ManpowerDesignationRateResponse> rates = rateService.getAll(designationId, includeInactive, pageable);
-        List<ManpowerDesignationMasterResponse> designations = getActiveDesignations();
-        Map<Long, String> designationLabelMap = designations.stream().collect(Collectors.toMap(
+        List<ManpowerDesignationMasterResponse> designations = getDesignations(true);
+        Map<Long, ManpowerDesignationMasterResponse> designationMap = designations.stream().collect(Collectors.toMap(
                 ManpowerDesignationMasterResponse::getDesignationId,
-                d -> d.getCategory() + " - " + d.getDesignationName(),
+                designation -> designation,
                 (first, second) -> first));
 
         model.addAttribute("rates", rates);
         model.addAttribute("designationId", designationId);
         model.addAttribute("includeInactive", includeInactive);
         model.addAttribute("availableDesignations", designations);
-        model.addAttribute("designationLabelMap", designationLabelMap);
+        model.addAttribute("designationMap", designationMap);
         return "master/designation-rates/list";
     }
 
@@ -171,26 +172,40 @@ public class DesignationRatePageController {
     }
 
     @PostMapping("/{rateId}/restore")
-    public String restore(@PathVariable Long rateId, RedirectAttributes redirectAttributes) {
+    public String restore(
+            @PathVariable Long rateId,
+            @RequestParam(required = false) Long designationId,
+            @RequestParam(defaultValue = "true") boolean includeInactive,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            RedirectAttributes redirectAttributes) {
         try {
             rateService.restore(rateId);
             redirectAttributes.addFlashAttribute("successMessage", "Designation rate restored successfully");
         } catch (RuntimeException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/master/designation-rates?includeInactive=true";
+        redirectAttributes.addAttribute("designationId", designationId);
+        redirectAttributes.addAttribute("includeInactive", includeInactive);
+        redirectAttributes.addAttribute("page", page);
+        redirectAttributes.addAttribute("size", size);
+        return "redirect:/master/designation-rates";
     }
 
     private void populateForm(Model model, ManpowerDesignationRateRequest form, Long rateId) {
         model.addAttribute("designationRateForm", form);
         model.addAttribute("rateId", rateId);
         model.addAttribute("isEdit", rateId != null);
-        model.addAttribute("availableDesignations", getActiveDesignations());
+        model.addAttribute("availableDesignations", getDesignations(false));
         model.addAttribute("availableLevels", resolveMappedLevels(form.getDesignationId()));
     }
 
-    private List<ManpowerDesignationMasterResponse> getActiveDesignations() {
-        return designationService.getAll(false, Pageable.unpaged()).getContent();
+    private List<ManpowerDesignationMasterResponse> getDesignations(boolean includeInactive) {
+        Comparator<String> textComparator = Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER);
+        return designationService.getAll(includeInactive, Pageable.unpaged()).getContent().stream()
+                .sorted(Comparator.comparing(ManpowerDesignationMasterResponse::getDesignationName, textComparator)
+                        .thenComparing(ManpowerDesignationMasterResponse::getCategory, textComparator))
+                .toList();
     }
 
     private List<ResourceLevelRefResponse> resolveMappedLevels(Long designationId) {

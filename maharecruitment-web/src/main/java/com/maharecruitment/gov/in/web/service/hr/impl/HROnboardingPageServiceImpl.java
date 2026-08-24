@@ -221,8 +221,31 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 "Processing HR onboarding. preOnboardingId={}, actorEmail={}",
                 preOnboardingId,
                 actorEmail);
-        AgencyCandidatePreOnboardingEntity entity = preOnboardingRepository.findById(preOnboardingId)
+        AgencyCandidatePreOnboardingEntity entity = preOnboardingRepository.findByIdForOnboardingUpdate(preOnboardingId)
                 .orElseThrow(() -> new RecruitmentNotificationException("Onboarding record not found."));
+        EmployeeEntity existingEmployee = employeeRepository.findByPreOnboardingId(preOnboardingId).orElse(null);
+
+        if (entity.getOnboardedAt() != null) {
+            if (existingEmployee == null) {
+                throw new RecruitmentNotificationException(
+                        "Onboarding is marked complete, but the linked employee record is missing.");
+            }
+            if (hasCompletedEmployeeAccount(existingEmployee)) {
+                log.info(
+                        "HR onboarding request is already complete. preOnboardingId={}, employeeId={}",
+                        preOnboardingId,
+                        existingEmployee.getEmployeeId());
+                return existingEmployeeAccountResult(existingEmployee);
+            }
+            log.warn(
+                    "Resuming incomplete employee account setup for completed onboarding marker. preOnboardingId={}, employeeId={}",
+                    preOnboardingId,
+                    existingEmployee.getEmployeeId());
+        }
+        if (existingEmployee != null && "RESIGNED".equalsIgnoreCase(existingEmployee.getStatus())) {
+            throw new RecruitmentNotificationException(
+                    "The linked employee is resigned and cannot be reactivated through onboarding.");
+        }
 
         User user = userRepository.findByEmailIgnoreCase(actorEmail)
                 .orElseThrow(() -> new RecruitmentNotificationException("User not found: " + actorEmail));
@@ -238,9 +261,6 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         }
         List<LocationMaster> selectedLocations = resolveSelectedEmployeeLocations(form.getSelectedLocationIds());
         validateEmployeeAccountData(form);
-        if (entity.getOnboardedAt() != null) {
-            throw new RecruitmentNotificationException("Candidate is already onboarded.");
-        }
         candidateIdentityValidationService.validateUniqueCandidateDetails(
                 entity.getPreOnboardingId(),
                 entity.getAadhaarNumber(),
@@ -266,7 +286,10 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         long vacancyCount = vacancy.getNumberOfVacancy() == null || vacancy.getNumberOfVacancy() < 0
                 ? 0L
                 : vacancy.getNumberOfVacancy();
-        if (filledCount >= vacancyCount) {
+        boolean existingEmployeeOccupiesVacancy = existingEmployee != null
+                && "ACTIVE".equalsIgnoreCase(existingEmployee.getStatus());
+        long resultingFilledCount = filledCount + (existingEmployeeOccupiesVacancy ? 0L : 1L);
+        if (resultingFilledCount > vacancyCount) {
             throw new RecruitmentNotificationException(
                     "All vacancies are already filled for this designation and level. This candidate cannot be onboarded.");
         }
@@ -284,7 +307,7 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             entity.setHrVerified(true);
             entity.setHrUserId(user.getId());
             entity.setOnboardedAt(LocalDateTime.now());
-            vacancy.setFillPost(filledCount + 1);
+            vacancy.setFillPost(resultingFilledCount);
 
             if (uploadedPhoto != null) {
                 applyUploadedPhoto(entity, uploadedPhoto, replacedPaths);
@@ -293,9 +316,11 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             designationVacancyRepository.save(vacancy);
             preOnboardingRepository.save(entity);
 
-            // CREATE EMPLOYEE RECORD
-            EmployeeEntity employee = new EmployeeEntity();
-            employee.setEmployeeCode(generateTemporaryEmployeeCode());
+            // Create once, or resume a legacy employee row whose HR completion state is incomplete.
+            EmployeeEntity employee = existingEmployee != null ? existingEmployee : new EmployeeEntity();
+            if (existingEmployee == null) {
+                employee.setEmployeeCode(generateTemporaryEmployeeCode());
+            }
             employee.setPreOnboarding(entity);
             employee.setFullName(entity.getCandidateName());
             employee.setEmail(entity.getCandidateEmail());
@@ -329,19 +354,22 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
             employee.setStatus("ACTIVE");
             EmployeeEntity savedEmployee = employeeRepository.save(employee);
 
-            // Generate Employee Code: EMP + padded ID
-            savedEmployee.setEmployeeCode("EMP" + String.format("%06d", savedEmployee.getEmployeeId()));
-            employeeRepository.save(savedEmployee);
+            if (!hasPermanentEmployeeCode(savedEmployee.getEmployeeCode())) {
+                savedEmployee.setEmployeeCode("EMP" + String.format("%06d", savedEmployee.getEmployeeId()));
+                employeeRepository.save(savedEmployee);
+            }
 
-            EmployeeOnboardingResult accountResult = createEmployeeAccessAccount(entity, departmentRegistration,
-                    savedEmployee);
-            saveEmployeeLocationMappings(savedEmployee, selectedLocations);
+            EmployeeOnboardingResult accountResult = savedEmployee.getUser() == null
+                    ? createEmployeeAccessAccount(entity, departmentRegistration, savedEmployee)
+                    : existingEmployeeAccountResult(savedEmployee);
+            saveMissingEmployeeLocationMappings(savedEmployee, selectedLocations);
             replacedPaths.forEach(fileStorageService::deleteQuietly);
             log.info(
-                    "HR onboarding completed successfully. preOnboardingId={}, actorEmail={}, employeeId={}",
+                    "HR onboarding completed successfully. preOnboardingId={}, actorEmail={}, employeeId={}, reusedEmployee={}",
                     preOnboardingId,
                     actorEmail,
-                    savedEmployee.getEmployeeId());
+                    savedEmployee.getEmployeeId(),
+                    existingEmployee != null);
             return accountResult;
         } catch (RuntimeException ex) {
             newlyUploadedPaths.forEach(fileStorageService::deleteQuietly);
@@ -464,6 +492,31 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
         employeeRepository.save(employee);
     }
 
+    private boolean hasCompletedEmployeeAccount(EmployeeEntity employee) {
+        return employee.getUser() != null
+                && hasPermanentEmployeeCode(employee.getEmployeeCode())
+                && "ACTIVE".equalsIgnoreCase(employee.getStatus());
+    }
+
+    private boolean hasPermanentEmployeeCode(String employeeCode) {
+        if (!StringUtils.hasText(employeeCode)) {
+            return false;
+        }
+        String normalizedCode = employeeCode.trim().toUpperCase();
+        return !"PENDING".equals(normalizedCode) && !normalizedCode.startsWith("TMP-");
+    }
+
+    private EmployeeOnboardingResult existingEmployeeAccountResult(EmployeeEntity employee) {
+        User existingUser = employee.getUser();
+        if (existingUser == null) {
+            throw new RecruitmentNotificationException("Employee account setup is incomplete.");
+        }
+        String username = StringUtils.hasText(existingUser.getEmail())
+                ? existingUser.getEmail()
+                : employee.getEmail();
+        return new EmployeeOnboardingResult(existingUser.getId(), username, null, null);
+    }
+
     private EmployeeOnboardingResult createEmployeeAccessAccount(
             AgencyCandidatePreOnboardingEntity entity,
             DepartmentRegistrationEntity departmentRegistration,
@@ -544,8 +597,11 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 .toList();
     }
 
-    private void saveEmployeeLocationMappings(EmployeeEntity employee, List<LocationMaster> locations) {
+    private void saveMissingEmployeeLocationMappings(EmployeeEntity employee, List<LocationMaster> locations) {
+        Set<Long> existingLocationIds = employeeLocationMappingRepository
+                .findLocationIdsByEmployeeId(employee.getEmployeeId());
         List<EmployeeLocationMappingEntity> mappings = locations.stream()
+                .filter(location -> !existingLocationIds.contains(location.getLocationId()))
                 .map(location -> {
                     EmployeeLocationMappingEntity mapping = new EmployeeLocationMappingEntity();
                     mapping.setEmployee(employee);
@@ -553,7 +609,9 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                     return mapping;
                 })
                 .toList();
-        employeeLocationMappingRepository.saveAll(mappings);
+        if (!mappings.isEmpty()) {
+            employeeLocationMappingRepository.saveAll(mappings);
+        }
     }
 
     private void validateEmployeeAccountData(AgencyPreOnboardingForm form) {

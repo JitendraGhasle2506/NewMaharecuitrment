@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -448,20 +449,52 @@ public class R__master_reference_data extends BaseJavaMigration {
                 new RateData(104L, 51L, "L3", 70000, "2026-03-01", "2026-12-31"),
                 new RateData(105L, 52L, "L2", 23000, "2026-03-01", "2026-12-31"));
 
+        Map<String, RateData> ratesByDesignationPeriod = new LinkedHashMap<>();
         for (RateData item : data) {
-            insertIfMissing(
-                    jdbcTemplate,
-                    "select count(*) from manpower_designation_rate where rate_id = ?",
+            String designationPeriodKey = item.designationId() + "|" + item.from();
+            ratesByDesignationPeriod.merge(
+                    designationPeriodKey,
+                    item,
+                    (current, candidate) -> isPreferredSeedRate(candidate, current) ? candidate : current);
+        }
+
+        for (RateData item : ratesByDesignationPeriod.values()) {
+            Date effectiveFrom = Date.valueOf(item.from());
+            Integer count = jdbcTemplate.queryForObject(
+                    "select count(*) from manpower_designation_rate "
+                            + "where designation_id = ? and upper(trim(level_code)) = 'L1' and effective_from = ?",
+                    Integer.class,
+                    item.designationId(),
+                    effectiveFrom);
+            if (count == null || count != 0) {
+                continue;
+            }
+            jdbcTemplate.update(
                     "insert into manpower_designation_rate "
                             + "(rate_id, designation_id, level_code, gross_monthly_ctc, effective_from, effective_to, active_flag, created_date_time) "
-                            + "values (?, ?, ?, ?, ?, ?, 'Y', current_timestamp)",
+                            + "values (?, ?, 'L1', ?, ?, ?, 'Y', current_timestamp)",
                     item.id(),
                     item.designationId(),
-                    item.levelCode(),
                     item.ctc(),
-                    Date.valueOf(item.from()),
+                    effectiveFrom,
                     Date.valueOf(item.to()));
         }
+    }
+
+    private boolean isPreferredSeedRate(RateData candidate, RateData current) {
+        boolean candidateIsL1 = "L1".equalsIgnoreCase(candidate.levelCode());
+        boolean currentIsL1 = "L1".equalsIgnoreCase(current.levelCode());
+        if (candidateIsL1 != currentIsL1) {
+            return candidateIsL1;
+        }
+        return resourceLevelRank(candidate.levelCode()) < resourceLevelRank(current.levelCode());
+    }
+
+    private int resourceLevelRank(String levelCode) {
+        if (levelCode == null || !levelCode.matches("(?i)L\\d+")) {
+            return Integer.MAX_VALUE;
+        }
+        return Integer.parseInt(levelCode.substring(1));
     }
 
     private void insertIfMissing(JdbcTemplate jdbcTemplate, String countSql, String insertSql, Object... args) {

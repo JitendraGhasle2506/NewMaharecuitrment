@@ -1,0 +1,409 @@
+.designation-rate-page .designation-rate-card {
+    overflow: hidden;
+}
+
+.designation-rate-page .designation-rate-header {
+    padding: 1.15rem 1.25rem;
+    background: linear-gradient(120deg, #173e68 0%, #245f91 100%);
+    border-bottom: 0;
+    color: #ffffff;
+}
+
+.designation-rate-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.designation-rate-title-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 1.1rem;
+}
+
+.designation-rate-page .designation-rate-header h2 {
+    color: #ffffff;
+}
+
+.designation-rate-header p {
+    margin: 0.18rem 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.9rem;
+}
+
+.designation-rate-primary-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-color: #ffffff;
+    background: #ffffff;
+    color: #174a78;
+    font-weight: 700;
+}
+
+.designation-rate-primary-action:hover,
+.designation-rate-primary-action:focus {
+    border-color: #e5f1fb;
+    background: #e5f1fb;
+    color: #123b60;
+}
+
+.designation-rate-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.75rem;
+    overflow-x: auto;
+    border: 1px solid #d8e3ed;
+    background: #f7fafc;
+}
+
+.designation-rate-nav-label {
+    flex: 0 0 auto;
+    margin-right: 0.2rem;
+    color: #5d7187;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.designation-rate-nav .btn {
+    flex: 0 0 auto;
+}
+
+.designation-rate-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.designation-rate-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.designation-rate-summary-card {
+    min-width: 0;
+    padding: 0.9rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border: 1px solid #d8e3ed;
+    background: #ffffff;
+}
+
+.designation-rate-summary-icon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    display: grid;
+    place-items: center;
+    background: #eaf3fb;
+    color: #1c5c91;
+}
+
+.designation-rate-summary-card:nth-child(2) .designation-rate-summary-icon {
+    background: #e9f7f0;
+    color: #18704b;
+}
+
+.designation-rate-summary-card:nth-child(3) .designation-rate-summary-icon {
+    background: #fff4dc;
+    color: #916018;
+}
+
+.designation-rate-summary-label,
+.designation-rate-summary-value {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.designation-rate-summary-label {
+    color: #64778b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.designation-rate-summary-value {
+    margin-top: 0.12rem;
+    color: #183b60;
+    font-size: 1.08rem;
+    line-height: 1.25;
+}
+
+.designation-rate-filter {
+    padding: 1rem;
+    border: 1px solid #d8e3ed;
+    background: #f8fbfe;
+}
+
+.designation-rate-filter-title {
+    margin: 0 0 0.8rem;
+    color: #254665;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.designation-rate-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 2fr) minmax(210px, 1fr) auto;
+    align-items: end;
+    gap: 0.8rem 1rem;
+}
+
+.designation-rate-filter-field,
+.designation-rate-filter-field .form-select {
+    width: 100%;
+    min-width: 0;
+}
+
+.designation-rate-status-filter.form-check {
+    min-height: 40px;
+    margin: 0;
+    padding: 0 0 0.05rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.designation-rate-status-filter .form-check-input {
+    float: none;
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.designation-rate-status-filter .form-check-label {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.designation-rate-filter-actions,
+.designation-rate-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.designation-rate-filter-actions {
+    min-height: 40px;
+    justify-content: flex-end;
+}
+
+.designation-rate-filter-actions .btn,
+.designation-rate-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.designation-rate-table-shell {
+    border: 1px solid #d4dee8;
+    background: #ffffff;
+}
+
+.designation-rate-table-heading {
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid #dce5ee;
+    background: #f9fbfd;
+}
+
+.designation-rate-table-heading h3 {
+    margin: 0;
+    color: #1b3f64;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.designation-rate-table-heading p {
+    margin: 0.15rem 0 0;
+    color: #66798d;
+    font-size: 0.85rem;
+}
+
+.designation-rate-record-count {
+    flex: 0 0 auto;
+    padding: 0.32rem 0.55rem;
+    border: 1px solid #cad7e3;
+    background: #ffffff;
+    color: #49627a;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.designation-rate-table-shell .table-responsive {
+    border: 0 !important;
+}
+
+.designation-rate-table {
+    min-width: 980px;
+    table-layout: auto;
+}
+
+.designation-rate-table thead th {
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.designation-rate-table .rate-col-serial {
+    width: 78px;
+    text-align: center;
+}
+
+.designation-rate-table .rate-col-level {
+    width: 95px;
+    text-align: center;
+}
+
+.designation-rate-table .rate-col-amount {
+    width: 180px;
+    text-align: right;
+}
+
+.designation-rate-table .rate-col-period {
+    width: 175px;
+    text-align: left;
+}
+
+.designation-rate-table .rate-col-status {
+    width: 105px;
+    text-align: center;
+}
+
+.designation-rate-table .rate-col-actions {
+    width: 225px;
+    text-align: center;
+}
+
+.designation-rate-actions {
+    justify-content: center;
+    flex-wrap: nowrap;
+}
+
+.designation-rate-actions form {
+    margin: 0;
+}
+
+.designation-identity {
+    min-width: 210px;
+}
+
+.designation-identity strong,
+.designation-identity span {
+    display: block;
+}
+
+.designation-identity strong {
+    color: #1d3855;
+}
+
+.designation-identity span {
+    margin-top: 0.12rem;
+    color: #6c7e90;
+    font-size: 0.82rem;
+}
+
+.rate-amount {
+    color: #174b74;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rate-validity {
+    min-width: 155px;
+    color: #334c65;
+    line-height: 1.5;
+}
+
+.rate-validity span {
+    display: block;
+    color: #77889a;
+    font-size: 0.8rem;
+}
+
+.designation-rate-empty {
+    padding: 2.25rem 1rem;
+    text-align: center;
+    color: #65788c;
+}
+
+.designation-rate-empty i {
+    margin-bottom: 0.6rem;
+    color: #9aabbb;
+    font-size: 1.65rem;
+}
+
+.designation-rate-empty strong,
+.designation-rate-empty span {
+    display: block;
+}
+
+.designation-rate-empty strong {
+    color: #324d68;
+}
+
+.designation-rate-empty span {
+    margin-top: 0.2rem;
+    font-size: 0.88rem;
+}
+
+@media (max-width: 991.98px) {
+    .designation-rate-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .designation-rate-filter-grid {
+        grid-template-columns: minmax(0, 1.5fr) minmax(210px, 1fr);
+    }
+
+    .designation-rate-filter-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .designation-rate-page .designation-rate-header,
+    .designation-rate-table-heading {
+        align-items: flex-start !important;
+        flex-direction: column;
+    }
+
+    .designation-rate-filter-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .designation-rate-filter-actions {
+        grid-column: auto;
+    }
+
+    .designation-rate-primary-action,
+    .designation-rate-filter-actions {
+        width: 100%;
+    }
+
+    .designation-rate-primary-action {
+        justify-content: center;
+    }
+
+    .designation-rate-filter-actions .btn {
+        flex: 1 1 auto;
+    }
+}

@@ -5,14 +5,23 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import jakarta.persistence.LockModeType;
 
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 
 @Repository
 public interface AgencyCandidatePreOnboardingRepository extends JpaRepository<AgencyCandidatePreOnboardingEntity, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select preOnboarding from AgencyCandidatePreOnboardingEntity preOnboarding "
+            + "where preOnboarding.preOnboardingId = :preOnboardingId")
+    Optional<AgencyCandidatePreOnboardingEntity> findByIdForOnboardingUpdate(
+            @Param("preOnboardingId") Long preOnboardingId);
 
     @Query("select distinct preOnboarding "
             + "from AgencyCandidatePreOnboardingEntity preOnboarding "
@@ -62,6 +71,7 @@ public interface AgencyCandidatePreOnboardingRepository extends JpaRepository<Ag
             + "left join fetch vacancy.designationMst designation "
             + "where preOnboarding.submittedAt is not null "
             + "and preOnboarding.hrVerified = false "
+            + "and preOnboarding.onboardedAt is null "
             + "order by preOnboarding.submittedAt asc")
     List<AgencyCandidatePreOnboardingEntity> findPendingHROnboarding();
 
