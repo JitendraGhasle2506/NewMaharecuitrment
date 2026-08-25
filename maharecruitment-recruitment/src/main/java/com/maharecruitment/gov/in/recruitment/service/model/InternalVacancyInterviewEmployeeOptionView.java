@@ -12,6 +12,9 @@ public class InternalVacancyInterviewEmployeeOptionView {
     private String employeeCode;
     private String email;
     private String mobile;
+    private Long designationId;
     private String designationName;
+    private String levelCode;
+    private String levelName;
     private String displayLabel;
 }

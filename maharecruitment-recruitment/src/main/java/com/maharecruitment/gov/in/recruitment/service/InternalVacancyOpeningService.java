@@ -11,6 +11,7 @@ import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatu
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityRoleOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewEmployeeOptionView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyApprovalDocumentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalProjectOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
@@ -40,6 +41,12 @@ public interface InternalVacancyOpeningService {
 
     InternalVacancyOpeningForm getOpeningForEdit(Long internalVacancyOpeningId);
 
+    InternalVacancyApprovalDocumentView getApprovalDocument(Long internalVacancyOpeningId);
+
+    InternalVacancyApprovalDocumentView getApprovalDocumentForOwner(
+            Long internalVacancyOpeningId,
+            String actorEmail);
+
     List<InternalProjectOptionView> getAvailableInternalProjects();
 
     List<ManpowerDesignationMasterResponse> getAvailableDesignations();
@@ -56,4 +63,6 @@ public interface InternalVacancyOpeningService {
             Pageable pageable);
 
     List<InternalVacancyInterviewEmployeeOptionView> getAvailableInterviewEmployees();
+
+    List<InternalVacancyInterviewEmployeeOptionView> getAvailableReplacementEmployees();
 }

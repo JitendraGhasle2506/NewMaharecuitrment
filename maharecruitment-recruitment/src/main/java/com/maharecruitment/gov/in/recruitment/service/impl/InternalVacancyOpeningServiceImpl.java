@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.entity.User;
@@ -42,6 +43,7 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyInterviewAuthorityEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyInterviewEmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyInterviewRoleEntity;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyHiringRequestType;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningRequirementEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
@@ -50,9 +52,11 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyOpeningRepository;
 import com.maharecruitment.gov.in.recruitment.repository.projection.InternalVacancyOpeningStatusCountProjection;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyApprovalDocumentStorageService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentRequestIdGenerator;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityRoleOptionView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyApprovalDocumentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewEmployeeOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
@@ -62,6 +66,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeni
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningResult;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningSummaryView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyRequirementCommand;
+import com.maharecruitment.gov.in.recruitment.service.model.StoredInternalVacancyApprovalDocument;
 
 @Service
 @Transactional(readOnly = true)
@@ -84,6 +89,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
     private final EmployeeRepository employeeRepository;
     private final RecruitmentRequestIdGenerator recruitmentRequestIdGenerator;
     private final RecruitmentNotificationService recruitmentNotificationService;
+    private final InternalVacancyApprovalDocumentStorageService approvalDocumentStorageService;
 
     public InternalVacancyOpeningServiceImpl(
             InternalVacancyOpeningRepository internalVacancyOpeningRepository,
@@ -95,7 +101,8 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             UserRepository userRepository,
             EmployeeRepository employeeRepository,
             RecruitmentRequestIdGenerator recruitmentRequestIdGenerator,
-            RecruitmentNotificationService recruitmentNotificationService) {
+            RecruitmentNotificationService recruitmentNotificationService,
+            InternalVacancyApprovalDocumentStorageService approvalDocumentStorageService) {
         this.internalVacancyOpeningRepository = internalVacancyOpeningRepository;
         this.projectRepository = projectRepository;
         this.designationRepository = designationRepository;
@@ -106,6 +113,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         this.employeeRepository = employeeRepository;
         this.recruitmentRequestIdGenerator = recruitmentRequestIdGenerator;
         this.recruitmentNotificationService = recruitmentNotificationService;
+        this.approvalDocumentStorageService = approvalDocumentStorageService;
     }
 
     @Override
@@ -121,15 +129,31 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 ? findOpeningForUpdate(command.getInternalVacancyOpeningId())
                 : new InternalVacancyOpeningEntity();
         validateSaveTransition(entity, targetStatus);
+        InternalVacancyHiringRequestType hiringRequestType = resolveHiringRequestType(command.getHiringRequestType());
+        List<EmployeeEntity> replacementEmployees = resolveReplacementEmployees(
+                command,
+                hiringRequestType,
+                targetStatus);
+        validateHiringRequestDetails(command, entity, hiringRequestType, targetStatus);
 
-        if (targetStatus != InternalVacancyOpeningStatus.DRAFT && 
-            (command.getRequirements() == null || command.getRequirements().isEmpty())) {
-            throw new RecruitmentNotificationException("At least one designation requirement is required to submit.");
+        List<InternalVacancyRequirementCommand> effectiveRequirements =
+                hiringRequestType == InternalVacancyHiringRequestType.EMPLOYEE_REPLACEMENT
+                        ? buildReplacementRequirements(replacementEmployees)
+                        : command.getRequirements();
+        if (targetStatus != InternalVacancyOpeningStatus.DRAFT
+                && (effectiveRequirements == null || effectiveRequirements.isEmpty())) {
+            throw new RecruitmentNotificationException(
+                    "At least one designation requirement is required to submit.");
         }
 
-        Map<Long, ManpowerDesignationMaster> designationById = resolveDesignations(command.getRequirements());
+        List<InternalVacancyRequirementCommand> safeRequirements = effectiveRequirements == null
+                ? List.of()
+                : effectiveRequirements;
+        Map<Long, ManpowerDesignationMaster> designationById = safeRequirements.isEmpty()
+                ? Map.of()
+                : resolveDesignations(safeRequirements);
         List<InternalVacancyOpeningRequirementEntity> requirementEntities = buildRequirementEntities(
-                command.getRequirements(),
+                safeRequirements,
                 designationById);
         List<Role> interviewRoles = List.of();
         List<User> interviewAuthorities = List.of();
@@ -161,12 +185,21 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         List<InternalVacancyInterviewEmployeeEntity> interviewEmployeeEntities = buildInterviewEmployeeEntities(
                 interviewEmployees);
 
+        String previousApprovalFilePath = entity.getEOfficeApprovalFilePath();
+        StoredInternalVacancyApprovalDocument uploadedApproval = null;
+        if (hiringRequestType == InternalVacancyHiringRequestType.NEW_CANDIDATE
+                && hasUploadedFile(command.getEOfficeApprovalDocument())) {
+            uploadedApproval = approvalDocumentStorageService.store(command.getEOfficeApprovalDocument());
+        }
+
         if (!isEdit) {
             entity.setRequestId(recruitmentRequestIdGenerator.generate(INTERNAL_REQUEST_TYPE));
             entity.setCreatedByEmail(actorEmail);
         }
 
         entity.setProjectMst(project);
+        entity.setHiringRequestType(hiringRequestType);
+        applyHiringRequestDetails(entity, hiringRequestType, uploadedApproval);
         entity.setStatus(targetStatus);
         entity.setRemarks(normalizeOptionalText(command.getRemarks()));
         entity.setUpdatedByEmail(actorEmail);
@@ -176,13 +209,24 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 interviewRoleEntities,
                 interviewAuthorityEntities,
                 interviewEmployeeEntities,
+                replacementEmployees,
                 isEdit);
 
-        InternalVacancyOpeningEntity saved = targetStatus == InternalVacancyOpeningStatus.OPEN
-                ? internalVacancyOpeningRepository.saveAndFlush(entity)
-                : internalVacancyOpeningRepository.save(entity);
-        if (targetStatus == InternalVacancyOpeningStatus.OPEN) {
-            recruitmentNotificationService.upsertFromInternalVacancyOpening(saved.getInternalVacancyOpeningId());
+        InternalVacancyOpeningEntity saved;
+        try {
+            saved = internalVacancyOpeningRepository.saveAndFlush(entity);
+            if (targetStatus == InternalVacancyOpeningStatus.OPEN) {
+                recruitmentNotificationService.upsertFromInternalVacancyOpening(saved.getInternalVacancyOpeningId());
+            }
+        } catch (RuntimeException ex) {
+            if (uploadedApproval != null) {
+                approvalDocumentStorageService.removeManagedFileQuietly(uploadedApproval.getFullPath());
+            }
+            throw ex;
+        }
+        if (StringUtils.hasText(previousApprovalFilePath)
+                && !previousApprovalFilePath.equals(saved.getEOfficeApprovalFilePath())) {
+            approvalDocumentStorageService.removeManagedFileQuietly(previousApprovalFilePath);
         }
         long totalVacancies = saved.getRequirements().stream()
                 .map(InternalVacancyOpeningRequirementEntity::getNumberOfVacancy)
@@ -298,6 +342,12 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         form.setInternalVacancyOpeningId(entity.getInternalVacancyOpeningId());
         form.setCurrentStatus(entity.getStatus());
         form.setProjectId(entity.getProjectMst().getProjectId());
+        form.setHiringRequestType(entity.getHiringRequestType());
+        form.setReplacementEmployeeIds(entity.getReplacementEmployees().stream()
+                .map(EmployeeEntity::getEmployeeId)
+                .filter(java.util.Objects::nonNull)
+                .toList());
+        form.setExistingEOfficeApprovalFileName(entity.getEOfficeApprovalFileName());
         form.setRemarks(entity.getRemarks());
         form.setRequirements(entity.getRequirements().stream()
                 .map(this::toRequirementForm)
@@ -316,6 +366,23 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .distinct()
                 .toList());
         return form;
+    }
+
+    @Override
+    public InternalVacancyApprovalDocumentView getApprovalDocument(Long internalVacancyOpeningId) {
+        return toApprovalDocumentView(findOpeningById(internalVacancyOpeningId));
+    }
+
+    @Override
+    public InternalVacancyApprovalDocumentView getApprovalDocumentForOwner(
+            Long internalVacancyOpeningId,
+            String actorEmail) {
+        String normalizedActorEmail = normalizeActorEmail(actorEmail);
+        InternalVacancyOpeningEntity entity = findOpeningById(internalVacancyOpeningId);
+        if (!normalizedActorEmail.equalsIgnoreCase(entity.getCreatedByEmail())) {
+            throw new RecruitmentNotificationException("E-office approval document is unavailable.");
+        }
+        return toApprovalDocumentView(entity);
     }
 
     @Override
@@ -462,7 +529,7 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
 
     @Override
     public List<InternalVacancyInterviewEmployeeOptionView> getAvailableInterviewEmployees() {
-        return employeeRepository.findByStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc("ACTIVE")
+        return employeeRepository.findActiveEmployeeOptions("ACTIVE")
                 .stream()
                 .map(employee -> InternalVacancyInterviewEmployeeOptionView.builder()
                         .employeeId(employee.getEmployeeId())
@@ -470,10 +537,57 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                         .employeeCode(employee.getEmployeeCode())
                         .email(employee.getEmail())
                         .mobile(employee.getMobile())
+                        .designationId(employee.getDesignation() != null
+                                ? employee.getDesignation().getDesignationId()
+                                : null)
                         .designationName(employee.getDesignation() != null ? employee.getDesignation().getDesignationName() : null)
+                        .levelCode(normalizeOptionalText(employee.getLevelCode()))
+                        .levelName(resolveEmployeeLevelName(employee))
                         .displayLabel(buildInterviewEmployeeLabel(employee))
                         .build())
                 .toList();
+    }
+
+    @Override
+    public List<InternalVacancyInterviewEmployeeOptionView> getAvailableReplacementEmployees() {
+        return employeeRepository.findActiveEmployeeOptions("ACTIVE").stream()
+                .filter(this::hasReplacementDesignationAndLevel)
+                .map(employee -> InternalVacancyInterviewEmployeeOptionView.builder()
+                        .employeeId(employee.getEmployeeId())
+                        .fullName(employee.getFullName())
+                        .email(employee.getEmail())
+                        .mobile(employee.getMobile())
+                        .designationId(employee.getDesignation().getDesignationId())
+                        .designationName(employee.getDesignation().getDesignationName())
+                        .levelCode(employee.getLevelCode().trim().toUpperCase(Locale.ROOT))
+                        .levelName(resolveEmployeeLevelName(employee))
+                        .displayLabel(buildReplacementEmployeeLabel(employee))
+                        .build())
+                .toList();
+    }
+
+    private boolean hasReplacementDesignationAndLevel(EmployeeEntity employee) {
+        if (employee.getDesignation() == null
+                || employee.getDesignation().getDesignationId() == null
+                || !StringUtils.hasText(employee.getLevelCode())) {
+            return false;
+        }
+        return employee.getDesignation().getLevels().stream()
+                .anyMatch(level -> level.getLevelCode() != null
+                        && level.getLevelCode().equalsIgnoreCase(employee.getLevelCode().trim()));
+    }
+
+    private String resolveEmployeeLevelName(EmployeeEntity employee) {
+        if (employee.getDesignation() == null || !StringUtils.hasText(employee.getLevelCode())) {
+            return null;
+        }
+        return employee.getDesignation().getLevels().stream()
+                .filter(level -> level.getLevelCode() != null
+                        && level.getLevelCode().equalsIgnoreCase(employee.getLevelCode().trim()))
+                .map(ResourceLevelExperience::getLevelName)
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .orElse(employee.getLevelCode().trim().toUpperCase(Locale.ROOT));
     }
 
     private BigDecimal getMonthlyRate(Long designationId, String levelCode) {
@@ -507,12 +621,150 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         if (command.getProjectId() == null) {
             throw new RecruitmentNotificationException("Project is required.");
         }
-        if (command.getRequirements() == null || command.getRequirements().isEmpty()) {
-            throw new RecruitmentNotificationException("At least one designation requirement is required.");
-        }
         if (!StringUtils.hasText(command.getActorEmail())) {
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
+    }
+
+    private InternalVacancyHiringRequestType resolveHiringRequestType(
+            InternalVacancyHiringRequestType hiringRequestType) {
+        if (hiringRequestType == null) {
+            throw new RecruitmentNotificationException("Hiring request type is required.");
+        }
+        return hiringRequestType;
+    }
+
+    private void validateHiringRequestDetails(
+            InternalVacancyOpeningCommand command,
+            InternalVacancyOpeningEntity entity,
+            InternalVacancyHiringRequestType hiringRequestType,
+            InternalVacancyOpeningStatus targetStatus) {
+        boolean submission = targetStatus == InternalVacancyOpeningStatus.PENDING_HR_APPROVAL
+                || targetStatus == InternalVacancyOpeningStatus.OPEN;
+
+        if (hiringRequestType == InternalVacancyHiringRequestType.NEW_CANDIDATE) {
+            boolean approvalAvailable = hasUploadedFile(command.getEOfficeApprovalDocument())
+                    || StringUtils.hasText(entity.getEOfficeApprovalFilePath());
+            if (submission && !approvalAvailable) {
+                throw new RecruitmentNotificationException(
+                        "E-office approval document is required for a new candidate request.");
+            }
+        }
+    }
+
+    private List<EmployeeEntity> resolveReplacementEmployees(
+            InternalVacancyOpeningCommand command,
+            InternalVacancyHiringRequestType hiringRequestType,
+            InternalVacancyOpeningStatus targetStatus) {
+        if (hiringRequestType != InternalVacancyHiringRequestType.EMPLOYEE_REPLACEMENT) {
+            return List.of();
+        }
+
+        List<Long> employeeIds = normalizePositiveIds(command.getReplacementEmployeeIds()).stream()
+                .filter(id -> id > 0)
+                .toList();
+        boolean submission = targetStatus == InternalVacancyOpeningStatus.PENDING_HR_APPROVAL
+                || targetStatus == InternalVacancyOpeningStatus.OPEN;
+        if (employeeIds.isEmpty()) {
+            if (submission) {
+                throw new RecruitmentNotificationException(
+                        "Select at least one employee to be replaced.");
+            }
+            return List.of();
+        }
+
+        List<EmployeeEntity> employees = employeeRepository.findReplacementEmployeesByEmployeeIdIn(employeeIds);
+        Map<Long, EmployeeEntity> employeeById = employees.stream()
+                .filter(employee -> employee.getEmployeeId() != null)
+                .collect(Collectors.toMap(
+                        EmployeeEntity::getEmployeeId,
+                        employee -> employee,
+                        (left, right) -> left,
+                        LinkedHashMap::new));
+        if (employeeById.size() != employeeIds.size()) {
+            throw new RecruitmentNotificationException(
+                    "One or more selected replacement employees do not exist.");
+        }
+
+        return employeeIds.stream()
+                .map(employeeById::get)
+                .peek(this::validateReplacementEmployee)
+                .toList();
+    }
+
+    private void validateReplacementEmployee(EmployeeEntity employee) {
+        if (!"ACTIVE".equalsIgnoreCase(employee.getStatus())) {
+            throw new RecruitmentNotificationException(
+                    "Selected replacement employees must be active.");
+        }
+        if (employee.getDesignation() == null || employee.getDesignation().getDesignationId() == null) {
+            throw new RecruitmentNotificationException(
+                    "Every selected replacement employee must have a designation.");
+        }
+        if (!StringUtils.hasText(employee.getLevelCode())) {
+            throw new RecruitmentNotificationException(
+                    "Every selected replacement employee must have a level.");
+        }
+    }
+
+    private List<InternalVacancyRequirementCommand> buildReplacementRequirements(
+            List<EmployeeEntity> replacementEmployees) {
+        Map<String, InternalVacancyRequirementCommand> requirementByKey = new LinkedHashMap<>();
+        for (EmployeeEntity employee : replacementEmployees) {
+            Long designationId = employee.getDesignation().getDesignationId();
+            String levelCode = employee.getLevelCode().trim().toUpperCase(Locale.ROOT);
+            String key = designationId + "|" + levelCode;
+            InternalVacancyRequirementCommand existing = requirementByKey.get(key);
+            long vacancyCount = existing == null ? 1L : existing.getNumberOfVacancy() + 1L;
+            requirementByKey.put(key, InternalVacancyRequirementCommand.builder()
+                    .designationId(designationId)
+                    .levelCode(levelCode)
+                    .numberOfVacancy(vacancyCount)
+                    .build());
+        }
+        return List.copyOf(requirementByKey.values());
+    }
+
+    private void applyHiringRequestDetails(
+            InternalVacancyOpeningEntity entity,
+            InternalVacancyHiringRequestType hiringRequestType,
+            StoredInternalVacancyApprovalDocument uploadedApproval) {
+        if (hiringRequestType == InternalVacancyHiringRequestType.EMPLOYEE_REPLACEMENT) {
+            clearApprovalDocument(entity);
+            return;
+        }
+
+        if (uploadedApproval != null) {
+            entity.setEOfficeApprovalFileName(uploadedApproval.getOriginalFileName());
+            entity.setEOfficeApprovalFilePath(uploadedApproval.getFullPath());
+            entity.setEOfficeApprovalContentType(uploadedApproval.getContentType());
+            entity.setEOfficeApprovalFileSize(uploadedApproval.getFileSize());
+        }
+    }
+
+    private void clearApprovalDocument(InternalVacancyOpeningEntity entity) {
+        entity.setEOfficeApprovalFileName(null);
+        entity.setEOfficeApprovalFilePath(null);
+        entity.setEOfficeApprovalContentType(null);
+        entity.setEOfficeApprovalFileSize(null);
+    }
+
+    private boolean hasUploadedFile(MultipartFile file) {
+        return file != null && !file.isEmpty();
+    }
+
+    private InternalVacancyApprovalDocumentView toApprovalDocumentView(InternalVacancyOpeningEntity entity) {
+        if (!StringUtils.hasText(entity.getEOfficeApprovalFilePath())
+                || !StringUtils.hasText(entity.getEOfficeApprovalFileName())) {
+            throw new RecruitmentNotificationException("E-office approval document is unavailable.");
+        }
+
+        return InternalVacancyApprovalDocumentView.builder()
+                .originalFileName(entity.getEOfficeApprovalFileName())
+                .contentType(entity.getEOfficeApprovalContentType())
+                .fileSize(entity.getEOfficeApprovalFileSize())
+                .resource(approvalDocumentStorageService.loadAsResource(entity.getEOfficeApprovalFilePath()))
+                .build();
     }
 
     private ProjectMst findInternalProject(Long projectId) {
@@ -927,22 +1179,26 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
             List<InternalVacancyInterviewRoleEntity> interviewRoleEntities,
             List<InternalVacancyInterviewAuthorityEntity> interviewAuthorityEntities,
             List<InternalVacancyInterviewEmployeeEntity> interviewEmployeeEntities,
+            List<EmployeeEntity> replacementEmployees,
             boolean isEdit) {
         if (isEdit) {
             entity.replaceRequirements(List.of());
             entity.replaceInterviewRoles(List.of());
             entity.replaceInterviewAuthorities(List.of());
             entity.replaceInterviewEmployees(List.of());
+            entity.replaceReplacementEmployees(List.of());
             internalVacancyOpeningRepository.saveAndFlush(entity);
             entity.replaceRequirements(requirementEntities);
             entity.replaceInterviewRoles(interviewRoleEntities);
             entity.replaceInterviewAuthorities(interviewAuthorityEntities);
             entity.replaceInterviewEmployees(interviewEmployeeEntities);
+            entity.replaceReplacementEmployees(replacementEmployees);
         } else {
             entity.replaceRequirements(requirementEntities);
             entity.replaceInterviewRoles(interviewRoleEntities);
             entity.replaceInterviewAuthorities(interviewAuthorityEntities);
             entity.replaceInterviewEmployees(interviewEmployeeEntities);
+            entity.replaceReplacementEmployees(replacementEmployees);
         }
     }
 
@@ -980,6 +1236,19 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
         }
         if (employee.getDesignation() != null && StringUtils.hasText(employee.getDesignation().getDesignationName())) {
             label.append(" - ").append(employee.getDesignation().getDesignationName());
+        }
+        return label.toString();
+    }
+
+    private String buildReplacementEmployeeLabel(EmployeeEntity employee) {
+        StringBuilder label = new StringBuilder(employee.getFullName());
+        if (employee.getDesignation() != null
+                && StringUtils.hasText(employee.getDesignation().getDesignationName())) {
+            label.append(" - ").append(employee.getDesignation().getDesignationName());
+        }
+        String levelName = resolveEmployeeLevelName(employee);
+        if (StringUtils.hasText(levelName)) {
+            label.append(" - ").append(levelName);
         }
         return label.toString();
     }

@@ -24,9 +24,13 @@
                     <form id="internalVacancyOpeningForm"
                         th:action="@{/hr/internal-vacancies}"
                         th:object="${openingForm}"
-                        method="post">
+                        method="post"
+                        enctype="multipart/form-data">
+                        <input autocomplete="off" type="hidden" th:if="${_csrf != null}"
+                            th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <input type="hidden" th:field="*{internalVacancyOpeningId}">
                         <input type="hidden" th:field="*{currentStatus}">
+                        <input type="hidden" th:field="*{existingEOfficeApprovalFileName}">
 
                         <div class="row g-3">
                             <div class="col-md-12">
@@ -41,6 +45,84 @@
                                     Projects are loaded from Project Master entries that are not linked to department applications.
                                 </div>
                                 <div class="text-danger small" th:errors="*{projectId}"></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-12">
+                                <label class="form-label d-block">Hiring Request Type <span class="text-danger">*</span></label>
+                                <div class="d-flex flex-wrap gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input hiring-request-type" type="radio"
+                                            th:field="*{hiringRequestType}" value="NEW_CANDIDATE" required>
+                                        <label class="form-check-label" th:for="${#ids.prev('hiringRequestType')}">
+                                            New Candidate
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input hiring-request-type" type="radio"
+                                            th:field="*{hiringRequestType}" value="EMPLOYEE_REPLACEMENT" required>
+                                        <label class="form-check-label" th:for="${#ids.prev('hiringRequestType')}">
+                                            Employee Replacement
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="text-danger small" th:errors="*{hiringRequestType}"></div>
+                            </div>
+
+                            <div class="col-md-12" id="replacementEmployeeContainer">
+                                <label class="form-label">
+                                    Employees to be Replaced <span class="text-danger">*</span>
+                                </label>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
+                                        type="button" id="replacementEmployeeDropdownButton"
+                                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                        Select Employees
+                                    </button>
+                                    <div class="dropdown-menu w-100 p-2 overflow-auto" style="max-height: 320px;"
+                                        aria-labelledby="replacementEmployeeDropdownButton">
+                                        <div class="text-muted small p-2" th:if="${#lists.isEmpty(replacementEmployeeOptions)}">
+                                            No active employees with designation and level mapping are available.
+                                        </div>
+                                        <div class="form-check py-1" th:each="employee : ${replacementEmployeeOptions}">
+                                            <input class="form-check-input replacement-employee-checkbox" type="checkbox"
+                                                name="replacementEmployeeIds"
+                                                th:id="${'replacementEmployee-' + employee.employeeId}"
+                                                th:value="${employee.employeeId}"
+                                                th:checked="${openingForm.replacementEmployeeIds != null and openingForm.replacementEmployeeIds.contains(employee.employeeId)}"
+                                                th:attr="data-designation-id=${employee.designationId},
+                                                         data-designation-name=${employee.designationName},
+                                                         data-level-code=${employee.levelCode},
+                                                         data-level-name=${employee.levelName}">
+                                            <label class="form-check-label"
+                                                th:for="${'replacementEmployee-' + employee.employeeId}"
+                                                th:text="${employee.displayLabel}"></label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-text">Select one or more active employees. Vacancies are grouped automatically by designation and level.</div>
+                                <div id="replacementEmployeeClientError" class="text-danger small d-none">
+                                    Select at least one employee to be replaced.
+                                </div>
+                                <div class="text-danger small" th:errors="*{replacementEmployeeIds}"></div>
+                            </div>
+
+                            <div class="col-md-12" id="eOfficeApprovalContainer">
+                                <label class="form-label" for="eOfficeApprovalDocument">
+                                    E-office Approval Document <span class="text-danger">*</span>
+                                </label>
+                                <input type="file" class="form-control" th:field="*{eOfficeApprovalDocument}"
+                                    accept="application/pdf,.pdf">
+                                <div class="form-text">Upload one PDF approval document (maximum 2 MB).</div>
+                                <div class="mt-2"
+                                    th:if="${openingForm.internalVacancyOpeningId != null and !#strings.isEmpty(openingForm.existingEOfficeApprovalFileName)}">
+                                    <span class="text-muted small">Current document:</span>
+                                    <a class="btn btn-outline-secondary btn-sm ms-1" target="_blank" rel="noopener"
+                                        th:href="@{/hr/internal-vacancies/{id}/e-office-approval(id=${openingForm.internalVacancyOpeningId})}"
+                                        th:text="${openingForm.existingEOfficeApprovalFileName}">View approval</a>
+                                </div>
+                                <div class="text-danger small" th:errors="*{eOfficeApprovalDocument}"></div>
                             </div>
                         </div>
 
@@ -138,7 +220,8 @@
 
                         <hr class="my-4">
 
-                        <div class="row g-3 align-items-end" th:if="${!isPendingApproval and !isSubmittedEdit}">
+                        <div class="row g-3 align-items-end" id="manualRequirementControls"
+                            th:if="${!isPendingApproval and !isSubmittedEdit}">
                             <div class="col-md-5">
                                 <label class="form-label">Designation <span class="text-danger">*</span></label>
                                 <select id="designationSelect" class="form-select">
@@ -168,7 +251,8 @@
                                         <th>Designation</th>
                                         <th>Level</th>
                                         <th>Vacancies</th>
-                                        <th th:if="${!isPendingApproval and !isSubmittedEdit}">Action</th>
+                                        <th class="requirementActionColumn"
+                                            th:if="${!isPendingApproval and !isSubmittedEdit}">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -198,7 +282,8 @@
                                                 th:name="${'requirements[' + stat.index + '].numberOfVacancy'}"
                                                 th:value="${requirement.numberOfVacancy}">
                                         </td>
-                                        <td th:if="${!isPendingApproval and !isSubmittedEdit}">
+                                        <td class="requirementActionColumn"
+                                            th:if="${!isPendingApproval and !isSubmittedEdit}">
                                             <button type="button" class="btn btn-outline-danger btn-sm removeRequirementButton">Remove</button>
                                         </td>
                                     </tr>
@@ -219,6 +304,7 @@
                             </button>
                             <button type="submit" name="action" value="reject" class="btn btn-outline-danger"
                                 th:if="${isPendingApproval}"
+                                formnovalidate
                                 onclick="return confirm('Reject this resource request?');">
                                 Reject Request
                             </button>
@@ -232,6 +318,27 @@
     </th:block>
 
     <script th:src="@{/js/hr-internal-vacancy-opening.js}"></script>
+    <script th:src="@{/js/internal-vacancy-replacement.js(v='20260825-4')}"></script>
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            const typeInputs = document.querySelectorAll('.hiring-request-type');
+            const approvalContainer = document.getElementById('eOfficeApprovalContainer');
+            const approvalDocument = document.getElementById('eOfficeApprovalDocument');
+            const hasExistingApproval = /*[[${!#strings.isEmpty(openingForm.existingEOfficeApprovalFileName)}]]*/ false;
+
+            function updateHiringRequestFields() {
+                const selectedType = document.querySelector('.hiring-request-type:checked')?.value;
+                const isReplacement = selectedType === 'EMPLOYEE_REPLACEMENT';
+
+                approvalContainer.classList.toggle('d-none', isReplacement);
+                approvalDocument.disabled = isReplacement;
+                approvalDocument.required = !isReplacement && !hasExistingApproval;
+            }
+
+            typeInputs.forEach(input => input.addEventListener('change', updateHiringRequestFields));
+            updateHiringRequestFields();
+        });
+    </script>
 </body>
 
 </html>

@@ -17,11 +17,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -56,6 +58,33 @@ public class InternalVacancyOpeningEntity extends RecruitmentAuditable {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "project_id", nullable = false)
     private ProjectMst projectMst;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "hiring_request_type", length = 30)
+    private InternalVacancyHiringRequestType hiringRequestType = InternalVacancyHiringRequestType.NEW_CANDIDATE;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "internal_vacancy_replacement_employee",
+            joinColumns = @JoinColumn(name = "internal_vacancy_opening_id"),
+            inverseJoinColumns = @JoinColumn(name = "employee_id"),
+            uniqueConstraints = @UniqueConstraint(
+                    name = "uk_internal_vacancy_replacement_employee",
+                    columnNames = { "internal_vacancy_opening_id", "employee_id" }))
+    @OrderBy("fullName ASC, employeeId ASC")
+    private List<EmployeeEntity> replacementEmployees = new ArrayList<>();
+
+    @Column(name = "e_office_approval_file_name", length = 255)
+    private String eOfficeApprovalFileName;
+
+    @Column(name = "e_office_approval_file_path", length = 1000)
+    private String eOfficeApprovalFilePath;
+
+    @Column(name = "e_office_approval_content_type", length = 100)
+    private String eOfficeApprovalContentType;
+
+    @Column(name = "e_office_approval_file_size")
+    private Long eOfficeApprovalFileSize;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -162,6 +191,13 @@ public class InternalVacancyOpeningEntity extends RecruitmentAuditable {
         interviewEmployees.add(employeeAssignment);
     }
 
+    public void replaceReplacementEmployees(List<EmployeeEntity> employees) {
+        replacementEmployees.clear();
+        if (employees != null) {
+            replacementEmployees.addAll(employees);
+        }
+    }
+
     @PrePersist
     @PreUpdate
     void normalize() {
@@ -170,6 +206,18 @@ public class InternalVacancyOpeningEntity extends RecruitmentAuditable {
         }
         if (remarks != null) {
             remarks = remarks.trim();
+        }
+        if (hiringRequestType == null) {
+            hiringRequestType = InternalVacancyHiringRequestType.NEW_CANDIDATE;
+        }
+        if (eOfficeApprovalFileName != null) {
+            eOfficeApprovalFileName = eOfficeApprovalFileName.trim();
+        }
+        if (eOfficeApprovalFilePath != null) {
+            eOfficeApprovalFilePath = eOfficeApprovalFilePath.trim();
+        }
+        if (eOfficeApprovalContentType != null) {
+            eOfficeApprovalContentType = eOfficeApprovalContentType.trim().toLowerCase();
         }
         if (createdByEmail != null) {
             createdByEmail = createdByEmail.trim().toLowerCase();

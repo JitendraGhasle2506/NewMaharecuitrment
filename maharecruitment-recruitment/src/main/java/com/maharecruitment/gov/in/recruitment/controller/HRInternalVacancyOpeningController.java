@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.controller;
 
 import java.security.Principal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -11,6 +12,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,6 +40,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInter
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateRequestListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyApprovalDocumentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningLevelOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningResult;
@@ -269,6 +276,20 @@ public class HRInternalVacancyOpeningController {
         return internalVacancyOpeningService.getLevelsByDesignation(designationId);
     }
 
+    @GetMapping("/{internalVacancyOpeningId}/e-office-approval")
+    public ResponseEntity<Resource> viewEOfficeApproval(@PathVariable Long internalVacancyOpeningId) {
+        try {
+            return approvalDocumentResponse(
+                    internalVacancyOpeningService.getApprovalDocument(internalVacancyOpeningId));
+        } catch (RecruitmentNotificationException ex) {
+            log.warn(
+                    "Unable to access HR e-office approval. openingId={}, reason={}",
+                    internalVacancyOpeningId,
+                    ex.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/interview-authorities")
     @ResponseBody
     public Page<InternalVacancyInterviewAuthorityUserOptionView> getInterviewAuthorities(
@@ -294,7 +315,12 @@ public class HRInternalVacancyOpeningController {
                         openingForm.getInterviewAuthorityRoleIds() == null
                                 ? List.of()
                                 : openingForm.getInterviewAuthorityRoleIds()));
-        model.addAttribute("interviewEmployeeOptions", internalVacancyOpeningService.getAvailableInterviewEmployees());
+        List<InternalVacancyInterviewEmployeeOptionView> employeeOptions =
+                internalVacancyOpeningService.getAvailableInterviewEmployees();
+        model.addAttribute("interviewEmployeeOptions", employeeOptions);
+        model.addAttribute(
+                "replacementEmployeeOptions",
+                internalVacancyOpeningService.getAvailableReplacementEmployees());
     }
 
     private InternalVacancyOpeningCommand toCommand(
@@ -304,6 +330,11 @@ public class HRInternalVacancyOpeningController {
         return InternalVacancyOpeningCommand.builder()
                 .internalVacancyOpeningId(openingForm.getInternalVacancyOpeningId())
                 .projectId(openingForm.getProjectId())
+                .hiringRequestType(openingForm.getHiringRequestType())
+                .replacementEmployeeIds(openingForm.getReplacementEmployeeIds() == null
+                        ? List.of()
+                        : new ArrayList<>(openingForm.getReplacementEmployeeIds()))
+                .eOfficeApprovalDocument(openingForm.getEOfficeApprovalDocument())
                 .remarks(openingForm.getRemarks())
                 .actorEmail(actorEmail)
                 .targetStatus(targetStatus)
@@ -327,6 +358,21 @@ public class HRInternalVacancyOpeningController {
                                 ? List.of()
                                 : new ArrayList<>(openingForm.getInterviewAuthorityEmployeeIds()))
                 .build();
+    }
+
+    private ResponseEntity<Resource> approvalDocumentResponse(InternalVacancyApprovalDocumentView document) {
+        ResponseEntity.BodyBuilder response = ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline()
+                                .filename(document.getOriginalFileName(), StandardCharsets.UTF_8)
+                                .build()
+                                .toString());
+        if (document.getFileSize() != null) {
+            response.contentLength(document.getFileSize());
+        }
+        return response.body(document.getResource());
     }
 
     private InternalVacancyOpeningStatus resolveTargetStatus(String action) {

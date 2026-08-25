@@ -5,6 +5,72 @@
     <meta charset="UTF-8">
     <title>Internal Resource Requirement Request</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .replacement-employee-menu {
+            max-height: min(480px, 70vh);
+        }
+
+        .replacement-employee-options {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .replacement-employee-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.8rem 1rem;
+            border-left: 3px solid transparent;
+            transition: background-color 0.15s ease-in-out;
+        }
+
+        .replacement-employee-option:hover {
+            background-color: var(--bs-tertiary-bg);
+        }
+
+        .replacement-employee-option:has(.form-check-input:checked) {
+            background-color: rgba(var(--bs-primary-rgb), 0.08);
+            border-left-color: var(--bs-primary);
+        }
+
+        .replacement-employee-option .form-check-input {
+            flex: 0 0 auto;
+            float: none;
+            margin: 0.25rem 0 0;
+        }
+
+        .replacement-employee-label {
+            min-width: 0;
+            cursor: pointer;
+        }
+
+        .replacement-employee-name {
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        .replacement-employee-meta > span {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .replacement-employee-meta i {
+            width: 1rem;
+            text-align: center;
+        }
+
+        #replacementEmployeeDropdownButton::after {
+            margin-left: 0.25rem;
+        }
+
+        @media (max-width: 575.98px) {
+            .replacement-employee-meta {
+                align-items: flex-start !important;
+                flex-direction: column;
+                gap: 0.25rem !important;
+            }
+        }
+    </style>
 </head>
 
 <body class="department-shell" th:attr="data-context-path=${contextPath}">
@@ -22,22 +88,179 @@
                     </div>
 
                     <form id="internalVacancyOpeningForm"
-                        th:action="@{/hod1/internal-vacancies}"
+                        th:action="@{/hod1/internal-vacancies(_csrf=${_csrf.token})}"
                         th:object="${openingForm}"
-                        method="post">
+                        method="post"
+                        enctype="multipart/form-data">
+                        <div id="internalVacancyClientValidationSummary"
+                            class="alert alert-danger d-none" role="alert">
+                            Please complete all mandatory fields before submitting the request.
+                        </div>
+                        <input autocomplete="off" type="hidden" th:if="${_csrf != null}"
+                            th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <input type="hidden" th:field="*{internalVacancyOpeningId}">
                         <input type="hidden" th:field="*{currentStatus}">
+                        <input type="hidden" th:field="*{existingEOfficeApprovalFileName}">
 
                         <div class="row g-3">
                             <div class="col-md-12">
                                 <label class="form-label">Project Name <span class="text-danger">*</span></label>
-                                <select class="form-select" th:field="*{projectId}">
-                                    <option value="">Select Project</option>
+                                <select class="form-select" th:field="*{projectId}" required
+                                    aria-describedby="projectIdClientError">
+                                    <option value="" disabled>Select Project</option>
                                     <option th:each="project : ${projectOptions}"
                                             th:value="${project.projectId}"
                                             th:text="${project.projectName}"></option>
                                 </select>
+                                <div id="projectIdClientError" class="invalid-feedback">
+                                    Please select a project.
+                                </div>
                                 <div class="text-danger small" th:errors="*{projectId}"></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-12">
+                                <label class="form-label d-block">Hiring Request Type <span class="text-danger">*</span></label>
+                                <div class="d-flex flex-wrap gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input hiring-request-type" type="radio"
+                                            th:field="*{hiringRequestType}" value="NEW_CANDIDATE" required>
+                                        <label class="form-check-label" th:for="${#ids.prev('hiringRequestType')}">
+                                            New Candidate
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input hiring-request-type" type="radio"
+                                            th:field="*{hiringRequestType}" value="EMPLOYEE_REPLACEMENT" required>
+                                        <label class="form-check-label" th:for="${#ids.prev('hiringRequestType')}">
+                                            Employee Replacement
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="text-danger small" th:errors="*{hiringRequestType}"></div>
+                            </div>
+
+                            <div class="col-md-12" id="replacementEmployeeContainer">
+                                <div class="border rounded-3 bg-body-tertiary p-3">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                        <label class="form-label fw-semibold mb-0">
+                                            <i class="fas fa-user-minus text-primary me-1" aria-hidden="true"></i>
+                                            Employees to be Replaced <span class="text-danger">*</span>
+                                        </label>
+                                        <span class="badge text-bg-light border text-secondary">Multiple selection allowed</span>
+                                    </div>
+
+                                    <div class="dropdown">
+                                        <button class="btn btn-light border dropdown-toggle w-100 d-flex align-items-center gap-2 text-start py-2"
+                                            type="button" id="replacementEmployeeDropdownButton"
+                                            data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                            <i class="fas fa-users text-secondary" aria-hidden="true"></i>
+                                            <span id="replacementEmployeeDropdownLabel" class="flex-grow-1">Select employees...</span>
+                                            <span id="replacementEmployeeCountBadge"
+                                                class="badge rounded-pill text-bg-primary d-none">0</span>
+                                        </button>
+
+                                        <div class="dropdown-menu replacement-employee-menu w-100 p-0 shadow"
+                                            id="replacementEmployeeDropdownMenu"
+                                            aria-labelledby="replacementEmployeeDropdownButton">
+                                            <div class="p-3 border-bottom bg-body-tertiary">
+                                                <label for="replacementEmployeeSearch" class="visually-hidden">Search employees</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-body">
+                                                        <i class="fas fa-search text-secondary" aria-hidden="true"></i>
+                                                    </span>
+                                                    <input type="search" class="form-control"
+                                                        id="replacementEmployeeSearch"
+                                                        placeholder="Search by employee, designation or level"
+                                                        autocomplete="off">
+                                                    <button class="btn btn-outline-secondary d-none" type="button"
+                                                        id="replacementEmployeeClearSearch"
+                                                        aria-label="Clear employee search">
+                                                        <i class="fas fa-times" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                                <div id="replacementEmployeeVisibleCount" class="small text-muted mt-2"
+                                                    th:text="${#lists.size(replacementEmployeeOptions) + ' employees available'}">
+                                                    0 employees available
+                                                </div>
+                                            </div>
+
+                                            <div class="replacement-employee-options" id="replacementEmployeeOptions">
+                                                <div class="text-center text-muted p-4"
+                                                    th:if="${#lists.isEmpty(replacementEmployeeOptions)}">
+                                                    <i class="fas fa-user-slash fa-lg d-block mb-2" aria-hidden="true"></i>
+                                                    No active employees with designation and level mapping are available.
+                                                </div>
+
+                                                <div class="replacement-employee-option border-bottom"
+                                                    th:each="employee : ${replacementEmployeeOptions}">
+                                                    <input class="form-check-input replacement-employee-checkbox flex-shrink-0" type="checkbox"
+                                                        name="replacementEmployeeIds"
+                                                        th:id="${'replacementEmployee-' + employee.employeeId}"
+                                                        th:value="${employee.employeeId}"
+                                                        th:checked="${openingForm.replacementEmployeeIds != null and openingForm.replacementEmployeeIds.contains(employee.employeeId)}"
+                                                        th:attr="data-designation-id=${employee.designationId},
+                                                                 data-designation-name=${employee.designationName},
+                                                                 data-level-code=${employee.levelCode},
+                                                                 data-level-name=${employee.levelName}">
+                                                    <label class="replacement-employee-label form-check-label flex-grow-1"
+                                                        th:for="${'replacementEmployee-' + employee.employeeId}">
+                                                        <span class="replacement-employee-name d-block fw-semibold"
+                                                            th:text="${employee.fullName}">Employee Name</span>
+                                                        <span class="replacement-employee-meta d-flex flex-wrap align-items-center gap-3 small text-muted mt-1">
+                                                            <span>
+                                                                <i class="fas fa-briefcase me-1" aria-hidden="true"></i>
+                                                                <span th:text="${employee.designationName}">Designation</span>
+                                                            </span>
+                                                            <span>
+                                                                <i class="fas fa-signal me-1" aria-hidden="true"></i>
+                                                                <span th:text="${employee.levelName}">Level</span>
+                                                            </span>
+                                                        </span>
+                                                    </label>
+                                                </div>
+
+                                                <div id="replacementEmployeeNoResults" class="text-center text-muted p-4 d-none">
+                                                    <i class="fas fa-search d-block mb-2" aria-hidden="true"></i>
+                                                    No employees match your search.
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex align-items-center justify-content-between gap-2 p-2 border-top bg-body-tertiary">
+                                                <span id="replacementEmployeeSelectedSummary" class="small text-muted">0 selected</span>
+                                                <button type="button" class="btn btn-link btn-sm text-decoration-none"
+                                                    id="replacementEmployeeClearSelection" disabled>
+                                                    Clear selection
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-text">
+                                        Search and select employees. Designation, level and vacancy totals update automatically.
+                                    </div>
+                                    <div id="replacementEmployeeClientError" class="text-danger small d-none">
+                                        Select at least one employee to be replaced.
+                                    </div>
+                                    <div class="text-danger small" th:errors="*{replacementEmployeeIds}"></div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12" id="eOfficeApprovalContainer">
+                                <label class="form-label" for="eOfficeApprovalDocument">
+                                    E-office Approval Document <span class="text-danger">*</span>
+                                </label>
+                                <input type="file" class="form-control" th:field="*{eOfficeApprovalDocument}"
+                                    accept="application/pdf,.pdf">
+                                <div class="form-text">Upload one PDF approval document (maximum 2 MB).</div>
+                                <div class="mt-2"
+                                    th:if="${openingForm.internalVacancyOpeningId != null and !#strings.isEmpty(openingForm.existingEOfficeApprovalFileName)}">
+                                    <span class="text-muted small">Current document:</span>
+                                    <a class="btn btn-outline-secondary btn-sm ms-1" target="_blank" rel="noopener"
+                                        th:href="@{/hod1/internal-vacancies/{id}/e-office-approval(id=${openingForm.internalVacancyOpeningId})}"
+                                        th:text="${openingForm.existingEOfficeApprovalFileName}">View approval</a>
+                                </div>
+                                <div class="text-danger small" th:errors="*{eOfficeApprovalDocument}"></div>
                             </div>
                         </div>
 
@@ -52,7 +275,7 @@
                         <hr class="my-4">
                         <h5>Designation Requirements</h5>
 
-                        <div class="row g-3 align-items-end">
+                        <div class="row g-3 align-items-end" id="manualRequirementControls">
                             <div class="col-md-5">
                                 <label class="form-label">Designation <span class="text-danger">*</span></label>
                                 <select id="designationSelect" class="form-select">
@@ -82,7 +305,7 @@
                                         <th>Designation</th>
                                         <th>Level</th>
                                         <th>Vacancies Required</th>
-                                        <th>Action</th>
+                                        <th class="requirementActionColumn">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -112,7 +335,7 @@
                                                 th:name="${'requirements[' + stat.index + '].numberOfVacancy'}"
                                                 th:value="${requirement.numberOfVacancy}">
                                         </td>
-                                        <td>
+                                        <td class="requirementActionColumn">
                                             <button type="button" class="btn btn-outline-danger btn-sm removeRequirementButton">Remove</button>
                                         </td>
                                     </tr>
@@ -121,7 +344,7 @@
                         </div>
 
                         <div class="mt-4 d-flex justify-content-center gap-2">
-                            <button type="submit" name="action" value="draft" class="btn btn-outline-primary">Save Draft</button>
+                            <button type="submit" name="action" value="draft" class="btn btn-outline-primary" formnovalidate>Save Draft</button>
                             <button type="submit" name="action" value="submit" class="btn btn-primary">Submit to HR</button>
                             <a class="btn btn-secondary" th:href="@{/hod1/internal-vacancies}">Back to List</a>
                         </div>
@@ -131,14 +354,50 @@
         </section>
     </th:block>
 
-    <script>
+    <script th:src="@{/js/internal-vacancy-replacement.js(v='20260825-4')}"></script>
+    <script th:inline="javascript">
         // Inline script or reuse HR script with adjusted paths
         document.addEventListener('DOMContentLoaded', function() {
             const contextPath = document.body.getAttribute('data-context-path') || '';
+            const form = document.getElementById('internalVacancyOpeningForm');
+            const projectSelect = document.getElementById('projectId');
+            const validationSummary = document.getElementById('internalVacancyClientValidationSummary');
             const designationSelect = document.getElementById('designationSelect');
             const levelSelect = document.getElementById('levelSelect');
             const addBtn = document.getElementById('addRequirementButton');
             const tableBody = document.querySelector('#internalRequirementTable tbody');
+            const hiringRequestTypeInputs = document.querySelectorAll('.hiring-request-type');
+            const approvalContainer = document.getElementById('eOfficeApprovalContainer');
+            const approvalDocument = document.getElementById('eOfficeApprovalDocument');
+            const hasExistingApproval = /*[[${!#strings.isEmpty(openingForm.existingEOfficeApprovalFileName)}]]*/ false;
+
+            form.addEventListener('invalid', function(event) {
+                event.target.classList.add('is-invalid');
+                validationSummary.classList.remove('d-none');
+            }, true);
+
+            form.addEventListener('submit', function() {
+                validationSummary.classList.add('d-none');
+            });
+
+            projectSelect.addEventListener('change', function() {
+                this.classList.toggle('is-invalid', !this.value);
+                if (this.value) {
+                    validationSummary.classList.add('d-none');
+                }
+            });
+
+            function updateHiringRequestFields() {
+                const selectedType = document.querySelector('.hiring-request-type:checked')?.value;
+                const isReplacement = selectedType === 'EMPLOYEE_REPLACEMENT';
+
+                approvalContainer.classList.toggle('d-none', isReplacement);
+                approvalDocument.disabled = isReplacement;
+                approvalDocument.required = !isReplacement && !hasExistingApproval;
+            }
+
+            hiringRequestTypeInputs.forEach(input => input.addEventListener('change', updateHiringRequestFields));
+            updateHiringRequestFields();
 
             designationSelect.addEventListener('change', function() {
                 const designationId = this.value;

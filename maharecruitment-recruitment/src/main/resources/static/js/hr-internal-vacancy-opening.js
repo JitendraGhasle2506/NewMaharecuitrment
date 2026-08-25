@@ -51,6 +51,10 @@
     authorityNextPage?.addEventListener("click", () => changeAuthorityPage(1));
     
     formElement.addEventListener("submit", onFormSubmit);
+    formElement.addEventListener("internal-vacancy-requirements-rebuilt", function () {
+        requirementRowKeys.clear();
+        initializeExistingRows();
+    });
 
     function initializeExistingRows() {
         const rows = requirementTableBody?.querySelectorAll("tr") || [];

@@ -20,6 +20,9 @@ import db.postmigration.V113__master_location_department_name_support;
 import db.postmigration.V114__employee_profile_insert_compatibility;
 import db.postmigration.V115__designation_rates_single_l1_per_period;
 import db.postmigration.V116__designation_rates_2026_l1_defaults;
+import db.postmigration.V117__internal_vacancy_hiring_request_details;
+import db.postmigration.V118__internal_vacancy_replacement_employee_mapping;
+import db.postmigration.V119__internal_vacancy_multiple_replacement_employees;
 
 class PostSchemaFlywayRunnerTest {
 
@@ -50,6 +53,12 @@ class PostSchemaFlywayRunnerTest {
                 migrations, V115__designation_rates_single_l1_per_period.class);
         int designationRateDefaultsMigrationIndex = indexOf(
                 migrations, V116__designation_rates_2026_l1_defaults.class);
+        int internalVacancyHiringDetailsMigrationIndex = indexOf(
+                migrations, V117__internal_vacancy_hiring_request_details.class);
+        int replacementEmployeeMappingMigrationIndex = indexOf(
+                migrations, V118__internal_vacancy_replacement_employee_mapping.class);
+        int multipleReplacementEmployeesMigrationIndex = indexOf(
+                migrations, V119__internal_vacancy_multiple_replacement_employees.class);
         assertThat(employeeCellMigrationIndex).isGreaterThanOrEqualTo(0);
         assertThat(cellAuthorityMigrationIndex).isGreaterThan(employeeCellMigrationIndex);
         assertThat(projectDepartmentMigrationIndex).isGreaterThan(cellAuthorityMigrationIndex);
@@ -62,6 +71,12 @@ class PostSchemaFlywayRunnerTest {
                 .isGreaterThan(employeeProfileCompatibilityMigrationIndex);
         assertThat(designationRateDefaultsMigrationIndex)
                 .isGreaterThan(designationRateNormalizationMigrationIndex);
+        assertThat(internalVacancyHiringDetailsMigrationIndex)
+                .isGreaterThan(designationRateDefaultsMigrationIndex);
+        assertThat(replacementEmployeeMappingMigrationIndex)
+                .isGreaterThan(internalVacancyHiringDetailsMigrationIndex);
+        assertThat(multipleReplacementEmployeesMigrationIndex)
+                .isGreaterThan(replacementEmployeeMappingMigrationIndex);
     }
 
     private int indexOf(List<?> migrations, Class<?> migrationType) {

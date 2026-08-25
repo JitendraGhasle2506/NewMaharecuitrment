@@ -13,7 +13,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 })
 @EnableJpaRepositories(basePackages = {
 		"com.maharecruitment.gov.in",
-		"com.project"
+		"com.project"  
 })
 @EntityScan(basePackages = {
 		"com.maharecruitment.gov.in",

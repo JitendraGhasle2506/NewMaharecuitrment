@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.controller;
 
 import java.security.Principal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -11,6 +12,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -29,6 +35,7 @@ import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatu
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyApprovalDocumentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningLevelOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningResult;
@@ -110,19 +117,21 @@ public class HODInternalVacancyOpeningController {
     public String create(
             @Valid @ModelAttribute("openingForm") InternalVacancyOpeningForm openingForm,
             BindingResult bindingResult,
-            @RequestParam("action") String action,
+            @RequestParam(name = "action", defaultValue = "submit") String action,
             Model model,
             Principal principal,
             RedirectAttributes redirectAttributes) {
-        String actorEmail = resolveActorEmail(principal);
         boolean editMode = openingForm.getInternalVacancyOpeningId() != null;
+        String actorReference = principal == null ? "anonymous" : principal.getName();
 
         if (bindingResult.hasErrors()) {
+            model.addAttribute("errorMessage", firstValidationMessage(bindingResult));
             populateFormModel(model, openingForm, editMode);
             return "hod/internal-vacancy-opening-form";
         }
 
         try {
+            String actorEmail = resolveActorEmail(principal);
             InternalVacancyOpeningStatus targetStatus = resolveTargetStatus(action);
             InternalVacancyOpeningResult result = internalVacancyOpeningService.saveOpening(
                     toCommand(openingForm, actorEmail, targetStatus));
@@ -134,11 +143,27 @@ public class HODInternalVacancyOpeningController {
             redirectAttributes.addFlashAttribute("successMessage", message);
             return "redirect:/hod1/internal-vacancies";
         } catch (RecruitmentNotificationException ex) {
-            log.warn("Unable to process HOD resource request. actor={}, reason={}", actorEmail, ex.getMessage());
+            log.warn("Unable to process HOD resource request. actor={}, reason={}", actorReference, ex.getMessage());
             model.addAttribute("errorMessage", ex.getMessage());
             populateFormModel(model, openingForm, editMode);
             return "hod/internal-vacancy-opening-form";
+        } catch (RuntimeException ex) {
+            log.error("Unexpected error while processing HOD resource request. actor={}", actorReference, ex);
+            model.addAttribute(
+                    "errorMessage",
+                    "Unable to submit the resource request right now. Please retry."
+                            + " For a new candidate request, select the approval PDF again.");
+            populateFormModel(model, openingForm, editMode);
+            return "hod/internal-vacancy-opening-form";
         }
+    }
+
+    private String firstValidationMessage(BindingResult bindingResult) {
+        return bindingResult.getAllErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .filter(message -> message != null && !message.isBlank())
+                .findFirst()
+                .orElse("Please complete all mandatory fields before submitting the request.");
     }
 
     @GetMapping("/by-designation/{designationId}")
@@ -147,11 +172,29 @@ public class HODInternalVacancyOpeningController {
         return internalVacancyOpeningService.getLevelsByDesignation(designationId);
     }
 
+    @GetMapping("/{internalVacancyOpeningId}/e-office-approval")
+    public ResponseEntity<Resource> viewEOfficeApproval(
+            @PathVariable Long internalVacancyOpeningId,
+            Principal principal) {
+        try {
+            InternalVacancyApprovalDocumentView document = internalVacancyOpeningService
+                    .getApprovalDocumentForOwner(internalVacancyOpeningId, resolveActorEmail(principal));
+            return approvalDocumentResponse(document);
+        } catch (RecruitmentNotificationException ex) {
+            log.warn(
+                    "Unable to access HOD e-office approval. openingId={}, reason={}",
+                    internalVacancyOpeningId,
+                    ex.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     private void populateFormModel(Model model, InternalVacancyOpeningForm openingForm, boolean isEdit) {
         model.addAttribute("openingForm", openingForm);
         model.addAttribute("isEdit", isEdit);
         model.addAttribute("projectOptions", internalVacancyOpeningService.getAvailableInternalProjects());
         model.addAttribute("designationOptions", internalVacancyOpeningService.getAvailableDesignations());
+        model.addAttribute("replacementEmployeeOptions", internalVacancyOpeningService.getAvailableReplacementEmployees());
     }
 
     private InternalVacancyOpeningCommand toCommand(
@@ -161,6 +204,11 @@ public class HODInternalVacancyOpeningController {
         return InternalVacancyOpeningCommand.builder()
                 .internalVacancyOpeningId(openingForm.getInternalVacancyOpeningId())
                 .projectId(openingForm.getProjectId())
+                .hiringRequestType(openingForm.getHiringRequestType())
+                .replacementEmployeeIds(openingForm.getReplacementEmployeeIds() == null
+                        ? List.of()
+                        : new ArrayList<>(openingForm.getReplacementEmployeeIds()))
+                .eOfficeApprovalDocument(openingForm.getEOfficeApprovalDocument())
                 .remarks(openingForm.getRemarks())
                 .actorEmail(actorEmail)
                 .targetStatus(targetStatus)
@@ -175,6 +223,21 @@ public class HODInternalVacancyOpeningController {
                 .interviewAuthorityUserIds(new ArrayList<>()) // HOD doesn't configure these
                 .interviewAuthorityEmployeeIds(new ArrayList<>()) // HOD doesn't configure these
                 .build();
+    }
+
+    private ResponseEntity<Resource> approvalDocumentResponse(InternalVacancyApprovalDocumentView document) {
+        ResponseEntity.BodyBuilder response = ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline()
+                                .filename(document.getOriginalFileName(), StandardCharsets.UTF_8)
+                                .build()
+                                .toString());
+        if (document.getFileSize() != null) {
+            response.contentLength(document.getFileSize());
+        }
+        return response.body(document.getResource());
     }
 
     private InternalVacancyOpeningStatus resolveTargetStatus(String action) {

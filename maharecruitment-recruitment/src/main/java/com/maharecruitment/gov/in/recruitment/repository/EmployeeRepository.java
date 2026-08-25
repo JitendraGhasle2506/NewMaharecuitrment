@@ -63,7 +63,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     List<EmployeeEntity> findByRecruitmentTypeAndStatus(String recruitmentType, String status);
     Page<EmployeeEntity> findByRecruitmentTypeAndStatus(String recruitmentType, String status, Pageable pageable);
 
-    @EntityGraph(attributePaths = "designation")
+    @EntityGraph(attributePaths = { "designation", "designation.levels" })
     List<EmployeeEntity> findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
             String recruitmentType, String status);
 
@@ -130,6 +130,18 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             "preOnboarding.interviewDetail.recruitmentNotification",
             "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
     List<EmployeeEntity> findByStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(String status);
+
+    @EntityGraph(attributePaths = { "designation", "designation.levels" })
+    @Query("select employee from EmployeeEntity employee "
+            + "where upper(trim(coalesce(employee.status, ''))) = :status "
+            + "order by lower(employee.fullName), employee.employeeId")
+    List<EmployeeEntity> findActiveEmployeeOptions(@Param("status") String status);
+
+    @EntityGraph(attributePaths = { "designation", "designation.levels" })
+    @Query("select distinct employee from EmployeeEntity employee "
+            + "where employee.employeeId in :employeeIds")
+    List<EmployeeEntity> findReplacementEmployeesByEmployeeIdIn(
+            @Param("employeeIds") Collection<Long> employeeIds);
 
     @EntityGraph(attributePaths = {
             "agency",
