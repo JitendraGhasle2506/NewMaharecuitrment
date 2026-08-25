@@ -11,6 +11,7 @@ import lombok.Getter;
 @Builder
 public class InternalVacancyCandidateListView {
 
+    private Long internalVacancyOpeningId;
     private Long recruitmentNotificationId;
     private String requestId;
     private String projectName;
@@ -25,4 +26,8 @@ public class InternalVacancyCandidateListView {
     private Long interviewScheduledCandidates;
     private Long feedbackSubmittedCandidates;
     private List<InternalVacancySubmittedCandidateView> candidates;
+
+    public String getNotificationStatusLabel() {
+        return notificationStatus == null ? "-" : notificationStatus.name().replace('_', ' ');
+    }
 }

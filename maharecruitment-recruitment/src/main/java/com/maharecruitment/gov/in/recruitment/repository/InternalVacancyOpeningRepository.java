@@ -24,6 +24,11 @@ public interface InternalVacancyOpeningRepository extends JpaRepository<Internal
     @EntityGraph(attributePaths = { "projectMst", "requirements", "requirements.designationMst" })
     Optional<InternalVacancyOpeningEntity> findDetailedByInternalVacancyOpeningId(Long internalVacancyOpeningId);
 
+    @EntityGraph(attributePaths = { "projectMst", "requirements", "requirements.designationMst" })
+    Optional<InternalVacancyOpeningEntity> findDetailedByInternalVacancyOpeningIdAndCreatedByEmailIgnoreCase(
+            Long internalVacancyOpeningId,
+            String createdByEmail);
+
     @EntityGraph(attributePaths = { "projectMst" })
     @Query(value = "select opening "
             + "from InternalVacancyOpeningEntity opening "

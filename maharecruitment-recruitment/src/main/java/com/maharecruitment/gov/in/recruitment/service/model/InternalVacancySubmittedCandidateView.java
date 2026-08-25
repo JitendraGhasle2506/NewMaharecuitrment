@@ -44,4 +44,27 @@ public class InternalVacancySubmittedCandidateView {
     private String finalDecisionStatus;
     private String finalDecisionRemarks;
     private LocalDateTime finalDecisionAt;
+
+    public String getCandidateStatusLabel() {
+        if (candidateStatus == null) {
+            return "-";
+        }
+        return switch (candidateStatus) {
+            case SHORTLISTED_BY_DEPARTMENT -> "SHORTLISTED BY INTERVIEW AUTHORITY";
+            case REJECTED_BY_DEPARTMENT -> "REJECTED BY INTERVIEW AUTHORITY";
+            default -> candidateStatus.name().replace('_', ' ');
+        };
+    }
+
+    public String getCandidateStatusCssClass() {
+        if (candidateStatus == null) {
+            return "status-neutral";
+        }
+        return switch (candidateStatus) {
+            case SHORTLISTED_BY_DEPARTMENT -> "status-shortlisted";
+            case REJECTED_BY_DEPARTMENT -> "status-rejected";
+            case INTERVIEW_SCHEDULED_BY_AGENCY, INTERVIEW_REQUEST_SENT_BY_AGENCY -> "status-interview";
+            default -> "status-submitted";
+        };
+    }
 }

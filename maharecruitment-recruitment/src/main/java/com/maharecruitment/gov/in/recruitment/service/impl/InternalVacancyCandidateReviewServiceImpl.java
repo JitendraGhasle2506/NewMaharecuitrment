@@ -87,19 +87,43 @@ public class InternalVacancyCandidateReviewServiceImpl implements InternalVacanc
                     "This request id does not belong to an internal vacancy recruitment flow.");
         }
 
+        return buildCandidateList(notification, normalizedRequestId, true);
+    }
+
+    @Override
+    public InternalVacancyCandidateListView getSubmittedCandidatesByRequestIdForOwner(
+            String requestId,
+            String actorEmail) {
+        String normalizedRequestId = normalizeRequestId(requestId);
+        String normalizedActorEmail = normalizeActorEmail(actorEmail);
+
+        RecruitmentNotificationEntity notification = notificationRepository
+                .findInternalVacancyForOwnerByRequestId(normalizedRequestId, normalizedActorEmail)
+                .orElseThrow(() -> new RecruitmentNotificationException(
+                        "Internal vacancy request not found or you are not allowed to view its applications."));
+
+        return buildCandidateList(notification, normalizedRequestId, false);
+    }
+
+    private InternalVacancyCandidateListView buildCandidateList(
+            RecruitmentNotificationEntity notification,
+            String normalizedRequestId,
+            boolean includeAssessmentSummary) {
+
         List<InternalVacancySubmittedCandidateView> candidates = interviewDetailRepository
                 .findActiveCandidatesForInternalVacancyByRequestId(normalizedRequestId)
                 .stream()
-                .map(this::toCandidateView)
+                .map(candidate -> toCandidateView(candidate, includeAssessmentSummary))
                 .toList();
 
         log.info(
-                "Loaded HR internal vacancy submitted candidates. requestId={}, recruitmentNotificationId={}, candidateCount={}",
+                "Loaded internal vacancy submitted candidates. requestId={}, recruitmentNotificationId={}, candidateCount={}",
                 notification.getRequestId(),
                 notification.getRecruitmentNotificationId(),
                 candidates.size());
 
         return InternalVacancyCandidateListView.builder()
+                .internalVacancyOpeningId(notification.getInternalVacancyOpening().getInternalVacancyOpeningId())
                 .recruitmentNotificationId(notification.getRecruitmentNotificationId())
                 .requestId(notification.getRequestId())
                 .projectName(notification.getProjectMst() != null ? notification.getProjectMst().getProjectName() : "-")
@@ -108,15 +132,20 @@ public class InternalVacancyCandidateReviewServiceImpl implements InternalVacanc
                 .build();
     }
 
-    private InternalVacancySubmittedCandidateView toCandidateView(RecruitmentInterviewDetailEntity candidate) {
+    private InternalVacancySubmittedCandidateView toCandidateView(
+            RecruitmentInterviewDetailEntity candidate,
+            boolean includeAssessmentSummary) {
         String designationName = candidate.getDesignationVacancy() != null
                 && candidate.getDesignationVacancy().getDesignationMst() != null
                         ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
                         : "-";
 
-        // Calculate average score and count
-        Double avg = assessmentRepository.calculateAverageScore(candidate.getRecruitmentInterviewDetailId());
-        long count = assessmentRepository.countSubmittedAssessments(candidate.getRecruitmentInterviewDetailId());
+        Double avg = includeAssessmentSummary
+                ? assessmentRepository.calculateAverageScore(candidate.getRecruitmentInterviewDetailId())
+                : null;
+        long count = includeAssessmentSummary
+                ? assessmentRepository.countSubmittedAssessments(candidate.getRecruitmentInterviewDetailId())
+                : 0L;
 
         return InternalVacancySubmittedCandidateView.builder()
                 .recruitmentNotificationId(candidate.getRecruitmentNotification() != null
@@ -167,6 +196,13 @@ public class InternalVacancyCandidateReviewServiceImpl implements InternalVacanc
             throw new RecruitmentNotificationException("Request id is required.");
         }
         return requestId.trim().toUpperCase();
+    }
+
+    private String normalizeActorEmail(String actorEmail) {
+        if (!StringUtils.hasText(actorEmail)) {
+            throw new RecruitmentNotificationException("Authenticated user is required.");
+        }
+        return actorEmail.trim();
     }
 
     private InternalVacancyCandidateRequestSummaryView toSummaryView(

@@ -108,14 +108,22 @@
                                     </td>
                                     <td th:text="${#temporals.format(opening.createdDateTime, 'dd-MMM-yyyy HH:mm')}">24-Mar-2026</td>
                                     <td class="text-center">
-                                        <a th:if="${opening.status.name() == 'DRAFT' or opening.status.name() == 'PENDING_HR_APPROVAL'}"
-                                           class="btn btn-outline-primary btn-sm"
-                                           th:href="@{/hod1/internal-vacancies/{id}/edit(id=${opening.internalVacancyOpeningId})}">
-                                            Edit
-                                        </a>
-                                        <span th:unless="${opening.status.name() == 'DRAFT' or opening.status.name() == 'PENDING_HR_APPROVAL'}" class="text-muted small">
-                                            Locked
-                                        </span>
+                                        <div class="d-inline-flex flex-wrap justify-content-center gap-2">
+                                            <a class="btn btn-outline-secondary btn-sm"
+                                               th:href="@{/hod1/internal-vacancies/{id}/view(id=${opening.internalVacancyOpeningId})}">
+                                                View Request
+                                            </a>
+                                            <a th:if="${opening.requestId != null and (opening.status.name() == 'OPEN' or opening.status.name() == 'CLOSED')}"
+                                               class="btn btn-outline-success btn-sm"
+                                               th:href="@{/hod1/internal-vacancies/request/{requestId}/applications(requestId=${opening.requestId})}">
+                                                View Applications
+                                            </a>
+                                            <a th:if="${opening.status.name() == 'DRAFT' or opening.status.name() == 'PENDING_HR_APPROVAL'}"
+                                               class="btn btn-outline-primary btn-sm"
+                                               th:href="@{/hod1/internal-vacancies/{id}/edit(id=${opening.internalVacancyOpeningId})}">
+                                                Edit
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>

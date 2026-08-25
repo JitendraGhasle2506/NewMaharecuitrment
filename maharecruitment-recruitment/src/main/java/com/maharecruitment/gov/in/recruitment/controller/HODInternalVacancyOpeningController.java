@@ -33,8 +33,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyOpeningForm;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyCandidateReviewService;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningDetailsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyApprovalDocumentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningLevelOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
@@ -54,9 +57,13 @@ public class HODInternalVacancyOpeningController {
     private static final int MAX_PAGE_SIZE = 50;
 
     private final InternalVacancyOpeningService internalVacancyOpeningService;
+    private final InternalVacancyCandidateReviewService internalVacancyCandidateReviewService;
 
-    public HODInternalVacancyOpeningController(InternalVacancyOpeningService internalVacancyOpeningService) {
+    public HODInternalVacancyOpeningController(
+            InternalVacancyOpeningService internalVacancyOpeningService,
+            InternalVacancyCandidateReviewService internalVacancyCandidateReviewService) {
         this.internalVacancyOpeningService = internalVacancyOpeningService;
+        this.internalVacancyCandidateReviewService = internalVacancyCandidateReviewService;
     }
 
     @GetMapping
@@ -92,6 +99,48 @@ public class HODInternalVacancyOpeningController {
     public String createForm(Model model) {
         populateFormModel(model, new InternalVacancyOpeningForm(), false);
         return "hod/internal-vacancy-opening-form";
+    }
+
+    @GetMapping("/{internalVacancyOpeningId}/view")
+    public String viewRequest(
+            @PathVariable Long internalVacancyOpeningId,
+            Principal principal,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        try {
+            InternalVacancyOpeningDetailsView application = internalVacancyOpeningService
+                    .getOpeningDetailsForOwner(internalVacancyOpeningId, resolveActorEmail(principal));
+            model.addAttribute("application", application);
+            return "hod/internal-vacancy-opening-view";
+        } catch (RecruitmentNotificationException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/hod1/internal-vacancies";
+        }
+    }
+
+    @GetMapping("/request/{requestId}/applications")
+    public String viewApplications(
+            @PathVariable String requestId,
+            Principal principal,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        try {
+            String actorEmail = resolveActorEmail(principal);
+            InternalVacancyCandidateListView candidateListView = internalVacancyCandidateReviewService
+                    .getSubmittedCandidatesByRequestIdForOwner(requestId, actorEmail);
+            InternalVacancyOpeningDetailsView requestDetails = internalVacancyOpeningService
+                    .getOpeningDetailsForOwner(candidateListView.getInternalVacancyOpeningId(), actorEmail);
+            model.addAttribute("candidateListView", candidateListView);
+            model.addAttribute("requestDetails", requestDetails);
+            return "hod/internal-vacancy-candidate-list";
+        } catch (RecruitmentNotificationException ex) {
+            log.warn(
+                    "Unable to access HOD internal vacancy applications. requestId={}, reason={}",
+                    requestId,
+                    ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/hod1/internal-vacancies";
+        }
     }
 
     @GetMapping("/{internalVacancyOpeningId}/edit")

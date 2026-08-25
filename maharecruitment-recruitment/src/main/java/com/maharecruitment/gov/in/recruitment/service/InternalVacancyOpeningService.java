@@ -13,6 +13,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInter
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewEmployeeOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyApprovalDocumentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningDetailsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalProjectOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningLevelOptionView;
@@ -40,6 +41,10 @@ public interface InternalVacancyOpeningService {
             List<InternalVacancyOpeningStatus> excludedStatuses);
 
     InternalVacancyOpeningForm getOpeningForEdit(Long internalVacancyOpeningId);
+
+    InternalVacancyOpeningDetailsView getOpeningDetailsForOwner(
+            Long internalVacancyOpeningId,
+            String actorEmail);
 
     InternalVacancyApprovalDocumentView getApprovalDocument(Long internalVacancyOpeningId);
 

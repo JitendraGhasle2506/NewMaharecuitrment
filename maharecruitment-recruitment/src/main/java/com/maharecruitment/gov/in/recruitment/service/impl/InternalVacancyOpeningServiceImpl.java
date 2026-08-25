@@ -60,6 +60,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAppro
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewEmployeeOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningListMetricsView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningDetailsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalProjectOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningLevelOptionView;
@@ -366,6 +367,45 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                 .distinct()
                 .toList());
         return form;
+    }
+
+    @Override
+    public InternalVacancyOpeningDetailsView getOpeningDetailsForOwner(
+            Long internalVacancyOpeningId,
+            String actorEmail) {
+        String normalizedActorEmail = normalizeActorEmail(actorEmail);
+        InternalVacancyOpeningEntity entity = internalVacancyOpeningRepository
+                .findDetailedByInternalVacancyOpeningIdAndCreatedByEmailIgnoreCase(
+                        internalVacancyOpeningId,
+                        normalizedActorEmail)
+                .orElseThrow(() -> new RecruitmentNotificationException(
+                        "Internal vacancy application is unavailable."));
+
+        List<InternalVacancyRequirementForm> requirements = entity.getRequirements().stream()
+                .map(this::toRequirementForm)
+                .toList();
+        long totalVacancies = requirements.stream()
+                .map(InternalVacancyRequirementForm::getNumberOfVacancy)
+                .filter(value -> value != null && value > 0)
+                .mapToLong(Long::longValue)
+                .sum();
+
+        return InternalVacancyOpeningDetailsView.builder()
+                .internalVacancyOpeningId(entity.getInternalVacancyOpeningId())
+                .requestId(entity.getRequestId())
+                .projectName(entity.getProjectMst().getProjectName())
+                .hiringRequestType(entity.getHiringRequestType())
+                .replacementEmployeeLabels(entity.getReplacementEmployees().stream()
+                        .map(this::buildReplacementEmployeeLabel)
+                        .toList())
+                .eOfficeApprovalFileName(entity.getEOfficeApprovalFileName())
+                .remarks(entity.getRemarks())
+                .requirements(requirements)
+                .totalVacancies(totalVacancies)
+                .status(entity.getStatus())
+                .createdDateTime(entity.getCreatedDateTime())
+                .updatedDateTime(entity.getUpdatedDateTime())
+                .build();
     }
 
     @Override

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Candidate Applications</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .request-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            padding: 14px 16px;
+            border: 1px solid #d8e4f5;
+            border-radius: 12px;
+            background: #f8fbff;
+        }
+
+        .summary-label {
+            color: #607391;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .summary-value {
+            margin-top: 4px;
+            color: #163868;
+            font-weight: 700;
+        }
+
+        .candidate-status {
+            display: inline-flex;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .status-neutral { background: #eef1f5; color: #55657e; }
+        .status-submitted { background: #e6f0ff; color: #1857a4; }
+        .status-shortlisted { background: #e7f8ee; color: #1f7a3d; }
+        .status-rejected { background: #ffebeb; color: #b02a37; }
+        .status-interview { background: #fff4d6; color: #8a5a00; }
+
+        .candidate-contact {
+            min-width: 220px;
+        }
+
+        @media (max-width: 900px) {
+            .request-summary { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body class="department-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HOD', 'Candidate Applications', ~{::section})}">
+        <section th:with="applicationCount=${candidateListView != null and candidateListView.candidates != null ? #lists.size(candidateListView.candidates) : 0}">
+            <div class="card add-emp-card">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-0">Candidate Applications</h2>
+                        <small class="text-muted" th:text="${candidateListView != null ? candidateListView.requestId : '-'}">REQ-0000</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/hod1/internal-vacancies}">Back to Requests</a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <h5 class="mb-3">Submitted Request Details</h5>
+                    <div class="request-summary">
+                        <div class="summary-item">
+                            <div class="summary-label">Request ID</div>
+                            <div class="summary-value" th:text="${requestDetails != null ? requestDetails.requestId : '-'}">REQ-0000</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Project</div>
+                            <div class="summary-value" th:text="${requestDetails != null and requestDetails.projectName != null ? requestDetails.projectName : '-'}">Project</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Request Type</div>
+                            <div class="summary-value" th:text="${requestDetails != null ? requestDetails.hiringRequestTypeLabel : '-'}">NEW CANDIDATE</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Request Status</div>
+                            <div class="summary-value" th:text="${requestDetails != null ? requestDetails.statusLabel : '-'}">OPEN</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Notification Status</div>
+                            <div class="summary-value" th:text="${candidateListView != null ? candidateListView.notificationStatusLabel : '-'}">IN PROGRESS</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Vacancies Requested</div>
+                            <div class="summary-value" th:text="${requestDetails != null ? requestDetails.totalVacancies : 0}">0</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Request Submitted At</div>
+                            <div class="summary-value"
+                                 th:text="${requestDetails != null and requestDetails.createdDateTime != null ? #temporals.format(requestDetails.createdDateTime, 'dd-MMM-yyyy HH:mm') : '-'}">-</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Applications Received</div>
+                            <div class="summary-value" th:text="${applicationCount}">0</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4" th:if="${requestDetails != null}">
+                        <div class="col-lg-8">
+                            <h6>Designation Requirements</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Designation</th>
+                                            <th>Level</th>
+                                            <th class="text-end">Vacancies</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:if="${#lists.isEmpty(requestDetails.requirements)}">
+                                            <td colspan="4" class="text-center text-muted">No requirements recorded.</td>
+                                        </tr>
+                                        <tr th:each="requirement, stat : ${requestDetails.requirements}">
+                                            <td th:text="${stat.count}">1</td>
+                                            <td th:text="${requirement.designationName}">Designation</td>
+                                            <td th:text="${requirement.levelName}">Level</td>
+                                            <td class="text-end" th:text="${requirement.numberOfVacancy}">1</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <h6>Remarks / Justification</h6>
+                            <p class="text-muted text-break"
+                               th:text="${#strings.isEmpty(requestDetails.remarks) ? 'No remarks provided.' : requestDetails.remarks}">
+                                No remarks provided.
+                            </p>
+
+                            <div th:if="${requestDetails.employeeReplacement}">
+                                <h6>Employees to be Replaced</h6>
+                                <span class="text-muted" th:if="${#lists.isEmpty(requestDetails.replacementEmployeeLabels)}">-</span>
+                                <ul class="mb-0" th:unless="${#lists.isEmpty(requestDetails.replacementEmployeeLabels)}">
+                                    <li th:each="employeeLabel : ${requestDetails.replacementEmployeeLabels}"
+                                        th:text="${employeeLabel}">Employee</li>
+                                </ul>
+                            </div>
+
+                            <div th:if="${requestDetails.newCandidate}">
+                                <h6>E-office Approval</h6>
+                                <a th:if="${!#strings.isEmpty(requestDetails.eOfficeApprovalFileName)}"
+                                   class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"
+                                   th:href="@{/hod1/internal-vacancies/{id}/e-office-approval(id=${requestDetails.internalVacancyOpeningId})}"
+                                   th:text="${requestDetails.eOfficeApprovalFileName}">View approval</a>
+                                <span class="text-muted" th:if="${#strings.isEmpty(requestDetails.eOfficeApprovalFileName)}">No approval document uploaded.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3">Submitted Candidate Applications</h5>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Candidate Details</th>
+                                    <th>Agency</th>
+                                    <th>Applied For</th>
+                                    <th>Education</th>
+                                    <th>Experience</th>
+                                    <th>Joining Time</th>
+                                    <th>Status</th>
+                                    <th>Submitted At</th>
+                                    <th>Interview</th>
+                                    <th>Final Decision</th>
+                                    <th>Resume</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${candidateListView == null or #lists.isEmpty(candidateListView.candidates)}">
+                                    <td colspan="12" class="text-center text-muted py-4">
+                                        No candidate applications have been submitted against this request yet.
+                                    </td>
+                                </tr>
+                                <tr th:each="candidate, stat : ${candidateListView.candidates}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td class="candidate-contact">
+                                        <div class="fw-semibold" th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">Candidate</div>
+                                        <div class="small text-muted" th:text="${candidate.candidateEmail != null ? candidate.candidateEmail : '-'}">email</div>
+                                        <div class="small text-muted" th:text="${candidate.candidateMobile != null ? candidate.candidateMobile : '-'}">mobile</div>
+                                    </td>
+                                    <td th:text="${candidate.agencyName != null ? candidate.agencyName : '-'}">Agency</td>
+                                    <td th:text="${(candidate.designationName != null ? candidate.designationName : '-') + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">Designation | Level</td>
+                                    <td th:text="${candidate.candidateEducation != null ? candidate.candidateEducation : '-'}">Education</td>
+                                    <td>
+                                        <div th:text="${'Total: ' + (candidate.totalExperience != null ? candidate.totalExperience : 0) + ' years'}">Total: 0 years</div>
+                                        <small class="text-muted" th:text="${'Relevant: ' + (candidate.relevantExperience != null ? candidate.relevantExperience : 0) + ' years'}">Relevant: 0 years</small>
+                                    </td>
+                                    <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
+                                    <td>
+                                        <span class="candidate-status"
+                                              th:classappend="${' ' + candidate.candidateStatusCssClass}"
+                                              th:text="${candidate.candidateStatusLabel}">SUBMITTED BY AGENCY</span>
+                                    </td>
+                                    <td th:text="${candidate.submittedAt != null ? #temporals.format(candidate.submittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">-</td>
+                                    <td>
+                                        <div th:if="${candidate.interviewDateTime != null}"
+                                             th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">-</div>
+                                        <small th:if="${candidate.interviewDateTime != null}" class="text-muted"
+                                               th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : '-'}">-</small>
+                                        <span th:if="${candidate.interviewDateTime == null}" class="text-muted">-</span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${candidate.finalDecisionStatus != null}" class="badge"
+                                              th:classappend="${candidate.finalDecisionStatus == 'SELECTED' ? ' text-bg-success' : ' text-bg-danger'}"
+                                              th:text="${candidate.finalDecisionStatus}">SELECTED</span>
+                                        <span th:if="${candidate.finalDecisionStatus == null}" class="text-muted">-</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                th:if="${candidate.resumeFilePath != null}"
+                                                th:attr="data-path=${candidate.resumeFilePath}"
+                                                onclick="openManagedDocument(this.getAttribute('data-path'))">View</button>
+                                        <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script th:inline="javascript">
+        const contextPath = /*[[@{/}]]*/ '/';
+
+        function openManagedDocument(path) {
+            if (!path) {
+                return;
+            }
+            try {
+                window.open(contextPath + "documents/view?path=" + encodeURIComponent(btoa(path)), "_blank");
+            } catch (error) {
+                alert("Unable to open resume document.");
+            }
+        }
+    </script>
+</body>
+</html>

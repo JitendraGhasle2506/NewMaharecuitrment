@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>View Resource Requirement Application</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .application-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .application-summary-item {
+            min-width: 0;
+            padding: 1rem;
+            border: 1px solid #d8e4f5;
+            border-radius: 0.75rem;
+            background: #f8fbff;
+        }
+
+        .application-label {
+            margin-bottom: 0.35rem;
+            color: #607391;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .application-value {
+            color: #163868;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.75rem;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .status-draft { background: #fff5df; border-color: #f0dfab; color: #946200; }
+        .status-pending { background: #e0f2ff; border-color: #b3d7ff; color: #0056b3; }
+        .status-open { background: #e7f8ee; border-color: #b8e1c7; color: #1f7a3d; }
+        .status-rejected { background: #ffebeb; border-color: #f8c2c2; color: #b02a37; }
+        .status-closed { background: #f3f5f8; border-color: #d8dde6; color: #55657e; }
+        .status-unknown { background: #f3f5f8; border-color: #d8dde6; color: #55657e; }
+
+        @media (max-width: 991.98px) {
+            .application-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 575.98px) {
+            .application-summary { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body class="department-shell" th:attr="data-context-path=${contextPath}">
+    <th:block th:replace="~{header/header :: var-sidebar-header('HOD', 'Internal Resource Requirement', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h2 class="mb-0">Resource Requirement Application</h2>
+                    <span class="status-badge"
+                        th:classappend="${' ' + application.statusCssClass}"
+                        th:text="${application.statusLabel}">UNKNOWN</span>
+                </div>
+
+                <div class="card-body">
+                    <div class="application-summary mb-4">
+                        <div class="application-summary-item">
+                            <div class="application-label">Request ID</div>
+                            <div class="application-value" th:text="${application.requestId}">REQ-0000</div>
+                        </div>
+                        <div class="application-summary-item">
+                            <div class="application-label">Project</div>
+                            <div class="application-value" th:text="${application.projectName}">Project Name</div>
+                        </div>
+                        <div class="application-summary-item">
+                            <div class="application-label">Request Type</div>
+                            <div class="application-value"
+                                th:text="${application.hiringRequestTypeLabel}">NEW CANDIDATE</div>
+                        </div>
+                        <div class="application-summary-item">
+                            <div class="application-label">Total Vacancies</div>
+                            <div class="application-value" th:text="${application.totalVacancies}">0</div>
+                        </div>
+                        <div class="application-summary-item">
+                            <div class="application-label">Created At</div>
+                            <div class="application-value"
+                                th:text="${application.createdDateTime == null ? '-' : #temporals.format(application.createdDateTime, 'dd-MMM-yyyy HH:mm')}">-</div>
+                        </div>
+                        <div class="application-summary-item">
+                            <div class="application-label">Last Updated</div>
+                            <div class="application-value"
+                                th:text="${application.updatedDateTime == null ? '-' : #temporals.format(application.updatedDateTime, 'dd-MMM-yyyy HH:mm')}">-</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4" th:if="${application.employeeReplacement}">
+                        <h5>Employees to be Replaced</h5>
+                        <div class="text-muted" th:if="${#lists.isEmpty(application.replacementEmployeeLabels)}">
+                            No replacement employees selected.
+                        </div>
+                        <ul class="mb-0" th:unless="${#lists.isEmpty(application.replacementEmployeeLabels)}">
+                            <li th:each="employeeLabel : ${application.replacementEmployeeLabels}"
+                                th:text="${employeeLabel}">Employee Name</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-4" th:if="${application.newCandidate}">
+                        <h5>E-office Approval Document</h5>
+                        <a th:if="${!#strings.isEmpty(application.eOfficeApprovalFileName)}"
+                            class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"
+                            th:href="@{/hod1/internal-vacancies/{id}/e-office-approval(id=${application.internalVacancyOpeningId})}"
+                            th:text="${application.eOfficeApprovalFileName}">View approval</a>
+                        <span class="text-muted" th:if="${#strings.isEmpty(application.eOfficeApprovalFileName)}">
+                            No approval document uploaded.
+                        </span>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Remarks / Justification</h5>
+                        <p class="mb-0 text-break"
+                            th:text="${#strings.isEmpty(application.remarks) ? 'No remarks provided.' : application.remarks}">
+                            No remarks provided.
+                        </p>
+                    </div>
+
+                    <h5>Designation Requirements</h5>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Designation</th>
+                                    <th>Level</th>
+                                    <th class="text-end">Vacancies Required</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(application.requirements)}">
+                                    <td colspan="4" class="text-center py-3 text-muted">No designation requirements added.</td>
+                                </tr>
+                                <tr th:each="requirement, stat : ${application.requirements}">
+                                    <td th:text="${stat.count}">1</td>
+                                    <td th:text="${requirement.designationName}">Designation</td>
+                                    <td th:text="${requirement.levelName}">Level</td>
+                                    <td class="text-end" th:text="${requirement.numberOfVacancy}">1</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 d-flex flex-wrap justify-content-center gap-2">
+                        <a th:if="${application.editable}"
+                            class="btn btn-primary"
+                            th:href="@{/hod1/internal-vacancies/{id}/edit(id=${application.internalVacancyOpeningId})}">Edit Application</a>
+                        <a class="btn btn-secondary" th:href="@{/hod1/internal-vacancies}">Back to List</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+
+</html>

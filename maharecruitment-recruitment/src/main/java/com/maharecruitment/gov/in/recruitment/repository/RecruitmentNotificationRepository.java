@@ -28,6 +28,16 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
     Optional<RecruitmentNotificationEntity> findByInternalVacancyOpeningInternalVacancyOpeningId(
             Long internalVacancyOpeningId);
 
+    @Query("select notification "
+            + "from RecruitmentNotificationEntity notification "
+            + "join fetch notification.projectMst project "
+            + "join fetch notification.internalVacancyOpening opening "
+            + "where upper(notification.requestId) = upper(:requestId) "
+            + "and upper(opening.createdByEmail) = upper(:actorEmail)")
+    Optional<RecruitmentNotificationEntity> findInternalVacancyForOwnerByRequestId(
+            @Param("requestId") String requestId,
+            @Param("actorEmail") String actorEmail);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select notification "
             + "from RecruitmentNotificationEntity notification "

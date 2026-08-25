@@ -16,4 +16,8 @@ public interface InternalVacancyCandidateReviewService {
     InternalVacancyCandidateRequestListMetricsView getCandidateRequestSummaryMetrics(String searchText);
 
     InternalVacancyCandidateListView getSubmittedCandidatesByRequestId(String requestId);
+
+    InternalVacancyCandidateListView getSubmittedCandidatesByRequestIdForOwner(
+            String requestId,
+            String actorEmail);
 }
