@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.springframework.util.StringUtils;
@@ -78,6 +79,15 @@ public class RecruitmentInterviewDetailEntity extends RecruitmentAuditable {
 
     @Column(name = "relevant_experience", nullable = false, precision = 5, scale = 1)
     private BigDecimal relevantExperience;
+
+    @Column(name = "current_ctc", precision = 14, scale = 2)
+    private BigDecimal currentCtc;
+
+    @Column(name = "has_resigned")
+    private Boolean resigned = false;
+
+    @Column(name = "last_working_day")
+    private LocalDate lastWorkingDay;
 
     @Column(name = "joining_time", nullable = false, length = 50)
     private String joiningTime;
@@ -186,6 +196,10 @@ public class RecruitmentInterviewDetailEntity extends RecruitmentAuditable {
 
         if (candidateStatus == null) {
             candidateStatus = RecruitmentCandidateStatus.SUBMITTED_BY_AGENCY;
+        }
+        resigned = Boolean.TRUE.equals(resigned);
+        if (!resigned) {
+            lastWorkingDay = null;
         }
         departmentInterviewChangeRequested = !Boolean.FALSE.equals(departmentInterviewChangeRequested);
         assessmentSubmitted = !Boolean.FALSE.equals(assessmentSubmitted);

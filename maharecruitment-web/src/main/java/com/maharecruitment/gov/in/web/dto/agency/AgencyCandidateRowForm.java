@@ -1,10 +1,13 @@
 package com.maharecruitment.gov.in.web.dto.agency;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -41,6 +44,17 @@ public class AgencyCandidateRowForm {
     @NotNull(message = "Relevant experience is required")
     @DecimalMin(value = "0.0", inclusive = true, message = "Relevant experience cannot be negative")
     private BigDecimal relevantExp;
+
+    @NotNull(message = "Current CTC is required")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Current CTC cannot be negative")
+    @Digits(integer = 12, fraction = 2, message = "Current CTC must contain at most 12 digits and 2 decimals")
+    private BigDecimal currentCtc;
+
+    @NotNull(message = "Please specify whether the candidate has resigned")
+    private Boolean resigned;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate lastWorkingDay;
 
     @NotBlank(message = "Joining time is required")
     private String joiningTime;

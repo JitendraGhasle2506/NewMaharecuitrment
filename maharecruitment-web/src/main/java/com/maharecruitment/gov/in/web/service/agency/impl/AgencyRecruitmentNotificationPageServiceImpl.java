@@ -169,6 +169,11 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
                         .candidateEducation(normalizedEducation)
                         .totalExperience(candidateRow.getTotalExp())
                         .relevantExperience(candidateRow.getRelevantExp())
+                        .currentCtc(candidateRow.getCurrentCtc())
+                        .resigned(Boolean.TRUE.equals(candidateRow.getResigned()))
+                        .lastWorkingDay(Boolean.TRUE.equals(candidateRow.getResigned())
+                                ? candidateRow.getLastWorkingDay()
+                                : null)
                         .joiningTime(normalizedJoiningTime)
                         .resumeOriginalName(uploadResult.originalFileName())
                         .resumeFilePath(uploadResult.fullPath())
@@ -283,6 +288,20 @@ public class AgencyRecruitmentNotificationPageServiceImpl implements AgencyRecru
         }
         if (rowForm.getRelevantExp() == null) {
             throw new RecruitmentNotificationException("Relevant experience is required at row " + rowNumber + ".");
+        }
+        if (rowForm.getCurrentCtc() == null) {
+            throw new RecruitmentNotificationException("Current CTC is required at row " + rowNumber + ".");
+        }
+        if (rowForm.getCurrentCtc().compareTo(java.math.BigDecimal.ZERO) < 0) {
+            throw new RecruitmentNotificationException("Current CTC cannot be negative at row " + rowNumber + ".");
+        }
+        if (rowForm.getResigned() == null) {
+            throw new RecruitmentNotificationException(
+                    "Please specify whether the candidate has resigned at row " + rowNumber + ".");
+        }
+        if (Boolean.TRUE.equals(rowForm.getResigned()) && rowForm.getLastWorkingDay() == null) {
+            throw new RecruitmentNotificationException(
+                    "Last working day is required for a resigned candidate at row " + rowNumber + ".");
         }
         if (!StringUtils.hasText(rowForm.getJoiningTime())) {
             throw new RecruitmentNotificationException("Joining time is required at row " + rowNumber + ".");

@@ -5,6 +5,21 @@
     <meta charset="UTF-8">
     <title>Notification Detail</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        #candidateInputTable {
+            min-width: 1900px;
+        }
+
+        #candidateInputTable .form-control,
+        #candidateInputTable .form-select {
+            min-width: 125px;
+        }
+
+        #candidateInputTable .candidate-name-input,
+        #candidateInputTable .email-input {
+            min-width: 190px;
+        }
+    </style>
 </head>
 
 <body class="agency-shell">
@@ -119,10 +134,9 @@
                                         <option th:each="vacancy : ${detail.designationVacancies}"
                                             th:value="${vacancy.vacancyId}"
                                             th:attr="data-open-count=${vacancy.numberOfVacancy != null and vacancy.filledPost != null ? vacancy.numberOfVacancy - vacancy.filledPost : 0},
-                                                     data-min-exp=${vacancy.minExperience != null ? vacancy.minExperience : ''},
-                                                     data-max-exp=${vacancy.maxExperience != null ? vacancy.maxExperience : ''}"
+                                                     data-min-exp=${vacancy.minExperience != null ? vacancy.minExperience : ''}"
                                             th:disabled="${vacancy.numberOfVacancy != null and vacancy.filledPost != null and vacancy.numberOfVacancy - vacancy.filledPost <= 0}"
-                                            th:text="${vacancy.designationName + ' | ' + vacancy.levelCode + ' | Open: ' + (vacancy.numberOfVacancy != null and vacancy.filledPost != null ? vacancy.numberOfVacancy - vacancy.filledPost : 0) + (vacancy.minExperience != null or vacancy.maxExperience != null ? ' | Exp: ' + (vacancy.minExperience != null ? vacancy.minExperience.stripTrailingZeros().toPlainString() : '0') + '-' + (vacancy.maxExperience != null ? vacancy.maxExperience.stripTrailingZeros().toPlainString() : 'Any') + ' yrs' : '')}">
+                                            th:text="${vacancy.designationName + ' | ' + vacancy.levelCode + ' | Open: ' + (vacancy.numberOfVacancy != null and vacancy.filledPost != null ? vacancy.numberOfVacancy - vacancy.filledPost : 0) + (vacancy.minExperience != null ? ' | Min Exp: ' + vacancy.minExperience.stripTrailingZeros().toPlainString() + '+ yrs' : '')}">
                                         </option>
                                     </select>
                                     <div class="invalid-feedback"
@@ -153,6 +167,9 @@
                                         <th>Qualification</th>
                                         <th>Total Exp</th>
                                         <th>Relevant Exp</th>
+                                        <th>Current CTC (₹)</th>
+                                        <th>Resigned?</th>
+                                        <th>Last Working Day</th>
                                         <th>Joining Time</th>
                                         <th>Resume (PDF)</th>
                                         <th>Action</th>
@@ -207,6 +224,40 @@
                                                 th:field="*{candidates[__${rowStat.index}__].relevantExp}" required>
                                         </td>
                                         <td>
+                                            <input autocomplete="off" type="number" class="form-control current-ctc-input"
+                                                min="0" max="999999999999.99" step="0.01" inputmode="decimal"
+                                                th:field="*{candidates[__${rowStat.index}__].currentCtc}"
+                                                th:classappend="${#fields.hasErrors('candidates[' + rowStat.index + '].currentCtc')} ? ' is-invalid'"
+                                                required>
+                                            <div class="invalid-feedback"
+                                                th:classappend="${#fields.hasErrors('candidates[' + rowStat.index + '].currentCtc')} ? ' d-block'"
+                                                th:text="${#fields.hasErrors('candidates[' + rowStat.index + '].currentCtc') ? #fields.errors('candidates[' + rowStat.index + '].currentCtc')[0] : 'Enter a valid non-negative Current CTC.'}">
+                                                Enter a valid non-negative Current CTC.
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <select autocomplete="off" class="form-select resigned-status-input"
+                                                th:field="*{candidates[__${rowStat.index}__].resigned}"
+                                                th:classappend="${#fields.hasErrors('candidates[' + rowStat.index + '].resigned')} ? ' is-invalid'"
+                                                required>
+                                                <option value="">Select</option>
+                                                <option value="false">No</option>
+                                                <option value="true">Yes</option>
+                                            </select>
+                                            <div class="invalid-feedback"
+                                                th:classappend="${#fields.hasErrors('candidates[' + rowStat.index + '].resigned')} ? ' d-block'"
+                                                th:text="${#fields.hasErrors('candidates[' + rowStat.index + '].resigned') ? #fields.errors('candidates[' + rowStat.index + '].resigned')[0] : 'Select Yes or No.'}">
+                                                Select Yes or No.
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <input autocomplete="off" type="date" class="form-control last-working-day-input"
+                                                th:field="*{candidates[__${rowStat.index}__].lastWorkingDay}"
+                                                th:disabled="${candidateRow.resigned != true}"
+                                                th:required="${candidateRow.resigned == true}">
+                                            <div class="invalid-feedback">Last working day is required when resigned.</div>
+                                        </td>
+                                        <td>
                                             <select autocomplete="off" class="form-select" th:field="*{candidates[__${rowStat.index}__].joiningTime}"
                                                 required>
                                                 <option value="">Select</option>
@@ -246,6 +297,8 @@
                                     <th>Candidate</th>
                                     <th>Designation</th>
                                     <th>Experience</th>
+                                    <th>Current CTC (₹)</th>
+                                    <th>Resignation</th>
                                     <th>Joining Time</th>
                                     <th>Status</th>
                                     <th>Resume</th>
@@ -255,7 +308,7 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${#lists.isEmpty(submittedCandidates)}">
-                                    <td colspan="9" class="text-center text-muted">
+                                    <td colspan="11" class="text-center text-muted">
                                         No candidates submitted yet.
                                     </td>
                                 </tr>
@@ -274,6 +327,16 @@
                                     <td>
                                         <span th:text="${candidate.totalExperience}">0</span> /
                                         <span th:text="${candidate.relevantExperience}">0</span>
+                                    </td>
+                                    <td th:text="${candidate.currentCtc != null ? #numbers.formatDecimal(candidate.currentCtc, 1, 2) : '-'}">-</td>
+                                    <td>
+                                        <span class="badge"
+                                            th:classappend="${candidate.resigned == true ? ' text-bg-warning' : ' text-bg-success'}"
+                                            th:text="${candidate.resigned == true ? 'Yes' : 'No'}">No</span>
+                                        <small class="d-block text-muted mt-1" th:if="${candidate.resigned == true}"
+                                            th:text="${candidate.lastWorkingDay != null ? 'Last day: ' + #temporals.format(candidate.lastWorkingDay, 'dd-MM-yyyy') : 'Last day: -'}">
+                                            Last day
+                                        </small>
                                     </td>
                                     <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
                                     <td>
@@ -426,7 +489,7 @@
     <script th:inline="javascript">
         const contextPath = /*[[@{/}]]*/ '/';
     </script>
-    <script th:src="@{/js/agency-notification-candidates.js(v=4)}"></script>
+    <script th:src="@{/js/agency-notification-candidates.js(v=6)}"></script>
 </body>
 
 </html>

@@ -6,16 +6,19 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.maharecruitment.gov.in.master.entity.AgencyMaster;
+import com.maharecruitment.gov.in.master.entity.ResourceLevelExperience;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.AgencyNotificationTrackingStatus;
@@ -42,6 +45,8 @@ class RecruitmentAgencyCandidateServiceImplTest {
     private final AtomicInteger saveCandidateCallCount = new AtomicInteger(0);
     private final AtomicInteger deletePreOnboardingCallCount = new AtomicInteger(0);
     private final AtomicInteger deleteAssessmentCallCount = new AtomicInteger(0);
+    private final AtomicReference<List<RecruitmentInterviewDetailEntity>> savedCandidates = new AtomicReference<>();
+    private final AtomicReference<ResourceLevelExperience> configuredLevelExperience = new AtomicReference<>();
     private RecruitmentInterviewDetailEntity withdrawCandidate;
     private AgencyCandidatePreOnboardingEntity withdrawPreOnboarding;
     private RecruitmentAgencyCandidateServiceImpl service;
@@ -67,6 +72,7 @@ class RecruitmentAgencyCandidateServiceImplTest {
         RecruitmentDesignationVacancyEntity vacancy = new RecruitmentDesignationVacancyEntity();
         vacancy.setRecruitmentDesignationVacancyId(44L);
         vacancy.setNotification(notification);
+        vacancy.setLevelCode("L1");
         vacancy.setNumberOfVacancy(5L);
         vacancy.setFillPost(0L);
 
@@ -98,7 +104,13 @@ class RecruitmentAgencyCandidateServiceImplTest {
                         duplicateSubmittedEmail.get();
                     case "existsByRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyIdAndActiveTrueAndCandidateMobile" ->
                         false;
-                    case "saveAll" -> args[0];
+                    case "saveAll" -> {
+                        @SuppressWarnings("unchecked")
+                        List<RecruitmentInterviewDetailEntity> candidates =
+                                (List<RecruitmentInterviewDetailEntity>) args[0];
+                        savedCandidates.set(candidates);
+                        yield candidates;
+                    }
                     case "findByRecruitmentInterviewDetailIdAndRecruitmentNotificationRecruitmentNotificationIdAndAgencyAgencyId" ->
                         Optional.of(withdrawCandidate);
                     case "save" -> {
@@ -165,7 +177,8 @@ class RecruitmentAgencyCandidateServiceImplTest {
         ResourceLevelExperienceRepository levelExperienceRepository = proxyWithDefaults(
                 ResourceLevelExperienceRepository.class,
                 (proxy, method, args) -> switch (method.getName()) {
-                    case "findByLevelCodeIgnoreCaseAndActiveFlagIgnoreCase" -> Optional.empty();
+                    case "findByLevelCodeIgnoreCaseAndActiveFlagIgnoreCase" ->
+                        Optional.ofNullable(configuredLevelExperience.get());
                     default -> throw new UnsupportedOperationException("Unexpected repository method: " + method.getName());
                 });
 
@@ -203,6 +216,8 @@ class RecruitmentAgencyCandidateServiceImplTest {
                 .candidateEducation("B.E.")
                 .totalExperience(new BigDecimal("4"))
                 .relevantExperience(new BigDecimal("3"))
+                .currentCtc(new BigDecimal("600000.00"))
+                .resigned(false)
                 .joiningTime("Immediate")
                 .resumeOriginalName("resume.pdf")
                 .resumeFilePath("recruitment/resume.pdf")
@@ -218,6 +233,77 @@ class RecruitmentAgencyCandidateServiceImplTest {
     }
 
     @Test
+    void submitCandidatesRequiresLastWorkingDayWhenCandidateHasResigned() {
+        AgencyCandidateSubmissionInput resignedCandidate = AgencyCandidateSubmissionInput.builder()
+                .candidateName("Candidate One")
+                .email("candidate@example.com")
+                .mobile("9876543210")
+                .candidateEducation("B.E.")
+                .totalExperience(new BigDecimal("4"))
+                .relevantExperience(new BigDecimal("3"))
+                .currentCtc(new BigDecimal("600000.00"))
+                .resigned(true)
+                .joiningTime("Immediate")
+                .resumeOriginalName("resume.pdf")
+                .resumeFilePath("recruitment/resume.pdf")
+                .resumeFileType("application/pdf")
+                .resumeFileSize(1024L)
+                .build();
+
+        RecruitmentNotificationException exception = assertThrows(
+                RecruitmentNotificationException.class,
+                () -> service.submitCandidates(11L, 22L, 55L, 44L, List.of(resignedCandidate)));
+
+        assertEquals("Last working day is required for a resigned candidate in row 1.", exception.getMessage());
+    }
+
+    @Test
+    void submitCandidatesPersistsCtcAndResignationDetails() {
+        service.submitCandidates(11L, 22L, 55L, 44L, List.of(validInput()));
+
+        RecruitmentInterviewDetailEntity savedCandidate = savedCandidates.get().getFirst();
+        assertEquals(new BigDecimal("600000.00"), savedCandidate.getCurrentCtc());
+        assertEquals(true, savedCandidate.getResigned());
+        assertEquals(LocalDate.of(2026, 8, 31), savedCandidate.getLastWorkingDay());
+    }
+
+    @Test
+    void submitCandidatesAllowsExperienceAboveConfiguredMaximum() {
+        configuredLevelExperience.set(ResourceLevelExperience.builder()
+                .minExperience(new BigDecimal("2"))
+                .maxExperience(new BigDecimal("5"))
+                .build());
+
+        service.submitCandidates(
+                11L,
+                22L,
+                55L,
+                44L,
+                List.of(validInput(new BigDecimal("8"), new BigDecimal("6"))));
+
+        assertEquals(new BigDecimal("8"), savedCandidates.get().getFirst().getTotalExperience());
+    }
+
+    @Test
+    void submitCandidatesRejectsExperienceBelowConfiguredMinimum() {
+        configuredLevelExperience.set(ResourceLevelExperience.builder()
+                .minExperience(new BigDecimal("2"))
+                .maxExperience(new BigDecimal("5"))
+                .build());
+
+        RecruitmentNotificationException exception = assertThrows(
+                RecruitmentNotificationException.class,
+                () -> service.submitCandidates(
+                        11L,
+                        22L,
+                        55L,
+                        44L,
+                        List.of(validInput(new BigDecimal("1"), new BigDecimal("1")))));
+
+        assertEquals("Total experience must be at least 2 year(s) in row 1.", exception.getMessage());
+    }
+
+    @Test
     void withdrawCandidateMarksCandidateInactiveWithoutDeletingRelatedRecords() {
         service.withdrawCandidate(11L, 77L, 22L);
 
@@ -228,13 +314,20 @@ class RecruitmentAgencyCandidateServiceImplTest {
     }
 
     private AgencyCandidateSubmissionInput validInput() {
+        return validInput(new BigDecimal("4"), new BigDecimal("3"));
+    }
+
+    private AgencyCandidateSubmissionInput validInput(BigDecimal totalExperience, BigDecimal relevantExperience) {
         return AgencyCandidateSubmissionInput.builder()
                 .candidateName("Candidate One")
                 .email("candidate@example.com")
                 .mobile("9876543210")
                 .candidateEducation("B.E.")
-                .totalExperience(new BigDecimal("4"))
-                .relevantExperience(new BigDecimal("3"))
+                .totalExperience(totalExperience)
+                .relevantExperience(relevantExperience)
+                .currentCtc(new BigDecimal("600000.00"))
+                .resigned(true)
+                .lastWorkingDay(LocalDate.of(2026, 8, 31))
                 .joiningTime("Immediate")
                 .resumeOriginalName("resume.pdf")
                 .resumeFilePath("recruitment/resume.pdf")

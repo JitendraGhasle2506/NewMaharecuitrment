@@ -300,6 +300,9 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             candidateEntity.setCandidateEducation(normalizedInput.getCandidateEducation());
             candidateEntity.setTotalExperience(normalizedInput.getTotalExperience());
             candidateEntity.setRelevantExperience(normalizedInput.getRelevantExperience());
+            candidateEntity.setCurrentCtc(normalizedInput.getCurrentCtc());
+            candidateEntity.setResigned(normalizedInput.getResigned());
+            candidateEntity.setLastWorkingDay(normalizedInput.getLastWorkingDay());
             candidateEntity.setJoiningTime(normalizedInput.getJoiningTime());
             candidateEntity.setResumeOriginalName(normalizedInput.getResumeOriginalName());
             candidateEntity.setResumeFilePath(normalizedInput.getResumeFilePath());
@@ -470,6 +473,9 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .candidateEducation(normalizedEducation)
                 .totalExperience(input.getTotalExperience())
                 .relevantExperience(input.getRelevantExperience())
+                .currentCtc(input.getCurrentCtc())
+                .resigned(Boolean.TRUE.equals(input.getResigned()))
+                .lastWorkingDay(Boolean.TRUE.equals(input.getResigned()) ? input.getLastWorkingDay() : null)
                 .joiningTime(normalizedJoiningTime)
                 .resumeOriginalName(normalizedResumeName)
                 .resumeFilePath(normalizedResumePath)
@@ -511,18 +517,22 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
             throw new RecruitmentNotificationException(
                     "Relevant experience cannot be greater than total experience in row " + rowNumber + ".");
         }
+        if (input.getCurrentCtc() == null || input.getCurrentCtc().compareTo(BigDecimal.ZERO) < 0) {
+            throw new RecruitmentNotificationException("Current CTC is invalid in row " + rowNumber + ".");
+        }
+        if (input.getResigned() == null) {
+            throw new RecruitmentNotificationException(
+                    "Candidate resignation status is required in row " + rowNumber + ".");
+        }
+        if (Boolean.TRUE.equals(input.getResigned()) && input.getLastWorkingDay() == null) {
+            throw new RecruitmentNotificationException(
+                    "Last working day is required for a resigned candidate in row " + rowNumber + ".");
+        }
         if (levelExperience != null && levelExperience.getMinExperience() != null
                 && input.getTotalExperience().compareTo(levelExperience.getMinExperience()) < 0) {
             throw new RecruitmentNotificationException(
                     "Total experience must be at least "
                             + levelExperience.getMinExperience().stripTrailingZeros().toPlainString()
-                            + " year(s) in row " + rowNumber + ".");
-        }
-        if (levelExperience != null && levelExperience.getMaxExperience() != null
-                && input.getTotalExperience().compareTo(levelExperience.getMaxExperience()) > 0) {
-            throw new RecruitmentNotificationException(
-                    "Total experience must not exceed "
-                            + levelExperience.getMaxExperience().stripTrailingZeros().toPlainString()
                             + " year(s) in row " + rowNumber + ".");
         }
         if (!StringUtils.hasText(input.getJoiningTime())) {
@@ -562,6 +572,9 @@ public class RecruitmentAgencyCandidateServiceImpl implements RecruitmentAgencyC
                 .candidateEducation(candidate.getCandidateEducation())
                 .totalExperience(candidate.getTotalExperience())
                 .relevantExperience(candidate.getRelevantExperience())
+                .currentCtc(candidate.getCurrentCtc())
+                .resigned(candidate.getResigned())
+                .lastWorkingDay(candidate.getLastWorkingDay())
                 .joiningTime(candidate.getJoiningTime())
                 .vacancyId(candidate.getDesignationVacancy().getRecruitmentDesignationVacancyId())
                 .designationName(designationName)

@@ -47,6 +47,14 @@
             '<td><input type="text" class="form-control" name="candidates[' + index + '].candidateEducation" required></td>' +
             '<td><input type="number" class="form-control total-exp-input" name="candidates[' + index + '].totalExp" min="0" step="0.1" required></td>' +
             '<td><input type="number" class="form-control relevant-exp-input" name="candidates[' + index + '].relevantExp" min="0" step="0.1" required></td>' +
+            '<td><input type="number" class="form-control current-ctc-input" name="candidates[' + index + '].currentCtc" min="0" max="999999999999.99" step="0.01" inputmode="decimal" required></td>' +
+            '<td><select class="form-select resigned-status-input" name="candidates[' + index + '].resigned" required>' +
+            '<option value="">Select</option>' +
+            '<option value="false">No</option>' +
+            '<option value="true">Yes</option>' +
+            '</select><div class="invalid-feedback">Select Yes or No.</div></td>' +
+            '<td><input type="date" class="form-control last-working-day-input" name="candidates[' + index + '].lastWorkingDay" disabled>' +
+            '<div class="invalid-feedback">Last working day is required when resigned.</div></td>' +
             '<td><select class="form-select" name="candidates[' + index + '].joiningTime" required>' +
             '<option value="">Select</option>' +
             '<option value="Immediate">Immediate</option>' +
@@ -98,7 +106,9 @@
             return;
         }
         var index = tableBody.querySelectorAll(".candidate-input-row").length;
-        tableBody.appendChild(createRow(index));
+        var row = createRow(index);
+        tableBody.appendChild(row);
+        updateResignationFields(row);
         validateAllNameFields();
         validateAllEmailFields();
         validateAllMobileFields();
@@ -112,6 +122,7 @@
         var rows = tableBody.querySelectorAll(".candidate-input-row");
         if (rows.length <= 1) {
             clearRowValues(rows[0]);
+            updateResignationFields(rows[0]);
             validateAllNameFields();
             validateAllEmailFields();
             validateAllMobileFields();
@@ -153,6 +164,37 @@
             validateAllEmailFields();
         }
     });
+
+    tableBody.addEventListener("change", function (event) {
+        if (event.target.classList.contains("resigned-status-input")) {
+            updateResignationFields(event.target.closest(".candidate-input-row"));
+        }
+    });
+
+    function updateResignationFields(row) {
+        if (!row) {
+            return;
+        }
+
+        var resignedSelect = row.querySelector(".resigned-status-input");
+        var lastWorkingDayInput = row.querySelector(".last-working-day-input");
+        if (!resignedSelect || !lastWorkingDayInput) {
+            return;
+        }
+
+        var resigned = resignedSelect.value === "true";
+        lastWorkingDayInput.disabled = !resigned;
+        lastWorkingDayInput.required = resigned;
+        if (!resigned) {
+            lastWorkingDayInput.value = "";
+            lastWorkingDayInput.setCustomValidity("");
+            lastWorkingDayInput.classList.remove("is-invalid");
+        }
+    }
+
+    function updateAllResignationFields() {
+        tableBody.querySelectorAll(".candidate-input-row").forEach(updateResignationFields);
+    }
 
     function normalizeEmail(value) {
         return (value || "").trim().toLowerCase();
@@ -381,19 +423,14 @@
         return getSelectedOpenCount() > 0;
     }
 
-    function getSelectedExperienceRange() {
+    function getSelectedMinimumExperience() {
         var selectedOption = designationSelect.options[designationSelect.selectedIndex];
         if (!selectedOption) {
-            return { min: null, max: null };
+            return null;
         }
 
         var minExp = selectedOption.getAttribute("data-min-exp");
-        var maxExp = selectedOption.getAttribute("data-max-exp");
-
-        return {
-            min: minExp === null || minExp === "" ? null : parseFloat(minExp),
-            max: maxExp === null || maxExp === "" ? null : parseFloat(maxExp)
-        };
+        return minExp === null || minExp === "" ? null : parseFloat(minExp);
     }
 
     function updateVacancyState() {
@@ -407,7 +444,7 @@
         }
 
         var openCount = getSelectedOpenCount();
-        var experienceRange = getSelectedExperienceRange();
+        var minimumExperience = getSelectedMinimumExperience();
         var isOpen = openCount > 0;
 
         addRowButton.disabled = !isOpen;
@@ -423,10 +460,9 @@
         }
 
         var rangeText = "";
-        if (experienceRange.min !== null || experienceRange.max !== null) {
-            var minText = experienceRange.min !== null ? experienceRange.min : "0";
-            var maxText = experienceRange.max !== null ? experienceRange.max : "Any";
-            rangeText = " Required total experience: " + minText + " to " + maxText + " year(s).";
+        if (minimumExperience !== null) {
+            rangeText = " Minimum total experience: " + minimumExperience
+                + " year(s). Candidates with higher experience are allowed.";
         }
 
         designationHelpText.textContent = "Remaining open vacancies: " + openCount + "." + rangeText;
@@ -434,20 +470,14 @@
 
     function validateExperienceRangeRows() {
         var valid = true;
-        var experienceRange = getSelectedExperienceRange();
+        var minimumExperience = getSelectedMinimumExperience();
 
         tableBody.querySelectorAll(".candidate-input-row").forEach(function (row, index) {
             var rowNumber = index + 1;
             var totalExp = parseFloat(row.querySelector(".total-exp-input").value || "0");
 
-            if (experienceRange.min !== null && totalExp < experienceRange.min) {
-                alert("Total experience must be at least " + experienceRange.min + " year(s) in row " + rowNumber + ".");
-                valid = false;
-                return;
-            }
-
-            if (experienceRange.max !== null && totalExp > experienceRange.max) {
-                alert("Total experience must not exceed " + experienceRange.max + " year(s) in row " + rowNumber + ".");
+            if (minimumExperience !== null && totalExp < minimumExperience) {
+                alert("Total experience must be at least " + minimumExperience + " year(s) in row " + rowNumber + ".");
                 valid = false;
                 return;
             }
@@ -457,6 +487,7 @@
     }
 
     designationSelect.addEventListener("change", updateVacancyState);
+    updateAllResignationFields();
     updateVacancyState();
 
     form.addEventListener("submit", function (event) {
@@ -475,6 +506,7 @@
         }
 
         var valid = true;
+        updateAllResignationFields();
 
         if (!validateAllNameFields()) {
             valid = false;

@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.recruitment.service.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
@@ -25,6 +26,12 @@ public class AgencySubmittedCandidateView {
     private BigDecimal totalExperience;
 
     private BigDecimal relevantExperience;
+
+    private BigDecimal currentCtc;
+
+    private Boolean resigned;
+
+    private LocalDate lastWorkingDay;
 
     private String joiningTime;
 
