@@ -23,7 +23,7 @@
                         <div class="application-hero-meta">
                             <span class="request-reference">
                                 <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
-                                <span th:text="${candidateListView != null ? candidateListView.requestId : '-'}">REQ-0000</span>
+                                <span th:text="${requestDetails != null ? requestDetails.requestId : '-'}">REQ-0000</span>
                             </span>
                             <span class="meta-divider" aria-hidden="true"></span>
                             <span>
@@ -94,7 +94,7 @@
                             <div class="submitted-date">
                                 <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
                                 <span>
-                                    <small>Submitted on</small>
+                                    <small>Request Submitted At</small>
                                     <strong
                                         th:text="${requestDetails != null and requestDetails.createdDateTime != null ? #temporals.format(requestDetails.createdDateTime, 'dd MMM yyyy, hh:mm a') : '-'}">-</strong>
                                 </span>
@@ -197,11 +197,12 @@
                             <div class="candidate-search">
                                 <label class="visually-hidden" for="candidateSearch">Search candidate applications</label>
                                 <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                                <input id="candidateSearch" type="search" autocomplete="off" placeholder="Search candidate, agency or role...">
+                                <input id="candidateSearch" class="candidate-search-input" type="search" autocomplete="off"
+                                    placeholder="Search candidate, agency or role...">
                             </div>
                             <div class="candidate-status-filter">
                                 <label for="candidateStatusFilter"><i class="fa-solid fa-filter" aria-hidden="true"></i>Status</label>
-                                <select id="candidateStatusFilter">
+                                <select id="candidateStatusFilter" class="candidate-filter-select">
                                     <option value="all">All statuses</option>
                                     <option value="submitted">Submitted</option>
                                     <option value="shortlisted">Shortlisted</option>

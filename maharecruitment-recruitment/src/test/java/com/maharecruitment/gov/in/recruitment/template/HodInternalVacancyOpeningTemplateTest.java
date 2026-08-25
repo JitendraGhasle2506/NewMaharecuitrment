@@ -46,6 +46,10 @@ class HodInternalVacancyOpeningTemplateTest {
                 .contains("candidate.candidateMobile")
                 .contains("candidate.candidateEducation")
                 .contains("candidate.resumeFilePath")
+                .contains("hod-internal-vacancy-applications.css")
+                .contains("id=\"candidateSearch\"")
+                .contains("id=\"candidateStatusFilter\"")
+                .contains("data-candidate-row")
                 .contains("No candidate applications have been submitted against this request yet.")
                 .doesNotContain("<form");
     }
