@@ -5,238 +5,346 @@
     <meta charset="UTF-8">
     <title>Candidate Applications</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <style>
-        .request-summary {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-            margin-bottom: 20px;
-        }
-
-        .summary-item {
-            padding: 14px 16px;
-            border: 1px solid #d8e4f5;
-            border-radius: 12px;
-            background: #f8fbff;
-        }
-
-        .summary-label {
-            color: #607391;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .summary-value {
-            margin-top: 4px;
-            color: #163868;
-            font-weight: 700;
-        }
-
-        .candidate-status {
-            display: inline-flex;
-            padding: 5px 9px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .status-neutral { background: #eef1f5; color: #55657e; }
-        .status-submitted { background: #e6f0ff; color: #1857a4; }
-        .status-shortlisted { background: #e7f8ee; color: #1f7a3d; }
-        .status-rejected { background: #ffebeb; color: #b02a37; }
-        .status-interview { background: #fff4d6; color: #8a5a00; }
-
-        .candidate-contact {
-            min-width: 220px;
-        }
-
-        @media (max-width: 900px) {
-            .request-summary { grid-template-columns: 1fr; }
-        }
-    </style>
+    <link rel="stylesheet" th:href="@{/css/hod-internal-vacancy-applications.css(v='20260825-1')}">
 </head>
 
-<body class="department-shell">
+<body class="department-shell candidate-applications-page" th:attr="data-context-path=${contextPath}">
     <th:block th:replace="~{header/header :: var-sidebar-header('HOD', 'Candidate Applications', ~{::section})}">
-        <section th:with="applicationCount=${candidateListView != null and candidateListView.candidates != null ? #lists.size(candidateListView.candidates) : 0}">
-            <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="mb-0">Candidate Applications</h2>
-                        <small class="text-muted" th:text="${candidateListView != null ? candidateListView.requestId : '-'}">REQ-0000</small>
+        <section
+            th:with="applicationCount=${candidateListView != null and candidateListView.candidates != null ? #lists.size(candidateListView.candidates) : 0}">
+            <article class="card add-emp-card candidate-applications-card">
+                <header class="header application-hero">
+                    <div class="application-hero-copy">
+                        <span class="application-eyebrow">
+                            <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
+                            Internal recruitment
+                        </span>
+                        <h2>Candidate Applications</h2>
+                        <div class="application-hero-meta">
+                            <span class="request-reference">
+                                <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
+                                <span th:text="${candidateListView != null ? candidateListView.requestId : '-'}">REQ-0000</span>
+                            </span>
+                            <span class="meta-divider" aria-hidden="true"></span>
+                            <span>
+                                <i class="fa-regular fa-folder-open" aria-hidden="true"></i>
+                                <span
+                                    th:text="${requestDetails != null and requestDetails.projectName != null ? requestDetails.projectName : '-'}">Project</span>
+                            </span>
+                        </div>
                     </div>
-                    <div class="d-flex gap-2">
-                        <a class="btn btn-outline-secondary btn-sm" th:href="@{/hod1/internal-vacancies}">Back to Requests</a>
+
+                    <div class="application-hero-actions">
+                        <span class="request-status-badge"
+                            th:if="${requestDetails != null}"
+                            th:classappend="${' ' + requestDetails.statusCssClass}">
+                            <span class="status-indicator" aria-hidden="true"></span>
+                            <span th:text="${requestDetails.statusLabel}">OPEN</span>
+                        </span>
+                        <a class="btn btn-light back-button" th:href="@{/hod1/internal-vacancies}">
+                            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                            <span>Back to Requests</span>
+                        </a>
                     </div>
+                </header>
+
+                <div class="card-body application-content">
+                    <div class="application-metrics" aria-label="Request summary">
+                        <div class="metric-card metric-card-applications">
+                            <span class="metric-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
+                            <div>
+                                <div class="metric-label">Applications Received</div>
+                                <div class="metric-value" th:text="${applicationCount}">0</div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card metric-card-vacancies">
+                            <span class="metric-icon" aria-hidden="true"><i class="fa-solid fa-user-plus"></i></span>
+                            <div>
+                                <div class="metric-label">Vacancies Requested</div>
+                                <div class="metric-value" th:text="${requestDetails != null ? requestDetails.totalVacancies : 0}">0</div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card metric-card-type">
+                            <span class="metric-icon" aria-hidden="true"><i class="fa-solid fa-arrows-rotate"></i></span>
+                            <div>
+                                <div class="metric-label">Request Type</div>
+                                <div class="metric-value metric-value-text"
+                                    th:text="${requestDetails != null ? requestDetails.hiringRequestTypeLabel : '-'}">NEW CANDIDATE</div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card metric-card-notification">
+                            <span class="metric-icon" aria-hidden="true"><i class="fa-regular fa-bell"></i></span>
+                            <div>
+                                <div class="metric-label">Notification Status</div>
+                                <div class="metric-value metric-value-text"
+                                    th:text="${candidateListView != null ? candidateListView.notificationStatusLabel : '-'}">IN PROGRESS</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <section class="content-section request-details-section" aria-labelledby="requestDetailsHeading">
+                        <div class="section-heading">
+                            <div>
+                                <span class="section-kicker">Request overview</span>
+                                <h3 id="requestDetailsHeading">Submitted Request Details</h3>
+                            </div>
+                            <div class="submitted-date">
+                                <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+                                <span>
+                                    <small>Submitted on</small>
+                                    <strong
+                                        th:text="${requestDetails != null and requestDetails.createdDateTime != null ? #temporals.format(requestDetails.createdDateTime, 'dd MMM yyyy, hh:mm a') : '-'}">-</strong>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="request-details-grid" th:if="${requestDetails != null}">
+                            <div class="requirements-panel">
+                                <div class="panel-heading">
+                                    <span class="panel-icon" aria-hidden="true"><i class="fa-solid fa-list-check"></i></span>
+                                    <div>
+                                        <h4>Designation Requirements</h4>
+                                        <p>Roles and staffing levels requested</p>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive requirements-table-wrap">
+                                    <table class="table requirements-table align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col" class="sequence-column">#</th>
+                                                <th scope="col">Designation</th>
+                                                <th scope="col">Level</th>
+                                                <th scope="col" class="text-end">Vacancies</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${#lists.isEmpty(requestDetails.requirements)}">
+                                                <td colspan="4" class="table-empty-state">No requirements recorded.</td>
+                                            </tr>
+                                            <tr th:each="requirement, stat : ${requestDetails.requirements}">
+                                                <td class="sequence-cell" th:text="${stat.count}">1</td>
+                                                <td><span class="designation-name" th:text="${requirement.designationName}">Designation</span></td>
+                                                <td><span class="level-chip" th:text="${requirement.levelName}">Level</span></td>
+                                                <td class="text-end"><span class="vacancy-count" th:text="${requirement.numberOfVacancy}">1</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <aside class="request-context-panel">
+                                <div class="context-block">
+                                    <div class="context-heading">
+                                        <span class="context-icon" aria-hidden="true"><i class="fa-regular fa-message"></i></span>
+                                        <h4>Remarks / Justification</h4>
+                                    </div>
+                                    <p class="context-copy"
+                                        th:text="${#strings.isEmpty(requestDetails.remarks) ? 'No remarks provided.' : requestDetails.remarks}">No remarks provided.</p>
+                                </div>
+
+                                <div class="context-block" th:if="${requestDetails.employeeReplacement}">
+                                    <div class="context-heading">
+                                        <span class="context-icon" aria-hidden="true"><i class="fa-solid fa-people-arrows"></i></span>
+                                        <h4>Employees to be Replaced</h4>
+                                    </div>
+                                    <p class="context-copy" th:if="${#lists.isEmpty(requestDetails.replacementEmployeeLabels)}">No employees selected.</p>
+                                    <ul class="replacement-list" th:unless="${#lists.isEmpty(requestDetails.replacementEmployeeLabels)}">
+                                        <li th:each="employeeLabel : ${requestDetails.replacementEmployeeLabels}">
+                                            <i class="fa-regular fa-user" aria-hidden="true"></i>
+                                            <span th:text="${employeeLabel}">Employee</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div class="context-block" th:if="${requestDetails.newCandidate}">
+                                    <div class="context-heading">
+                                        <span class="context-icon" aria-hidden="true"><i class="fa-regular fa-file-pdf"></i></span>
+                                        <h4>E-office Approval</h4>
+                                    </div>
+                                    <a th:if="${!#strings.isEmpty(requestDetails.eOfficeApprovalFileName)}"
+                                        class="document-link" target="_blank" rel="noopener"
+                                        th:href="@{/hod1/internal-vacancies/{id}/e-office-approval(id=${requestDetails.internalVacancyOpeningId})}">
+                                        <span class="document-link-icon" aria-hidden="true"><i class="fa-solid fa-file-arrow-down"></i></span>
+                                        <span class="document-link-copy">
+                                            <strong th:text="${requestDetails.eOfficeApprovalFileName}">Approval.pdf</strong>
+                                            <small>Open approval document</small>
+                                        </span>
+                                        <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                                    </a>
+                                    <p class="context-copy" th:if="${#strings.isEmpty(requestDetails.eOfficeApprovalFileName)}">No approval document uploaded.</p>
+                                </div>
+                            </aside>
+                        </div>
+                    </section>
+
+                    <section class="content-section candidates-section" aria-labelledby="candidateApplicationsHeading">
+                        <div class="candidate-section-heading">
+                            <div>
+                                <span class="section-kicker">Candidate pipeline</span>
+                                <div class="candidate-title-row">
+                                    <h3 id="candidateApplicationsHeading">Submitted Candidate Applications</h3>
+                                    <span class="application-count-badge" th:text="${applicationCount}">0</span>
+                                </div>
+                                <p>Review applicant profiles, interview progress and final decisions.</p>
+                            </div>
+                        </div>
+
+                        <div class="candidate-toolbar" th:if="${applicationCount > 0}">
+                            <div class="candidate-search">
+                                <label class="visually-hidden" for="candidateSearch">Search candidate applications</label>
+                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                <input id="candidateSearch" type="search" autocomplete="off" placeholder="Search candidate, agency or role...">
+                            </div>
+                            <div class="candidate-status-filter">
+                                <label for="candidateStatusFilter"><i class="fa-solid fa-filter" aria-hidden="true"></i>Status</label>
+                                <select id="candidateStatusFilter">
+                                    <option value="all">All statuses</option>
+                                    <option value="submitted">Submitted</option>
+                                    <option value="shortlisted">Shortlisted</option>
+                                    <option value="interview">Interview scheduled</option>
+                                    <option value="selected">Selected</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                            <div id="candidateResultCount" class="candidate-result-count" role="status" aria-live="polite">
+                                <span>Showing</span>
+                                <strong th:text="${applicationCount}">0</strong>
+                                <span th:text="${applicationCount == 1 ? 'application' : 'applications'}">applications</span>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive candidate-table-wrap" th:if="${applicationCount > 0}">
+                            <table class="table candidate-table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="candidate-number-column">#</th>
+                                        <th scope="col">Candidate</th>
+                                        <th scope="col">Applied For</th>
+                                        <th scope="col">Agency</th>
+                                        <th scope="col">Experience &amp; Joining</th>
+                                        <th scope="col">Application</th>
+                                        <th scope="col">Interview &amp; Decision</th>
+                                        <th scope="col" class="text-center">Resume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="candidate-row" th:each="candidate, stat : ${candidateListView.candidates}"
+                                        data-candidate-row
+                                        th:attr="data-status=${(candidate.candidateStatusLabel != null ? candidate.candidateStatusLabel : '') + ' ' + (candidate.finalDecisionStatus != null ? candidate.finalDecisionStatus : '')}">
+                                        <td class="candidate-number-cell" data-label="#"><span th:text="${stat.count}">1</span></td>
+                                        <td class="candidate-identity-cell" data-label="Candidate">
+                                            <div class="candidate-identity">
+                                                <span class="candidate-avatar" aria-hidden="true"><i class="fa-regular fa-user"></i></span>
+                                                <div class="candidate-identity-copy">
+                                                    <strong th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">Candidate</strong>
+                                                    <a class="candidate-contact-link" th:if="${candidate.candidateEmail != null}"
+                                                        th:href="${'mailto:' + candidate.candidateEmail}">
+                                                        <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+                                                        <span th:text="${candidate.candidateEmail}">email</span>
+                                                    </a>
+                                                    <a class="candidate-contact-link" th:if="${candidate.candidateMobile != null}"
+                                                        th:href="${'tel:' + candidate.candidateMobile}">
+                                                        <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                                                        <span th:text="${candidate.candidateMobile}">mobile</span>
+                                                    </a>
+                                                    <span class="candidate-contact-link text-muted"
+                                                        th:if="${candidate.candidateEmail == null and candidate.candidateMobile == null}">No contact details</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td data-label="Applied For">
+                                            <strong class="table-primary-text"
+                                                th:text="${candidate.designationName != null ? candidate.designationName : '-'}">Designation</strong>
+                                            <div class="cell-meta-row">
+                                                <span class="level-chip" th:text="${candidate.levelCode != null ? candidate.levelCode : '-'}">L1</span>
+                                                <span class="education-text"
+                                                    th:text="${candidate.candidateEducation != null ? candidate.candidateEducation : 'Education not specified'}">Education</span>
+                                            </div>
+                                        </td>
+                                        <td data-label="Agency">
+                                            <div class="agency-name">
+                                                <span class="agency-icon" aria-hidden="true"><i class="fa-regular fa-building"></i></span>
+                                                <span th:text="${candidate.agencyName != null ? candidate.agencyName : '-'}">Agency</span>
+                                            </div>
+                                        </td>
+                                        <td data-label="Experience &amp; Joining">
+                                            <div class="experience-grid">
+                                                <span><small>Total</small><strong
+                                                    th:text="${(candidate.totalExperience != null ? candidate.totalExperience : 0) + ' yrs'}">0 yrs</strong></span>
+                                                <span><small>Relevant</small><strong
+                                                    th:text="${(candidate.relevantExperience != null ? candidate.relevantExperience : 0) + ' yrs'}">0 yrs</strong></span>
+                                            </div>
+                                            <div class="joining-time">
+                                                <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                                                <span th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</span>
+                                            </div>
+                                        </td>
+                                        <td data-label="Application">
+                                            <span class="candidate-status" th:classappend="${' ' + candidate.candidateStatusCssClass}"
+                                                th:text="${candidate.candidateStatusLabel}">SUBMITTED BY AGENCY</span>
+                                            <div class="submission-time">
+                                                <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                                                <span th:text="${candidate.submittedAt != null ? #temporals.format(candidate.submittedAt, 'dd MMM yyyy, hh:mm a') : '-'}">-</span>
+                                            </div>
+                                        </td>
+                                        <td data-label="Interview &amp; Decision">
+                                            <div class="interview-detail" th:if="${candidate.interviewDateTime != null}">
+                                                <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+                                                <span>
+                                                    <strong th:text="${#temporals.format(candidate.interviewDateTime, 'dd MMM yyyy, hh:mm a')}">-</strong>
+                                                    <small th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : 'Time slot not specified'}">-</small>
+                                                </span>
+                                            </div>
+                                            <div class="interview-pending" th:if="${candidate.interviewDateTime == null}">
+                                                <i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i><span>Not scheduled</span>
+                                            </div>
+                                            <span class="decision-badge" th:if="${candidate.finalDecisionStatus != null}"
+                                                th:classappend="${candidate.finalDecisionStatus == 'SELECTED' ? ' decision-selected' : ' decision-rejected'}">
+                                                <i th:class="${candidate.finalDecisionStatus == 'SELECTED' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'}"
+                                                    aria-hidden="true"></i>
+                                                <span th:text="${candidate.finalDecisionStatus}">SELECTED</span>
+                                            </span>
+                                        </td>
+                                        <td class="resume-cell" data-label="Resume">
+                                            <button type="button" class="resume-button" th:if="${candidate.resumeFilePath != null}"
+                                                th:attr="data-path=${candidate.resumeFilePath},aria-label=${'View resume for ' + (candidate.candidateName != null ? candidate.candidateName : 'candidate')}"
+                                                onclick="openManagedDocument(this.getAttribute('data-path'))">
+                                                <i class="fa-regular fa-file-lines" aria-hidden="true"></i><span>View</span>
+                                            </button>
+                                            <span class="resume-unavailable" th:if="${candidate.resumeFilePath == null}">
+                                                <i class="fa-regular fa-file" aria-hidden="true"></i><span>Not available</span>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr id="candidateFilterEmpty" class="candidate-filter-empty" hidden>
+                                        <td colspan="8">
+                                            <div class="table-filter-empty-state">
+                                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                                <strong>No matching applications</strong>
+                                                <span>Try a different keyword or status filter.</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="candidate-empty-state" th:if="${applicationCount == 0}">
+                            <span class="empty-state-icon" aria-hidden="true"><i class="fa-solid fa-user-clock"></i></span>
+                            <h4>No candidate applications yet</h4>
+                            <p>No candidate applications have been submitted against this request yet.</p>
+                            <span class="empty-state-note">
+                                <i class="fa-regular fa-bell" aria-hidden="true"></i>
+                                Applications will appear here after an agency submits a candidate.
+                            </span>
+                        </div>
+                    </section>
                 </div>
-
-                <div class="card-body">
-                    <h5 class="mb-3">Submitted Request Details</h5>
-                    <div class="request-summary">
-                        <div class="summary-item">
-                            <div class="summary-label">Request ID</div>
-                            <div class="summary-value" th:text="${requestDetails != null ? requestDetails.requestId : '-'}">REQ-0000</div>
-                        </div>
-                        <div class="summary-item">
-                            <div class="summary-label">Project</div>
-                            <div class="summary-value" th:text="${requestDetails != null and requestDetails.projectName != null ? requestDetails.projectName : '-'}">Project</div>
-                        </div>
-                        <div class="summary-item">
-                            <div class="summary-label">Request Type</div>
-                            <div class="summary-value" th:text="${requestDetails != null ? requestDetails.hiringRequestTypeLabel : '-'}">NEW CANDIDATE</div>
-                        </div>
-                        <div class="summary-item">
-                            <div class="summary-label">Request Status</div>
-                            <div class="summary-value" th:text="${requestDetails != null ? requestDetails.statusLabel : '-'}">OPEN</div>
-                        </div>
-                        <div class="summary-item">
-                            <div class="summary-label">Notification Status</div>
-                            <div class="summary-value" th:text="${candidateListView != null ? candidateListView.notificationStatusLabel : '-'}">IN PROGRESS</div>
-                        </div>
-                        <div class="summary-item">
-                            <div class="summary-label">Vacancies Requested</div>
-                            <div class="summary-value" th:text="${requestDetails != null ? requestDetails.totalVacancies : 0}">0</div>
-                        </div>
-                        <div class="summary-item">
-                            <div class="summary-label">Request Submitted At</div>
-                            <div class="summary-value"
-                                 th:text="${requestDetails != null and requestDetails.createdDateTime != null ? #temporals.format(requestDetails.createdDateTime, 'dd-MMM-yyyy HH:mm') : '-'}">-</div>
-                        </div>
-                        <div class="summary-item">
-                            <div class="summary-label">Applications Received</div>
-                            <div class="summary-value" th:text="${applicationCount}">0</div>
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-4" th:if="${requestDetails != null}">
-                        <div class="col-lg-8">
-                            <h6>Designation Requirements</h6>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Designation</th>
-                                            <th>Level</th>
-                                            <th class="text-end">Vacancies</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr th:if="${#lists.isEmpty(requestDetails.requirements)}">
-                                            <td colspan="4" class="text-center text-muted">No requirements recorded.</td>
-                                        </tr>
-                                        <tr th:each="requirement, stat : ${requestDetails.requirements}">
-                                            <td th:text="${stat.count}">1</td>
-                                            <td th:text="${requirement.designationName}">Designation</td>
-                                            <td th:text="${requirement.levelName}">Level</td>
-                                            <td class="text-end" th:text="${requirement.numberOfVacancy}">1</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="col-lg-4">
-                            <h6>Remarks / Justification</h6>
-                            <p class="text-muted text-break"
-                               th:text="${#strings.isEmpty(requestDetails.remarks) ? 'No remarks provided.' : requestDetails.remarks}">
-                                No remarks provided.
-                            </p>
-
-                            <div th:if="${requestDetails.employeeReplacement}">
-                                <h6>Employees to be Replaced</h6>
-                                <span class="text-muted" th:if="${#lists.isEmpty(requestDetails.replacementEmployeeLabels)}">-</span>
-                                <ul class="mb-0" th:unless="${#lists.isEmpty(requestDetails.replacementEmployeeLabels)}">
-                                    <li th:each="employeeLabel : ${requestDetails.replacementEmployeeLabels}"
-                                        th:text="${employeeLabel}">Employee</li>
-                                </ul>
-                            </div>
-
-                            <div th:if="${requestDetails.newCandidate}">
-                                <h6>E-office Approval</h6>
-                                <a th:if="${!#strings.isEmpty(requestDetails.eOfficeApprovalFileName)}"
-                                   class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"
-                                   th:href="@{/hod1/internal-vacancies/{id}/e-office-approval(id=${requestDetails.internalVacancyOpeningId})}"
-                                   th:text="${requestDetails.eOfficeApprovalFileName}">View approval</a>
-                                <span class="text-muted" th:if="${#strings.isEmpty(requestDetails.eOfficeApprovalFileName)}">No approval document uploaded.</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h5 class="mb-3">Submitted Candidate Applications</h5>
-
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Candidate Details</th>
-                                    <th>Agency</th>
-                                    <th>Applied For</th>
-                                    <th>Education</th>
-                                    <th>Experience</th>
-                                    <th>Joining Time</th>
-                                    <th>Status</th>
-                                    <th>Submitted At</th>
-                                    <th>Interview</th>
-                                    <th>Final Decision</th>
-                                    <th>Resume</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:if="${candidateListView == null or #lists.isEmpty(candidateListView.candidates)}">
-                                    <td colspan="12" class="text-center text-muted py-4">
-                                        No candidate applications have been submitted against this request yet.
-                                    </td>
-                                </tr>
-                                <tr th:each="candidate, stat : ${candidateListView.candidates}">
-                                    <td th:text="${stat.count}">1</td>
-                                    <td class="candidate-contact">
-                                        <div class="fw-semibold" th:text="${candidate.candidateName != null ? candidate.candidateName : '-'}">Candidate</div>
-                                        <div class="small text-muted" th:text="${candidate.candidateEmail != null ? candidate.candidateEmail : '-'}">email</div>
-                                        <div class="small text-muted" th:text="${candidate.candidateMobile != null ? candidate.candidateMobile : '-'}">mobile</div>
-                                    </td>
-                                    <td th:text="${candidate.agencyName != null ? candidate.agencyName : '-'}">Agency</td>
-                                    <td th:text="${(candidate.designationName != null ? candidate.designationName : '-') + ' | ' + (candidate.levelCode != null ? candidate.levelCode : '-')}">Designation | Level</td>
-                                    <td th:text="${candidate.candidateEducation != null ? candidate.candidateEducation : '-'}">Education</td>
-                                    <td>
-                                        <div th:text="${'Total: ' + (candidate.totalExperience != null ? candidate.totalExperience : 0) + ' years'}">Total: 0 years</div>
-                                        <small class="text-muted" th:text="${'Relevant: ' + (candidate.relevantExperience != null ? candidate.relevantExperience : 0) + ' years'}">Relevant: 0 years</small>
-                                    </td>
-                                    <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
-                                    <td>
-                                        <span class="candidate-status"
-                                              th:classappend="${' ' + candidate.candidateStatusCssClass}"
-                                              th:text="${candidate.candidateStatusLabel}">SUBMITTED BY AGENCY</span>
-                                    </td>
-                                    <td th:text="${candidate.submittedAt != null ? #temporals.format(candidate.submittedAt, 'dd-MMM-yyyy HH:mm') : '-'}">-</td>
-                                    <td>
-                                        <div th:if="${candidate.interviewDateTime != null}"
-                                             th:text="${#temporals.format(candidate.interviewDateTime, 'dd-MMM-yyyy HH:mm')}">-</div>
-                                        <small th:if="${candidate.interviewDateTime != null}" class="text-muted"
-                                               th:text="${candidate.interviewTimeSlot != null ? candidate.interviewTimeSlot : '-'}">-</small>
-                                        <span th:if="${candidate.interviewDateTime == null}" class="text-muted">-</span>
-                                    </td>
-                                    <td>
-                                        <span th:if="${candidate.finalDecisionStatus != null}" class="badge"
-                                              th:classappend="${candidate.finalDecisionStatus == 'SELECTED' ? ' text-bg-success' : ' text-bg-danger'}"
-                                              th:text="${candidate.finalDecisionStatus}">SELECTED</span>
-                                        <span th:if="${candidate.finalDecisionStatus == null}" class="text-muted">-</span>
-                                    </td>
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm"
-                                                th:if="${candidate.resumeFilePath != null}"
-                                                th:attr="data-path=${candidate.resumeFilePath}"
-                                                onclick="openManagedDocument(this.getAttribute('data-path'))">View</button>
-                                        <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+            </article>
         </section>
     </th:block>
 
@@ -248,11 +356,56 @@
                 return;
             }
             try {
-                window.open(contextPath + "documents/view?path=" + encodeURIComponent(btoa(path)), "_blank");
+                window.open(contextPath + "documents/view?path=" + encodeURIComponent(btoa(path)), "_blank", "noopener");
             } catch (error) {
-                alert("Unable to open resume document.");
+                window.alert("Unable to open resume document.");
             }
         }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const searchInput = document.getElementById("candidateSearch");
+            const statusFilter = document.getElementById("candidateStatusFilter");
+            const resultCount = document.getElementById("candidateResultCount");
+            const emptyResult = document.getElementById("candidateFilterEmpty");
+            const rows = Array.from(document.querySelectorAll("[data-candidate-row]"));
+
+            if (!searchInput || !statusFilter || rows.length === 0) {
+                return;
+            }
+
+            const searchableRows = rows.map((row) => ({
+                row,
+                content: row.textContent.toLocaleLowerCase(),
+                status: (row.dataset.status || "").toLocaleLowerCase()
+            }));
+
+            const applyFilters = () => {
+                const query = searchInput.value.trim().toLocaleLowerCase();
+                const selectedStatus = statusFilter.value;
+                let visibleCount = 0;
+
+                searchableRows.forEach((candidate) => {
+                    const matchesSearch = !query || candidate.content.includes(query);
+                    const matchesStatus = selectedStatus === "all" || candidate.status.includes(selectedStatus);
+                    const isVisible = matchesSearch && matchesStatus;
+
+                    candidate.row.hidden = !isVisible;
+                    visibleCount += isVisible ? 1 : 0;
+                });
+
+                if (emptyResult) {
+                    emptyResult.hidden = visibleCount !== 0;
+                }
+
+                if (resultCount) {
+                    resultCount.innerHTML = `<span>Showing</span><strong>${visibleCount}</strong><span>${visibleCount === 1 ? "application" : "applications"}</span>`;
+                }
+            };
+
+            searchInput.addEventListener("input", applyFilters);
+            statusFilter.addEventListener("change", applyFilters);
+        });
     </script>
 </body>
+
 </html>
