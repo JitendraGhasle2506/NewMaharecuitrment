@@ -90,7 +90,7 @@
                         </h3>
                         <form autocomplete="off" class="designation-rate-filter-grid" method="get"
                             th:action="@{/master/designation-rates}">
-                            <input type="hidden" name="size" th:value="${rates.size}">
+                            <input autocomplete="off" type="hidden" name="size" th:value="${rates.size}">
                             <div class="designation-rate-filter-field">
                                 <label class="form-label" for="designationId">Designation</label>
                                 <select autocomplete="off" id="designationId" name="designationId" class="form-select form-select-sm">

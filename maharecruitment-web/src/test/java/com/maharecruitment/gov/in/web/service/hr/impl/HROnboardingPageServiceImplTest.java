@@ -30,6 +30,9 @@ import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.auth.service.UserManagementService;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
+import com.maharecruitment.gov.in.master.entity.AgencyMaster;
+import com.maharecruitment.gov.in.master.entity.LocationMaster;
+import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.repository.DepartmentMstRepository;
 import com.maharecruitment.gov.in.master.repository.LocationMasterRepository;
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
@@ -43,6 +46,8 @@ import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboa
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeLocationMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
+import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
+import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
 import com.maharecruitment.gov.in.web.service.onboarding.CandidateIdentityValidationService;
 import com.maharecruitment.gov.in.web.service.storage.FileStorageService;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
@@ -245,8 +250,3 @@ class HROnboardingPageServiceImplTest {
         return user;
     }
 }
-import com.maharecruitment.gov.in.master.entity.AgencyMaster;
-import com.maharecruitment.gov.in.master.entity.LocationMaster;
-import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
-import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
-import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
