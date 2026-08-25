@@ -378,8 +378,8 @@
                                                 (${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' status-scheduled' : ' status-submitted')))"
                                             th:text="${candidate.assessmentSubmitted == true ? 'FEEDBACK SUBMITTED' :
                                                 (candidate.candidateStatus == null ? '-' :
-                                                (candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT' ? 'SHORTLISTED BY INTERVIEW AUTHORITY' :
-                                                (candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT' ? 'REJECTED BY INTERVIEW AUTHORITY' :
+                                                (candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT' ? 'SHORTLISTED BY REQUESTER' :
+                                                (candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT' ? 'REJECTED BY REQUESTER' :
                                                 #strings.replace(candidate.candidateStatus.name(), '_', ' '))))}">
                                             SUBMITTED BY AGENCY
                                         </span>
@@ -435,7 +435,9 @@
                                         <span th:if="${candidate.resumeFilePath == null}" class="text-muted">-</span>
                                     </td>
                                     <td>
-                                        <div th:if="${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'}"
+                                        <div th:if="${candidateListView.canSubmitInterviewFeedback == true
+                                                and candidate.candidateStatus != null
+                                                and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'}"
                                             class="mb-2">
                                             <a class="btn btn-outline-primary btn-sm"
                                                 th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates/{recruitmentInterviewDetailId}/feedback(
@@ -456,7 +458,8 @@
                                         </div>
 
                                         <form method="post"
-                                            th:if="${(candidate.candidateStatus == null or candidate.candidateStatus.name() != 'INTERVIEW_SCHEDULED_BY_AGENCY')
+                                            th:if="${candidateListView.canShortlistCandidates == true
+                                                and (candidate.candidateStatus == null or candidate.candidateStatus.name() != 'INTERVIEW_SCHEDULED_BY_AGENCY')
                                                 and candidate.assessmentSubmitted != true and candidate.finalDecisionStatus == null}"
                                             th:action="@{/interview-authority/internal-vacancies/request/{requestId}/candidates/{recruitmentInterviewDetailId}/review(
                                                 requestId=${candidateListView.requestId},
@@ -483,6 +486,11 @@
                                                 </button>
                                             </div>
                                         </form>
+                                        <div class="text-muted small"
+                                            th:if="${candidateListView.canShortlistCandidates != true
+                                                and (candidate.candidateStatus == null or candidate.candidateStatus.name() == 'SUBMITTED_BY_AGENCY')}">
+                                            Only the user who raised this request can shortlist or reject candidates.
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>

@@ -60,14 +60,16 @@ public interface RecruitmentNotificationRepository extends JpaRepository<Recruit
     @Query("select notification "
             + "from RecruitmentNotificationEntity notification "
             + "join fetch notification.projectMst project "
-            + "join notification.internalVacancyOpening opening "
+            + "join fetch notification.internalVacancyOpening opening "
             + "where upper(notification.requestId) = upper(:requestId) "
             + "and notification.status <> com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus.CLOSED "
             + "and opening.status = com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus.OPEN "
-            + "and (exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
+            + "and (upper(opening.createdByEmail) = upper(:actorEmail) "
+            + "   or exists (select 1 from opening.interviewAuthorities auth where auth.user.id = :userId) "
             + "   or exists (select 1 from opening.interviewEmployees emp where emp.employee.employeeId = :employeeId))")
-    Optional<RecruitmentNotificationEntity> findInternalVacancyForInterviewAuthorityReview(
+    Optional<RecruitmentNotificationEntity> findAccessibleInternalVacancyForCandidateReview(
             @Param("requestId") String requestId,
+            @Param("actorEmail") String actorEmail,
             @Param("userId") Long userId,
             @Param("employeeId") Long employeeId);
 }

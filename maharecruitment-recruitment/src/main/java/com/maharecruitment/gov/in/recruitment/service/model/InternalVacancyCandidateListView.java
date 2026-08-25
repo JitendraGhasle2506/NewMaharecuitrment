@@ -15,6 +15,8 @@ public class InternalVacancyCandidateListView {
     private String requestId;
     private String projectName;
     private RecruitmentNotificationStatus notificationStatus;
+    private boolean canShortlistCandidates;
+    private boolean canSubmitInterviewFeedback;
     private InternalVacancyCandidateFilterType activeFilter;
     private Long totalCandidates;
     private Long pendingReviewCandidates;

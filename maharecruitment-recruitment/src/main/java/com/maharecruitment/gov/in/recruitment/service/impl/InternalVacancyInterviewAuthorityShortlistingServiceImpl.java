@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.recruitment.service.impl;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
@@ -57,7 +59,10 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
         ActorContext actor = resolveActorContext(actorEmail);
 
         List<InternalVacancySubmittedCandidateView> candidates = interviewDetailRepository
-                .findActiveCandidatesForInternalVacanciesByInterviewAuthority(actor.userId(), actor.employeeId())
+                .findActiveCandidatesForInternalVacanciesAccessibleToActor(
+                        actor.email(),
+                        actor.userId(),
+                        actor.employeeId())
                 .stream()
                 .map(this::toCandidateView)
                 .toList();
@@ -133,13 +138,18 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
                 filterType != null ? filterType : InternalVacancyCandidateFilterType.ALL;
 
         RecruitmentNotificationEntity notification = notificationRepository
-                .findInternalVacancyForInterviewAuthorityReview(normalizedRequestId, actor.userId(), actor.employeeId())
+                .findAccessibleInternalVacancyForCandidateReview(
+                        normalizedRequestId,
+                        actor.email(),
+                        actor.userId(),
+                        actor.employeeId())
                 .orElseThrow(() -> new RecruitmentNotificationException(
-                        "This internal vacancy request is not assigned to the logged-in interview authority."));
+                        "This internal vacancy request is not available to the logged-in user."));
 
         List<InternalVacancySubmittedCandidateView> candidates = interviewDetailRepository
-                .findActiveCandidatesForInternalVacancyByRequestIdAndInterviewAuthority(
+                .findActiveCandidatesForInternalVacancyAccessibleToActor(
                         normalizedRequestId,
+                        actor.email(),
                         actor.userId(),
                         actor.employeeId())
                 .stream()
@@ -162,6 +172,10 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
                 .requestId(notification.getRequestId())
                 .projectName(notification.getProjectMst() != null ? notification.getProjectMst().getProjectName() : "-")
                 .notificationStatus(notification.getStatus())
+                .canShortlistCandidates(isRequestOwner(notification.getInternalVacancyOpening(), actor.email()))
+                .canSubmitInterviewFeedback(isAssignedInterviewAuthority(
+                        notification.getInternalVacancyOpening(),
+                        actor))
                 .activeFilter(resolvedFilter)
                 .totalCandidates(metrics.totalCandidates)
                 .pendingReviewCandidates(metrics.pendingReviewCandidates)
@@ -190,13 +204,12 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
         }
 
         RecruitmentInterviewDetailEntity candidate = interviewDetailRepository
-                .findByIdForInternalVacancyInterviewAuthorityReviewUpdate(
+                .findByIdForInternalVacancyRequesterReviewUpdate(
                         normalizedRequestId,
                         recruitmentInterviewDetailId,
-                        actor.userId(),
-                        actor.employeeId())
+                        actor.email())
                 .orElseThrow(() -> new RecruitmentNotificationException(
-                        "Candidate not found for the assigned internal vacancy interview authority."));
+                        "Only the user who raised this internal vacancy request can shortlist or reject candidates."));
 
         if (candidate.getCandidateStatus() == RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY) {
             throw new RecruitmentNotificationException("Candidate cannot be reviewed after interview scheduling.");
@@ -231,7 +244,8 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
             throw new RecruitmentNotificationException("Authenticated user is required.");
         }
 
-        Long userId = userRepository.findByEmailIgnoreCase(actorEmail.trim())
+        String normalizedActorEmail = actorEmail.trim().toLowerCase(Locale.ROOT);
+        Long userId = userRepository.findByEmailIgnoreCase(normalizedActorEmail)
                 .map(User::getId)
                 .orElse(null);
 
@@ -245,10 +259,38 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
             throw new RecruitmentNotificationException("Authenticated actor not found.");
         }
 
-        return new ActorContext(userId, employeeId);
+        return new ActorContext(normalizedActorEmail, userId, employeeId);
     }
 
-    private record ActorContext(Long userId, Long employeeId) {
+    private record ActorContext(String email, Long userId, Long employeeId) {
+    }
+
+    private boolean isRequestOwner(InternalVacancyOpeningEntity opening, String actorEmail) {
+        return opening != null
+                && StringUtils.hasText(opening.getCreatedByEmail())
+                && StringUtils.hasText(actorEmail)
+                && opening.getCreatedByEmail().equalsIgnoreCase(actorEmail);
+    }
+
+    private boolean isAssignedInterviewAuthority(InternalVacancyOpeningEntity opening, ActorContext actor) {
+        if (opening == null || actor == null) {
+            return false;
+        }
+
+        boolean assignedByUser = actor.userId() != null
+                && opening.getInterviewAuthorities() != null
+                && opening.getInterviewAuthorities().stream()
+                        .anyMatch(authority -> authority.getUser() != null
+                                && actor.userId().equals(authority.getUser().getId()));
+        if (assignedByUser) {
+            return true;
+        }
+
+        return actor.employeeId() != null
+                && opening.getInterviewEmployees() != null
+                && opening.getInterviewEmployees().stream()
+                        .anyMatch(assignment -> assignment.getEmployee() != null
+                                && actor.employeeId().equals(assignment.getEmployee().getEmployeeId()));
     }
 
     private InternalVacancySubmittedCandidateView toCandidateView(RecruitmentInterviewDetailEntity candidate) {
