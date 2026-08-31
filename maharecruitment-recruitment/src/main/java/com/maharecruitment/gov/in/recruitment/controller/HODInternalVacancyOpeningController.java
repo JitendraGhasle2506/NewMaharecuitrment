@@ -34,7 +34,9 @@ import com.maharecruitment.gov.in.recruitment.dto.hr.InternalVacancyOpeningForm;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyCandidateReviewService;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyInterviewAuthorityShortlistingService;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningDetailsView;
@@ -58,12 +60,15 @@ public class HODInternalVacancyOpeningController {
 
     private final InternalVacancyOpeningService internalVacancyOpeningService;
     private final InternalVacancyCandidateReviewService internalVacancyCandidateReviewService;
+    private final InternalVacancyInterviewAuthorityShortlistingService shortlistingService;
 
     public HODInternalVacancyOpeningController(
             InternalVacancyOpeningService internalVacancyOpeningService,
-            InternalVacancyCandidateReviewService internalVacancyCandidateReviewService) {
+            InternalVacancyCandidateReviewService internalVacancyCandidateReviewService,
+            InternalVacancyInterviewAuthorityShortlistingService shortlistingService) {
         this.internalVacancyOpeningService = internalVacancyOpeningService;
         this.internalVacancyCandidateReviewService = internalVacancyCandidateReviewService;
+        this.shortlistingService = shortlistingService;
     }
 
     @GetMapping
@@ -141,6 +146,46 @@ public class HODInternalVacancyOpeningController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/hod1/internal-vacancies";
         }
+    }
+
+    @PostMapping("/request/{requestId}/applications/{recruitmentInterviewDetailId}/review")
+    public String reviewCandidate(
+            @PathVariable String requestId,
+            @PathVariable Long recruitmentInterviewDetailId,
+            @RequestParam("decision") DepartmentCandidateReviewDecision reviewDecision,
+            @RequestParam(name = "remarks", required = false) String reviewRemarks,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+        try {
+            shortlistingService.reviewCandidate(
+                    resolveActorEmail(principal),
+                    requestId,
+                    recruitmentInterviewDetailId,
+                    reviewDecision,
+                    reviewRemarks);
+            String successMessage = reviewDecision == DepartmentCandidateReviewDecision.SHORTLIST
+                    ? "Candidate shortlisted successfully."
+                    : "Candidate rejected successfully.";
+            redirectAttributes.addFlashAttribute("successMessage", successMessage);
+        } catch (RecruitmentNotificationException ex) {
+            log.warn(
+                    "Unable to apply HOD candidate review. requestId={}, candidateId={}, decision={}, reason={}",
+                    requestId,
+                    recruitmentInterviewDetailId,
+                    reviewDecision,
+                    ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Unexpected error while applying HOD candidate review. requestId={}, candidateId={}, decision={}",
+                    requestId,
+                    recruitmentInterviewDetailId,
+                    reviewDecision,
+                    ex);
+            redirectAttributes.addFlashAttribute("errorMessage", "Unable to save candidate decision right now.");
+        }
+
+        return "redirect:/hod1/internal-vacancies/request/" + requestId + "/applications";
     }
 
     @GetMapping("/{internalVacancyOpeningId}/edit")

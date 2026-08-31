@@ -22,7 +22,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningStatus;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyCandidateReviewService;
+import com.maharecruitment.gov.in.recruitment.service.InternalVacancyInterviewAuthorityShortlistingService;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyOpeningService;
+import com.maharecruitment.gov.in.recruitment.service.model.DepartmentCandidateReviewDecision;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyCandidateListView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningDetailsView;
@@ -40,7 +42,7 @@ class HODInternalVacancyOpeningControllerTest {
                 .build();
         when(service.getOpeningDetailsForOwner(7L, "hod@example.com")).thenReturn(application);
         MockMvc mockMvc = MockMvcBuilders
-                .standaloneSetup(new HODInternalVacancyOpeningController(service, candidateReviewService))
+                .standaloneSetup(createController(service, candidateReviewService))
                 .build();
 
         mockMvc.perform(get("/hod1/internal-vacancies/7/view")
@@ -72,7 +74,7 @@ class HODInternalVacancyOpeningControllerTest {
         when(service.getOpeningDetailsForOwner(23L, "hod@example.com"))
                 .thenReturn(requestDetails);
         MockMvc mockMvc = MockMvcBuilders
-                .standaloneSetup(new HODInternalVacancyOpeningController(service, candidateReviewService))
+                .standaloneSetup(createController(service, candidateReviewService))
                 .build();
 
         mockMvc.perform(get("/hod1/internal-vacancies/request/REQ-23/applications")
@@ -89,6 +91,34 @@ class HODInternalVacancyOpeningControllerTest {
     }
 
     @Test
+    void ownerCanShortlistCandidateFromApplicationsPage() throws Exception {
+        InternalVacancyOpeningService service = mock(InternalVacancyOpeningService.class);
+        InternalVacancyCandidateReviewService candidateReviewService = mock(InternalVacancyCandidateReviewService.class);
+        InternalVacancyInterviewAuthorityShortlistingService shortlistingService =
+                mock(InternalVacancyInterviewAuthorityShortlistingService.class);
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(new HODInternalVacancyOpeningController(
+                        service,
+                        candidateReviewService,
+                        shortlistingService))
+                .build();
+
+        mockMvc.perform(post("/hod1/internal-vacancies/request/REQ-23/applications/91/review")
+                        .principal(() -> "hod@example.com")
+                        .param("decision", "SHORTLIST")
+                        .param("remarks", "Meets the role requirements"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/hod1/internal-vacancies/request/REQ-23/applications"));
+
+        verify(shortlistingService).reviewCandidate(
+                "hod@example.com",
+                "REQ-23",
+                91L,
+                DepartmentCandidateReviewDecision.SHORTLIST,
+                "Meets the role requirements");
+    }
+
+    @Test
     void implicitFormSubmissionDefaultsToSubmitAction() throws Exception {
         InternalVacancyOpeningService service = mock(InternalVacancyOpeningService.class);
         InternalVacancyCandidateReviewService candidateReviewService = mock(InternalVacancyCandidateReviewService.class);
@@ -98,7 +128,7 @@ class HODInternalVacancyOpeningControllerTest {
                         .requestId("REQ-1")
                         .build());
         MockMvc mockMvc = MockMvcBuilders
-                .standaloneSetup(new HODInternalVacancyOpeningController(service, candidateReviewService))
+                .standaloneSetup(createController(service, candidateReviewService))
                 .build();
         Principal principal = () -> "hod@example.com";
 
@@ -122,7 +152,7 @@ class HODInternalVacancyOpeningControllerTest {
         InternalVacancyOpeningService service = mock(InternalVacancyOpeningService.class);
         InternalVacancyCandidateReviewService candidateReviewService = mock(InternalVacancyCandidateReviewService.class);
         MockMvc mockMvc = MockMvcBuilders
-                .standaloneSetup(new HODInternalVacancyOpeningController(service, candidateReviewService))
+                .standaloneSetup(createController(service, candidateReviewService))
                 .build();
 
         mockMvc.perform(post("/hod1/internal-vacancies")
@@ -147,7 +177,7 @@ class HODInternalVacancyOpeningControllerTest {
         when(service.saveOpening(any(InternalVacancyOpeningCommand.class)))
                 .thenThrow(new IllegalStateException("Database constraint details"));
         MockMvc mockMvc = MockMvcBuilders
-                .standaloneSetup(new HODInternalVacancyOpeningController(service, candidateReviewService))
+                .standaloneSetup(createController(service, candidateReviewService))
                 .build();
 
         mockMvc.perform(post("/hod1/internal-vacancies")
@@ -162,5 +192,14 @@ class HODInternalVacancyOpeningControllerTest {
                         "errorMessage",
                         "Unable to submit the resource request right now. Please retry."
                                 + " For a new candidate request, select the approval PDF again."));
+    }
+
+    private HODInternalVacancyOpeningController createController(
+            InternalVacancyOpeningService service,
+            InternalVacancyCandidateReviewService candidateReviewService) {
+        return new HODInternalVacancyOpeningController(
+                service,
+                candidateReviewService,
+                mock(InternalVacancyInterviewAuthorityShortlistingService.class));
     }
 }

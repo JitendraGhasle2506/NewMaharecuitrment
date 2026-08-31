@@ -24,7 +24,7 @@ class HodInternalVacancyOpeningTemplateTest {
     }
 
     @Test
-    void candidateApplicationViewIsReadOnlyAndShowsSubmissionDetails() throws IOException {
+    void candidateApplicationViewShowsSubmissionDetailsAndReviewActions() throws IOException {
         String template = new ClassPathResource(
                 "templates/hod/internal-vacancy-candidate-list.html")
                 .getContentAsString(StandardCharsets.UTF_8);
@@ -51,7 +51,11 @@ class HodInternalVacancyOpeningTemplateTest {
                 .contains("id=\"candidateStatusFilter\"")
                 .contains("data-candidate-row")
                 .contains("No candidate applications have been submitted against this request yet.")
-                .doesNotContain("<form");
+                .contains("class=\"candidate-review-form\"")
+                .contains("@{/hod1/internal-vacancies/request/{requestId}/applications/{recruitmentInterviewDetailId}/review(")
+                .contains("name=\"decision\" value=\"SHORTLIST\"")
+                .contains("name=\"decision\" value=\"REJECT\"")
+                .contains("Remarks are required when rejecting a candidate.");
     }
 
     @Test

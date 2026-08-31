@@ -99,6 +99,34 @@ class InternalVacancyInterviewAuthorityShortlistingServiceImplTest {
     }
 
     @Test
+    void requestOwnerCanRejectCandidateWithRemarks() {
+        service.reviewCandidate(
+                REQUEST_OWNER_EMAIL,
+                "REQ-20260825-I0001",
+                77L,
+                DepartmentCandidateReviewDecision.REJECT,
+                "  Experience does not match  ");
+
+        assertEquals(RecruitmentCandidateStatus.REJECTED_BY_DEPARTMENT, candidate.getCandidateStatus());
+        assertEquals("Experience does not match", candidate.getDepartmentShortlistRemarks());
+    }
+
+    @Test
+    void rejectionRequiresRemarks() {
+        RecruitmentNotificationException exception = assertThrows(
+                RecruitmentNotificationException.class,
+                () -> service.reviewCandidate(
+                        REQUEST_OWNER_EMAIL,
+                        "REQ-20260825-I0001",
+                        77L,
+                        DepartmentCandidateReviewDecision.REJECT,
+                        "  "));
+
+        assertEquals("Remarks are required when rejecting a candidate.", exception.getMessage());
+        assertEquals(RecruitmentCandidateStatus.SUBMITTED_BY_AGENCY, candidate.getCandidateStatus());
+    }
+
+    @Test
     void nonOwnerCannotShortlistCandidate() {
         RecruitmentNotificationException exception = assertThrows(
                 RecruitmentNotificationException.class,

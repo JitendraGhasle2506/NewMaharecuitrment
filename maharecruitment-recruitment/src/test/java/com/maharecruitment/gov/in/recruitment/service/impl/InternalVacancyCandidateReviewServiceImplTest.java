@@ -38,6 +38,7 @@ class InternalVacancyCandidateReviewServiceImplTest {
         when(notification.getRequestId()).thenReturn("REQ-23");
         when(notification.getInternalVacancyOpening()).thenReturn(opening);
         when(opening.getInternalVacancyOpeningId()).thenReturn(23L);
+        when(candidate.getDepartmentShortlistRemarks()).thenReturn("Strong profile");
         when(interviewDetailRepository.findActiveCandidatesForInternalVacancyByRequestId("REQ-23"))
                 .thenReturn(List.of(candidate));
         InternalVacancyCandidateReviewServiceImpl service = new InternalVacancyCandidateReviewServiceImpl(
@@ -52,6 +53,7 @@ class InternalVacancyCandidateReviewServiceImplTest {
         assertThat(result.getRequestId()).isEqualTo("REQ-23");
         assertThat(result.getInternalVacancyOpeningId()).isEqualTo(23L);
         assertThat(result.getCandidates()).hasSize(1);
+        assertThat(result.getCandidates().getFirst().getDepartmentShortlistRemarks()).isEqualTo("Strong profile");
         verify(notificationRepository).findInternalVacancyForOwnerByRequestId("REQ-23", "hod@example.com");
         verify(interviewDetailRepository).findActiveCandidatesForInternalVacancyByRequestId("REQ-23");
         verifyNoInteractions(assessmentRepository);

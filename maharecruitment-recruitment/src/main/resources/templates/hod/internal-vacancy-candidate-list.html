@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Candidate Applications</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/hod-internal-vacancy-applications.css(v='20260825-1')}">
+    <link rel="stylesheet" th:href="@{/css/hod-internal-vacancy-applications.css(v='20260831-1')}">
 </head>
 
 <body class="department-shell candidate-applications-page" th:attr="data-context-path=${contextPath}">
@@ -49,6 +49,9 @@
                 </header>
 
                 <div class="card-body application-content">
+                    <div class="alert alert-success" role="alert" th:if="${successMessage}" th:text="${successMessage}"></div>
+                    <div class="alert alert-danger" role="alert" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
                     <div class="application-metrics" aria-label="Request summary">
                         <div class="metric-card metric-card-applications">
                             <span class="metric-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
@@ -230,6 +233,7 @@
                                         <th scope="col">Application</th>
                                         <th scope="col">Interview &amp; Decision</th>
                                         <th scope="col" class="text-center">Resume</th>
+                                        <th scope="col" class="candidate-action-column">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -286,7 +290,15 @@
                                         </td>
                                         <td data-label="Application">
                                             <span class="candidate-status" th:classappend="${' ' + candidate.candidateStatusCssClass}"
-                                                th:text="${candidate.candidateStatusLabel}">SUBMITTED BY AGENCY</span>
+                                                th:text="${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT'
+                                                    ? 'SHORTLISTED BY REQUESTER'
+                                                    : (candidate.candidateStatus != null and candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT'
+                                                        ? 'REJECTED BY REQUESTER'
+                                                        : candidate.candidateStatusLabel)}">SUBMITTED BY AGENCY</span>
+                                            <p class="candidate-review-remarks" th:if="${candidate.departmentShortlistRemarks != null}">
+                                                <i class="fa-regular fa-message" aria-hidden="true"></i>
+                                                <span th:text="${candidate.departmentShortlistRemarks}">Review remarks</span>
+                                            </p>
                                             <div class="submission-time">
                                                 <i class="fa-regular fa-calendar" aria-hidden="true"></i>
                                                 <span th:text="${candidate.submittedAt != null ? #temporals.format(candidate.submittedAt, 'dd MMM yyyy, hh:mm a') : '-'}">-</span>
@@ -320,9 +332,56 @@
                                                 <i class="fa-regular fa-file" aria-hidden="true"></i><span>Not available</span>
                                             </span>
                                         </td>
+                                        <td class="candidate-action-cell" data-label="Action">
+                                            <form method="post" class="candidate-review-form"
+                                                th:if="${requestDetails != null and requestDetails.status != null and requestDetails.status.name() == 'OPEN'
+                                                    and (candidate.candidateStatus == null or candidate.candidateStatus.name() != 'INTERVIEW_SCHEDULED_BY_AGENCY')
+                                                    and candidate.assessmentSubmitted != true and candidate.finalDecisionStatus == null}"
+                                                th:action="@{/hod1/internal-vacancies/request/{requestId}/applications/{recruitmentInterviewDetailId}/review(
+                                                    requestId=${candidateListView.requestId},
+                                                    recruitmentInterviewDetailId=${candidate.recruitmentInterviewDetailId})}">
+                                                <input type="hidden" th:if="${_csrf != null}"
+                                                    th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                <label class="visually-hidden"
+                                                    th:for="${'reviewRemarks-' + candidate.recruitmentInterviewDetailId}">
+                                                    Review remarks
+                                                </label>
+                                                <textarea class="candidate-review-input" name="remarks" rows="2" maxlength="1000"
+                                                    th:id="${'reviewRemarks-' + candidate.recruitmentInterviewDetailId}"
+                                                    th:text="${candidate.departmentShortlistRemarks}"
+                                                    placeholder="Remarks (required for rejection)"></textarea>
+                                                <div class="candidate-review-actions">
+                                                    <button type="submit" class="candidate-action-button action-shortlist"
+                                                        name="decision" value="SHORTLIST">
+                                                        <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+                                                        <span>Shortlist</span>
+                                                    </button>
+                                                    <button type="submit" class="candidate-action-button action-reject"
+                                                        name="decision" value="REJECT">
+                                                        <i class="fa-solid fa-user-xmark" aria-hidden="true"></i>
+                                                        <span>Reject</span>
+                                                    </button>
+                                                </div>
+                                            </form>
+                                            <span class="candidate-action-unavailable"
+                                                th:if="${requestDetails != null and requestDetails.status != null and requestDetails.status.name() == 'OPEN'
+                                                    and candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'}">
+                                                Decision locked after interview scheduling.
+                                            </span>
+                                            <span class="candidate-action-unavailable"
+                                                th:if="${requestDetails != null and requestDetails.status != null and requestDetails.status.name() == 'OPEN'
+                                                    and (candidate.assessmentSubmitted == true or candidate.finalDecisionStatus != null)
+                                                    and (candidate.candidateStatus == null or candidate.candidateStatus.name() != 'INTERVIEW_SCHEDULED_BY_AGENCY')}">
+                                                Candidate has moved beyond shortlisting.
+                                            </span>
+                                            <span class="candidate-action-unavailable"
+                                                th:if="${requestDetails == null or requestDetails.status == null or requestDetails.status.name() != 'OPEN'}">
+                                                Decisions are available only while the vacancy is open.
+                                            </span>
+                                        </td>
                                     </tr>
                                     <tr id="candidateFilterEmpty" class="candidate-filter-empty" hidden>
-                                        <td colspan="8">
+                                        <td colspan="9">
                                             <div class="table-filter-empty-state">
                                                 <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                                                 <strong>No matching applications</strong>
@@ -369,6 +428,25 @@
             const resultCount = document.getElementById("candidateResultCount");
             const emptyResult = document.getElementById("candidateFilterEmpty");
             const rows = Array.from(document.querySelectorAll("[data-candidate-row]"));
+
+            document.querySelectorAll(".candidate-review-form").forEach((form) => {
+                form.addEventListener("submit", (event) => {
+                    const decision = event.submitter?.value;
+                    const remarks = form.querySelector("[name='remarks']");
+                    if (decision === "REJECT" && remarks && !remarks.value.trim()) {
+                        event.preventDefault();
+                        remarks.setCustomValidity("Remarks are required when rejecting a candidate.");
+                        remarks.reportValidity();
+                        return;
+                    }
+                    if (remarks) {
+                        remarks.setCustomValidity("");
+                    }
+                });
+                form.querySelector("[name='remarks']")?.addEventListener("input", (event) => {
+                    event.currentTarget.setCustomValidity("");
+                });
+            });
 
             if (!searchInput || !statusFilter || rows.length === 0) {
                 return;

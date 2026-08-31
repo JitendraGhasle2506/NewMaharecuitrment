@@ -176,6 +176,7 @@ public class InternalVacancyCandidateReviewServiceImpl implements InternalVacanc
                 .resumeOriginalName(candidate.getResumeOriginalName())
                 .resumeFilePath(candidate.getResumeFilePath())
                 .candidateStatus(candidate.getCandidateStatus())
+                .departmentShortlistRemarks(candidate.getDepartmentShortlistRemarks())
                 .submittedAt(candidate.getCreatedDateTime())
                 .interviewDateTime(candidate.getInterviewDateTime())
                 .interviewTimeSlot(candidate.getInterviewTimeSlot())

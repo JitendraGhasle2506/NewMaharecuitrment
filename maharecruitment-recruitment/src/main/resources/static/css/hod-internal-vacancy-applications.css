@@ -618,7 +618,7 @@
     border-radius: 0 0 14px 14px;
 }
 
-.candidate-table { min-width: 1180px; }
+.candidate-table { min-width: 1460px; }
 .candidate-table thead th { padding-block: 0.8rem !important; }
 
 .candidate-applications-page .candidate-applications-card .candidate-table tbody td {
@@ -761,6 +761,86 @@ a.candidate-contact-link:hover { color: #2867ad; text-decoration: underline; }
 .status-shortlisted { color: #176741; border-color: #bfe4ce; background: #e9f8ef; }
 .status-rejected { color: #a52b39; border-color: #f0c8cd; background: #ffedef; }
 .status-interview { color: #8a5b04; border-color: #ecd9a9; background: #fff6dc; }
+
+.candidate-review-remarks {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    max-width: 180px;
+    margin: 0.45rem 0 0;
+    color: #687c92;
+    font-size: 0.68rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.candidate-review-remarks i { margin-top: 0.12rem; }
+
+.candidate-action-column { min-width: 250px; }
+
+.candidate-review-form {
+    display: grid;
+    gap: 0.55rem;
+    min-width: 235px;
+}
+
+.candidate-review-input {
+    width: 100%;
+    min-height: 54px;
+    padding: 0.5rem 0.6rem;
+    resize: vertical;
+    color: #334e68;
+    border: 1px solid #cbd8e5;
+    border-radius: 8px;
+    outline: none;
+    background: #fff;
+    font: inherit;
+    font-size: 0.74rem;
+    line-height: 1.4;
+}
+
+.candidate-review-input:focus {
+    border-color: #6e9dcd;
+    box-shadow: 0 0 0 3px rgba(40, 103, 173, 0.11);
+}
+
+.candidate-review-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+}
+
+.candidate-action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 34px;
+    padding: 0.4rem 0.55rem;
+    border: 1px solid;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.72rem;
+    font-weight: 750;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.candidate-action-button:hover,
+.candidate-action-button:focus { transform: translateY(-1px); }
+.action-shortlist { color: #176741; border-color: #9fd0b3; background: #f3fbf6; }
+.action-shortlist:hover,
+.action-shortlist:focus { color: #0e5432; border-color: #72b28d; background: #e5f6eb; }
+.action-reject { color: #a52b39; border-color: #e5aeb5; background: #fff7f8; }
+.action-reject:hover,
+.action-reject:focus { color: #85202c; border-color: #cf7f89; background: #fdebed; }
+
+.candidate-action-unavailable {
+    display: block;
+    max-width: 220px;
+    color: #7a8b9c;
+    font-size: 0.72rem;
+    line-height: 1.45;
+}
 
 .interview-detail,
 .interview-pending {
@@ -987,6 +1067,7 @@ a.candidate-contact-link:hover { color: #2867ad; text-decoration: underline; }
     .candidate-table .candidate-number-cell { display: none; }
     .candidate-identity { min-width: 0; }
     .resume-cell { text-align: left; }
+    .candidate-review-form { min-width: 0; }
     .candidate-filter-empty { display: block; }
     .candidate-filter-empty[hidden] { display: none; }
     .candidate-filter-empty td { display: block; }
@@ -1013,5 +1094,6 @@ a.candidate-contact-link:hover { color: #2867ad; text-decoration: underline; }
     .application-hero .back-button,
     .document-link,
     .candidate-table .candidate-row,
-    .resume-button { transition: none; }
+    .resume-button,
+    .candidate-action-button { transition: none; }
 }
