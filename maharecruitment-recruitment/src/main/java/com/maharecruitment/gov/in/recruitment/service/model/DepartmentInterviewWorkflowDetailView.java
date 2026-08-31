@@ -47,6 +47,7 @@ public class DepartmentInterviewWorkflowDetailView {
     private Long filledVacancyCount;
     private Long remainingVacancyCount;
     private String interviewAuthority;
+    private List<InternalVacancyAssignedInterviewAuthorityView> interviewAuthorities;
     private boolean panelAssigned;
     private List<InternalVacancyLevelTwoPanelMemberView> panelMembers;
     private int panelFeedbackSubmittedCount;

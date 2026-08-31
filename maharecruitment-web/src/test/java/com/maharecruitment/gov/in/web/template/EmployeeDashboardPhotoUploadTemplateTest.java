@@ -19,7 +19,7 @@ class EmployeeDashboardPhotoUploadTemplateTest {
                 .contains("id=\"photoUploadForm\" method=\"post\" enctype=\"multipart/form-data\"")
                 .contains("th:action=\"@{/employee/profile/photo/upload}\"")
                 .contains("th:name=\"${_csrf.parameterName}\"")
-                .contains("employee-dashboard.js(v='20260818')");
+                .contains("employee-dashboard.js(v='20260831')");
         assertThat(script)
                 .contains("'X-Requested-With': 'XMLHttpRequest'")
                 .contains("'Accept': 'application/json'")

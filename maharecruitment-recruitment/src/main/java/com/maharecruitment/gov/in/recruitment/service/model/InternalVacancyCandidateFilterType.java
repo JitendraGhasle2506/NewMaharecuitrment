@@ -10,8 +10,8 @@ public enum InternalVacancyCandidateFilterType {
     PENDING_REVIEW("pending", "Pending Review"),
     SHORTLISTED("shortlisted", "Shortlisted"),
     REJECTED("rejected", "Rejected"),
-    INTERVIEW_SCHEDULED("scheduled", "Interview Scheduled"),
-    FEEDBACK_SUBMITTED("feedback", "Feedback Submitted");
+    INTERVIEW_SCHEDULED("scheduled", "Feedback Pending"),
+    FEEDBACK_SUBMITTED("feedback", "My Feedback Submitted");
 
     private final String requestValue;
     private final String label;

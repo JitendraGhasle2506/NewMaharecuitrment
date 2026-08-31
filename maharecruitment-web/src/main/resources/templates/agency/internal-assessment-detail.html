@@ -506,10 +506,7 @@
                                 th:text="${detail.assessment.submittedAt != null ? #temporals.format(detail.assessment.submittedAt, 'dd-MM-yyyy HH:mm') : '-'}">
                                 01-Apr-2026 10:30
                             </div>
-                            <div class="overview-support"
-                                th:text="${'Interview Authority: ' + (detail.assessment.interviewAuthority != null ? detail.assessment.interviewAuthority : '-')}">
-                                Interview Authority
-                            </div>
+                            <div class="overview-support">Level 1 feedback received</div>
                         </div>
                     </div>
 
@@ -567,10 +564,6 @@
 
                             <div th:if="${detail.assessment != null}">
                                 <div class="assessment-meta mb-3">
-                                    <div class="assessment-tag" th:if="${detail.consolidatedAssessment == null}">
-                                        <strong>Authority</strong>
-                                        <span th:text="${detail.assessment.interviewAuthority != null ? detail.assessment.interviewAuthority : '-'}">Authority</span>
-                                    </div>
                                     <div class="assessment-tag" th:if="${detail.consolidatedAssessment != null}">
                                         <strong>Average Panel Score</strong>
                                         <span th:text="${detail.consolidatedAssessment.averageScore != null ? detail.consolidatedAssessment.averageScore + ' / 20.00' : '-'}">0.00</span>
@@ -640,7 +633,7 @@
                                     <table class="table table-bordered table-sm align-middle">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>Assessor</th>
+                                                <th>Panel</th>
                                                 <th class="text-center">Technical</th>
                                                 <th class="text-center">Comm.</th>
                                                 <th class="text-center">Leader.</th>
@@ -650,11 +643,8 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr th:each="assessmentItem : ${detail.consolidatedAssessment.individualAssessments}">
-                                                <td>
-                                                    <div class="fw-bold text-dark" th:text="${assessmentItem.assessorName}">Name</div>
-                                                    <small class="text-muted" th:text="${assessmentItem.assessorType}">USER</small>
-                                                </td>
+                                            <tr th:each="assessmentItem, assessmentStat : ${detail.consolidatedAssessment.individualAssessments}">
+                                                <td class="fw-bold text-dark" th:text="${'Panel ' + assessmentStat.count}">Panel 1</td>
                                                 <td class="text-center" th:text="${assessmentItem.technicalScore}">0</td>
                                                 <td class="text-center" th:text="${assessmentItem.communicationScore}">0</td>
                                                 <td class="text-center" th:text="${assessmentItem.leadershipScore}">0</td>
@@ -663,29 +653,6 @@
                                                 <td>
                                                     <small th:text="${assessmentItem.remarks != null ? assessmentItem.remarks : '-'}">Remarks</small>
                                                 </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <h6 class="section-title mb-3">Panel Members</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-sm align-middle">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Name</th>
-                                                <th>Designation</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr th:if="${#lists.isEmpty(detail.assessment.panelMembers)}">
-                                                <td colspan="3" class="text-center text-muted">No panel member details available.</td>
-                                            </tr>
-                                            <tr th:each="member, stat : ${detail.assessment.panelMembers}">
-                                                <td th:text="${stat.count}">1</td>
-                                                <td th:text="${member.panelMemberName != null ? member.panelMemberName : '-'}">Member</td>
-                                                <td th:text="${member.panelMemberDesignation != null ? member.panelMemberDesignation : '-'}">Designation</td>
                                             </tr>
                                         </tbody>
                                     </table>

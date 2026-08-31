@@ -39,6 +39,7 @@ public class InternalVacancySubmittedCandidateView {
     private Boolean interviewChangeRequested;
     private LocalDateTime interviewChangeRequestedAt;
     private Boolean assessmentSubmitted;
+    private boolean feedbackSubmittedByCurrentActor;
     private BigDecimal averagePanelScore;
     private Long submittedAssessmentCount;
     private String finalDecisionStatus;

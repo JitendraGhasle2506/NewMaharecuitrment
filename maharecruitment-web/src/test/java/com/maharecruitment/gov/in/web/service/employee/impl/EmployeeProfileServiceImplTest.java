@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 
@@ -110,6 +111,50 @@ class EmployeeProfileServiceImplTest {
     }
 
     @Test
+    void savesMarriageDetailsForMarriedEmployee() {
+        User user = user();
+        EmployeeEntity employee = employee();
+        EmployeeProfile profile = new EmployeeProfile();
+        profile.setEmployee(employee);
+        EmployeeProfileDTO dto = new EmployeeProfileDTO();
+        dto.setMaritalStatus("Married");
+        dto.setSpouseName("  Ananya Employee  ");
+        dto.setMarriageDate(LocalDate.of(2020, 2, 20));
+
+        prepareProfileUpdate(user, employee, profile);
+
+        EmployeeProfileDTO saved = service().updateCurrentEmployeeProfile(user.getEmail(), dto);
+
+        assertThat(profile.getSpouseName()).isEqualTo("Ananya Employee");
+        assertThat(profile.getMarriageDate()).isEqualTo(LocalDate.of(2020, 2, 20));
+        assertThat(saved.getSpouseName()).isEqualTo("Ananya Employee");
+        assertThat(saved.getMarriageDate()).isEqualTo(LocalDate.of(2020, 2, 20));
+    }
+
+    @Test
+    void clearsMarriageDetailsWhenEmployeeIsNotMarried() {
+        User user = user();
+        EmployeeEntity employee = employee();
+        EmployeeProfile profile = new EmployeeProfile();
+        profile.setEmployee(employee);
+        profile.setSpouseName("Previous Spouse");
+        profile.setMarriageDate(LocalDate.of(2018, 1, 10));
+        EmployeeProfileDTO dto = new EmployeeProfileDTO();
+        dto.setMaritalStatus("Single");
+        dto.setSpouseName("Ignored Name");
+        dto.setMarriageDate(LocalDate.of(2021, 3, 15));
+
+        prepareProfileUpdate(user, employee, profile);
+
+        EmployeeProfileDTO saved = service().updateCurrentEmployeeProfile(user.getEmail(), dto);
+
+        assertThat(profile.getSpouseName()).isNull();
+        assertThat(profile.getMarriageDate()).isNull();
+        assertThat(saved.getSpouseName()).isNull();
+        assertThat(saved.getMarriageDate()).isNull();
+    }
+
+    @Test
     void resolvesEmployeeProfilePhotoBeforeOtherPhotoSources() {
         User user = user();
         EmployeeEntity employee = employee();
@@ -198,6 +243,15 @@ class EmployeeProfileServiceImplTest {
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
         when(employeeRepository.findDetailedByUserId(user.getId())).thenReturn(Optional.of(employee));
         when(employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId())).thenReturn(profile);
+    }
+
+    private void prepareProfileUpdate(User user, EmployeeEntity employee, EmployeeProfile profile) {
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
+        when(employeeRepository.findDetailedByUserId(user.getId())).thenReturn(Optional.of(employee));
+        when(employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()))
+                .thenReturn(Optional.of(profile));
+        when(employeeProfileRepository.save(profile)).thenReturn(profile);
+        when(employeeRepository.save(employee)).thenReturn(employee);
     }
 
     private void allowPhoto(String photoPath, Path resolvedPath) {

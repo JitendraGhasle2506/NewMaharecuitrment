@@ -17,7 +17,6 @@ import org.springframework.util.StringUtils;
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentFeedbackEntity;
-import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentPanelMemberEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInternalLevelTwoScheduleEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
@@ -31,6 +30,8 @@ import com.maharecruitment.gov.in.recruitment.service.model.AgencyInternalAssess
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyInternalAssessmentDetailView;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyInternalAssessmentProjectView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAssessmentView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyConsolidatedAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatusResolver;
 
@@ -141,20 +142,16 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 .findByRecruitmentInterviewDetailRecruitmentInterviewDetailId(recruitmentInterviewDetailId)
                 .orElse(null);
         int levelTwoFeedbackSubmittedCount = loadLevelTwoFeedbackCount(recruitmentInterviewDetailId);
-        Map<Long, String> interviewerNameMap = assessment == null
-                ? Map.of()
-                : loadInterviewerNameMap(List.of(assessment));
 
-        com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyConsolidatedAssessmentView consolidatedAssessment =
-                internalVacancyAssessmentService.getConsolidatedAssessment(recruitmentInterviewDetailId);
+        InternalVacancyConsolidatedAssessmentView consolidatedAssessment = redactPanelIdentities(
+                internalVacancyAssessmentService.getConsolidatedAssessment(recruitmentInterviewDetailId));
 
         return toDetailView(
                 candidate,
                 assessment,
                 consolidatedAssessment,
                 levelTwoSchedule,
-                levelTwoFeedbackSubmittedCount,
-                interviewerNameMap);
+                levelTwoFeedbackSubmittedCount);
     }
 
     @Override
@@ -304,10 +301,9 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
     private AgencyInternalAssessmentDetailView toDetailView(
             RecruitmentInterviewDetailEntity candidate,
             RecruitmentAssessmentFeedbackEntity assessment,
-            com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyConsolidatedAssessmentView consolidatedAssessment,
-        RecruitmentInternalLevelTwoScheduleEntity levelTwoSchedule,
-        int levelTwoFeedbackSubmittedCount,
-        Map<Long, String> interviewerNameMap) {
+            InternalVacancyConsolidatedAssessmentView consolidatedAssessment,
+            RecruitmentInternalLevelTwoScheduleEntity levelTwoSchedule,
+            int levelTwoFeedbackSubmittedCount) {
         boolean schedulingAllowed = isLevelTwoSchedulingAllowed(candidate, assessment);
         boolean levelTwoScheduled = isLevelTwoInterviewScheduled(levelTwoSchedule);
         boolean panelAssigned = levelTwoSchedule != null && levelTwoSchedule.getPanelAssignedAt() != null;
@@ -336,7 +332,7 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 .initialInterviewDateTime(candidate.getInterviewDateTime())
                 .initialInterviewTimeSlot(candidate.getInterviewTimeSlot())
                 .initialInterviewLink(candidate.getInterviewLink())
-                .assessment(toAssessmentView(assessment, interviewerNameMap))
+                .assessment(toAgencyAssessmentView(assessment))
                 .consolidatedAssessment(consolidatedAssessment)
                 .levelTwoInterviewDateTime(levelTwoSchedule != null ? levelTwoSchedule.getInterviewDateTime() : null)
                 .levelTwoInterviewTimeSlot(levelTwoSchedule != null ? levelTwoSchedule.getInterviewTimeSlot() : null)
@@ -449,23 +445,13 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                         LinkedHashMap::new));
     }
 
-    private DepartmentInterviewAssessmentView toAssessmentView(
-            RecruitmentAssessmentFeedbackEntity assessment,
-            Map<Long, String> interviewerNameMap) {
+    private DepartmentInterviewAssessmentView toAgencyAssessmentView(RecruitmentAssessmentFeedbackEntity assessment) {
         if (assessment == null) {
             return null;
         }
 
-        List<DepartmentInterviewAssessmentView.DepartmentInterviewAssessmentPanelMemberView> panelMemberViews =
-                assessment.getPanelMembers() == null
-                        ? List.of()
-                        : assessment.getPanelMembers().stream()
-                                .map(this::toPanelMemberView)
-                                .toList();
-
         return DepartmentInterviewAssessmentView.builder()
                 .recruitmentAssessmentFeedbackId(assessment.getRecruitmentAssessmentFeedbackId())
-                .interviewAuthority(resolveInterviewAuthorityLabel(assessment, interviewerNameMap))
                 .candidateName(assessment.getCandidateName())
                 .interviewDateTime(assessment.getInterviewDateTime())
                 .mobile(assessment.getMobile())
@@ -484,15 +470,48 @@ public class RecruitmentAgencyInternalAssessmentServiceImpl implements Recruitme
                 .assessmentRemarks(assessment.getAssessmentRemarks())
                 .finalRemarks(assessment.getFinalRemarks())
                 .submittedAt(assessment.getCreatedDateTime())
-                .panelMembers(panelMemberViews)
+                .panelMembers(List.of())
                 .build();
     }
 
-    private DepartmentInterviewAssessmentView.DepartmentInterviewAssessmentPanelMemberView toPanelMemberView(
-            RecruitmentAssessmentPanelMemberEntity panelMember) {
-        return DepartmentInterviewAssessmentView.DepartmentInterviewAssessmentPanelMemberView.builder()
-                .panelMemberName(panelMember.getPanelMemberName())
-                .panelMemberDesignation(panelMember.getPanelMemberDesignation())
+    static InternalVacancyConsolidatedAssessmentView redactPanelIdentities(
+            InternalVacancyConsolidatedAssessmentView assessment) {
+        if (assessment == null) {
+            return null;
+        }
+
+        List<InternalVacancyAssessmentView> sourceAssessments = assessment.getIndividualAssessments();
+        List<InternalVacancyAssessmentView> redactedAssessments = sourceAssessments == null
+                ? List.of()
+                : sourceAssessments.stream()
+                        .filter(Objects::nonNull)
+                        .map(RecruitmentAgencyInternalAssessmentServiceImpl::redactPanelIdentity)
+                        .toList();
+
+        return InternalVacancyConsolidatedAssessmentView.builder()
+                .recruitmentInterviewDetailId(assessment.getRecruitmentInterviewDetailId())
+                .candidateName(assessment.getCandidateName())
+                .requestId(assessment.getRequestId())
+                .totalPanels(assessment.getTotalPanels())
+                .submittedAssessments(assessment.getSubmittedAssessments())
+                .averageScore(assessment.getAverageScore())
+                .individualAssessments(redactedAssessments)
+                .isSelectionCriteriaMet(assessment.isSelectionCriteriaMet())
+                .build();
+    }
+
+    private static InternalVacancyAssessmentView redactPanelIdentity(InternalVacancyAssessmentView assessment) {
+        return InternalVacancyAssessmentView.builder()
+                .assessmentId(assessment.getAssessmentId())
+                .technicalScore(assessment.getTechnicalScore())
+                .communicationScore(assessment.getCommunicationScore())
+                .leadershipScore(assessment.getLeadershipScore())
+                .relevantExperienceScore(assessment.getRelevantExperienceScore())
+                .totalScore(assessment.getTotalScore())
+                .remarks(assessment.getRemarks())
+                .interviewerGrade(assessment.getInterviewerGrade())
+                .recommendationStatus(assessment.getRecommendationStatus())
+                .submittedAt(assessment.getSubmittedAt())
                 .build();
     }
 

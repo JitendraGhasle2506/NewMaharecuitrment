@@ -9,6 +9,8 @@ create table if not exists employee_profile (
     alternate_mobile_no varchar(15),
     pan_no varchar(10),
     marital_status varchar(30),
+    spouse_name varchar(100),
+    marriage_date date,
     blood_group varchar(10),
     emergency_contact_name varchar(100),
     emergency_contact_no varchar(15),

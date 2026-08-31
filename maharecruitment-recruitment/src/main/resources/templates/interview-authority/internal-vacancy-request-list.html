@@ -220,11 +220,11 @@
                             <div class="overview-note">Rejected by the request creator</div>
                         </div>
                         <div class="overview-card">
-                            <div class="overview-label">Feedback Submitted</div>
+                            <div class="overview-label">My Feedback Submitted</div>
                             <div class="overview-value" th:text="${feedbackSubmittedCandidates}">0</div>
                             <div class="overview-note"
-                                 th:text="${'Interview Scheduled: ' + interviewScheduledCandidates}">
-                                Interview Scheduled: 0
+                                 th:text="${'Feedback Pending: ' + interviewScheduledCandidates}">
+                                Feedback Pending: 0
                             </div>
                         </div>
                     </div>
@@ -246,8 +246,8 @@
                                     <th class="text-center">Pending</th>
                                     <th class="text-center">Shortlisted</th>
                                     <th class="text-center">Rejected</th>
-                                    <th class="text-center">Scheduled</th>
-                                    <th class="text-center">Feedback</th>
+                                    <th class="text-center">Feedback Pending</th>
+                                    <th class="text-center">My Feedback</th>
                                     <th>Latest Submitted At</th>
                                     <th class="action-cell">Action</th>
                                 </tr>

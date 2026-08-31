@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +23,7 @@ import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
+import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyPanelAssessmentRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentInterviewDetailRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyInterviewAuthorityShortlistingService;
@@ -42,29 +45,35 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
     private final EmployeeRepository employeeRepository;
     private final RecruitmentNotificationRepository notificationRepository;
     private final RecruitmentInterviewDetailRepository interviewDetailRepository;
+    private final InternalVacancyPanelAssessmentRepository assessmentRepository;
 
     public InternalVacancyInterviewAuthorityShortlistingServiceImpl(
             UserRepository userRepository,
             EmployeeRepository employeeRepository,
             RecruitmentNotificationRepository notificationRepository,
-            RecruitmentInterviewDetailRepository interviewDetailRepository) {
+            RecruitmentInterviewDetailRepository interviewDetailRepository,
+            InternalVacancyPanelAssessmentRepository assessmentRepository) {
         this.userRepository = userRepository;
         this.employeeRepository = employeeRepository;
         this.notificationRepository = notificationRepository;
         this.interviewDetailRepository = interviewDetailRepository;
+        this.assessmentRepository = assessmentRepository;
     }
 
     @Override
     public List<InternalVacancyCandidateRequestSummaryView> getAssignedRequestSummaries(String actorEmail) {
         ActorContext actor = resolveActorContext(actorEmail);
 
-        List<InternalVacancySubmittedCandidateView> candidates = interviewDetailRepository
+        List<RecruitmentInterviewDetailEntity> candidateEntities = interviewDetailRepository
                 .findActiveCandidatesForInternalVacanciesAccessibleToActor(
                         actor.email(),
                         actor.userId(),
-                        actor.employeeId())
-                .stream()
-                .map(this::toCandidateView)
+                        actor.employeeId());
+        Set<Long> submittedFeedbackCandidateIds = findSubmittedFeedbackCandidateIds(candidateEntities, actor);
+        List<InternalVacancySubmittedCandidateView> candidates = candidateEntities.stream()
+                .map(candidate -> toCandidateView(
+                        candidate,
+                        submittedFeedbackCandidateIds.contains(candidate.getRecruitmentInterviewDetailId())))
                 .toList();
 
         Map<String, SummaryAccumulator> summaryByRequestId = new LinkedHashMap<>();
@@ -98,7 +107,7 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
             if (isAwaitingInterviewFeedback(candidate)) {
                 accumulator.interviewScheduledCandidates++;
             }
-            if (Boolean.TRUE.equals(candidate.getAssessmentSubmitted())) {
+            if (candidate.isFeedbackSubmittedByCurrentActor()) {
                 accumulator.feedbackSubmittedCandidates++;
             }
             if (candidate.getSubmittedAt() != null
@@ -146,14 +155,17 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "This internal vacancy request is not available to the logged-in user."));
 
-        List<InternalVacancySubmittedCandidateView> candidates = interviewDetailRepository
+        List<RecruitmentInterviewDetailEntity> candidateEntities = interviewDetailRepository
                 .findActiveCandidatesForInternalVacancyAccessibleToActor(
                         normalizedRequestId,
                         actor.email(),
                         actor.userId(),
-                        actor.employeeId())
-                .stream()
-                .map(this::toCandidateView)
+                        actor.employeeId());
+        Set<Long> submittedFeedbackCandidateIds = findSubmittedFeedbackCandidateIds(candidateEntities, actor);
+        List<InternalVacancySubmittedCandidateView> candidates = candidateEntities.stream()
+                .map(candidate -> toCandidateView(
+                        candidate,
+                        submittedFeedbackCandidateIds.contains(candidate.getRecruitmentInterviewDetailId())))
                 .toList();
         CandidateListMetrics metrics = summarizeCandidates(candidates);
         List<InternalVacancySubmittedCandidateView> filteredCandidates = candidates.stream()
@@ -293,7 +305,9 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
                                 && actor.employeeId().equals(assignment.getEmployee().getEmployeeId()));
     }
 
-    private InternalVacancySubmittedCandidateView toCandidateView(RecruitmentInterviewDetailEntity candidate) {
+    private InternalVacancySubmittedCandidateView toCandidateView(
+            RecruitmentInterviewDetailEntity candidate,
+            boolean feedbackSubmittedByCurrentActor) {
         String designationName = candidate.getDesignationVacancy() != null
                 && candidate.getDesignationVacancy().getDesignationMst() != null
                         ? candidate.getDesignationVacancy().getDesignationMst().getDesignationName()
@@ -336,10 +350,32 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
                 .interviewChangeRequested(candidate.getDepartmentInterviewChangeRequested())
                 .interviewChangeRequestedAt(candidate.getDepartmentInterviewChangeRequestedAt())
                 .assessmentSubmitted(candidate.getAssessmentSubmitted())
+                .feedbackSubmittedByCurrentActor(feedbackSubmittedByCurrentActor)
                 .finalDecisionStatus(candidate.getFinalDecisionStatus())
                 .finalDecisionRemarks(candidate.getFinalDecisionRemarks())
                 .finalDecisionAt(candidate.getFinalDecisionAt())
                 .build();
+    }
+
+    private Set<Long> findSubmittedFeedbackCandidateIds(
+            List<RecruitmentInterviewDetailEntity> candidates,
+            ActorContext actor) {
+        if (candidates == null || candidates.isEmpty()) {
+            return Set.of();
+        }
+
+        Set<Long> candidateIds = candidates.stream()
+                .map(RecruitmentInterviewDetailEntity::getRecruitmentInterviewDetailId)
+                .filter(id -> id != null && id > 0)
+                .collect(Collectors.toSet());
+        if (candidateIds.isEmpty()) {
+            return Set.of();
+        }
+
+        return assessmentRepository.findSubmittedInterviewDetailIdsByAssessor(
+                candidateIds,
+                actor.userId(),
+                actor.employeeId());
     }
 
     private String normalizeRequestId(String requestId) {
@@ -379,7 +415,7 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
             if (isAwaitingInterviewFeedback(candidate)) {
                 metrics.interviewScheduledCandidates++;
             }
-            if (Boolean.TRUE.equals(candidate.getAssessmentSubmitted())) {
+            if (candidate.isFeedbackSubmittedByCurrentActor()) {
                 metrics.feedbackSubmittedCandidates++;
             }
         }
@@ -403,7 +439,7 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
             case INTERVIEW_SCHEDULED:
                 return isAwaitingInterviewFeedback(candidate);
             case FEEDBACK_SUBMITTED:
-                return Boolean.TRUE.equals(candidate.getAssessmentSubmitted());
+                return candidate.isFeedbackSubmittedByCurrentActor();
             case ALL:
             default:
                 return true;
@@ -413,7 +449,7 @@ public class InternalVacancyInterviewAuthorityShortlistingServiceImpl
     private boolean isAwaitingInterviewFeedback(InternalVacancySubmittedCandidateView candidate) {
         return candidate != null
                 && candidate.getCandidateStatus() == RecruitmentCandidateStatus.INTERVIEW_SCHEDULED_BY_AGENCY
-                && !Boolean.TRUE.equals(candidate.getAssessmentSubmitted());
+                && !candidate.isFeedbackSubmittedByCurrentActor();
     }
 
     private static final class SummaryAccumulator {

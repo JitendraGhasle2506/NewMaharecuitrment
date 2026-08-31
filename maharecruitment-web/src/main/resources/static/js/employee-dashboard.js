@@ -11,6 +11,8 @@
     const form = document.getElementById('employeeProfileForm');
     const photoForm = document.getElementById('photoUploadForm');
     const photoFile = document.getElementById('photoFile');
+    const maritalStatus = document.getElementById('maritalStatus');
+    const marriageDetails = document.getElementById('marriageDetails');
     const csrfToken = document.getElementById('csrfToken')?.value;
     const csrfHeader = document.getElementById('csrfHeader')?.value;
 
@@ -82,12 +84,18 @@
         clearErrors();
         const formData = new FormData(form);
         const dob = String(formData.get('dob') || '').trim();
+        const marriageDate = String(formData.get('marriageDate') || '').trim();
         let gender = String(formData.get('gender') || '').trim();
         let panNo = String(field('panNo')?.value || '').trim().toUpperCase();
         let valid = true;
 
         if (dob === '1900-01-01') {
             setError('dob', 'Please select a valid date of birth');
+            valid = false;
+        }
+
+        if (marriageDate && marriageDate > localDateValue(new Date())) {
+            setError('marriageDate', 'Marriage date cannot be in the future');
             valid = false;
         }
 
@@ -114,6 +122,27 @@
         }
 
         return valid;
+    }
+
+    function localDateValue(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function updateMarriageDetails() {
+        const married = maritalStatus?.value.trim().toLowerCase() === 'married';
+        if (marriageDetails) {
+            marriageDetails.hidden = !married;
+            marriageDetails.querySelectorAll('input').forEach((input) => {
+                input.disabled = !married;
+            });
+        }
+        if (!married) {
+            setError('spouseName', '');
+            setError('marriageDate', '');
+        }
     }
 
     function isPlaceholder(value) {
@@ -207,6 +236,13 @@
             document.getElementById(button.dataset.scrollTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
+
+    const marriageDateInput = field('marriageDate');
+    if (marriageDateInput) {
+        marriageDateInput.max = localDateValue(new Date());
+    }
+    maritalStatus?.addEventListener('change', updateMarriageDetails);
+    updateMarriageDetails();
 
     form?.addEventListener('submit', async (event) => {
         event.preventDefault();

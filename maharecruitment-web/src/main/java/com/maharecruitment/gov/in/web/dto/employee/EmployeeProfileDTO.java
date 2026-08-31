@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.web.dto.employee;
 
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -39,6 +40,12 @@ public class EmployeeProfileDTO {
     private String nonce;
 
     private String maritalStatus;
+
+    @Size(max = 100, message = "Spouse / partner name must not exceed 100 characters")
+    private String spouseName;
+
+    @PastOrPresent(message = "Marriage date cannot be in the future")
+    private LocalDate marriageDate;
 
     private String bloodGroup;
 

@@ -46,6 +46,12 @@ public class EmployeeProfile {
     @Column(name = "marital_status", length = 30)
     private String maritalStatus;
 
+    @Column(name = "spouse_name", length = 100)
+    private String spouseName;
+
+    @Column(name = "marriage_date")
+    private LocalDate marriageDate;
+
     @Column(name = "blood_group", length = 10)
     private String bloodGroup;
 

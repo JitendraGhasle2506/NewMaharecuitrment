@@ -265,7 +265,7 @@
                             </td>
                             <th>Candidate Summary</th>
                             <td th:text="${'Total: ' + (candidateListView != null and candidateListView.totalCandidates != null ? candidateListView.totalCandidates : 0)
-                                    + ' | Scheduled: ' + (candidateListView != null and candidateListView.interviewScheduledCandidates != null ? candidateListView.interviewScheduledCandidates : 0)
+                                    + ' | Feedback Pending: ' + (candidateListView != null and candidateListView.interviewScheduledCandidates != null ? candidateListView.interviewScheduledCandidates : 0)
                                     + ' | Rejected: ' + (candidateListView != null and candidateListView.rejectedCandidates != null ? candidateListView.rejectedCandidates : 0)}">
                                 Submitted: 0 | Interview Scheduled: 0
                             </td>
@@ -300,13 +300,13 @@
                         <a class="filter-pill"
                            th:classappend="${candidateListView.activeFilter != null and candidateListView.activeFilter.name() == 'INTERVIEW_SCHEDULED'} ? ' is-active'"
                            th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${candidateListView.requestId},filter='scheduled')}">
-                            <span>Scheduled</span>
+                            <span>Feedback Pending</span>
                             <span class="filter-pill-count" th:text="${candidateListView.interviewScheduledCandidates != null ? candidateListView.interviewScheduledCandidates : 0}">0</span>
                         </a>
                         <a class="filter-pill"
                            th:classappend="${candidateListView.activeFilter != null and candidateListView.activeFilter.name() == 'FEEDBACK_SUBMITTED'} ? ' is-active'"
                            th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates(requestId=${candidateListView.requestId},filter='feedback')}">
-                            <span>Feedback</span>
+                            <span>My Feedback</span>
                             <span class="filter-pill-count" th:text="${candidateListView.feedbackSubmittedCandidates != null ? candidateListView.feedbackSubmittedCandidates : 0}">0</span>
                         </a>
                     </div>
@@ -372,11 +372,11 @@
                                     <td th:text="${candidate.joiningTime != null ? candidate.joiningTime : '-'}">-</td>
                                     <td>
                                         <span class="status-chip"
-                                            th:classappend="${candidate.assessmentSubmitted == true} ? ' status-feedback' :
+                                            th:classappend="${candidate.feedbackSubmittedByCurrentActor == true} ? ' status-feedback' :
                                                 (${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT'} ? ' status-shortlisted' :
                                                 (${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT'} ? ' status-rejected' :
                                                 (${candidate.candidateStatus != null and candidate.candidateStatus.name() == 'INTERVIEW_SCHEDULED_BY_AGENCY'} ? ' status-scheduled' : ' status-submitted')))"
-                                            th:text="${candidate.assessmentSubmitted == true ? 'FEEDBACK SUBMITTED' :
+                                            th:text="${candidate.feedbackSubmittedByCurrentActor == true ? 'YOUR FEEDBACK SUBMITTED' :
                                                 (candidate.candidateStatus == null ? '-' :
                                                 (candidate.candidateStatus.name() == 'SHORTLISTED_BY_DEPARTMENT' ? 'SHORTLISTED BY REQUESTER' :
                                                 (candidate.candidateStatus.name() == 'REJECTED_BY_DEPARTMENT' ? 'REJECTED BY REQUESTER' :
@@ -404,7 +404,7 @@
                                                 </span>
                                             </div>
                                             <div
-                                                th:if="${candidate.assessmentSubmitted != true and candidate.interviewLink != null and !#strings.isEmpty(candidate.interviewLink)}"
+                                                th:if="${candidate.feedbackSubmittedByCurrentActor != true and candidate.interviewLink != null and !#strings.isEmpty(candidate.interviewLink)}"
                                                 class="interview-link-stack">
                                                 <div class="interview-link-actions">
                                                     <a class="interview-join-link"
@@ -443,7 +443,7 @@
                                                 th:href="@{/interview-authority/internal-vacancies/request/{requestId}/candidates/{recruitmentInterviewDetailId}/feedback(
                                                     requestId=${candidateListView.requestId},
                                                     recruitmentInterviewDetailId=${candidate.recruitmentInterviewDetailId})}">
-                                                <span th:text="${candidate.assessmentSubmitted == true ? 'Open Interview Feedback' : 'Fill Interview Feedback'}">
+                                                <span th:text="${candidate.feedbackSubmittedByCurrentActor == true ? 'Open My Feedback' : 'Fill Interview Feedback'}">
                                                     Fill Interview Feedback
                                                 </span>
                                             </a>

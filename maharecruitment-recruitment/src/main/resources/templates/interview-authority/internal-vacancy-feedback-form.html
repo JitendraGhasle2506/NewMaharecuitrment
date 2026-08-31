@@ -137,6 +137,25 @@
             border-top: 1px solid #dbe5f3;
         }
 
+        .authority-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 26px;
+            min-height: 26px;
+            padding: 2px 8px;
+            color: #fff;
+            border-radius: 999px;
+            background: #2867ad;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .authority-name {
+            color: #1f3f73;
+            font-weight: 700;
+        }
+
         .interview-link-stack {
             display: flex;
             flex-direction: column;
@@ -307,6 +326,39 @@
                     </div>
 
                     <div class="section-card">
+                        <div class="section-head d-flex align-items-center justify-content-between gap-2">
+                            <span>Interview Authorities</span>
+                            <span class="authority-count"
+                                th:text="${workflowDetail.interviewAuthorities != null ? #lists.size(workflowDetail.interviewAuthorities) : 0}">0</span>
+                        </div>
+                        <div class="section-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th scope="col" width="8%">#</th>
+                                            <th scope="col">Name</th>
+                                            <th scope="col">Designation</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:if="${#lists.isEmpty(workflowDetail.interviewAuthorities)}">
+                                            <td colspan="3" class="text-center text-muted py-3">
+                                                No interview authorities are assigned.
+                                            </td>
+                                        </tr>
+                                        <tr th:each="authority, stat : ${workflowDetail.interviewAuthorities}">
+                                            <td th:text="${stat.count}">1</td>
+                                            <td class="authority-name" th:text="${authority.name}">Authority Name</td>
+                                            <td th:text="${authority.designation}">Designation</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
                         <div class="section-head">Interview Schedule</div>
                         <div class="section-body">
                             <table class="table table-bordered table-sm mb-0">
@@ -336,7 +388,7 @@
                                     <td th:text="${workflowDetail.interviewTimeSlot != null ? workflowDetail.interviewTimeSlot : '-'}">-</td>
                                     <th>Interview Link</th>
                                     <td>
-                                        <div th:if="${workflowDetail.assessmentSubmitted != true and workflowDetail.interviewLink != null and !#strings.isEmpty(workflowDetail.interviewLink)}"
+                                        <div th:if="${workflowDetail.assessment == null and workflowDetail.interviewLink != null and !#strings.isEmpty(workflowDetail.interviewLink)}"
                                              class="interview-link-stack">
                                             <div class="interview-link-actions">
                                                 <a class="interview-join-link"
@@ -354,11 +406,11 @@
                                             </div>
                                             <span class="copy-link-status" aria-live="polite">Link copied to clipboard</span>
                                         </div>
-                                        <div th:if="${workflowDetail.assessmentSubmitted != true and workflowDetail.interviewLink != null and !#strings.isEmpty(workflowDetail.interviewLink)}"
+                                        <div th:if="${workflowDetail.assessment == null and workflowDetail.interviewLink != null and !#strings.isEmpty(workflowDetail.interviewLink)}"
                                              class="small text-muted">
                                             Quick access for the scheduled interview link.
                                         </div>
-                                        <div th:if="${workflowDetail.assessmentSubmitted == true or workflowDetail.interviewLink == null or #strings.isEmpty(workflowDetail.interviewLink)}">
+                                        <div th:if="${workflowDetail.assessment != null or workflowDetail.interviewLink == null or #strings.isEmpty(workflowDetail.interviewLink)}">
                                             <span class="text-muted">-</span>
                                         </div>
                                     </td>
@@ -508,7 +560,7 @@
 
                                     <div class="assessment-actions">
                                         <button type="submit" class="btn btn-success btn-sm"
-                                                th:text="${workflowDetail.assessmentSubmitted == true ? 'Update Feedback' : 'Submit Feedback'}">
+                                                th:text="${workflowDetail.assessment != null ? 'Update Feedback' : 'Submit Feedback'}">
                                             Submit Feedback
                                         </button>
                                     </div>

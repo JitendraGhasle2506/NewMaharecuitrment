@@ -1,15 +1,23 @@
 package com.maharecruitment.gov.in.recruitment.service.impl;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.maharecruitment.gov.in.auth.entity.User;
+import com.maharecruitment.gov.in.auth.entity.Role;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.entity.InternalVacancyOpeningEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentFeedbackEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentAssessmentPanelMemberEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentCandidateStatus;
@@ -27,6 +35,7 @@ import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewA
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentSubmissionInput;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.DepartmentInterviewWorkflowDetailView;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAssignedInterviewAuthorityView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyAssessmentView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyLevelTwoWorkflowStatus;
 
@@ -78,10 +87,10 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                 .orElseThrow(() -> new RecruitmentNotificationException(
                         "Candidate record not found for the assigned internal interview authority."));
 
-        Long internalVacancyOpeningId = candidate.getRecruitmentNotification() != null
-                && candidate.getRecruitmentNotification().getInternalVacancyOpening() != null
-                        ? candidate.getRecruitmentNotification().getInternalVacancyOpening().getInternalVacancyOpeningId()
-                        : null;
+        InternalVacancyOpeningEntity opening = candidate.getRecruitmentNotification() != null
+                ? candidate.getRecruitmentNotification().getInternalVacancyOpening()
+                : null;
+        Long internalVacancyOpeningId = opening != null ? opening.getInternalVacancyOpeningId() : null;
         if (internalVacancyOpeningId == null) {
             throw new RecruitmentNotificationException("This candidate does not belong to an internal vacancy workflow.");
         }
@@ -93,6 +102,8 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
 
         // Load only the current panel's own assessment (data isolation: each panel sees only their own marks)
         InternalVacancyAssessmentView myAssessment = assessmentService.getMyAssessment(recruitmentInterviewDetailId, actorEmail);
+        List<InternalVacancyAssignedInterviewAuthorityView> assignedInterviewAuthorities =
+                resolveAssignedInterviewAuthorities(opening);
 
         RecruitmentDesignationVacancyEntity vacancy = candidate.getDesignationVacancy();
         long vacancyCount = safePositive(vacancy != null ? vacancy.getNumberOfVacancy() : null);
@@ -137,9 +148,129 @@ public class InternalVacancyInterviewAuthorityWorkflowServiceImpl
                 .vacancyCount(vacancyCount)
                 .filledVacancyCount(filledCount)
                 .remainingVacancyCount(remainingCount)
+                .interviewAuthorities(assignedInterviewAuthorities)
                 //.selectionAllowed(false)
                 .assessment(toAssessmentViewFromPanelAssessment(myAssessment))
                 .build();
+    }
+
+    private List<InternalVacancyAssignedInterviewAuthorityView> resolveAssignedInterviewAuthorities(
+            InternalVacancyOpeningEntity opening) {
+        if (opening == null) {
+            return List.of();
+        }
+
+        Set<Long> configuredRoleIds = opening.getInterviewRoles() == null
+                ? Set.of()
+                : opening.getInterviewRoles().stream()
+                        .filter(assignment -> assignment != null && assignment.getRole() != null)
+                        .map(assignment -> assignment.getRole().getId())
+                        .filter(id -> id != null && id > 0)
+                        .collect(Collectors.toSet());
+
+        Map<String, InternalVacancyAssignedInterviewAuthorityView> authoritiesByIdentity = new LinkedHashMap<>();
+        if (opening.getInterviewAuthorities() != null) {
+            opening.getInterviewAuthorities().stream()
+                    .filter(assignment -> assignment != null && assignment.getUser() != null)
+                    .forEach(assignment -> {
+                        User user = assignment.getUser();
+                        InternalVacancyAssignedInterviewAuthorityView view =
+                                toAssignedUserView(user, configuredRoleIds);
+                        authoritiesByIdentity.put(
+                                authorityIdentityKey(user.getEmail(), view.getName(), "USER", view.getUserId()),
+                                view);
+                    });
+        }
+
+        if (opening.getInterviewEmployees() != null) {
+            opening.getInterviewEmployees().stream()
+                    .filter(assignment -> assignment != null && assignment.getEmployee() != null)
+                    .forEach(assignment -> {
+                        EmployeeEntity employee = assignment.getEmployee();
+                        InternalVacancyAssignedInterviewAuthorityView view = toAssignedEmployeeView(employee);
+                        authoritiesByIdentity.put(
+                                authorityIdentityKey(
+                                        employee.getEmail(), view.getName(), "EMPLOYEE", view.getEmployeeId()),
+                                view);
+                    });
+        }
+
+        return authoritiesByIdentity.values().stream()
+                .sorted(Comparator.comparing(
+                        InternalVacancyAssignedInterviewAuthorityView::getName,
+                        String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    private InternalVacancyAssignedInterviewAuthorityView toAssignedUserView(
+            User user,
+            Set<Long> configuredRoleIds) {
+        List<Role> roles = user.getRoles() == null ? List.of() : user.getRoles();
+        List<String> roleLabels = roles.stream()
+                .filter(role -> role != null
+                        && (configuredRoleIds.isEmpty() || configuredRoleIds.contains(role.getId())))
+                .map(Role::getName)
+                .filter(StringUtils::hasText)
+                .map(this::toRoleLabel)
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+        if (roleLabels.isEmpty() && !configuredRoleIds.isEmpty()) {
+            roleLabels = roles.stream()
+                    .filter(role -> role != null && StringUtils.hasText(role.getName()))
+                    .map(Role::getName)
+                    .map(this::toRoleLabel)
+                    .distinct()
+                    .sorted(String.CASE_INSENSITIVE_ORDER)
+                    .toList();
+        }
+
+        return InternalVacancyAssignedInterviewAuthorityView.builder()
+                .userId(user.getId())
+                .name(resolveAuthorityName(user.getName(), user.getEmail()))
+                .designation(roleLabels.isEmpty() ? "Interview Authority" : String.join(", ", roleLabels))
+                .build();
+    }
+
+    private InternalVacancyAssignedInterviewAuthorityView toAssignedEmployeeView(EmployeeEntity employee) {
+        String designation = employee.getDesignation() != null
+                && StringUtils.hasText(employee.getDesignation().getDesignationName())
+                        ? employee.getDesignation().getDesignationName().trim()
+                        : "Employee";
+        if (StringUtils.hasText(employee.getLevelCode())) {
+            designation = designation + " (" + employee.getLevelCode().trim().toUpperCase(Locale.ROOT) + ")";
+        }
+
+        return InternalVacancyAssignedInterviewAuthorityView.builder()
+                .employeeId(employee.getEmployeeId())
+                .name(resolveAuthorityName(employee.getFullName(), employee.getEmail()))
+                .designation(designation)
+                .build();
+    }
+
+    private String resolveAuthorityName(String name, String email) {
+        if (StringUtils.hasText(name)) {
+            return name.trim();
+        }
+        return StringUtils.hasText(email) ? email.trim() : "Interview Authority";
+    }
+
+    private String authorityIdentityKey(String email, String name, String type, Long id) {
+        if (StringUtils.hasText(email)) {
+            return "EMAIL:" + email.trim().toLowerCase(Locale.ROOT);
+        }
+        if (StringUtils.hasText(name)) {
+            return "NAME:" + name.trim().toLowerCase(Locale.ROOT);
+        }
+        return type + ":" + id;
+    }
+
+    private String toRoleLabel(String roleName) {
+        String normalizedRoleName = roleName.trim();
+        String withoutPrefix = normalizedRoleName.startsWith("ROLE_")
+                ? normalizedRoleName.substring(5)
+                : normalizedRoleName;
+        return withoutPrefix.replace('_', ' ');
     }
 
     @Override

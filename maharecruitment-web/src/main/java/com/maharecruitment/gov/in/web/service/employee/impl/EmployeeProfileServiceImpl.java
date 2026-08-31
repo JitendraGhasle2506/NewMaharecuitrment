@@ -3,7 +3,6 @@ package com.maharecruitment.gov.in.web.service.employee.impl;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -90,7 +89,11 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         profile.setGender(normalizeText(profileDTO.getGender()));
         profile.setAlternateMobileNo(normalizeText(profileDTO.getAlternateMobileNo()));
         profile.setPanNo(resolvedPan);
-        profile.setMaritalStatus(normalizeText(profileDTO.getMaritalStatus()));
+        String maritalStatus = normalizeText(profileDTO.getMaritalStatus());
+        boolean married = isMarried(maritalStatus);
+        profile.setMaritalStatus(maritalStatus);
+        profile.setSpouseName(married ? normalizeText(profileDTO.getSpouseName()) : null);
+        profile.setMarriageDate(married ? profileDTO.getMarriageDate() : null);
         profile.setBloodGroup(normalizeText(profileDTO.getBloodGroup()));
         profile.setEmergencyContactName(normalizeText(profileDTO.getEmergencyContactName()));
         profile.setEmergencyContactNo(normalizeText(profileDTO.getEmergencyContactNo()));
@@ -200,6 +203,8 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
                 profile != null ? normalizePanForDisplay(profile.getPanNo()) : null,
                 employee != null ? normalizePanForDisplay(employee.getPanNumber()) : null)));
         dto.setMaritalStatus(profile != null ? profile.getMaritalStatus() : null);
+        dto.setSpouseName(profile != null ? normalizeText(profile.getSpouseName()) : null);
+        dto.setMarriageDate(profile != null ? profile.getMarriageDate() : null);
         dto.setBloodGroup(firstText(profile != null ? normalizeText(profile.getBloodGroup()) : null,
                 employee != null ? normalizeText(employee.getBloodGroup()) : null));
         dto.setEmergencyContactName(firstText(profile != null ? normalizeText(profile.getEmergencyContactName()) : null,
@@ -284,7 +289,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     }
 
     private int calculateCompletionPercentage(EmployeeProfileDTO dto) {
-        List<String> values = Stream.of(
+        String[] values = {
                 dto.getFullName(),
                 dto.getDob() != null ? dto.getDob().toString() : null,
                 dto.getGender(),
@@ -298,10 +303,20 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
                 dto.getEmergencyContactNo(),
                 dto.getCurrentAddress(),
                 dto.getPermanentAddress(),
-                dto.getPhotoUrl())
-                .toList();
-        long completed = values.stream().filter(StringUtils::hasText).count();
-        return (int) Math.round((completed * 100.0d) / values.size());
+                dto.getPhotoUrl()
+        };
+        long completed = Stream.of(values).filter(StringUtils::hasText).count();
+        int fieldCount = values.length;
+        if (isMarried(dto.getMaritalStatus())) {
+            fieldCount += 2;
+            completed += StringUtils.hasText(dto.getSpouseName()) ? 1 : 0;
+            completed += dto.getMarriageDate() != null ? 1 : 0;
+        }
+        return (int) Math.round((completed * 100.0d) / fieldCount);
+    }
+
+    private boolean isMarried(String maritalStatus) {
+        return "Married".equalsIgnoreCase(normalizeText(maritalStatus));
     }
 
     private Optional<Path> resolvePhotoPath(EmployeeProfile profile, EmployeeEntity employee) {

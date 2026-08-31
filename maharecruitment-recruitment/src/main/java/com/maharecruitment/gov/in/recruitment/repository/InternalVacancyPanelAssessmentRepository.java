@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.recruitment.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -38,6 +39,19 @@ public interface InternalVacancyPanelAssessmentRepository extends JpaRepository<
            ")")
     Optional<InternalVacancyPanelAssessmentEntity> findByInterviewDetailAndAssessor(
             @Param("interviewDetailId") Long interviewDetailId,
+            @Param("userId") Long userId,
+            @Param("employeeId") Long employeeId);
+
+    @Query("select distinct a.interviewDetail.recruitmentInterviewDetailId " +
+           "from InternalVacancyPanelAssessmentEntity a " +
+           "where a.interviewDetail.recruitmentInterviewDetailId in :interviewDetailIds " +
+           "and a.status = 'SUBMITTED' " +
+           "and (" +
+           "  (:userId is not null and a.assessorUser.id = :userId) " +
+           "  or (:employeeId is not null and a.assessorEmployee.employeeId = :employeeId)" +
+           ")")
+    Set<Long> findSubmittedInterviewDetailIdsByAssessor(
+            @Param("interviewDetailIds") Set<Long> interviewDetailIds,
             @Param("userId") Long userId,
             @Param("employeeId") Long employeeId);
 }
