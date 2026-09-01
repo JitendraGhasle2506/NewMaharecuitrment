@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Employee Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/employee-dashboard.css}" />
+    <link rel="stylesheet" th:href="@{/css/employee-dashboard.css(v='20260902')}" />
 </head>
 
 <body class="employee-dashboard-page employee-dashboard-home">
@@ -59,19 +59,19 @@
                     </div>
                     <dl class="profile-facts">
                         <div>
-                            <dt>Role</dt>
+                            <dt><i class="fa-solid fa-user-tie"></i> Role</dt>
                             <dd id="summaryRole" th:text="${#strings.isEmpty(profile.role) ? '-' : profile.role}">-</dd>
                         </div>
                         <div>
-                            <dt>Department</dt>
+                            <dt><i class="fa-solid fa-building"></i> Department</dt>
                             <dd id="summaryDepartment" th:text="${#strings.isEmpty(profile.department) ? '-' : profile.department}">-</dd>
                         </div>
                         <div>
-                            <dt>Email</dt>
+                            <dt><i class="fa-regular fa-envelope"></i> Email</dt>
                             <dd id="summaryEmail" th:text="${#strings.isEmpty(profile.email) ? '-' : profile.email}">-</dd>
                         </div>
                         <div>
-                            <dt>Mobile / Alternate</dt>
+                            <dt><i class="fa-solid fa-phone"></i> Mobile / Alternate</dt>
                             <dd>
                                 <span id="summaryMobile" th:text="${#strings.isEmpty(profile.mobileNo) ? '-' : profile.mobileNo}">-</span>
                                 <span id="summaryAltMobile"
@@ -88,6 +88,7 @@
                             <strong>Update Profile</strong>
                             <small>Manage personal details and profile photo</small>
                         </span>
+                        <i class="fa-solid fa-arrow-right quick-action-arrow"></i>
                     </a>
                 </div>
             </div>
@@ -143,14 +144,15 @@
                                             <i class="fa-solid fa-xmark"></i>
                                         </button>
                                     </header>
-                                    <form class="birthday-wish-form" method="post"
+                                    <form class="birthday-wish-form" method="post" autocomplete="off"
                                         th:action="@{/employee/birthday-wishes}">
-                                        <input type="hidden" name="recipientEmployeeId" th:value="${celebration.employeeId}">
+                                        <input type="hidden" name="recipientEmployeeId" autocomplete="off"
+                                            th:value="${celebration.employeeId}">
                                         <input type="hidden" autocomplete="off" th:if="${_csrf != null}"
                                             th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                         <label th:for="${'birthdayWish-' + celebration.employeeId}">Birthday message</label>
                                         <textarea th:id="${'birthdayWish-' + celebration.employeeId}" name="message"
-                                            rows="3" maxlength="300" required
+                                            rows="3" maxlength="300" autocomplete="off" required
                                             th:text="${'Happy Birthday, ' + celebration.employeeName + '! Wishing you a wonderful year ahead.'}"></textarea>
                                         <button type="submit" class="birthday-wish-button">
                                             <i class="fa-solid fa-paper-plane"></i>
@@ -270,8 +272,8 @@
                         <header class="dashboard-dialog-header">
                             <div>
                                 <span class="widget-kicker">Celebrate &amp; Connect</span>
-                        <h3>Birthday Wishes</h3>
-                        <p>Select a colleague to read the message or reply.</p>
+                                <h3>Birthday Wishes</h3>
+                                <p>Select a colleague to read the message or reply.</p>
                             </div>
                             <button type="button" class="dashboard-dialog-close"
                                 data-dashboard-dialog-close aria-label="Close birthday wishes">
@@ -279,8 +281,8 @@
                             </button>
                         </header>
                         <div class="birthday-wishes-grid">
-                    <div class="birthday-wish-column"
-                        th:if="${!#lists.isEmpty(dashboardContent.receivedBirthdayWishes)}">
+                            <div class="birthday-wish-column"
+                                th:if="${!#lists.isEmpty(dashboardContent.receivedBirthdayWishes)}">
                         <h4>
                             <span><i class="fa-solid fa-inbox"></i> Wishes for You</span>
                             <b th:text="${#lists.size(dashboardContent.receivedBirthdayWishes)}">0</b>
@@ -300,13 +302,13 @@
                                 </summary>
                                 <div class="birthday-wish-card-body">
                                     <blockquote th:text="${wish.wishMessage}">Happy Birthday!</blockquote>
-                                    <form class="birthday-reply-form" method="post"
+                                    <form class="birthday-reply-form" method="post" autocomplete="off"
                                         th:action="@{/employee/birthday-wishes/{wishId}/reply(wishId=${wish.wishId})}">
                                         <input type="hidden" autocomplete="off" th:if="${_csrf != null}"
                                             th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                         <label th:for="${'birthdayReply-' + wish.wishId}">Your reply</label>
                                         <textarea th:id="${'birthdayReply-' + wish.wishId}" name="reply" rows="2"
-                                            maxlength="300" required placeholder="Write a thank-you reply..."
+                                            maxlength="300" autocomplete="off" required placeholder="Write a thank-you reply..."
                                             th:text="${wish.replyMessage}"></textarea>
                                         <button type="submit" class="birthday-reply-button">
                                             <i class="fa-solid fa-reply"></i>
@@ -316,10 +318,10 @@
                                 </div>
                             </details>
                         </div>
-                    </div>
+                            </div>
 
-                    <div class="birthday-wish-column"
-                        th:if="${!#lists.isEmpty(dashboardContent.birthdayReplies)}">
+                            <div class="birthday-wish-column"
+                                th:if="${!#lists.isEmpty(dashboardContent.birthdayReplies)}">
                         <h4>
                             <span><i class="fa-solid fa-reply-all"></i> Replies to Your Wishes</span>
                             <b th:text="${#lists.size(dashboardContent.birthdayReplies)}">0</b>
@@ -344,7 +346,7 @@
                                 </div>
                             </details>
                         </div>
-                    </div>
+                            </div>
                         </div>
                     </div>
                 </dialog>
@@ -395,7 +397,7 @@
             </section>
         </section>
     </th:block>
-    <script th:src="@{/js/employee-dashboard-community.js(v='20260901')}"></script>
+    <script th:src="@{/js/employee-dashboard-community.js(v='20260902')}"></script>
 </body>
 
 </html>

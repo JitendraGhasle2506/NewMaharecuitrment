@@ -101,6 +101,8 @@ class AgencyCandidateBatchFormValidationTest {
         rowForm.setCandidateEducation("B.E.");
         rowForm.setTotalExp(new BigDecimal("5.0"));
         rowForm.setRelevantExp(new BigDecimal("3.0"));
+        rowForm.setCurrentCtc(new BigDecimal("8.50"));
+        rowForm.setResigned(false);
         rowForm.setJoiningTime("Immediate");
 
         AgencyCandidateBatchForm form = new AgencyCandidateBatchForm();

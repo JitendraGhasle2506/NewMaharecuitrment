@@ -16,6 +16,8 @@ class EmployeeDashboardCommunityTemplateTest {
                 .getContentAsString(StandardCharsets.UTF_8);
         String interactions = new ClassPathResource("static/js/employee-dashboard-community.js")
                 .getContentAsString(StandardCharsets.UTF_8);
+        String stylesheet = new ClassPathResource("static/css/employee-dashboard.css")
+                .getContentAsString(StandardCharsets.UTF_8);
 
         assertThat(template)
                 .contains("Today's Celebrations")
@@ -30,6 +32,7 @@ class EmployeeDashboardCommunityTemplateTest {
                 .contains("New employee announcements will appear here.")
                 .contains("class=\"celebration-action-button birthday-wish-composer\"")
                 .contains("class=\"dashboard-dialog birthday-compose-dialog\"")
+                .contains("@{/css/employee-dashboard.css(v='20260902')}")
                 .contains("th:action=\"@{/employee/birthday-wishes}\"")
                 .contains("Birthday message")
                 .contains("Wishes for You")
@@ -53,5 +56,12 @@ class EmployeeDashboardCommunityTemplateTest {
                 .contains("[data-dashboard-dialog-target]")
                 .contains("[data-dashboard-dialog-close]")
                 .contains("event.target === dialog");
+
+        assertThat(stylesheet)
+                .contains("Modern employee dashboard skin")
+                .contains("max-width: 1440px")
+                .contains("grid-template-columns: repeat(4, minmax(0, 1fr))")
+                .contains(".employee-dashboard-home .employee-dashboard .dashboard-community-grid")
+                .contains("@media (max-width: 420px)");
     }
 }

@@ -1399,3 +1399,502 @@
         min-height: 40px;
     }
 }
+
+/* Modern employee dashboard skin. Scoped to the dashboard home so profile forms remain unchanged. */
+.employee-dashboard-home {
+    background: #f4f7fb;
+}
+
+.employee-dashboard-home .employee-dashboard {
+    --ed-primary: #176b87;
+    --ed-primary-dark: #123a52;
+    --ed-accent: #158264;
+    --ed-ink: #172b3a;
+    --ed-muted: #657787;
+    --ed-line: #e1e9ee;
+    --ed-surface: #ffffff;
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-bottom: 24px;
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 98px;
+    min-height: 158px;
+    margin-bottom: 14px;
+    padding: 24px 28px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    background:
+        radial-gradient(circle at 86% -30%, rgba(80, 211, 176, 0.3), transparent 31%),
+        linear-gradient(120deg, #102f46 0%, #125b73 58%, #16775f 100%);
+    box-shadow: 0 16px 36px rgba(18, 58, 82, 0.16);
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-intro::after {
+    right: 19%;
+    top: -60px;
+    width: 138px;
+    height: 138px;
+    border-color: rgba(255, 255, 255, 0.1);
+    border-radius: 38px;
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-kicker {
+    margin-bottom: 5px;
+    color: #a9ecd8;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-intro h2 {
+    font-size: clamp(1.55rem, 2.4vw, 2rem);
+    letter-spacing: -0.02em;
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-intro p {
+    margin-top: 4px;
+    color: rgba(235, 247, 250, 0.84);
+    font-size: 0.9rem;
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-today-chip {
+    min-height: 32px;
+    margin-top: 13px;
+    padding: 6px 10px;
+    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 0.76rem;
+}
+
+.employee-dashboard-home .employee-dashboard .completion-meter {
+    width: 92px;
+    min-width: 92px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background:
+        radial-gradient(circle at center, #17495c 57%, transparent 58%),
+        conic-gradient(#ffd166 calc(var(--completion, 0) * 1%), rgba(255, 255, 255, 0.16) 0);
+    box-shadow: 0 10px 24px rgba(5, 30, 43, 0.2);
+}
+
+.employee-dashboard-home .employee-dashboard .completion-meter span {
+    color: #ffffff;
+    font-size: 1.25rem;
+}
+
+.employee-dashboard-home .employee-dashboard .completion-meter small {
+    max-width: 66px;
+    color: rgba(235, 247, 250, 0.78);
+    font-size: 0.61rem;
+    line-height: 1.15;
+    text-align: center;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 0.28fr);
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-card,
+.employee-dashboard-home .employee-dashboard .quick-action,
+.employee-dashboard-home .employee-dashboard .dashboard-widget {
+    border-color: #e2e9ee;
+    border-radius: 16px;
+    box-shadow: 0 5px 18px rgba(20, 54, 72, 0.055);
+}
+
+.employee-dashboard-home .employee-dashboard .profile-card {
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 14px 18px;
+    padding: 16px 18px;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-photo-wrap {
+    width: 88px;
+    border: 3px solid #ffffff;
+    outline: 1px solid #dce7ec;
+    box-shadow: 0 7px 18px rgba(23, 75, 97, 0.13);
+}
+
+.employee-dashboard-home .employee-dashboard .profile-photo-fallback i {
+    font-size: 1.8rem;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-status {
+    min-height: 24px;
+    padding: 3px 8px;
+    background: #eaf8f2;
+    color: #126548;
+    font-size: 0.67rem;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-main h3 {
+    margin-top: 7px;
+    font-size: 1.22rem;
+    letter-spacing: -0.015em;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-code {
+    margin-top: 4px;
+    font-size: 0.8rem;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-facts {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-facts div {
+    min-width: 0;
+    padding: 9px 11px;
+    border: 1px solid #edf1f4;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-facts dt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #71808e;
+    font-size: 0.68rem;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-facts dt i {
+    color: #36839b;
+}
+
+.employee-dashboard-home .employee-dashboard .profile-facts dd {
+    overflow: hidden;
+    margin-top: 3px;
+    font-size: 0.78rem;
+    text-overflow: ellipsis;
+}
+
+.employee-dashboard-home .employee-dashboard .quick-actions {
+    min-width: 0;
+}
+
+.employee-dashboard-home .employee-dashboard .quick-action {
+    position: relative;
+    min-height: 100%;
+    overflow: hidden;
+    padding: 18px;
+    border-color: #dbe8ed;
+    background:
+        radial-gradient(circle at 100% 0, rgba(34, 153, 122, 0.12), transparent 38%),
+        linear-gradient(145deg, #ffffff, #f2f9f8);
+    transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.employee-dashboard-home .employee-dashboard .quick-action:hover {
+    transform: translateY(-2px);
+    border-color: #9ac8bb;
+    box-shadow: 0 10px 24px rgba(20, 91, 75, 0.1);
+}
+
+.employee-dashboard-home .employee-dashboard .quick-action > i:first-child {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 12px;
+    background: #dff3ec;
+    color: #147153;
+}
+
+.employee-dashboard-home .employee-dashboard .quick-action-copy {
+    min-width: 0;
+}
+
+.employee-dashboard-home .employee-dashboard .quick-action-copy strong {
+    font-size: 0.9rem;
+}
+
+.employee-dashboard-home .employee-dashboard .quick-action-arrow {
+    width: auto;
+    height: auto;
+    margin-left: auto;
+    background: transparent;
+    color: #4e7b71;
+    font-size: 0.78rem;
+}
+
+.employee-dashboard-home .employee-dashboard .birthday-wish-feedback {
+    margin-bottom: 14px;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(20, 54, 72, 0.05);
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-community-grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.employee-dashboard-home .employee-dashboard .celebrations-widget,
+.employee-dashboard-home .employee-dashboard .announcements-widget,
+.employee-dashboard-home .employee-dashboard .upcoming-events-widget {
+    padding: 16px;
+}
+
+.employee-dashboard-home .employee-dashboard .celebrations-widget,
+.employee-dashboard-home .employee-dashboard .announcements-widget {
+    background: #ffffff;
+}
+
+.employee-dashboard-home .employee-dashboard .widget-heading {
+    margin-bottom: 12px;
+}
+
+.employee-dashboard-home .employee-dashboard .widget-kicker {
+    margin-bottom: 2px;
+    font-size: 0.65rem;
+}
+
+.employee-dashboard-home .employee-dashboard .widget-heading h3 {
+    font-size: 1rem;
+}
+
+.employee-dashboard-home .employee-dashboard .widget-count,
+.employee-dashboard-home .employee-dashboard .announcement-bell {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+}
+
+.employee-dashboard-home .employee-dashboard .celebration-list {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 8px;
+}
+
+.employee-dashboard-home .employee-dashboard .celebration-item {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 10px;
+    border-color: #eee5ca;
+    border-radius: 12px;
+    background: #fffcf4;
+}
+
+.employee-dashboard-home .employee-dashboard .celebration-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 0.92rem;
+}
+
+.employee-dashboard-home .employee-dashboard .celebration-copy strong {
+    font-size: 0.86rem;
+}
+
+.employee-dashboard-home .employee-dashboard .celebration-copy span {
+    font-size: 0.62rem;
+}
+
+.employee-dashboard-home .employee-dashboard .celebration-action-button,
+.employee-dashboard-home .employee-dashboard .celebration-status {
+    min-height: 30px;
+    padding: 5px 9px;
+    font-size: 0.69rem;
+}
+
+.employee-dashboard-home .employee-dashboard .announcement-list {
+    gap: 8px;
+}
+
+.employee-dashboard-home .employee-dashboard .announcement-item {
+    padding: 10px;
+    border-color: #e5ecef;
+    border-radius: 11px;
+    background: #f8fafb;
+}
+
+.employee-dashboard-home .employee-dashboard .announcement-item p {
+    margin-bottom: 0;
+    font-size: 0.75rem;
+}
+
+.employee-dashboard-home .employee-dashboard .birthday-wishes-widget {
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border-color: #e4e9ee;
+    background: #ffffff;
+}
+
+.employee-dashboard-home .employee-dashboard .wishes-icon {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+}
+
+.employee-dashboard-home .employee-dashboard .birthday-wishes-summary h3 {
+    font-size: 0.9rem;
+}
+
+.employee-dashboard-home .employee-dashboard .wish-summary-count {
+    min-height: 27px;
+    padding: 4px 8px;
+    font-size: 0.66rem;
+}
+
+.employee-dashboard-home .employee-dashboard .open-birthday-wishes-button {
+    min-height: 32px;
+    padding: 6px 10px;
+    border-radius: 9px;
+    font-size: 0.7rem;
+}
+
+.employee-dashboard-home .employee-dashboard .upcoming-events-widget {
+    margin-bottom: 0;
+}
+
+.employee-dashboard-home .employee-dashboard .upcoming-events-list {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 9px;
+}
+
+.employee-dashboard-home .employee-dashboard .upcoming-event {
+    grid-template-columns: 50px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+    border-color: #e1e9ed;
+    border-left-width: 3px;
+    border-radius: 12px;
+    background: #fbfcfd;
+}
+
+.employee-dashboard-home .employee-dashboard .event-date {
+    min-height: 56px;
+    border-radius: 10px;
+}
+
+.employee-dashboard-home .employee-dashboard .event-date strong {
+    font-size: 1.18rem;
+}
+
+.employee-dashboard-home .employee-dashboard .event-details h4 {
+    margin-top: 2px;
+    font-size: 0.83rem;
+}
+
+.employee-dashboard-home .employee-dashboard .event-details small {
+    margin-top: 4px;
+    font-size: 0.66rem;
+}
+
+.employee-dashboard-home .employee-dashboard .holiday-count,
+.employee-dashboard-home .employee-dashboard .calendar-link {
+    min-height: 34px;
+    border-radius: 9px;
+}
+
+.employee-dashboard-home .employee-dashboard .widget-empty {
+    min-height: 78px;
+    padding: 12px;
+    border-radius: 12px;
+}
+
+@media (max-width: 1199.98px) {
+    .employee-dashboard-home .employee-dashboard .profile-facts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 991.98px) {
+    .employee-dashboard-home .employee-dashboard .profile-grid,
+    .employee-dashboard-home .employee-dashboard .dashboard-community-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-dashboard-home .employee-dashboard .quick-action {
+        min-height: 76px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .employee-dashboard-home .employee-dashboard .dashboard-intro {
+        grid-template-columns: minmax(0, 1fr) 78px;
+        min-height: 142px;
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .employee-dashboard-home .employee-dashboard .completion-meter {
+        width: 76px;
+        min-width: 76px;
+    }
+
+    .employee-dashboard-home .employee-dashboard .completion-meter span {
+        font-size: 1rem;
+    }
+
+    .employee-dashboard-home .employee-dashboard .completion-meter small {
+        max-width: 56px;
+        font-size: 0.55rem;
+    }
+
+    .employee-dashboard-home .employee-dashboard .profile-card {
+        grid-template-columns: 68px minmax(0, 1fr);
+        gap: 12px;
+        padding: 14px;
+    }
+
+    .employee-dashboard-home .employee-dashboard .profile-photo-wrap {
+        width: 68px;
+    }
+
+    .employee-dashboard-home .employee-dashboard .profile-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-dashboard-home .employee-dashboard .celebration-list,
+    .employee-dashboard-home .employee-dashboard .upcoming-events-list {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-dashboard-home .employee-dashboard .birthday-wishes-summary {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .employee-dashboard-home .employee-dashboard .birthday-wishes-summary-actions {
+        width: auto;
+    }
+
+    .employee-dashboard-home .employee-dashboard .wish-summary-count {
+        display: none;
+    }
+
+    .employee-dashboard-home .employee-dashboard .open-birthday-wishes-button {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 420px) {
+    .employee-dashboard-home .employee-dashboard .dashboard-intro {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-dashboard-home .employee-dashboard .completion-meter {
+        margin-top: 12px;
+    }
+
+    .employee-dashboard-home .employee-dashboard .profile-card {
+        grid-template-columns: 58px minmax(0, 1fr);
+    }
+
+    .employee-dashboard-home .employee-dashboard .profile-photo-wrap {
+        width: 58px;
+    }
+
+    .employee-dashboard-home .employee-dashboard .profile-main h3 {
+        font-size: 1.05rem;
+    }
+
+    .employee-dashboard-home .employee-dashboard .quick-action-copy small {
+        display: none;
+    }
+}
