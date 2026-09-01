@@ -59,6 +59,103 @@
     margin-top: 6px;
 }
 
+.employee-dashboard-home .employee-dashboard .dashboard-intro {
+    position: relative;
+    overflow: hidden;
+    min-height: 220px;
+    padding: 30px;
+    border: 0;
+    background:
+        radial-gradient(circle at 86% 12%, rgba(255, 255, 255, 0.18) 0 78px, transparent 79px),
+        radial-gradient(circle at 72% 115%, rgba(67, 211, 161, 0.17) 0 150px, transparent 151px),
+        linear-gradient(125deg, #0d3f5a 0%, #0f647d 58%, #16856f 100%);
+    box-shadow: 0 18px 42px rgba(13, 63, 90, 0.2);
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-intro::after {
+    content: "";
+    position: absolute;
+    right: 20%;
+    top: -42px;
+    width: 116px;
+    height: 116px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 28px;
+    transform: rotate(28deg);
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-intro-content,
+.employee-dashboard-home .employee-dashboard .completion-meter {
+    position: relative;
+    z-index: 1;
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #b9f1dd;
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-intro h2 {
+    color: #ffffff;
+    font-size: clamp(1.75rem, 3vw, 2.35rem);
+    letter-spacing: -0.025em;
+}
+
+.employee-dashboard-home .employee-dashboard .dashboard-intro p {
+    max-width: 650px;
+    color: #dcecf1;
+    font-size: 0.98rem;
+}
+
+.employee-dashboard .dashboard-today-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    margin-top: 18px;
+    padding: 7px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-size: 0.84rem;
+    font-weight: 700;
+    backdrop-filter: blur(5px);
+}
+
+.employee-dashboard .birthday-wish-feedback {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    border: 1px solid;
+    border-radius: 9px;
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.employee-dashboard .birthday-wish-feedback.success {
+    border-color: #b9dfca;
+    background: #edf9f2;
+    color: #11603a;
+}
+
+.employee-dashboard .birthday-wish-feedback.error {
+    border-color: #f0c4c1;
+    background: #fff3f2;
+    color: #a62d28;
+}
+
+.employee-dashboard-home .employee-dashboard .completion-meter {
+    background:
+        radial-gradient(circle at center, #ffffff 58%, transparent 59%),
+        conic-gradient(#ffd166 calc(var(--completion, 0) * 1%), rgba(255, 255, 255, 0.2) 0);
+    box-shadow: 0 12px 28px rgba(4, 38, 54, 0.22);
+}
+
 .employee-dashboard .dashboard-back-link {
     display: inline-flex;
     align-items: center;
@@ -240,6 +337,846 @@
     border-color: var(--ed-primary);
 }
 
+.employee-dashboard .quick-action-copy {
+    display: grid;
+    gap: 3px;
+}
+
+.employee-dashboard .quick-action-copy strong {
+    color: var(--ed-primary-dark);
+    font-size: 0.94rem;
+}
+
+.employee-dashboard .quick-action-copy small {
+    color: var(--ed-muted);
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.employee-dashboard .dashboard-community-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.employee-dashboard .dashboard-widget {
+    border: 1px solid var(--ed-line);
+    border-radius: 10px;
+    background: var(--ed-surface);
+    box-shadow: 0 12px 30px rgba(15, 67, 95, 0.08);
+}
+
+.employee-dashboard .celebrations-widget,
+.employee-dashboard .announcements-widget,
+.employee-dashboard .upcoming-events-widget {
+    padding: 20px;
+}
+
+.employee-dashboard .celebrations-widget {
+    background:
+        radial-gradient(circle at 100% 0, rgba(255, 209, 102, 0.17), transparent 34%),
+        #ffffff;
+}
+
+.employee-dashboard .announcements-widget {
+    background:
+        radial-gradient(circle at 100% 0, rgba(15, 95, 122, 0.1), transparent 36%),
+        #ffffff;
+}
+
+.employee-dashboard .widget-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.employee-dashboard .widget-kicker {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--ed-primary);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.employee-dashboard .widget-heading h3 {
+    color: var(--ed-primary-dark);
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.employee-dashboard .widget-heading p {
+    margin-top: 4px;
+    color: var(--ed-muted);
+    font-size: 0.86rem;
+}
+
+.employee-dashboard .widget-count,
+.employee-dashboard .announcement-bell {
+    display: inline-grid;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    place-items: center;
+    border-radius: 10px;
+    background: #e7f5ef;
+    color: #147354;
+    font-weight: 900;
+}
+
+.employee-dashboard .announcement-bell {
+    background: #e8f4f7;
+    color: var(--ed-primary);
+}
+
+.employee-dashboard .celebration-list,
+.employee-dashboard .announcement-list {
+    display: grid;
+    gap: 10px;
+}
+
+.employee-dashboard .celebration-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    overflow: hidden;
+    padding: 13px;
+    border: 1px solid #f0e5c4;
+    border-radius: 10px;
+    background: linear-gradient(110deg, #fffdf7, #fff8e4);
+}
+
+.employee-dashboard .celebration-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 50%;
+    background: #fff0bd;
+    color: #a76200;
+    font-size: 1.1rem;
+}
+
+.employee-dashboard .celebration-icon.anniversary {
+    background: #fce8ef;
+    color: #b4235a;
+}
+
+.employee-dashboard .celebration-copy {
+    display: grid;
+    min-width: 0;
+}
+
+.employee-dashboard .celebration-copy span {
+    color: #99701d;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.employee-dashboard .celebration-copy strong {
+    overflow: hidden;
+    color: var(--ed-ink);
+    font-size: 0.96rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.employee-dashboard .celebration-copy small {
+    color: var(--ed-muted);
+}
+
+.employee-dashboard .celebration-action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 7px 11px;
+    border: 1px solid #e2c776;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #8a5a09;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.employee-dashboard .birthday-wish-card > summary::-webkit-details-marker {
+    display: none;
+}
+
+.employee-dashboard .celebration-action-button:hover {
+    border-color: #c8952a;
+    background: #fff9e9;
+}
+
+.employee-dashboard .celebration-action-button.reply {
+    border-color: #9fd5bf;
+    color: #176e50;
+}
+
+.employee-dashboard .birthday-wish-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+    margin-top: 8px;
+    padding: 12px;
+    border: 1px solid #eddfb5;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.employee-dashboard .birthday-wish-form label {
+    grid-column: 1 / -1;
+    font-size: 0.74rem;
+}
+
+.employee-dashboard .birthday-wish-form textarea,
+.employee-dashboard .birthday-reply-form textarea {
+    min-height: 60px;
+    padding: 8px 10px;
+    border-color: #dfcf9d;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.employee-dashboard .birthday-wish-button,
+.employee-dashboard .birthday-reply-button {
+    align-self: stretch;
+    min-width: 104px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #bd7a0c, #e0a126);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.employee-dashboard .birthday-wish-button:hover,
+.employee-dashboard .birthday-reply-button:hover {
+    filter: brightness(0.94);
+}
+
+.employee-dashboard .celebration-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.employee-dashboard .celebration-status.sent {
+    background: #eaf7f1;
+    color: #176e50;
+}
+
+.employee-dashboard .celebration-status.own {
+    background: #fff1c9;
+    color: #8b5b0d;
+}
+
+.employee-dashboard .announcement-item {
+    display: grid;
+    grid-template-columns: 9px minmax(0, 1fr);
+    gap: 10px;
+    padding: 13px;
+    border: 1px solid #dae7ed;
+    border-radius: 9px;
+    background: #f7fbfc;
+}
+
+.employee-dashboard .announcement-item.action {
+    border-color: #e7ddbd;
+    background: #fffaf0;
+}
+
+.employee-dashboard .announcement-dot {
+    width: 9px;
+    height: 9px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: #2b92af;
+    box-shadow: 0 0 0 4px rgba(43, 146, 175, 0.12);
+}
+
+.employee-dashboard .announcement-item.action .announcement-dot {
+    background: #d28b15;
+    box-shadow: 0 0 0 4px rgba(210, 139, 21, 0.13);
+}
+
+.employee-dashboard .announcement-item strong {
+    display: block;
+    color: var(--ed-primary-dark);
+    font-size: 0.9rem;
+}
+
+.employee-dashboard .announcement-item p {
+    margin: 4px 0 7px;
+    color: var(--ed-muted);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.employee-dashboard .widget-empty {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 96px;
+    padding: 15px;
+    border: 1px dashed #cbdce5;
+    border-radius: 10px;
+    background: #f8fbfc;
+}
+
+.employee-dashboard .empty-icon {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    place-items: center;
+    border-radius: 50%;
+    background: #eaf4f7;
+    color: var(--ed-primary);
+}
+
+.employee-dashboard .widget-empty strong {
+    display: block;
+    color: var(--ed-primary-dark);
+    font-size: 0.9rem;
+}
+
+.employee-dashboard .widget-empty p {
+    margin-top: 3px;
+    color: var(--ed-muted);
+    font-size: 0.8rem;
+}
+
+.employee-dashboard .upcoming-events-widget {
+    margin-bottom: 18px;
+}
+
+.employee-dashboard .dashboard-dialog {
+    width: min(540px, calc(100vw - 28px));
+    max-width: none;
+    max-height: calc(100vh - 36px);
+    overflow: hidden;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    box-shadow: 0 24px 70px rgba(10, 41, 57, 0.28);
+}
+
+.employee-dashboard .dashboard-dialog::backdrop {
+    background: rgba(8, 31, 44, 0.58);
+    backdrop-filter: blur(3px);
+}
+
+.employee-dashboard .dashboard-dialog[open] {
+    animation: dashboard-dialog-in 160ms ease-out;
+}
+
+.employee-dashboard .dashboard-dialog-panel {
+    overflow-y: auto;
+    max-height: calc(100vh - 36px);
+    padding: 18px;
+    background: #ffffff;
+}
+
+.employee-dashboard .dashboard-dialog-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.employee-dashboard .dashboard-dialog-header h3 {
+    margin: 0;
+    color: var(--ed-primary-dark);
+    font-size: 1.08rem;
+    font-weight: 800;
+}
+
+.employee-dashboard .dashboard-dialog-header p {
+    margin: 3px 0 0;
+    color: var(--ed-muted);
+    font-size: 0.8rem;
+}
+
+.employee-dashboard .dashboard-dialog-close {
+    display: inline-grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid #d9e3e8;
+    border-radius: 50%;
+    background: #f7fafb;
+    color: #405a69;
+}
+
+.employee-dashboard .dashboard-dialog-close:hover {
+    background: #edf3f6;
+    color: var(--ed-primary-dark);
+}
+
+.employee-dashboard .birthday-dialog-message {
+    margin: 0;
+    padding: 14px 16px;
+    border-left: 4px solid #278663;
+    border-radius: 0 10px 10px 0;
+    background: #edf8f3;
+    color: #245443;
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.employee-dashboard .birthday-wishes-widget {
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    background:
+        radial-gradient(circle at 100% 0, rgba(196, 77, 121, 0.09), transparent 30%),
+        #ffffff;
+}
+
+.employee-dashboard .birthday-wishes-summary,
+.employee-dashboard .birthday-wishes-summary-title,
+.employee-dashboard .birthday-wishes-summary-actions {
+    display: flex;
+    align-items: center;
+}
+
+.employee-dashboard .birthday-wishes-summary {
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.employee-dashboard .birthday-wishes-summary-title,
+.employee-dashboard .birthday-wishes-summary-actions {
+    gap: 10px;
+}
+
+.employee-dashboard .birthday-wishes-summary h3 {
+    margin: 0;
+    color: var(--ed-primary-dark);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.employee-dashboard .wishes-icon {
+    display: inline-grid;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    place-items: center;
+    border-radius: 10px;
+    background: #fbeaf1;
+    color: #b33a68;
+}
+
+.employee-dashboard .wish-summary-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 30px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #fff2d2;
+    color: #83560d;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.employee-dashboard .wish-summary-count.reply {
+    background: #e9f7f1;
+    color: #176e50;
+}
+
+.employee-dashboard .open-birthday-wishes-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 7px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--ed-primary);
+    color: #ffffff;
+    font-size: 0.76rem;
+    font-weight: 800;
+}
+
+.employee-dashboard .birthday-wishes-dialog {
+    width: min(900px, calc(100vw - 28px));
+}
+
+.employee-dashboard .birthday-wishes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 14px;
+}
+
+.employee-dashboard .birthday-wish-column {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+}
+
+.employee-dashboard .birthday-wish-column > h4 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 7px;
+    margin: 0;
+    color: var(--ed-primary-dark);
+    font-size: 0.88rem;
+    font-weight: 800;
+}
+
+.employee-dashboard .birthday-wish-column > h4 span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.employee-dashboard .birthday-wish-column > h4 b {
+    display: inline-grid;
+    min-width: 25px;
+    height: 25px;
+    padding: 0 7px;
+    place-items: center;
+    border-radius: 999px;
+    background: #edf3f6;
+    color: #456071;
+    font-size: 0.72rem;
+}
+
+.employee-dashboard .birthday-wish-list {
+    display: grid;
+    gap: 8px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 3px;
+    scrollbar-color: #b8cbd4 transparent;
+    scrollbar-width: thin;
+}
+
+@keyframes dashboard-dialog-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.employee-dashboard .birthday-wish-card {
+    overflow: hidden;
+    border: 1px solid #e2e9ed;
+    border-radius: 10px;
+    background: #fbfdfe;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.employee-dashboard .birthday-wish-card.received {
+    border-left: 4px solid #d69725;
+}
+
+.employee-dashboard .birthday-wish-card.reply {
+    border-left: 4px solid #278663;
+}
+
+.employee-dashboard .birthday-wish-card-heading {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 58px;
+    padding: 10px 12px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.employee-dashboard .birthday-wish-card-heading:hover {
+    background: #f5f9fa;
+}
+
+.employee-dashboard .birthday-wish-card[open] {
+    border-color: #c7d9e1;
+    box-shadow: 0 8px 20px rgba(25, 73, 98, 0.09);
+}
+
+.employee-dashboard .wish-person {
+    min-width: 0;
+    flex: 1;
+}
+
+.employee-dashboard .wish-avatar {
+    display: inline-grid;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    place-items: center;
+    border-radius: 50%;
+    background: #f7e7b9;
+    color: #9b670f;
+}
+
+.employee-dashboard .birthday-wish-card.reply .wish-avatar {
+    background: #e5f5ed;
+    color: #18704f;
+}
+
+.employee-dashboard .birthday-wish-card-heading strong,
+.employee-dashboard .birthday-wish-card-heading small {
+    display: block;
+}
+
+.employee-dashboard .birthday-wish-card-heading strong {
+    overflow: hidden;
+    color: var(--ed-ink);
+    font-size: 0.87rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.employee-dashboard .birthday-wish-card-heading small,
+.employee-dashboard .original-wish-label {
+    color: var(--ed-muted);
+    font-size: 0.7rem;
+}
+
+.employee-dashboard .wish-open-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ed-primary);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.employee-dashboard .wish-open-label i {
+    transition: transform 160ms ease;
+}
+
+.employee-dashboard .birthday-wish-card[open] .wish-open-label i {
+    transform: rotate(180deg);
+}
+
+.employee-dashboard .birthday-wish-card-body {
+    padding: 0 12px 12px;
+    border-top: 1px solid #edf1f3;
+}
+
+.employee-dashboard .birthday-wish-card-body > blockquote {
+    margin: 11px 0;
+    color: #3d5262;
+    font-size: 0.84rem;
+    font-style: italic;
+    line-height: 1.5;
+}
+
+.employee-dashboard .birthday-reply-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+    padding-top: 10px;
+    border-top: 1px solid #e8edef;
+}
+
+.employee-dashboard .birthday-reply-form label {
+    grid-column: 1 / -1;
+    font-size: 0.74rem;
+}
+
+.employee-dashboard .birthday-reply-button {
+    background: linear-gradient(135deg, #176f56, #21906a);
+}
+
+.employee-dashboard .original-wish-label {
+    display: block;
+    margin-top: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.employee-dashboard .original-wish {
+    margin-top: 3px;
+    color: var(--ed-muted);
+    font-size: 0.78rem;
+}
+
+.employee-dashboard .reply-message {
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border-left: 3px solid #278663;
+    border-radius: 0 8px 8px 0;
+    background: #edf8f3;
+    color: #245443;
+    font-size: 0.84rem;
+}
+
+.employee-dashboard .upcoming-heading {
+    align-items: center;
+}
+
+.employee-dashboard .upcoming-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.employee-dashboard .holiday-count {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    min-height: 38px;
+    padding: 7px 11px;
+    border-radius: 8px;
+    background: #eaf7ef;
+    color: #176a4d;
+}
+
+.employee-dashboard .holiday-count strong {
+    font-size: 1rem;
+}
+
+.employee-dashboard .holiday-count span {
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.employee-dashboard .calendar-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid #c9dee7;
+    border-radius: 8px;
+    color: var(--ed-primary);
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.employee-dashboard .calendar-link:hover {
+    border-color: var(--ed-primary);
+    background: #f0f8fa;
+}
+
+.employee-dashboard .upcoming-events-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.employee-dashboard .upcoming-event {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 13px;
+    padding: 14px;
+    border: 1px solid #dbe7ed;
+    border-left: 4px solid #2d91ad;
+    border-radius: 9px;
+    background: #ffffff;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.employee-dashboard .upcoming-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(15, 67, 95, 0.1);
+}
+
+.employee-dashboard .upcoming-event.holiday {
+    border-left-color: #21865f;
+}
+
+.employee-dashboard .event-date {
+    display: grid;
+    align-content: center;
+    min-height: 64px;
+    border-radius: 9px;
+    background: #eef7f9;
+    text-align: center;
+}
+
+.employee-dashboard .event-date strong {
+    color: var(--ed-primary-dark);
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.employee-dashboard .event-date span {
+    margin-top: 4px;
+    color: var(--ed-primary);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+}
+
+.employee-dashboard .event-details {
+    min-width: 0;
+}
+
+.employee-dashboard .event-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ed-primary);
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.employee-dashboard .event-details h4 {
+    overflow: hidden;
+    margin: 4px 0 2px;
+    color: var(--ed-ink);
+    font-size: 0.93rem;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.employee-dashboard .event-details small {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-top: 7px;
+    color: #526b7e;
+    font-size: 0.72rem;
+}
+
+.employee-dashboard .event-details small b {
+    color: #167055;
+}
+
+.employee-dashboard .upcoming-empty {
+    justify-content: center;
+    text-align: left;
+}
+
 .employee-dashboard .dashboard-panels {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
@@ -378,7 +1315,8 @@
 
 @media (max-width: 991.98px) {
     .employee-dashboard .profile-grid,
-    .employee-dashboard .dashboard-panels {
+    .employee-dashboard .dashboard-panels,
+    .employee-dashboard .dashboard-community-grid {
         grid-template-columns: 1fr;
     }
 }
@@ -403,7 +1341,61 @@
     .employee-dashboard .profile-facts,
     .employee-dashboard .form-grid,
     .employee-dashboard .address-grid,
-    .employee-dashboard .marriage-details {
+    .employee-dashboard .marriage-details,
+    .employee-dashboard .birthday-wishes-grid,
+    .employee-dashboard .upcoming-events-list {
         grid-template-columns: 1fr;
+    }
+
+    .employee-dashboard-home .employee-dashboard .dashboard-intro {
+        padding: 24px 20px;
+    }
+
+    .employee-dashboard .upcoming-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .employee-dashboard .upcoming-heading-actions {
+        width: 100%;
+    }
+
+    .employee-dashboard .birthday-wishes-summary {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .employee-dashboard .birthday-wishes-summary-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .employee-dashboard .open-birthday-wishes-button {
+        margin-left: auto;
+    }
+
+    .employee-dashboard .dashboard-dialog-panel {
+        padding: 14px;
+    }
+
+    .employee-dashboard .calendar-link {
+        flex: 1;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .employee-dashboard .birthday-wish-form,
+    .employee-dashboard .birthday-reply-form {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-dashboard .birthday-wish-form label,
+    .employee-dashboard .birthday-reply-form label {
+        grid-column: auto;
+    }
+
+    .employee-dashboard .birthday-wish-button,
+    .employee-dashboard .birthday-reply-button {
+        min-height: 40px;
     }
 }

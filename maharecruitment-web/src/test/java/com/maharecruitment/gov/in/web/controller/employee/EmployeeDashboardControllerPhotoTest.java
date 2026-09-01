@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 
 import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileUpdateResponse;
+import com.maharecruitment.gov.in.web.service.employee.EmployeeDashboardContentService;
 import com.maharecruitment.gov.in.web.service.employee.EmployeeProfileService;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,6 +25,9 @@ class EmployeeDashboardControllerPhotoTest {
     @Mock
     private EmployeeProfileService employeeProfileService;
 
+    @Mock
+    private EmployeeDashboardContentService employeeDashboardContentService;
+
     @Test
     void photoEndpointReturnsNotFoundWhenNoValidEmployeePhotoCanBeResolved() {
         Principal principal = () -> "employee@example.gov.in";
@@ -31,7 +35,7 @@ class EmployeeDashboardControllerPhotoTest {
                 .thenReturn(Optional.empty());
 
         EmployeeDashboardController controller =
-                new EmployeeDashboardController(employeeProfileService);
+                new EmployeeDashboardController(employeeProfileService, employeeDashboardContentService);
 
         assertThat(controller.photo(principal).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(controller.photo(principal).getBody()).isNull();
@@ -47,7 +51,8 @@ class EmployeeDashboardControllerPhotoTest {
                 new byte[] { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF });
         when(employeeProfileService.uploadCurrentEmployeePhoto(eq(principal.getName()), any()))
                 .thenThrow(new IllegalStateException("Storage unavailable"));
-        EmployeeDashboardController controller = new EmployeeDashboardController(employeeProfileService);
+        EmployeeDashboardController controller =
+                new EmployeeDashboardController(employeeProfileService, employeeDashboardContentService);
 
         var response = controller.uploadPhoto(principal, null, file);
 

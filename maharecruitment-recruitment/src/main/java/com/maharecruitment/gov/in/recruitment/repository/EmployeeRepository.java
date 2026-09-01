@@ -14,10 +14,23 @@ import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeAgencyFilterProjection;
+import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeBirthdayProjection;
 import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeListProjection;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> {
+
+    @Query("""
+            select employee.employeeId as employeeId,
+                   employee.fullName as fullName,
+                   employee.dateOfBirth as dateOfBirth
+            from EmployeeEntity employee
+            where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
+              and employee.dateOfBirth is not null
+            order by lower(employee.fullName), employee.employeeId
+            """)
+    List<EmployeeBirthdayProjection> findActiveEmployeeBirthdays();
+
     Optional<EmployeeEntity> findByEmployeeCode(String employeeCode);
 
     Optional<EmployeeEntity> findByEmployeeCodeIgnoreCase(String employeeCode);

@@ -28,6 +28,7 @@ import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationE
 import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileDTO;
 import com.maharecruitment.gov.in.web.dto.employee.EmployeeProfileUpdateResponse;
+import com.maharecruitment.gov.in.web.service.employee.EmployeeDashboardContentService;
 import com.maharecruitment.gov.in.web.service.employee.EmployeeProfileService;
 
 import jakarta.servlet.http.HttpSession;
@@ -44,9 +45,13 @@ public class EmployeeDashboardController {
     private static final String EMPLOYEE_PROFILE_REFRESHED_KEY = "employeeProfileSessionRefreshed";
 
     private final EmployeeProfileService employeeProfileService;
+    private final EmployeeDashboardContentService employeeDashboardContentService;
 
-    public EmployeeDashboardController(EmployeeProfileService employeeProfileService) {
+    public EmployeeDashboardController(
+            EmployeeProfileService employeeProfileService,
+            EmployeeDashboardContentService employeeDashboardContentService) {
         this.employeeProfileService = employeeProfileService;
+        this.employeeDashboardContentService = employeeDashboardContentService;
     }
 
     @GetMapping("/dashboard")
@@ -54,8 +59,9 @@ public class EmployeeDashboardController {
         EmployeeProfileDTO profile = addProfileAttributes(principal, session, model);
         model.addAttribute("pageHeading", "Employee Dashboard");
         model.addAttribute("pageSubtitle", profile.isProfileAvailable()
-                ? "View your employee profile and attendance calendar."
+                ? "Welcome back, " + profile.getFullName() + ". Here is what is happening today."
                 : "Complete your profile to keep MahaIT employee records up to date.");
+        model.addAttribute("dashboardContent", employeeDashboardContentService.getDashboardContent(profile));
         return "employee/dashboard";
     }
 

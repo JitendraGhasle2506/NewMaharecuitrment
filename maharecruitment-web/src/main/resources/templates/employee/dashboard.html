@@ -8,15 +8,22 @@
     <link rel="stylesheet" th:href="@{/css/employee-dashboard.css}" />
 </head>
 
-<body class="employee-dashboard-page">
+<body class="employee-dashboard-page employee-dashboard-home">
     <th:block th:replace="~{header/header :: var-sidebar-header('Employee', 'Employee Dashboard', ~{::section})}">
         <section class="employee-dashboard">
 
             <div class="dashboard-intro">
-                <div>
-                    <span class="dashboard-kicker">MahaIT Recruitment</span>
+                <div class="dashboard-intro-content">
+                    <span class="dashboard-kicker">
+                        <i class="fa-solid fa-building-columns"></i>
+                        MahaIT Recruitment
+                    </span>
                     <h2 th:text="${pageHeading}">Employee Dashboard</h2>
-                    <p th:text="${pageSubtitle}">View your employee profile and attendance calendar.</p>
+                    <p th:text="${pageSubtitle}">Welcome back. Here is what is happening today.</p>
+                    <div class="dashboard-today-chip">
+                        <i class="fa-regular fa-calendar"></i>
+                        <span th:text="${dashboardContent.todayLabel}">Tuesday, 1 September 2026</span>
+                    </div>
                 </div>
                 <div class="completion-meter" th:attr="data-completion=${profile.completionPercentage}"
                     th:style="'--completion:' + ${profile.completionPercentage}">
@@ -77,16 +84,318 @@
                 <div class="quick-actions">
                     <a class="quick-action" th:href="@{/employee/profile/update}">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <span>Update Profile</span>
-                    </a>
-                    <a class="quick-action" th:href="@{/employee/attendance-calendar}">
-                        <i class="fa-solid fa-calendar-days"></i>
-                        <span>Calendar</span>
+                        <span class="quick-action-copy">
+                            <strong>Update Profile</strong>
+                            <small>Manage personal details and profile photo</small>
+                        </span>
                     </a>
                 </div>
             </div>
+
+            <div class="birthday-wish-feedback success" role="status" th:if="${birthdayWishSuccess}">
+                <i class="fa-solid fa-circle-check"></i>
+                <span th:text="${birthdayWishSuccess}">Birthday wish sent successfully.</span>
+            </div>
+            <div class="birthday-wish-feedback error" role="alert" th:if="${birthdayWishError}">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span th:text="${birthdayWishError}">Unable to process the birthday wish.</span>
+            </div>
+
+            <div class="dashboard-community-grid">
+                <article class="dashboard-widget celebrations-widget">
+                    <div class="widget-heading">
+                        <div>
+                            <span class="widget-kicker">Celebrate Together</span>
+                            <h3>Today's Celebrations</h3>
+                        </div>
+                        <span class="widget-count" th:text="${#lists.size(dashboardContent.todaysCelebrations)}">0</span>
+                    </div>
+
+                    <div class="celebration-list" th:if="${!#lists.isEmpty(dashboardContent.todaysCelebrations)}">
+                        <div class="celebration-item" th:each="celebration : ${dashboardContent.todaysCelebrations}">
+                            <div class="celebration-icon"
+                                th:classappend="${celebration.type == 'BIRTHDAY'} ? ' birthday' : ' anniversary'">
+                                <i class="fa-solid"
+                                    th:classappend="${celebration.type == 'BIRTHDAY'} ? ' fa-cake-candles' : ' fa-heart'"></i>
+                            </div>
+                            <div class="celebration-copy">
+                                <span th:text="${celebration.label}">Birthday</span>
+                                <strong th:text="${celebration.employeeName}">Employee Name</strong>
+                            </div>
+
+                            <button type="button" class="celebration-action-button birthday-wish-composer"
+                                th:if="${celebration.type == 'BIRTHDAY' and celebration.canWish}"
+                                th:attr="data-dashboard-dialog-target=${'birthdayWishDialog-' + celebration.employeeId}">
+                                <i class="fa-solid fa-gift"></i>
+                                Wish
+                            </button>
+                            <dialog class="dashboard-dialog birthday-compose-dialog"
+                                th:if="${celebration.type == 'BIRTHDAY' and celebration.canWish}"
+                                th:id="${'birthdayWishDialog-' + celebration.employeeId}">
+                                <div class="dashboard-dialog-panel">
+                                    <header class="dashboard-dialog-header">
+                                        <div>
+                                            <span class="widget-kicker">Celebrate Together</span>
+                                            <h3>Wish <span th:text="${celebration.employeeName}">Employee</span></h3>
+                                        </div>
+                                        <button type="button" class="dashboard-dialog-close"
+                                            data-dashboard-dialog-close aria-label="Close birthday wish">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </header>
+                                    <form class="birthday-wish-form" method="post"
+                                        th:action="@{/employee/birthday-wishes}">
+                                        <input type="hidden" name="recipientEmployeeId" th:value="${celebration.employeeId}">
+                                        <input type="hidden" autocomplete="off" th:if="${_csrf != null}"
+                                            th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                        <label th:for="${'birthdayWish-' + celebration.employeeId}">Birthday message</label>
+                                        <textarea th:id="${'birthdayWish-' + celebration.employeeId}" name="message"
+                                            rows="3" maxlength="300" required
+                                            th:text="${'Happy Birthday, ' + celebration.employeeName + '! Wishing you a wonderful year ahead.'}"></textarea>
+                                        <button type="submit" class="birthday-wish-button">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                            Send Wish
+                                        </button>
+                                    </form>
+                                </div>
+                            </dialog>
+
+                            <button type="button" class="celebration-action-button reply"
+                                th:if="${celebration.type == 'BIRTHDAY' and celebration.wishSent and celebration.wishReply != null and !#strings.isEmpty(celebration.wishReply)}"
+                                th:attr="data-dashboard-dialog-target=${'birthdayReplyDialog-' + celebration.employeeId}">
+                                <i class="fa-solid fa-circle-check"></i>
+                                View reply
+                            </button>
+                            <dialog class="dashboard-dialog birthday-compose-dialog"
+                                th:if="${celebration.type == 'BIRTHDAY' and celebration.wishSent and celebration.wishReply != null and !#strings.isEmpty(celebration.wishReply)}"
+                                th:id="${'birthdayReplyDialog-' + celebration.employeeId}">
+                                <div class="dashboard-dialog-panel">
+                                    <header class="dashboard-dialog-header">
+                                        <div>
+                                            <span class="widget-kicker">Birthday Reply</span>
+                                            <h3 th:text="${celebration.employeeName}">Employee</h3>
+                                        </div>
+                                        <button type="button" class="dashboard-dialog-close"
+                                            data-dashboard-dialog-close aria-label="Close birthday reply">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </header>
+                                    <blockquote class="birthday-dialog-message">
+                                        <p th:text="${celebration.wishReply}">Thank you!</p>
+                                    </blockquote>
+                                </div>
+                            </dialog>
+
+                            <span class="celebration-status sent"
+                                th:if="${celebration.type == 'BIRTHDAY' and celebration.wishSent and (celebration.wishReply == null or #strings.isEmpty(celebration.wishReply))}">
+                                <i class="fa-solid fa-check"></i> Sent
+                            </span>
+                            <span class="celebration-status own"
+                                th:if="${celebration.type == 'BIRTHDAY' and celebration.ownCelebration}">
+                                <i class="fa-solid fa-cake-candles"></i> Your birthday
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="widget-empty celebration-empty"
+                        th:if="${#lists.isEmpty(dashboardContent.todaysCelebrations)}">
+                        <span class="empty-icon"><i class="fa-solid fa-champagne-glasses"></i></span>
+                        <div>
+                            <strong>No celebrations today</strong>
+                            <p>Birthdays and marriage anniversaries will appear here.</p>
+                        </div>
+                    </div>
+                </article>
+
+                <aside class="dashboard-widget announcements-widget">
+                    <div class="widget-heading">
+                        <div>
+                            <span class="widget-kicker">Stay Informed</span>
+                            <h3>Announcements</h3>
+                        </div>
+                        <span class="announcement-bell"><i class="fa-solid fa-bullhorn"></i></span>
+                    </div>
+
+                    <div class="announcement-list" th:if="${!#lists.isEmpty(dashboardContent.announcements)}">
+                        <article class="announcement-item" th:each="announcement : ${dashboardContent.announcements}"
+                            th:classappend="${announcement.tone == 'ACTION'} ? ' action' : ' info'">
+                            <span class="announcement-dot"></span>
+                            <div>
+                                <strong th:text="${announcement.title}">Announcement title</strong>
+                                <p th:text="${announcement.message}">Announcement details</p>
+                            </div>
+                        </article>
+                    </div>
+
+                    <div class="widget-empty" th:if="${#lists.isEmpty(dashboardContent.announcements)}">
+                        <span class="empty-icon"><i class="fa-regular fa-bell"></i></span>
+                        <div>
+                            <strong>You are all caught up</strong>
+                            <p>New employee announcements will appear here.</p>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            <section class="dashboard-widget birthday-wishes-widget"
+                th:if="${!#lists.isEmpty(dashboardContent.receivedBirthdayWishes) or !#lists.isEmpty(dashboardContent.birthdayReplies)}">
+                <div class="birthday-wishes-summary">
+                    <div class="birthday-wishes-summary-title">
+                        <span class="wishes-icon"><i class="fa-solid fa-envelope-open-text"></i></span>
+                        <div>
+                            <span class="widget-kicker">Celebrate &amp; Connect</span>
+                            <h3>Birthday Wishes</h3>
+                        </div>
+                    </div>
+                    <div class="birthday-wishes-summary-actions">
+                        <span class="wish-summary-count"
+                            th:if="${!#lists.isEmpty(dashboardContent.receivedBirthdayWishes)}">
+                            <strong th:text="${#lists.size(dashboardContent.receivedBirthdayWishes)}">0</strong>
+                            received
+                        </span>
+                        <span class="wish-summary-count reply"
+                            th:if="${!#lists.isEmpty(dashboardContent.birthdayReplies)}">
+                            <strong th:text="${#lists.size(dashboardContent.birthdayReplies)}">0</strong>
+                            replies
+                        </span>
+                        <button type="button" class="open-birthday-wishes-button"
+                            data-dashboard-dialog-target="birthdayWishesDialog">
+                            Open <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <dialog id="birthdayWishesDialog" class="dashboard-dialog birthday-wishes-dialog">
+                    <div class="dashboard-dialog-panel birthday-wishes-dialog-panel">
+                        <header class="dashboard-dialog-header">
+                            <div>
+                                <span class="widget-kicker">Celebrate &amp; Connect</span>
+                        <h3>Birthday Wishes</h3>
+                        <p>Select a colleague to read the message or reply.</p>
+                            </div>
+                            <button type="button" class="dashboard-dialog-close"
+                                data-dashboard-dialog-close aria-label="Close birthday wishes">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </header>
+                        <div class="birthday-wishes-grid">
+                    <div class="birthday-wish-column"
+                        th:if="${!#lists.isEmpty(dashboardContent.receivedBirthdayWishes)}">
+                        <h4>
+                            <span><i class="fa-solid fa-inbox"></i> Wishes for You</span>
+                            <b th:text="${#lists.size(dashboardContent.receivedBirthdayWishes)}">0</b>
+                        </h4>
+                        <div class="birthday-wish-list">
+                            <details class="birthday-wish-card received"
+                                th:each="wish : ${dashboardContent.receivedBirthdayWishes}">
+                                <summary class="birthday-wish-card-heading">
+                                    <span class="wish-avatar"><i class="fa-solid fa-user"></i></span>
+                                    <span class="wish-person">
+                                        <strong th:text="${wish.employeeName}">Colleague Name</strong>
+                                        <small th:text="${wish.sentLabel}">1 Sep, 10:30 AM</small>
+                                    </span>
+                                    <span class="wish-open-label">
+                                        Read <i class="fa-solid fa-chevron-down"></i>
+                                    </span>
+                                </summary>
+                                <div class="birthday-wish-card-body">
+                                    <blockquote th:text="${wish.wishMessage}">Happy Birthday!</blockquote>
+                                    <form class="birthday-reply-form" method="post"
+                                        th:action="@{/employee/birthday-wishes/{wishId}/reply(wishId=${wish.wishId})}">
+                                        <input type="hidden" autocomplete="off" th:if="${_csrf != null}"
+                                            th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                        <label th:for="${'birthdayReply-' + wish.wishId}">Your reply</label>
+                                        <textarea th:id="${'birthdayReply-' + wish.wishId}" name="reply" rows="2"
+                                            maxlength="300" required placeholder="Write a thank-you reply..."
+                                            th:text="${wish.replyMessage}"></textarea>
+                                        <button type="submit" class="birthday-reply-button">
+                                            <i class="fa-solid fa-reply"></i>
+                                            <span th:text="${#strings.isEmpty(wish.replyMessage) ? 'Reply' : 'Update'}">Reply</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+
+                    <div class="birthday-wish-column"
+                        th:if="${!#lists.isEmpty(dashboardContent.birthdayReplies)}">
+                        <h4>
+                            <span><i class="fa-solid fa-reply-all"></i> Replies to Your Wishes</span>
+                            <b th:text="${#lists.size(dashboardContent.birthdayReplies)}">0</b>
+                        </h4>
+                        <div class="birthday-wish-list">
+                            <details class="birthday-wish-card reply"
+                                th:each="wish : ${dashboardContent.birthdayReplies}">
+                                <summary class="birthday-wish-card-heading">
+                                    <span class="wish-avatar"><i class="fa-solid fa-cake-candles"></i></span>
+                                    <span class="wish-person">
+                                        <strong th:text="${wish.employeeName}">Colleague Name</strong>
+                                        <small th:text="${wish.repliedLabel}">2 Sep, 9:15 AM</small>
+                                    </span>
+                                    <span class="wish-open-label">
+                                        View <i class="fa-solid fa-chevron-down"></i>
+                                    </span>
+                                </summary>
+                                <div class="birthday-wish-card-body">
+                                    <small class="original-wish-label">Your wish</small>
+                                    <p class="original-wish" th:text="${wish.wishMessage}">Happy Birthday!</p>
+                                    <blockquote class="reply-message" th:text="${wish.replyMessage}">Thank you!</blockquote>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                        </div>
+                    </div>
+                </dialog>
+            </section>
+
+            <section class="dashboard-widget upcoming-events-widget">
+                <div class="widget-heading upcoming-heading">
+                    <div>
+                        <span class="widget-kicker">Next 30 Days</span>
+                        <h3>Upcoming Events</h3>
+                        <p>Organization holidays scheduled for the next 30 days.</p>
+                    </div>
+                    <div class="upcoming-heading-actions">
+                        <span class="holiday-count">
+                            <strong th:text="${#lists.size(dashboardContent.upcomingEvents)}">0</strong>
+                            <span>Holidays</span>
+                        </span>
+                        <a class="calendar-link" th:href="@{/employee/attendance-calendar}">
+                            Open Calendar <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="upcoming-events-list" th:if="${!#lists.isEmpty(dashboardContent.upcomingEvents)}">
+                    <article class="upcoming-event holiday" th:each="event : ${dashboardContent.upcomingEvents}">
+                        <time class="event-date" th:datetime="${event.date}">
+                            <strong th:text="${event.day}">12</strong>
+                            <span th:text="${event.month}">SEP</span>
+                        </time>
+                        <div class="event-details">
+                            <span class="event-category"><i class="fa-solid fa-calendar-check"></i> Holiday</span>
+                            <h4 th:text="${event.title}">Upcoming event</h4>
+                            <small>
+                                <span th:text="${event.dateLabel}">Saturday, 12 September</span>
+                                <b th:text="${event.relativeLabel}">In 11 days</b>
+                            </small>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="widget-empty upcoming-empty" th:if="${#lists.isEmpty(dashboardContent.upcomingEvents)}">
+                    <span class="empty-icon"><i class="fa-regular fa-calendar-check"></i></span>
+                    <div>
+                        <strong>No upcoming events</strong>
+                        <p>There are no organization holidays scheduled in the next 30 days.</p>
+                    </div>
+                </div>
+            </section>
         </section>
     </th:block>
+    <script th:src="@{/js/employee-dashboard-community.js(v='20260901')}"></script>
 </body>
 
 </html>
