@@ -231,12 +231,6 @@
         return true;
     }
 
-    document.querySelectorAll('[data-scroll-target]').forEach((button) => {
-        button.addEventListener('click', () => {
-            document.getElementById(button.dataset.scrollTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-    });
-
     const marriageDateInput = field('marriageDate');
     if (marriageDateInput) {
         marriageDateInput.max = localDateValue(new Date());

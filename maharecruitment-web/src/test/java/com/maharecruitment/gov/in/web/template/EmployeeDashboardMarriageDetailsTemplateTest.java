@@ -12,9 +12,12 @@ class EmployeeDashboardMarriageDetailsTemplateTest {
 
     @Test
     void marriageDetailsAreConditionallyAvailableForMarriedEmployees() throws IOException {
-        String template = resource("templates/employee/dashboard.html");
+        String dashboard = resource("templates/employee/dashboard.html");
+        String template = resource("templates/employee/profile-update.html");
         String script = resource("static/js/employee-dashboard.js");
 
+        assertThat(dashboard)
+                .doesNotContain("Editable Details", "Personal Information", "id=\"employeeProfileForm\"");
         assertThat(template)
                 .contains("id=\"maritalStatus\" name=\"maritalStatus\"")
                 .contains("id=\"marriageDetails\" class=\"marriage-details\"")

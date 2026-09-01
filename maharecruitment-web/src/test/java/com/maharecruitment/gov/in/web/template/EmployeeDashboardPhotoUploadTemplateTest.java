@@ -12,14 +12,18 @@ class EmployeeDashboardPhotoUploadTemplateTest {
 
     @Test
     void photoFormPostsMultipartWithCsrfAndAjaxResponseHandling() throws IOException {
-        String template = resource("templates/employee/dashboard.html");
+        String dashboard = resource("templates/employee/dashboard.html");
+        String template = resource("templates/employee/profile-update.html");
         String script = resource("static/js/employee-dashboard.js");
 
+        assertThat(dashboard)
+                .contains("th:href=\"@{/employee/profile/update}\"")
+                .doesNotContain("id=\"photoUploadCard\"", "Profile Photo");
         assertThat(template)
                 .contains("id=\"photoUploadForm\" method=\"post\" enctype=\"multipart/form-data\"")
                 .contains("th:action=\"@{/employee/profile/photo/upload}\"")
                 .contains("th:name=\"${_csrf.parameterName}\"")
-                .contains("employee-dashboard.js(v='20260831')");
+                .contains("employee-dashboard.js(v='20260901')");
         assertThat(script)
                 .contains("'X-Requested-With': 'XMLHttpRequest'")
                 .contains("'Accept': 'application/json'")

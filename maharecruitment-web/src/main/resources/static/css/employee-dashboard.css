@@ -59,6 +59,22 @@
     margin-top: 6px;
 }
 
+.employee-dashboard .dashboard-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 12px;
+    color: var(--ed-primary);
+    font-size: 0.86rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.employee-dashboard .dashboard-back-link:hover {
+    color: var(--ed-primary-dark);
+    text-decoration: underline;
+}
+
 .employee-dashboard .completion-meter {
     width: 132px;
     min-width: 132px;
@@ -334,6 +350,7 @@
 .employee-dashboard .form-actions {
     display: flex;
     justify-content: flex-end;
+    gap: 10px;
     margin-top: 18px;
 }
 

@@ -51,16 +51,22 @@ public class EmployeeDashboardController {
 
     @GetMapping("/dashboard")
     public String dashboard(Principal principal, HttpSession session, Model model) {
-        EmployeeProfileDTO profile = employeeProfileService.getCurrentEmployeeProfile(resolveLoginEmail(principal));
-        SessionUserDTO loggedInUser = refreshSessionUser(session, profile);
-        model.addAttribute("profile", profile);
-        model.addAttribute("sessionUser", loggedInUser);
-        model.addAttribute("loggedInUser", loggedInUser);
+        EmployeeProfileDTO profile = addProfileAttributes(principal, session, model);
         model.addAttribute("pageHeading", "Employee Dashboard");
+        model.addAttribute("pageSubtitle", profile.isProfileAvailable()
+                ? "View your employee profile and attendance calendar."
+                : "Complete your profile to keep MahaIT employee records up to date.");
+        return "employee/dashboard";
+    }
+
+    @GetMapping("/profile/update")
+    public String profileUpdatePage(Principal principal, HttpSession session, Model model) {
+        EmployeeProfileDTO profile = addProfileAttributes(principal, session, model);
+        model.addAttribute("pageHeading", "Update Profile");
         model.addAttribute("pageSubtitle", profile.isProfileAvailable()
                 ? "View and update your personal information."
                 : "Complete your profile to keep MahaIT employee records up to date.");
-        return "employee/dashboard";
+        return "employee/profile-update";
     }
 
     @GetMapping("/profile")
@@ -215,5 +221,14 @@ public class EmployeeDashboardController {
             return dto;
         }
         return null;
+    }
+
+    private EmployeeProfileDTO addProfileAttributes(Principal principal, HttpSession session, Model model) {
+        EmployeeProfileDTO profile = employeeProfileService.getCurrentEmployeeProfile(resolveLoginEmail(principal));
+        SessionUserDTO loggedInUser = refreshSessionUser(session, profile);
+        model.addAttribute("profile", profile);
+        model.addAttribute("sessionUser", loggedInUser);
+        model.addAttribute("loggedInUser", loggedInUser);
+        return profile;
     }
 }

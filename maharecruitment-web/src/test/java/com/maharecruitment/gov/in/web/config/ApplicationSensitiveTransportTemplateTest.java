@@ -46,7 +46,7 @@ class ApplicationSensitiveTransportTemplateTest {
     void employeePanUsesEncryptedAjaxPayloadAndMaskedDisplay() throws Exception {
         String template = Files.readString(modulePath(
                 "maharecruitment-web",
-                "src/main/resources/templates/employee/dashboard.html"));
+                "src/main/resources/templates/employee/profile-update.html"));
         String dashboardScript = Files.readString(modulePath(
                 "maharecruitment-web",
                 "src/main/resources/static/js/employee-dashboard.js"));
