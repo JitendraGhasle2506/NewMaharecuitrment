@@ -1,6 +1,8 @@
 package com.maharecruitment.gov.in.web.service.employee;
 
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.MonthDay;
 import java.time.ZoneId;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +46,7 @@ public class EmployeeDashboardContentService {
     static final int UPCOMING_EVENT_LIMIT = 8;
     static final int WISH_HISTORY_DAYS = 30;
     static final int WISH_HISTORY_LIMIT = 20;
+    static final Duration SHARED_CONTENT_CACHE_TTL = Duration.ofMinutes(5);
     private static final LocalDate PLACEHOLDER_DATE_OF_BIRTH = LocalDate.of(1900, 1, 1);
     private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
     private static final DateTimeFormatter TODAY_FORMATTER =
@@ -53,12 +57,15 @@ public class EmployeeDashboardContentService {
             DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH);
     private static final DateTimeFormatter WISH_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("d MMM, h:mm a", Locale.ENGLISH);
+    private static final Pageable WISH_HISTORY_PAGE = PageRequest.of(0, WISH_HISTORY_LIMIT);
 
     private final EmployeeRepository employeeRepository;
     private final EmployeeProfileRepository employeeProfileRepository;
     private final HolidayService holidayService;
     private final EmployeeBirthdayWishRepository birthdayWishRepository;
     private final Clock clock;
+    private final Object sharedContentCacheMonitor = new Object();
+    private volatile SharedContentSnapshot sharedContentCache;
 
     @Autowired
     public EmployeeDashboardContentService(
@@ -89,13 +96,11 @@ public class EmployeeDashboardContentService {
 
     public EmployeeDashboardContentView getDashboardContent(EmployeeProfileDTO currentProfile) {
         LocalDate today = LocalDate.now(clock);
-        List<EmployeeBirthdayProjection> birthdays = employeeRepository.findActiveEmployeeBirthdays();
-        List<EmployeeAnniversaryProjection> anniversaries = employeeProfileRepository.findActiveEmployeeAnniversaries();
-        List<HolidayMasterEntity> holidays = holidayService.getHolidaysBetween(
-                today.plusDays(1),
-                today.plusDays(UPCOMING_WINDOW_DAYS));
+        SharedContentSnapshot sharedContent = getSharedContent(today);
         Long currentEmployeeId = currentProfile == null ? null : currentProfile.getEmployeeId();
-        List<EmployeeBirthdayWishEntity> sentToday = currentEmployeeId == null
+        boolean hasBirthdayCelebrations = sharedContent.birthdays().stream()
+                .anyMatch(birthday -> isRealDateOfBirth(birthday.getDateOfBirth()));
+        List<EmployeeBirthdayWishEntity> sentToday = currentEmployeeId == null || !hasBirthdayCelebrations
                 ? List.of()
                 : birthdayWishRepository.findBySender_EmployeeIdAndCelebrationDateOrderByCreatedDateDesc(
                         currentEmployeeId, today);
@@ -108,23 +113,60 @@ public class EmployeeDashboardContentService {
 
         List<CelebrationView> todaysCelebrations = todaysCelebrations(
                 today,
-                birthdays,
-                anniversaries,
+                sharedContent.birthdays(),
+                sharedContent.anniversaries(),
                 currentEmployeeId,
                 sentWishesByRecipient);
-        List<UpcomingEventView> upcomingEvents = upcomingEvents(today, holidays);
         List<AnnouncementView> announcements = announcements(currentProfile);
-        List<BirthdayWishView> receivedBirthdayWishes = receivedBirthdayWishes(currentEmployeeId, today);
-        List<BirthdayWishView> birthdayReplies = birthdayReplies(currentEmployeeId, today);
+        LocalDate wishHistoryStart = today.minusDays(WISH_HISTORY_DAYS);
+        List<BirthdayWishView> receivedBirthdayWishes = receivedBirthdayWishes(
+                currentEmployeeId, wishHistoryStart);
+        List<BirthdayWishView> birthdayReplies = birthdayReplies(
+                currentEmployeeId, wishHistoryStart, today);
 
         return new EmployeeDashboardContentView(
                 today,
                 today.format(TODAY_FORMATTER),
                 todaysCelebrations,
-                upcomingEvents,
+                sharedContent.upcomingEvents(),
                 announcements,
                 receivedBirthdayWishes,
                 birthdayReplies);
+    }
+
+    private SharedContentSnapshot getSharedContent(LocalDate today) {
+        Instant now = clock.instant();
+        SharedContentSnapshot snapshot = sharedContentCache;
+        if (snapshot != null && snapshot.isValidFor(today, now)) {
+            return snapshot;
+        }
+
+        synchronized (sharedContentCacheMonitor) {
+            snapshot = sharedContentCache;
+            if (snapshot != null && snapshot.isValidFor(today, now)) {
+                return snapshot;
+            }
+
+            List<EmployeeBirthdayProjection> birthdays = List.copyOf(
+                    employeeRepository.findActiveEmployeeBirthdaysOn(
+                            today.getMonthValue(), today.getDayOfMonth()));
+            List<EmployeeAnniversaryProjection> anniversaries = List.copyOf(
+                    employeeProfileRepository.findActiveEmployeeAnniversariesOn(
+                            today.getMonthValue(), today.getDayOfMonth()));
+            List<UpcomingEventView> upcomingEvents = upcomingEvents(
+                    today,
+                    holidayService.getHolidaysBetween(
+                            today.plusDays(1),
+                            today.plusDays(UPCOMING_WINDOW_DAYS)));
+            snapshot = new SharedContentSnapshot(
+                    today,
+                    now.plus(SHARED_CONTENT_CACHE_TTL),
+                    birthdays,
+                    anniversaries,
+                    upcomingEvents);
+            sharedContentCache = snapshot;
+            return snapshot;
+        }
     }
 
     private List<CelebrationView> todaysCelebrations(
@@ -225,15 +267,15 @@ public class EmployeeDashboardContentService {
         return List.copyOf(announcements);
     }
 
-    private List<BirthdayWishView> receivedBirthdayWishes(Long currentEmployeeId, LocalDate today) {
+    private List<BirthdayWishView> receivedBirthdayWishes(Long currentEmployeeId, LocalDate fromDate) {
         if (currentEmployeeId == null) {
             return List.of();
         }
         return birthdayWishRepository
                 .findByRecipient_EmployeeIdAndCelebrationDateGreaterThanEqualOrderByCreatedDateDesc(
                         currentEmployeeId,
-                        today.minusDays(WISH_HISTORY_DAYS),
-                        PageRequest.of(0, WISH_HISTORY_LIMIT))
+                        fromDate,
+                        WISH_HISTORY_PAGE)
                 .stream()
                 .map(wish -> new BirthdayWishView(
                         wish.getWishId(),
@@ -245,16 +287,19 @@ public class EmployeeDashboardContentService {
                 .toList();
     }
 
-    private List<BirthdayWishView> birthdayReplies(Long currentEmployeeId, LocalDate today) {
+    private List<BirthdayWishView> birthdayReplies(
+            Long currentEmployeeId,
+            LocalDate fromDate,
+            LocalDate today) {
         if (currentEmployeeId == null) {
             return List.of();
         }
         return birthdayWishRepository
                 .findRecentRepliesForSender(
                         currentEmployeeId,
-                        today.minusDays(WISH_HISTORY_DAYS),
+                        fromDate,
                         today,
-                        PageRequest.of(0, WISH_HISTORY_LIMIT))
+                        WISH_HISTORY_PAGE)
                 .stream()
                 .map(wish -> new BirthdayWishView(
                         wish.getWishId(),
@@ -287,5 +332,17 @@ public class EmployeeDashboardContentService {
 
     private String displayName(String name) {
         return name == null || name.isBlank() ? "MahaIT Colleague" : name.trim();
+    }
+
+    private record SharedContentSnapshot(
+            LocalDate date,
+            Instant expiresAt,
+            List<EmployeeBirthdayProjection> birthdays,
+            List<EmployeeAnniversaryProjection> anniversaries,
+            List<UpcomingEventView> upcomingEvents) {
+
+        private boolean isValidFor(LocalDate requestedDate, Instant now) {
+            return date.equals(requestedDate) && now.isBefore(expiresAt);
+        }
     }
 }

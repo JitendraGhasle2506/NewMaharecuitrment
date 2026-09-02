@@ -27,9 +27,13 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             from EmployeeEntity employee
             where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
               and employee.dateOfBirth is not null
+              and month(employee.dateOfBirth) = :month
+              and day(employee.dateOfBirth) = :day
             order by lower(employee.fullName), employee.employeeId
             """)
-    List<EmployeeBirthdayProjection> findActiveEmployeeBirthdays();
+    List<EmployeeBirthdayProjection> findActiveEmployeeBirthdaysOn(
+            @Param("month") int month,
+            @Param("day") int day);
 
     Optional<EmployeeEntity> findByEmployeeCode(String employeeCode);
 
@@ -110,6 +114,11 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     @Query("select employee from EmployeeEntity employee "
             + "where employee.user.id = :userId")
     Optional<EmployeeEntity> findDetailedByUserId(@Param("userId") Long userId);
+
+    @EntityGraph(attributePaths = { "departmentRegistration", "designation", "preOnboarding" })
+    @Query("select employee from EmployeeEntity employee "
+            + "where employee.user.id = :userId")
+    Optional<EmployeeEntity> findEmployeeProfileByUserId(@Param("userId") Long userId);
 
     @EntityGraph(attributePaths = {
             "departmentRegistration",

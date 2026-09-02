@@ -178,7 +178,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         if (user == null || user.getId() == null) {
             return Optional.empty();
         }
-        return employeeRepository.findDetailedByUserId(user.getId());
+        return employeeRepository.findEmployeeProfileByUserId(user.getId());
     }
 
     private EmployeeEntity requireEmployee(User user) {
@@ -219,7 +219,9 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
         dto.setRole(resolveRole(user, employee));
         dto.setDepartment(resolveDepartment(employee, user));
         dto.setMobileNo(firstText(employee != null ? normalizeText(employee.getMobile()) : null, user.getMobileNo()));
-        dto.setPhotoUrl(resolvePhotoPath(profile, employee).isPresent() ? cacheBustedEmployeePhotoUrl() : "");
+        dto.setPhotoUrl(resolvePhotoPath(profile, employee)
+                .map(this::employeePhotoUrl)
+                .orElse(""));
         dto.setCompletionPercentage(calculateCompletionPercentage(dto));
         return dto;
     }
@@ -334,8 +336,9 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
                 .findFirst();
     }
 
-    private String cacheBustedEmployeePhotoUrl() {
-        return "/employee/profile/photo?v=" + System.currentTimeMillis();
+    private String employeePhotoUrl(Path photoPath) {
+        String version = Integer.toUnsignedString(photoPath.toString().hashCode(), 36);
+        return "/employee/profile/photo?v=" + version;
     }
 
     private LocalDate firstDate(LocalDate... values) {

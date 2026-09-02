@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeProfile;
@@ -20,9 +21,13 @@ public interface EmployeeProfileRepository extends JpaRepository<EmployeeProfile
             from EmployeeProfile profile
             where upper(trim(coalesce(profile.employee.status, ''))) = 'ACTIVE'
               and profile.marriageDate is not null
+              and month(profile.marriageDate) = :month
+              and day(profile.marriageDate) = :day
             order by lower(profile.employee.fullName), profile.employee.employeeId
             """)
-    List<EmployeeAnniversaryProjection> findActiveEmployeeAnniversaries();
+    List<EmployeeAnniversaryProjection> findActiveEmployeeAnniversariesOn(
+            @Param("month") int month,
+            @Param("day") int day);
 
     Optional<EmployeeProfile> findByEmployeeEmployeeId(Long employeeId);
 }

@@ -3,11 +3,13 @@ package com.maharecruitment.gov.in.web.controller.employee;
 import java.net.URLConnection;
 import java.nio.file.Path;
 import java.security.Principal;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -178,6 +180,7 @@ public class EmployeeDashboardController {
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
+                    .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePrivate())
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + path.getFileName() + "\"")
                     .body(resource);
         } catch (Exception ex) {

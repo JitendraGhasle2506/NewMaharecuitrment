@@ -57,7 +57,7 @@ class EmployeeProfileServiceImplTest {
 
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue("old.employee@example.com"))
                 .thenReturn(Optional.of(user));
-        when(employeeRepository.findDetailedByUserId(10L)).thenReturn(Optional.of(employee));
+        when(employeeRepository.findEmployeeProfileByUserId(10L)).thenReturn(Optional.of(employee));
         when(employeeProfileRepository.findByEmployeeEmployeeId(101L)).thenReturn(Optional.empty());
         when(userRepository.existsByEmailIgnoreCaseAndIdNot("new.employee@example.com", 10L)).thenReturn(false);
         when(employeeRepository.existsByEmailIgnoreCaseAndEmployeeIdNot("new.employee@example.com", 101L))
@@ -88,7 +88,7 @@ class EmployeeProfileServiceImplTest {
         dto.setNonce("0123456789abcdefghijklmn");
 
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
-        when(employeeRepository.findDetailedByUserId(user.getId())).thenReturn(Optional.of(employee));
+        when(employeeRepository.findEmployeeProfileByUserId(user.getId())).thenReturn(Optional.of(employee));
         when(employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()))
                 .thenReturn(Optional.of(profile));
         when(sensitivePayloadDecryptor.decryptSensitivePayloads(
@@ -210,6 +210,27 @@ class EmployeeProfileServiceImplTest {
     }
 
     @Test
+    void dashboardProfileUsesLightweightEmployeeLookupAndStablePhotoUrl() {
+        User user = user();
+        EmployeeEntity employee = employee();
+        EmployeeProfile profile = new EmployeeProfile();
+        profile.setEmployee(employee);
+        profile.setPhotoPath("D:/uploads/employee-profile-photo/profile.jpg");
+        Path resolvedPath = Path.of(profile.getPhotoPath());
+        when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
+        when(employeeRepository.findEmployeeProfileByUserId(user.getId())).thenReturn(Optional.of(employee));
+        when(employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()))
+                .thenReturn(Optional.of(profile));
+        allowPhoto(profile.getPhotoPath(), resolvedPath);
+
+        EmployeeProfileDTO result = service().getCurrentEmployeeProfile(user.getEmail());
+
+        String expectedVersion = Integer.toUnsignedString(resolvedPath.toString().hashCode(), 36);
+        assertThat(result.getPhotoUrl()).isEqualTo("/employee/profile/photo?v=" + expectedVersion);
+        verify(employeeRepository, never()).findDetailedByUserId(user.getId());
+    }
+
+    @Test
     void failedProfileInsertDeletesNewlyStoredPhoto() {
         User user = user();
         EmployeeEntity employee = employee();
@@ -220,7 +241,7 @@ class EmployeeProfileServiceImplTest {
                 new byte[] { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF });
         String uploadedPath = "D:/uploads/employee-profile-photo/new-photo.jpg";
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
-        when(employeeRepository.findDetailedByUserId(user.getId())).thenReturn(Optional.of(employee));
+        when(employeeRepository.findEmployeeProfileByUserId(user.getId())).thenReturn(Optional.of(employee));
         when(employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId())).thenReturn(Optional.empty());
         when(fileStorageService.store(photo, "employee-profile-photo"))
                 .thenReturn(new FileUploadResult(
@@ -241,13 +262,13 @@ class EmployeeProfileServiceImplTest {
             EmployeeEntity employee,
             Optional<EmployeeProfile> profile) {
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
-        when(employeeRepository.findDetailedByUserId(user.getId())).thenReturn(Optional.of(employee));
+        when(employeeRepository.findEmployeeProfileByUserId(user.getId())).thenReturn(Optional.of(employee));
         when(employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId())).thenReturn(profile);
     }
 
     private void prepareProfileUpdate(User user, EmployeeEntity employee, EmployeeProfile profile) {
         when(userRepository.findByEmailIgnoreCaseAndActiveTrue(user.getEmail())).thenReturn(Optional.of(user));
-        when(employeeRepository.findDetailedByUserId(user.getId())).thenReturn(Optional.of(employee));
+        when(employeeRepository.findEmployeeProfileByUserId(user.getId())).thenReturn(Optional.of(employee));
         when(employeeProfileRepository.findByEmployeeEmployeeId(employee.getEmployeeId()))
                 .thenReturn(Optional.of(profile));
         when(employeeProfileRepository.save(profile)).thenReturn(profile);

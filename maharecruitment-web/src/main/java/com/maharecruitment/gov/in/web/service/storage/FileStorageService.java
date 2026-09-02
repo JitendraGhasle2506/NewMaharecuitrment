@@ -5,8 +5,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -31,9 +36,17 @@ public class FileStorageService {
     private static final Set<String> DEFAULT_DOCUMENT_EXTENSIONS = Set.of("pdf", "jpg", "jpeg", "png");
     private static final Set<String> PDF_EXTENSIONS = Set.of("pdf");
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png");
+    private static final int STORED_FILE_VALIDATION_CACHE_SIZE = 512;
 
     private final FileUploadProperties properties;
     private final SecureFileUploadService secureFileUploadService;
+    private final Map<StoredFileValidationKey, Boolean> storedFileValidationCache =
+            Collections.synchronizedMap(new LinkedHashMap<>(64, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<StoredFileValidationKey, Boolean> eldest) {
+                    return size() > STORED_FILE_VALIDATION_CACHE_SIZE;
+                }
+            });
 
     public FileStorageService(
             FileUploadProperties properties,
@@ -117,12 +130,31 @@ public class FileStorageService {
     }
 
     public boolean isManagedFileAllowed(String fullPath, String module) {
-        if (!isManagedPath(fullPath)) {
+        Optional<Path> managedPath = resolveManagedPath(fullPath);
+        if (managedPath.isEmpty()) {
             return false;
         }
 
-        Path path = Paths.get(fullPath).toAbsolutePath().normalize();
-        return secureFileUploadService.isStoredFileAllowed(path, policyForModule(module));
+        Path path = managedPath.get();
+        try {
+            BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
+            StoredFileValidationKey cacheKey = new StoredFileValidationKey(
+                    path,
+                    module == null ? "" : module.toLowerCase(Locale.ROOT),
+                    attributes.size(),
+                    attributes.lastModifiedTime().toMillis());
+            Boolean cachedResult = storedFileValidationCache.get(cacheKey);
+            if (cachedResult != null) {
+                return cachedResult;
+            }
+
+            boolean allowed = secureFileUploadService.isStoredFileAllowed(path, policyForModule(module));
+            storedFileValidationCache.put(cacheKey, allowed);
+            return allowed;
+        } catch (IOException ex) {
+            log.warn("Unable to read stored file attributes for {}", path, ex);
+            return false;
+        }
     }
 
     private ValidatedFileUpload validate(MultipartFile file, String module) {
@@ -144,5 +176,12 @@ public class FileStorageService {
             return SecureFileUploadPolicy.allowedExtensions(module, PDF_EXTENSIONS);
         }
         return SecureFileUploadPolicy.allowedExtensions(module, DEFAULT_DOCUMENT_EXTENSIONS);
+    }
+
+    private record StoredFileValidationKey(
+            Path path,
+            String module,
+            long size,
+            long lastModifiedMillis) {
     }
 }

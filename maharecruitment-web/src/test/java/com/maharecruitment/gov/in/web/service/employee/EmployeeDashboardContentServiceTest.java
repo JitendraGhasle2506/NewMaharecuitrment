@@ -2,6 +2,9 @@ package com.maharecruitment.gov.in.web.service.employee;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -57,8 +60,8 @@ class EmployeeDashboardContentServiceTest {
         List<EmployeeAnniversaryProjection> anniversaries = List.of(
                 anniversary("Vikram Shah", LocalDate.of(2020, 9, 1)),
                 anniversary("Meera Joshi", LocalDate.of(2022, 9, 10)));
-        when(employeeRepository.findActiveEmployeeBirthdays()).thenReturn(birthdays);
-        when(profileRepository.findActiveEmployeeAnniversaries()).thenReturn(anniversaries);
+        when(employeeRepository.findActiveEmployeeBirthdaysOn(9, 1)).thenReturn(birthdays);
+        when(profileRepository.findActiveEmployeeAnniversariesOn(9, 1)).thenReturn(anniversaries);
         when(holidayService.getHolidaysBetween(TODAY.plusDays(1), TODAY.plusDays(30)))
                 .thenReturn(List.of(holiday("MahaIT Foundation Day", TODAY.plusDays(5))));
 
@@ -101,8 +104,8 @@ class EmployeeDashboardContentServiceTest {
         EmployeeProfileRepository profileRepository = mock(EmployeeProfileRepository.class);
         HolidayService holidayService = mock(HolidayService.class);
         EmployeeBirthdayWishRepository birthdayWishRepository = mock(EmployeeBirthdayWishRepository.class);
-        when(employeeRepository.findActiveEmployeeBirthdays()).thenReturn(List.of());
-        when(profileRepository.findActiveEmployeeAnniversaries()).thenReturn(List.of());
+        when(employeeRepository.findActiveEmployeeBirthdaysOn(9, 1)).thenReturn(List.of());
+        when(profileRepository.findActiveEmployeeAnniversariesOn(9, 1)).thenReturn(List.of());
         when(holidayService.getHolidaysBetween(TODAY.plusDays(1), TODAY.plusDays(30)))
                 .thenReturn(List.of());
 
@@ -120,6 +123,37 @@ class EmployeeDashboardContentServiceTest {
         assertThat(content.todaysCelebrations()).isEmpty();
         assertThat(content.upcomingEvents()).isEmpty();
         assertThat(content.announcements()).isEmpty();
+    }
+
+    @Test
+    void reusesSharedOrganizationContentWithinTheCacheWindow() {
+        EmployeeRepository employeeRepository = mock(EmployeeRepository.class);
+        EmployeeProfileRepository profileRepository = mock(EmployeeProfileRepository.class);
+        HolidayService holidayService = mock(HolidayService.class);
+        EmployeeBirthdayWishRepository birthdayWishRepository = mock(EmployeeBirthdayWishRepository.class);
+        when(employeeRepository.findActiveEmployeeBirthdaysOn(9, 1)).thenReturn(List.of());
+        when(profileRepository.findActiveEmployeeAnniversariesOn(9, 1)).thenReturn(List.of());
+        when(holidayService.getHolidaysBetween(TODAY.plusDays(1), TODAY.plusDays(30)))
+                .thenReturn(List.of());
+
+        EmployeeProfileDTO currentProfile = new EmployeeProfileDTO();
+        currentProfile.setEmployeeId(99L);
+        EmployeeDashboardContentService service = new EmployeeDashboardContentService(
+                employeeRepository,
+                profileRepository,
+                holidayService,
+                birthdayWishRepository,
+                fixedClock(TODAY));
+
+        service.getDashboardContent(currentProfile);
+        service.getDashboardContent(currentProfile);
+
+        verify(employeeRepository, times(1)).findActiveEmployeeBirthdaysOn(9, 1);
+        verify(profileRepository, times(1)).findActiveEmployeeAnniversariesOn(9, 1);
+        verify(holidayService, times(1))
+                .getHolidaysBetween(TODAY.plusDays(1), TODAY.plusDays(30));
+        verify(birthdayWishRepository, never())
+                .findBySender_EmployeeIdAndCelebrationDateOrderByCreatedDateDesc(99L, TODAY);
     }
 
     private EmployeeBirthdayProjection birthday(String name, LocalDate dateOfBirth) {
