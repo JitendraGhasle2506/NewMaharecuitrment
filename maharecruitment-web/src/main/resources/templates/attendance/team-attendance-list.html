@@ -48,10 +48,10 @@
                     <span class="metric-icon"><i class="fa-solid fa-people-group" aria-hidden="true"></i></span>
                     <div><span>Team members</span><strong th:text="${overview.teamSize}">0</strong></div>
                 </article>
-                <article class="attendance-metric metric-present">
+                <!-- <article class="attendance-metric metric-present">
                     <span class="metric-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
                     <div><span>Present days</span><strong th:text="${overview.totalPresentDays}">0</strong></div>
-                </article>
+                </article> -->
                 <article class="attendance-metric metric-away">
                     <span class="metric-icon"><i class="fa-solid fa-calendar-minus" aria-hidden="true"></i></span>
                     <div><span>Leave / tour</span><strong th:text="${overview.totalLeaveDays + overview.totalTourDays}">0</strong></div>
