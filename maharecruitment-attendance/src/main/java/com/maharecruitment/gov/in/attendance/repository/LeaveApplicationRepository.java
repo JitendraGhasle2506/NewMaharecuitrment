@@ -32,6 +32,16 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
             LocalDate endDate,
             LocalDate startDate);
 
+    @Query("select leave from LeaveApplicationEntity leave "
+            + "where leave.employeeId in :employeeIds "
+            + "and upper(leave.status) = 'APPROVED' "
+            + "and leave.startDate <= :endDate "
+            + "and leave.endDate >= :startDate")
+    List<LeaveApplicationEntity> findApprovedOverlappingPeriod(
+            @Param("employeeIds") Collection<Long> employeeIds,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
     boolean existsByEmployeeIdAndCompOffWorkDateAndStatusIn(
             Long employeeId,
             LocalDate compOffWorkDate,

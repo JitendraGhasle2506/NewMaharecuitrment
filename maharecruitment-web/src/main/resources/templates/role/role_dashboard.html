@@ -50,6 +50,19 @@
                         </article>
                     </section>
 
+                    <section class="panel mt-4"
+                        th:if="${session.SESSION_USER != null and (session.SESSION_USER.roles.contains('ROLE_COO') or session.SESSION_USER.roles.contains('ROLE_HOD') or session.SESSION_USER.roles.contains('ROLE_STM') or session.SESSION_USER.roles.contains('ROLE_PM') or session.SESSION_USER.roles.contains('ROLE_EMPLOYEE'))}">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                            <div>
+                                <h4 class="mb-1">Team Attendance</h4>
+                                <p class="text-muted mb-0">View attendance for employees mapped under your reporting authority.</p>
+                            </div>
+                            <a class="btn btn-primary" th:href="@{/reporting-manager/attendance}">
+                                <i class="fa-solid fa-people-group me-2" aria-hidden="true"></i>Open Team Attendance
+                            </a>
+                        </div>
+                    </section>
+
                     <section class="panel mt-4">
                         <h4>Task Snapshot</h4>
                         <div class="table-responsive">

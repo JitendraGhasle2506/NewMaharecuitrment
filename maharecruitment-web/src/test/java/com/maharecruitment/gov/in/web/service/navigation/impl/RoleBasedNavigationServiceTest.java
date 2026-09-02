@@ -34,6 +34,14 @@ class RoleBasedNavigationServiceTest {
     }
 
     @Test
+    void canAccessTeamAttendanceForAnyAuthenticatedReportingAuthority() {
+        assertTrue(service.canAccessUrl(
+                "/reporting-manager/attendance/view?empId=101",
+                List.of("ROLE_EMPLOYEE")));
+        assertFalse(service.canAccessUrl("/reporting-manager/attendance", List.of()));
+    }
+
+    @Test
     void canAccessUrlRejectsBlankSubmenuUrl() {
         assertFalse(service.canAccessUrl(null, List.of("ROLE_ADMIN")));
         assertFalse(service.canAccessUrl("   ", List.of("ROLE_ADMIN")));

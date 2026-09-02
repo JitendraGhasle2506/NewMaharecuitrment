@@ -637,7 +637,8 @@ class ReportingManagerServiceImplTest {
 
     @Test
     void effectiveAuthorityEmployeesIncludeCellFallbackWithoutReplacingExplicitMappings() {
-        when(mappingRepository.findEmployeeIdsByAuthorityUserId(7L)).thenReturn(List.of(101L, 102L));
+        when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.empty());
+        when(mappingRepository.findEmployeeIdsByAuthorityIdentity(7L, null)).thenReturn(List.of(101L, 102L));
         when(cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(7L)).thenReturn(List.of(11L));
         when(employeeCellMappingRepository.findEmployeeIdsWithoutExplicitReportingMapping(List.of(11L), 7L))
                 .thenReturn(List.of(103L, 104L));
@@ -645,6 +646,18 @@ class ReportingManagerServiceImplTest {
         List<Long> employeeIds = service.getEffectiveEmployeeIdsForAuthority(7L);
 
         assertEquals(List.of(101L, 102L, 103L, 104L), employeeIds);
+    }
+
+    @Test
+    void effectiveAuthorityEmployeesIncludeLegacyDirectReportsByManagerEmployeeId() {
+        EmployeeEntity manager = employee(50L, "Project Manager", "EMP050", "INTERNAL", "ACTIVE");
+        when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.of(manager));
+        when(mappingRepository.findEmployeeIdsByAuthorityIdentity(7L, 50L)).thenReturn(List.of(101L));
+        when(cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(7L)).thenReturn(List.of());
+
+        List<Long> employeeIds = service.getEffectiveEmployeeIdsForAuthority(7L);
+
+        assertEquals(List.of(101L), employeeIds);
     }
 
     @Test

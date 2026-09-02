@@ -1,55 +1,170 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
-    <title>My Team Attendance</title>
+    <title>Team Attendance</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/team-attendance.css(v='20260902')}">
+    <script th:src="@{/js/team-attendance.js(v='20260902')}" defer></script>
 </head>
 
-<body>
+<body class="team-attendance-page">
     <th:block th:replace="~{header/header :: var-sidebar-header('Team Attendance', 'Attendance', ~{::section})}">
-        <section>
-            <div class="card add-emp-card">
-                <div class="header d-flex justify-content-between align-items-center">
-                    <h2>My Team Attendance (<span th:text="${currentRoleType}"></span>)</h2>
+        <section class="team-attendance-shell">
+            <header class="team-attendance-hero">
+                <div>
+                    <span class="page-eyebrow">Reporting manager workspace</span>
+                    <h1>Attendance under your authority</h1>
+                    <p>Review monthly attendance for employees who report directly to you or through your assigned cell.</p>
+                </div>
+                <form class="period-filter" method="get" th:action="@{/reporting-manager/attendance}" data-period-form>
+                    <label for="teamMonth">Attendance period</label>
+                    <div class="period-controls">
+                        <select id="teamMonth" name="month" class="form-select" aria-label="Month">
+                            <option th:each="entry : ${monthNames}"
+                                th:value="${entry.key}"
+                                th:text="${entry.value}"
+                                th:selected="${entry.key == selectedMonth}">September</option>
+                        </select>
+                        <select name="year" class="form-select" aria-label="Year">
+                            <option th:each="year : ${yearsList}"
+                                th:value="${year}"
+                                th:text="${year}"
+                                th:selected="${year == selectedYear}">2026</option>
+                        </select>
+                        <button type="submit" class="period-submit">
+                            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                            <span class="visually-hidden">Apply period</span>
+                        </button>
+                    </div>
+                </form>
+            </header>
+
+            <div class="attendance-metrics" aria-label="Team attendance summary">
+                <article class="attendance-metric metric-team">
+                    <span class="metric-icon"><i class="fa-solid fa-people-group" aria-hidden="true"></i></span>
+                    <div><span>Team members</span><strong th:text="${overview.teamSize}">0</strong></div>
+                </article>
+                <article class="attendance-metric metric-present">
+                    <span class="metric-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+                    <div><span>Present days</span><strong th:text="${overview.totalPresentDays}">0</strong></div>
+                </article>
+                <article class="attendance-metric metric-away">
+                    <span class="metric-icon"><i class="fa-solid fa-calendar-minus" aria-hidden="true"></i></span>
+                    <div><span>Leave / tour</span><strong th:text="${overview.totalLeaveDays + overview.totalTourDays}">0</strong></div>
+                </article>
+                <article class="attendance-metric metric-rate">
+                    <span class="metric-icon"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span>
+                    <div><span>Presence rate</span><strong><span th:text="${overview.attendanceRate}">0</span>%</strong></div>
+                </article>
+            </div>
+
+            <section class="team-directory" aria-labelledby="teamDirectoryTitle">
+                <div class="directory-header">
+                    <div>
+                        <span class="page-eyebrow" th:text="${periodLabel}">September 2026</span>
+                        <h2 id="teamDirectoryTitle">Team attendance overview</h2>
+                        <p th:if="${overview.statusDate != null}">
+                            Latest status is shown as of
+                            <strong th:text="${#temporals.format(overview.statusDate, 'dd MMM yyyy')}">02 Sep 2026</strong>.
+                        </p>
+                        <p th:unless="${overview.statusDate != null}">This period has not started yet.</p>
+                    </div>
+                    <label class="team-search" for="teamSearch">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <input id="teamSearch" type="search" placeholder="Search name, code or project"
+                            autocomplete="off" data-team-search>
+                    </label>
                 </div>
 
-                <div class="card-body">
-                    <div class="table-responsive mt-3">
-                        <table class="table table-bordered table-hover align-middle w-100">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Emp ID</th>
-                                    <th>Employee Name</th>
-                                    <th>Employee Code</th>
-                                    <th>Project</th>
-                                    <th style="width: 150px;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:if="${teamMembers == null || teamMembers.isEmpty()}">
-                                    <td colspan="5" class="text-center text-muted p-4">No team members mapped to your account.</td>
-                                </tr>
-                                <tr th:each="member : ${teamMembers}">
-                                    <td th:text="${member.employeeId}"></td>
-                                    <td class="fw-bold" th:text="${member.employeeName}"></td>
-                                    <td th:text="${member.employeeCode}"></td>
-                                    <td th:text="${member.projectName}">-</td>
-                                    <td>
-                                        <a th:href="@{/hod1/team-attendance/view(empId=${member.employeeId})}" 
-                                           class="btn btn-sm btn-info w-100">
-                                            <i class="fa fa-eye"></i> View Attendance
-                                        </a>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <div class="empty-team" th:if="${#lists.isEmpty(teamMembers)}">
+                    <span class="empty-team-icon"><i class="fa-solid fa-user-shield" aria-hidden="true"></i></span>
+                    <h3>No employees are mapped to you</h3>
+                    <p>Employees will appear here after HR assigns you as their reporting authority or cell head.</p>
+                </div>
+
+                <div class="team-table-wrap" th:unless="${#lists.isEmpty(teamMembers)}">
+                    <table class="team-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Assignment</th>
+                                <th>Latest status</th>
+                                <th>Month summary</th>
+                                <th>Presence</th>
+                                <th><span class="visually-hidden">Action</span></th>
+                            </tr>
+                        </thead>
+                        <tbody data-team-rows>
+                            <tr th:each="member : ${teamMembers}"
+                                th:attr="data-search-text=${member.employeeName + ' ' + member.employeeCode + ' ' + member.designation + ' ' + member.unitName + ' ' + member.projectName}">
+                                <td>
+                                    <div class="employee-identity">
+                                        <span class="employee-avatar" th:text="${member.initials}">AP</span>
+                                        <div>
+                                            <strong th:text="${member.employeeName}">Asha Patil</strong>
+                                            <span th:text="${member.employeeCode}">EMP001</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="assignment-copy">
+                                        <strong th:text="${member.designation}">Project Manager</strong>
+                                        <span>
+                                            <i class="fa-regular fa-building" aria-hidden="true"></i>
+                                            <span th:text="${member.unitName}">Applications</span>
+                                        </span>
+                                        <span th:if="${member.projectName != '-'}">
+                                            <i class="fa-solid fa-diagram-project" aria-hidden="true"></i>
+                                            <span th:text="${member.projectName}">Recruitment Portal</span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-pill"
+                                        th:classappend="${' status-' + #strings.toLowerCase(member.latestStatus)}">
+                                        <span class="status-dot"></span>
+                                        <span th:text="${#strings.replace(member.latestStatus, '_', ' ')}">PRESENT</span>
+                                    </span>
+                                    <small class="punch-time" th:if="${member.latestInTime != '-'}">
+                                        <span th:text="${member.latestInTime}">09:45</span>
+                                        <i class="fa-solid fa-arrow-right-long" aria-hidden="true"></i>
+                                        <span th:text="${member.latestOutTime}">18:10</span>
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="month-counts" aria-label="Monthly status counts">
+                                        <span class="count-present"><b th:text="${member.presentDays}">18</b> Present</span>
+                                        <span class="count-absent"><b th:text="${member.absentDays}">1</b> Absent</span>
+                                        <span class="count-leave"><b th:text="${member.leaveDays + member.tourDays}">2</b> Away</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="rate-cell">
+                                        <div class="rate-label"><strong><span th:text="${member.attendanceRate}">90</span>%</strong></div>
+                                        <div class="rate-track" aria-hidden="true">
+                                            <span th:style="${'width:' + member.attendanceRate + '%'}"></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="action-cell">
+                                    <a class="view-register-link"
+                                        th:href="@{/reporting-manager/attendance/view(empId=${member.employeeId},month=${selectedMonth},year=${selectedYear})}">
+                                        View register
+                                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="search-empty" data-search-empty hidden>
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        No employees match your search.
                     </div>
                 </div>
-            </div>
+            </section>
         </section>
     </th:block>
 </body>
 </html>
-

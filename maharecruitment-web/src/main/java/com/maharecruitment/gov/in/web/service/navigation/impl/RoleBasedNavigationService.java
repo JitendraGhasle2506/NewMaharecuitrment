@@ -42,6 +42,8 @@ public class RoleBasedNavigationService implements NavigationService {
                         AccessRule.forRoles(Set.of("ROLE_ADMIN", "ROLE_HR"), "/common/holidays",
                                         "/common/holidays/**"),
                         AccessRule.forAuthenticated("/home", "/common", "/common/**"),
+                        AccessRule.forAuthenticated("/reporting-manager/attendance",
+                                        "/reporting-manager/attendance/**"),
                         AccessRule.forRoles(Set.of("ROLE_ADMIN"), "/admin", "/admin/**"),
                         AccessRule.forRoles(Set.of("ROLE_HR", "ROLE_AUDITOR"), "/hr/department/payment",
                                         "/hr/department/payment/**"),

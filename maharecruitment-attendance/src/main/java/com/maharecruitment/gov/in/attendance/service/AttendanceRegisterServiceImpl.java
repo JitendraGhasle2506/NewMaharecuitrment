@@ -1510,36 +1510,6 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 	}
 
 	@Override
-	public List<Map<String, Object>> getTeamMembers(Long approverId, String roleType) {
-		List<com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity> mappings;
-		if ("HOD".equalsIgnoreCase(roleType)) {
-			mappings = employeeReportingMappingRepository.findByHodUserId(approverId);
-		} else {
-			mappings = employeeReportingMappingRepository.findByManagerEmployeeId(approverId);
-		}
-
-		List<Map<String, Object>> result = new ArrayList<>();
-		for (com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity m : mappings) {
-			Map<String, Object> map = new HashMap<>();
-			map.put("employeeId", m.getEmployeeId());
-
-			employeeRepository.findById(m.getEmployeeId()).ifPresent(e -> {
-				map.put("employeeName", e.getFullName());
-				map.put("employeeCode", e.getEmployeeCode());
-			});
-
-			if (m.getProjectId() != null) {
-				projectRepo.findById(m.getProjectId()).ifPresent(p -> {
-					map.put("projectName", p.getProjectName());
-				});
-			}
-
-			result.add(map);
-		}
-		return result;
-	}
-
-	@Override
 	public void approveRejectManualAttendance(Long requestId, Long approverId, String status, String comments,
 			String roleType) {
 		com.maharecruitment.gov.in.attendance.entity.ManualAttendanceRequestEntity request = manualAttendanceRequestRepository

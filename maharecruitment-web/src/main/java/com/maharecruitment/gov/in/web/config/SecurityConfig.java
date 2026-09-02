@@ -223,6 +223,7 @@ public class SecurityConfig {
                     .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR")
 
                 .requestMatchers("/home", "/common/**").authenticated()
+                .requestMatchers("/reporting-manager/attendance/**").authenticated()
                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
 
                 .requestMatchers("/hr/department/payment/**")

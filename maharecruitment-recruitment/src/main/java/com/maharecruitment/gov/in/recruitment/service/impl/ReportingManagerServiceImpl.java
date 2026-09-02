@@ -752,8 +752,11 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             return List.of();
         }
 
+        Long managerEmployeeId = employeeRepository.findByUser_Id(authorityUserId)
+                .map(EmployeeEntity::getEmployeeId)
+                .orElse(null);
         LinkedHashSet<Long> employeeIds = new LinkedHashSet<>(
-                mappingRepository.findEmployeeIdsByAuthorityUserId(authorityUserId));
+                mappingRepository.findEmployeeIdsByAuthorityIdentity(authorityUserId, managerEmployeeId));
         List<Long> cellIds = cellAuthorityMappingRepository.findCellIdsByAuthorityUserId(authorityUserId);
         if (!cellIds.isEmpty()) {
             employeeIds.addAll(employeeCellMappingRepository.findEmployeeIdsWithoutExplicitReportingMapping(

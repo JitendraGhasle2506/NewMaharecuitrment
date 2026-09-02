@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -13,6 +14,11 @@ public interface ManualAttendanceRequestRepository extends JpaRepository<ManualA
     List<ManualAttendanceRequestEntity> findByUserIdAndAttendanceDate(Long userId, LocalDate attendanceDate);
 
     List<ManualAttendanceRequestEntity> findByUserIdAndAttendanceDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
+
+    List<ManualAttendanceRequestEntity> findByUserIdInAndAttendanceDateBetween(
+            Collection<Long> userIds,
+            LocalDate startDate,
+            LocalDate endDate);
 
     List<ManualAttendanceRequestEntity> findByUserIdAndAttendanceDateBetweenAndHodStatusIgnoreCase(
             Long userId,
