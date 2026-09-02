@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Locale;
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.ui.Model;
@@ -35,14 +37,31 @@ import jakarta.validation.Valid;
 @RequestMapping("/employee")
 public class ApplyLeaveMasterController {
 
-    @Autowired
-    private LeaveApplicationService leaveApplicationService;
+    private static final Map<String, Integer> PRIMARY_LEAVE_ORDER = Map.of(
+            "EARNEDLEAVE", 0,
+            "EL", 0,
+            "CASUALLEAVE", 1,
+            "CL", 1,
+            "MEDICALLEAVE", 2,
+            "ML", 2);
+    private static final Set<String> EXCLUDED_LEAVE_NAMES = Set.of(
+            "SPECIALLEAVE",
+            "RESTRICTEDHOLIDAY",
+            "HALFPAYLEAVE");
+    private static final Pattern NON_ALPHANUMERIC = Pattern.compile("[^A-Z0-9]");
 
-    @Autowired
-    private EmployeeRepository employeeRepository;
+    private final LeaveApplicationService leaveApplicationService;
+    private final EmployeeRepository employeeRepository;
+    private final LeaveRepository leaveMasterRepository;
 
-    @Autowired
-    private LeaveRepository leaveMasterRepository;
+    public ApplyLeaveMasterController(
+            LeaveApplicationService leaveApplicationService,
+            EmployeeRepository employeeRepository,
+            LeaveRepository leaveMasterRepository) {
+        this.leaveApplicationService = leaveApplicationService;
+        this.employeeRepository = employeeRepository;
+        this.leaveMasterRepository = leaveMasterRepository;
+    }
 
     @GetMapping("/applyLeave")
     public String showApplyLeaveForm(Model model, HttpSession session) {
@@ -55,15 +74,28 @@ public class ApplyLeaveMasterController {
 
     private void populateApplyLeaveModel(Model model, HttpSession session) {
         SessionUserDTO sessionUser = (SessionUserDTO) session.getAttribute("SESSION_USER");
+        EmployeeEntity employee = null;
         if (sessionUser != null) {
-            EmployeeEntity employee = requireEmployee(sessionUser);
-            model.addAttribute("employee", employee);
+            employee = requireEmployee(sessionUser);
         }
-        model.addAttribute("leaveTypes", getLeaveTypesWithCompOff());
+        populateApplyLeaveModel(model, employee, getSelectableLeaveTypes());
     }
 
-    private List<LeaveEntity> getLeaveTypesWithCompOff() {
-        List<LeaveEntity> leaveTypes = new ArrayList<>(leaveMasterRepository.findAll());
+    private void populateApplyLeaveModel(
+            Model model,
+            EmployeeEntity employee,
+            List<LeaveEntity> leaveTypes) {
+        if (employee != null) {
+            model.addAttribute("employee", employee);
+        }
+        model.addAttribute("leaveTypes", leaveTypes);
+    }
+
+    private List<LeaveEntity> getSelectableLeaveTypes() {
+        List<LeaveEntity> leaveTypes = leaveMasterRepository.findAll().stream()
+                .filter(Objects::nonNull)
+                .filter(leave -> !isExcludedLeaveType(leave))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         boolean hasCompOff = leaveTypes.stream().anyMatch(this::isCompOffLeaveType);
         if (!hasCompOff) {
             LeaveEntity compOff = new LeaveEntity();
@@ -71,10 +103,33 @@ public class ApplyLeaveMasterController {
             compOff.setLeaveName("Comp Off");
             leaveTypes.add(compOff);
         }
-        leaveTypes.sort(Comparator.comparing(
-                leave -> safeValue(leave.getLeaveName()),
-                String.CASE_INSENSITIVE_ORDER));
+        leaveTypes.sort(Comparator
+                .comparingInt(this::leaveTypePriority)
+                .thenComparing(
+                        leave -> safeValue(leave.getLeaveName()),
+                        String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(
+                        leave -> safeValue(leave.getLeaveCode()),
+                        String.CASE_INSENSITIVE_ORDER));
         return leaveTypes;
+    }
+
+    private int leaveTypePriority(LeaveEntity leave) {
+        Integer namePriority = PRIMARY_LEAVE_ORDER.get(normalizeLeaveValue(leave.getLeaveName()));
+        if (namePriority != null) {
+            return namePriority;
+        }
+        return PRIMARY_LEAVE_ORDER.getOrDefault(normalizeLeaveValue(leave.getLeaveCode()), 3);
+    }
+
+    private boolean isExcludedLeaveType(LeaveEntity leave) {
+        return EXCLUDED_LEAVE_NAMES.contains(normalizeLeaveValue(leave.getLeaveName()));
+    }
+
+    private boolean isSelectableLeaveType(String submittedLeaveType, List<LeaveEntity> leaveTypes) {
+        String normalizedValue = normalizeLeaveValue(submittedLeaveType);
+        return !normalizedValue.isEmpty() && leaveTypes.stream()
+                .anyMatch(leave -> normalizedValue.equals(normalizeLeaveValue(leave.getLeaveCode())));
     }
 
     private boolean isCompOffLeaveType(LeaveEntity leave) {
@@ -91,7 +146,7 @@ public class ApplyLeaveMasterController {
     }
 
     private String normalizeLeaveValue(String value) {
-        return safeValue(value).toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
+        return NON_ALPHANUMERIC.matcher(safeValue(value).toUpperCase(Locale.ROOT)).replaceAll("");
     }
 
     private String safeValue(String value) {
@@ -142,15 +197,22 @@ public class ApplyLeaveMasterController {
         EmployeeEntity employee = requireEmployee(sessionUser);
 
         leaveApplication.setEmployeeId(employee.getEmployeeId());
+        List<LeaveEntity> leaveTypes = getSelectableLeaveTypes();
         if (bindingResult.hasErrors()) {
-            populateApplyLeaveModel(model, session);
+            populateApplyLeaveModel(model, employee, leaveTypes);
+            return "attendance/apply-leave";
+        }
+
+        if (!isSelectableLeaveType(leaveApplication.getLeaveType(), leaveTypes)) {
+            populateApplyLeaveModel(model, employee, leaveTypes);
+            model.addAttribute("error", "Please select an available leave type.");
             return "attendance/apply-leave";
         }
 
         try {
             leaveApplicationService.saveLeaveApplication(leaveApplication);
         } catch (IllegalArgumentException ex) {
-            populateApplyLeaveModel(model, session);
+            populateApplyLeaveModel(model, employee, leaveTypes);
             model.addAttribute("error", ex.getMessage());
             return "attendance/apply-leave";
         }
