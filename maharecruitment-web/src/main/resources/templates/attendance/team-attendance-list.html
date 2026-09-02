@@ -18,16 +18,18 @@
                     <h1>Attendance under your authority</h1>
                     <p>Review monthly attendance for employees who report directly to you or through your assigned cell.</p>
                 </div>
-                <form class="period-filter" method="get" th:action="@{/reporting-manager/attendance}" data-period-form>
+                <form class="period-filter" method="get" th:action="@{/reporting-manager/attendance}"
+                    autocomplete="off" data-period-form>
                     <label for="teamMonth">Attendance period</label>
                     <div class="period-controls">
-                        <select id="teamMonth" name="month" class="form-select" aria-label="Month">
+                        <select id="teamMonth" name="month" class="form-select" aria-label="Month"
+                            autocomplete="off">
                             <option th:each="entry : ${monthNames}"
                                 th:value="${entry.key}"
                                 th:text="${entry.value}"
                                 th:selected="${entry.key == selectedMonth}">September</option>
                         </select>
-                        <select name="year" class="form-select" aria-label="Year">
+                        <select name="year" class="form-select" aria-label="Year" autocomplete="off">
                             <option th:each="year : ${yearsList}"
                                 th:value="${year}"
                                 th:text="${year}"

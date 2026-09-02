@@ -18,16 +18,16 @@
                     Back to team
                 </a>
                 <form class="detail-period-filter" method="get"
-                    th:action="@{/reporting-manager/attendance/view}">
-                    <input type="hidden" name="empId" th:value="${member.employeeId}">
+                    th:action="@{/reporting-manager/attendance/view}" autocomplete="off">
+                    <input type="hidden" name="empId" th:value="${member.employeeId}" autocomplete="off">
                     <label for="detailMonth">Period</label>
-                    <select id="detailMonth" name="month" class="form-select">
+                    <select id="detailMonth" name="month" class="form-select" autocomplete="off">
                         <option th:each="entry : ${monthNames}"
                             th:value="${entry.key}"
                             th:text="${entry.value}"
                             th:selected="${entry.key == selectedMonth}">September</option>
                     </select>
-                    <select name="year" class="form-select">
+                    <select name="year" class="form-select" autocomplete="off">
                         <option th:each="year : ${yearsList}"
                             th:value="${year}"
                             th:text="${year}"
