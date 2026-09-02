@@ -3,10 +3,10 @@ package com.maharecruitment.gov.in.attendance.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,22 +14,25 @@ import com.maharecruitment.gov.in.attendance.dto.TourApplicationHODDTO;
 import com.maharecruitment.gov.in.attendance.entity.TourApplicationEntity;
 import com.maharecruitment.gov.in.attendance.repository.TourApplicationRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
-import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
-import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
+import com.maharecruitment.gov.in.recruitment.service.ReportingManagerService;
 
 @Service
 @Transactional
 public class TourApplicationServiceImpl implements TourApplicationService {
 
-    @Autowired
-    private TourApplicationRepository tourApplicationRepository;
+    private final TourApplicationRepository tourApplicationRepository;
+    private final ReportingManagerService reportingManagerService;
+    private final EmployeeRepository employeeRepository;
 
-    @Autowired
-    private EmployeeReportingMappingRepository employeeReportingMappingRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
+    public TourApplicationServiceImpl(
+            TourApplicationRepository tourApplicationRepository,
+            ReportingManagerService reportingManagerService,
+            EmployeeRepository employeeRepository) {
+        this.tourApplicationRepository = tourApplicationRepository;
+        this.reportingManagerService = reportingManagerService;
+        this.employeeRepository = employeeRepository;
+    }
 
     @Override
     public void saveTourApplication(TourApplicationEntity tourApplication) {
@@ -43,21 +46,21 @@ public class TourApplicationServiceImpl implements TourApplicationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TourApplicationEntity> getTourApplicationsByEmployee(Long employeeId) {
         return tourApplicationRepository.findByEmployeeIdOrderByApplicationDateDesc(employeeId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TourApplicationHODDTO> getPendingToursForHOD(Long hodUserId, String search) {
-        List<EmployeeReportingMappingEntity> mappings = employeeReportingMappingRepository.findByHodUserId(hodUserId);
-        if (mappings.isEmpty()) {
+        List<Long> employeeIds = reportingManagerService.getEffectiveEmployeeIdsForAuthority(hodUserId);
+        if (employeeIds.isEmpty()) {
             return List.of();
         }
-        List<Long> employeeIds = mappings.stream()
-                .map(EmployeeReportingMappingEntity::getEmployeeId)
-                .collect(Collectors.toList());
-        
-        List<TourApplicationEntity> tours = tourApplicationRepository.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(employeeIds, "PENDING");
+
+        List<TourApplicationEntity> tours = tourApplicationRepository
+                .findByEmployeeIdInAndStatusOrderByApplicationDateDesc(employeeIds, "PENDING");
         
         if (tours.isEmpty()) {
             return List.of();
@@ -67,16 +70,17 @@ public class TourApplicationServiceImpl implements TourApplicationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TourApplicationHODDTO> getProcessedToursForHOD(Long hodUserId, String search) {
-        List<EmployeeReportingMappingEntity> mappings = employeeReportingMappingRepository.findByHodUserId(hodUserId);
-        if (mappings.isEmpty()) {
+        List<Long> employeeIds = reportingManagerService.getEffectiveEmployeeIdsForAuthority(hodUserId);
+        if (employeeIds.isEmpty()) {
             return List.of();
         }
-        List<Long> employeeIds = mappings.stream()
-                .map(EmployeeReportingMappingEntity::getEmployeeId)
-                .collect(Collectors.toList());
-        
-        List<TourApplicationEntity> tours = tourApplicationRepository.findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(employeeIds, List.of("APPROVED", "REJECTED"));
+
+        List<TourApplicationEntity> tours = tourApplicationRepository
+                .findByEmployeeIdInAndStatusInOrderByApplicationDateDesc(
+                        employeeIds,
+                        List.of("APPROVED", "REJECTED"));
         
         if (tours.isEmpty()) {
             return List.of();
@@ -86,20 +90,24 @@ public class TourApplicationServiceImpl implements TourApplicationService {
     }
 
     private List<TourApplicationHODDTO> convertToHODDTO(List<TourApplicationEntity> tours, List<Long> employeeIds, String search) {
-        Map<Long, EmployeeEntity> employeeMap = employeeRepository.findAllById(employeeIds).stream()
+        Map<Long, EmployeeEntity> employeeMap = employeeRepository
+                .findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(employeeIds).stream()
                 .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, emp -> emp));
+        String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
 
         List<TourApplicationHODDTO> dtos = new ArrayList<>();
         for (TourApplicationEntity tour : tours) {
             EmployeeEntity emp = employeeMap.get(tour.getEmployeeId());
 
             // Filter by search query (Name or Designation)
-            if (search != null && !search.trim().isEmpty()) {
-                String query = search.toLowerCase().trim();
-                boolean matchesName = emp != null && emp.getFullName() != null && emp.getFullName().toLowerCase().contains(query);
+            if (!normalizedSearch.isEmpty()) {
+                boolean matchesName = emp != null
+                        && emp.getFullName() != null
+                        && emp.getFullName().toLowerCase(Locale.ROOT).contains(normalizedSearch);
                 
                 String designationName = (emp != null && emp.getDesignation() != null) ? emp.getDesignation().getDesignationName() : null;
-                boolean matchesDesignation = designationName != null && designationName.toLowerCase().contains(query);
+                boolean matchesDesignation = designationName != null
+                        && designationName.toLowerCase(Locale.ROOT).contains(normalizedSearch);
                 
                 if (!matchesName && !matchesDesignation) {
                     continue;
