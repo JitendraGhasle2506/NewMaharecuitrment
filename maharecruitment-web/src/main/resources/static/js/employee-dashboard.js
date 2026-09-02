@@ -46,11 +46,19 @@
         };
     }
 
-    function showAlert(icon, title, text) {
-        if (window.Swal) {
-            return Swal.fire({ icon, title, text });
+    function showAlert(icon, title, message) {
+        const text = String(message || title || '').trim();
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+            return Promise.resolve(window.Swal.fire({
+                icon,
+                title,
+                text,
+                confirmButtonText: 'OK',
+                confirmButtonColor: icon === 'error' ? '#d33' : '#1f4f78',
+                allowOutsideClick: false
+            }));
         }
-        alert(text || title);
+        window.alert(text);
         return Promise.resolve();
     }
 
@@ -263,10 +271,13 @@
                 return;
             }
             updateDashboard(payload.profile);
-            showAlert('success', 'Profile updated successfully', payload.message || 'Profile updated successfully')
-                .then(() => window.location.reload());
+            await showAlert('success', 'Success!', payload.message || 'Profile updated successfully.');
+            window.location.reload();
         } catch (error) {
-            showAlert('error', 'Unable to save profile', 'Please try again after some time.');
+            const message = error instanceof Error && error.message
+                ? error.message
+                : 'Please try again after some time.';
+            await showAlert('error', 'Unable to save profile', message);
         }
     });
 
