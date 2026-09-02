@@ -160,15 +160,101 @@ public class TeamAttendanceServiceImpl implements TeamAttendanceService {
         long absentDays = members.stream().mapToLong(TeamAttendanceMemberView::absentDays).sum();
         long leaveDays = members.stream().mapToLong(TeamAttendanceMemberView::leaveDays).sum();
         long tourDays = members.stream().mapToLong(TeamAttendanceMemberView::tourDays).sum();
+        DailyStatusCounts todayCounts = YearMonth.from(today).equals(period)
+                ? summarizeDailyStatuses(
+                        employees,
+                        today,
+                        attendanceByEmployee,
+                        leavesByEmployee,
+                        toursByEmployee,
+                        pendingDatesByEmployee,
+                        holidayDates,
+                        workingDayOverrides)
+                : loadTodayStatusCounts(employees, activeEmployeeIds, today);
         return new TeamAttendanceOverview(
                 period,
                 statusDate,
                 List.copyOf(members),
+                todayCounts.present(),
+                todayCounts.absent(),
+                todayCounts.leave(),
                 presentDays,
                 absentDays,
                 leaveDays,
                 tourDays,
                 rate(presentDays, presentDays + absentDays + leaveDays + tourDays));
+    }
+
+    private DailyStatusCounts loadTodayStatusCounts(
+            List<EmployeeEntity> employees,
+            List<Long> employeeIds,
+            LocalDate today) {
+        Map<Long, Map<LocalDate, DailyAttendanceInternalEntity>> attendanceByEmployee =
+                groupAttendance(employeeIds, today, today);
+        Set<LocalDate> holidayDates = holidayRepository.findByHolidayDate(today)
+                .map(holiday -> Set.of(holiday.getHolidayDate()))
+                .orElseGet(Set::of);
+        Set<LocalDate> workingDayOverrides = workingDayRepository.findByWorkingDate(today)
+                .map(workingDay -> Set.of(workingDay.getWorkingDate()))
+                .orElseGet(Set::of);
+        Map<Long, List<LeaveApplicationEntity>> leavesByEmployee = leaveRepository
+                .findApprovedOverlappingPeriod(employeeIds, today, today).stream()
+                .collect(Collectors.groupingBy(LeaveApplicationEntity::getEmployeeId));
+        Map<Long, List<TourApplicationEntity>> toursByEmployee = tourRepository
+                .findApprovedOverlappingPeriod(employeeIds, today, today).stream()
+                .collect(Collectors.groupingBy(TourApplicationEntity::getEmployeeId));
+        Map<Long, Set<LocalDate>> pendingDatesByEmployee = manualAttendanceRepository
+                .findByUserIdInAndAttendanceDateBetween(employeeIds, today, today).stream()
+                .filter(request -> "PENDING".equalsIgnoreCase(request.getHodStatus()))
+                .collect(Collectors.groupingBy(
+                        ManualAttendanceRequestEntity::getUserId,
+                        Collectors.mapping(ManualAttendanceRequestEntity::getAttendanceDate, Collectors.toSet())));
+        return summarizeDailyStatuses(
+                employees,
+                today,
+                attendanceByEmployee,
+                leavesByEmployee,
+                toursByEmployee,
+                pendingDatesByEmployee,
+                holidayDates,
+                workingDayOverrides);
+    }
+
+    private DailyStatusCounts summarizeDailyStatuses(
+            List<EmployeeEntity> employees,
+            LocalDate date,
+            Map<Long, Map<LocalDate, DailyAttendanceInternalEntity>> attendanceByEmployee,
+            Map<Long, List<LeaveApplicationEntity>> leavesByEmployee,
+            Map<Long, List<TourApplicationEntity>> toursByEmployee,
+            Map<Long, Set<LocalDate>> pendingDatesByEmployee,
+            Set<LocalDate> holidayDates,
+            Set<LocalDate> workingDayOverrides) {
+        long present = 0;
+        long absent = 0;
+        long leave = 0;
+        for (EmployeeEntity employee : employees) {
+            if (employee.getJoiningDate() != null && date.isBefore(employee.getJoiningDate())) {
+                continue;
+            }
+            Long employeeId = employee.getEmployeeId();
+            String status = resolveStatus(
+                    date,
+                    attendanceByEmployee.getOrDefault(employeeId, Map.of()).get(date),
+                    leavesByEmployee.getOrDefault(employeeId, List.of()),
+                    toursByEmployee.getOrDefault(employeeId, List.of()),
+                    pendingDatesByEmployee.getOrDefault(employeeId, Set.of()),
+                    holidayDates,
+                    workingDayOverrides);
+            switch (status) {
+                case "PRESENT" -> present++;
+                case "ABSENT" -> absent++;
+                case "LEAVE", "COMP_OFF" -> leave++;
+                default -> {
+                    // Tours, holidays, week-offs and pending requests remain separate statuses.
+                }
+            }
+        }
+        return new DailyStatusCounts(present, absent, leave);
     }
 
     @Override
@@ -418,7 +504,7 @@ public class TeamAttendanceServiceImpl implements TeamAttendanceService {
     private TeamAttendanceOverview emptyOverview(YearMonth period) {
         LocalDate today = LocalDate.now();
         LocalDate statusDate = period.atDay(1).isAfter(today) ? null : min(period.atEndOfMonth(), today);
-        return new TeamAttendanceOverview(period, statusDate, List.of(), 0, 0, 0, 0, 0);
+        return new TeamAttendanceOverview(period, statusDate, List.of(), 0, 0, 0, 0, 0, 0, 0, 0);
     }
 
     private LocalDate min(LocalDate first, LocalDate second) {
@@ -448,5 +534,8 @@ public class TeamAttendanceServiceImpl implements TeamAttendanceService {
             }
         }
         return result.toString();
+    }
+
+    private record DailyStatusCounts(long present, long absent, long leave) {
     }
 }

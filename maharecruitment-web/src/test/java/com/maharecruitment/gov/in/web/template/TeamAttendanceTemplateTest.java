@@ -34,6 +34,9 @@ class TeamAttendanceTemplateTest {
                 YearMonth.of(2026, 8),
                 LocalDate.of(2026, 8, 31),
                 List.of(member),
+                1,
+                2,
+                3,
                 18,
                 1,
                 1,
@@ -52,6 +55,9 @@ class TeamAttendanceTemplateTest {
                 .contains("EMP101")
                 .contains("Recruitment Portal")
                 .contains("status-present")
+                .contains("Present today")
+                .contains("Absent today")
+                .contains("On leave today")
                 .contains("90%");
     }
 

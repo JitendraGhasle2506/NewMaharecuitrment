@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Team Attendance</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <link rel="stylesheet" th:href="@{/css/team-attendance.css(v='20260902')}">
+    <link rel="stylesheet" th:href="@{/css/team-attendance.css(v='20260902-2')}">
     <script th:src="@{/js/team-attendance.js(v='20260902')}" defer></script>
 </head>
 
@@ -48,17 +48,17 @@
                     <span class="metric-icon"><i class="fa-solid fa-people-group" aria-hidden="true"></i></span>
                     <div><span>Team members</span><strong th:text="${overview.teamSize}">0</strong></div>
                 </article>
-                <!-- <article class="attendance-metric metric-present">
+                <article class="attendance-metric metric-present">
                     <span class="metric-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
-                    <div><span>Present days</span><strong th:text="${overview.totalPresentDays}">0</strong></div>
-                </article> -->
-                <article class="attendance-metric metric-away">
-                    <span class="metric-icon"><i class="fa-solid fa-calendar-minus" aria-hidden="true"></i></span>
-                    <div><span>Leave / tour</span><strong th:text="${overview.totalLeaveDays + overview.totalTourDays}">0</strong></div>
+                    <div><span>Present today</span><strong th:text="${overview.todayPresentCount}">0</strong></div>
                 </article>
-                <article class="attendance-metric metric-rate">
-                    <span class="metric-icon"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span>
-                    <div><span>Presence rate</span><strong><span th:text="${overview.attendanceRate}">0</span>%</strong></div>
+                <article class="attendance-metric metric-absent">
+                    <span class="metric-icon"><i class="fa-solid fa-circle-xmark" aria-hidden="true"></i></span>
+                    <div><span>Absent today</span><strong th:text="${overview.todayAbsentCount}">0</strong></div>
+                </article>
+                <article class="attendance-metric metric-leave">
+                    <span class="metric-icon"><i class="fa-solid fa-calendar-minus" aria-hidden="true"></i></span>
+                    <div><span>On leave today</span><strong th:text="${overview.todayLeaveCount}">0</strong></div>
                 </article>
             </div>
 

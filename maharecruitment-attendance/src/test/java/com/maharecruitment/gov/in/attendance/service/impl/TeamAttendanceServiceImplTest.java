@@ -19,6 +19,7 @@ import com.maharecruitment.gov.in.attendance.entity.DailyAttendanceInternalEntit
 import com.maharecruitment.gov.in.attendance.entity.HolidayMasterEntity;
 import com.maharecruitment.gov.in.attendance.entity.LeaveApplicationEntity;
 import com.maharecruitment.gov.in.attendance.entity.TourApplicationEntity;
+import com.maharecruitment.gov.in.attendance.entity.WeekOffWorkingDayEntity;
 import com.maharecruitment.gov.in.attendance.repository.DailyAttendanceInternalRepository;
 import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
 import com.maharecruitment.gov.in.attendance.repository.LeaveApplicationRepository;
@@ -109,6 +110,62 @@ class TeamAttendanceServiceImplTest {
     }
 
     @Test
+    void overviewCountsPresentAbsentAndLeaveEmployeesForToday() {
+        LocalDate today = LocalDate.now();
+        YearMonth period = YearMonth.from(today);
+        LocalDate startDate = period.atDay(1);
+        LocalDate endDate = period.atEndOfMonth();
+        List<Long> employeeIds = List.of(101L, 102L, 103L);
+        List<EmployeeEntity> employees = List.of(
+                employee(101L, "Asha Patil", today.minusMonths(1)),
+                employee(102L, "Ravi Joshi", today.minusMonths(1)),
+                employee(103L, "Neha Shah", today.minusMonths(1)));
+
+        DailyAttendanceInternalEntity present = new DailyAttendanceInternalEntity();
+        present.setId(1L);
+        present.setEmployeeId(101L);
+        present.setAttendanceDate(today);
+        present.setStatus("PRESENT");
+
+        LeaveApplicationEntity leave = new LeaveApplicationEntity();
+        leave.setEmployeeId(102L);
+        leave.setStartDate(today);
+        leave.setEndDate(today);
+        leave.setLeaveType("CL");
+        leave.setStatus("APPROVED");
+
+        WeekOffWorkingDayEntity workingDay = new WeekOffWorkingDayEntity();
+        workingDay.setWorkingDate(today);
+
+        when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(employeeIds);
+        when(employeeRepository.findByEmployeeIdInOrderByFullNameAscEmployeeIdAsc(employeeIds))
+                .thenReturn(employees);
+        when(dailyAttendanceRepository.findByEmployeeIdInAndAttendanceDateBetween(
+                employeeIds,
+                startDate,
+                endDate)).thenReturn(List.of(present));
+        when(holidayRepository.findByHolidayDateBetween(startDate, endDate)).thenReturn(List.of());
+        when(workingDayRepository.findByWorkingDateBetween(startDate, endDate)).thenReturn(List.of(workingDay));
+        when(leaveRepository.findApprovedOverlappingPeriod(employeeIds, startDate, endDate))
+                .thenReturn(List.of(leave));
+        when(tourRepository.findApprovedOverlappingPeriod(employeeIds, startDate, endDate))
+                .thenReturn(List.of());
+        when(manualAttendanceRepository.findByUserIdInAndAttendanceDateBetween(
+                employeeIds,
+                startDate,
+                endDate)).thenReturn(List.of());
+        when(reportingMappingRepository.findByEmployeeIdIn(employeeIds)).thenReturn(List.of());
+        when(employeeCellMappingRepository.findByEmployeeEmployeeIdInOrderByEmployeeEmployeeIdAsc(employeeIds))
+                .thenReturn(List.of());
+
+        TeamAttendanceOverview overview = service.getOverview(7L, period);
+
+        assertThat(overview.todayPresentCount()).isEqualTo(1);
+        assertThat(overview.todayAbsentCount()).isEqualTo(1);
+        assertThat(overview.todayLeaveCount()).isEqualTo(1);
+    }
+
+    @Test
     void unauthorizedEmployeeIsRejectedBeforeEmployeeOrAttendanceQueries() {
         when(reportingManagerService.getEffectiveEmployeeIdsForAuthority(7L)).thenReturn(List.of(101L));
 
@@ -120,13 +177,17 @@ class TeamAttendanceServiceImplTest {
     }
 
     private EmployeeEntity employee() {
+        return employee(101L, "Asha Patil", LocalDate.of(2026, 8, 1));
+    }
+
+    private EmployeeEntity employee(Long employeeId, String fullName, LocalDate joiningDate) {
         EmployeeEntity employee = new EmployeeEntity();
-        employee.setEmployeeId(101L);
-        employee.setEmployeeCode("EMP101");
-        employee.setFullName("Asha Patil");
+        employee.setEmployeeId(employeeId);
+        employee.setEmployeeCode("EMP" + employeeId);
+        employee.setFullName(fullName);
         employee.setRecruitmentType("INTERNAL");
         employee.setStatus("ACTIVE");
-        employee.setJoiningDate(LocalDate.of(2026, 8, 1));
+        employee.setJoiningDate(joiningDate);
         return employee;
     }
 }

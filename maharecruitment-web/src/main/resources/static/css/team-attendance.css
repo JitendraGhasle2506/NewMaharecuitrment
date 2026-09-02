@@ -145,7 +145,8 @@
 
 .metric-team .metric-icon { color: #3157d5; background: #edf2ff; }
 .metric-present .metric-icon { color: #138a60; background: #e8f8f1; }
-.metric-away .metric-icon { color: #b7791f; background: #fff7e6; }
+.metric-absent .metric-icon { color: #c2414f; background: #fff0f1; }
+.metric-leave .metric-icon { color: #b7791f; background: #fff7e6; }
 .metric-rate .metric-icon { color: #7b48c5; background: #f4edff; }
 
 .attendance-metric div {
