@@ -11,8 +11,11 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.RoleRepository;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
@@ -33,6 +36,7 @@ import com.maharecruitment.gov.in.recruitment.repository.InternalVacancyOpeningR
 import com.maharecruitment.gov.in.recruitment.service.InternalVacancyApprovalDocumentStorageService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationService;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentRequestIdGenerator;
+import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyInterviewAuthorityUserOptionView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningCommand;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyOpeningDetailsView;
 import com.maharecruitment.gov.in.recruitment.service.model.InternalVacancyRequirementCommand;
@@ -41,6 +45,7 @@ class InternalVacancyOpeningServiceImplTest {
 
     private ProjectMstRepository projectRepository;
     private EmployeeRepository employeeRepository;
+    private UserRepository userRepository;
     private InternalVacancyOpeningRepository internalVacancyOpeningRepository;
     private InternalVacancyOpeningServiceImpl service;
 
@@ -48,6 +53,7 @@ class InternalVacancyOpeningServiceImplTest {
     void setUp() {
         projectRepository = mock(ProjectMstRepository.class);
         employeeRepository = mock(EmployeeRepository.class);
+        userRepository = mock(UserRepository.class);
         internalVacancyOpeningRepository = mock(InternalVacancyOpeningRepository.class);
         service = new InternalVacancyOpeningServiceImpl(
                 internalVacancyOpeningRepository,
@@ -56,7 +62,7 @@ class InternalVacancyOpeningServiceImplTest {
                 mock(ManpowerDesignationMasterService.class),
                 mock(ManpowerDesignationRateService.class),
                 mock(RoleRepository.class),
-                mock(UserRepository.class),
+                userRepository,
                 employeeRepository,
                 mock(RecruitmentRequestIdGenerator.class),
                 mock(RecruitmentNotificationService.class),
@@ -220,6 +226,32 @@ class InternalVacancyOpeningServiceImplTest {
         assertThat(label)
                 .isEqualTo("Employee Name - Developer - L1")
                 .doesNotContain("MahaIT3286");
+    }
+
+    @Test
+    void returnsAllMixedAuthorityOptionsForUnpagedEditFormRequest() {
+        User user = new User();
+        user.setId(503L);
+        user.setName("Role Authority");
+        EmployeeEntity employee = new EmployeeEntity();
+        employee.setEmployeeId(1199L);
+        employee.setFullName("Employee Authority");
+
+        when(userRepository.findByRolesAndSearch(List.of(17L), null, Pageable.unpaged()))
+                .thenReturn(new PageImpl<>(List.of(user)));
+        when(employeeRepository.findActiveWithSearch(null, Pageable.unpaged()))
+                .thenReturn(new PageImpl<>(List.of(employee)));
+
+        List<InternalVacancyInterviewAuthorityUserOptionView> options =
+                service.getAvailableInterviewAuthorities(List.of(17L, -100L));
+
+        assertThat(options)
+                .extracting(
+                        InternalVacancyInterviewAuthorityUserOptionView::getUserId,
+                        InternalVacancyInterviewAuthorityUserOptionView::getType)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(503L, "USER"),
+                        org.assertj.core.groups.Tuple.tuple(1199L, "EMPLOYEE"));
     }
 
     private EmployeeEntity replacementEmployee(

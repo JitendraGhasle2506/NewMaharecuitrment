@@ -556,6 +556,10 @@ public class InternalVacancyOpeningServiceImpl implements InternalVacancyOpening
                             .type("EMPLOYEE")
                             .build()).getContent());
 
+            if (pageable.isUnpaged()) {
+                return new org.springframework.data.domain.PageImpl<>(allResults);
+            }
+
             int start = (int) pageable.getOffset();
             int end = Math.min((start + pageable.getPageSize()), allResults.size());
             
