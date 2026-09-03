@@ -615,7 +615,7 @@
 
         .today-attendance-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 10px;
         }
 
@@ -638,6 +638,11 @@
         }
 
         .today-attendance-item:nth-child(3) {
+            background: linear-gradient(180deg, #f4f3ff, #ebe9fe);
+            border-color: #d8d4f7;
+        }
+
+        .today-attendance-item:nth-child(4) {
             background: linear-gradient(180deg, #fff8ed, #fff1da);
             border-color: #f4ddae;
         }
@@ -1822,6 +1827,13 @@
                                         <span class="today-attendance-value" th:text="${attendance.todayInTime ?: '-'}">-</span>
                                     </div>
                                     <div class="today-attendance-item">
+                                        <span class="today-attendance-label">Hours Completed</span>
+                                        <span id="todayHoursCompleted"
+                                              class="today-attendance-value"
+                                              th:attr="data-in-time=${attendance.todayInTime},data-out-time=${attendance.todayOutTime}"
+                                              aria-live="polite">-</span>
+                                    </div>
+                                    <div class="today-attendance-item">
                                         <span class="today-attendance-label">Out Time</span>
                                         <span class="today-attendance-value" th:text="${attendance.todayOutTime ?: '-'}">-</span>
                                     </div>
@@ -2440,6 +2452,51 @@
                 $('#dateRangePicker').datepicker('show');
             });
         });
+    </script>
+    <script>
+        (function () {
+            const hoursCompleted = document.getElementById('todayHoursCompleted');
+            if (!hoursCompleted) {
+                return;
+            }
+
+            function parseTime(value) {
+                const match = /^(\d{1,2}):(\d{2})$/.exec((value || '').trim());
+                if (!match) {
+                    return null;
+                }
+                const hours = Number(match[1]);
+                const minutes = Number(match[2]);
+                return hours <= 23 && minutes <= 59 ? (hours * 60) + minutes : null;
+            }
+
+            function formatDuration(totalSeconds) {
+                const safeSeconds = Math.max(0, totalSeconds);
+                return String(Math.floor(safeSeconds / 3600)).padStart(2, '0')
+                    + ':'
+                    + String(Math.floor((safeSeconds % 3600) / 60)).padStart(2, '0')
+                    + ':'
+                    + String(safeSeconds % 60).padStart(2, '0');
+            }
+
+            function updateHoursCompleted() {
+                const inMinutes = parseTime(hoursCompleted.dataset.inTime);
+                if (inMinutes === null) {
+                    hoursCompleted.textContent = '-';
+                    return;
+                }
+
+                const outMinutes = parseTime(hoursCompleted.dataset.outTime);
+                const now = new Date();
+                const endSeconds = outMinutes !== null
+                    ? outMinutes * 60
+                    : (now.getHours() * 3600) + (now.getMinutes() * 60) + now.getSeconds();
+                hoursCompleted.textContent = formatDuration(endSeconds - (inMinutes * 60));
+            }
+
+            updateHoursCompleted();
+            window.setInterval(updateHoursCompleted, 1000);
+        }());
     </script>
     <script>
         (function () {

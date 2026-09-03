@@ -78,6 +78,19 @@ class InternalAttendancePrivacyTemplateTest {
                 .contains("th:text=\"${employeeSubDepartment}\"");
     }
 
+    @Test
+    void todaysAttendanceShowsLiveHoursCompletedAfterCheckInTime() throws IOException {
+        assertThat(template())
+                .containsSubsequence(
+                        ">In Time</span>",
+                        ">Hours Completed</span>",
+                        ">Out Time</span>")
+                .contains("id=\"todayHoursCompleted\"")
+                .contains("data-in-time=${attendance.todayInTime}")
+                .contains("data-out-time=${attendance.todayOutTime}")
+                .contains("window.setInterval(updateHoursCompleted, 1000)");
+    }
+
     private String template() throws IOException {
         ClassPathResource resource =
                 new ClassPathResource("templates/attendance/attendance-register-internal.html");
