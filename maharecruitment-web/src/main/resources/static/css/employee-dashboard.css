@@ -483,11 +483,11 @@
 }
 
 .employee-dashboard .celebration-copy strong {
-    overflow: hidden;
     color: var(--ed-ink);
     font-size: 0.96rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 .employee-dashboard .celebration-copy small {
@@ -1667,7 +1667,7 @@
 }
 
 .employee-dashboard-home .employee-dashboard .celebration-list {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 8px;
 }
 
