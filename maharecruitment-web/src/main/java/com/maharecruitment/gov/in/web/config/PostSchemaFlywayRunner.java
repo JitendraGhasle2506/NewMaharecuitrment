@@ -95,8 +95,6 @@ import db.postmigration.V111__login_failure_audit_support;
 import db.postmigration.V112__login_failure_legacy_constraint_cleanup;
 import db.postmigration.V113__master_location_department_name_support;
 import db.postmigration.V114__employee_profile_insert_compatibility;
-import db.postmigration.V115__designation_rates_single_l1_per_period;
-import db.postmigration.V116__designation_rates_2026_l1_defaults;
 import db.postmigration.V117__internal_vacancy_hiring_request_details;
 import db.postmigration.V118__internal_vacancy_replacement_employee_mapping;
 import db.postmigration.V119__internal_vacancy_multiple_replacement_employees;
@@ -223,8 +221,6 @@ public class PostSchemaFlywayRunner {
                 new V112__login_failure_legacy_constraint_cleanup(),
                 new V113__master_location_department_name_support(),
                 new V114__employee_profile_insert_compatibility(),
-                new V115__designation_rates_single_l1_per_period(),
-                new V116__designation_rates_2026_l1_defaults(),
                 new V117__internal_vacancy_hiring_request_details(),
                 new V118__internal_vacancy_replacement_employee_mapping(),
                 new V119__internal_vacancy_multiple_replacement_employees(),

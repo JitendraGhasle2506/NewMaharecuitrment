@@ -168,9 +168,13 @@ public final class SecurityHeaderPolicy {
         if (uniqueHashes.isEmpty()) {
             return directive + " 'none';";
         }
-        StringBuilder value = new StringBuilder(directive).append(" 'unsafe-hashes'");
+
+
+    /*     StringBuilder value = new StringBuilder(directive).append(" 'unsafe-hashes'");
         uniqueHashes.forEach(hash -> value.append(" 'sha256-").append(hash).append("'"));
-        return value.append(';').toString();
+        return value.append(';').toString(); */
+
+        return "";
     }
 
     @SuppressWarnings("unchecked")

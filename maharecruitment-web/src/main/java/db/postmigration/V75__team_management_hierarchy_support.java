@@ -302,7 +302,6 @@ public class V75__team_management_hierarchy_support extends BaseJavaMigration {
         syncSequence(statement, "m_wing_master", "wing_id");
         syncSequence(statement, "m_cell_master", "cell_id");
         syncSequence(statement, "project_mst", "project_id");
-        syncSequence(statement, "manpower_designation_master", "designation_id");
     }
 
     private void syncSequence(Statement statement, String tableName, String columnName) throws Exception {
@@ -355,13 +354,6 @@ public class V75__team_management_hierarchy_support extends BaseJavaMigration {
                   )
                 """);
 
-        seedDesignation(statement, "Senior Technical Manager (STM)");
-        seedDesignation(statement, "Project Manager");
-        seedDesignation(statement, "Project Lead");
-        seedDesignation(statement, "SSD");
-        seedDesignation(statement, "SD");
-        seedDesignation(statement, "QM");
-        seedDesignation(statement, "QAL");
 
         seedTeam(statement, "Development Team", "DEVELOPMENT", null, 10);
         seedTeam(statement, "Team D-15", "DEVELOPMENT", "Development Team", 15);
@@ -370,20 +362,6 @@ public class V75__team_management_hierarchy_support extends BaseJavaMigration {
         seedTeam(statement, "Team O-4", "OM", "O&M Team", 24);
         seedTeam(statement, "Support Team", "SUPPORT", null, 30);
         seedTeam(statement, "Team SQA", "SUPPORT", "Support Team", 31);
-
-        seedPosition(statement, "Senior Technical Manager", "Senior Technical Manager (STM)", null, null, null, 1);
-        seedPosition(statement, "Project Manager", "Project Manager", null, "Senior Technical Manager", null, 2);
-        seedPosition(statement, "Development Project Lead", "Project Lead", "Development Team", "Project Manager", null, 10);
-        seedPosition(statement, "O&M Project Lead", "Project Lead", "O&M Team", "Project Manager", null, 20);
-        seedPosition(statement, "Team D-15 Lead", "SSD", "Team D-15", "Development Project Lead", "Gajanan Thakare", 151);
-        seedPosition(statement, "Team D-15 Developer 1", "SD", "Team D-15", "Team D-15 Lead", null, 152);
-        seedPosition(statement, "Team D-15 Developer 2", "SD", "Team D-15", "Team D-15 Lead", null, 153);
-        seedPosition(statement, "Team D-16 Lead", "SSD", "Team D-16", "Development Project Lead", null, 161);
-        seedPosition(statement, "Team D-16 Developer", "SD", "Team D-16", "Team D-16 Lead", null, 162);
-        seedPosition(statement, "Team O-4 Developer", "SD", "Team O-4", "O&M Project Lead", "Kiran Jadhav", 241);
-        seedPosition(statement, "Team O-4 Developer 2", "SD", "Team O-4", "Team O-4 Developer", null, 242);
-        seedPosition(statement, "Team SQA Manager", "QM", "Team SQA", "Project Manager", "Mallikarjun Kopuri", 311);
-        seedPosition(statement, "Team SQA Lead", "QAL", "Team SQA", "Team SQA Manager", null, 312);
 
         statement.execute("""
                 insert into employee_team_mapping (
@@ -402,21 +380,6 @@ public class V75__team_management_hierarchy_support extends BaseJavaMigration {
                       and existing.status = 'ACTIVE'
                   )
                 """);
-    }
-
-    private void seedDesignation(Statement statement, String designationName) throws Exception {
-        String designation = escapeSql(designationName);
-        statement.execute(
-                "insert into manpower_designation_master ("
-                        + "category, designation_name, role_name, active_flag, created_date_time, updated_date_time"
-                        + ") "
-                        + "select 'MAHAIT Organization', '" + designation + "', '" + designation + "', "
-                        + "'Y', current_timestamp, current_timestamp "
-                        + "where not exists ("
-                        + "select 1 from manpower_designation_master "
-                        + "where lower(designation_name) = lower('" + designation + "') "
-                        + "and active_flag = 'Y'"
-                        + ")");
     }
 
     private void seedTeam(
@@ -447,58 +410,6 @@ public class V75__team_management_hierarchy_support extends BaseJavaMigration {
                         + "select 1 from team_master existing "
                         + "where existing.cell_id = project.cell_id "
                         + "and lower(existing.team_name) = lower('" + team + "')"
-                        + ")");
-    }
-
-    private void seedPosition(
-            Statement statement,
-            String positionName,
-            String designationName,
-            String teamName,
-            String reportingPositionName,
-            String employeeName,
-            int displayOrder) throws Exception {
-        String teamSelect = teamName == null
-                ? "null"
-                : "(select team.team_id from team_master team "
-                        + "join project_mst team_project on team_project.cell_id = team.cell_id "
-                        + "where team_project.project_code = 'MRC' "
-                        + "and lower(team.team_name) = lower('" + escapeSql(teamName) + "') "
-                        + "fetch first 1 row only)";
-        String reportingSelect = reportingPositionName == null
-                ? "null"
-                : "(select reporting.position_id from position_master reporting "
-                        + "join project_mst reporting_project on reporting_project.project_id = reporting.project_id "
-                        + "where reporting_project.project_code = 'MRC' "
-                        + "and lower(reporting.position_name) = lower('" + escapeSql(reportingPositionName) + "') "
-                        + "fetch first 1 row only)";
-        String employeeSelect = employeeName == null
-                ? "null"
-                : "(select employee.employee_id from employee_master employee "
-                        + "where lower(employee.full_name) = lower('" + escapeSql(employeeName) + "') "
-                        + "and upper(employee.status) = 'ACTIVE' "
-                        + "fetch first 1 row only)";
-        String position = escapeSql(positionName);
-        String designation = escapeSql(designationName);
-        statement.execute(
-                "insert into position_master ("
-                        + "position_name, project_id, team_id, designation_id, reporting_position_id, employee_id, "
-                        + "display_order, position_status, status, created_date_time, updated_date_time"
-                        + ") "
-                        + "select '" + position + "', project.project_id, " + teamSelect + ", "
-                        + "designation.designation_id, " + reportingSelect + ", " + employeeSelect + ", "
-                        + displayOrder + ", "
-                        + "case when " + employeeSelect + " is null then 'VACANT' else 'FILLED' end, "
-                        + "'ACTIVE', current_timestamp, current_timestamp "
-                        + "from project_mst project "
-                        + "join manpower_designation_master designation "
-                        + "on lower(designation.designation_name) = lower('" + designation + "') "
-                        + "and designation.active_flag = 'Y' "
-                        + "where project.project_code = 'MRC' "
-                        + "and not exists ("
-                        + "select 1 from position_master existing "
-                        + "where existing.project_id = project.project_id "
-                        + "and lower(existing.position_name) = lower('" + position + "')"
                         + ")");
     }
 

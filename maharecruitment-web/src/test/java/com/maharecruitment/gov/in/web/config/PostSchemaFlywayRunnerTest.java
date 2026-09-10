@@ -18,8 +18,6 @@ import db.postmigration.V108__password_reset_otp_lock_support;
 import db.postmigration.V109__auth_user_password_change_required;
 import db.postmigration.V113__master_location_department_name_support;
 import db.postmigration.V114__employee_profile_insert_compatibility;
-import db.postmigration.V115__designation_rates_single_l1_per_period;
-import db.postmigration.V116__designation_rates_2026_l1_defaults;
 import db.postmigration.V117__internal_vacancy_hiring_request_details;
 import db.postmigration.V118__internal_vacancy_replacement_employee_mapping;
 import db.postmigration.V119__internal_vacancy_multiple_replacement_employees;
@@ -50,10 +48,6 @@ class PostSchemaFlywayRunnerTest {
                 migrations, V113__master_location_department_name_support.class);
         int employeeProfileCompatibilityMigrationIndex = indexOf(
                 migrations, V114__employee_profile_insert_compatibility.class);
-        int designationRateNormalizationMigrationIndex = indexOf(
-                migrations, V115__designation_rates_single_l1_per_period.class);
-        int designationRateDefaultsMigrationIndex = indexOf(
-                migrations, V116__designation_rates_2026_l1_defaults.class);
         int internalVacancyHiringDetailsMigrationIndex = indexOf(
                 migrations, V117__internal_vacancy_hiring_request_details.class);
         int replacementEmployeeMappingMigrationIndex = indexOf(
@@ -70,12 +64,8 @@ class PostSchemaFlywayRunnerTest {
         assertThat(requiredPasswordChangeMigrationIndex).isGreaterThan(passwordResetLockMigrationIndex);
         assertThat(locationDepartmentMigrationIndex).isGreaterThan(requiredPasswordChangeMigrationIndex);
         assertThat(employeeProfileCompatibilityMigrationIndex).isGreaterThan(locationDepartmentMigrationIndex);
-        assertThat(designationRateNormalizationMigrationIndex)
-                .isGreaterThan(employeeProfileCompatibilityMigrationIndex);
-        assertThat(designationRateDefaultsMigrationIndex)
-                .isGreaterThan(designationRateNormalizationMigrationIndex);
         assertThat(internalVacancyHiringDetailsMigrationIndex)
-                .isGreaterThan(designationRateDefaultsMigrationIndex);
+                .isGreaterThan(employeeProfileCompatibilityMigrationIndex);
         assertThat(replacementEmployeeMappingMigrationIndex)
                 .isGreaterThan(internalVacancyHiringDetailsMigrationIndex);
         assertThat(multipleReplacementEmployeesMigrationIndex)
