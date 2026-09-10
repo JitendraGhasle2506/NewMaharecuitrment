@@ -1,9 +1,9 @@
 package com.maharecruitment.gov.in.web.controller.master;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -193,19 +193,78 @@ public class DesignationRatePageController {
     }
 
     private void populateForm(Model model, ManpowerDesignationRateRequest form, Long rateId) {
+        boolean isEdit = rateId != null;
+        List<ManpowerDesignationMasterResponse> designations = getDesignations(false);
+        ManpowerDesignationMasterResponse selectedDesignation = findDesignation(
+                designations,
+                form.getDesignationId());
+
+        if (isEdit && selectedDesignation == null && form.getDesignationId() != null) {
+            selectedDesignation = getDesignationIncludingInactive(form.getDesignationId());
+            if (selectedDesignation != null) {
+                List<ManpowerDesignationMasterResponse> formDesignations = new ArrayList<>(designations);
+                formDesignations.add(selectedDesignation);
+                formDesignations.sort(designationComparator());
+                designations = List.copyOf(formDesignations);
+            }
+        }
+
         model.addAttribute("designationRateForm", form);
         model.addAttribute("rateId", rateId);
-        model.addAttribute("isEdit", rateId != null);
-        model.addAttribute("availableDesignations", getDesignations(false));
-        model.addAttribute("availableLevels", resolveMappedLevels(form.getDesignationId()));
+        model.addAttribute("isEdit", isEdit);
+        model.addAttribute("availableDesignations", designations);
+        model.addAttribute("availableLevels", resolveFormLevels(selectedDesignation, form.getLevelCode(), isEdit));
     }
 
     private List<ManpowerDesignationMasterResponse> getDesignations(boolean includeInactive) {
-        Comparator<String> textComparator = Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER);
         return designationService.getAll(includeInactive, Pageable.unpaged()).getContent().stream()
-                .sorted(Comparator.comparing(ManpowerDesignationMasterResponse::getDesignationName, textComparator)
-                        .thenComparing(ManpowerDesignationMasterResponse::getCategory, textComparator))
+                .sorted(designationComparator())
                 .toList();
+    }
+
+    private Comparator<ManpowerDesignationMasterResponse> designationComparator() {
+        Comparator<String> textComparator = Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER);
+        return Comparator.comparing(ManpowerDesignationMasterResponse::getDesignationName, textComparator)
+                .thenComparing(ManpowerDesignationMasterResponse::getCategory, textComparator);
+    }
+
+    private ManpowerDesignationMasterResponse findDesignation(
+            List<ManpowerDesignationMasterResponse> designations,
+            Long designationId) {
+        if (designationId == null) {
+            return null;
+        }
+        return designations.stream()
+                .filter(designation -> designationId.equals(designation.getDesignationId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private ManpowerDesignationMasterResponse getDesignationIncludingInactive(Long designationId) {
+        try {
+            return designationService.getById(designationId, true);
+        } catch (RuntimeException ex) {
+            log.warn("Unable to resolve current designation for designationId={}", designationId, ex);
+            return null;
+        }
+    }
+
+    private List<ResourceLevelRefResponse> resolveFormLevels(
+            ManpowerDesignationMasterResponse designation,
+            String selectedLevelCode,
+            boolean preserveSelectedLevel) {
+        List<ResourceLevelRefResponse> levels = sortLevels(designation == null ? null : designation.getLevels());
+        if (!preserveSelectedLevel || selectedLevelCode == null || selectedLevelCode.isBlank()
+                || levels.stream().anyMatch(level -> selectedLevelCode.equalsIgnoreCase(level.getLevelCode()))) {
+            return levels;
+        }
+
+        List<ResourceLevelRefResponse> formLevels = new ArrayList<>(levels);
+        formLevels.add(ResourceLevelRefResponse.builder()
+                .levelCode(selectedLevelCode.trim())
+                .build());
+        formLevels.sort(levelComparator());
+        return List.copyOf(formLevels);
     }
 
     private List<ResourceLevelRefResponse> resolveMappedLevels(Long designationId) {
@@ -217,17 +276,29 @@ public class DesignationRatePageController {
             if (designation.getLevels() == null || designation.getLevels().isEmpty()) {
                 return List.of();
             }
-            return designation.getLevels().stream()
-                    .filter(Objects::nonNull)
-                    .sorted((first, second) -> {
-                        String firstCode = first.getLevelCode() == null ? "" : first.getLevelCode();
-                        String secondCode = second.getLevelCode() == null ? "" : second.getLevelCode();
-                        return firstCode.compareToIgnoreCase(secondCode);
-                    })
-                    .toList();
+            return sortLevels(designation.getLevels());
         } catch (RuntimeException ex) {
             log.warn("Unable to resolve mapped levels for designationId={}", designationId, ex);
             return List.of();
         }
+    }
+
+    private List<ResourceLevelRefResponse> sortLevels(Iterable<ResourceLevelRefResponse> levels) {
+        if (levels == null) {
+            return List.of();
+        }
+        List<ResourceLevelRefResponse> sortedLevels = new ArrayList<>();
+        levels.forEach(level -> {
+            if (level != null) {
+                sortedLevels.add(level);
+            }
+        });
+        sortedLevels.sort(levelComparator());
+        return List.copyOf(sortedLevels);
+    }
+
+    private Comparator<ResourceLevelRefResponse> levelComparator() {
+        Comparator<String> levelCodeComparator = Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER);
+        return Comparator.comparing(ResourceLevelRefResponse::getLevelCode, levelCodeComparator);
     }
 }

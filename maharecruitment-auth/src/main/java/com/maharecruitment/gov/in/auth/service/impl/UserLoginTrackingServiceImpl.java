@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
+import com.maharecruitment.gov.in.auth.service.LoginAttemptBucketService;
 import com.maharecruitment.gov.in.auth.service.UserLoginTrackingService;
 
 @Service
@@ -14,9 +15,13 @@ import com.maharecruitment.gov.in.auth.service.UserLoginTrackingService;
 public class UserLoginTrackingServiceImpl implements UserLoginTrackingService {
 
     private final UserRepository userRepository;
+    private final LoginAttemptBucketService loginAttemptBucketService;
 
-    public UserLoginTrackingServiceImpl(UserRepository userRepository) {
+    public UserLoginTrackingServiceImpl(
+            UserRepository userRepository,
+            LoginAttemptBucketService loginAttemptBucketService) {
         this.userRepository = userRepository;
+        this.loginAttemptBucketService = loginAttemptBucketService;
     }
 
     @Override
@@ -31,6 +36,7 @@ public class UserLoginTrackingServiceImpl implements UserLoginTrackingService {
         LocalDateTime previousLoginTime = user.getLastLoginAt();
         user.setLastLoginAt(loginTime);
         userRepository.save(user);
+        loginAttemptBucketService.reset(user.getId());
         return previousLoginTime;
     }
 }

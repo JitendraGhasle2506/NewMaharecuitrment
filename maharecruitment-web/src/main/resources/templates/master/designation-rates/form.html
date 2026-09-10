@@ -51,7 +51,7 @@
                             <select autocomplete="off" id="levelCodeSelect" class="form-select" th:field="*{levelCode}">
                                 <option value="">Select level</option>
                                 <option th:each="l : ${availableLevels}" th:value="${l.levelCode}"
-                                    th:text="${l.levelCode + ' - ' + l.levelName}"></option>
+                                    th:text="${#strings.isEmpty(l.levelName) ? l.levelCode : l.levelCode + ' - ' + l.levelName}"></option>
                             </select>
                             <div class="text-danger small" th:if="${#fields.hasErrors('levelCode')}"
                                 th:errors="*{levelCode}"></div>
@@ -96,7 +96,7 @@
             </div>
         </section>
     </th:block>
-    <script th:src="@{/js/master-designation-rate-form.js}"></script>
+    <script th:src="@{/js/master-designation-rate-form.js(v='20260909-edit-selection')}"></script>
 </body>
 
 </html>

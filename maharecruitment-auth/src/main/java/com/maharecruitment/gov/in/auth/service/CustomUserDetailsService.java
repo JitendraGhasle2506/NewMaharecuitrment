@@ -20,12 +20,15 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final AgencyAccountAccessService agencyAccountAccessService;
+    private final LoginAttemptBucketService loginAttemptBucketService;
 
     public CustomUserDetailsService(
             UserRepository userRepository,
-            AgencyAccountAccessService agencyAccountAccessService) {
+            AgencyAccountAccessService agencyAccountAccessService,
+            LoginAttemptBucketService loginAttemptBucketService) {
         this.userRepository = userRepository;
         this.agencyAccountAccessService = agencyAccountAccessService;
+        this.loginAttemptBucketService = loginAttemptBucketService;
     }
 
     @Override
@@ -44,6 +47,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .password(user.getPassword())
                 .authorities(authorities)
                 .disabled(!Boolean.TRUE.equals(user.getActive()))
+                .accountLocked(loginAttemptBucketService.isBlocked(user.getId()))
                 .build();
     }
 

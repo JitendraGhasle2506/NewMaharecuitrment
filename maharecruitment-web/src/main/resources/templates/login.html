@@ -78,7 +78,10 @@
                         <h2>Sign In</h2>
                         <p class="auth-subtext">Use your registered email or mobile number to sign in.</p>
 
-                        <div th:if="${param.error}" class="alert alert-danger">Invalid email, mobile number, or password.</div>
+                        <div th:if="${param.error}" class="alert alert-danger">
+                            Invalid email, mobile number, or password. Accounts are blocked for 24 hours after 3
+                            consecutive failed login attempts.
+                        </div>
                         <div th:if="${param.logout}" class="alert alert-success">You have been logged out.</div>
                         <div th:if="${param.sessionExpired}" class="alert alert-warning">Session expired. Please login
                             again.</div>

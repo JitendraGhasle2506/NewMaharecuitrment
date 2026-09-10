@@ -13,9 +13,10 @@
         void loadMappedLevels(designationSelect.value, "");
     });
 
-    if (designationSelect.value) {
-        void loadMappedLevels(designationSelect.value, levelCodeSelect.value);
-    } else {
+    // Existing form options are rendered by the server so saved values that are
+    // no longer mapped remain visible. Reload levels only after the user changes
+    // the designation.
+    if (!designationSelect.value) {
         resetLevelOptions();
     }
 

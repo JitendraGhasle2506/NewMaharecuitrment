@@ -3,6 +3,8 @@ package com.maharecruitment.gov.in.master.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import org.springframework.format.annotation.DateTimeFormat;
+
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,8 +26,10 @@ public class ManpowerDesignationRateRequest {
     private BigDecimal grossMonthlyCtc;
 
     @NotNull(message = "Effective from date is required")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate effectiveFrom;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate effectiveTo;
     private String activeFlag;
 }
