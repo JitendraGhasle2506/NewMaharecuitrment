@@ -9,7 +9,7 @@ import org.thymeleaf.processor.IProcessor;
 /**
  * Applies CSP trust only to elements produced from server-owned Thymeleaf
  * templates. Unescaped or client-provided HTML is never processed by this
- * dialect and therefore never receives a nonce or an allowed attribute hash.
+ * dialect and therefore never receives a nonce.
  */
 @Component
 public final class CspTemplateDialect extends AbstractProcessorDialect {

@@ -1,5 +1,8 @@
 package com.maharecruitment.gov.in.web.service.verification.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
@@ -17,6 +20,8 @@ import com.maharecruitment.gov.in.web.service.verification.AccountNotificationSe
 import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 import com.maharecruitment.gov.in.web.util.ApplicationUrlService;
+
+import jakarta.annotation.PostConstruct;
 
 @Service
 public class NotificationServiceImpl implements OtpDispatchService, AccountNotificationService {
@@ -40,6 +45,31 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         this.environment = environment;
         this.notificationChannelProperties = notificationChannelProperties;
         this.applicationUrlService = applicationUrlService;
+    }
+
+    @PostConstruct
+    void reportEmailConfiguration() {
+        if (!notificationChannelProperties.isEmailEnabled()) {
+            log.info("Email dispatch is disabled by app.service.email-enabled.");
+            return;
+        }
+
+        List<String> missingProperties = missingEmailProperties();
+        if (!missingProperties.isEmpty()) {
+            log.error(
+                    "Email dispatch is enabled but SMTP configuration is incomplete. Missing properties: {}. "
+                            + "Set the corresponding SMTP_* environment variables before starting the application.",
+                    String.join(", ", missingProperties));
+            return;
+        }
+
+        log.info(
+                "Email SMTP configuration loaded: host={}, port={}, sender={}, security={}, authenticationEnabled={}.",
+                getProperty("spring.mail.host"),
+                environment.getProperty("spring.mail.port", Integer.class, 25),
+                getFromAddress(),
+                smtpSecurityMode(),
+                isSmtpAuthenticationEnabled());
     }
 
     @Override
@@ -81,28 +111,36 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
             return;
         }
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(getFromAddress());
-        message.setTo(email);
-        if (VerificationPurposes.LOGIN_AUTHENTICATION.equalsIgnoreCase(valueOrBlank(purpose))) {
-            message.setSubject("Maha Recruitment Portal Login OTP");
-            message.setText(buildLoginOtpEmailBody(otp, otpReferenceId));
-        } else if (VerificationPurposes.PASSWORD_RESET.equalsIgnoreCase(valueOrBlank(purpose))) {
-            message.setSubject("MahaIT Recruitment Password Reset OTP");
-            message.setText(buildPasswordResetOtpEmailBody(otp, otpReferenceId));
-        } else if (VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT.equalsIgnoreCase(valueOrBlank(purpose))) {
-            message.setSubject("MahaIT Recruitment Department Registration Email Verification OTP");
-            message.setText(buildDepartmentRegistrationOtpEmailBody(otp, email, otpReferenceId));
-        } else {
-            message.setSubject("MahaIT Recruitment Email Verification OTP");
-            message.setText(buildGenericVerificationOtpEmailBody(otp, otpReferenceId));
-        }
-
         try {
+            validateEmailConfiguration();
+
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(getFromAddress());
+            message.setTo(email);
+            if (VerificationPurposes.LOGIN_AUTHENTICATION.equalsIgnoreCase(valueOrBlank(purpose))) {
+                message.setSubject("Maha Recruitment Portal Login OTP");
+                message.setText(buildLoginOtpEmailBody(otp, otpReferenceId));
+            } else if (VerificationPurposes.PASSWORD_RESET.equalsIgnoreCase(valueOrBlank(purpose))) {
+                message.setSubject("MahaIT Recruitment Password Reset OTP");
+                message.setText(buildPasswordResetOtpEmailBody(otp, otpReferenceId));
+            } else if (VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT.equalsIgnoreCase(valueOrBlank(purpose))) {
+                message.setSubject("MahaIT Recruitment Department Registration Email Verification OTP");
+                message.setText(buildDepartmentRegistrationOtpEmailBody(otp, email, otpReferenceId));
+            } else {
+                message.setSubject("MahaIT Recruitment Email Verification OTP");
+                message.setText(buildGenericVerificationOtpEmailBody(otp, otpReferenceId));
+            }
+
             mailSender.send(message);
         } catch (Exception ex) {
-            log.error("Failed to send email verification OTP to {} from {}. Reason: {}",
-                    email, message.getFrom(), extractFailureReason(ex), ex);
+            log.error(
+                    "Failed to send email verification OTP. smtpHost={}, smtpPort={}, recipient={}, reasonType={}, reason={}",
+                    getProperty("spring.mail.host"),
+                    environment.getProperty("spring.mail.port", Integer.class, 25),
+                    maskEmail(email),
+                    rootCause(ex).getClass().getSimpleName(),
+                    extractFailureReason(ex),
+                    ex);
             throw new IllegalStateException(buildFailureMessage("Failed to send email verification OTP.", ex), ex);
         }
     }
@@ -467,6 +505,14 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         return fallback;
     }
 
+    private Throwable rootCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
     private String resolveOtpValidityText(String purpose) {
         int expiryMinutes = VerificationPurposes.PASSWORD_RESET.equalsIgnoreCase(valueOrBlank(purpose))
                 ? environment.getProperty("security.password-reset.otp-validity-minutes", Integer.class, 5)
@@ -500,6 +546,68 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
 
         throw new IllegalStateException(
                 "Email sender address is not configured. Set spring.mail.from.email or SMTP_FROM_EMAIL to a verified sender address.");
+    }
+
+    private void validateEmailConfiguration() {
+        List<String> missingProperties = missingEmailProperties();
+        if (!missingProperties.isEmpty()) {
+            throw new IllegalStateException(
+                    "Email SMTP configuration is incomplete. Missing properties: "
+                            + String.join(", ", missingProperties)
+                            + ". Set the corresponding SMTP_* environment variables on the application server.");
+        }
+    }
+
+    private List<String> missingEmailProperties() {
+        List<String> missingProperties = new ArrayList<>(4);
+        addIfMissing(missingProperties, "spring.mail.host");
+        addIfMissing(missingProperties, "spring.mail.from.email");
+        if (isSmtpAuthenticationEnabled()) {
+            addIfMissing(missingProperties, "spring.mail.username");
+            addIfMissing(missingProperties, "spring.mail.password");
+        }
+        return missingProperties;
+    }
+
+    private void addIfMissing(List<String> missingProperties, String propertyName) {
+        if (!StringUtils.hasText(getProperty(propertyName))) {
+            missingProperties.add(propertyName);
+        }
+    }
+
+    private boolean isSmtpAuthenticationEnabled() {
+        return environment.getProperty(
+                "spring.mail.properties.mail.smtp.auth",
+                Boolean.class,
+                true);
+    }
+
+    private String smtpSecurityMode() {
+        if (environment.getProperty(
+                "spring.mail.properties.mail.smtp.ssl.enable",
+                Boolean.class,
+                false)) {
+            return "TLS_WRAPPER";
+        }
+        if (environment.getProperty(
+                "spring.mail.properties.mail.smtp.starttls.enable",
+                Boolean.class,
+                false)) {
+            return "STARTTLS";
+        }
+        return "PLAIN";
+    }
+
+    private String maskEmail(String email) {
+        if (!StringUtils.hasText(email)) {
+            return "<missing>";
+        }
+        String normalized = email.trim();
+        int separator = normalized.indexOf('@');
+        if (separator <= 0) {
+            return "***";
+        }
+        return normalized.charAt(0) + "***" + normalized.substring(separator);
     }
 
     private void sendSmsMessage(String mobileNo, String message, String context) {

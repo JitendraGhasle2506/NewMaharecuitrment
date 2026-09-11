@@ -37,13 +37,12 @@ repository-managed deployment/proxy files.
 
 ## CSP compatibility decisions
 
-The application contains server-rendered script/style blocks plus legacy event
-and style attributes. A Thymeleaf processor adds a cryptographically random
-per-response nonce only to application-owned script/style template nodes and
-records SHA-256 `unsafe-hashes` entries for their final rendered attribute
-values. Dynamically supplied unescaped HTML does not pass through that processor
-and receives no CSP trust. This keeps the existing pages functional without a
-blanket inline-execution permission. The policy does not permit `unsafe-eval`.
+The application uses a Thymeleaf processor to add a cryptographically random
+per-response nonce only to application-owned script/style template nodes.
+Dynamically supplied unescaped HTML does not pass through that processor and
+receives no CSP trust. Event-handler and style attributes are denied explicitly
+with `script-src-attr 'none'` and `style-src-attr 'none'`. The policy does not
+permit `unsafe-eval` or a blanket inline-execution permission.
 
 Select2/jQuery, Flatpickr, and Leaflet remain allowlisted from jsDelivr,
 code.jquery.com, and unpkg.com. The location form connects to Nominatim and loads
@@ -53,9 +52,9 @@ Four invoice flows intentionally use same-origin iframes. Default responses use
 `X-Frame-Options: DENY` and `frame-ancestors 'none'`; only the invoice responses
 that are actually embedded use `SAMEORIGIN` and `frame-ancestors 'self'`.
 
-Longer term, self-host third-party assets and move legacy event/style attributes
-to external resources so the narrower `unsafe-hashes` compatibility directive
-can also be removed.
+Legacy event/style attributes must be moved to nonce-bearing or external
+resources. Self-hosting third-party assets would further reduce the CSP source
+allowlist.
 
 ## HSTS and reverse-proxy finding
 

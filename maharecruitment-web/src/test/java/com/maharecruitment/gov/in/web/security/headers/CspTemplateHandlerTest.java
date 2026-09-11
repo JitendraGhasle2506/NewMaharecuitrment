@@ -35,7 +35,7 @@ class CspTemplateHandlerTest {
     }
 
     @Test
-    void trustsOnlyAuthoredTemplateElementsAndFinalAttributeValues() {
+    void trustsOnlyAuthoredScriptAndStyleElements() {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/dashboard");
         MockHttpServletResponse response = new MockHttpServletResponse();
         String untrustedHtml = "<script>alert('untrusted')</script>";
@@ -68,13 +68,9 @@ class CspTemplateHandlerTest {
                 .doesNotContain("<script nonce=\"" + nonce + "\">alert('untrusted')");
         assertThat(response.getHeader("Content-Security-Policy"))
                 .contains("'nonce-" + nonce + "'")
-                .contains("script-src-attr 'unsafe-hashes'")
-                .contains("style-src-attr 'unsafe-hashes'")
-                .contains("'sha256-" + SecurityHeaderPolicy.sha256("save(\"42\")") + "'")
-                .contains("'sha256-" + SecurityHeaderPolicy.sha256("color: red") + "'")
-                .contains("'sha256-" + SecurityHeaderPolicy.sha256("save(43)") + "'")
-                .contains("'sha256-" + SecurityHeaderPolicy.sha256("color: blue") + "'")
-                .doesNotContain("'unsafe-inline'");
+                .contains("script-src-attr 'none'")
+                .contains("style-src-attr 'none'")
+                .doesNotContain("unsafe-");
     }
 
     private WebContext webContext(

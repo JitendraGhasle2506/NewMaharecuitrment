@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.web.service.verification.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -24,8 +25,7 @@ class NotificationServiceImplTest {
         NotificationServiceImpl service = new NotificationServiceImpl(
                 mailSender,
                 mock(RestClient.class),
-                new MockEnvironment()
-                        .withProperty("spring.mail.from.email", "noreply@mahait.org")
+                smtpEnvironment()
                         .withProperty("otp.expiry-minutes", "5"),
                 new NotificationChannelProperties(),
                 applicationUrlService());
@@ -53,8 +53,7 @@ class NotificationServiceImplTest {
         NotificationServiceImpl service = new NotificationServiceImpl(
                 mailSender,
                 mock(RestClient.class),
-                new MockEnvironment()
-                        .withProperty("spring.mail.from.email", "noreply@mahait.org"),
+                smtpEnvironment(),
                 new NotificationChannelProperties(),
                 applicationUrlService());
 
@@ -71,6 +70,31 @@ class NotificationServiceImplTest {
         assertThat(messageCaptor.getValue().getText())
                 .contains("https://portal.example.gov.in/maharecruitment/login")
                 .doesNotContain("evil.example.com");
+    }
+
+    @Test
+    void emailOtpFailsWithActionableErrorWhenSmtpCredentialsAreMissing() {
+        NotificationServiceImpl service = new NotificationServiceImpl(
+                mock(JavaMailSender.class),
+                mock(RestClient.class),
+                new MockEnvironment()
+                        .withProperty("spring.mail.host", "smtp.example.com")
+                        .withProperty("spring.mail.from.email", "noreply@example.com")
+                        .withProperty("spring.mail.properties.mail.smtp.auth", "true"),
+                new NotificationChannelProperties(),
+                applicationUrlService());
+
+        assertThatThrownBy(() -> service.sendEmailOtp("user@example.com", "209552"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasStackTraceContaining("spring.mail.username")
+                .hasStackTraceContaining("spring.mail.password");
+    }
+
+    private MockEnvironment smtpEnvironment() {
+        return new MockEnvironment()
+                .withProperty("spring.mail.host", "smtp.example.com")
+                .withProperty("spring.mail.from.email", "noreply@mahait.org")
+                .withProperty("spring.mail.properties.mail.smtp.auth", "false");
     }
 
     private ApplicationUrlService applicationUrlService() {
