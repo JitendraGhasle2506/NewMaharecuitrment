@@ -41,7 +41,7 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("security.allowed-hosts[0]"))
                 .isEqualTo("${SECURITY_ALLOWED_HOST_PORTAL:103.5.84.215}");
         assertThat(properties.getProperty("security.allowed-hosts[4]"))
-                .isEqualTo("${SECURITY_ALLOWED_HOST_SERVER:}");
+                .isEqualTo("${SECURITY_ALLOWED_HOST_SERVER:103.5.84.216}");
         assertThat(properties.getProperty("security.allowed-ports[1]"))
                 .isEqualTo("${SECURITY_ALLOWED_PORT_HTTPS:443}");
         assertThat(properties.getProperty("security.allowed-ports[4]"))

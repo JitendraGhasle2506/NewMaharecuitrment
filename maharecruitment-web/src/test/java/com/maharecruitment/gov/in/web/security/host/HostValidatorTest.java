@@ -22,6 +22,8 @@ class HostValidatorTest {
         properties.setAllowedHosts(List.of(
                 "portal.example.gov.in",
                 "www.portal.example.gov.in",
+                "103.5.84.215",
+                "103.5.84.216",
                 "localhost",
                 "127.0.0.1"));
         properties.setAllowedPorts(Set.of(80, 443, 8443));
@@ -32,6 +34,8 @@ class HostValidatorTest {
     @ValueSource(strings = {
             "portal.example.gov.in",
             "www.portal.example.gov.in",
+            "103.5.84.215",
+            "103.5.84.216",
             "localhost",
             "LOCALHOST",
             "127.0.0.1",

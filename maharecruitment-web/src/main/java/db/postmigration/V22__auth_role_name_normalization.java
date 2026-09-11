@@ -60,8 +60,6 @@ public class V22__auth_role_name_normalization extends BaseJavaMigration {
         }
 
         cleanupObsoleteUserRoleLinks(jdbcTemplate, connection, roleIds);
-
-        new R__auth_reference_data().migrate(context);
     }
 
     private void ensureCanonicalRoles(JdbcTemplate jdbcTemplate) {
