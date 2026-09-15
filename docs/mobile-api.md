@@ -748,6 +748,17 @@ Both attendance integrations use the single configured base URL
 `attendance.integration.internal.base-url`; the portal appends the appropriate
 fixed endpoint path for report retrieval or mobile attendance updates.
 
+The attendance HTTP client keeps normal JVM CA validation and additionally
+loads `attendance.integration.internal.additional-ca-certificate`. Its default
+is the bundled official ISRG Root X1 certificate required by the upstream
+Let’s Encrypt `YR2 -> Root YR -> ISRG Root X1` chain. Set
+`ATTENDANCE_INTERNAL_ADDITIONAL_CA_CERTIFICATE` only when operations need to
+use another PEM CA bundle. A missing or blank value safely falls back to the
+bundled certificate. Hostname and certificate validation remain enabled. On
+startup, verify that the log contains `Configured internal attendance HTTP
+client with JDK transport and additional CA certificate`; its absence means an
+older attendance module is deployed.
+
 For check-in, the portal sends exactly these fields:
 
 ```json

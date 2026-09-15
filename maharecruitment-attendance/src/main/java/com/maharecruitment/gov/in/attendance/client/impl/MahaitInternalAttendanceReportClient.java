@@ -18,7 +18,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -49,7 +48,7 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
     public MahaitInternalAttendanceReportClient(
             InternalAttendanceSyncProperties properties) {
         this.properties = properties;
-        this.restClient = createRestClient(properties);
+        this.restClient = InternalAttendanceRestClientFactory.create(properties);
         this.objectMapper = new ObjectMapper();
     }
 
@@ -167,15 +166,6 @@ public class MahaitInternalAttendanceReportClient implements InternalAttendanceR
         return dayRecords.stream()
                 .sorted(Comparator.comparing(InternalAttendanceDayRecord::getAttendanceDate))
                 .toList();
-    }
-
-    private RestClient createRestClient(InternalAttendanceSyncProperties syncProperties) {
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Math.max(syncProperties.getConnectTimeoutSeconds(), 1) * 1000);
-        requestFactory.setReadTimeout(Math.max(syncProperties.getReadTimeoutSeconds(), 1) * 1000);
-        return RestClient.builder()
-                .requestFactory(requestFactory)
-                .build();
     }
 
     private boolean isTooManyRequests(RestClientResponseException ex) {

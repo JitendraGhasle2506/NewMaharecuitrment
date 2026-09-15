@@ -12,7 +12,7 @@ Configure these variables for the operating-system account that runs the applica
 SPRING_PROFILES_ACTIVE=<uat or prod>
 EMAIL_ENABLED=true
 SMTP_HOST=email-smtp.ap-south-1.amazonaws.com
-SMTP_PORT=2587
+SMTP_PORT=587
 SMTP_FROM_EMAIL=<verified AWS SES sender address>
 SMTP_AUTH=true
 SMTP_STARTTLS_ENABLED=true
@@ -32,7 +32,7 @@ Run the appropriate check on the deployed server itself, not on a developer mach
 Linux:
 
 ```bash
-openssl s_client -crlf -quiet -starttls smtp -connect email-smtp.ap-south-1.amazonaws.com:2587
+openssl s_client -crlf -quiet -starttls smtp -connect email-smtp.ap-south-1.amazonaws.com:587
 ```
 
 Windows Server:

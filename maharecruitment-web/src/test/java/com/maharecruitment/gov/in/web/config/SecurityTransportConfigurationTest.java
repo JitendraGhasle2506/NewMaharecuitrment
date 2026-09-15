@@ -59,7 +59,7 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("spring.mail.host"))
                 .isEqualTo("${SMTP_HOST:email-smtp.ap-south-1.amazonaws.com}");
         assertThat(properties.getProperty("spring.mail.port"))
-                .isEqualTo("${SMTP_PORT:2587}");
+                .isEqualTo("${SMTP_PORT:587}");
         assertThat(properties.getProperty("spring.mail.username"))
                 .isNotBlank()
                 .doesNotContain("${");
@@ -70,6 +70,14 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("spring.profiles.default")).isEqualTo("local");
         assertThat(properties.getProperty("server.servlet.context-path"))
                 .isEqualTo("${SERVER_SERVLET_CONTEXT_PATH:/maharecruitment}");
+    }
+
+    @Test
+    void internalAttendanceUsesBundledTrustedCaCertificate() throws Exception {
+        Properties properties = loadProperties("application.properties");
+
+        assertThat(properties.getProperty("attendance.integration.internal.additional-ca-certificate"))
+                .isEqualTo("${ATTENDANCE_INTERNAL_ADDITIONAL_CA_CERTIFICATE:classpath:certificates/isrg-root-x1.pem}");
     }
 
     @Test

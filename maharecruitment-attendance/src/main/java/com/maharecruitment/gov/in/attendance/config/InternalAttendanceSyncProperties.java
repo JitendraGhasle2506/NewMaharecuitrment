@@ -12,6 +12,8 @@ public class InternalAttendanceSyncProperties {
 
     private static final String REPORT_API_PATH = "/third-party/attendance-report-org";
     private static final String UPDATE_API_PATH = "/third-party/update-attendance";
+    private static final String DEFAULT_ADDITIONAL_CA_CERTIFICATE =
+            "classpath:certificates/isrg-root-x1.pem";
 
     private boolean enabled = true;
 
@@ -34,6 +36,8 @@ public class InternalAttendanceSyncProperties {
     private int connectTimeoutSeconds = 5;
 
     private int readTimeoutSeconds = 15;
+
+    private String additionalCaCertificate = DEFAULT_ADDITIONAL_CA_CERTIFICATE;
 
     private boolean stopOnUpstreamUnavailable = true;
 
@@ -137,6 +141,16 @@ public class InternalAttendanceSyncProperties {
 
     public void setReadTimeoutSeconds(int readTimeoutSeconds) {
         this.readTimeoutSeconds = readTimeoutSeconds;
+    }
+
+    public String getAdditionalCaCertificate() {
+        return additionalCaCertificate;
+    }
+
+    public void setAdditionalCaCertificate(String additionalCaCertificate) {
+        this.additionalCaCertificate = StringUtils.hasText(additionalCaCertificate)
+                ? additionalCaCertificate.trim()
+                : DEFAULT_ADDITIONAL_CA_CERTIFICATE;
     }
 
     public boolean isStopOnUpstreamUnavailable() {
