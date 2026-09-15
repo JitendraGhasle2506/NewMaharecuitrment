@@ -729,10 +729,13 @@ public class HROnboardingPageServiceImpl implements HROnboardingPageService {
                 employee.getFullName(),
                 employee.getEmail(),
                 displayValue(employee.getDesignation()),
-                employee.getMahaitJoiningDate(),
-                employee.getRecruitmentType(),
-                displayValue(employee.getAgencyName()),
-                employee.getStatus());
+               employee.getMahaitJoiningDate(),
+               employee.getRecruitmentType(),
+               displayValue(employee.getAgencyName()),
+               displayValue(employee.getCellName()),
+               displayValue(employee.getReportingManagerName()),
+               displayValue(employee.getReportingHodName()),
+               employee.getStatus());
     }
 
     private EmployeeAgencyFilterView toEmployeeAgencyFilterView(EmployeeAgencyFilterProjection agency) {

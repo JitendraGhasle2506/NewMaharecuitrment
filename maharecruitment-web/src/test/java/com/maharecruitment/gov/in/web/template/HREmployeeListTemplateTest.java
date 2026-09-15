@@ -21,35 +21,43 @@ class HREmployeeListTemplateTest {
 
         assertThat(employeeRows)
                 .contains("@{/hr/employees/{employeeId}")
-                .contains("fa-regular fa-eye")
-                .contains("> View")
+                .contains("employee-view-link")
+                .contains("View <i class=\"fa-solid fa-arrow-right\"")
+                .doesNotContain("emp.employeeCode")
                 .doesNotContain("employee-location-mappings")
                 .doesNotContain("employee-cell-mappings");
     }
 
     @Test
-    void employeeListShowsOnlyRequestedColumnsAndAgencyFilter() throws Exception {
+    void employeeListShowsCompactDirectoryFiltersAndActions() throws Exception {
         String template = Files.readString(EMPLOYEE_LIST_TEMPLATE);
         int tableHeadStart = template.indexOf("<thead");
         int tableHeadEnd = template.indexOf("</thead>", tableHeadStart);
         String tableHead = template.substring(tableHeadStart, tableHeadEnd);
 
         assertThat(tableHead)
-                .contains("Employee Information")
-                .contains("Employee Code")
-                .contains("Agency")
-                .contains("Designation")
-                .contains("Mahait Joining Date")
-                .contains("Type")
+                .contains("Employee")
+                .contains("Organisation")
+                .contains("Assignment")
+                .contains("Reporting")
+                .contains("Joined")
                 .contains("Status")
                 .contains("Action")
                 .doesNotContain("Project Name");
 
         assertThat(template)
+                .contains("employee-status-tabs")
+                .contains("/hr/employees/resigned")
+                .contains("id=\"employeeSearch\"")
                 .contains("id=\"employeeAgencyFilter\"")
                 .contains("name=\"agencyId\"")
-                .contains("All Agencies")
+                .contains("All agencies")
+                .contains("data-auto-submit")
                 .contains("agencyId=${currentAgencyId}")
-                .contains("colspan=\"8\"");
+                .contains("/hr/employees/export/excel")
+                .contains("Export Excel")
+                .contains("employee-list.css")
+                .contains("employee-list.js")
+                .contains("colspan=\"7\"");
     }
 }

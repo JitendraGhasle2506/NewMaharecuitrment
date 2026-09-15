@@ -5,231 +5,255 @@
     <meta charset="UTF-8">
     <title>Employees</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
-    <style>
-        .employee-table-card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            margin-bottom: 2rem;
-        }
-
-        .employee-table-card .header {
-            padding: 1.5rem 2rem;
-            background: #fff;
-            border-bottom: 1px solid #edf2f7;
-            border-radius: 12px 12px 0 0;
-        }
-
-        .status-badge {
-            padding: 0.35em 0.8em;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border-radius: 6px;
-        }
-
-        .status-active {
-            background-color: #e6fffa;
-            color: #2c7a7b;
-        }
-
-        .employee-avatar {
-            width: 36px;
-            height: 36px;
-            background: #f7fafc;
-            border: 1px solid #edf2f7;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: #4a5568;
-        }
-
-        .employee-filter-form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: flex-end;
-            justify-content: flex-end;
-        }
-
-        .employee-filter-field {
-            min-width: 150px;
-        }
-
-        .employee-filter-search {
-            min-width: 260px;
-            flex: 1 1 280px;
-        }
-
-        .employee-filter-actions {
-            display: flex;
-            gap: 8px;
-            align-items: flex-end;
-        }
-
-        .employee-detail-link {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .employee-detail-link:hover {
-            color: var(--primary, #0d6efd);
-            text-decoration: underline;
-        }
-    </style>
+    <link rel="stylesheet" th:href="@{/css/employee-list.css(v='20260915')}">
+    <script th:src="@{/js/employee-list.js(v='20260915')}" defer></script>
 </head>
 
 <body class="hr-shell">
 
     <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'Employees', ~{::section})}">
         <section>
-            <div class="card employee-table-card">
-                <div class="header d-flex flex-wrap justify-content-between align-items-end gap-3">
-                    <div>
-                        <h2 class="mb-0" th:text="${pageTitle != null ? pageTitle : 'Employees'}">Employees</h2>
-                        <p class="text-muted mb-0" th:text="${pageSubtitle != null ? pageSubtitle : 'Employee list'}">Employee list</p>
-                    </div>
-                    <div class="d-flex flex-wrap gap-2">
+            <div class="card employee-table-card"
+                th:with="hasFilters=${currentType != 'ALL' or currentAgencyId != null or !#strings.isEmpty(searchTerm)}">
+                <div class="employee-page-header">
+                    <div class="employee-heading-row">
+                        <div class="employee-heading">
+                            <div class="employee-title-line">
+                                <span class="employee-title-icon" aria-hidden="true">
+                                    <i class="fa-solid fa-users"></i>
+                                </span>
+                                <div>
+                                    <h2 th:text="${pageTitle != null ? pageTitle : 'Employees'}">Employees</h2>
+                                    <p th:text="${pageSubtitle != null ? pageSubtitle : 'Employee list'}">Employee list</p>
+                                </div>
+                            </div>
+                            <div class="employee-header-meta" aria-live="polite">
+                                <span><strong th:text="${employeePage.totalElements}">0</strong> employees</span>
+                                <span th:text="${currentType == 'ALL' ? 'All employment types' : #strings.capitalize(#strings.toLowerCase(currentType))}">All employment types</span>
+                            </div>
+                        </div>
+
+                        <div class="employee-actions">
+                        <a class="btn btn-success btn-sm"
+                            th:href="@{/hr/employees/export/excel(status=${currentStatus},type=${currentType},agencyId=${currentAgencyId},search=${searchTerm})}"
+                            title="Download all employees matching the current filters">
+                            <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
+                            <span>Export Excel</span>
+                        </a>
                         <a class="btn btn-outline-primary btn-sm"
                             th:if="${currentStatus == 'ACTIVE'}"
                             th:href="@{/hr/employees/import}">
-                            <i class="fa-solid fa-file-import me-1"></i> Import CSV
+                            <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+                            <span>Import CSV</span>
                         </a>
-                        <a class="btn btn-outline-primary btn-sm"
-                            th:if="${currentStatus == 'ACTIVE'}"
-                            th:href="@{/hr/employee-location-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
-                            <i class="fa-solid fa-location-dot me-1"></i> Location Mapping
-                        </a>
-                        <a class="btn btn-outline-primary btn-sm"
-                            th:if="${currentStatus == 'ACTIVE'}"
-                            th:href="@{/hr/employee-cell-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
-                            <i class="fa-solid fa-table-cells me-1"></i> Cell Mapping
-                        </a>
-                    </div>
-                    <div class="d-flex align-items-end gap-2 flex-grow-1 justify-content-end flex-wrap">
-                        <div class="filter-group flex-grow-1" style="max-width: 1040px;">
-                            <form autocomplete="off" method="get"
-                                class="employee-filter-form"
-                                th:action="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
-                                <input autocomplete="off" type="hidden" name="page" value="0">
-                                <div class="employee-filter-field employee-filter-search">
-                                    <label class="form-label mb-1">Search</label>
-                                    <input autocomplete="off" type="text"
-                                        name="search"
-                                        class="form-control form-control-sm"
-                                        th:value="${searchTerm}"
-                                        placeholder="Employee name, code or email">
-                                </div>
-                                <div class="employee-filter-field">
-                                    <label class="form-label mb-1" for="employeeAgencyFilter">Agency</label>
-                                    <select autocomplete="off" id="employeeAgencyFilter" name="agencyId" class="form-select form-select-sm">
-                                        <option value="" th:selected="${currentAgencyId == null}">All Agencies</option>
-                                        <option th:each="agency : ${agencyOptions}"
-                                            th:value="${agency.agencyId}"
-                                            th:text="${agency.agencyName}"
-                                            th:selected="${currentAgencyId == agency.agencyId}">
-                                            Agency
-                                        </option>
-                                    </select>
-                                </div>
-                                <div class="employee-filter-field">
-                                    <label class="form-label mb-1">Type</label>
-                                    <select autocomplete="off" name="type" class="form-select form-select-sm">
-                                        <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
-                                        <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
-                                        <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
-                                    </select>
-                                </div>
-                                <div class="employee-filter-field">
-                                    <label class="form-label mb-1">Page Size</label>
-                                    <select autocomplete="off" name="size" class="form-select form-select-sm">
-                                        <option value="10" th:selected="${pageSize == 10}">10 per page</option>
-                                        <option value="25" th:selected="${pageSize == 25}">25 per page</option>
-                                        <option value="50" th:selected="${pageSize == 50}">50 per page</option>
-                                    </select>
-                                </div>
-                                <div class="employee-filter-actions">
-                                    <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
-                                    <a class="btn btn-outline-secondary btn-sm"
-                                        th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
-                                        Clear
-                                    </a>
-                                </div>
-                            </form>
+                            <div class="dropdown" th:if="${currentStatus == 'ACTIVE'}">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-gear" aria-hidden="true"></i>
+                                    <span>Manage</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item"
+                                            th:href="@{/hr/employee-location-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                                            <i class="fa-solid fa-location-dot" aria-hidden="true"></i> Location mapping
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item"
+                                            th:href="@{/hr/employee-cell-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                                            <i class="fa-solid fa-table-cells" aria-hidden="true"></i> Cell mapping
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
+                    </div>
+
+                    <nav class="employee-status-tabs" aria-label="Employee status">
+                        <a th:href="@{/hr/employees(type=${currentType},agencyId=${currentAgencyId},search=${searchTerm},size=${employeePage.size})}"
+                            th:classappend="${currentStatus == 'ACTIVE'} ? ' active'"
+                            th:attr="aria-current=${currentStatus == 'ACTIVE'} ? 'page'">
+                            <i class="fa-solid fa-user-check" aria-hidden="true"></i> Active
+                        </a>
+                        <a th:href="@{/hr/employees/resigned(type=${currentType},agencyId=${currentAgencyId},search=${searchTerm},size=${employeePage.size})}"
+                            th:classappend="${currentStatus == 'RESIGNED'} ? ' active'"
+                            th:attr="aria-current=${currentStatus == 'RESIGNED'} ? 'page'">
+                            <i class="fa-solid fa-user-clock" aria-hidden="true"></i> Resigned
+                        </a>
+                    </nav>
+                </div>
+
+                <div class="employee-filter-panel">
+                    <form id="employeeFilterForm" autocomplete="off" method="get"
+                        class="employee-filter-form"
+                        th:action="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
+                        <input type="hidden" name="page" value="0">
+                        <div class="employee-filter-field employee-filter-search">
+                            <label class="form-label" for="employeeSearch">Search employees</label>
+                            <div class="employee-search-input">
+                                <!-- <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> -->
+                                <input id="employeeSearch" autocomplete="off" type="search" name="search"
+                                    class="form-control" th:value="${searchTerm}"
+                                    placeholder="Name, email, cell or project manager"
+                                    aria-label="Search by employee name, email, cell or project manager">
+                            </div>
+                        </div>
+                        <div class="employee-filter-field">
+                            <label class="form-label" for="employeeTypeFilter">Employment type</label>
+                            <select id="employeeTypeFilter" name="type" class="form-select" data-auto-submit>
+                                <option value="ALL" th:selected="${currentType == 'ALL'}">All types</option>
+                                <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
+                                <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
+                            </select>
+                        </div>
+                        <div class="employee-filter-field employee-filter-agency">
+                            <label class="form-label" for="employeeAgencyFilter">Agency</label>
+                            <select id="employeeAgencyFilter" name="agencyId" class="form-select" data-auto-submit>
+                                <option value="" th:selected="${currentAgencyId == null}">All agencies</option>
+                                <option th:each="agency : ${agencyOptions}"
+                                    th:value="${agency.agencyId}"
+                                    th:text="${agency.agencyName}"
+                                    th:selected="${currentAgencyId == agency.agencyId}">Agency</option>
+                            </select>
+                        </div>
+                        <div class="employee-filter-field employee-filter-size">
+                            <label class="form-label" for="employeePageSize">Rows</label>
+                            <select id="employeePageSize" name="size" class="form-select" data-auto-submit>
+                                <option value="10" th:selected="${pageSize == 10}">10</option>
+                                <option value="25" th:selected="${pageSize == 25}">25</option>
+                                <option value="50" th:selected="${pageSize == 50}">50</option>
+                            </select>
+                        </div>
+                        <div class="employee-filter-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Search
+                            </button>
+                            <a class="btn btn-outline-secondary" th:if="${hasFilters}"
+                                th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
+                                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                                <span>Reset</span>
+                            </a>
+                        </div>
+                    </form>
+
+                    <div class="employee-active-filters" th:if="${hasFilters}">
+                        <span class="employee-active-filters-label">Filtered by:</span>
+                        <span class="employee-filter-chip" th:if="${!#strings.isEmpty(searchTerm)}">
+                            Search: <strong th:text="${searchTerm}">term</strong>
+                        </span>
+                        <span class="employee-filter-chip" th:if="${currentType != 'ALL'}"
+                            th:text="${#strings.capitalize(#strings.toLowerCase(currentType))}">Internal</span>
+                        <span class="employee-filter-chip" th:each="agency : ${agencyOptions}"
+                            th:if="${currentAgencyId != null and currentAgencyId == agency.agencyId}">
+                            <i class="fa-solid fa-building" aria-hidden="true"></i>
+                            <span th:text="|Agency: ${agency.agencyName}|">Agency name</span>
+                        </span>
                     </div>
                 </div>
                 <div class="card-body p-0">
                     <div th:if="${successMessage}" class="alert alert-success m-3" th:text="${successMessage}"></div>
                     <div th:if="${errorMessage}" class="alert alert-danger m-3" th:text="${errorMessage}"></div>
 
-                    <div class="px-4 pt-3 text-muted small"
-                        th:text="${employeePage.totalElements > 0 ? 'Showing ' + (employeePage.number * employeePage.size + 1) + ' to ' + (employeePage.number * employeePage.size + employeePage.numberOfElements) + ' of ' + employeePage.totalElements + ' employees' : 'No employee records found for the current filter'}">
-                        Showing 1 to 10 of 10 employees
+                    <div class="employee-result-bar">
+                        <div>
+                            <span class="employee-result-count"
+                                th:text="${employeePage.totalElements > 0 ? 'Showing ' + (employeePage.number * employeePage.size + 1) + '–' + (employeePage.number * employeePage.size + employeePage.numberOfElements) + ' of ' + employeePage.totalElements : 'No employees found'}">
+                                Showing 1–10 of 10
+                            </span>
+                            <span class="employee-result-sort">
+                                <i class="fa-solid fa-arrow-down-a-z" aria-hidden="true"></i> Sorted by name
+                            </span>
+                        </div>
+                        <span class="employee-scroll-hint">
+                            <i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i> Scroll for more
+                        </span>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
+                    <div class="table-responsive employee-table-wrap">
+                        <table class="table table-hover align-middle mb-0 employee-details-table">
+                            <thead>
                                 <tr>
-                                    <th class="ps-4">Employee Information</th>
-                                    <th>Employee Code</th>
-                                    <th>Agency</th>
-                                    <th>Designation</th>
-                                    <th>Mahait Joining Date</th>
-                                    <th>Type</th>
+                                    <th class="employee-primary-column">Employee</th>
+                                    <th>Organisation</th>
+                                    <th>Assignment</th>
+                                    <th>Reporting</th>
+                                    <th>Joined</th>
                                     <th>Status</th>
-                                    <th class="text-end pe-4">Action</th>
+                                    <th class="employee-action-column"><span class="visually-hidden">Action</span></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:each="emp : ${employees}">
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="employee-avatar me-3"
-                                                th:text="${#strings.substring(emp.fullName, 0, 1)}">E</div>
-                                            <div>
-                                                <a class="employee-detail-link fw-bold"
+                                    <td data-label="Employee" class="employee-primary-column">
+                                        <div class="employee-identity">
+                                            <div class="employee-avatar"
+                                                th:text="${!#strings.isEmpty(emp.fullName) ? #strings.substring(emp.fullName, 0, 1) : '?'}">E</div>
+                                            <div class="employee-identity-text">
+                                                <a class="employee-detail-link"
                                                     th:href="@{/hr/employees/{employeeId}(employeeId=${emp.employeeId},status=${currentStatus},type=${currentType},agencyId=${currentAgencyId},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}"
-                                                    th:text="${emp.fullName}">
-                                                    Full Name
-                                                </a>
-                                                <small class="text-muted" th:text="${emp.email}">email@domain.com</small>
+                                                    th:text="${!#strings.isEmpty(emp.fullName) ? emp.fullName : 'Unnamed employee'}">Full Name</a>
+                                                <div class="employee-identity-meta">
+                                                    <span th:if="${!#strings.isEmpty(emp.recruitmentType)}"
+                                                        th:text="${#strings.capitalize(#strings.toLowerCase(emp.recruitmentType))}">Internal</span>
+                                                </div>
+                                                <a class="employee-email" th:if="${!#strings.isEmpty(emp.email)}"
+                                                    th:href="|mailto:${emp.email}|" th:text="${emp.email}">email@domain.com</a>
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
-                                        <a class="employee-detail-link"
-                                            th:href="@{/hr/employees/{employeeId}(employeeId=${emp.employeeId},status=${currentStatus},type=${currentType},agencyId=${currentAgencyId},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
-                                            <span class="badge bg-secondary-subtle text-secondary-emphasis"
-                                                th:text="${emp.employeeCode}">EMP001</span>
-                                        </a>
+                                    <td data-label="Organisation">
+                                        <div class="employee-cell-stack">
+                                            <strong th:text="${!#strings.isEmpty(emp.designation) ? emp.designation : 'Not assigned'}">Designation</strong>
+                                            <span th:text="${!#strings.isEmpty(emp.agencyName) ? emp.agencyName : 'No agency'}">Agency</span>
+                                        </div>
                                     </td>
-                                    <td th:text="${emp.agencyName}">Agency</td>
-                                    <td th:text="${emp.designation}">Designation</td>
-                                    <td th:text="${emp.mahaitJoiningDate != null ? #temporals.format(emp.mahaitJoiningDate, 'dd-MM-yyyy') : '-'}">01-01-2024</td>
-                                    <td>
-                                        <span th:if="${emp.recruitmentType == 'INTERNAL'}" class="badge bg-info">Internal</span>
-                                        <span th:if="${emp.recruitmentType == 'EXTERNAL'}" class="badge bg-secondary">External</span>
-                                        <span th:if="${emp.recruitmentType == null}" class="badge bg-light text-dark">-</span>
+                                    <td data-label="Assignment">
+                                        <div class="employee-cell-stack">
+                                            <strong th:text="${!#strings.isEmpty(emp.cellName) ? emp.cellName : 'Not mapped'}">Cell</strong>
+                                            <span th:text="${!#strings.isEmpty(emp.recruitmentType) ? #strings.capitalize(#strings.toLowerCase(emp.recruitmentType)) + ' employee' : 'Type not set'}">Internal employee</span>
+                                        </div>
                                     </td>
-                                    <td>
+                                    <td data-label="Reporting">
+                                        <div class="employee-cell-stack employee-reporting-stack">
+                                            <span>
+                                                <small>Project manager</small>
+                                                <strong th:text="${!#strings.isEmpty(emp.reportingManagerName) ? emp.reportingManagerName : 'Not assigned'}">Manager</strong>
+                                            </span>
+                                            <span>
+                                                <small>HOD</small>
+                                                <strong th:text="${!#strings.isEmpty(emp.reportingHodName) ? emp.reportingHodName : 'Not assigned'}">HOD</strong>
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td data-label="Joined" class="employee-date-cell"
+                                        th:text="${emp.mahaitJoiningDate != null ? #temporals.format(emp.mahaitJoiningDate, 'dd MMM yyyy') : '—'}">01 Jan 2024</td>
+                                    <td data-label="Status">
                                         <span class="status-badge"
-                                            th:classappend="${emp.status == 'ACTIVE'} ? ' status-active' : ' bg-danger-subtle text-danger-emphasis'"
-                                            th:text="${emp.status}">ACTIVE</span>
+                                            th:classappend="${emp.status == 'ACTIVE'} ? ' status-active' : ' status-resigned'">
+                                            <i class="fa-solid fa-circle" aria-hidden="true"></i>
+                                            <span th:text="${!#strings.isEmpty(emp.status) ? #strings.capitalize(#strings.toLowerCase(emp.status)) : 'Unknown'}">Active</span>
+                                        </span>
                                     </td>
-                                    <td class="text-end pe-4">
-                                        <a class="btn btn-primary btn-sm px-3"
+                                    <td data-label="Action" class="employee-action-column">
+                                        <a class="employee-view-link"
                                             th:href="@{/hr/employees/{employeeId}(employeeId=${emp.employeeId},status=${currentStatus},type=${currentType},agencyId=${currentAgencyId},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}"
                                             th:attr="aria-label=|View details for ${emp.fullName}|">
-                                            <i class="fa-regular fa-eye me-1" aria-hidden="true"></i> View
+                                            View <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                                         </a>
                                     </td>
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(employees)}">
-                                    <td colspan="8" class="text-center py-5 text-muted">
-                                        No employee records found.
+                                    <td colspan="7" class="employee-empty-state">
+                                        <span class="employee-empty-icon" aria-hidden="true">
+                                            <i class="fa-solid fa-user-slash"></i>
+                                        </span>
+                                        <h3>No employees found</h3>
+                                        <p>Try changing your search or filters.</p>
+                                        <a class="btn btn-outline-primary btn-sm" th:if="${hasFilters}"
+                                            th:href="${currentStatus == 'RESIGNED'} ? @{/hr/employees/resigned} : @{/hr/employees}">
+                                            Clear all filters
+                                        </a>
                                     </td>
                                 </tr>
                             </tbody>

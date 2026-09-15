@@ -1,7 +1,15 @@
 package com.maharecruitment.gov.in.web.controller.hr;
 
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -14,10 +22,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.web.service.hr.EmployeeListExcelExporter;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeOnboardingDetailView;
 import com.maharecruitment.gov.in.workorder.service.HrWorkOrderService;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @Controller
 @RequestMapping("/hr/employees")
@@ -26,15 +37,20 @@ public class EmployeeListController {
 
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 50;
+    private static final String EXCEL_CONTENT_TYPE =
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     private final HROnboardingPageService hrOnboardingPageService;
     private final HrWorkOrderService hrWorkOrderService;
+    private final EmployeeListExcelExporter employeeListExcelExporter;
 
     public EmployeeListController(
             HROnboardingPageService hrOnboardingPageService,
-            HrWorkOrderService hrWorkOrderService) {
+            HrWorkOrderService hrWorkOrderService,
+            EmployeeListExcelExporter employeeListExcelExporter) {
         this.hrOnboardingPageService = hrOnboardingPageService;
         this.hrWorkOrderService = hrWorkOrderService;
+        this.employeeListExcelExporter = employeeListExcelExporter;
     }
 
     @GetMapping
@@ -57,6 +73,40 @@ public class EmployeeListController {
             @RequestParam(name = "search", required = false) String search,
             Model model) {
         return renderEmployeeList(type, "RESIGNED", agencyId, page, size, search, model);
+    }
+
+    @GetMapping("/export/excel")
+    public void exportEmployeesToExcel(
+            @RequestParam(required = false, defaultValue = "ACTIVE") String status,
+            @RequestParam(required = false, defaultValue = "ALL") String type,
+            @RequestParam(required = false) Long agencyId,
+            @RequestParam(name = "search", required = false) String search,
+            HttpServletResponse response) throws IOException {
+        String normalizedStatus = normalizeStatus(status);
+        String normalizedType = normalizeType(type);
+        Long normalizedAgencyId = normalizeAgencyId(agencyId);
+        String normalizedSearch = normalizeSearch(search);
+
+        Page<EmployeeListView> employeePage = hrOnboardingPageService.getEmployeesByStatus(
+                normalizedType,
+                normalizedStatus,
+                normalizedSearch,
+                normalizedAgencyId,
+                Pageable.unpaged(employeeSort()));
+        List<EmployeeListView> employees = employeePage.getContent();
+
+        String fileName = normalizedStatus.toLowerCase()
+                + "-employees-"
+                + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
+                + ".xlsx";
+        response.setContentType(EXCEL_CONTENT_TYPE);
+        response.setHeader(
+                HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition.attachment().filename(fileName).build().toString());
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store, max-age=0");
+        response.setHeader(HttpHeaders.PRAGMA, "no-cache");
+        response.setHeader("X-Content-Type-Options", "nosniff");
+        employeeListExcelExporter.write(employees, normalizedStatus, response.getOutputStream());
     }
 
     @GetMapping("/{employeeId}")
@@ -163,10 +213,14 @@ public class EmployeeListController {
         var pageRequest = PageRequest.of(
                 page,
                 size,
-                Sort.by(
-                        Sort.Order.asc("fullName").ignoreCase(),
-                        Sort.Order.asc("employeeId")));
+                employeeSort());
         return hrOnboardingPageService.getEmployeesByStatus(type, status, search, agencyId, pageRequest);
+    }
+
+    private Sort employeeSort() {
+        return Sort.by(
+                Sort.Order.asc("employee.fullName").ignoreCase(),
+                Sort.Order.asc("employee.employeeId"));
     }
 
     private int resolvePageSize(int size) {

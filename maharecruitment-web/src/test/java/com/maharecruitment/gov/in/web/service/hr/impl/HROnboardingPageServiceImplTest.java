@@ -3,6 +3,7 @@ package com.maharecruitment.gov.in.web.service.hr.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -19,6 +20,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
@@ -46,6 +49,7 @@ import com.maharecruitment.gov.in.recruitment.repository.AgencyCandidatePreOnboa
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeLocationMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentDesignationVacancyRepository;
+import com.maharecruitment.gov.in.recruitment.repository.projection.EmployeeListProjection;
 import com.maharecruitment.gov.in.web.dto.agency.AgencyPreOnboardingForm;
 import com.maharecruitment.gov.in.web.dto.hr.EmployeeOnboardingResult;
 import com.maharecruitment.gov.in.web.service.onboarding.CandidateIdentityValidationService;
@@ -88,6 +92,36 @@ class HROnboardingPageServiceImplTest {
 
     @InjectMocks
     private HROnboardingPageServiceImpl service;
+
+    @Test
+    void employeeListIncludesCellManagerAndHodDetails() {
+        var pageable = PageRequest.of(0, 10);
+        EmployeeListProjection projection = mock(EmployeeListProjection.class);
+        when(projection.getEmployeeId()).thenReturn(10L);
+        when(projection.getEmployeeCode()).thenReturn("EMP-010");
+        when(projection.getFullName()).thenReturn("Asha Patil");
+        when(projection.getEmail()).thenReturn("asha.patil@example.test");
+        when(projection.getDesignation()).thenReturn("Project Manager");
+        when(projection.getMahaitJoiningDate()).thenReturn(LocalDate.of(2026, 9, 1));
+        when(projection.getRecruitmentType()).thenReturn("INTERNAL");
+        when(projection.getAgencyName()).thenReturn("MAHAIT");
+        when(projection.getCellName()).thenReturn("Application Cell");
+        when(projection.getReportingManagerName()).thenReturn("Ravi Shah");
+        when(projection.getReportingHodName()).thenReturn("Meera Joshi");
+        when(projection.getStatus()).thenReturn("ACTIVE");
+        when(employeeRepository.findEmployeeListPageByStatusAndFilters(
+                "ACTIVE", "INTERNAL", 3L, "%ASHA%", pageable))
+                .thenReturn(new PageImpl<>(List.of(projection), pageable, 1));
+
+        var result = service.getEmployeesByStatus(
+                "internal", "active", " asha ", 3L, pageable);
+
+        assertThat(result.getContent()).singleElement().satisfies(employee -> {
+            assertThat(employee.cellName()).isEqualTo("Application Cell");
+            assertThat(employee.reportingManagerName()).isEqualTo("Ravi Shah");
+            assertThat(employee.reportingHodName()).isEqualTo("Meera Joshi");
+        });
+    }
 
     @Test
     void onboardingLookupUsesPessimisticWriteLock() throws NoSuchMethodException {

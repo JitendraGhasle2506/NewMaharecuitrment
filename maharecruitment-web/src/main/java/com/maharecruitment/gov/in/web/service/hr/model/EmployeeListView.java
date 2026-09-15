@@ -11,5 +11,8 @@ public record EmployeeListView(
         LocalDate mahaitJoiningDate,
         String recruitmentType,
         String agencyName,
+        String cellName,
+        String reportingManagerName,
+        String reportingHodName,
         String status) {
 }

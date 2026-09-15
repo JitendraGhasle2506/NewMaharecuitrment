@@ -20,5 +20,11 @@ public interface EmployeeListProjection {
 
     String getAgencyName();
 
+    String getCellName();
+
+    String getReportingManagerName();
+
+    String getReportingHodName();
+
     String getStatus();
 }
