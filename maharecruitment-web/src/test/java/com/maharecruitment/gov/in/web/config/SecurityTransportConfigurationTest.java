@@ -54,6 +54,18 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("security.password-reset.resend-cooldown-seconds")).isEqualTo("30");
         assertThat(properties.getProperty("maharecruitment.sms.acl.resend-cooldown"))
                 .isEqualTo("${SMS_OTP_RESEND_COOLDOWN:30s}");
+        assertThat(properties.getProperty("spring.mail.protocol"))
+                .isEqualTo("${SMTP_PROTOCOL:smtp}");
+        assertThat(properties.getProperty("spring.mail.host"))
+                .isEqualTo("${SMTP_HOST:email-smtp.ap-south-1.amazonaws.com}");
+        assertThat(properties.getProperty("spring.mail.port"))
+                .isEqualTo("${SMTP_PORT:2587}");
+        assertThat(properties.getProperty("spring.mail.username"))
+                .isNotBlank()
+                .doesNotContain("${");
+        assertThat(properties.getProperty("spring.mail.password"))
+                .isNotBlank()
+                .doesNotContain("${");
         assertThat(properties.getProperty("spring.profiles.active")).isNull();
         assertThat(properties.getProperty("spring.profiles.default")).isEqualTo("local");
         assertThat(properties.getProperty("server.servlet.context-path"))
@@ -85,6 +97,9 @@ class SecurityTransportConfigurationTest {
             assertThat(properties.getProperty("security.host-validation.enabled"))
                     .as(fileName)
                     .isEqualTo("${SECURITY_HOST_VALIDATION_ENABLED:false}");
+            assertThat(properties.getProperty("app.service.sms-enabled"))
+                    .as(fileName)
+                    .isEqualTo("${SMS_ENABLED:true}");
         }
     }
 
