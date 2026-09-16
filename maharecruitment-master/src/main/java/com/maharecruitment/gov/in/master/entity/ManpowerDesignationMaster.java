@@ -5,6 +5,8 @@ import java.util.Set;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -51,6 +53,11 @@ public class ManpowerDesignationMaster extends Auditable {
     @Column(name = "role_name", length = 200)
     private String roleName;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "designation_type", nullable = false, length = 1)
+    @Builder.Default
+    private DesignationType designationType = DesignationType.O;
+
     @Column(name = "educational_qualification", length = 500)
     private String educationalQualification;
 
@@ -80,6 +87,9 @@ public class ManpowerDesignationMaster extends Auditable {
         }
         if (roleName != null) {
             roleName = roleName.trim();
+        }
+        if (designationType == null) {
+            designationType = DesignationType.O;
         }
         if (educationalQualification != null) {
             educationalQualification = educationalQualification.trim();

@@ -22,6 +22,7 @@ import org.springframework.util.StringUtils;
 import com.maharecruitment.gov.in.master.entity.LocationMaster;
 import com.maharecruitment.gov.in.master.repository.LocationMasterRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeRecruitmentType;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeLocationMappingAuditLogEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeLocationMappingEntity;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
@@ -447,8 +448,7 @@ public class EmployeeLocationMappingPageServiceImpl implements EmployeeLocationM
         if (!StringUtils.hasText(recruitmentType) || "ALL".equalsIgnoreCase(recruitmentType)) {
             return null;
         }
-        String normalized = recruitmentType.trim().toUpperCase();
-        return "INTERNAL".equals(normalized) || "EXTERNAL".equals(normalized) ? normalized : null;
+        return EmployeeRecruitmentType.normalizeOrNull(recruitmentType);
     }
 
     private String buildSearchPattern(String searchText) {

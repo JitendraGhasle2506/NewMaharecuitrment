@@ -55,6 +55,7 @@
                                     <th>SR No.</th>
                                     <th>Category</th>
                                     <th>Designation Name</th>
+                                    <th>Designation Type</th>
                                     <!-- <th>Role</th> -->
                                     <th>Levels</th>
                                     <th>Status</th>
@@ -63,12 +64,18 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${designations.isEmpty()}">
-                                    <td colspan="6" class="text-center text-muted">No records found</td>
+                                    <td colspan="7" class="text-center text-muted">No records found</td>
                                 </tr>
                                 <tr th:each="item, itemStat : ${designations.content}">
                                     <td th:text="${designations.number * designations.size + itemStat.count}"></td>
                                     <td th:text="${item.category}"></td>
                                     <td th:text="${item.designationName}"></td>
+                                    <td>
+                                        <span class="badge text-bg-light border"
+                                            th:text="${item.designationType != null ? item.designationType.name() + ' - ' + item.designationType.displayName : 'O - Other'}">
+                                            O - Other
+                                        </span>
+                                    </td>
                                     <!-- <td th:text="${item.roleName}"></td> -->
                                     <td>
                                         <span th:if="${item.levels == null or item.levels.isEmpty()}"

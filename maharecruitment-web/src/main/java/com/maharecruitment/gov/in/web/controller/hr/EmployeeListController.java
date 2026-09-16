@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeRecruitmentType;
 import com.maharecruitment.gov.in.web.service.hr.EmployeeListExcelExporter;
 import com.maharecruitment.gov.in.web.service.hr.HROnboardingPageService;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeListView;
@@ -234,11 +235,8 @@ public class EmployeeListController {
         if (!StringUtils.hasText(type)) {
             return "ALL";
         }
-        String normalizedType = type.trim().toUpperCase();
-        if ("INTERNAL".equals(normalizedType) || "EXTERNAL".equals(normalizedType)) {
-            return normalizedType;
-        }
-        return "ALL";
+        String supportedType = EmployeeRecruitmentType.normalizeOrNull(type);
+        return supportedType != null ? supportedType : "ALL";
     }
 
     private String normalizeSearch(String search) {

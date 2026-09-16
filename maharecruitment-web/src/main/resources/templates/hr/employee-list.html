@@ -105,6 +105,7 @@
                                 <option value="ALL" th:selected="${currentType == 'ALL'}">All types</option>
                                 <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
                                 <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
+                                <option value="MAHAIT" th:selected="${currentType == 'MAHAIT'}">MAHAIT</option>
                             </select>
                         </div>
                         <div class="employee-filter-field employee-filter-agency">
@@ -143,7 +144,7 @@
                             Search: <strong th:text="${searchTerm}">term</strong>
                         </span>
                         <span class="employee-filter-chip" th:if="${currentType != 'ALL'}"
-                            th:text="${#strings.capitalize(#strings.toLowerCase(currentType))}">Internal</span>
+                            th:text="${currentType == 'MAHAIT' ? 'MAHAIT' : #strings.capitalize(#strings.toLowerCase(currentType))}">Internal</span>
                         <span class="employee-filter-chip" th:each="agency : ${agencyOptions}"
                             th:if="${currentAgencyId != null and currentAgencyId == agency.agencyId}">
                             <i class="fa-solid fa-building" aria-hidden="true"></i>
@@ -195,7 +196,7 @@
                                                     th:text="${!#strings.isEmpty(emp.fullName) ? emp.fullName : 'Unnamed employee'}">Full Name</a>
                                                 <div class="employee-identity-meta">
                                                     <span th:if="${!#strings.isEmpty(emp.recruitmentType)}"
-                                                        th:text="${#strings.capitalize(#strings.toLowerCase(emp.recruitmentType))}">Internal</span>
+                                                        th:text="${emp.recruitmentType == 'MAHAIT' ? 'MAHAIT' : #strings.capitalize(#strings.toLowerCase(emp.recruitmentType))}">Internal</span>
                                                 </div>
                                                 <a class="employee-email" th:if="${!#strings.isEmpty(emp.email)}"
                                                     th:href="|mailto:${emp.email}|" th:text="${emp.email}">email@domain.com</a>
@@ -211,7 +212,7 @@
                                     <td data-label="Assignment">
                                         <div class="employee-cell-stack">
                                             <strong th:text="${!#strings.isEmpty(emp.cellName) ? emp.cellName : 'Not mapped'}">Cell</strong>
-                                            <span th:text="${!#strings.isEmpty(emp.recruitmentType) ? #strings.capitalize(#strings.toLowerCase(emp.recruitmentType)) + ' employee' : 'Type not set'}">Internal employee</span>
+                                            <span th:text="${!#strings.isEmpty(emp.recruitmentType) ? (emp.recruitmentType == 'MAHAIT' ? 'MAHAIT employee' : #strings.capitalize(#strings.toLowerCase(emp.recruitmentType)) + ' employee') : 'Type not set'}">Internal employee</span>
                                         </div>
                                     </td>
                                     <td data-label="Reporting">

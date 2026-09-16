@@ -4,8 +4,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+
+import com.maharecruitment.gov.in.master.entity.DesignationType;
 
 @Getter
 @Setter
@@ -19,6 +22,9 @@ public class ManpowerDesignationMasterRequest {
 
     @NotBlank(message = "Role name is required")
     private String roleName;
+
+    @NotNull(message = "Designation type is required")
+    private DesignationType designationType = DesignationType.O;
     
     @NotBlank(message = "Education Qualification is required")
     private String educationalQualification;

@@ -45,4 +45,22 @@ class EmployeeListControllerTest {
                 .extracting(order -> order.getProperty())
                 .containsExactly("employee.fullName", "employee.employeeId");
     }
+
+    @Test
+    void employeeListAcceptsMahaitTypeFilter() {
+        HROnboardingPageService onboardingService = mock(HROnboardingPageService.class);
+        EmployeeListController controller = new EmployeeListController(
+                onboardingService,
+                mock(HrWorkOrderService.class),
+                mock(EmployeeListExcelExporter.class));
+        when(onboardingService.getEmployeesByStatus(
+                eq("MAHAIT"), eq("ACTIVE"), eq(null), eq(null), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+        when(onboardingService.getAgencyFilterOptions("ACTIVE")).thenReturn(List.of());
+
+        controller.employeeList("mahait", null, 0, 10, null, new ConcurrentModel());
+
+        verify(onboardingService).getEmployeesByStatus(
+                eq("MAHAIT"), eq("ACTIVE"), eq(null), eq(null), any(Pageable.class));
+    }
 }

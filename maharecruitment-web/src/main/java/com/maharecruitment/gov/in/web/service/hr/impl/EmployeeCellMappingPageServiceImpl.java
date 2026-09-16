@@ -23,6 +23,7 @@ import com.maharecruitment.gov.in.master.repository.CellMasterRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeCellMappingAuditLogEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeCellMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeRecruitmentType;
 import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationException;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingAuditLogRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepository;
@@ -374,8 +375,7 @@ public class EmployeeCellMappingPageServiceImpl implements EmployeeCellMappingPa
         if (!StringUtils.hasText(recruitmentType) || "ALL".equalsIgnoreCase(recruitmentType)) {
             return null;
         }
-        String normalized = recruitmentType.trim().toUpperCase();
-        return "INTERNAL".equals(normalized) || "EXTERNAL".equals(normalized) ? normalized : null;
+        return EmployeeRecruitmentType.normalizeOrNull(recruitmentType);
     }
 
     private String buildSearchPattern(String searchText) {

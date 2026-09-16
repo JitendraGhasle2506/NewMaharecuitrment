@@ -50,6 +50,7 @@ class HREmployeeListTemplateTest {
                 .contains("/hr/employees/resigned")
                 .contains("id=\"employeeSearch\"")
                 .contains("id=\"employeeAgencyFilter\"")
+                .contains("value=\"MAHAIT\"")
                 .contains("name=\"agencyId\"")
                 .contains("All agencies")
                 .contains("data-auto-submit")

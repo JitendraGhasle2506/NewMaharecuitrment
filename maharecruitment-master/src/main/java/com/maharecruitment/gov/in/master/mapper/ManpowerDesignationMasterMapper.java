@@ -32,6 +32,7 @@ public class ManpowerDesignationMasterMapper {
                 .category(entity.getCategory())
                 .designationName(entity.getDesignationName())
                 .roleName(entity.getRoleName())
+                .designationType(entity.getDesignationType())
                 .educationalQualification(entity.getEducationalQualification())
                 .certification(entity.getCertification())
                 .activeFlag(entity.getActiveFlag())

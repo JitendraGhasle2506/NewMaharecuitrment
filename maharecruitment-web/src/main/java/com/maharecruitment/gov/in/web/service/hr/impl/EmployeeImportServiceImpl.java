@@ -53,6 +53,7 @@ import com.maharecruitment.gov.in.master.repository.ManpowerDesignationMasterRep
 import com.maharecruitment.gov.in.master.repository.SubDepartmentRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeLocationMappingEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeRecruitmentType;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeLocationMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.web.dto.hr.EmployeeImportResult;
@@ -266,6 +267,34 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
                         "REQ-EXT-001",
                         "ACTIVE",
                         "3",
+                        ""),
+                List.of(
+                        "",
+                        "MAHAIT",
+                        "Sneha Deshmukh",
+                        "sneha.deshmukh@example.com",
+                        "9876543230",
+                        "1991-06-10",
+                        "FEMALE",
+                        "B+",
+                        "Mumbai Office Address",
+                        "Ajay Deshmukh",
+                        "Father",
+                        "9876543231",
+                        "",
+                        "2026-07-01",
+                        "2026-07-01",
+                        "LMNOP1234Q",
+                        "901290129012",
+                        "1",
+                        "1",
+                        "",
+                        "1",
+                        "1",
+                        "L2",
+                        "REQ-MAHAIT-001",
+                        "ACTIVE",
+                        "1",
                         ""));
 
         String csv = rows.stream()
@@ -878,9 +907,10 @@ public class EmployeeImportServiceImpl implements EmployeeImportService {
     }
 
     private String normalizeRecruitmentType(String recruitmentType) {
-        String normalized = normalizeRequiredText(recruitmentType, "recruitmentType").toUpperCase(Locale.ROOT);
-        if (!"INTERNAL".equals(normalized) && !"EXTERNAL".equals(normalized)) {
-            throw new IllegalArgumentException("recruitmentType must be INTERNAL or EXTERNAL.");
+        String normalized = EmployeeRecruitmentType.normalizeOrNull(
+                normalizeRequiredText(recruitmentType, "recruitmentType"));
+        if (normalized == null) {
+            throw new IllegalArgumentException("recruitmentType must be INTERNAL, EXTERNAL, or MAHAIT.");
         }
         return normalized;
     }

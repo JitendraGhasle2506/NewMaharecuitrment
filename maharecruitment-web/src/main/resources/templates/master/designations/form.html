@@ -57,6 +57,16 @@
                         </div>
 
                         <div class="col-md-6">
+                            <label class="form-label">Designation Type <span class="text-danger">*</span></label>
+                            <select autocomplete="off" th:field="*{designationType}" class="form-select" required>
+                                <option value="O">O - Other</option>
+                                <option value="M">M - MAHAIT On Roll</option>
+                            </select>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('designationType')}"
+                                th:errors="*{designationType}"></div>
+                        </div>
+
+                        <div class="col-md-6">
                             <label class="form-label">Status</label>
                             <select autocomplete="off" class="form-select" th:field="*{activeFlag}">
                                 <option value="Y">Active</option>

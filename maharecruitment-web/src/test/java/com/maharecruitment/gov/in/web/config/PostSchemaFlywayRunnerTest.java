@@ -22,6 +22,8 @@ import db.postmigration.V117__internal_vacancy_hiring_request_details;
 import db.postmigration.V118__internal_vacancy_replacement_employee_mapping;
 import db.postmigration.V119__internal_vacancy_multiple_replacement_employees;
 import db.postmigration.V121__employee_profile_marriage_details;
+import db.postmigration.V122__employee_birthday_wishes;
+import db.postmigration.V123__manpower_designation_type;
 
 class PostSchemaFlywayRunnerTest {
 
@@ -56,6 +58,10 @@ class PostSchemaFlywayRunnerTest {
                 migrations, V119__internal_vacancy_multiple_replacement_employees.class);
         int employeeMarriageDetailsMigrationIndex = indexOf(
                 migrations, V121__employee_profile_marriage_details.class);
+        int employeeBirthdayWishesMigrationIndex = indexOf(
+                migrations, V122__employee_birthday_wishes.class);
+        int designationTypeMigrationIndex = indexOf(
+                migrations, V123__manpower_designation_type.class);
         assertThat(employeeCellMigrationIndex).isGreaterThanOrEqualTo(0);
         assertThat(cellAuthorityMigrationIndex).isGreaterThan(employeeCellMigrationIndex);
         assertThat(projectDepartmentMigrationIndex).isGreaterThan(cellAuthorityMigrationIndex);
@@ -72,6 +78,10 @@ class PostSchemaFlywayRunnerTest {
                 .isGreaterThan(replacementEmployeeMappingMigrationIndex);
         assertThat(employeeMarriageDetailsMigrationIndex)
                 .isGreaterThan(multipleReplacementEmployeesMigrationIndex);
+        assertThat(employeeBirthdayWishesMigrationIndex)
+                .isGreaterThan(employeeMarriageDetailsMigrationIndex);
+        assertThat(designationTypeMigrationIndex)
+                .isGreaterThan(employeeBirthdayWishesMigrationIndex);
     }
 
     private int indexOf(List<?> migrations, Class<?> migrationType) {

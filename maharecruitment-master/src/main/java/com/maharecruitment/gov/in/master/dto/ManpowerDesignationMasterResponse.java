@@ -6,6 +6,8 @@ import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
 
+import com.maharecruitment.gov.in.master.entity.DesignationType;
+
 @Getter
 @Builder
 public class ManpowerDesignationMasterResponse {
@@ -14,6 +16,7 @@ public class ManpowerDesignationMasterResponse {
     private String category;
     private String designationName;
     private String roleName;
+    private DesignationType designationType;
     private String educationalQualification;
     private String certification;
     private String activeFlag;

@@ -43,6 +43,7 @@
                                     <option value="ALL" th:selected="${currentType == 'ALL'}">All Types</option>
                                     <option value="INTERNAL" th:selected="${currentType == 'INTERNAL'}">Internal</option>
                                     <option value="EXTERNAL" th:selected="${currentType == 'EXTERNAL'}">External</option>
+                                    <option value="MAHAIT" th:selected="${currentType == 'MAHAIT'}">MAHAIT</option>
                                 </select>
                             </div>
                             <div class="employee-location-filter-field">
@@ -144,6 +145,8 @@
                                             class="badge bg-info">Internal</span>
                                         <span th:if="${employee.recruitmentType == 'EXTERNAL'}"
                                             class="badge bg-secondary">External</span>
+                                        <span th:if="${employee.recruitmentType == 'MAHAIT'}"
+                                            class="badge bg-primary">MAHAIT</span>
                                         <span th:if="${employee.recruitmentType == null}"
                                             class="badge bg-light text-dark">-</span>
                                     </td>

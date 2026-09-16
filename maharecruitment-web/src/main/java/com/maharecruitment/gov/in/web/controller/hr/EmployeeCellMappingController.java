@@ -27,6 +27,7 @@ import com.maharecruitment.gov.in.recruitment.exception.RecruitmentNotificationE
 import com.maharecruitment.gov.in.web.dto.hr.EmployeeCellBulkMappingForm;
 import com.maharecruitment.gov.in.web.dto.hr.EmployeeCellMappingUpdateForm;
 import com.maharecruitment.gov.in.web.service.hr.EmployeeCellMappingPageService;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeRecruitmentType;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeCellBulkMappingResult;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeCellMappingEditView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeCellMappingEmployeeView;
@@ -249,11 +250,8 @@ public class EmployeeCellMappingController {
         if (!StringUtils.hasText(type)) {
             return "ALL";
         }
-        String normalizedType = type.trim().toUpperCase();
-        if ("INTERNAL".equals(normalizedType) || "EXTERNAL".equals(normalizedType)) {
-            return normalizedType;
-        }
-        return "ALL";
+        String supportedType = EmployeeRecruitmentType.normalizeOrNull(type);
+        return supportedType != null ? supportedType : "ALL";
     }
 
     private String normalizeSearch(String search) {

@@ -52,6 +52,7 @@ public class ManpowerDesignationMasterServiceImpl implements ManpowerDesignation
                 .category(request.getCategory())
                 .designationName(request.getDesignationName())
                 .roleName(request.getRoleName())
+                .designationType(request.getDesignationType())
                 .educationalQualification(request.getEducationalQualification())
                 .certification(request.getCertification())
                 .activeFlag(normalizeActiveFlag(request.getActiveFlag()))
@@ -74,6 +75,7 @@ public class ManpowerDesignationMasterServiceImpl implements ManpowerDesignation
         entity.setCategory(request.getCategory());
         entity.setDesignationName(request.getDesignationName());
         entity.setRoleName(request.getRoleName());
+        entity.setDesignationType(request.getDesignationType());
         entity.setEducationalQualification(request.getEducationalQualification());
         entity.setCertification(request.getCertification());
         entity.setActiveFlag(normalizeActiveFlag(request.getActiveFlag()));

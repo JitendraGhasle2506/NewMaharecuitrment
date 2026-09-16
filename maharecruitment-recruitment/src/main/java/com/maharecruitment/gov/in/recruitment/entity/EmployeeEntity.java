@@ -56,7 +56,7 @@ public class EmployeeEntity extends RecruitmentAuditable {
     private String requestId;
 
     @Column(name = "recruitment_type", length = 20)
-    private String recruitmentType; // INTERNAL or EXTERNAL
+    private String recruitmentType; // INTERNAL, EXTERNAL, or MAHAIT
 
     @Column(name = "email", nullable = false, length = 255)
     private String email;

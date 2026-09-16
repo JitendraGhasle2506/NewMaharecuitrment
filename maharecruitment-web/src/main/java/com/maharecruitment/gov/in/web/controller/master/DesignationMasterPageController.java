@@ -75,6 +75,7 @@ public class DesignationMasterPageController {
             form.setCategory(existing.getCategory());
             form.setDesignationName(existing.getDesignationName());
             form.setRoleName(existing.getRoleName());
+            form.setDesignationType(existing.getDesignationType());
             form.setEducationalQualification(existing.getEducationalQualification());
             form.setCertification(existing.getCertification());
             form.setActiveFlag(existing.getActiveFlag());
