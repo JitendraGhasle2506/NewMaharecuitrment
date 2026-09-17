@@ -159,10 +159,16 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
                         this::pickPreferredReportingMapping,
                         LinkedHashMap::new));
 
-        Map<Long, ProjectMst> mappedProjects = projectRepository.findAllById(reportingMappings.values().stream()
-                .map(EmployeeReportingMappingEntity::getProjectId)
+        Set<Long> projectIds = Stream.concat(
+                reportingMappings.values().stream()
+                        .map(EmployeeReportingMappingEntity::getProjectId),
+                employees.stream()
+                        .filter(employee -> !reportingMappings.containsKey(employee.getEmployeeId()))
+                        .map(this::resolveLegacyProjectId))
                 .filter(id -> id != null && id > 0)
-                .collect(Collectors.toSet()))
+                .collect(Collectors.toSet());
+
+        Map<Long, ProjectMst> mappedProjects = projectRepository.findAllById(projectIds)
                 .stream()
                 .collect(Collectors.toMap(ProjectMst::getProjectId, Function.identity()));
 
@@ -637,17 +643,36 @@ public class InternalEmployeeAttendanceReportServiceImpl implements InternalEmpl
             return new ProjectAssignment(reportingMapping.getProjectId(), "-");
         }
 
-        if (employee.getPreOnboarding() != null
-                && employee.getPreOnboarding().getInterviewDetail() != null
-                && employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() != null
-                && employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst() != null) {
-            ProjectMst project = employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst();
-            return new ProjectAssignment(
-                    project.getProjectId(),
-                    StringUtils.hasText(project.getProjectName()) ? project.getProjectName().trim() : "-");
+        Long legacyProjectId = resolveLegacyProjectId(employee);
+        if (legacyProjectId != null) {
+            ProjectMst legacyProject = mappedProjects.get(legacyProjectId);
+            if (legacyProject != null && StringUtils.hasText(legacyProject.getProjectName())) {
+                return new ProjectAssignment(legacyProject.getProjectId(), legacyProject.getProjectName().trim());
+            }
+            return new ProjectAssignment(legacyProjectId, "-");
         }
 
         return new ProjectAssignment(null, "-");
+    }
+
+    private Long resolveLegacyProjectId(EmployeeEntity employee) {
+        try {
+            if (employee.getPreOnboarding() == null
+                    || employee.getPreOnboarding().getInterviewDetail() == null
+                    || employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification() == null
+                    || employee.getPreOnboarding().getInterviewDetail().getRecruitmentNotification().getProjectMst() == null) {
+                return null;
+            }
+            return employee.getPreOnboarding()
+                    .getInterviewDetail()
+                    .getRecruitmentNotification()
+                    .getProjectMst()
+                    .getProjectId();
+        } catch (RuntimeException exception) {
+            log.warn("Unable to resolve legacy recruitment project for internal attendance employeeId={}.",
+                    employee.getEmployeeId(), exception);
+            return null;
+        }
     }
 
     private String defaultText(String value) {

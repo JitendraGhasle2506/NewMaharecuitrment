@@ -37,8 +37,11 @@ import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.entity.SubDepartment;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
+import com.maharecruitment.gov.in.recruitment.entity.AgencyCandidatePreOnboardingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentInterviewDetailEntity;
+import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 
@@ -206,6 +209,49 @@ class InternalEmployeeAttendanceReportServiceImplTest {
     }
 
     @Test
+    void buildReportToleratesMissingLegacyRecruitmentProject() {
+        EmployeeEntity employee = buildEmployee(101L, "EMP000101", "Aarav Sharma", "ACTIVE");
+        employee.setPreOnboarding(buildPreOnboardingWithProject(3L));
+        LocalDate startDate = YearMonth.of(2026, 5).atDay(1);
+        LocalDate endDate = YearMonth.of(2026, 5).atEndOfMonth();
+
+        when(employeeRepository.findDetailedInternalEmployeesForAttendanceReport(null, null, null, "ACTIVE"))
+                .thenReturn(List.of(employee));
+        when(employeeReportingMappingRepository.findByEmployeeIdIn(List.of(employee.getEmployeeId())))
+                .thenReturn(List.of());
+        when(projectRepository.findAllById(anyCollection()))
+                .thenReturn(List.of());
+        when(dailyAttendanceInternalRepository.findByEmployeeIdInAndAttendanceDateBetween(
+                List.of(employee.getEmployeeId()),
+                startDate,
+                endDate))
+                .thenReturn(List.of());
+        when(leaveApplicationRepository.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(
+                List.of(employee.getEmployeeId()),
+                "APPROVED"))
+                .thenReturn(List.of());
+        when(tourApplicationRepository.findByEmployeeIdInAndStatusOrderByApplicationDateDesc(
+                List.of(employee.getEmployeeId()),
+                "APPROVED"))
+                .thenReturn(List.of());
+        when(holidayRepository.findByHolidayDateBetween(startDate, endDate))
+                .thenReturn(List.of());
+        when(weekOffWorkingDayRepository.findByWorkingDateBetween(startDate, endDate))
+                .thenReturn(List.of());
+
+        InternalAttendanceReportFilter filter = new InternalAttendanceReportFilter();
+        filter.setMonth(5);
+        filter.setYear(2026);
+        filter.setEmployeeStatus("ACTIVE");
+
+        InternalAttendanceReportView report = service.buildReport(filter);
+
+        assertEquals(1, report.getRows().size());
+        assertEquals(3L, report.getRows().get(0).getProjectId());
+        assertEquals("-", report.getRows().get(0).getProjectName());
+    }
+
+    @Test
     void buildReportTreatsWeekOffWithPunchTimesAsPresent() {
         EmployeeEntity employee = buildEmployee(101L, "EMP000101", "Aarav Sharma", "ACTIVE");
         EmployeeReportingMappingEntity mapping = buildMapping(employee.getEmployeeId(), 44L);
@@ -346,6 +392,19 @@ class InternalEmployeeAttendanceReportServiceImplTest {
         project.setProjectId(projectId);
         project.setProjectName(projectName);
         return project;
+    }
+
+    private AgencyCandidatePreOnboardingEntity buildPreOnboardingWithProject(Long projectId) {
+        RecruitmentNotificationEntity notification = new RecruitmentNotificationEntity();
+        notification.setRecruitmentNotificationId(701L);
+        notification.setProjectMst(buildProject(projectId, null));
+
+        RecruitmentInterviewDetailEntity interviewDetail = new RecruitmentInterviewDetailEntity();
+        interviewDetail.setRecruitmentNotification(notification);
+
+        AgencyCandidatePreOnboardingEntity preOnboarding = new AgencyCandidatePreOnboardingEntity();
+        preOnboarding.setInterviewDetail(interviewDetail);
+        return preOnboarding;
     }
 
     private AgencyMaster buildAgency(Long agencyId, String agencyName) {

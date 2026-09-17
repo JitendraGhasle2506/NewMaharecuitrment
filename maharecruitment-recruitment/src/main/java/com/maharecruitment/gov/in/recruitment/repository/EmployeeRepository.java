@@ -149,11 +149,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             "agency",
             "departmentRegistration",
             "subDepartment",
-            "designation",
-            "preOnboarding",
-            "preOnboarding.interviewDetail",
-            "preOnboarding.interviewDetail.recruitmentNotification",
-            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+            "designation" })
     List<EmployeeEntity> findByStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(String status);
 
     @EntityGraph(attributePaths = { "designation", "designation.levels" })
@@ -677,11 +673,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             "agency",
             "departmentRegistration",
             "subDepartment",
-            "designation",
-            "preOnboarding",
-            "preOnboarding.interviewDetail",
-            "preOnboarding.interviewDetail.recruitmentNotification",
-            "preOnboarding.interviewDetail.recruitmentNotification.projectMst" })
+            "designation" })
     @Query("select employee from EmployeeEntity employee "
             + "where upper(trim(coalesce(employee.recruitmentType, ''))) = 'INTERNAL' "
             + "and (:agencyId is null or employee.agency.agencyId = :agencyId) "

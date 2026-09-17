@@ -7,9 +7,9 @@
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <style>
         .report-shell .card {
-            border: none;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(20, 34, 61, 0.08);
+            border: 1px solid #e4eaf1;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(20, 34, 61, 0.06);
         }
 
         .report-header {
@@ -27,9 +27,9 @@
         }
 
         .filter-panel {
-            background: linear-gradient(180deg, #f8fbff 0%, #f3f7fc 100%);
+            background: #f7f9fc;
             border: 1px solid #e4ebf3;
-            border-radius: 14px;
+            border-radius: 8px;
             padding: 18px;
             margin-bottom: 24px;
         }
@@ -43,7 +43,7 @@
 
         .summary-card {
             border: 1px solid #e8eef5;
-            border-radius: 14px;
+            border-radius: 8px;
             padding: 16px 18px;
             background: #fff;
         }
@@ -132,6 +132,13 @@
             margin-bottom: 16px;
         }
 
+        .report-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
         .report-meta {
             color: #667085;
             font-size: 0.92rem;
@@ -139,14 +146,16 @@
 
         .attendance-table-wrap {
             border: 1px solid #e6edf5;
-            border-radius: 14px;
+            border-radius: 8px;
             overflow: auto;
+            max-height: 68vh;
             background: #fff;
+            scrollbar-gutter: stable;
         }
 
         .attendance-report-table {
-            width: 100%;
-            min-width: 1500px;
+            width: max-content;
+            min-width: 100%;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 0.84rem;
@@ -170,49 +179,43 @@
             border-bottom: 1px solid #edf2f7;
             border-right: 1px solid #f1f5f9;
             text-align: center;
+            vertical-align: middle;
             white-space: nowrap;
         }
 
         .attendance-report-table th:first-child,
-        .attendance-report-table td:first-child,
-        .attendance-report-table th:nth-child(2),
-        .attendance-report-table td:nth-child(2) {
+        .attendance-report-table td:first-child {
             position: sticky;
             left: 0;
             z-index: 1;
             background: #fff;
+            box-shadow: 1px 0 0 #dfe7f0;
         }
 
-        .attendance-report-table th:nth-child(2),
-        .attendance-report-table td:nth-child(2) {
-            left: 116px;
-        }
-
-        .attendance-report-table thead th:first-child,
-        .attendance-report-table thead th:nth-child(2) {
+        .attendance-report-table thead th:first-child {
             z-index: 3;
             background: #eff4fa;
         }
 
         .employee-cell {
-            min-width: 280px;
+            min-width: 240px;
+            max-width: 280px;
             text-align: left !important;
+            white-space: normal !important;
         }
 
         .project-cell {
             min-width: 180px;
+            max-width: 240px;
             text-align: left !important;
+            white-space: normal !important;
         }
 
         .agency-cell {
             min-width: 190px;
+            max-width: 240px;
             text-align: left !important;
-        }
-
-        .employee-code-cell {
-            min-width: 116px;
-            background: #fcfdff;
-            font-weight: 600;
+            white-space: normal !important;
         }
 
         .employee-name {
@@ -294,6 +297,15 @@
         .totals-cell {
             background: #fbfcfe;
             font-weight: 700;
+            min-width: 72px;
+        }
+
+        .attendance-report-table tbody tr:hover td {
+            background: #f7fbff;
+        }
+
+        .attendance-report-table tbody tr:hover .totals-cell {
+            background: #f2f7fc;
         }
 
         .empty-state {
@@ -306,12 +318,50 @@
         }
 
         @media (max-width: 991.98px) {
+            .report-header {
+                margin-bottom: 18px;
+            }
+
+            .report-meta.text-end {
+                text-align: left !important;
+            }
+
+            .report-toolbar {
+                align-items: flex-start;
+            }
+
+            .report-actions {
+                justify-content: flex-start;
+                width: 100%;
+            }
 
             .attendance-report-table th:first-child,
-            .attendance-report-table td:first-child,
-            .attendance-report-table th:nth-child(2),
-            .attendance-report-table td:nth-child(2) {
+            .attendance-report-table td:first-child {
                 position: static;
+                box-shadow: none;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .report-shell .card-body {
+                padding: 16px !important;
+            }
+
+            .summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .summary-card {
+                padding: 14px;
+            }
+
+            .summary-value {
+                font-size: 1.45rem;
+            }
+
+            .report-actions .btn {
+                flex: 1 1 100%;
             }
         }
     </style>
@@ -432,13 +482,13 @@
                                 Showing 0 employees.
                             </span>
                         </div>
-                            <div class="d-flex gap-2">
+                        <div class="report-actions">
                                 <a class="btn btn-outline-danger btn-sm"
-                                    th:href="@{/hr/internal-attendance-report/download/pdf(month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
+                                    th:href="@{/hr/internal-attendance-report/download/pdf(month=${filter.month},year=${filter.year},projectId=${filter.projectId},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
                                     <i class="fas fa-file-pdf me-1"></i> Download PDF
                                 </a>
                                 <a class="btn btn-outline-primary btn-sm"
-                                    th:href="@{/hr/internal-attendance-report/download/time-csv(month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
+                                    th:href="@{/hr/internal-attendance-report/download/time-csv(month=${filter.month},year=${filter.year},projectId=${filter.projectId},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
                                     <i class="fas fa-clock me-1"></i> Download In/Out Time CSV
                                 </a>
                             <button type="button" class="btn btn-outline-success btn-sm"
@@ -458,7 +508,6 @@
                         <table class="attendance-report-table" id="internalAttendanceReportTable">
                             <thead>
                                 <tr>
-                                    <th class="employee-code-cell">Code</th>
                                     <th class="employee-cell">Employee</th>
                                     <th class="project-cell">Project</th>
                                     <th class="agency-cell">Agency</th>
@@ -474,19 +523,18 @@
                                             <small th:text="${#temporals.format(day, 'E')}">Mon</small>
                                         </th>
                                     </th:block>
-                                    <th class="totals-heading">P</th>
-                                    <th class="totals-heading">Total Absent</th>
-                                    <th class="totals-heading">Approved Leave</th>
-                                    <th class="totals-heading">CO </th>
-                                    <th class="totals-heading">T</th>
-                                    <th class="totals-heading">H</th>
-                                    <th class="totals-heading">WO</th>
-                                    <th class="totals-heading">Payable Days</th>
+                                    <th class="totals-heading" title="Present">P</th>
+                                    <th class="totals-heading" title="Absent">A</th>
+                                    <th class="totals-heading" title="Approved Leave">L</th>
+                                    <th class="totals-heading" title="Comp Off">CO</th>
+                                    <th class="totals-heading" title="Tour">T</th>
+                                    <th class="totals-heading" title="Holiday">H</th>
+                                    <th class="totals-heading" title="Week Off">WO</th>
+                                    <th class="totals-heading">Payable</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:each="row : ${reportPage.content}">
-                                    <td class="employee-code-cell" th:text="${row.employeeCode}">EMP000001</td>
                                     <td class="employee-cell">
                                         <span class="employee-name" th:text="${row.employeeName}">Employee Name</span>
                                         <span class="employee-meta" th:text="${row.designation}">
@@ -500,7 +548,8 @@
                                     </td>
                                     <td class="project-cell" th:text="${row.projectName}">Project Name</td>
                                     <td class="agency-cell" th:text="${row.agencyName}">Agency Name</td>
-                                    <td th:each="day : ${report.calendarDays}" class="day-column">
+                                    <td th:each="day : ${report.calendarDays}" class="day-column"
+                                        th:classappend="${day.dayOfWeek.name() == 'SATURDAY' or day.dayOfWeek.name() == 'SUNDAY'} ? ' weekend'">
                                         <th:block th:with="status=${row.dailyStatus.get(day.dayOfMonth)}">
                                             <span th:if="${#strings.isEmpty(status)}"
                                                 class="status-badge status-empty"></span>
@@ -542,13 +591,13 @@
                             <ul class="pagination app-pagination mb-0">
                                 <li class="page-item" th:classappend="${reportPage.first} ? ' disabled'">
                                     <a class="page-link"
-                                        th:href="@{/hr/internal-attendance-report(page=${reportPage.number - 1},month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
+                                        th:href="@{/hr/internal-attendance-report(page=${reportPage.number - 1},month=${filter.month},year=${filter.year},projectId=${filter.projectId},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
                                         Previous
                                     </a>
                                 </li>
                                 <li class="page-item" th:classappend="${reportPage.number == 0} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/hr/internal-attendance-report(page=0,month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">1</a>
+                                        th:href="@{/hr/internal-attendance-report(page=0,month=${filter.month},year=${filter.year},projectId=${filter.projectId},agencyId=${filter.agencyId},searchText=${filter.searchText})}">1</a>
                                 </li>
                                 <li class="page-item disabled" th:if="${middleStart > 1}">
                                     <span class="page-link app-pagination-ellipsis">...</span>
@@ -557,7 +606,7 @@
                                     <li class="page-item" th:each="pageIndex : ${#numbers.sequence(middleStart, middleEnd)}"
                                         th:classappend="${pageIndex == reportPage.number} ? ' active'">
                                         <a class="page-link"
-                                            th:href="@{/hr/internal-attendance-report(page=${pageIndex},month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}"
+                                            th:href="@{/hr/internal-attendance-report(page=${pageIndex},month=${filter.month},year=${filter.year},projectId=${filter.projectId},agencyId=${filter.agencyId},searchText=${filter.searchText})}"
                                             th:text="${pageIndex + 1}">2</a>
                                     </li>
                                 </th:block>
@@ -567,12 +616,12 @@
                                 <li class="page-item" th:if="${reportPage.totalPages > 1}"
                                     th:classappend="${reportPage.number == reportPage.totalPages - 1} ? ' active'">
                                     <a class="page-link"
-                                        th:href="@{/hr/internal-attendance-report(page=${reportPage.totalPages - 1},month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}"
+                                        th:href="@{/hr/internal-attendance-report(page=${reportPage.totalPages - 1},month=${filter.month},year=${filter.year},projectId=${filter.projectId},agencyId=${filter.agencyId},searchText=${filter.searchText})}"
                                         th:text="${reportPage.totalPages}">2</a>
                                 </li>
                                 <li class="page-item" th:classappend="${reportPage.last} ? ' disabled'">
                                     <a class="page-link"
-                                        th:href="@{/hr/internal-attendance-report(page=${reportPage.number + 1},month=${filter.month},year=${filter.year},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
+                                        th:href="@{/hr/internal-attendance-report(page=${reportPage.number + 1},month=${filter.month},year=${filter.year},projectId=${filter.projectId},agencyId=${filter.agencyId},searchText=${filter.searchText})}">
                                         Next
                                     </a>
                                 </li>
