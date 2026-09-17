@@ -14,6 +14,7 @@ import org.springframework.web.client.RestClient;
 
 import com.maharecruitment.gov.in.web.properties.ApplicationUrlProperties;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 import com.maharecruitment.gov.in.web.util.ApplicationUrlService;
 
@@ -88,6 +89,22 @@ class NotificationServiceImplTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasStackTraceContaining("spring.mail.username")
                 .hasStackTraceContaining("spring.mail.password");
+    }
+
+    @Test
+    void disabledEmailChannelReportsDeliveryFailure() {
+        NotificationChannelProperties channelProperties = new NotificationChannelProperties();
+        channelProperties.setEmailEnabled(false);
+        NotificationServiceImpl service = new NotificationServiceImpl(
+                mock(JavaMailSender.class),
+                mock(RestClient.class),
+                smtpEnvironment(),
+                channelProperties,
+                applicationUrlService());
+
+        assertThatThrownBy(() -> service.sendEmailOtp("user@example.com", "209552"))
+                .isInstanceOf(OtpDeliveryException.class)
+                .hasMessageContaining("disabled");
     }
 
     private MockEnvironment smtpEnvironment() {

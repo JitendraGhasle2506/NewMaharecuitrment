@@ -249,6 +249,9 @@ public class OtpVerificationController {
         if (OtpResponseCodes.OTP_RESEND_COOLDOWN.equals(exception.getResponseCode())) {
             return "OTP was already sent. Please wait before requesting another OTP.";
         }
+        if (OtpResponseCodes.OTP_SEND_COOLDOWN.equals(exception.getResponseCode())) {
+            return "Please wait before requesting another OTP.";
+        }
         return RATE_LIMIT_MESSAGE;
     }
 

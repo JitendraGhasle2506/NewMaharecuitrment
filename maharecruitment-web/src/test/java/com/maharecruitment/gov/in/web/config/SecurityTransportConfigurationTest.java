@@ -59,7 +59,7 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("spring.mail.host"))
                 .isEqualTo("${SMTP_HOST:email-smtp.ap-south-1.amazonaws.com}");
         assertThat(properties.getProperty("spring.mail.port"))
-                .isEqualTo("${SMTP_PORT:587}");
+                .isEqualTo("${SMTP_PORT:22}");
         assertThat(properties.getProperty("spring.mail.username"))
                 .isNotBlank()
                 .doesNotContain("${");

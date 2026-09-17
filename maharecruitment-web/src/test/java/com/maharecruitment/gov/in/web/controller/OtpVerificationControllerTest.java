@@ -152,4 +152,34 @@ class OtpVerificationControllerTest {
         assertEquals(OtpResponseCodes.OTP_RESEND_LIMIT_EXCEEDED, response.getBody().code());
         assertEquals("Maximum OTP resend limit reached. Please try again later.", response.getBody().message());
     }
+
+    @Test
+    void sendAttemptCooldownDoesNotClaimThatOtpWasSent() {
+        OtpVerificationService service = mock(OtpVerificationService.class);
+        OtpVerificationController controller = new OtpVerificationController(
+                service,
+                false,
+                new NotificationChannelProperties(),
+                new TransportSecurityProperties());
+        OtpSendRequest request = new OtpSendRequest();
+        request.setPurpose(VerificationPurposes.DEPARTMENT_REGISTRATION_PRIMARY_CONTACT);
+        request.setChannel(VerificationChannel.EMAIL);
+        request.setReference("user@example.com");
+        when(service.sendOtp(any(), any(), any(), any(), any()))
+                .thenThrow(new OtpRateLimitException(
+                        "cooldown",
+                        111,
+                        OtpResponseCodes.OTP_SEND_COOLDOWN));
+
+        ResponseEntity<VerificationResponse> response = controller.sendOtp(
+                request,
+                new BeanPropertyBindingResult(request, "request"),
+                new MockHttpServletRequest(),
+                new MockHttpSession());
+
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+        assertEquals(OtpResponseCodes.OTP_SEND_COOLDOWN, response.getBody().code());
+        assertEquals("Please wait before requesting another OTP.", response.getBody().message());
+        assertEquals(111, response.getBody().retryAfterSeconds());
+    }
 }

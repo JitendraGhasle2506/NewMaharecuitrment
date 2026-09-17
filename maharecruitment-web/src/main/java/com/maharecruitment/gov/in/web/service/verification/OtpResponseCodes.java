@@ -10,6 +10,7 @@ public final class OtpResponseCodes {
     public static final String OTP_ATTEMPTS_EXCEEDED = "OTP_ATTEMPTS_EXCEEDED";
     public static final String OTP_ALREADY_USED = "OTP_ALREADY_USED";
     public static final String OTP_NOT_FOUND = "OTP_NOT_FOUND";
+    public static final String OTP_SEND_COOLDOWN = "OTP_SEND_COOLDOWN";
     public static final String OTP_RESEND_COOLDOWN = "OTP_RESEND_COOLDOWN";
     public static final String OTP_RESEND_LIMIT_EXCEEDED = "OTP_RESEND_LIMIT_EXCEEDED";
     public static final String OTP_TEMPORARILY_BLOCKED = "OTP_TEMPORARILY_BLOCKED";

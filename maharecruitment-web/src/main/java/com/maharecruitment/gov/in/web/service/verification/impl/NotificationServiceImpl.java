@@ -15,9 +15,11 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
+import com.maharecruitment.gov.in.web.dto.verification.VerificationChannel;
 import com.maharecruitment.gov.in.web.properties.NotificationChannelProperties;
 import com.maharecruitment.gov.in.web.service.verification.AccountNotificationService;
 import com.maharecruitment.gov.in.web.service.verification.OtpDispatchService;
+import com.maharecruitment.gov.in.web.service.verification.OtpDeliveryException;
 import com.maharecruitment.gov.in.web.service.verification.VerificationPurposes;
 import com.maharecruitment.gov.in.web.util.ApplicationUrlService;
 
@@ -66,7 +68,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
         log.info(
                 "Email SMTP configuration loaded: host={}, port={}, sender={}, security={}, authenticationEnabled={}.",
                 getProperty("spring.mail.host"),
-                environment.getProperty("spring.mail.port", Integer.class, 25),
+                environment.getProperty("spring.mail.port", Integer.class, 587),
                 getFromAddress(),
                 smtpSecurityMode(),
                 isSmtpAuthenticationEnabled());
@@ -107,8 +109,11 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
     @Override
     public void sendEmailOtp(String email, String otp, String purpose, String otpReferenceId) {
         if (!notificationChannelProperties.isEmailEnabled()) {
-            log.info("Email dispatch is disabled. Skipping OTP email for address {}.", email);
-            return;
+            log.warn("Email dispatch is disabled. OTP email was not sent to address {}.", maskEmail(email));
+            throw new OtpDeliveryException(
+                    VerificationChannel.EMAIL,
+                    "Email OTP delivery is disabled.",
+                    null);
         }
 
         try {
@@ -136,7 +141,7 @@ public class NotificationServiceImpl implements OtpDispatchService, AccountNotif
             log.error(
                     "Failed to send email verification OTP. smtpHost={}, smtpPort={}, recipient={}, reasonType={}, reason={}",
                     getProperty("spring.mail.host"),
-                    environment.getProperty("spring.mail.port", Integer.class, 25),
+                    environment.getProperty("spring.mail.port", Integer.class, 587),
                     maskEmail(email),
                     rootCause(ex).getClass().getSimpleName(),
                     extractFailureReason(ex),

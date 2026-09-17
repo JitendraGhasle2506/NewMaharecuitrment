@@ -302,6 +302,9 @@ public class OtpLoginController {
         if (OtpResponseCodes.OTP_RESEND_COOLDOWN.equals(exception.getResponseCode())) {
             return RATE_LIMIT_MESSAGE;
         }
+        if (OtpResponseCodes.OTP_SEND_COOLDOWN.equals(exception.getResponseCode())) {
+            return "Please wait before requesting another OTP.";
+        }
         if (exception.getMessage() != null && exception.getMessage().contains("already valid")) {
             return RATE_LIMIT_MESSAGE;
         }

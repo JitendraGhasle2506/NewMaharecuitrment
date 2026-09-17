@@ -142,7 +142,7 @@ class OtpRateLimiterTest {
                 .satisfies(exception -> {
                     OtpRateLimitException rateLimitException = (OtpRateLimitException) exception;
                     assertThat(rateLimitException.getResponseCode())
-                            .isEqualTo(OtpResponseCodes.OTP_RESEND_COOLDOWN);
+                            .isEqualTo(OtpResponseCodes.OTP_SEND_COOLDOWN);
                     assertThat(rateLimitException.getRetryAfterSeconds()).isBetween(1L, 120L);
                 });
     }

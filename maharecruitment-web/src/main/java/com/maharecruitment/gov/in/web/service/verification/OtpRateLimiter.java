@@ -194,7 +194,7 @@ public class OtpRateLimiter {
             return requestLimitExceeded
                     ? OtpResponseCodes.OTP_RESEND_LIMIT_EXCEEDED
                     : cooldownExceeded
-                            ? OtpResponseCodes.OTP_RESEND_COOLDOWN
+                            ? OtpResponseCodes.OTP_SEND_COOLDOWN
                             : OtpResponseCodes.OTP_RATE_LIMITED;
         }
         return OtpResponseCodes.OTP_RATE_LIMITED;
