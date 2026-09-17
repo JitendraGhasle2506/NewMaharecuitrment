@@ -13,11 +13,23 @@ import org.springframework.stereotype.Repository;
 
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationEntity;
 import com.maharecruitment.gov.in.recruitment.entity.RecruitmentNotificationStatus;
+import com.maharecruitment.gov.in.recruitment.repository.projection.RecruitmentNotificationRankReleaseProjection;
 
 import jakarta.persistence.LockModeType;
 
 @Repository
 public interface RecruitmentNotificationRepository extends JpaRepository<RecruitmentNotificationEntity, Long> {
+
+    @Query("select notification.recruitmentNotificationId as recruitmentNotificationId, "
+            + "notification.requestId as requestId, "
+            + "notification.departmentProjectApplicationId as departmentProjectApplicationId, "
+            + "notification.status as status, "
+            + "notification.createdDateTime as createdDateTime, "
+            + "project.projectName as projectName "
+            + "from RecruitmentNotificationEntity notification "
+            + "left join notification.projectMst project "
+            + "order by notification.recruitmentNotificationId desc")
+    java.util.List<RecruitmentNotificationRankReleaseProjection> findAllForRankReleaseOverview();
 
     boolean existsByRequestIdIgnoreCase(String requestId);
 

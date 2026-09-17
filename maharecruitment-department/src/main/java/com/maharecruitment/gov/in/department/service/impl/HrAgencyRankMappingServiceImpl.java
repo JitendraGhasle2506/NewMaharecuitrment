@@ -50,6 +50,7 @@ import com.maharecruitment.gov.in.recruitment.repository.AgencyGlobalRankReposit
 import com.maharecruitment.gov.in.recruitment.repository.AgencyNotificationTrackingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RankReleaseRuleRepository;
 import com.maharecruitment.gov.in.recruitment.repository.RecruitmentNotificationRepository;
+import com.maharecruitment.gov.in.recruitment.repository.projection.RecruitmentNotificationRankReleaseProjection;
 import com.maharecruitment.gov.in.recruitment.service.RecruitmentNotificationRankAssignmentService;
 import com.maharecruitment.gov.in.recruitment.service.model.AgencyRankAssignmentCommand;
 
@@ -149,9 +150,8 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
                     .build();
         }
 
-        List<RecruitmentNotificationEntity> notifications = recruitmentNotificationRepository.findAll().stream()
-                .sorted(Comparator.comparing(RecruitmentNotificationEntity::getRecruitmentNotificationId).reversed())
-                .toList();
+        List<RecruitmentNotificationRankReleaseProjection> notifications =
+                recruitmentNotificationRepository.findAllForRankReleaseOverview();
         if (notifications.isEmpty()) {
             return HrAgencyRankMappingListView.builder()
                     .rankMappings(List.of())
@@ -184,7 +184,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
 
         LocalDateTime now = LocalDateTime.now();
         List<HrAgencyRankMappingListRowView> rows = new ArrayList<>();
-        for (RecruitmentNotificationEntity notification : notifications) {
+        for (RecruitmentNotificationRankReleaseProjection notification : notifications) {
             for (AgencyGlobalRankEntity globalRank : globalRanks) {
                 rows.add(toRankReleaseOverviewRow(
                         notification,
@@ -508,9 +508,9 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
     }
 
     private Map<Long, DepartmentProjectApplicationEntity> loadApplicationById(
-            List<RecruitmentNotificationEntity> notifications) {
+            List<RecruitmentNotificationRankReleaseProjection> notifications) {
         Set<Long> applicationIds = notifications.stream()
-                .map(RecruitmentNotificationEntity::getDepartmentProjectApplicationId)
+                .map(RecruitmentNotificationRankReleaseProjection::getDepartmentProjectApplicationId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
@@ -564,7 +564,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
     }
 
     private HrAgencyRankMappingListRowView toRankReleaseOverviewRow(
-            RecruitmentNotificationEntity notification,
+            RecruitmentNotificationRankReleaseProjection notification,
             AgencyGlobalRankEntity globalRank,
             Map<Long, DepartmentProjectApplicationEntity> applicationById,
             Map<Long, String> departmentNameById,
@@ -754,12 +754,12 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
     }
 
     private void loadTrackingMetadata(
-            List<RecruitmentNotificationEntity> notifications,
+            List<RecruitmentNotificationRankReleaseProjection> notifications,
             Map<String, AgencyNotificationTrackingEntity> trackingByNotificationAndAgency,
             Map<String, LocalDateTime> firstReleaseByNotificationAndRank,
             Map<Long, Boolean> responseReceivedByNotification) {
         Set<Long> notificationIds = notifications.stream()
-                .map(RecruitmentNotificationEntity::getRecruitmentNotificationId)
+                .map(RecruitmentNotificationRankReleaseProjection::getRecruitmentNotificationId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         if (notificationIds.isEmpty()) {
@@ -818,7 +818,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
     }
 
     private LocalDateTime resolveRankOneEligibleOn(
-            RecruitmentNotificationEntity notification,
+            RecruitmentNotificationRankReleaseProjection notification,
             AgencyGlobalRankEntity globalRank) {
         if (notification.getCreatedDateTime() != null) {
             return notification.getCreatedDateTime();
@@ -828,7 +828,7 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
 
     private ReleaseStatusView resolveReleaseStatus(
             AgencyNotificationTrackingEntity tracking,
-            RecruitmentNotificationEntity notification,
+            RecruitmentNotificationRankReleaseProjection notification,
             Integer rankNumber,
             Integer previousAssignedRank,
             LocalDateTime previousRankReleasedOn,
@@ -894,12 +894,10 @@ public class HrAgencyRankMappingServiceImpl implements HrAgencyRankMappingServic
     }
 
     private String resolveProjectName(
-            RecruitmentNotificationEntity notification,
+            RecruitmentNotificationRankReleaseProjection notification,
             DepartmentProjectApplicationEntity application) {
-        if (notification != null
-                && notification.getProjectMst() != null
-                && StringUtils.hasText(notification.getProjectMst().getProjectName())) {
-            return notification.getProjectMst().getProjectName();
+        if (notification != null && StringUtils.hasText(notification.getProjectName())) {
+            return notification.getProjectName().trim();
         }
         if (application != null && StringUtils.hasText(application.getProjectName())) {
             return application.getProjectName();

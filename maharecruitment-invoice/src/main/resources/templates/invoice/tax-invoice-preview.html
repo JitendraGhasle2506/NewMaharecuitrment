@@ -311,11 +311,11 @@
                                 <td th:text="${invoice.placeOfSupply}">Maharashtra</td>
                             </tr>
                             <tr>
-                                <td><b>Dept Ref/ WO No:</b></td>
+                                <td><b>Request Id:</b></td>
                                 <td th:text="${invoice.deptRefNumber != null ? invoice.deptRefNumber : '-'}">Mail</td>
                             </tr>
                             <tr>
-                                <td><b>Dept Ref/ WO Date:</b></td>
+                                <td><b>Work Order Date:</b></td>
                                 <td th:text="${#temporals.format(invoice.deptRefDate, 'dd-MM-yyyy')}">25-02-2026</td>
                             </tr>
                             <tr>
