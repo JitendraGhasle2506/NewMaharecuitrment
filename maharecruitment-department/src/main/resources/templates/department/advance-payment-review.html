@@ -78,23 +78,25 @@
                             <h5 class="section-title mb-3" style="color: #2c3e50; border-left: 4px solid #9b59b6; padding-left: 10px;">
                                 Auditor Review Action
                             </h5>
-                            <form id="reviewForm">
-                                <input type="hidden" id="paymentId" th:value="${payment.id}" />
+                            <form id="reviewForm"
+                                th:data-review-url="@{/auditor/department/payment/{paymentId}/review(paymentId=${payment.id})}"
+                                th:data-list-url="@{/auditor/department/payment/list}">
                                 <div class="row g-3">
                                     <div class="col-md-4">
                                         <label class="form-label fw-semibold">Auditor Decision</label>
-                                        <select id="auditorDecision" class="form-select">
+                                        <select id="auditorDecision" class="form-select" required>
                                             <option value="">-- Select Decision --</option>
                                             <option th:each="d : ${auditorDecisions}" th:value="${d}" th:text="${d}"></option>
                                         </select>
                                     </div>
                                     <div class="col-md-8">
                                         <label class="form-label fw-semibold">Review Remarks</label>
-                                        <textarea id="remarks" class="form-control" rows="3" placeholder="Enter remarks..."></textarea>
+                                        <textarea id="remarks" class="form-control" rows="3" maxlength="1000"
+                                            placeholder="Enter remarks..."></textarea>
                                     </div>
                                 </div>
                                 <div class="mt-4 text-center">
-                                    <button type="button" onclick="submitReview()" class="btn btn-success px-5">
+                                    <button type="submit" id="reviewSubmitButton" class="btn btn-success px-5">
                                         <i class="fas fa-check-circle me-1"></i> Submit Decision
                                     </button>
                                 </div>
@@ -153,64 +155,53 @@
 
             <script th:inline="javascript">
                 /*<![CDATA[*/
-                function submitReview() {
-                    const paymentId = document.getElementById('paymentId').value;
-                    const remarks = document.getElementById('remarks').value;
-                    const contextPath = /*[[@{/}]]*/ '';
-                    let endpoint = "";
-                    let decision = "";
-
-                    const hrSelect = document.getElementById('hrDecision');
-                    const auditorSelect = document.getElementById('auditorDecision');
-
-                    if (hrSelect && hrSelect.offsetParent !== null) {
-                        endpoint = contextPath + "hr/department/payment/" + paymentId + "/review";
-                        decision = hrSelect.value;
-                    } else if (auditorSelect && auditorSelect.offsetParent !== null) {
-                        endpoint = contextPath + "auditor/department/payment/" + paymentId + "/review";
-                        decision = auditorSelect.value;
-                    }
-
-                    if (!decision) {
-                        alert("Please select a decision.");
+                (() => {
+                    const reviewForm = document.getElementById('reviewForm');
+                    if (!reviewForm) {
                         return;
                     }
 
-                    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
-                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+                    reviewForm.addEventListener('submit', async (event) => {
+                        event.preventDefault();
+                        if (!reviewForm.reportValidity()) {
+                            return;
+                        }
 
-                    fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            [csrfHeader]: csrfToken
-                        },
-                        body: JSON.stringify({
-                            decision: decision,
-                            remarks: remarks
-                        })
-                    }).then(response => {
-                        if (response.ok) {
-                            return response.json();
-                        } else {
-                            return response.json().then(data => {
-                                throw new Error(data.message || 'Submission failed with status ' + response.status);
-                            }).catch(() => {
-                                throw new Error('Submission failed with status ' + response.status);
+                        const submitButton = document.getElementById('reviewSubmitButton');
+                        const decision = document.getElementById('auditorDecision').value;
+                        const remarks = document.getElementById('remarks').value.trim();
+                        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+                        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (csrfHeader && csrfToken) {
+                            headers[csrfHeader] = csrfToken;
+                        }
+
+                        submitButton.disabled = true;
+                        const originalButtonHtml = submitButton.innerHTML;
+                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Submitting...';
+
+                        try {
+                            const response = await fetch(reviewForm.dataset.reviewUrl, {
+                                method: 'POST',
+                                headers,
+                                body: JSON.stringify({ decision, remarks })
                             });
+                            const data = await response.json().catch(() => ({}));
+                            if (!response.ok) {
+                                throw new Error(data.message || `Submission failed with status ${response.status}`);
+                            }
+
+                            alert(data.message || 'Decision submitted successfully.');
+                            window.location.assign(reviewForm.dataset.listUrl);
+                        } catch (error) {
+                            console.error('Error:', error);
+                            alert('Error: ' + error.message);
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = originalButtonHtml;
                         }
-                    }).then(data => {
-                        alert(data.message || 'Decision submitted successfully.');
-                        if (endpoint.includes("/hr/")) {
-                            window.location.href = contextPath + "hr/department/payment/list";
-                        } else {
-                            window.location.href = contextPath + "auditor/department/payment/list";
-                        }
-                    }).catch(error => {
-                        console.error('Error:', error);
-                        alert("Error: " + error.message);
                     });
-                }
+                })();
                 /*]]>*/
             </script>
         </section>

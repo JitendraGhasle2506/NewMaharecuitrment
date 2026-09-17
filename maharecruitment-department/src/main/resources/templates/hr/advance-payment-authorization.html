@@ -140,11 +140,16 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex flex-column align-items-center gap-2">
-                                            <form th:action="@{/hr/department-requests/advance-payment/authorize}" method="post">
+                                            <form class="partial-payment-authorization-form"
+                                                th:action="@{/hr/department-requests/advance-payment/authorize}"
+                                                method="post">
                                                 <input type="hidden" name="applicationId" th:value="${item.departmentProjectApplicationId}">
-                                                <input type="hidden" name="allowed" th:value="${!item.partialPaymentAllowed}">
+                                                <input class="partial-payment-value" type="hidden" name="allowed"
+                                                    th:value="${item.partialPaymentAllowed}">
                                                 <label class="switch">
-                                                    <input type="checkbox" th:checked="${item.partialPaymentAllowed}" onchange="this.form.submit()">
+                                                    <input class="partial-payment-toggle" type="checkbox"
+                                                        th:checked="${item.partialPaymentAllowed}"
+                                                        th:aria-label="${item.partialPaymentAllowed ? 'Disable partial payment for ' : 'Enable partial payment for '} + ${item.projectName}">
                                                     <span class="slider"></span>
                                                 </label>
                                             </form>
@@ -224,6 +229,20 @@
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('searchInput');
             const tableBody = document.querySelector('#authTable tbody');
+
+            document.querySelectorAll('.partial-payment-authorization-form').forEach(function(form) {
+                const toggle = form.querySelector('.partial-payment-toggle');
+                const allowedInput = form.querySelector('.partial-payment-value');
+                if (!toggle || !allowedInput) {
+                    return;
+                }
+
+                toggle.addEventListener('change', function() {
+                    allowedInput.value = String(toggle.checked);
+                    toggle.disabled = true;
+                    form.requestSubmit();
+                });
+            });
             
             if (searchInput && tableBody) {
                 searchInput.addEventListener('input', function() {
