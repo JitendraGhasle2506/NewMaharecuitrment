@@ -33,13 +33,15 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers"))
                 .isEqualTo("${APP_SECURITY_TRUST_FORWARDED_HEADERS:false}");
         assertThat(properties.getProperty("app.base-url"))
-                .isEqualTo("${APP_BASE_URL:https://portal.example.gov.in/maharecruitment-web}");
+                .isEqualTo("${APP_BASE_URL:https://mahahrseva.mahait.org/maharecruitment}");
         assertThat(properties.getProperty("app.mobile-auth.issuer"))
                 .isEqualTo("${MOBILE_AUTH_JWT_ISSUER:maharecruitment-mobile}");
         assertThat(properties.getProperty("security.host-validation.enabled"))
                 .isEqualTo("${SECURITY_HOST_VALIDATION_ENABLED:false}");
         assertThat(properties.getProperty("security.allowed-hosts[0]"))
                 .isEqualTo("${SECURITY_ALLOWED_HOST_PORTAL:103.5.84.215}");
+        assertThat(properties.getProperty("security.allowed-hosts[1]"))
+                .isEqualTo("${SECURITY_ALLOWED_HOST_DOMAIN:mahahrseva.mahait.org}");
         assertThat(properties.getProperty("security.allowed-hosts[4]"))
                 .isEqualTo("${SECURITY_ALLOWED_HOST_SERVER:103.5.84.216}");
         assertThat(properties.getProperty("security.allowed-ports[1]"))
@@ -59,7 +61,7 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("spring.mail.host"))
                 .isEqualTo("${SMTP_HOST:email-smtp.ap-south-1.amazonaws.com}");
         assertThat(properties.getProperty("spring.mail.port"))
-                .isEqualTo("${SMTP_PORT:22}");
+                .isEqualTo("${SMTP_PORT:587}");
         assertThat(properties.getProperty("spring.mail.username"))
                 .isNotBlank()
                 .doesNotContain("${");
@@ -105,6 +107,12 @@ class SecurityTransportConfigurationTest {
             assertThat(properties.getProperty("security.host-validation.enabled"))
                     .as(fileName)
                     .isEqualTo("${SECURITY_HOST_VALIDATION_ENABLED:false}");
+            assertThat(properties.getProperty("app.base-url"))
+                    .as(fileName)
+                    .isEqualTo("${APP_BASE_URL:https://mahahrseva.mahait.org}");
+            assertThat(properties.getProperty("server.servlet.context-path"))
+                    .as(fileName)
+                    .isEqualTo("${SERVER_SERVLET_CONTEXT_PATH:/}");
             assertThat(properties.getProperty("app.service.sms-enabled"))
                     .as(fileName)
                     .isEqualTo("${SMS_ENABLED:true}");
