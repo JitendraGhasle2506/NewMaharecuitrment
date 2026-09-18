@@ -39,13 +39,13 @@ public class ProjectMst extends Auditable {
     private Long projectId;
 
     @NotBlank(message = "Project Name is required")
-    @Column(name = "project_name", nullable = false, length = 100)
+    @Column(name = "project_name", nullable = false, length = 300)
     private String projectName;
 
     @Column(name = "project_code", length = 30)
     private String projectCode;
 
-    @Column(name = "project_desc", length = 100)
+    @Column(name = "project_desc", length = 500)
     private String projectDesc;
 
     @NotNull(message = "Project Type is required")

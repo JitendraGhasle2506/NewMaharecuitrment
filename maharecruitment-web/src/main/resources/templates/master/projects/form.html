@@ -38,7 +38,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Project Name <span class="text-danger">*</span></label>
-                            <input autocomplete="off" type="text" th:field="*{projectName}" class="form-control" maxlength="100">
+                            <input autocomplete="off" type="text" th:field="*{projectName}" class="form-control" maxlength="300">
                             <div class="text-danger small" th:if="${#fields.hasErrors('projectName')}" th:errors="*{projectName}"></div>
                         </div>
 
@@ -94,7 +94,7 @@
 
                         <div class="col-md-12">
                             <label class="form-label">Project Description</label>
-                            <textarea autocomplete="off" th:field="*{projectDesc}" class="form-control" maxlength="100" rows="3"></textarea>
+                            <textarea autocomplete="off" th:field="*{projectDesc}" class="form-control" maxlength="500" rows="4"></textarea>
                             <div class="text-danger small" th:if="${#fields.hasErrors('projectDesc')}" th:errors="*{projectDesc}"></div>
                         </div>
 

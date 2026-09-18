@@ -145,6 +145,120 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     @Query("select employee from EmployeeEntity employee where employee.employeeId in :employeeIds")
     List<EmployeeEntity> findDetailedByEmployeeIdIn(@Param("employeeIds") Collection<Long> employeeIds);
 
+    @EntityGraph(attributePaths = { "departmentRegistration", "designation" })
+    @Query(value = """
+            select employee
+            from EmployeeEntity employee
+            left join employee.departmentRegistration department
+            left join employee.designation designation
+            where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
+              and trim(coalesce(employee.employeeCode, '')) <> ''
+              and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING'
+              and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%'
+              and not exists (
+                    select mapping.employeeProjectMappingId
+                    from EmployeeProjectMappingEntity mapping
+                    where mapping.employee = employee
+              )
+              and (:recruitmentType is null
+                   or upper(trim(coalesce(employee.recruitmentType, ''))) = :recruitmentType)
+              and (:searchPattern is null
+                   or upper(coalesce(employee.fullName, '')) like :searchPattern
+                   or upper(coalesce(employee.email, '')) like :searchPattern
+                   or upper(coalesce(employee.mobile, '')) like :searchPattern
+                   or upper(coalesce(department.departmentName, '')) like :searchPattern
+                   or upper(coalesce(designation.designationName, '')) like :searchPattern)
+            """,
+            countQuery = """
+                    select count(employee)
+                    from EmployeeEntity employee
+                    left join employee.departmentRegistration department
+                    left join employee.designation designation
+                    where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
+                      and trim(coalesce(employee.employeeCode, '')) <> ''
+                      and upper(trim(coalesce(employee.employeeCode, ''))) <> 'PENDING'
+                      and upper(trim(coalesce(employee.employeeCode, ''))) not like 'TMP-%'
+                      and not exists (
+                            select mapping.employeeProjectMappingId
+                            from EmployeeProjectMappingEntity mapping
+                            where mapping.employee = employee
+                      )
+                      and (:recruitmentType is null
+                           or upper(trim(coalesce(employee.recruitmentType, ''))) = :recruitmentType)
+                      and (:searchPattern is null
+                           or upper(coalesce(employee.fullName, '')) like :searchPattern
+                           or upper(coalesce(employee.email, '')) like :searchPattern
+                           or upper(coalesce(employee.mobile, '')) like :searchPattern
+                           or upper(coalesce(department.departmentName, '')) like :searchPattern
+                           or upper(coalesce(designation.designationName, '')) like :searchPattern)
+                    """)
+    Page<EmployeeEntity> findActiveOnboardedWithoutProjectMapping(
+            @Param("recruitmentType") String recruitmentType,
+            @Param("searchPattern") String searchPattern,
+            Pageable pageable);
+
+    @EntityGraph(attributePaths = { "departmentRegistration", "designation" })
+    @Query(value = """
+            select employee
+            from EmployeeEntity employee
+            left join employee.departmentRegistration department
+            left join employee.designation designation
+            where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
+              and exists (
+                    select mapping.employeeProjectMappingId
+                    from EmployeeProjectMappingEntity mapping
+                    where mapping.employee = employee
+              )
+              and (:recruitmentType is null
+                   or upper(trim(coalesce(employee.recruitmentType, ''))) = :recruitmentType)
+              and (:searchPattern is null
+                   or upper(coalesce(employee.fullName, '')) like :searchPattern
+                   or upper(coalesce(employee.email, '')) like :searchPattern
+                   or upper(coalesce(employee.mobile, '')) like :searchPattern
+                   or upper(coalesce(department.departmentName, '')) like :searchPattern
+                   or upper(coalesce(designation.designationName, '')) like :searchPattern
+                   or exists (
+                        select projectMapping.employeeProjectMappingId
+                        from EmployeeProjectMappingEntity projectMapping
+                        join projectMapping.project project
+                        where projectMapping.employee = employee
+                          and (upper(coalesce(project.projectName, '')) like :searchPattern
+                               or upper(coalesce(project.projectCode, '')) like :searchPattern)
+                   ))
+            """,
+            countQuery = """
+                    select count(employee)
+                    from EmployeeEntity employee
+                    left join employee.departmentRegistration department
+                    left join employee.designation designation
+                    where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
+                      and exists (
+                            select mapping.employeeProjectMappingId
+                            from EmployeeProjectMappingEntity mapping
+                            where mapping.employee = employee
+                      )
+                      and (:recruitmentType is null
+                           or upper(trim(coalesce(employee.recruitmentType, ''))) = :recruitmentType)
+                      and (:searchPattern is null
+                           or upper(coalesce(employee.fullName, '')) like :searchPattern
+                           or upper(coalesce(employee.email, '')) like :searchPattern
+                           or upper(coalesce(employee.mobile, '')) like :searchPattern
+                           or upper(coalesce(department.departmentName, '')) like :searchPattern
+                           or upper(coalesce(designation.designationName, '')) like :searchPattern
+                           or exists (
+                                select projectMapping.employeeProjectMappingId
+                                from EmployeeProjectMappingEntity projectMapping
+                                join projectMapping.project project
+                                where projectMapping.employee = employee
+                                  and (upper(coalesce(project.projectName, '')) like :searchPattern
+                                       or upper(coalesce(project.projectCode, '')) like :searchPattern)
+                           ))
+                    """)
+    Page<EmployeeEntity> findActiveOnboardedWithProjectMapping(
+            @Param("recruitmentType") String recruitmentType,
+            @Param("searchPattern") String searchPattern,
+            Pageable pageable);
+
     @EntityGraph(attributePaths = {
             "agency",
             "departmentRegistration",

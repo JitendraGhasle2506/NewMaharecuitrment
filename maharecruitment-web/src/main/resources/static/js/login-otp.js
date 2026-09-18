@@ -545,7 +545,10 @@
 
                 if (!data.expirySeconds || data.expirySeconds <= 0) {
                     setOtpSectionVisible(false);
-                    setStatus(data.message || "Unable to send OTP.", "is-error");
+                    setStatus(
+                        data.message || "Unable to send OTP.",
+                        data.success ? "is-success" : "is-error"
+                    );
                     setTiming("");
                     return;
                 }

@@ -128,10 +128,25 @@ public class OtpLoginController {
                     OtpResponseCodes.forFailure(ex.getReason())));
         } catch (UnknownLoginIdentifierException ex) {
             return ResponseEntity.ok(new VerificationResponse(
-                    ex.getMessage(),
+                    GENERIC_SEND_ACCEPTED,
                     false,
                     VerificationPurposes.LOGIN_AUTHENTICATION,
-                    request.getChannel()));
+                    request.getChannel(),
+                    0,
+                    false,
+                    null,
+                    null,
+                    null,
+                    0,
+                    0,
+                    0,
+                    0,
+                    request.getChannel() == null ? null : request.getChannel().name(),
+                    null,
+                    0,
+                    0,
+                    true,
+                    OtpResponseCodes.OTP_REQUEST_ACCEPTED));
         } catch (SmsGatewayException ex) {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new VerificationResponse(
                     SMS_SEND_FAILURE,

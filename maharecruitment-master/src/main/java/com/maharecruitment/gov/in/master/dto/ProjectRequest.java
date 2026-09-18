@@ -14,12 +14,12 @@ import lombok.Setter;
 public class ProjectRequest {
 
     @NotBlank(message = "Project name is required")
-    @Size(max = 100, message = "Project name must not exceed 100 characters")
+    @Size(max = 300, message = "Project name must not exceed 300 characters")
     private String projectName;
 
     private String projectCode;
 
-    @Size(max = 100, message = "Project description must not exceed 100 characters")
+    @Size(max = 500, message = "Project description must not exceed 500 characters")
     private String projectDesc;
 
     @NotNull(message = "Project type is required")

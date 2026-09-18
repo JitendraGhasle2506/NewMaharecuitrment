@@ -59,7 +59,7 @@ class OtpLoginControllerTest {
     }
 
     @Test
-    void unknownIdentifierReturnsVisibleValidationMessage() {
+    void unknownIdentifierReturnsGenericAcceptedMessage() {
         OtpLoginSendRequest request = new OtpLoginSendRequest();
         request.setIdentifier("invalid@example.com");
         request.setChannel("EMAIL");
@@ -77,7 +77,9 @@ class OtpLoginControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message())
-                .isEqualTo("Email or mobile number is not registered.");
+                .isEqualTo("OTP request accepted. If the account details are valid, an OTP will be sent.");
+        assertThat(response.getBody().success()).isTrue();
+        assertThat(response.getBody().code()).isEqualTo("OTP_REQUEST_ACCEPTED");
         assertThat(response.getBody().expirySeconds()).isZero();
     }
 

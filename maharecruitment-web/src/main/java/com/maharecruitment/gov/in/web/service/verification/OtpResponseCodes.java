@@ -4,6 +4,7 @@ package com.maharecruitment.gov.in.web.service.verification;
 public final class OtpResponseCodes {
 
     public static final String OTP_SENT = "OTP_SENT";
+    public static final String OTP_REQUEST_ACCEPTED = "OTP_REQUEST_ACCEPTED";
     public static final String OTP_VERIFIED = "OTP_VERIFIED";
     public static final String INVALID_OTP = "INVALID_OTP";
     public static final String OTP_EXPIRED = "OTP_EXPIRED";
