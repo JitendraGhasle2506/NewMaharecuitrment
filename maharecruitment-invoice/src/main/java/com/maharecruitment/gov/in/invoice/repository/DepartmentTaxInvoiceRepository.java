@@ -1,5 +1,7 @@
 package com.maharecruitment.gov.in.invoice.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -15,6 +17,8 @@ public interface DepartmentTaxInvoiceRepository extends JpaRepository<Department
     Optional<DepartmentTaxInvoiceEntity> findByRequestIdIgnoreCase(String requestId);
 
     Optional<DepartmentTaxInvoiceEntity> findByDepartmentProjectApplicationId(Long departmentProjectApplicationId);
+
+    List<DepartmentTaxInvoiceEntity> findByDepartmentProjectApplicationIdIn(Collection<Long> departmentProjectApplicationIds);
 
     boolean existsByRequestIdIgnoreCase(String requestId);
 

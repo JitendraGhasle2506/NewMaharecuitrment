@@ -6,6 +6,8 @@ public record EmployeeProjectMappingEmployeeView(
         String email,
         String designation,
         String department,
+        Long departmentId,
+        Long subDepartmentId,
         String recruitmentType,
         EmployeeProjectOptionView mappedProject) {
 

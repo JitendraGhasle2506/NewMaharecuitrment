@@ -86,6 +86,23 @@ public interface DepartmentProjectApplicationRepository extends JpaRepository<De
             Long subDepartmentId,
             Collection<DepartmentApplicationStatus> applicationStatuses);
 
+    @Query("""
+            select distinct application
+            from DepartmentProjectApplicationEntity application
+            left join ProjectMst project on project.applicationId = application.departmentProjectApplicationId
+            where application.active = true
+              and application.applicationStatus = :applicationStatus
+              and application.departmentId = :departmentId
+              and (:subDepartmentId is null or application.subDepartmentId = :subDepartmentId)
+              and (:projectId is null or project.projectId = :projectId)
+            order by application.departmentProjectApplicationId desc
+            """)
+    List<DepartmentProjectApplicationEntity> findCompletedTaxInvoiceCandidates(
+            @Param("departmentId") Long departmentId,
+            @Param("subDepartmentId") Long subDepartmentId,
+            @Param("projectId") Long projectId,
+            @Param("applicationStatus") DepartmentApplicationStatus applicationStatus);
+
     @Query(
             "select a.departmentId as departmentId, "
                     + "count(a.departmentProjectApplicationId) as projectCount "

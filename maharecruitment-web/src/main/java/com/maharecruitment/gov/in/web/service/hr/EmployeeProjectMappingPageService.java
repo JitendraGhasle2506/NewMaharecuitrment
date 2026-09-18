@@ -15,6 +15,7 @@ public interface EmployeeProjectMappingPageService {
     Page<EmployeeProjectMappingEmployeeView> searchUnmappedEmployees(
             String recruitmentType,
             String searchText,
+            Long projectId,
             Pageable pageable);
 
     Page<EmployeeProjectMappingEmployeeView> searchMappedEmployees(
@@ -24,7 +25,7 @@ public interface EmployeeProjectMappingPageService {
 
     EmployeeProjectMappingEditView loadMapping(Long employeeId);
 
-    List<EmployeeProjectOptionView> availableActiveProjects();
+    List<EmployeeProjectOptionView> availableActiveProjects(String recruitmentType);
 
     boolean updateMapping(Long employeeId, Long projectId);
 

@@ -27,15 +27,9 @@
                         </div>
                     </div>
 
-                    <form autocomplete="off" method="get" class="employee-location-filter-form"
+                    <form autocomplete="off" method="get" class="employee-location-filter-form employee-project-filter-form"
                         th:action="@{/hr/employee-project-mappings}">
                         <input autocomplete="off" type="hidden" name="page" value="0">
-                        <div class="employee-location-filter-field employee-location-filter-search">
-                            <label class="form-label mb-1" for="employeeProjectSearch">Search</label>
-                            <input autocomplete="off" id="employeeProjectSearch" type="search" name="search"
-                                class="form-control form-control-sm" th:value="${searchTerm}"
-                                placeholder="Employee name or email">
-                        </div>
                         <div class="employee-location-filter-field">
                             <label class="form-label mb-1" for="employeeProjectType">Type</label>
                             <select autocomplete="off" id="employeeProjectType" name="type" class="form-select form-select-sm">
@@ -45,6 +39,22 @@
                                 <option value="MAHAIT" th:selected="${currentType == 'MAHAIT'}">MAHAIT</option>
                             </select>
                         </div>
+                        <div class="employee-location-filter-field employee-project-filter-project">
+                            <label class="form-label mb-1" for="bulkEmployeeProjectPicker">
+                                Project <span class="text-danger">*</span>
+                            </label>
+                            <select autocomplete="off" id="bulkEmployeeProjectPicker" name="projectId"
+                                class="form-select form-select-sm">
+                                <option value="">Select project</option>
+                                <option th:each="project : ${availableProjects}"
+                                    th:value="${project.projectId}"
+                                    th:text="${project.displayName}"
+                                    th:attr="data-scope=${project.scope},data-department-id=${project.departmentId},data-sub-department-id=${project.subDepartmentId}"
+                                    th:selected="${selectedProjectId != null and selectedProjectId.equals(project.projectId)}">
+                                    Project
+                                </option>
+                            </select>
+                        </div>
                         <div class="employee-location-filter-field">
                             <label class="form-label mb-1" for="employeeProjectPageSize">Page Size</label>
                             <select autocomplete="off" id="employeeProjectPageSize" name="size" class="form-select form-select-sm">
@@ -52,6 +62,12 @@
                                 <option value="25" th:selected="${pageSize == 25}">25 per page</option>
                                 <option value="50" th:selected="${pageSize == 50}">50 per page</option>
                             </select>
+                        </div>
+                        <div class="employee-location-filter-field employee-location-filter-search employee-project-filter-search">
+                            <label class="form-label mb-1" for="employeeProjectSearch">Search</label>
+                            <input autocomplete="off" id="employeeProjectSearch" type="search" name="search"
+                                class="form-control form-control-sm" th:value="${searchTerm}"
+                                placeholder="Employee name or email">
                         </div>
                         <div class="employee-location-filter-actions">
                             <button type="submit" class="btn btn-primary btn-sm">
@@ -87,23 +103,17 @@
                         <input autocomplete="off" type="hidden" name="search" th:value="${searchTerm}">
                         <input autocomplete="off" type="hidden" name="page" th:value="${employeePage.number}">
                         <input autocomplete="off" type="hidden" name="size" th:value="${employeePage.size}">
+                        <input autocomplete="off" type="hidden" id="employeeProjectBulkProjectId" name="projectId"
+                            th:value="${selectedProjectId}">
 
                         <div class="employee-project-bulk-bar">
                             <div class="employee-project-target">
-                                <label class="form-label mb-1" for="bulkEmployeeProjectPicker">
-                                    Target Project <span class="text-danger">*</span>
-                                </label>
-                                <select autocomplete="off" id="bulkEmployeeProjectPicker" name="projectId"
-                                    class="form-select form-select-sm" required>
-                                    <option value="">Select target project</option>
-                                    <option th:each="project : ${availableProjects}"
-                                        th:value="${project.projectId}"
-                                        th:text="${project.displayName}"
-                                        th:attr="data-scope=${project.scope}"
-                                        th:selected="${bulkMappingForm.projectId != null and bulkMappingForm.projectId.equals(project.projectId)}">
-                                        Project
-                                    </option>
-                                </select>
+                                <div class="employee-project-selected-project">
+                                    <span>Target Project</span>
+                                    <strong th:text="${selectedProject != null ? selectedProject.displayName : 'Select a project from filter'}">
+                                        Select a project from filter
+                                    </strong>
+                                </div>
                                 <div id="employeeProjectScopeHint" class="employee-project-scope-hint">
                                     Select a project to enable compatible employees.
                                 </div>
@@ -141,7 +151,7 @@
                             </thead>
                             <tbody>
                                 <tr th:each="employee : ${employees}" class="employee-project-row"
-                                    th:attr="data-employee-scope=${employee.recruitmentType == 'EXTERNAL' ? 'EXTERNAL' : 'INTERNAL'}">
+                                    th:attr="data-employee-scope=${employee.recruitmentType == 'EXTERNAL' ? 'EXTERNAL' : 'INTERNAL'},data-employee-department-id=${employee.departmentId},data-employee-sub-department-id=${employee.subDepartmentId}">
                                     <td class="ps-4">
                                         <input autocomplete="off" type="checkbox"
                                             class="form-check-input employee-project-row-check" name="employeeIds"
@@ -155,7 +165,7 @@
                                                 th:text="${#strings.isEmpty(employee.fullName) ? 'E' : #strings.substring(employee.fullName, 0, 1)}">E</div>
                                             <div>
                                                 <a class="employee-location-name"
-                                                    th:href="@{/hr/employee-project-mappings/{employeeId}(employeeId=${employee.employeeId},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}"
+                                                    th:href="@{/hr/employee-project-mappings/{employeeId}(employeeId=${employee.employeeId},type=${currentType},search=${searchTerm},filterProjectId=${selectedProjectId},page=${employeePage.number},size=${employeePage.size})}"
                                                     th:text="${employee.fullName}">Employee</a>
                                                 <div class="small text-muted" th:text="${employee.email}">email@example.com</div>
                                             </div>
@@ -172,7 +182,7 @@
                                     </td>
                                     <td class="text-end pe-4">
                                         <a class="btn btn-outline-primary btn-sm"
-                                            th:href="@{/hr/employee-project-mappings/{employeeId}(employeeId=${employee.employeeId},type=${currentType},search=${searchTerm},page=${employeePage.number},size=${employeePage.size})}">
+                                            th:href="@{/hr/employee-project-mappings/{employeeId}(employeeId=${employee.employeeId},type=${currentType},search=${searchTerm},filterProjectId=${selectedProjectId},page=${employeePage.number},size=${employeePage.size})}">
                                             <i class="fa-solid fa-diagram-project me-1"></i> Assign
                                         </a>
                                     </td>
@@ -197,22 +207,22 @@
                         <div class="btn-group btn-group-sm">
                             <a class="btn btn-outline-secondary" title="First page"
                                 th:classappend="${employeePage.first} ? ' disabled'"
-                                th:href="@{/hr/employee-project-mappings(type=${currentType},search=${searchTerm},page=0,size=${employeePage.size})}">
+                                th:href="@{/hr/employee-project-mappings(type=${currentType},projectId=${selectedProjectId},search=${searchTerm},page=0,size=${employeePage.size})}">
                                 <i class="fa-solid fa-angles-left"></i><span class="visually-hidden">First page</span>
                             </a>
                             <a class="btn btn-outline-secondary" th:classappend="${employeePage.first} ? ' disabled'"
                                 title="Previous page"
-                                th:href="@{/hr/employee-project-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number - 1},size=${employeePage.size})}">
+                                th:href="@{/hr/employee-project-mappings(type=${currentType},projectId=${selectedProjectId},search=${searchTerm},page=${employeePage.number - 1},size=${employeePage.size})}">
                                 <i class="fa-solid fa-chevron-left"></i><span class="visually-hidden">Previous</span>
                             </a>
                             <a class="btn btn-outline-secondary" th:classappend="${employeePage.last} ? ' disabled'"
                                 title="Next page"
-                                th:href="@{/hr/employee-project-mappings(type=${currentType},search=${searchTerm},page=${employeePage.number + 1},size=${employeePage.size})}">
+                                th:href="@{/hr/employee-project-mappings(type=${currentType},projectId=${selectedProjectId},search=${searchTerm},page=${employeePage.number + 1},size=${employeePage.size})}">
                                 <i class="fa-solid fa-chevron-right"></i><span class="visually-hidden">Next</span>
                             </a>
                             <a class="btn btn-outline-secondary" title="Last page"
                                 th:classappend="${employeePage.last} ? ' disabled'"
-                                th:href="@{/hr/employee-project-mappings(type=${currentType},search=${searchTerm},page=${employeePage.totalPages - 1},size=${employeePage.size})}">
+                                th:href="@{/hr/employee-project-mappings(type=${currentType},projectId=${selectedProjectId},search=${searchTerm},page=${employeePage.totalPages - 1},size=${employeePage.size})}">
                                 <i class="fa-solid fa-angles-right"></i><span class="visually-hidden">Last page</span>
                             </a>
                         </div>

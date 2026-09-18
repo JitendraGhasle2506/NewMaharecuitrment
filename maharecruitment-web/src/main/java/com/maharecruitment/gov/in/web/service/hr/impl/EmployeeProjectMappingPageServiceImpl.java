@@ -55,9 +55,15 @@ public class EmployeeProjectMappingPageServiceImpl implements EmployeeProjectMap
     public Page<EmployeeProjectMappingEmployeeView> searchUnmappedEmployees(
             String recruitmentType,
             String searchText,
+            Long projectId,
             Pageable pageable) {
+        ProjectMst project = resolveNullableActiveProject(projectId);
+        ProjectScopeType projectScope = project == null ? null : project.getProjectScopeType();
         Page<EmployeeEntity> employeePage = employeeRepository.findActiveOnboardedWithoutProjectMapping(
                 normalizeRecruitmentType(recruitmentType),
+                projectScope == null ? null : projectScope.name(),
+                project == null ? null : project.getDepartmentId(),
+                project == null ? null : project.getSubDepartmentId(),
                 buildSearchPattern(searchText),
                 pageable);
         List<EmployeeProjectMappingEmployeeView> content = employeePage.getContent().stream()
@@ -92,6 +98,7 @@ public class EmployeeProjectMappingPageServiceImpl implements EmployeeProjectMap
         List<EmployeeProjectOptionView> availableProjects = new ArrayList<>(projectRepository
                 .findByProjectScopeTypeAndActiveFlagIgnoreCaseOrderByProjectNameAsc(requiredScope, ACTIVE_FLAG)
                 .stream()
+                .filter(project -> matchesEmployeeDepartment(project, employee))
                 .map(this::toProjectOption)
                 .toList());
         if (selectedProject != null
@@ -106,8 +113,14 @@ public class EmployeeProjectMappingPageServiceImpl implements EmployeeProjectMap
     }
 
     @Override
-    public List<EmployeeProjectOptionView> availableActiveProjects() {
-        return projectRepository.findByActiveFlagIgnoreCaseOrderByProjectNameAsc(ACTIVE_FLAG).stream()
+    public List<EmployeeProjectOptionView> availableActiveProjects(String recruitmentType) {
+        ProjectScopeType projectScope = projectScopeForFilter(recruitmentType);
+        List<ProjectMst> projects = projectScope == null
+                ? projectRepository.findByActiveFlagIgnoreCaseOrderByProjectNameAsc(ACTIVE_FLAG)
+                : projectRepository.findByProjectScopeTypeAndActiveFlagIgnoreCaseOrderByProjectNameAsc(
+                        projectScope,
+                        ACTIVE_FLAG);
+        return projects.stream()
                 .map(this::toProjectOption)
                 .toList();
     }
@@ -121,6 +134,7 @@ public class EmployeeProjectMappingPageServiceImpl implements EmployeeProjectMap
         if (project.getProjectScopeType() != requiredScope) {
             throw new RecruitmentNotificationException(scopeMismatchMessage(requiredScope));
         }
+        validateProjectDepartmentMatch(project, employee);
 
         EmployeeProjectMappingEntity mapping = mappingRepository.findByEmployeeEmployeeId(employeeId).orElse(null);
         if (mapping != null && Objects.equals(mapping.getProject().getProjectId(), project.getProjectId())) {
@@ -160,6 +174,7 @@ public class EmployeeProjectMappingPageServiceImpl implements EmployeeProjectMap
             if (project.getProjectScopeType() != requiredScope) {
                 throw new RecruitmentNotificationException(scopeMismatchMessage(requiredScope));
             }
+            validateProjectDepartmentMatch(project, employee);
         });
 
         Map<Long, EmployeeProjectMappingEntity> mappings = mappingsByEmployeeId(uniqueEmployeeIds);
@@ -220,6 +235,23 @@ public class EmployeeProjectMappingPageServiceImpl implements EmployeeProjectMap
         return project;
     }
 
+    private ProjectMst resolveNullableActiveProject(Long projectId) {
+        if (projectId == null || projectId < 1) {
+            return null;
+        }
+        return resolveActiveProject(projectId);
+    }
+
+    private ProjectScopeType projectScopeForFilter(String recruitmentType) {
+        String normalizedRecruitmentType = normalizeRecruitmentType(recruitmentType);
+        if (normalizedRecruitmentType == null) {
+            return null;
+        }
+        return EmployeeRecruitmentType.EXTERNAL.name().equalsIgnoreCase(normalizedRecruitmentType)
+                ? ProjectScopeType.EXTERNAL
+                : ProjectScopeType.INTERNAL;
+    }
+
     private ProjectScopeType requiredScope(EmployeeEntity employee) {
         return EmployeeRecruitmentType.EXTERNAL.name().equalsIgnoreCase(employee.getRecruitmentType())
                 ? ProjectScopeType.EXTERNAL
@@ -264,8 +296,9 @@ public class EmployeeProjectMappingPageServiceImpl implements EmployeeProjectMap
                 employee.getEmail(),
                 employee.getDesignation() == null ? "-" : defaultIfBlank(
                         employee.getDesignation().getDesignationName(), "-"),
-                employee.getDepartmentRegistration() == null ? "-" : defaultIfBlank(
-                        employee.getDepartmentRegistration().getDepartmentName(), "-"),
+                resolveDepartmentDisplay(employee),
+                resolveEmployeeDepartmentId(employee),
+                resolveEmployeeSubDepartmentId(employee),
                 defaultIfBlank(employee.getRecruitmentType(), "-"),
                 mapping == null ? null : toProjectOption(mapping.getProject()));
     }
@@ -275,8 +308,80 @@ public class EmployeeProjectMappingPageServiceImpl implements EmployeeProjectMap
                 project.getProjectId(),
                 defaultIfBlank(project.getProjectName(), "-"),
                 project.getProjectCode(),
+                project.getDepartmentId(),
+                project.getSubDepartmentId(),
                 project.getProjectScopeType() == null ? "-" : project.getProjectScopeType().name(),
                 ACTIVE_FLAG.equalsIgnoreCase(project.getActiveFlag()));
+    }
+
+    private void validateProjectDepartmentMatch(ProjectMst project, EmployeeEntity employee) {
+        if (matchesEmployeeDepartment(project, employee)) {
+            return;
+        }
+        Long projectSubDepartmentId = project == null ? null : project.getSubDepartmentId();
+        if (projectSubDepartmentId != null) {
+            throw new RecruitmentNotificationException(
+                    "Selected project belongs to a different subdepartment than the employee.");
+        }
+        throw new RecruitmentNotificationException(
+                "Selected project belongs to a different department than the employee.");
+    }
+
+    private boolean matchesEmployeeDepartment(ProjectMst project, EmployeeEntity employee) {
+        if (project == null || employee == null) {
+            return false;
+        }
+
+        Long projectSubDepartmentId = project.getSubDepartmentId();
+        if (projectSubDepartmentId != null) {
+            return Objects.equals(projectSubDepartmentId, resolveEmployeeSubDepartmentId(employee));
+        }
+
+        Long projectDepartmentId = project.getDepartmentId();
+        return projectDepartmentId != null
+                && Objects.equals(projectDepartmentId, resolveEmployeeDepartmentId(employee));
+    }
+
+    private Long resolveEmployeeDepartmentId(EmployeeEntity employee) {
+        if (employee == null) {
+            return null;
+        }
+        if (employee.getDepartment() != null) {
+            return employee.getDepartment().getDepartmentId();
+        }
+        if (employee.getSubDepartment() != null && employee.getSubDepartment().getDepartment() != null) {
+            return employee.getSubDepartment().getDepartment().getDepartmentId();
+        }
+        return null;
+    }
+
+    private Long resolveEmployeeSubDepartmentId(EmployeeEntity employee) {
+        if (employee == null || employee.getSubDepartment() == null) {
+            return null;
+        }
+        return employee.getSubDepartment().getSubDeptId();
+    }
+
+    private String resolveDepartmentDisplay(EmployeeEntity employee) {
+        String departmentName = employee.getDepartment() == null
+                ? null
+                : employee.getDepartment().getDepartmentName();
+        String subDepartmentName = employee.getSubDepartment() == null
+                ? null
+                : employee.getSubDepartment().getSubDeptName();
+
+        String normalizedDepartment = defaultIfBlank(departmentName, null);
+        String normalizedSubDepartment = defaultIfBlank(subDepartmentName, null);
+        if (normalizedDepartment != null && normalizedSubDepartment != null) {
+            return normalizedDepartment + " / " + normalizedSubDepartment;
+        }
+        if (normalizedDepartment != null) {
+            return normalizedDepartment;
+        }
+        if (normalizedSubDepartment != null) {
+            return normalizedSubDepartment;
+        }
+        return "-";
     }
 
     private String normalizeRecruitmentType(String recruitmentType) {

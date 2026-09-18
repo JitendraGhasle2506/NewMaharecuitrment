@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.web.controller.hr;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +29,7 @@ import com.maharecruitment.gov.in.web.service.hr.EmployeeProjectMappingPageServi
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeProjectBulkMappingResult;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeProjectMappingEditView;
 import com.maharecruitment.gov.in.web.service.hr.model.EmployeeProjectMappingEmployeeView;
+import com.maharecruitment.gov.in.web.service.hr.model.EmployeeProjectOptionView;
 
 import jakarta.validation.Valid;
 
@@ -51,11 +53,20 @@ public class EmployeeProjectMappingController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long projectId,
             Model model) {
         int resolvedPage = Math.max(page, 0);
         int resolvedSize = resolvePageSize(size);
         String normalizedType = normalizeType(type);
         String normalizedSearch = normalizeSearch(search);
+        List<EmployeeProjectOptionView> availableProjects = mappingService.availableActiveProjects(normalizedType);
+        Long selectedProjectId = resolveSelectedProjectId(projectId, availableProjects);
+        EmployeeProjectOptionView selectedProject = selectedProjectId == null
+                ? null
+                : availableProjects.stream()
+                        .filter(project -> project.projectId().equals(selectedProjectId))
+                        .findFirst()
+                        .orElse(null);
         Pageable pageable = PageRequest.of(
                 resolvedPage,
                 resolvedSize,
@@ -63,10 +74,15 @@ public class EmployeeProjectMappingController {
         Page<EmployeeProjectMappingEmployeeView> employeePage = mappingService.searchUnmappedEmployees(
                 normalizedType,
                 normalizedSearch,
+                selectedProjectId,
                 pageable);
         if (employeePage.getTotalPages() > 0 && resolvedPage >= employeePage.getTotalPages()) {
             pageable = PageRequest.of(employeePage.getTotalPages() - 1, resolvedSize, pageable.getSort());
-            employeePage = mappingService.searchUnmappedEmployees(normalizedType, normalizedSearch, pageable);
+            employeePage = mappingService.searchUnmappedEmployees(
+                    normalizedType,
+                    normalizedSearch,
+                    selectedProjectId,
+                    pageable);
         }
 
         model.addAttribute("employees", employeePage.getContent());
@@ -74,7 +90,9 @@ public class EmployeeProjectMappingController {
         model.addAttribute("currentType", normalizedType);
         model.addAttribute("searchTerm", normalizedSearch == null ? "" : normalizedSearch);
         model.addAttribute("pageSize", employeePage.getSize());
-        model.addAttribute("availableProjects", mappingService.availableActiveProjects());
+        model.addAttribute("availableProjects", availableProjects);
+        model.addAttribute("selectedProjectId", selectedProjectId);
+        model.addAttribute("selectedProject", selectedProject);
         if (!model.containsAttribute("bulkMappingForm")) {
             model.addAttribute("bulkMappingForm", new EmployeeProjectBulkMappingForm());
         }
@@ -121,13 +139,14 @@ public class EmployeeProjectMappingController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long projectId,
             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
                     bindingResult.getAllErrors().getFirst().getDefaultMessage());
             redirectAttributes.addFlashAttribute("bulkMappingForm", form);
-            return "redirect:/hr/employee-project-mappings" + buildBackQuery(type, page, size, search);
+            return "redirect:/hr/employee-project-mappings" + buildBackQuery(type, page, size, search, projectId);
         }
         try {
             EmployeeProjectBulkMappingResult result = mappingService.updateMappings(
@@ -138,7 +157,7 @@ public class EmployeeProjectMappingController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             redirectAttributes.addFlashAttribute("bulkMappingForm", form);
         }
-        return "redirect:/hr/employee-project-mappings" + buildBackQuery(type, page, size, search);
+        return "redirect:/hr/employee-project-mappings" + buildBackQuery(type, page, size, search, projectId);
     }
 
     @GetMapping("/{employeeId}")
@@ -148,14 +167,17 @@ public class EmployeeProjectMappingController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long filterProjectId,
+            @RequestParam(required = false) Long projectId,
             @RequestParam(defaultValue = "assign") String source,
             Model model,
             RedirectAttributes redirectAttributes) {
         try {
+            Long resolvedFilterProjectId = filterProjectId == null ? projectId : filterProjectId;
             EmployeeProjectMappingEditView editView = mappingService.loadMapping(employeeId);
             EmployeeProjectMappingUpdateForm form = new EmployeeProjectMappingUpdateForm();
             form.setProjectId(editView.selectedProject() == null ? null : editView.selectedProject().projectId());
-            populateEditModel(model, editView, form, type, page, size, search, source);
+            populateEditModel(model, editView, form, type, page, size, search, resolvedFilterProjectId, source);
             return "hr/employee-project-mapping-form";
         } catch (RecruitmentNotificationException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
@@ -172,12 +194,13 @@ public class EmployeeProjectMappingController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long filterProjectId,
             @RequestParam(defaultValue = "assign") String source,
             Model model,
             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             EmployeeProjectMappingEditView editView = mappingService.loadMapping(employeeId);
-            populateEditModel(model, editView, form, type, page, size, search, source);
+            populateEditModel(model, editView, form, type, page, size, search, filterProjectId, source);
             model.addAttribute("errorMessage", bindingResult.getAllErrors().getFirst().getDefaultMessage());
             return "hr/employee-project-mapping-form";
         }
@@ -188,11 +211,11 @@ public class EmployeeProjectMappingController {
                     changed ? "Employee project mapping updated successfully."
                             : "Employee is already mapped to this project.");
             return "redirect:/hr/employee-project-mappings/" + employeeId
-                    + buildBackQuery(type, page, size, search)
+                    + buildBackQuery(type, page, size, search, filterProjectId)
                     + "&source=" + normalizeSource(source);
         } catch (RecruitmentNotificationException ex) {
             EmployeeProjectMappingEditView editView = mappingService.loadMapping(employeeId);
-            populateEditModel(model, editView, form, type, page, size, search, source);
+            populateEditModel(model, editView, form, type, page, size, search, filterProjectId, source);
             model.addAttribute("errorMessage", ex.getMessage());
             return "hr/employee-project-mapping-form";
         }
@@ -206,6 +229,7 @@ public class EmployeeProjectMappingController {
             int page,
             int size,
             String search,
+            Long filterProjectId,
             String source) {
         model.addAttribute("editView", editView);
         model.addAttribute("mappingForm", form);
@@ -213,8 +237,9 @@ public class EmployeeProjectMappingController {
         model.addAttribute("currentPage", Math.max(page, 0));
         model.addAttribute("pageSize", resolvePageSize(size));
         model.addAttribute("searchTerm", normalizeSearch(search) == null ? "" : normalizeSearch(search));
+        model.addAttribute("filterProjectId", normalizeProjectId(filterProjectId));
         model.addAttribute("source", normalizeSource(source));
-        model.addAttribute("backUrl", buildListUrl(source, type, page, size, search));
+        model.addAttribute("backUrl", buildListUrl(source, type, page, size, search, filterProjectId));
     }
 
     private int resolvePageSize(int size) {
@@ -233,10 +258,33 @@ public class EmployeeProjectMappingController {
         return StringUtils.hasText(search) ? search.trim() : null;
     }
 
+    private Long normalizeProjectId(Long projectId) {
+        return projectId == null || projectId < 1 ? null : projectId;
+    }
+
+    private Long resolveSelectedProjectId(Long projectId, List<EmployeeProjectOptionView> availableProjects) {
+        Long normalizedProjectId = normalizeProjectId(projectId);
+        if (normalizedProjectId == null) {
+            return null;
+        }
+        return availableProjects.stream()
+                .anyMatch(project -> project.projectId().equals(normalizedProjectId))
+                        ? normalizedProjectId
+                        : null;
+    }
+
     private String buildBackQuery(String type, int page, int size, String search) {
+        return buildBackQuery(type, page, size, search, null);
+    }
+
+    private String buildBackQuery(String type, int page, int size, String search, Long projectId) {
         StringBuilder query = new StringBuilder("?type=").append(normalizeType(type))
                 .append("&page=").append(Math.max(page, 0))
                 .append("&size=").append(resolvePageSize(size));
+        Long normalizedProjectId = normalizeProjectId(projectId);
+        if (normalizedProjectId != null) {
+            query.append("&projectId=").append(normalizedProjectId);
+        }
         String normalizedSearch = normalizeSearch(search);
         if (normalizedSearch != null) {
             query.append("&search=").append(URLEncoder.encode(normalizedSearch, StandardCharsets.UTF_8));
@@ -244,11 +292,11 @@ public class EmployeeProjectMappingController {
         return query.toString();
     }
 
-    private String buildListUrl(String source, String type, int page, int size, String search) {
+    private String buildListUrl(String source, String type, int page, int size, String search, Long projectId) {
         String path = "mapped".equals(normalizeSource(source))
                 ? "/hr/employee-project-mappings/mapped"
                 : "/hr/employee-project-mappings";
-        return path + buildBackQuery(type, page, size, search);
+        return path + buildBackQuery(type, page, size, search, projectId);
     }
 
     private String normalizeSource(String source) {

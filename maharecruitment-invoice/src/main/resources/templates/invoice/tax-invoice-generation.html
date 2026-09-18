@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Generate Tax Invoices</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <style>
+        .tax-generation-shell {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        .tax-generation-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .tax-generation-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .tax-generation-icon {
+            width: 3rem;
+            height: 3rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.75rem;
+            color: #0f766e;
+            background: #ccfbf1;
+            box-shadow: 0 10px 24px rgba(15, 118, 110, 0.12);
+        }
+
+        .tax-generation-panel {
+            border: 0;
+            border-radius: 0.75rem;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        .tax-generation-form {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
+
+        .tax-generation-field {
+            min-width: 0;
+        }
+
+        .tax-generation-field.department,
+        .tax-generation-field.project {
+            grid-column: span 2;
+        }
+
+        .tax-generation-field.subdepartment,
+        .tax-generation-field.date {
+            grid-column: span 1;
+        }
+
+        .tax-generation-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .tax-generation-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .tax-generation-stat {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            background: #ffffff;
+            min-height: 5.25rem;
+        }
+
+        .tax-generation-stat-label {
+            color: #64748b;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 700;
+        }
+
+        .tax-generation-stat-value {
+            color: #0f172a;
+            font-size: 1.45rem;
+            font-weight: 800;
+            margin-top: 0.25rem;
+        }
+
+        .tax-generation-table {
+            table-layout: fixed;
+        }
+
+        .tax-generation-table th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+
+        .tax-generation-table td,
+        .tax-generation-table th {
+            vertical-align: middle;
+            padding: 0.85rem 1rem;
+        }
+
+        .tax-generation-main-text {
+            font-weight: 700;
+            color: #0f172a;
+            word-break: break-word;
+        }
+
+        .tax-generation-muted {
+            color: #64748b;
+            font-size: 0.84rem;
+            word-break: break-word;
+        }
+
+        .tax-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 7.5rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .tax-status.generated {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .tax-status.failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .tax-generation-empty {
+            padding: 2.5rem 1rem;
+            text-align: center;
+            color: #64748b;
+        }
+
+        @media (max-width: 1199.98px) {
+            .tax-generation-form {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .tax-generation-field.department,
+            .tax-generation-field.project,
+            .tax-generation-field.subdepartment,
+            .tax-generation-field.date {
+                grid-column: span 1;
+            }
+
+            .tax-generation-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .tax-generation-form,
+            .tax-generation-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .tax-generation-actions {
+                justify-content: stretch;
+            }
+
+            .tax-generation-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Invoice', 'Generate Tax Invoices', ~{::section})}">
+        <section class="tax-generation-shell">
+            <div class="tax-generation-header">
+                <div class="tax-generation-title">
+                    <div class="tax-generation-icon">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold text-dark mb-1">Generate Tax Invoices</h2>
+                        <p class="text-muted mb-0">Department, project, employee and invoice generation workspace.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success border-0 shadow-sm" th:text="${successMessage}">
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger border-0 shadow-sm" th:text="${errorMessage}"></div>
+
+            <div class="card tax-generation-panel">
+                <div class="card-body p-4">
+                    <form th:object="${invoiceFilter}" method="post" th:action="@{/invoice/tax-invoices/generate/preview}">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <div class="tax-generation-form">
+                            <div class="tax-generation-field department">
+                                <label class="form-label fw-semibold" for="departmentId">Department</label>
+                                <select id="departmentId" class="form-select" th:field="*{departmentId}" required>
+                                    <option value="">Select Department</option>
+                                    <option th:each="department : ${departments}" th:value="${department.id}"
+                                        th:text="${department.name}">Department</option>
+                                </select>
+                            </div>
+
+                            <div class="tax-generation-field subdepartment">
+                                <label class="form-label fw-semibold" for="subDepartmentId">Subdepartment</label>
+                                <select id="subDepartmentId" class="form-select" th:field="*{subDepartmentId}">
+                                    <option value="">All Subdepartments</option>
+                                    <option th:each="subDepartment : ${subDepartments}" th:value="${subDepartment.id}"
+                                        th:text="${subDepartment.name}"
+                                        th:attr="data-department-id=${subDepartment.departmentId}">Subdepartment</option>
+                                </select>
+                            </div>
+
+                            <div class="tax-generation-field project">
+                                <label class="form-label fw-semibold" for="projectId">Project</label>
+                                <select id="projectId" class="form-select" th:field="*{projectId}">
+                                    <option value="">All Projects</option>
+                                    <option th:each="project : ${projects}" th:value="${project.id}"
+                                        th:text="${project.code != null ? project.name + ' (' + project.code + ')' : project.name}"
+                                        th:attr="data-department-id=${project.departmentId},data-sub-department-id=${project.subDepartmentId}">
+                                        Project
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="tax-generation-field date">
+                                <label class="form-label fw-semibold" for="startDate">Start Date</label>
+                                <input id="startDate" type="date" class="form-control" th:field="*{startDate}" required>
+                            </div>
+
+                            <div class="tax-generation-field date">
+                                <label class="form-label fw-semibold" for="endDate">End Date</label>
+                                <input id="endDate" type="date" class="form-control" th:field="*{endDate}" required>
+                            </div>
+                        </div>
+
+                        <div class="tax-generation-actions">
+                            <button type="submit" class="btn btn-outline-primary rounded-pill px-4 fw-semibold">
+                                <i class="fa-solid fa-magnifying-glass me-1"></i> Preview
+                            </button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold"
+                                th:formaction="@{/invoice/tax-invoices/generate/generate}">
+                                <i class="fa-solid fa-file-circle-plus me-1"></i> Generate
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="tax-generation-summary" th:if="${previewReady}">
+                <div class="tax-generation-stat">
+                    <div class="tax-generation-stat-label">Employees</div>
+                    <div class="tax-generation-stat-value" th:text="${preview.employeeCount}">0</div>
+                </div>
+                <div class="tax-generation-stat">
+                    <div class="tax-generation-stat-label">Applications</div>
+                    <div class="tax-generation-stat-value" th:text="${preview.applicationCount}">0</div>
+                </div>
+                <div class="tax-generation-stat">
+                    <div class="tax-generation-stat-label">Ready</div>
+                    <div class="tax-generation-stat-value" th:text="${preview.pendingGenerationCount}">0</div>
+                </div>
+                <div class="tax-generation-stat">
+                    <div class="tax-generation-stat-label">Existing</div>
+                    <div class="tax-generation-stat-value" th:text="${preview.alreadyGeneratedCount}">0</div>
+                </div>
+            </div>
+
+            <div class="card tax-generation-panel" th:if="${generationResult != null}">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                        <div>
+                            <h5 class="fw-bold mb-1">Generation Result</h5>
+                            <div class="text-muted small"
+                                th:text="${'Generated: ' + generationResult.generatedCount + ' | Existing: ' + generationResult.alreadyGeneratedCount + ' | Failed: ' + generationResult.failedCount}">
+                                Generated: 0 | Existing: 0 | Failed: 0
+                            </div>
+                        </div>
+                        <span class="badge bg-light text-dark border rounded-pill px-3 py-2"
+                            th:text="${'Processed ' + generationResult.totalProcessedCount}">Processed 0</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover tax-generation-table mb-0">
+                        <colgroup>
+                            <col style="width: 18%;">
+                            <col style="width: 14%;">
+                            <col style="width: 24%;">
+                            <col style="width: 12%;">
+                            <col style="width: 16%;">
+                            <col style="width: 16%;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Request</th>
+                                <th>Invoice ID</th>
+                                <th>Project</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="application : ${generationResult.applications}">
+                                <td>
+                                    <div class="tax-generation-main-text" th:text="${application.requestId}">REQ</div>
+                                    <div class="tax-generation-muted" th:text="${application.tiNumber ?: '-'}">TI</div>
+                                </td>
+                                <td th:text="${application.departmentTaxInvoiceId ?: '-'}">-</td>
+                                <td>
+                                    <div class="tax-generation-main-text" th:text="${application.projectName}">Project</div>
+                                    <div class="tax-generation-muted" th:text="${application.projectCode}">Code</div>
+                                </td>
+                                <td th:text="${application.issueDate != null ? #temporals.format(application.issueDate, 'dd-MMM-yyyy') : '-'}">
+                                    -
+                                </td>
+                                <td>
+                                    <span class="tax-status"
+                                        th:classappend="${application.generationStatus == 'Generated' || application.generationStatus == 'Already Generated'} ? ' generated' : (${application.generationStatus == 'Failed'} ? ' failed' : '')"
+                                        th:text="${application.generationStatus}">Status</span>
+                                    <div class="tax-generation-muted mt-1" th:text="${application.message}">Message</div>
+                                </td>
+                                <td class="text-end">
+                                    <a th:if="${application.generated}" class="btn btn-light btn-sm border rounded-pill px-3 fw-semibold"
+                                        th:href="@{/invoice/tax-invoices/application/{applicationId}(applicationId=${application.applicationId})}">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card tax-generation-panel" th:if="${previewReady}">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-1">Eligible Applications</h5>
+                    <div class="text-muted small">Completed applications matched to the selected project and invoice date range.</div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover tax-generation-table mb-0">
+                        <colgroup>
+                            <col style="width: 18%;">
+                            <col style="width: 14%;">
+                            <col style="width: 26%;">
+                            <col style="width: 20%;">
+                            <col style="width: 10%;">
+                            <col style="width: 12%;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Request</th>
+                                <th>Invoice ID</th>
+                                <th>Project</th>
+                                <th>Department</th>
+                                <th>Date</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(preview.applications)}">
+                                <td colspan="6" class="tax-generation-empty">No completed applications found for the selected filter.</td>
+                            </tr>
+                            <tr th:each="application : ${preview.applications}">
+                                <td>
+                                    <div class="tax-generation-main-text" th:text="${application.requestId}">REQ</div>
+                                    <div class="tax-generation-muted" th:text="${application.tiNumber ?: 'Ready'}">Ready</div>
+                                </td>
+                                <td th:text="${application.departmentTaxInvoiceId ?: '-'}">-</td>
+                                <td>
+                                    <div class="tax-generation-main-text" th:text="${application.projectName}">Project</div>
+                                    <div class="tax-generation-muted" th:text="${application.projectCode}">Code</div>
+                                </td>
+                                <td>
+                                    <div class="tax-generation-main-text" th:text="${application.departmentName}">Department</div>
+                                    <div class="tax-generation-muted" th:text="${application.subDepartmentName}">Subdepartment</div>
+                                </td>
+                                <td th:text="${application.issueDate != null ? #temporals.format(application.issueDate, 'dd-MMM-yyyy') : '-'}">
+                                    -
+                                </td>
+                                <td class="text-end">
+                                    <a th:if="${application.generated}" class="btn btn-light btn-sm border rounded-pill px-3 fw-semibold"
+                                        th:href="@{/invoice/tax-invoices/application/{applicationId}(applicationId=${application.applicationId})}">
+                                        View
+                                    </a>
+                                    <a th:unless="${application.generated}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold"
+                                        th:href="@{/invoice/tax-invoices/application/{applicationId}/preview(applicationId=${application.applicationId})}">
+                                        Preview
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card tax-generation-panel" th:if="${previewReady}">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-1">Mapped Employees</h5>
+                    <div class="text-muted small">Active employees currently mapped to the selected project scope.</div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover tax-generation-table mb-0">
+                        <colgroup>
+                            <col style="width: 24%;">
+                            <col style="width: 20%;">
+                            <col style="width: 18%;">
+                            <col style="width: 20%;">
+                            <col style="width: 18%;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Designation</th>
+                                <th>Type</th>
+                                <th>Department</th>
+                                <th>Project</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(preview.employees)}">
+                                <td colspan="5" class="tax-generation-empty">No active mapped employees found for the selected filter.</td>
+                            </tr>
+                            <tr th:each="employee : ${preview.employees}">
+                                <td>
+                                    <div class="tax-generation-main-text" th:text="${employee.fullName}">Employee</div>
+                                    <div class="tax-generation-muted">
+                                        <span th:text="${employee.employeeCode}">Code</span>
+                                        <span th:text="${' | ' + employee.email}"> | email</span>
+                                    </div>
+                                </td>
+                                <td th:text="${employee.designationName}">Designation</td>
+                                <td th:text="${employee.recruitmentType}">Type</td>
+                                <td>
+                                    <div class="tax-generation-main-text" th:text="${employee.departmentName}">Department</div>
+                                    <div class="tax-generation-muted" th:text="${employee.subDepartmentName}">Subdepartment</div>
+                                </td>
+                                <td th:text="${employee.projectName}">Project</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <script>
+        (function () {
+            const departmentSelect = document.getElementById('departmentId');
+            const subDepartmentSelect = document.getElementById('subDepartmentId');
+            const projectSelect = document.getElementById('projectId');
+
+            if (!departmentSelect || !subDepartmentSelect || !projectSelect) {
+                return;
+            }
+
+            function setOptionVisibility(option, visible) {
+                option.hidden = !visible;
+                option.disabled = !visible;
+            }
+
+            function filterSubDepartments() {
+                const departmentId = departmentSelect.value;
+                Array.from(subDepartmentSelect.options).forEach(function (option) {
+                    if (!option.value) {
+                        setOptionVisibility(option, true);
+                        return;
+                    }
+                    setOptionVisibility(option, !departmentId || option.dataset.departmentId === departmentId);
+                });
+                if (subDepartmentSelect.selectedOptions.length
+                        && subDepartmentSelect.selectedOptions[0].disabled) {
+                    subDepartmentSelect.value = '';
+                }
+            }
+
+            function filterProjects() {
+                const departmentId = departmentSelect.value;
+                const subDepartmentId = subDepartmentSelect.value;
+                Array.from(projectSelect.options).forEach(function (option) {
+                    if (!option.value) {
+                        setOptionVisibility(option, true);
+                        return;
+                    }
+                    const matchesDepartment = !departmentId || option.dataset.departmentId === departmentId;
+                    const optionSubDepartmentId = option.dataset.subDepartmentId || '';
+                    const matchesSubDepartment = !subDepartmentId || optionSubDepartmentId === subDepartmentId;
+                    setOptionVisibility(option, matchesDepartment && matchesSubDepartment);
+                });
+                if (projectSelect.selectedOptions.length && projectSelect.selectedOptions[0].disabled) {
+                    projectSelect.value = '';
+                }
+            }
+
+            function refreshDependentOptions() {
+                filterSubDepartments();
+                filterProjects();
+            }
+
+            departmentSelect.addEventListener('change', refreshDependentOptions);
+            subDepartmentSelect.addEventListener('change', filterProjects);
+            refreshDependentOptions();
+        }());
+    </script>
+</body>
+
+</html>

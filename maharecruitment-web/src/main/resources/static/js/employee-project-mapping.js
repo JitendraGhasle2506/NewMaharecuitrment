@@ -4,6 +4,7 @@
     document.addEventListener("DOMContentLoaded", function () {
         const form = document.getElementById("employeeProjectBulkMappingForm");
         const projectPicker = document.getElementById("bulkEmployeeProjectPicker");
+        const bulkProjectId = document.getElementById("employeeProjectBulkProjectId");
         const selectAll = document.getElementById("employeeProjectSelectAll");
         const selectCompatible = document.getElementById("employeeProjectSelectCompatible");
         const clearSelection = document.getElementById("employeeProjectClearSelection");
@@ -18,16 +19,37 @@
             return Array.from(form.querySelectorAll(".employee-project-row-check"));
         }
 
-        function selectedScope() {
+        function selectedProject() {
             const option = projectPicker.options[projectPicker.selectedIndex];
-            return option ? option.dataset.scope || "" : "";
+            if (!option || !option.value) {
+                return null;
+            }
+            return {
+                scope: option.dataset.scope || "",
+                departmentId: option.dataset.departmentId || "",
+                subDepartmentId: option.dataset.subDepartmentId || ""
+            };
+        }
+
+        function isCompatible(row, project) {
+            if (!row || !project || !project.scope) {
+                return false;
+            }
+            if (row.dataset.employeeScope !== project.scope) {
+                return false;
+            }
+            if (project.subDepartmentId) {
+                return row.dataset.employeeSubDepartmentId === project.subDepartmentId;
+            }
+            return Boolean(project.departmentId)
+                && row.dataset.employeeDepartmentId === project.departmentId;
         }
 
         function compatibleChecks() {
-            const scope = selectedScope();
+            const project = selectedProject();
             return checks().filter(function (checkbox) {
                 const row = checkbox.closest(".employee-project-row");
-                return scope && row && row.dataset.employeeScope === scope;
+                return isCompatible(row, project);
             });
         }
 
@@ -45,21 +67,24 @@
         }
 
         function applyScope() {
-            const scope = selectedScope();
+            const project = selectedProject();
+            if (bulkProjectId) {
+                bulkProjectId.value = projectPicker.value || "";
+            }
             checks().forEach(function (checkbox) {
                 const row = checkbox.closest(".employee-project-row");
-                const compatible = Boolean(scope && row && row.dataset.employeeScope === scope);
+                const compatible = isCompatible(row, project);
                 checkbox.disabled = !compatible;
                 if (!compatible) {
                     checkbox.checked = false;
                 }
                 if (row) {
-                    row.classList.toggle("is-incompatible", Boolean(scope) && !compatible);
+                    row.classList.toggle("is-incompatible", Boolean(project) && !compatible);
                 }
             });
             if (scopeHint) {
-                scopeHint.textContent = scope
-                    ? "Only " + scope.toLowerCase() + " employees can be selected for this project."
+                scopeHint.textContent = project
+                    ? "Only employees from the matching department or subdepartment can be selected for this project."
                     : "Select a project to enable compatible employees.";
             }
             updateSelectionState();
@@ -95,7 +120,8 @@
             if (!projectPicker.value || checks().every(function (checkbox) { return !checkbox.checked; })) {
                 event.preventDefault();
                 if (!projectPicker.value) {
-                    projectPicker.reportValidity();
+                    scopeHint.textContent = "Select a project before assigning employees.";
+                    projectPicker.focus();
                 } else {
                     scopeHint.textContent = "Select at least one compatible employee.";
                 }

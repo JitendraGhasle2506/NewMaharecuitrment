@@ -49,6 +49,20 @@ public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
     @EntityGraph(attributePaths = { "cell", "cell.wing" })
     List<ProjectMst> findByActiveFlagIgnoreCaseOrderByProjectNameAsc(String activeFlag);
 
+    @EntityGraph(attributePaths = { "department", "subDepartment" })
+    @Query("""
+            select project
+            from ProjectMst project
+            where upper(trim(coalesce(project.activeFlag, ''))) = upper(:activeFlag)
+              and (:departmentId is null or project.departmentId = :departmentId)
+              and (:subDepartmentId is null or project.subDepartmentId = :subDepartmentId)
+            order by lower(project.projectName), project.projectId
+            """)
+    List<ProjectMst> findActiveProjectOptionsForTaxInvoice(
+            @Param("departmentId") Long departmentId,
+            @Param("subDepartmentId") Long subDepartmentId,
+            @Param("activeFlag") String activeFlag);
+
     long countByProjectScopeType(ProjectScopeType projectScopeType);
 
     @Query("""

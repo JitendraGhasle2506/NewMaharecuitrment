@@ -145,11 +145,13 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
     @Query("select employee from EmployeeEntity employee where employee.employeeId in :employeeIds")
     List<EmployeeEntity> findDetailedByEmployeeIdIn(@Param("employeeIds") Collection<Long> employeeIds);
 
-    @EntityGraph(attributePaths = { "departmentRegistration", "designation" })
+    @EntityGraph(attributePaths = { "department", "subDepartment", "subDepartment.department", "designation" })
     @Query(value = """
             select employee
             from EmployeeEntity employee
-            left join employee.departmentRegistration department
+            left join employee.department department
+            left join employee.subDepartment subDepartment
+            left join subDepartment.department subDepartmentParent
             left join employee.designation designation
             where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
               and trim(coalesce(employee.employeeCode, '')) <> ''
@@ -162,17 +164,31 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
               )
               and (:recruitmentType is null
                    or upper(trim(coalesce(employee.recruitmentType, ''))) = :recruitmentType)
+              and (:projectScope is null
+                   or (:projectScope = 'EXTERNAL'
+                       and upper(trim(coalesce(employee.recruitmentType, ''))) = 'EXTERNAL')
+                   or (:projectScope = 'INTERNAL'
+                       and upper(trim(coalesce(employee.recruitmentType, ''))) <> 'EXTERNAL'))
+              and (:projectSubDepartmentId is null
+                   or subDepartment.subDeptId = :projectSubDepartmentId)
+              and (:projectSubDepartmentId is not null
+                   or :projectDepartmentId is null
+                   or department.departmentId = :projectDepartmentId
+                   or subDepartmentParent.departmentId = :projectDepartmentId)
               and (:searchPattern is null
                    or upper(coalesce(employee.fullName, '')) like :searchPattern
                    or upper(coalesce(employee.email, '')) like :searchPattern
                    or upper(coalesce(employee.mobile, '')) like :searchPattern
                    or upper(coalesce(department.departmentName, '')) like :searchPattern
+                   or upper(coalesce(subDepartment.subDeptName, '')) like :searchPattern
                    or upper(coalesce(designation.designationName, '')) like :searchPattern)
             """,
             countQuery = """
                     select count(employee)
                     from EmployeeEntity employee
-                    left join employee.departmentRegistration department
+                    left join employee.department department
+                    left join employee.subDepartment subDepartment
+                    left join subDepartment.department subDepartmentParent
                     left join employee.designation designation
                     where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
                       and trim(coalesce(employee.employeeCode, '')) <> ''
@@ -185,23 +201,39 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
                       )
                       and (:recruitmentType is null
                            or upper(trim(coalesce(employee.recruitmentType, ''))) = :recruitmentType)
+                      and (:projectScope is null
+                           or (:projectScope = 'EXTERNAL'
+                               and upper(trim(coalesce(employee.recruitmentType, ''))) = 'EXTERNAL')
+                           or (:projectScope = 'INTERNAL'
+                               and upper(trim(coalesce(employee.recruitmentType, ''))) <> 'EXTERNAL'))
+                      and (:projectSubDepartmentId is null
+                           or subDepartment.subDeptId = :projectSubDepartmentId)
+                      and (:projectSubDepartmentId is not null
+                           or :projectDepartmentId is null
+                           or department.departmentId = :projectDepartmentId
+                           or subDepartmentParent.departmentId = :projectDepartmentId)
                       and (:searchPattern is null
                            or upper(coalesce(employee.fullName, '')) like :searchPattern
-                           or upper(coalesce(employee.email, '')) like :searchPattern
-                           or upper(coalesce(employee.mobile, '')) like :searchPattern
-                           or upper(coalesce(department.departmentName, '')) like :searchPattern
-                           or upper(coalesce(designation.designationName, '')) like :searchPattern)
+                            or upper(coalesce(employee.email, '')) like :searchPattern
+                            or upper(coalesce(employee.mobile, '')) like :searchPattern
+                            or upper(coalesce(department.departmentName, '')) like :searchPattern
+                            or upper(coalesce(subDepartment.subDeptName, '')) like :searchPattern
+                            or upper(coalesce(designation.designationName, '')) like :searchPattern)
                     """)
     Page<EmployeeEntity> findActiveOnboardedWithoutProjectMapping(
             @Param("recruitmentType") String recruitmentType,
+            @Param("projectScope") String projectScope,
+            @Param("projectDepartmentId") Long projectDepartmentId,
+            @Param("projectSubDepartmentId") Long projectSubDepartmentId,
             @Param("searchPattern") String searchPattern,
             Pageable pageable);
 
-    @EntityGraph(attributePaths = { "departmentRegistration", "designation" })
+    @EntityGraph(attributePaths = { "department", "subDepartment", "designation" })
     @Query(value = """
             select employee
             from EmployeeEntity employee
-            left join employee.departmentRegistration department
+            left join employee.department department
+            left join employee.subDepartment subDepartment
             left join employee.designation designation
             where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
               and exists (
@@ -216,6 +248,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
                    or upper(coalesce(employee.email, '')) like :searchPattern
                    or upper(coalesce(employee.mobile, '')) like :searchPattern
                    or upper(coalesce(department.departmentName, '')) like :searchPattern
+                   or upper(coalesce(subDepartment.subDeptName, '')) like :searchPattern
                    or upper(coalesce(designation.designationName, '')) like :searchPattern
                    or exists (
                         select projectMapping.employeeProjectMappingId
@@ -229,7 +262,8 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
             countQuery = """
                     select count(employee)
                     from EmployeeEntity employee
-                    left join employee.departmentRegistration department
+                    left join employee.department department
+                    left join employee.subDepartment subDepartment
                     left join employee.designation designation
                     where upper(trim(coalesce(employee.status, ''))) = 'ACTIVE'
                       and exists (
@@ -241,11 +275,12 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> 
                            or upper(trim(coalesce(employee.recruitmentType, ''))) = :recruitmentType)
                       and (:searchPattern is null
                            or upper(coalesce(employee.fullName, '')) like :searchPattern
-                           or upper(coalesce(employee.email, '')) like :searchPattern
-                           or upper(coalesce(employee.mobile, '')) like :searchPattern
-                           or upper(coalesce(department.departmentName, '')) like :searchPattern
-                           or upper(coalesce(designation.designationName, '')) like :searchPattern
-                           or exists (
+                            or upper(coalesce(employee.email, '')) like :searchPattern
+                            or upper(coalesce(employee.mobile, '')) like :searchPattern
+                            or upper(coalesce(department.departmentName, '')) like :searchPattern
+                            or upper(coalesce(subDepartment.subDeptName, '')) like :searchPattern
+                            or upper(coalesce(designation.designationName, '')) like :searchPattern
+                            or exists (
                                 select projectMapping.employeeProjectMappingId
                                 from EmployeeProjectMappingEntity projectMapping
                                 join projectMapping.project project
