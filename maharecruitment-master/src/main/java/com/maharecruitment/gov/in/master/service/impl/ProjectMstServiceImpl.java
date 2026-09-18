@@ -1,5 +1,8 @@
 package com.maharecruitment.gov.in.master.service.impl;
 
+import java.util.Locale;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -61,8 +64,7 @@ public class ProjectMstServiceImpl implements ProjectMstService {
                 departmentSelection.department().getDepartmentId(),
                 departmentSelection.subDepartmentId(),
                 null);
-        String projectCode = normalizeCode(request.getProjectCode());
-        ensureUniqueProjectCode(projectCode, null);
+        String projectCode = generateManualProjectCode();
 
         ProjectMst entity = new ProjectMst();
         mapRequestToEntity(request, entity, projectName, projectCode, departmentSelection);
@@ -85,8 +87,9 @@ public class ProjectMstServiceImpl implements ProjectMstService {
                 departmentSelection.department().getDepartmentId(),
                 departmentSelection.subDepartmentId(),
                 projectId);
-        String projectCode = normalizeCode(request.getProjectCode());
-        ensureUniqueProjectCode(projectCode, projectId);
+        String projectCode = entity.getProjectCode() == null || entity.getProjectCode().isBlank()
+                ? generateManualProjectCode()
+                : normalizeCode(entity.getProjectCode());
         mapRequestToEntity(request, entity, projectName, projectCode, departmentSelection);
 
         return projectMapper.toResponse(projectRepository.save(entity));
@@ -192,9 +195,12 @@ public class ProjectMstServiceImpl implements ProjectMstService {
         entity.setProjectCode(projectCode);
         entity.setProjectDesc(normalizeDescription(request.getProjectDesc()));
         entity.setProjectType(request.getProjectType());
-        entity.setProjectScopeType(resolveProjectScopeType(request.getProjectScopeType(), entity.getApplicationId()));
+        ProjectScopeType projectScopeType = resolveProjectScopeType(
+                request.getProjectScopeType(),
+                entity.getApplicationId());
+        entity.setProjectScopeType(projectScopeType);
         applyDepartmentSelection(entity, departmentSelection);
-        entity.setCell(resolveActiveCell(request.getCellId()));
+        entity.setCell(resolveCell(request.getCellId(), projectScopeType));
     }
 
     private DepartmentSelection resolveDepartmentSelection(Long departmentId, Long subDepartmentId) {
@@ -223,9 +229,6 @@ public class ProjectMstServiceImpl implements ProjectMstService {
     }
 
     private CellMaster resolveActiveCell(Long cellId) {
-        if (cellId == null) {
-            throw new BusinessValidationException("Cell is required.");
-        }
         CellMaster cell = cellMasterRepository.findByCellId(cellId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cell not found with id: " + cellId));
         if (!"Y".equalsIgnoreCase(cell.getActiveFlag())) {
@@ -235,6 +238,16 @@ public class ProjectMstServiceImpl implements ProjectMstService {
             throw new BusinessValidationException("Selected cell belongs to an inactive wing.");
         }
         return cell;
+    }
+
+    private CellMaster resolveCell(Long cellId, ProjectScopeType projectScopeType) {
+        if (cellId == null) {
+            if (projectScopeType == ProjectScopeType.EXTERNAL) {
+                return null;
+            }
+            throw new BusinessValidationException("Cell is required for internal projects.");
+        }
+        return resolveActiveCell(cellId);
     }
 
     private ProjectScopeType resolveProjectScopeType(ProjectScopeType projectScopeType, Long applicationId) {
@@ -259,12 +272,6 @@ public class ProjectMstServiceImpl implements ProjectMstService {
                 subDepartmentId,
                 excludeId)) {
             throw new DuplicateResourceException("Project already exists with name: " + projectName);
-        }
-    }
-
-    private void ensureUniqueProjectCode(String projectCode, Long excludeId) {
-        if (projectRepository.existsByProjectCodeExcludingId(projectCode, excludeId)) {
-            throw new DuplicateResourceException("Project already exists with code: " + projectCode);
         }
     }
 
@@ -300,6 +307,20 @@ public class ProjectMstServiceImpl implements ProjectMstService {
             prefix = "PRJ";
         }
         return prefix + "-" + applicationId;
+    }
+
+    private String generateManualProjectCode() {
+        for (int attempt = 0; attempt < 10; attempt++) {
+            String code = "PRJ-" + UUID.randomUUID()
+                    .toString()
+                    .replace("-", "")
+                    .substring(0, 12)
+                    .toUpperCase(Locale.ROOT);
+            if (!projectRepository.existsByProjectCodeExcludingId(code, null)) {
+                return code;
+            }
+        }
+        throw new IllegalStateException("Unable to generate a unique project code.");
     }
 
     private record DepartmentSelection(DepartmentMst department, SubDepartment subDepartment) {

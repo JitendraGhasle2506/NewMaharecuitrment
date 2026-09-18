@@ -82,6 +82,8 @@ class ProjectMstServiceImplTest {
         verify(projectRepository).save(captor.capture());
         assertThat(captor.getValue().getDepartmentId()).isEqualTo(10L);
         assertThat(captor.getValue().getSubDepartmentId()).isEqualTo(20L);
+        assertThat(captor.getValue().getProjectCode()).startsWith("PRJ-").hasSize(16);
+        assertThat(captor.getValue().getProjectCode()).isNotEqualTo(request.getProjectCode());
         assertThat(response.getDepartmentId()).isEqualTo(10L);
         assertThat(response.getDepartmentName()).isEqualTo("Finance");
         assertThat(response.getSubDepartmentId()).isEqualTo(20L);
@@ -124,6 +126,35 @@ class ProjectMstServiceImplTest {
         assertThat(response.getDepartmentId()).isEqualTo(10L);
         assertThat(response.getSubDepartmentId()).isEqualTo(20L);
         assertThat(response.getApplicationId()).isEqualTo(50L);
+    }
+
+    @Test
+    void createExternalProjectDoesNotRequireCell() {
+        DepartmentMst department = department(10L, "Finance");
+        ProjectRequest request = validRequest(10L, null, null);
+        request.setProjectScopeType(ProjectScopeType.EXTERNAL);
+
+        when(departmentRepository.findById(10L)).thenReturn(Optional.of(department));
+        when(projectRepository.save(any(ProjectMst.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProjectResponse response = service.create(request);
+
+        assertThat(response.getCellId()).isNull();
+        verify(cellRepository, never()).findByCellId(any());
+    }
+
+    @Test
+    void createInternalProjectStillRequiresCell() {
+        DepartmentMst department = department(10L, "Finance");
+        ProjectRequest request = validRequest(10L, null, null);
+
+        when(departmentRepository.findById(10L)).thenReturn(Optional.of(department));
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Cell is required for internal projects.");
+
+        verify(projectRepository, never()).save(any(ProjectMst.class));
     }
 
     private ProjectRequest validRequest(Long departmentId, Long subDepartmentId, Long cellId) {

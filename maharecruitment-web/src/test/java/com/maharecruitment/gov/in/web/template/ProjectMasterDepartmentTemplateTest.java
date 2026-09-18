@@ -33,6 +33,18 @@ class ProjectMasterDepartmentTemplateTest {
                 .contains("${item.subDepartmentName != null ? item.subDepartmentName : '-'}");
     }
 
+    @Test
+    void formShowsGeneratedCodeAndMakesCellConditionalOnScope() throws IOException {
+        assertThat(template("form.html"))
+                .contains("Generated automatically")
+                .doesNotContain("th:field=\"*{projectCode}\"")
+                .contains("id=\"projectScopeType\"")
+                .contains("id=\"cellId\"")
+                .contains("projectScopeSelect?.value !== 'EXTERNAL'")
+                .contains("cellSelect.required = cellRequired")
+                .contains("Select Cell (optional for external projects)");
+    }
+
     private String template(String fileName) throws IOException {
         ClassPathResource resource = new ClassPathResource("templates/master/projects/" + fileName);
         return resource.getContentAsString(StandardCharsets.UTF_8);

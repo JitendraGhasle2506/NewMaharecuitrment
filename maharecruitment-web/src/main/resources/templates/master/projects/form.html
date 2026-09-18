@@ -43,14 +43,15 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Project Code <span class="text-danger">*</span></label>
-                            <input autocomplete="off" type="text" th:field="*{projectCode}" class="form-control text-uppercase" maxlength="30">
-                            <div class="text-danger small" th:if="${#fields.hasErrors('projectCode')}" th:errors="*{projectCode}"></div>
+                            <label class="form-label" for="projectCodeDisplay">Project Code</label>
+                            <input id="projectCodeDisplay" type="text" class="form-control text-uppercase" autocomplete="off"
+                                th:value="${isEdit ? projectForm.projectCode : 'Generated automatically'}"
+                                readonly aria-readonly="true">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Project Scope <span class="text-danger">*</span></label>
-                            <select autocomplete="off" class="form-select" th:field="*{projectScopeType}">
+                            <select autocomplete="off" class="form-select" id="projectScopeType" th:field="*{projectScopeType}">
                                 <option value="">Select Project Scope</option>
                                 <option th:each="scopeType : ${projectScopeTypes}"
                                     th:value="${scopeType}"
@@ -81,9 +82,9 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Cell <span class="text-danger">*</span></label>
-                            <select autocomplete="off" class="form-select" th:field="*{cellId}">
-                                <option value="">Select Cell</option>
+                            <label class="form-label" for="cellId">Cell <span id="cellRequiredMarker" class="text-danger">*</span></label>
+                            <select autocomplete="off" class="form-select" id="cellId" th:field="*{cellId}">
+                                <option value="">Select Cell (optional for external projects)</option>
                                 <option th:each="cell : ${availableCells}"
                                     th:value="${cell.cellId}"
                                     th:text="${cell.wingName != null ? cell.wingName + ' - ' + cell.cellName : cell.cellName}"></option>
@@ -111,8 +112,24 @@
         document.addEventListener('DOMContentLoaded', () => {
             const departmentSelect = document.getElementById('departmentId');
             const subDepartmentSelect = document.getElementById('subDepartmentId');
+            const projectScopeSelect = document.getElementById('projectScopeType');
+            const cellSelect = document.getElementById('cellId');
+            const cellRequiredMarker = document.getElementById('cellRequiredMarker');
             const form = departmentSelect?.closest('form');
             const subDepartmentsUrl = form?.dataset.subdepartmentsUrl;
+
+            const updateCellRequirement = () => {
+                const cellRequired = projectScopeSelect?.value !== 'EXTERNAL';
+                if (cellSelect) {
+                    cellSelect.required = cellRequired;
+                }
+                if (cellRequiredMarker) {
+                    cellRequiredMarker.hidden = !cellRequired;
+                }
+            };
+            projectScopeSelect?.addEventListener('change', updateCellRequirement);
+            updateCellRequirement();
+
             if (!departmentSelect || !subDepartmentSelect || !subDepartmentsUrl) {
                 return;
             }
