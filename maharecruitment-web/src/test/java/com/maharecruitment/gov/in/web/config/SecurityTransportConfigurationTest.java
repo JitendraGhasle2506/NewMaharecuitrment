@@ -33,7 +33,7 @@ class SecurityTransportConfigurationTest {
         assertThat(properties.getProperty("app.security.transport.trust-forwarded-headers"))
                 .isEqualTo("${APP_SECURITY_TRUST_FORWARDED_HEADERS:false}");
         assertThat(properties.getProperty("app.base-url"))
-                .isEqualTo("${APP_BASE_URL:https://mahahrseva.mahait.org/maharecruitment}");
+                .isEqualTo("${APP_BASE_URL:https://mahahrseva.mahait.org}");
         assertThat(properties.getProperty("app.mobile-auth.issuer"))
                 .isEqualTo("${MOBILE_AUTH_JWT_ISSUER:maharecruitment-mobile}");
         assertThat(properties.getProperty("security.host-validation.enabled"))
