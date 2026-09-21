@@ -259,6 +259,18 @@
 
 <body class="tax-invoice" th:classappend="${#bools.isTrue(embeddedPreviewMode)} ? ' embedded-mode' : ''">
     <div class="preview-page">
+        <form th:if="${#bools.isTrue(employeeBillingPreview)}" id="billingDetailsForm"
+              th:action="@{/invoice/tax-invoices/generate/invoice}" th:object="${billingDetails}" method="post"
+              class="preview-banner no-print">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" name="loadToken" th:value="${loadToken}">
+            <strong>Preview Tax Invoice</strong>
+            <p>Enter billing details below, then generate the printable invoice. Leave GST blank for an unregistered client.</p>
+            <ul th:if="${#fields.hasErrors('*')}" role="alert">
+                <li th:each="error : ${#fields.errors('*')}" th:text="${error}"></li>
+            </ul>
+            <a th:href="@{/invoice/tax-invoices/generate}">Change selection / Load again</a>
+        </form>
         <div id="print-content" class="preview-sheet">
             <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}"
                 class="preview-banner">
@@ -303,20 +315,32 @@
                             </tr>
                             <tr>
                                 <td><b>Client GST Number:</b></td>
-                                <td th:text="${invoice.clientGstNumber != null ? invoice.clientGstNumber : '-'}">
-                                    27AABCM3129H1DW</td>
+                                <td><span th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${invoice.clientGstNumber != null ? invoice.clientGstNumber : '-'}">
+                                    27AABCM3129H1DW</span>
+                                    <input th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{clientGstNumber}" form="billingDetailsForm"
+                                        type="text" aria-label="Client GST Number" class="form-control" maxlength="15"></td>
                             </tr>
                             <tr>
                                 <td><b>Place Of Supply:</b></td>
-                                <td th:text="${invoice.placeOfSupply}">Maharashtra</td>
+                                <td><span th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${invoice.placeOfSupply}">Maharashtra</span>
+                                    <input th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{placeOfSupply}" form="billingDetailsForm"
+                                        type="text" aria-label="Place Of Supply" class="form-control" maxlength="100" required></td>
                             </tr>
                             <tr>
-                                <td><b>Dept Ref/ WO No:</b></td>
-                                <td th:text="${invoice.deptRefNumber != null ? invoice.deptRefNumber : '-'}">Mail</td>
+                                <td><b th:text="${#bools.isTrue(employeeBillingPreview) ? 'Request Id:' : 'Dept Ref/ WO No:'}">Dept Ref/ WO No:</b></td>
+                                <td><span th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${invoice.deptRefNumber != null ? invoice.deptRefNumber : '-'}">Mail</span>
+                                    <input th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{requestId}" form="billingDetailsForm"
+                                        type="text" aria-label="Request Id" class="form-control" maxlength="100" required></td>
                             </tr>
                             <tr>
-                                <td><b>Dept Ref/ WO Date:</b></td>
-                                <td th:text="${#temporals.format(invoice.deptRefDate, 'dd-MM-yyyy')}">25-02-2026</td>
+                                <td><b th:text="${#bools.isTrue(employeeBillingPreview) ? 'Work Order Date:' : 'Dept Ref/ WO Date:'}">Dept Ref/ WO Date:</b></td>
+                                <td><span th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${#temporals.format(invoice.deptRefDate, 'dd-MM-yyyy')}">25-02-2026</span>
+                                    <input th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{workOrderDate}" form="billingDetailsForm"
+                                        type="date" aria-label="Work Order Date" class="form-control" required></td>
                             </tr>
                             <tr>
                                 <td><b>PM Name:</b></td>
@@ -332,8 +356,14 @@
                 <tr>
                     <td colspan="3" class="invoice-billed-to">
                         <b>To,</b><br>
-                        <span th:text="${invoice.billedTo}">Department Name</span><br>
-                        <span th:text="${invoice.billingAddress}">Address</span>
+                        <span th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${invoice.billedTo}">Department Name</span>
+                        <input th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{billedTo}" form="billingDetailsForm"
+                            aria-label="To recipient / department" class="form-control" maxlength="255" required type="text"><br>
+                        <span class="address-block" th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${invoice.billingAddress}">Address</span>
+                        <textarea th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{billingAddress}" form="billingDetailsForm"
+                            aria-label="Billing address" class="form-control" maxlength="2000" required rows="3"></textarea>
                     </td>
                 </tr>
             </table>
@@ -449,7 +479,7 @@
                 <tr>
                     <td class="text-center" width="35%">Customer's Seal and Signature</td>
                     <td class="text-center" width="30%">
-                        <div class="qr-wrapper">
+                        <div class="qr-wrapper" th:unless="${#bools.isTrue(employeeBillingPreview)}">
                             <th:block th:if="${!#strings.isEmpty(invoice.qrCodeDataUrl)}">
                                 <div class="qr-block">
                                     <img th:src="${invoice.qrCodeDataUrl}" class="qr-code-image"
@@ -474,7 +504,8 @@
         </div>
 
         <div th:if="${!#bools.isTrue(embeddedPreviewMode)}" class="preview-actions no-print">
-            <button id="printBtn" class="btn" onclick="printContent('print-content')">Print</button>
+            <button th:if="${#bools.isTrue(employeeBillingPreview)}" type="submit" form="billingDetailsForm" class="btn btn-primary">Generate Tax Invoice</button>
+            <button th:unless="${#bools.isTrue(employeeBillingPreview)}" id="printBtn" class="btn" onclick="printContent('print-content')">Print</button>
         </div>
     </div>
 
