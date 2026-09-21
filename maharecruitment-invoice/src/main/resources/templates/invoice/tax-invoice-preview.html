@@ -5,7 +5,7 @@
     <title>Tax Invoice Preview</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/print.css}" />
-    <style>
+    <style th:fragment="invoiceStyles">
         body.tax-invoice {
             margin: 0;
             background: #fff;
@@ -169,9 +169,34 @@
             text-align: center;
         }
 
+        .employee-invoice-document .invoice-company-name {
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
+        .employee-billing-preview .invoice-brand-table td {
+            padding: 16px 12px;
+        }
+
+        .employee-billing-preview .invoice-brand-table td:first-child:not([colspan]) {
+            width: 120px;
+        }
+
+        .employee-invoice-document .invoice-company-cin {
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .employee-invoice-document .invoice-document-title {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 12px 0;
+        }
+
         /* Keep editing spacious without changing the shared printable invoice layout. */
         @media screen {
-            body.employee-billing-preview {
+            .employee-billing-preview {
                 background: #f1f5f9;
             }
 
@@ -336,8 +361,8 @@
 </head>
 
 <body class="tax-invoice"
-    th:classappend="${(#bools.isTrue(embeddedPreviewMode) ? ' embedded-mode' : '') + (#bools.isTrue(employeeBillingPreview) ? ' employee-billing-preview' : '')}">
-    <div class="preview-page">
+    th:classappend="${(#bools.isTrue(embeddedPreviewMode) ? ' embedded-mode' : '') + (#bools.isTrue(employeeBillingPreview) ? ' employee-billing-preview' : '') + (#bools.isTrue(employeeInvoiceDocument) ? ' employee-invoice-document' : '')}">
+    <div class="preview-page" th:fragment="invoiceContent">
         <form th:if="${#bools.isTrue(employeeBillingPreview)}" id="billingDetailsForm"
               th:action="@{/invoice/tax-invoices/generate/invoice}" th:object="${billingDetails}" method="post"
               class="preview-banner no-print">
@@ -363,15 +388,15 @@
                         <img th:src="@{/img/mahait_logo.png}" width="70" alt="MahaIT Logo">
                     </td>
                     <td colspan="5" style="text-align:center; vertical-align: middle;">
-                        <h3 style="margin:0;" th:text="${#bools.isTrue(employeeBillingPreview) ? 'Tax Invoice' : invoice.companyName}">
+                        <h3 class="invoice-company-name" style="margin:0;" th:text="${#bools.isTrue(employeeInvoiceDocument) ? 'MAHARASHTRA INFORMATION TECHNOLOGY CORPORATION LIMITED' : invoice.companyName}">
                             Maharashtra Information Technology Corporation Limited
                         </h3>
-                        <div th:text="${'CIN : ' + invoice.cinNumber}">CIN : U74999MH1998SGC099591</div>
+                        <div class="invoice-company-cin" th:text="${'CIN : ' + invoice.cinNumber}">CIN : U74999MH1998SGC099591</div>
                     </td>
                 </tr>
-                <tr th:unless="${#bools.isTrue(employeeBillingPreview)}">
+                <tr>
                     <td colspan="6" style="text-align:center;">
-                        <h3 class="invoice-document-title">PROFORMA INVOICE</h3>
+                        <h3 class="invoice-document-title" th:text="${invoice.documentTitle}">PROFORMA INVOICE</h3>
                     </td>
                 </tr>
             </table>
@@ -558,12 +583,12 @@
                 <tr>
                     <td class="text-center" width="35%">Customer's Seal and Signature</td>
                     <td class="text-center" width="30%">
-                        <div class="qr-wrapper" th:unless="${#bools.isTrue(employeeBillingPreview)}">
+                        <div class="qr-wrapper">
                             <th:block th:if="${!#strings.isEmpty(invoice.qrCodeDataUrl)}">
                                 <div class="qr-block">
                                     <img th:src="${invoice.qrCodeDataUrl}" class="qr-code-image"
                                         alt="Tax Invoice QR Code">
-                                    <div class="qr-caption">Scan for invoice details</div>
+                                    <div class="qr-caption" th:text="${#bools.isTrue(employeeBillingPreview) ? 'Preview QR (updated when invoice is generated)' : 'Scan for invoice details'}">Scan for invoice details</div>
                                 </div>
                             </th:block>
                             <div th:if="${#strings.isEmpty(invoice.qrCodeDataUrl)}" class="qr-placeholder">QR</div>

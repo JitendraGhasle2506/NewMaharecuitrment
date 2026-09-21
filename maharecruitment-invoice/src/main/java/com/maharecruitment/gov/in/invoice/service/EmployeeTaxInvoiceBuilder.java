@@ -187,6 +187,9 @@ public class EmployeeTaxInvoiceBuilder {
         TaxInvoiceView view = viewMapper.toView(invoice);
         // Billing editors need the original value, not the shared read-only mapper's masked GST.
         view.setClientGstNumber(invoice.getClientGstNumber());
+        view.setPanNumber(invoice.getPanNumber());
+        view.setGstNumber(invoice.getGstNumber());
+        view.setDocumentTitle("TAX INVOICE");
         List<TaxInvoiceLineItemView> lineItems = new ArrayList<>();
         int lineNumber = 1;
         for (EmployeeLine line : lines) {

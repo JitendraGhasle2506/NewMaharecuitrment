@@ -125,6 +125,7 @@ public class DepartmentTaxInvoiceGenerationController {
                 throw new IllegalArgumentException("The selection has changed or expired. Load employees again before Preview.");
             }
             TaxInvoiceView invoice = generationService.buildEmployeeInvoice(filter);
+            invoice.setQrCodeDataUrl(qrCodeGenerator.generateDataUrl(invoice));
             draft = new Draft(draft.token(), draft.selection(), invoice);
             session.setAttribute(DRAFT_SESSION_KEY, draft);
             model.addAttribute("billingDetails", TaxInvoiceBillingDetails.from(invoice));
@@ -155,6 +156,7 @@ public class DepartmentTaxInvoiceGenerationController {
         details.applyTo(invoice);
         invoice.setQrCodeDataUrl(qrCodeGenerator.generateDataUrl(invoice));
         model.addAttribute("invoice", invoice);
+        model.addAttribute("employeeInvoiceDocument", true);
         session.removeAttribute(DRAFT_SESSION_KEY);
         return INVOICE_VIEW_NAME;
     }
@@ -163,7 +165,8 @@ public class DepartmentTaxInvoiceGenerationController {
         model.addAttribute("invoice", draft.invoice());
         model.addAttribute("loadToken", draft.token());
         model.addAttribute("employeeBillingPreview", true);
-        return INVOICE_VIEW_NAME;
+        model.addAttribute("employeeInvoiceDocument", true);
+        return "invoice/employee-tax-invoice-preview";
     }
 
     private record Selection(Long departmentId, Long subDepartmentId, Long projectId,

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.io.ByteArrayInputStream;
@@ -34,6 +35,7 @@ import com.maharecruitment.gov.in.invoice.service.*;
 class DepartmentTaxInvoiceGenerationControllerTest {
     private static final String URL = "/invoice/tax-invoices/generate";
     private final DepartmentTaxInvoiceGenerationService service = mock(DepartmentTaxInvoiceGenerationService.class);
+    private final DepartmentTaxInvoiceService referenceService = mock(DepartmentTaxInvoiceService.class);
     private MockMvc mvc;
     private MockHttpSession session;
     private TaxInvoiceView invoice;
@@ -49,14 +51,16 @@ class DepartmentTaxInvoiceGenerationControllerTest {
         ThymeleafViewResolver views = new ThymeleafViewResolver();
         views.setTemplateEngine(engine);
         mvc = MockMvcBuilders.standaloneSetup(new DepartmentTaxInvoiceGenerationController(service,
-                new TaxInvoiceQrCodeGenerator())).setViewResolvers(views).build();
+                new TaxInvoiceQrCodeGenerator()), new TaxInvoiceController(referenceService, new TaxInvoiceQrCodeGenerator()))
+                .setViewResolvers(views).build();
         session = new MockHttpSession();
         invoice = TaxInvoiceView.builder().tiNumber("EMP-1").tiDate(LocalDate.of(2026, 9, 21))
                 .deptRefDate(LocalDate.of(2026, 9, 1)).requestId("OLD").deptRefNumber("OLD")
                 .clientGstNumber("27AAKCM6988L1ZG").clientGstinAvailable(true).placeOfSupply("Maharashtra")
                 .billedTo("Original department").billingAddress("Original address")
                 .baseAmount(new BigDecimal("1000")).totalAmount(new BigDecimal("1180"))
-                .totalAmountDisplay("1,180.00").companyName("MahaIT").build();
+                .totalAmountDisplay("1,180.00").companyName("MahaIT").documentTitle("TAX INVOICE")
+                .panNumber("ABCDE1545T").gstNumber("27ABCDE1545TK1Z7").build();
         when(service.buildEmployeeInvoice(any())).thenReturn(invoice);
         when(service.loadProjectEmployees(any())).thenReturn(List.of(new TaxInvoiceEmployeePreviewView(
                 1L, "E1", "Alex", "", "Developer", "L1", "", "", "", "Project", null, null, 30)));
@@ -77,10 +81,12 @@ class DepartmentTaxInvoiceGenerationControllerTest {
     private String preview() throws Exception {
         String token = load();
         MvcResult result = mvc.perform(selection("/employee-preview").param("loadToken", token))
-                .andExpect(view().name("invoice/tax-invoice-preview")).andReturn();
+                .andExpect(view().name("invoice/employee-tax-invoice-preview")).andReturn();
         assertThat(result.getResponse().getContentAsString()).contains("Generate Tax Invoice", "Original department",
                 "Original address", "27AAKCM6988L1ZG", "billingDetailsForm", "Bank Account Details")
-                .contains("employee-billing-preview", ">Tax Invoice</h3>")
+                .contains("employee-billing-preview", ">TAX INVOICE</h3>",
+                        "MAHARASHTRA INFORMATION TECHNOLOGY CORPORATION LIMITED", "Shared navigation",
+                        "alt=\"Tax Invoice QR Code\"", "data:image/png;base64,", "ABCDE1545T", "27ABCDE1545TK1Z7")
                 .doesNotContain("id=\"printBtn\"", "PROFORMA INVOICE", ">MahaIT</h3>");
         return token;
     }
@@ -109,9 +115,10 @@ class DepartmentTaxInvoiceGenerationControllerTest {
         byte[] png = Base64.getDecoder().decode(finalInvoice.getQrCodeDataUrl().split(",", 2)[1]);
         String qr = new MultiFormatReader().decode(new BinaryBitmap(new HybridBinarizer(
                 new BufferedImageLuminanceSource(ImageIO.read(new ByteArrayInputStream(png)))))).getText();
-        assertThat(qr).contains("REQUEST ID: REQ-NEW", "BILLED TO: Entered recipient", "TOTAL: INR 1180.00");
+        assertThat(qr).contains("MAHAIT TAX INVOICE", "REQUEST ID: REQ-NEW", "BILLED TO: Entered recipient", "TOTAL: INR 1180.00");
         assertThat(result.getResponse().getContentAsString()).contains("id=\"printBtn\"", "REQ-NEW")
-                .contains("PROFORMA INVOICE", ">MahaIT</h3>")
+                .contains(">TAX INVOICE</h3>", "MAHARASHTRA INFORMATION TECHNOLOGY CORPORATION LIMITED")
+                .doesNotContain("PROFORMA INVOICE")
                 .doesNotContain("Generate Tax Invoice", "billingDetailsForm");
         verify(service, times(1)).buildEmployeeInvoice(any());
     }
@@ -127,7 +134,7 @@ class DepartmentTaxInvoiceGenerationControllerTest {
                 .andExpect(model().attribute("employeeBillingPreview", true)).andReturn();
         TaxInvoiceBillingDetails retained = (TaxInvoiceBillingDetails) result.getModelAndView().getModel().get("billingDetails");
         if (!field.equals("billingAddress")) assertThat(retained.getBillingAddress()).isEqualTo("First line\nSecond line");
-        assertThat(result.getResponse().getContentAsString()).contains("Generate Tax Invoice", "role=\"alert\"");
+        assertThat(result.getResponse().getContentAsString()).contains("Generate Tax Invoice", "role=\"alert\"", "Shared navigation", "alt=\"Tax Invoice QR Code\"");
         mvc.perform(generate(token)).andExpect(model().attributeDoesNotExist("employeeBillingPreview"));
     }
 
@@ -171,7 +178,7 @@ class DepartmentTaxInvoiceGenerationControllerTest {
         invoice.setClientGstinAvailable(false);
         String token = load();
         mvc.perform(selection("/employee-preview").param("loadToken", token))
-                .andExpect(view().name("invoice/tax-invoice-preview"))
+                .andExpect(view().name("invoice/employee-tax-invoice-preview"))
                 .andExpect(model().attribute("employeeBillingPreview", true));
         mvc.perform(generate(token).with(req -> { req.setParameter("billingAddress", ""); return req; }))
                 .andExpect(model().attributeHasFieldErrors("billingDetails", "billingAddress"));
@@ -182,6 +189,16 @@ class DepartmentTaxInvoiceGenerationControllerTest {
         assertThat(invoice.getBillingAddress()).isEqualTo("First line\nSecond line");
         assertThat(invoice.isClientGstinAvailable()).isFalse();
         assertThat(invoice.getQrCodeDataUrl()).startsWith("data:image/png;base64,");
+    }
+
+    @Test
+    void existingApplicationInvoiceKeepsItsCompanyHeadingAndDocumentTitle() throws Exception {
+        invoice.setDocumentTitle("PROFORMA INVOICE");
+        when(referenceService.getInvoiceByApplicationId(38L)).thenReturn(invoice);
+        MvcResult result = mvc.perform(get("/invoice/tax-invoices/application/38/new"))
+                .andExpect(view().name("invoice/tax-invoice-preview")).andReturn();
+        assertThat(result.getResponse().getContentAsString()).contains(">MahaIT</h3>", "PROFORMA INVOICE")
+                .doesNotContain("billingDetailsForm", "Generate Tax Invoice", "Shared navigation");
     }
 
 }

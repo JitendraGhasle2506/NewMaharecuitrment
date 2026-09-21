@@ -63,6 +63,8 @@ class EmployeeTaxInvoiceRegressionTest {
         registration.setGstNo("27AAKCM6988L1ZG");
         MahaItProfile profile = mock(MahaItProfile.class, invocation ->
                 invocation.getMethod().getReturnType() == String.class ? "Configured" : RETURNS_DEFAULTS.answer(invocation));
+        when(profile.getPanNumber()).thenReturn("ABCDE1545T");
+        when(profile.getGstNumber()).thenReturn("27ABCDE1545TK1Z7");
         when(profiles.findFirstByActiveTrueOrderByUpdatedDateDesc()).thenReturn(Optional.of(profile));
         when(rates.findActiveRatesForPeriod(anyLong(), anyString(), any(), any())).thenReturn(List.of(
                 ManpowerDesignationRate.builder().effectiveFrom(start.minusYears(1)).grossMonthlyCtc(new BigDecimal("30000")).build()));
@@ -114,6 +116,9 @@ class EmployeeTaxInvoiceRegressionTest {
         assertThat(invoice.getSgstAmount()).isEqualByComparingTo("6534");
         assertThat(invoice.getTotalAmount()).isEqualByComparingTo("85668");
         assertThat(invoice.getClientGstNumber()).isEqualTo("27AAKCM6988L1ZG");
+        assertThat(invoice.getPanNumber()).isEqualTo("ABCDE1545T");
+        assertThat(invoice.getGstNumber()).isEqualTo("27ABCDE1545TK1Z7");
+        assertThat(invoice.getDocumentTitle()).isEqualTo("TAX INVOICE");
         assertThat(invoice.getBilledTo()).isEqualTo("Billing department");
         assertThat(invoice.getBillingAddress()).isEqualTo("Billing address");
     }
