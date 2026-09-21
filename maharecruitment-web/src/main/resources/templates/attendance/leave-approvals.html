@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>HOD Approvals | Attendance System</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/vendor/sweetalert2/sweetalert2.min.css}">
     <style>
         :root {
             --primary-navy: #1f4f78;
@@ -206,10 +207,12 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="btn-group">
-                                                    <button type="button" class="btn btn-success btn-sm px-3 me-2" th:onclick="'submitAction(' + ${leave.leaveId} + ', \'approve\', \'Leave\')'">
+                                                    <button type="button" class="btn btn-success btn-sm px-3 me-2 js-approval-action"
+                                                            th:data-request-id="${leave.leaveId}" data-action="approve" data-type="Leave">
                                                         <i class="fa fa-check"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-danger btn-sm px-3" th:onclick="'submitAction(' + ${leave.leaveId} + ', \'reject\', \'Leave\')'">
+                                                    <button type="button" class="btn btn-danger btn-sm px-3 js-approval-action"
+                                                            th:data-request-id="${leave.leaveId}" data-action="reject" data-type="Leave">
                                                         <i class="fa fa-times"></i>
                                                     </button>
                                                 </div>
@@ -274,10 +277,12 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="btn-group">
-                                                    <button type="button" class="btn btn-success btn-sm px-3 me-2" th:onclick="'submitAction(' + ${tour.tourId} + ', \'approve\', \'Tour\')'">
+                                                    <button type="button" class="btn btn-success btn-sm px-3 me-2 js-approval-action"
+                                                            th:data-request-id="${tour.tourId}" data-action="approve" data-type="Tour">
                                                         <i class="fa fa-check"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-danger btn-sm px-3" th:onclick="'submitAction(' + ${tour.tourId} + ', \'reject\', \'Tour\')'">
+                                                    <button type="button" class="btn btn-danger btn-sm px-3 js-approval-action"
+                                                            th:data-request-id="${tour.tourId}" data-action="reject" data-type="Tour">
                                                         <i class="fa fa-times"></i>
                                                     </button>
                                                 </div>
@@ -482,6 +487,12 @@
                 const leaveTab = document.getElementById('leave-tab');
                 if (leaveTab) bootstrap.Tab.getOrCreateInstance(leaveTab).show();
             }
+
+            document.querySelectorAll('.js-approval-action').forEach(button => {
+                button.addEventListener('click', () => {
+                    submitAction(button.dataset.requestId, button.dataset.action, button.dataset.type);
+                });
+            });
         });
 
         function submitAction(id, action, type) {
