@@ -101,6 +101,8 @@ import db.postmigration.V119__internal_vacancy_multiple_replacement_employees;
 import db.postmigration.V121__employee_profile_marriage_details;
 import db.postmigration.V122__employee_birthday_wishes;
 import db.postmigration.V123__manpower_designation_type;
+import db.postmigration.V126__deactivate_internal_projects;
+import db.postmigration.V127__delete_internal_projects;
 
 @Component
 @ConditionalOnClass(name = "org.flywaydb.core.Flyway")
@@ -228,6 +230,8 @@ public class PostSchemaFlywayRunner {
                 new V121__employee_profile_marriage_details(),
                 new V122__employee_birthday_wishes(),
                 new V123__manpower_designation_type(),
+                new V126__deactivate_internal_projects(),
+                new V127__delete_internal_projects(),
                 new R__hr_employee_cell_mapping_navigation());
     }
 
