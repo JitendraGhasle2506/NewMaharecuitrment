@@ -62,7 +62,8 @@ public class TaxInvoiceQrCodeGenerator {
 
     private String buildPayload(TaxInvoiceView invoice) {
         StringBuilder payload = new StringBuilder();
-        appendLine(payload, "MAHAIT PROFORMA INVOICE");
+        appendLine(payload, "MAHAIT " + (StringUtils.hasText(invoice.getDocumentTitle())
+                ? invoice.getDocumentTitle() : "PROFORMA INVOICE"));
         appendLine(payload, "TI NO: " + normalize(invoice.getTiNumber()));
         appendLine(payload, "REQUEST ID: " + normalize(invoice.getRequestId()));
         appendLine(payload, "DATE: " + formatDate(invoice.getTiDate()));

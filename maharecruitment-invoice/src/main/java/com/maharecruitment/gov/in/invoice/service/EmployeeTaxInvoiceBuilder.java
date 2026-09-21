@@ -97,7 +97,8 @@ public class EmployeeTaxInvoiceBuilder {
         if (project == null) {
             throw new TaxInvoiceException("Select a project to generate the tax invoice.");
         }
-        if (mappings == null || mappings.isEmpty()) {
+        mappings = InvoiceEmployeeMappings.uniqueEmployees(mappings);
+        if (mappings.isEmpty()) {
             throw new TaxInvoiceException("No active employees are mapped to the selected project.");
         }
 
@@ -144,7 +145,7 @@ public class EmployeeTaxInvoiceBuilder {
         DepartmentTaxInvoiceEntity invoice = DepartmentTaxInvoiceEntity.builder()
                 .departmentProjectApplicationId(application == null ? null
                         : application.getDepartmentProjectApplicationId())
-                .departmentRegistrationId(registration.getDepartmentRegistrationId())
+                .departmentRegistrationId(registration == null ? null : registration.getDepartmentRegistrationId())
                 .requestId(application == null ? null : trimToNull(application.getRequestId()))
                 .tiNumber(buildReferenceNumber(project, periodStart, periodEnd))
                 .tiDate(issueDate)
@@ -154,10 +155,11 @@ public class EmployeeTaxInvoiceBuilder {
                 .projectName(requireText(project.getProjectName(), "Project name"))
                 .projectCode(trimToNull(project.getProjectCode()))
                 .pmName(application == null ? null : trimToNull(application.getMahaitContact()))
-                .billedTo(resolveBilledTo(registration))
+                .billedTo(registration == null && project.getDepartment() != null
+                        ? trimToNull(project.getDepartment().getDepartmentName()) : resolveBilledTo(registration))
                 .billingAddress(resolveBillingAddress(registration))
-                .clientGstinAvailable(StringUtils.hasText(registration.getGstNo()))
-                .clientGstNumber(trimToNull(registration.getGstNo()))
+                .clientGstinAvailable(registration != null && StringUtils.hasText(registration.getGstNo()))
+                .clientGstNumber(registration == null ? null : trimToNull(registration.getGstNo()))
                 .placeOfSupply(DEFAULT_PLACE_OF_SUPPLY)
                 .baseAmount(breakdown.baseAmount())
                 .agencyCommissionAmount(totalAgencyCommission)
@@ -183,6 +185,11 @@ public class EmployeeTaxInvoiceBuilder {
                 .build();
 
         TaxInvoiceView view = viewMapper.toView(invoice);
+        // Billing editors need the original value, not the shared read-only mapper's masked GST.
+        view.setClientGstNumber(invoice.getClientGstNumber());
+        view.setPanNumber(invoice.getPanNumber());
+        view.setGstNumber(invoice.getGstNumber());
+        view.setDocumentTitle("TAX INVOICE");
         List<TaxInvoiceLineItemView> lineItems = new ArrayList<>();
         int lineNumber = 1;
         for (EmployeeLine line : lines) {
@@ -358,8 +365,8 @@ public class EmployeeTaxInvoiceBuilder {
                         || Objects.equals(registration.getSubDeptId(), billingSubDepartmentId))
                 .findFirst()
                 .or(() -> departmentRegistrations.stream().findFirst())
-                .orElseThrow(() -> new TaxInvoiceException(
-                        "Department registration (billing details) was not found for the selected project."));
+                // An unregistered department can supply billing details in the employee invoice preview.
+                .orElse(null);
     }
 
     private String buildReferenceNumber(ProjectMst project, LocalDate periodStart, LocalDate periodEnd) {
@@ -399,19 +406,25 @@ public class EmployeeTaxInvoiceBuilder {
     }
 
     private String resolveBilledTo(DepartmentRegistrationEntity registration) {
+        if (registration == null) {
+            return "";
+        }
         String billedTo = trimToNull(registration.getBillDepartmentName());
         if (billedTo == null) {
             billedTo = trimToNull(registration.getDepartmentName());
         }
-        return billedTo != null ? billedTo : "Department";
+        return billedTo != null ? billedTo : "";
     }
 
     private String resolveBillingAddress(DepartmentRegistrationEntity registration) {
+        if (registration == null) {
+            return "";
+        }
         String billingAddress = trimToNull(registration.getBillAddress());
         if (billingAddress == null) {
             billingAddress = trimToNull(registration.getAddress());
         }
-        return billingAddress != null ? billingAddress : "Address not available";
+        return billingAddress != null ? billingAddress : "";
     }
 
     private LocalDate latest(LocalDate first, LocalDate second) {

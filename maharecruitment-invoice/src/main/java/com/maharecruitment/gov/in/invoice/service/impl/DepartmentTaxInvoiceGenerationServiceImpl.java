@@ -32,6 +32,7 @@ import com.maharecruitment.gov.in.invoice.repository.DepartmentTaxInvoiceReposit
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceGenerationService;
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceService;
 import com.maharecruitment.gov.in.invoice.service.EmployeeTaxInvoiceBuilder;
+import com.maharecruitment.gov.in.invoice.service.InvoiceEmployeeMappings;
 import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.entity.SubDepartment;
@@ -213,10 +214,10 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
     }
 
     private List<TaxInvoiceEmployeePreviewView> loadEmployeePreview(ResolvedFilter filter) {
-        return employeeProjectMappingRepository.findCurrentProjectEmployeesForTaxInvoice(
+        return InvoiceEmployeeMappings.uniqueEmployees(employeeProjectMappingRepository.findCurrentProjectEmployeesForTaxInvoice(
                 filter.departmentId(),
                 employeeSubDepartmentScope(filter),
-                filter.projectId()).stream()
+                filter.projectId())).stream()
                 .map(mapping -> toEmployeePreview(mapping, filter.startDate(), filter.endDate()))
                 .toList();
     }
