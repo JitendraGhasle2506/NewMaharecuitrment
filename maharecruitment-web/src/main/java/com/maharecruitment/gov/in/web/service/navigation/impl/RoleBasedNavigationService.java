@@ -96,6 +96,13 @@ public class RoleBasedNavigationService implements NavigationService {
         }
 
         @Override
+        public List<String> resolveRoleLabels(List<String> roles) {
+                return orderRoles(roles).stream()
+                                .map(RoleBasedNavigationService::toDisplayRole)
+                                .toList();
+        }
+
+        @Override
         public boolean canAccessUrl(String url, List<String> roles) {
                 String normalizedUrl = normalizeUrl(url);
                 if (normalizedUrl.isBlank()) {

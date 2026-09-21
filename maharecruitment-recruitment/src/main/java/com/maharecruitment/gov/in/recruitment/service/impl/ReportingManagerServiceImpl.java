@@ -128,12 +128,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 userRepository.findDistinctUserIdsByRoleName(ROLE_PM),
                 TYPE_PM);
         addDirectManagerAuthorities(authorityTypesByUserId);
-        return authorityTypesByUserId;
-    }
-
-    private Map<Long, String> loadDirectManagerAuthorityTypes() {
-        Map<Long, String> authorityTypesByUserId = new LinkedHashMap<>();
-        addDirectManagerAuthorities(authorityTypesByUserId);
+        addOtherEmployeeAuthorities(authorityTypesByUserId);
         return authorityTypesByUserId;
     }
 
@@ -146,6 +141,21 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                 authorityTypesByUserId,
                 getActiveManagers(ROLE_PM, PM_DESIGNATION_NAMES, PM_MANAGER_NAME_PATTERN),
                 TYPE_PM);
+    }
+
+    /**
+     * Active internal employees with an active account may be assigned as a
+     * direct reporting authority even when they do not hold a manager role.
+     * Role-based authorities are added first so their more specific type is
+     * retained in the selector.
+     */
+    private void addOtherEmployeeAuthorities(Map<Long, String> authorityTypesByUserId) {
+        addAuthorityEmployees(
+                authorityTypesByUserId,
+                employeeRepository
+                        .findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
+                                INTERNAL, ACTIVE),
+                TYPE_OTHER);
     }
 
     private void addAuthorityUsers(
@@ -261,6 +271,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
             case TYPE_HOD -> 1;
             case TYPE_STM -> 2;
             case TYPE_PM -> 3;
+            case TYPE_OTHER -> 4;
             default -> Integer.MAX_VALUE;
         };
     }
@@ -796,7 +807,7 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         if (directManagerAuthority
                 && (!authorityType.equals(normalizedType) || managerEmployeeId != null)) {
             throw new IllegalArgumentException(
-                    "STM and PM reporting authorities support direct employee mappings only.");
+                    "STM, PM, and Other Employee reporting authorities support direct employee mappings only.");
         }
         if (TYPE_HOD.equals(normalizedType) && !TYPE_COO.equals(authorityType)) {
             throw new IllegalArgumentException("HOD manager mapping is available only when COO is selected.");
@@ -869,11 +880,11 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
         }
         String authorityType = resolveAuthorityType(authority);
         if (authorityType == null) {
-            authorityType = loadDirectManagerAuthorityTypes().get(userId);
+            authorityType = loadReportingAuthorityTypes().get(userId);
         }
         if (authorityType == null) {
             throw new IllegalArgumentException(
-                    "Selected user must be an eligible COO, HOD, STM, or PM reporting authority.");
+                    "Selected user must be an eligible COO, HOD, STM, PM, or active internal employee reporting authority.");
         }
         return authorityType;
     }
@@ -900,7 +911,9 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     }
 
     private boolean isDirectManagerAuthority(String authorityType) {
-        return TYPE_STM.equals(authorityType) || TYPE_PM.equals(authorityType);
+        return TYPE_STM.equals(authorityType)
+                || TYPE_PM.equals(authorityType)
+                || TYPE_OTHER.equals(authorityType);
     }
 
     private boolean hasRole(User user, String roleName) {

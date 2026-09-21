@@ -171,6 +171,25 @@ class ReportingManagerServiceImplTest {
     }
 
     @Test
+    void getReportingAuthoritiesIncludesActiveInternalEmployeesAsOtherAuthorities() {
+        User employeeUser = userWithRole(11L, "Neha Kulkarni", "ROLE_EMPLOYEE");
+        EmployeeEntity employee = employee(110L, "Neha Kulkarni", "EMP110", "INTERNAL", "ACTIVE");
+        employee.setUser(employeeUser);
+
+        when(employeeRepository
+                .findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
+                        "INTERNAL", "ACTIVE"))
+                .thenReturn(List.of(employee));
+        when(userRepository.findAllById(Set.of(11L))).thenReturn(List.of(employeeUser));
+
+        List<Map<String, Object>> result = service.getReportingAuthorities();
+
+        assertEquals(1, result.size());
+        assertEquals(11L, result.get(0).get("id"));
+        assertEquals("OTHER", result.get(0).get("authorityType"));
+    }
+
+    @Test
     void getProjectsReturnsActiveProjectsForSelection() {
         when(projectRepository.findByActiveFlagIgnoreCaseOrderByProjectNameAsc("Y"))
                 .thenReturn(List.of(project(12L, "Citizen Services")));

@@ -164,9 +164,12 @@
                                             Active session
                                         </span>
                                         <div class="profile-dropdown-meta">
-                                            <div class="small text-muted">
-                                                <span class="profile-meta-label">Role</span>
-                                                <span th:text="${primaryRoleLabel}">Role</span>
+                                            <div class="small text-muted profile-roles">
+                                                <span class="profile-meta-label d-block">Assigned roles</span>
+                                                <div class="profile-role-list">
+                                                    <span class="profile-role-chip" th:each="roleLabel : ${roleLabels}"
+                                                        th:text="${roleLabel}">Role</span>
+                                                </div>
                                             </div>
                                             <div class="small text-muted"
                                                 th:text="${sessionLoginTime != null ? 'Login time: ' + #temporals.format(sessionLoginTime, 'dd-MM-yyyy, hh:mm a') : 'Login time unavailable'}">

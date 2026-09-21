@@ -8,5 +8,7 @@ public interface NavigationService {
 
     String resolvePrimaryRoleLabel(List<String> roles);
 
+    List<String> resolveRoleLabels(List<String> roles);
+
     boolean canAccessUrl(String url, List<String> roles);
 }

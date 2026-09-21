@@ -190,7 +190,7 @@
                                 
                                 <!-- Step 1: Reporting Authority -->
                                 <div class="workflow-panel">
-                                    <label class="form-label d-block">1. Select Reporting Authority (COO, HOD, STM or PM) <span class="text-danger">*</span></label>
+                                    <label class="form-label d-block">1. Select Reporting Authority (COO, HOD, STM, PM or Other Employee) <span class="text-danger">*</span></label>
                                     <div class="option-grid">
                                     <div class="form-check choice-pill">
                                         <input autocomplete="off" class="form-check-input authorityTypeOption" type="radio"
@@ -211,6 +211,11 @@
                                         <input autocomplete="off" class="form-check-input authorityTypeOption" type="radio"
                                                name="authorityType" id="authorityTypePM" value="PM" required>
                                         <label class="form-check-label" for="authorityTypePM">Project Manager (PM)</label>
+                                    </div>
+                                    <div class="form-check choice-pill">
+                                        <input autocomplete="off" class="form-check-input authorityTypeOption" type="radio"
+                                               name="authorityType" id="authorityTypeOther" value="OTHER" required>
+                                        <label class="form-check-label" for="authorityTypeOther">Other Employee</label>
                                     </div>
                                     </div>
                                     <div class="mt-3 hidden select-wrap" id="authorityUserSection">
@@ -776,7 +781,7 @@
             }
 
             function isDirectManagerAuthority(type) {
-                return type === 'STM' || type === 'PM';
+                return type === 'STM' || type === 'PM' || type === 'OTHER';
             }
 
             function authorityTypeLabel(type) {
@@ -789,7 +794,10 @@
                 if(type === 'STM') {
                     return 'STM';
                 }
-                return 'PM';
+                if(type === 'PM') {
+                    return 'PM';
+                }
+                return 'Other Employee';
             }
 
             function selectedAuthorityType() {
@@ -1182,7 +1190,7 @@
                 var authorityUserId = $('#authoritySelect').val();
                 var managerType = $('input[name="managerType"]:checked').val();
                 if(!authorityType) {
-                    showFormMessage('#employeeFormMessage', 'Please select COO, HOD, STM or PM.');
+                    showFormMessage('#employeeFormMessage', 'Please select COO, HOD, STM, PM or Other Employee.');
                     e.preventDefault();
                     return;
                 }

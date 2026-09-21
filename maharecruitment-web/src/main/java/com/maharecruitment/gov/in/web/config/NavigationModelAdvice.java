@@ -53,6 +53,7 @@ public class NavigationModelAdvice {
         model.addAttribute("homePageUrl", homeUrl);
         model.addAttribute("contextPath", contextPath);
         model.addAttribute("primaryRoleLabel", navigationService.resolvePrimaryRoleLabel(resolvedRoles));
+        model.addAttribute("roleLabels", navigationService.resolveRoleLabels(resolvedRoles));
     }
 
     private SessionUserDTO refreshEmployeePhotoSessionUser(
