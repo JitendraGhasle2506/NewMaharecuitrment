@@ -6,31 +6,126 @@
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/role-dashboard.css}">
     <style>
-        .hod-stat-card {
-            width: 100%;
-            min-height: 150px;
-            border: 0;
+        .hod-dashboard-hero {
+            position: relative;
+            overflow: hidden;
+            margin: -1rem -1rem 1.5rem;
+            padding: 2rem;
             border-radius: 14px;
-            padding: 1.25rem;
+            background: linear-gradient(125deg, #113f67, #1f6fa8 62%, #38a3a5);
+            color: #fff;
+        }
+        .hod-dashboard-hero::after {
+            position: absolute;
+            right: -2.5rem;
+            bottom: -5rem;
+            width: 13rem;
+            height: 13rem;
+            border: 2rem solid rgba(255, 255, 255, .11);
+            border-radius: 50%;
+            content: '';
+        }
+        .hod-dashboard-hero h1 {
+            position: relative;
+            z-index: 1;
+            margin: 0 0 .35rem;
+            font-size: clamp(1.5rem, 2.4vw, 2rem);
+            font-weight: 700;
+        }
+        .hod-dashboard-hero p {
+            position: relative;
+            z-index: 1;
+            max-width: 46rem;
+            margin: 0;
+            color: rgba(255, 255, 255, .88);
+        }
+        .hod-stat-card {
+            position: relative;
+            width: 100%;
+            min-height: 168px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, .25);
+            border-radius: 16px;
+            padding: 1.25rem 1.25rem 1rem;
             color: #fff;
             text-align: left;
-            transition: transform .2s ease, box-shadow .2s ease;
+            box-shadow: 0 8px 18px rgba(23, 43, 77, .12);
+            transition: transform .2s ease, box-shadow .2s ease, outline-color .2s ease;
+        }
+        .hod-stat-card::after {
+            position: absolute;
+            top: -2.5rem;
+            right: -2.5rem;
+            width: 8rem;
+            height: 8rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .1);
+            content: '';
         }
         .hod-stat-card:hover, .hod-stat-card:focus-visible {
             color: #fff;
-            transform: translateY(-3px);
-            box-shadow: 0 12px 24px rgba(31, 79, 120, .22);
+            transform: translateY(-4px);
+            box-shadow: 0 16px 30px rgba(23, 43, 77, .22);
+        }
+        .hod-stat-card.active {
+            outline: 3px solid rgba(17, 63, 103, .18);
+            outline-offset: 3px;
+            box-shadow: 0 16px 30px rgba(23, 43, 77, .26);
         }
         .hod-stat-card.employees { background: linear-gradient(135deg, #1f4f78, #2f77ad); }
         .hod-stat-card.cells { background: linear-gradient(135deg, #146c94, #25a3bd); }
         .hod-stat-card.projects { background: linear-gradient(135deg, #5a3e9b, #8867cf); }
         .hod-stat-card.present { background: linear-gradient(135deg, #198754, #42b883); }
         .hod-stat-card.absent { background: linear-gradient(135deg, #b02a37, #e35d6a); }
-        .hod-stat-label { display: block; font-size: .82rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
-        .hod-stat-value { display: block; margin: .35rem 0; font-size: 2.2rem; font-weight: 700; line-height: 1; }
-        .hod-stat-hint { font-size: .85rem; opacity: .92; }
-        .hod-detail-panel { border: 1px solid #e8edf3; border-radius: 12px; overflow: hidden; }
-        .hod-detail-panel .panel-heading { padding: 1rem 1.25rem; background: #f8fafc; border-bottom: 1px solid #e8edf3; }
+        .hod-stat-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            margin-bottom: .9rem;
+            border: 1px solid rgba(255, 255, 255, .3);
+            border-radius: 11px;
+            background: rgba(255, 255, 255, .13);
+            font-size: 1.1rem;
+        }
+        .hod-stat-label { display: block; font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .88; }
+        .hod-stat-value { display: block; margin: .25rem 0 .55rem; font-size: 2.3rem; font-weight: 700; line-height: 1; }
+        .hod-stat-hint { display: block; font-size: .8rem; font-weight: 500; opacity: .92; }
+        .hod-detail-panel {
+            overflow: hidden;
+            border: 1px solid #e3eaf2;
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(34, 65, 102, .07);
+        }
+        .hod-detail-panel .panel-heading {
+            padding: 1rem 1.25rem;
+            background: linear-gradient(90deg, #f7faff, #fff);
+            border-bottom: 1px solid #e3eaf2;
+        }
+        .hod-detail-panel .panel-heading h4 { color: #173f63; font-size: 1rem; font-weight: 700; }
+        .hod-detail-panel .table thead th {
+            padding: .85rem 1rem;
+            border-bottom-width: 1px;
+            background: #f8fafc;
+            color: #597085;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .hod-detail-panel .table tbody td { padding: .9rem 1rem; color: #34495e; vertical-align: middle; }
+        .hod-detail-panel .table tbody tr:last-child td { border-bottom: 0; }
+        .hod-detail-panel .table tbody tr:hover { background-color: #f5faff; }
+        .count-chip { display: inline-flex; min-width: 2rem; justify-content: center; padding: .25rem .55rem; border-radius: 999px; background: #e9f2fb; color: #1f5f91; font-size: .78rem; font-weight: 700; }
+        .dashboard-empty-state { padding: 2.25rem 1rem; border: 1px dashed #c9d7e5; border-radius: 14px; background: #fbfdff; color: #70859a; text-align: center; }
+        .dashboard-empty-state i { display: block; margin-bottom: .65rem; color: #2f77ad; font-size: 1.45rem; }
+        .dashboard-empty-state.is-hidden { display: none; }
+        @media (max-width: 575.98px) {
+            .hod-dashboard-hero { margin: -1rem -1rem 1.25rem; padding: 1.5rem; border-radius: 0 0 14px 14px; }
+            .hod-stat-card { min-height: 145px; }
+        }
     </style>
 </head>
 <body class="role-shell">
@@ -39,51 +134,56 @@
             <div class="card add-emp-card">
                 <div class="header"><h2>HOD Dashboard</h2></div>
                 <div class="card-body">
-                    <div class="role-hero">
+                    <div class="hod-dashboard-hero">
                         <h1>My Team Overview</h1>
-                        <p>View employees in your reporting hierarchy, along with the cells and projects in their scope.</p>
+                        <p>Use a summary card to view the people, cells, projects, or today’s attendance within your reporting scope.</p>
                     </div>
                     <div class="row g-3 mt-2" role="tablist" aria-label="HOD dashboard details">
-                        <div class="col-md-4">
+                        <div class="col-sm-6 col-xl">
                             <button type="button" class="hod-stat-card employees" id="employees-tab"
                                     data-bs-toggle="tab" data-bs-target="#employees-panel" role="tab"
                                     aria-controls="employees-panel" aria-selected="false">
+                                <span class="hod-stat-icon"><i class="fa fa-users" aria-hidden="true"></i></span>
                                 <span class="hod-stat-label">Total Employees</span>
                                 <span class="hod-stat-value" th:text="${dashboard.totalEmployees}">0</span>
                                 <span class="hod-stat-hint">Click to view employee list</span>
                             </button>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-sm-6 col-xl">
                             <button type="button" class="hod-stat-card cells" id="cells-tab"
                                     data-bs-toggle="tab" data-bs-target="#cells-panel" role="tab"
                                     aria-controls="cells-panel" aria-selected="false">
+                                <span class="hod-stat-icon"><i class="fa fa-sitemap" aria-hidden="true"></i></span>
                                 <span class="hod-stat-label">Cells in Scope</span>
                                 <span class="hod-stat-value" th:text="${dashboard.totalCells}">0</span>
                                 <span class="hod-stat-hint">Click to view cells and counts</span>
                             </button>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-sm-6 col-xl">
                             <button type="button" class="hod-stat-card projects" id="projects-tab"
                                     data-bs-toggle="tab" data-bs-target="#projects-panel" role="tab"
                                     aria-controls="projects-panel" aria-selected="false">
+                                <span class="hod-stat-icon"><i class="fa fa-briefcase" aria-hidden="true"></i></span>
                                 <span class="hod-stat-label">Projects in Scope</span>
                                 <span class="hod-stat-value" th:text="${dashboard.totalProjects}">0</span>
                                 <span class="hod-stat-hint">Click to view project details</span>
                             </button>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-sm-6 col-xl">
                             <button type="button" class="hod-stat-card present" id="present-tab"
                                     data-bs-toggle="tab" data-bs-target="#present-panel" role="tab"
                                     aria-controls="present-panel" aria-selected="false">
+                                <span class="hod-stat-icon"><i class="fa fa-user-check" aria-hidden="true"></i></span>
                                 <span class="hod-stat-label">Present Today</span>
                                 <span class="hod-stat-value" th:text="${dashboard.presentEmployeesCount}">0</span>
                                 <span class="hod-stat-hint">Click to view present employees</span>
                             </button>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-sm-6 col-xl">
                             <button type="button" class="hod-stat-card absent" id="absent-tab"
                                     data-bs-toggle="tab" data-bs-target="#absent-panel" role="tab"
                                     aria-controls="absent-panel" aria-selected="false">
+                                <span class="hod-stat-icon"><i class="fa fa-user-times" aria-hidden="true"></i></span>
                                 <span class="hod-stat-label">Absent Today</span>
                                 <span class="hod-stat-value" th:text="${dashboard.absentEmployeesCount}">0</span>
                                 <span class="hod-stat-hint">Click to view absent employees</span>
@@ -92,6 +192,10 @@
                     </div>
 
                     <div class="tab-content mt-4">
+                        <div class="dashboard-empty-state" id="dashboard-empty-state">
+                            <i class="fa fa-hand-pointer-o" aria-hidden="true"></i>
+                            Select a summary card above to view its details.
+                        </div>
                         <section class="tab-pane fade hod-detail-panel" id="employees-panel" role="tabpanel"
                                 aria-labelledby="employees-tab" tabindex="0">
                             <div class="panel-heading d-flex justify-content-between align-items-center">
@@ -101,7 +205,6 @@
                             <div class="table-responsive">
                                 <table class="table align-middle table-hover mb-0">
                                     <thead><tr>
-                                        <th scope="col">Employee Code</th>
                                         <th scope="col">Employee Name</th>
                                         <th scope="col">Designation</th>
                                         <th scope="col">Cell</th>
@@ -112,7 +215,6 @@
                                     </tr></thead>
                                     <tbody>
                                         <tr th:each="employee : ${dashboard.employees}">
-                                            <td th:text="${employee.employeeCode}"></td>
                                             <td th:text="${employee.fullName}"></td>
                                             <td th:text="${employee.designation}"></td>
                                             <td th:text="${employee.cellName}"></td>
@@ -122,7 +224,7 @@
                                             <td th:text="${employee.status}"></td>
                                         </tr>
                                         <tr th:if="${#lists.isEmpty(dashboard.employees)}">
-                                            <td colspan="8" class="text-center text-muted py-4">No employees are mapped to you.</td>
+                                            <td colspan="7" class="text-center text-muted py-4">No employees are mapped to you.</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -147,8 +249,8 @@
                                         <tr th:each="cell : ${dashboard.cells}">
                                             <td th:text="${cell.cellName}"></td>
                                             <td th:text="${cell.wingName}"></td>
-                                            <td th:text="${cell.employeeCount}"></td>
-                                            <td th:text="${cell.projectCount}"></td>
+                                            <td><span class="count-chip" th:text="${cell.employeeCount}">0</span></td>
+                                            <td><span class="count-chip" th:text="${cell.projectCount}">0</span></td>
                                         </tr>
                                         <tr th:if="${#lists.isEmpty(dashboard.cells)}">
                                             <td colspan="4" class="text-center text-muted py-4">No cells are assigned to your reporting scope.</td>
@@ -177,7 +279,7 @@
                                             <td th:text="${project.projectName}"></td>
                                             <td th:text="${project.projectCode}"></td>
                                             <td th:text="${project.cellName}"></td>
-                                            <td th:text="${project.employeeCount}"></td>
+                                            <td><span class="count-chip" th:text="${project.employeeCount}">0</span></td>
                                         </tr>
                                         <tr th:if="${#lists.isEmpty(dashboard.projects)}">
                                             <td colspan="4" class="text-center text-muted py-4">No projects are in your reporting scope.</td>
@@ -196,7 +298,6 @@
                             <div class="table-responsive">
                                 <table class="table align-middle table-hover mb-0">
                                     <thead><tr>
-                                        <th scope="col">Employee Code</th>
                                         <th scope="col">Employee Name</th>
                                         <th scope="col">Designation</th>
                                         <th scope="col">Cell</th>
@@ -204,7 +305,6 @@
                                     </tr></thead>
                                     <tbody>
                                         <tr th:each="employee : ${dashboard.presentEmployees}">
-                                            <td th:text="${employee.employeeCode}"></td>
                                             <td th:text="${employee.fullName}"></td>
                                             <td th:text="${employee.designation}"></td>
                                             <td th:text="${employee.cellName}"></td>
@@ -227,7 +327,6 @@
                             <div class="table-responsive">
                                 <table class="table align-middle table-hover mb-0">
                                     <thead><tr>
-                                        <th scope="col">Employee Code</th>
                                         <th scope="col">Employee Name</th>
                                         <th scope="col">Designation</th>
                                         <th scope="col">Cell</th>
@@ -235,7 +334,6 @@
                                     </tr></thead>
                                     <tbody>
                                         <tr th:each="employee : ${dashboard.absentEmployees}">
-                                            <td th:text="${employee.employeeCode}"></td>
                                             <td th:text="${employee.fullName}"></td>
                                             <td th:text="${employee.designation}"></td>
                                             <td th:text="${employee.cellName}"></td>
@@ -253,5 +351,12 @@
             </div>
         </section>
     </th:block>
+    <script>
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach((tab) => {
+            tab.addEventListener('shown.bs.tab', () => {
+                document.getElementById('dashboard-empty-state')?.classList.add('is-hidden');
+            });
+        });
+    </script>
 </body>
 </html>
