@@ -1,0 +1,10 @@
+<!-- Minimal shared-shell fixture: verifies the caller includes the navigation fragment. -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="var-files-header"></head>
+<body>
+    <div th:fragment="var-sidebar-header(menu, title, content)">
+        <nav aria-label="Shared navigation"></nav>
+        <th:block th:replace="${content}"/>
+    </div>
+</body>
+</html>

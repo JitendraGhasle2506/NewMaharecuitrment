@@ -5,7 +5,7 @@
     <title>Tax Invoice Preview</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/print.css}" />
-    <style>
+    <style th:fragment="invoiceStyles">
         body.tax-invoice {
             margin: 0;
             background: #fff;
@@ -169,6 +169,109 @@
             text-align: center;
         }
 
+        .employee-invoice-document .invoice-company-name {
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
+        .employee-billing-preview .invoice-brand-table td {
+            padding: 16px 12px;
+        }
+
+        .employee-billing-preview .invoice-brand-table td:first-child:not([colspan]) {
+            width: 120px;
+        }
+
+        .employee-invoice-document .invoice-company-cin {
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .employee-invoice-document .invoice-document-title {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 12px 0;
+        }
+
+        /* Keep editing spacious without changing the shared printable invoice layout. */
+        @media screen {
+            .employee-billing-preview {
+                background: #f1f5f9;
+            }
+
+            .employee-billing-preview .preview-page {
+                /* max-width: 1120px; */
+                padding: 24px 16px;
+                background: transparent;
+            }
+
+            .employee-billing-preview .preview-sheet {
+                padding: 24px;
+                border: 1px solid #d9e2ec;
+                border-radius: 12px;
+                overflow-x: auto;
+            }
+
+            .employee-billing-preview .invoice-brand-table td {
+                border: 0;
+                vertical-align: middle;
+            }
+
+            .employee-billing-preview .invoice-detail-grid {
+                table-layout: fixed;
+            }
+
+            .employee-billing-preview .invoice-detail-grid td {
+                border: 0 !important;
+                padding: 6px 8px;
+                overflow-wrap: anywhere;
+            }
+
+            .employee-billing-preview .invoice-detail-grid td:first-child {
+                width: 38%;
+            }
+
+            .employee-billing-preview .form-control {
+                width: 100%;
+                min-width: 0;
+                box-sizing: border-box;
+                font-size: 0.95rem;
+            }
+
+            .employee-billing-preview textarea.form-control {
+                min-height: 100px;
+                resize: vertical;
+            }
+
+            .employee-billing-preview .invoice-billed-to {
+                padding: 16px;
+                vertical-align: top;
+            }
+
+            .employee-billing-preview .invoice-items-table td {
+                overflow-wrap: anywhere;
+            }
+
+            .employee-billing-preview .preview-actions {
+                padding: 8px 0 16px;
+            }
+        }
+
+        @media screen and (max-width: 767.98px) {
+            .employee-billing-preview .preview-sheet {
+                padding: 12px;
+            }
+
+            .employee-billing-preview .preview-sheet > table {
+                min-width: 700px;
+            }
+
+            .employee-billing-preview .preview-actions .btn {
+                width: 100%;
+            }
+        }
+
         @media (max-width: 767.98px) {
             .preview-page {
                 padding: 6px 8px 10px;
@@ -257,8 +360,21 @@
     </style>
 </head>
 
-<body class="tax-invoice" th:classappend="${#bools.isTrue(embeddedPreviewMode)} ? ' embedded-mode' : ''">
-    <div class="preview-page">
+<body class="tax-invoice"
+    th:classappend="${(#bools.isTrue(embeddedPreviewMode) ? ' embedded-mode' : '') + (#bools.isTrue(employeeBillingPreview) ? ' employee-billing-preview' : '') + (#bools.isTrue(employeeInvoiceDocument) ? ' employee-invoice-document' : '')}">
+    <div class="preview-page" th:fragment="invoiceContent">
+        <form th:if="${#bools.isTrue(employeeBillingPreview)}" id="billingDetailsForm"
+              th:action="@{/invoice/tax-invoices/generate/invoice}" th:object="${billingDetails}" method="post"
+              class="preview-banner no-print">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" name="loadToken" th:value="${loadToken}">
+            <strong>Preview Tax Invoice</strong>
+            <p>Enter billing details below, then generate the printable invoice. Leave GST blank for an unregistered client.</p>
+            <ul th:if="${#fields.hasErrors('*')}" role="alert">
+                <li th:each="error : ${#fields.errors('*')}" th:text="${error}"></li>
+            </ul>
+            <a th:href="@{/invoice/tax-invoices/generate}">Change selection / Load again</a>
+        </form>
         <div id="print-content" class="preview-sheet">
             <div th:if="${#bools.isTrue(invoicePreviewMode) and !#bools.isTrue(embeddedPreviewMode)}"
                 class="preview-banner">
@@ -272,15 +388,15 @@
                         <img th:src="@{/img/mahait_logo.png}" width="70" alt="MahaIT Logo">
                     </td>
                     <td colspan="5" style="text-align:center; vertical-align: middle;">
-                        <h3 style="margin:0;" th:text="${invoice.companyName}">
+                        <h3 class="invoice-company-name" style="margin:0;" th:text="${#bools.isTrue(employeeInvoiceDocument) ? 'MAHARASHTRA INFORMATION TECHNOLOGY CORPORATION LIMITED' : invoice.companyName}">
                             Maharashtra Information Technology Corporation Limited
                         </h3>
-                        <div th:text="${'CIN : ' + invoice.cinNumber}">CIN : U74999MH1998SGC099591</div>
+                        <div class="invoice-company-cin" th:text="${'CIN : ' + invoice.cinNumber}">CIN : U74999MH1998SGC099591</div>
                     </td>
                 </tr>
                 <tr>
                     <td colspan="6" style="text-align:center;">
-                        <h3 class="invoice-document-title">PROFORMA INVOICE</h3>
+                        <h3 class="invoice-document-title" th:text="${invoice.documentTitle}">PROFORMA INVOICE</h3>
                     </td>
                 </tr>
             </table>
@@ -303,20 +419,32 @@
                             </tr>
                             <tr>
                                 <td><b>Client GST Number:</b></td>
-                                <td th:text="${invoice.clientGstNumber != null ? invoice.clientGstNumber : '-'}">
-                                    27AABCM3129H1DW</td>
+                                <td><span th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${invoice.clientGstNumber != null ? invoice.clientGstNumber : '-'}">
+                                    27AABCM3129H1DW</span>
+                                    <input th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{clientGstNumber}" form="billingDetailsForm"
+                                        type="text" aria-label="Client GST Number" class="form-control" maxlength="15"></td>
                             </tr>
                             <tr>
                                 <td><b>Place Of Supply:</b></td>
-                                <td th:text="${invoice.placeOfSupply}">Maharashtra</td>
+                                <td><span th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${invoice.placeOfSupply}">Maharashtra</span>
+                                    <input th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{placeOfSupply}" form="billingDetailsForm"
+                                        type="text" aria-label="Place Of Supply" class="form-control" maxlength="100" required></td>
                             </tr>
                             <tr>
-                                <td><b>Dept Ref/ WO No:</b></td>
-                                <td th:text="${invoice.deptRefNumber != null ? invoice.deptRefNumber : '-'}">Mail</td>
+                                <td><b th:text="${#bools.isTrue(employeeBillingPreview) ? 'Request Id:' : 'Dept Ref/ WO No:'}">Dept Ref/ WO No:</b></td>
+                                <td><span th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${invoice.deptRefNumber != null ? invoice.deptRefNumber : '-'}">Mail</span>
+                                    <input th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{requestId}" form="billingDetailsForm"
+                                        type="text" aria-label="Request Id" class="form-control" maxlength="100" required></td>
                             </tr>
                             <tr>
-                                <td><b>Dept Ref/ WO Date:</b></td>
-                                <td th:text="${#temporals.format(invoice.deptRefDate, 'dd-MM-yyyy')}">25-02-2026</td>
+                                <td><b th:text="${#bools.isTrue(employeeBillingPreview) ? 'Work Order Date:' : 'Dept Ref/ WO Date:'}">Dept Ref/ WO Date:</b></td>
+                                <td><span th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${#temporals.format(invoice.deptRefDate, 'dd-MM-yyyy')}">25-02-2026</span>
+                                    <input th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{workOrderDate}" form="billingDetailsForm"
+                                        type="date" aria-label="Work Order Date" class="form-control" required></td>
                             </tr>
                             <tr>
                                 <td><b>PM Name:</b></td>
@@ -332,8 +460,14 @@
                 <tr>
                     <td colspan="3" class="invoice-billed-to">
                         <b>To,</b><br>
-                        <span th:text="${invoice.billedTo}">Department Name</span><br>
-                        <span th:text="${invoice.billingAddress}">Address</span>
+                        <span th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${invoice.billedTo}">Department Name</span>
+                        <input th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{billedTo}" form="billingDetailsForm"
+                            aria-label="To recipient / department" class="form-control" maxlength="255" required type="text"><br>
+                        <span class="address-block" th:unless="${#bools.isTrue(employeeBillingPreview)}" th:text="${invoice.billingAddress}">Address</span>
+                        <textarea th:if="${#bools.isTrue(employeeBillingPreview)}" th:object="${billingDetails}"
+                                        th:field="*{billingAddress}" form="billingDetailsForm"
+                            aria-label="Billing address" class="form-control" maxlength="2000" required rows="3"></textarea>
                     </td>
                 </tr>
             </table>
@@ -454,7 +588,7 @@
                                 <div class="qr-block">
                                     <img th:src="${invoice.qrCodeDataUrl}" class="qr-code-image"
                                         alt="Tax Invoice QR Code">
-                                    <div class="qr-caption">Scan for invoice details</div>
+                                    <div class="qr-caption" th:text="${#bools.isTrue(employeeBillingPreview) ? 'Preview QR (updated when invoice is generated)' : 'Scan for invoice details'}">Scan for invoice details</div>
                                 </div>
                             </th:block>
                             <div th:if="${#strings.isEmpty(invoice.qrCodeDataUrl)}" class="qr-placeholder">QR</div>
@@ -474,7 +608,8 @@
         </div>
 
         <div th:if="${!#bools.isTrue(embeddedPreviewMode)}" class="preview-actions no-print">
-            <button id="printBtn" class="btn" onclick="printContent('print-content')">Print</button>
+            <button th:if="${#bools.isTrue(employeeBillingPreview)}" type="submit" form="billingDetailsForm" class="btn btn-primary">Generate Tax Invoice</button>
+            <button th:unless="${#bools.isTrue(employeeBillingPreview)}" id="printBtn" class="btn" onclick="printContent('print-content')">Print</button>
         </div>
     </div>
 

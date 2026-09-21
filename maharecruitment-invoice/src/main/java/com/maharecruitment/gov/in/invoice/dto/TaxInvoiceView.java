@@ -19,6 +19,9 @@ import lombok.Setter;
 @Builder
 public class TaxInvoiceView {
 
+    @Builder.Default
+    private String documentTitle = "PROFORMA INVOICE";
+
     private Long departmentTaxInvoiceId;
     private Long departmentProjectApplicationId;
     private Long departmentRegistrationId;

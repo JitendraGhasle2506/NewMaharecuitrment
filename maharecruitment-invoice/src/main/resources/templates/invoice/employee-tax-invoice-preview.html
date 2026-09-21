@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Preview Tax Invoice</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/print.css}">
+    <th:block th:replace="~{invoice/tax-invoice-preview :: invoiceStyles}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{header/header :: var-sidebar-header('Invoice', 'Preview Tax Invoice', ~{::section})}">
+        <section class="tax-invoice employee-invoice-document employee-billing-preview">
+            <th:block th:replace="~{invoice/tax-invoice-preview :: invoiceContent}"></th:block>
+        </section>
+    </th:block>
+</body>
+</html>

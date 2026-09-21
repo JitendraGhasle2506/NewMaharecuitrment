@@ -225,6 +225,7 @@
                     <form id="taxInvoiceGenerationForm" th:object="${invoiceFilter}" method="post"
                         th:action="@{/invoice/tax-invoices/generate/load}">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input type="hidden" name="loadToken" th:value="${loadToken}">
                         <div class="tax-generation-form">
                             <div class="tax-generation-field department">
                                 <label class="form-label fw-semibold" for="departmentId">Department</label>
@@ -272,16 +273,16 @@
                             <button type="submit" class="btn btn-outline-primary rounded-pill px-4 fw-semibold">
                                 <i class="fa-solid fa-users me-1"></i> Load
                             </button>
-                            <button id="generateEmployeeInvoiceButton" type="submit"
+                            <button id="previewEmployeeInvoiceButton" type="submit"
                                 class="btn btn-primary rounded-pill px-4 fw-semibold"
                                 th:if="${employeesLoaded != null and employeesLoaded and !#lists.isEmpty(employees)}"
-                                th:formaction="@{/invoice/tax-invoices/generate/invoice}" formtarget="_blank">
-                                <i class="fa-solid fa-file-invoice me-1"></i> Generate Employee Invoice
+                                th:formaction="@{/invoice/tax-invoices/generate/employee-preview}">
+                                <i class="fa-solid fa-file-invoice me-1"></i> Preview Tax Invoice
                             </button>
                         </div>
                         <div class="tax-generation-note">
-                            Select a department and project, then Load to see the project's employees. Generate Employee
-                            Invoice then bills each employee at their designation/level rate for the selected dates.
+                            Select a department and project, then Load employees and Preview Tax Invoice.
+                            Enter billing details in the preview before generating the invoice.
                         </div>
                     </form>
                 </div>
@@ -589,10 +590,10 @@
 
             // The loaded employee list belongs to the submitted filter; any change means Load must run again.
             function invalidateLoadedEmployees() {
-                const generateButton = document.getElementById('generateEmployeeInvoiceButton');
+                const previewButton = document.getElementById('previewEmployeeInvoiceButton');
                 const loadedPanel = document.getElementById('loadedEmployeesPanel');
-                if (generateButton) {
-                    generateButton.remove();
+                if (previewButton) {
+                    previewButton.remove();
                 }
                 if (loadedPanel) {
                     loadedPanel.remove();
