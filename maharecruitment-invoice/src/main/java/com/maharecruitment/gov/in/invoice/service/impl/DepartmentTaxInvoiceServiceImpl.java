@@ -47,6 +47,10 @@ import com.maharecruitment.gov.in.invoice.service.TaxInvoiceAmountCalculator;
 import com.maharecruitment.gov.in.invoice.service.TaxInvoiceNumberGenerator;
 import com.maharecruitment.gov.in.invoice.service.TaxInvoiceViewMapper;
 import com.maharecruitment.gov.in.invoice.service.model.TaxInvoiceAmountBreakdown;
+import com.maharecruitment.gov.in.master.entity.ManpowerDesignationRate;
+import com.maharecruitment.gov.in.master.entity.RateMaster;
+import com.maharecruitment.gov.in.master.repository.ManpowerDesignationRateRepository;
+import com.maharecruitment.gov.in.master.repository.RateMasterRepository;
 
 @Service
 @Transactional(readOnly = true)
@@ -66,6 +70,8 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
     private final MahaItProfileRepository mahaItProfileRepository;
     private final UserService userService;
     private final DepartmentTaxInvoiceRepository invoiceRepository;
+    private final ManpowerDesignationRateRepository designationRateRepository;
+    private final RateMasterRepository rateMasterRepository;
     private final TaxInvoiceNumberGenerator numberGenerator;
     private final TaxInvoiceAmountCalculator amountCalculator;
     private final IndianCurrencyToWordsConverter currencyToWordsConverter;
@@ -79,6 +85,8 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
             MahaItProfileRepository mahaItProfileRepository,
             UserService userService,
             DepartmentTaxInvoiceRepository invoiceRepository,
+            ManpowerDesignationRateRepository designationRateRepository,
+            RateMasterRepository rateMasterRepository,
             TaxInvoiceNumberGenerator numberGenerator,
             TaxInvoiceAmountCalculator amountCalculator,
             IndianCurrencyToWordsConverter currencyToWordsConverter,
@@ -90,6 +98,8 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
         this.mahaItProfileRepository = mahaItProfileRepository;
         this.userService = userService;
         this.invoiceRepository = invoiceRepository;
+        this.designationRateRepository = designationRateRepository;
+        this.rateMasterRepository = rateMasterRepository;
         this.numberGenerator = numberGenerator;
         this.amountCalculator = amountCalculator;
         this.currencyToWordsConverter = currencyToWordsConverter;
@@ -282,23 +292,23 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
 
         LocalDate issueDate = resolveIssueDate(application);
         LocalDate referenceDate = resolveReferenceDate(application, issueDate);
-        List<DepartmentTaxInvoiceLineItemEntity> lineItems = buildLineItems(requirements);
+        List<InvoiceLineBuildResult> lineItemResults = buildLineItems(requirements, issueDate);
+        List<DepartmentTaxInvoiceLineItemEntity> lineItems = lineItemResults.stream()
+                .map(InvoiceLineBuildResult::lineItem)
+                .toList();
 
-        BigDecimal totalAgencyCommission = requirements.stream()
-                .map(DepartmentProjectResourceRequirementEntity::getAgencyCommissionAmount)
-                .filter(java.util.Objects::nonNull)
+        BigDecimal totalAgencyCommission = lineItemResults.stream()
+                .map(InvoiceLineBuildResult::agencyCommissionAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal totalMahaItCommission = requirements.stream()
-                .map(DepartmentProjectResourceRequirementEntity::getMahaItCommissionAmount)
-                .filter(java.util.Objects::nonNull)
+        BigDecimal totalMahaItCommission = lineItemResults.stream()
+                .map(InvoiceLineBuildResult::mahaItCommissionAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal taxableBase = requirements.stream()
-                .map(DepartmentProjectResourceRequirementEntity::getTaxableAmount)
-                .filter(java.util.Objects::nonNull)
+        BigDecimal taxableBase = lineItemResults.stream()
+                .map(InvoiceLineBuildResult::taxableAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
@@ -356,9 +366,12 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
         return invoice;
     }
 
-    private List<DepartmentTaxInvoiceLineItemEntity> buildLineItems(
-            List<DepartmentProjectResourceRequirementEntity> requirements) {
-        List<DepartmentTaxInvoiceLineItemEntity> lineItems = new ArrayList<>();
+    private List<InvoiceLineBuildResult> buildLineItems(
+            List<DepartmentProjectResourceRequirementEntity> requirements,
+            LocalDate issueDate) {
+        List<InvoiceLineBuildResult> lineItems = new ArrayList<>();
+        BigDecimal agencyCommissionMultiplier = resolveCommissionMultiplier("AGENCY");
+        BigDecimal mahaItCommissionMultiplier = resolveCommissionMultiplier("MAHAIT");
 
         int lineNumber = 1;
         for (DepartmentProjectResourceRequirementEntity requirement : requirements) {
@@ -372,23 +385,28 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
             Integer quantity = requirePositive(requirement.getRequiredQuantity(), "Resource requirement quantity");
             Integer durationInMonths = requirePositive(requirement.getDurationInMonths(),
                     "Resource requirement duration");
-            BigDecimal ratePerMonth = normalizeCurrency(requirement.getMonthlyRate());
+            BigDecimal ratePerMonth = resolveMasterMonthlyRate(requirement, issueDate);
             if (ratePerMonth.compareTo(ZERO) <= 0) {
                 throw new TaxInvoiceException("Resource requirement monthly rate must be greater than zero.");
             }
 
-            BigDecimal totalAmount = requirement.getTaxableAmount() != null
-                    ? normalizeCurrency(requirement.getTaxableAmount())
-                    : ratePerMonth
-                            .multiply(BigDecimal.valueOf(quantity))
-                            .multiply(BigDecimal.valueOf(durationInMonths))
-                            .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal manpowerAmount = ratePerMonth
+                    .multiply(BigDecimal.valueOf(quantity))
+                    .multiply(BigDecimal.valueOf(durationInMonths))
+                    .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal agencyCommissionAmount = manpowerAmount.multiply(agencyCommissionMultiplier)
+                    .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal subTotal = manpowerAmount.add(agencyCommissionAmount);
+            BigDecimal mahaItCommissionAmount = subTotal.multiply(mahaItCommissionMultiplier)
+                    .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal taxableAmount = subTotal.add(mahaItCommissionAmount)
+                    .setScale(2, RoundingMode.HALF_UP);
 
-            if (totalAmount.compareTo(ZERO) <= 0) {
+            if (taxableAmount.compareTo(ZERO) <= 0) {
                 throw new TaxInvoiceException("Resource requirement total cost must be greater than zero.");
             }
 
-            BigDecimal loadedRate = totalAmount.divide(
+            BigDecimal loadedRate = taxableAmount.divide(
                     BigDecimal.valueOf(quantity.longValue() * durationInMonths.longValue()),
                     2, RoundingMode.HALF_UP);
 
@@ -400,12 +418,47 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
                     .quantity(quantity)
                     .ratePerMonth(loadedRate)
                     .durationInMonths(durationInMonths)
-                    .totalAmount(totalAmount)
+                    .totalAmount(taxableAmount)
                     .build();
-            lineItems.add(lineItem);
+            lineItems.add(new InvoiceLineBuildResult(
+                    lineItem,
+                    agencyCommissionAmount,
+                    mahaItCommissionAmount,
+                    taxableAmount));
         }
 
         return lineItems;
+    }
+
+    private BigDecimal resolveMasterMonthlyRate(
+            DepartmentProjectResourceRequirementEntity requirement,
+            LocalDate issueDate) {
+        Long designationId = requirement.getDesignationId();
+        String levelCode = requireText(requirement.getLevelCode(), "Resource requirement level code")
+                .toUpperCase();
+        if (designationId == null || designationId < 1) {
+            throw new TaxInvoiceException("Resource requirement designation id is required.");
+        }
+        LocalDate lookupDate = issueDate == null ? LocalDate.now() : issueDate;
+        ManpowerDesignationRate rate = designationRateRepository
+                .findActiveRates(designationId, levelCode, lookupDate)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new TaxInvoiceException(
+                        "Designation monthly rate is not configured in master for designation "
+                                + requirement.getDesignationName()
+                                + " (designationId=" + designationId
+                                + ", levelCode=" + levelCode
+                                + ", date=" + lookupDate + ")."));
+        return normalizeCurrency(rate.getGrossMonthlyCtc());
+    }
+
+    private BigDecimal resolveCommissionMultiplier(String type) {
+        BigDecimal percentage = rateMasterRepository.findByTypeIgnoreCase(type)
+                .filter(rate -> "Y".equalsIgnoreCase(trimToNull(rate.getActiveFlag())))
+                .map(RateMaster::getRate)
+                .orElse(new BigDecimal("10.00"));
+        return percentage.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
     }
 
     private BigDecimal resolveTaxRate(LocalDate issueDate, String taxCode) {
@@ -642,6 +695,13 @@ public class DepartmentTaxInvoiceServiceImpl implements DepartmentTaxInvoiceServ
             return right == null;
         }
         return left.equals(right);
+    }
+
+    private record InvoiceLineBuildResult(
+            DepartmentTaxInvoiceLineItemEntity lineItem,
+            BigDecimal agencyCommissionAmount,
+            BigDecimal mahaItCommissionAmount,
+            BigDecimal taxableAmount) {
     }
 
     private record InvoiceActorDetails(Long userId, String displayName, String loginId) {

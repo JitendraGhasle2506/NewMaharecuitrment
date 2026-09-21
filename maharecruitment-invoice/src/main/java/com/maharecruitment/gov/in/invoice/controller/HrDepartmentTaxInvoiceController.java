@@ -14,12 +14,12 @@ import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceListItemView;
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceService;
 
 @Controller
-@RequestMapping("/auditor/department-tax-invoices")
-public class AuditorDepartmentTaxInvoiceController {
+@RequestMapping("/hr/department-tax-invoices")
+public class HrDepartmentTaxInvoiceController {
 
     private final DepartmentTaxInvoiceService taxInvoiceService;
 
-    public AuditorDepartmentTaxInvoiceController(DepartmentTaxInvoiceService taxInvoiceService) {
+    public HrDepartmentTaxInvoiceController(DepartmentTaxInvoiceService taxInvoiceService) {
         this.taxInvoiceService = taxInvoiceService;
     }
 
@@ -37,10 +37,10 @@ public class AuditorDepartmentTaxInvoiceController {
 
         Page<TaxInvoiceListItemView> taxInvoices = taxInvoiceService.getGeneratedInvoices(pageable);
         model.addAttribute("taxInvoices", taxInvoices);
-        model.addAttribute("pageRoleLabel", "Auditor");
-        model.addAttribute("invoiceListBasePath", "/auditor/department-tax-invoices");
+        model.addAttribute("pageRoleLabel", "HR");
+        model.addAttribute("invoiceListBasePath", "/hr/department-tax-invoices");
         model.addAttribute("invoiceListDescription",
-                "Review all completed and generated department tax invoices from the auditor dashboard.");
+                "Review generated department tax invoices from the HR invoice dashboard.");
         return "invoice/auditor-department-tax-invoice-list";
     }
 }

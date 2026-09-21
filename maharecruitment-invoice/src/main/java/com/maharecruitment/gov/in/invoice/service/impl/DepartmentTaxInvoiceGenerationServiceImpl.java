@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.invoice.service.impl;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +31,7 @@ import com.maharecruitment.gov.in.invoice.exception.TaxInvoiceException;
 import com.maharecruitment.gov.in.invoice.repository.DepartmentTaxInvoiceRepository;
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceGenerationService;
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceService;
+import com.maharecruitment.gov.in.invoice.service.EmployeeTaxInvoiceBuilder;
 import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.entity.SubDepartment;
@@ -44,7 +46,6 @@ import com.maharecruitment.gov.in.recruitment.repository.EmployeeProjectMappingR
 @Transactional(readOnly = true)
 public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxInvoiceGenerationService {
 
-    private static final String ACTIVE_PROJECT_FLAG = "Y";
     private static final String DEFAULT_ACTOR = "SYSTEM";
 
     private final DepartmentMstRepository departmentRepository;
@@ -55,6 +56,7 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
     private final DepartmentProjectApplicationActivityRepository activityRepository;
     private final DepartmentTaxInvoiceRepository invoiceRepository;
     private final DepartmentTaxInvoiceService taxInvoiceService;
+    private final EmployeeTaxInvoiceBuilder employeeTaxInvoiceBuilder;
 
     public DepartmentTaxInvoiceGenerationServiceImpl(
             DepartmentMstRepository departmentRepository,
@@ -64,7 +66,8 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
             DepartmentProjectApplicationRepository applicationRepository,
             DepartmentProjectApplicationActivityRepository activityRepository,
             DepartmentTaxInvoiceRepository invoiceRepository,
-            DepartmentTaxInvoiceService taxInvoiceService) {
+            DepartmentTaxInvoiceService taxInvoiceService,
+            EmployeeTaxInvoiceBuilder employeeTaxInvoiceBuilder) {
         this.departmentRepository = departmentRepository;
         this.subDepartmentRepository = subDepartmentRepository;
         this.projectRepository = projectRepository;
@@ -73,6 +76,7 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
         this.activityRepository = activityRepository;
         this.invoiceRepository = invoiceRepository;
         this.taxInvoiceService = taxInvoiceService;
+        this.employeeTaxInvoiceBuilder = employeeTaxInvoiceBuilder;
     }
 
     @Override
@@ -104,12 +108,20 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
 
     @Override
     public List<TaxInvoiceGenerationOptionView> getProjectOptions(Long departmentId, Long subDepartmentId) {
-        return projectRepository.findActiveProjectOptionsForTaxInvoice(
-                departmentId,
-                subDepartmentId,
-                ACTIVE_PROJECT_FLAG).stream()
+        return resolveScopedProjects(normalizeOptionalId(departmentId))
+                .stream()
                 .map(this::toProjectOption)
                 .toList();
+    }
+
+    /**
+     * Projects whose project_mst.department_id matches the selected department.
+     */
+    private List<ProjectMst> resolveScopedProjects(Long departmentId) {
+        if (departmentId == null) {
+            return List.of();
+        }
+        return projectRepository.findProjectsByDepartmentIdNative(departmentId);
     }
 
     @Override
@@ -169,13 +181,52 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
                 List.copyOf(results));
     }
 
+    @Override
+    public List<TaxInvoiceEmployeePreviewView> loadProjectEmployees(TaxInvoiceGenerationFilter filter) {
+        ResolvedFilter resolvedFilter = validateAndResolveFilter(filter);
+        if (resolvedFilter.projectId() == null) {
+            throw new TaxInvoiceException("Select a project to load its employees.");
+        }
+        return loadEmployeePreview(resolvedFilter);
+    }
+
+    @Override
+    public TaxInvoiceView buildEmployeeInvoice(TaxInvoiceGenerationFilter filter) {
+        ResolvedFilter resolvedFilter = validateAndResolveFilter(filter);
+        if (resolvedFilter.projectId() == null) {
+            throw new TaxInvoiceException("Select a project to generate the employee-wise tax invoice.");
+        }
+        ProjectMst project = projectRepository.findById(resolvedFilter.projectId())
+                .orElseThrow(() -> new TaxInvoiceException("Selected project was not found."));
+        List<EmployeeProjectMappingEntity> mappings = employeeProjectMappingRepository
+                .findCurrentProjectEmployeesForTaxInvoice(
+                        resolvedFilter.departmentId(),
+                        employeeSubDepartmentScope(resolvedFilter),
+                        resolvedFilter.projectId());
+        return employeeTaxInvoiceBuilder.build(
+                project,
+                resolvedFilter.departmentId(),
+                resolvedFilter.subDepartmentId(),
+                mappings,
+                resolvedFilter.startDate(),
+                resolvedFilter.endDate());
+    }
+
     private List<TaxInvoiceEmployeePreviewView> loadEmployeePreview(ResolvedFilter filter) {
         return employeeProjectMappingRepository.findCurrentProjectEmployeesForTaxInvoice(
                 filter.departmentId(),
-                filter.subDepartmentId(),
+                employeeSubDepartmentScope(filter),
                 filter.projectId()).stream()
-                .map(this::toEmployeePreview)
+                .map(mapping -> toEmployeePreview(mapping, filter.startDate(), filter.endDate()))
                 .toList();
+    }
+
+    /**
+     * Project options are scoped by department only, so a chosen project already fixes the scope;
+     * applying the subdepartment on top would drop the project's employees when the two disagree.
+     */
+    private Long employeeSubDepartmentScope(ResolvedFilter filter) {
+        return filter.projectId() != null ? null : filter.subDepartmentId();
     }
 
     private List<TaxInvoiceGenerationApplicationView> loadApplicationPreview(ResolvedFilter filter) {
@@ -313,23 +364,20 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
             throw new TaxInvoiceException("Selected subdepartment does not belong to the selected department.");
         }
         if (projectId != null) {
-            validateProjectSelection(projectId, departmentId, subDepartmentId);
+            validateProjectSelection(projectId, departmentId);
         }
 
         return new ResolvedFilter(departmentId, subDepartmentId, projectId, startDate, endDate);
     }
 
-    private void validateProjectSelection(Long projectId, Long departmentId, Long subDepartmentId) {
-        ProjectMst project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new TaxInvoiceException("Selected project was not found."));
-        if (!ACTIVE_PROJECT_FLAG.equalsIgnoreCase(project.getActiveFlag())) {
-            throw new TaxInvoiceException("Inactive projects cannot be used for tax invoice generation.");
+    private void validateProjectSelection(Long projectId, Long departmentId) {
+        if (!projectRepository.existsById(projectId)) {
+            throw new TaxInvoiceException("Selected project was not found.");
         }
-        if (!Objects.equals(project.getDepartmentId(), departmentId)) {
+        boolean inScope = resolveScopedProjects(departmentId).stream()
+                .anyMatch(scoped -> Objects.equals(scoped.getProjectId(), projectId));
+        if (!inScope) {
             throw new TaxInvoiceException("Selected project does not belong to the selected department.");
-        }
-        if (subDepartmentId != null && !Objects.equals(project.getSubDepartmentId(), subDepartmentId)) {
-            throw new TaxInvoiceException("Selected project does not belong to the selected subdepartment.");
         }
     }
 
@@ -352,7 +400,10 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
                 invoice == null ? "Ready for generation." : "Tax invoice already exists.");
     }
 
-    private TaxInvoiceEmployeePreviewView toEmployeePreview(EmployeeProjectMappingEntity mapping) {
+    private TaxInvoiceEmployeePreviewView toEmployeePreview(
+            EmployeeProjectMappingEntity mapping,
+            LocalDate periodStart,
+            LocalDate periodEnd) {
         EmployeeEntity employee = mapping.getEmployee();
         ProjectMst project = mapping.getProject();
         return new TaxInvoiceEmployeePreviewView(
@@ -361,10 +412,25 @@ public class DepartmentTaxInvoiceGenerationServiceImpl implements DepartmentTaxI
                 defaultIfBlank(employee.getFullName(), "-"),
                 defaultIfBlank(employee.getEmail(), "-"),
                 employee.getDesignation() == null ? "-" : defaultIfBlank(employee.getDesignation().getDesignationName(), "-"),
+                defaultIfBlank(employee.getLevelCode(), "-"),
                 defaultIfBlank(employee.getRecruitmentType(), "-"),
                 resolveDepartmentName(employee, project),
                 resolveSubDepartmentName(employee, project),
-                project == null ? "-" : defaultIfBlank(project.getProjectName(), "-"));
+                project == null ? "-" : defaultIfBlank(project.getProjectName(), "-"),
+                employee.getOnboardingDate(),
+                employee.getResignationDate(),
+                countDaysOnProject(employee, periodStart, periodEnd));
+    }
+
+    /** Same window EmployeeTaxInvoiceBuilder bills: the period clipped to onboarding and resignation dates. */
+    private long countDaysOnProject(EmployeeEntity employee, LocalDate periodStart, LocalDate periodEnd) {
+        LocalDate from = employee.getOnboardingDate() != null && employee.getOnboardingDate().isAfter(periodStart)
+                ? employee.getOnboardingDate()
+                : periodStart;
+        LocalDate to = employee.getResignationDate() != null && employee.getResignationDate().isBefore(periodEnd)
+                ? employee.getResignationDate()
+                : periodEnd;
+        return from.isAfter(to) ? 0 : ChronoUnit.DAYS.between(from, to) + 1;
     }
 
     private TaxInvoiceGenerationApplicationView withStatus(

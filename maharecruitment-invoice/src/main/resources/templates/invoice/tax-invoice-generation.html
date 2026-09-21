@@ -160,6 +160,13 @@
             color: #64748b;
         }
 
+        .tax-generation-note {
+            margin-top: 0.75rem;
+            color: #64748b;
+            font-size: 0.88rem;
+            text-align: right;
+        }
+
         @media (max-width: 1199.98px) {
             .tax-generation-form {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -215,7 +222,8 @@
 
             <div class="card tax-generation-panel">
                 <div class="card-body p-4">
-                    <form th:object="${invoiceFilter}" method="post" th:action="@{/invoice/tax-invoices/generate/preview}">
+                    <form id="taxInvoiceGenerationForm" th:object="${invoiceFilter}" method="post"
+                        th:action="@{/invoice/tax-invoices/generate/load}">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <div class="tax-generation-form">
                             <div class="tax-generation-field department">
@@ -239,8 +247,8 @@
 
                             <div class="tax-generation-field project">
                                 <label class="form-label fw-semibold" for="projectId">Project</label>
-                                <select id="projectId" class="form-select" th:field="*{projectId}">
-                                    <option value="">All Projects</option>
+                                <select id="projectId" class="form-select" th:field="*{projectId}" required>
+                                    <option value="">Select Project</option>
                                     <option th:each="project : ${projects}" th:value="${project.id}"
                                         th:text="${project.code != null ? project.name + ' (' + project.code + ')' : project.name}"
                                         th:attr="data-department-id=${project.departmentId},data-sub-department-id=${project.subDepartmentId}">
@@ -262,14 +270,64 @@
 
                         <div class="tax-generation-actions">
                             <button type="submit" class="btn btn-outline-primary rounded-pill px-4 fw-semibold">
-                                <i class="fa-solid fa-magnifying-glass me-1"></i> Preview
+                                <i class="fa-solid fa-users me-1"></i> Load
                             </button>
-                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold"
-                                th:formaction="@{/invoice/tax-invoices/generate/generate}">
-                                <i class="fa-solid fa-file-circle-plus me-1"></i> Generate
+                            <button id="generateEmployeeInvoiceButton" type="submit"
+                                class="btn btn-primary rounded-pill px-4 fw-semibold"
+                                th:if="${employeesLoaded != null and employeesLoaded and !#lists.isEmpty(employees)}"
+                                th:formaction="@{/invoice/tax-invoices/generate/invoice}" formtarget="_blank">
+                                <i class="fa-solid fa-file-invoice me-1"></i> Generate Employee Invoice
                             </button>
                         </div>
+                        <div class="tax-generation-note">
+                            Select a department and project, then Load to see the project's employees. Generate Employee
+                            Invoice then bills each employee at their designation/level rate for the selected dates.
+                        </div>
                     </form>
+                </div>
+            </div>
+
+            <div id="loadedEmployeesPanel" class="card tax-generation-panel" th:if="${employeesLoaded}">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-1">
+                        Project Employees
+                        <span class="badge bg-primary-subtle text-primary ms-1" th:text="${#lists.size(employees)}">0</span>
+                    </h5>
+                    <div class="text-muted small">
+                        Active employees mapped to the selected project and their days on the project between the
+                        selected start and end dates. Each employee is one row on the invoice.
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover tax-generation-table mb-0">
+                        <colgroup>
+                            <col style="width: 10%;">
+                            <col style="width: 40%;">
+                            <col style="width: 30%;">
+                            <col style="width: 20%;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Sr No.</th>
+                                <th>Employee Name</th>
+                                <th>Designation</th>
+                                <th class="text-end">No. of Days</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(employees)}">
+                                <td colspan="4" class="tax-generation-empty">
+                                    No active employees are mapped to the selected project.
+                                </td>
+                            </tr>
+                            <tr th:each="employee, stat : ${employees}">
+                                <td th:text="${stat.count}">1</td>
+                                <td class="tax-generation-main-text" th:text="${employee.fullName}">Employee</td>
+                                <td th:text="${employee.designationName}">Designation</td>
+                                <td class="text-end fw-semibold" th:text="${employee.numberOfDays}">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -289,72 +347,6 @@
                 <div class="tax-generation-stat">
                     <div class="tax-generation-stat-label">Existing</div>
                     <div class="tax-generation-stat-value" th:text="${preview.alreadyGeneratedCount}">0</div>
-                </div>
-            </div>
-
-            <div class="card tax-generation-panel" th:if="${generationResult != null}">
-                <div class="card-header bg-white border-0 pt-4 px-4">
-                    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-                        <div>
-                            <h5 class="fw-bold mb-1">Generation Result</h5>
-                            <div class="text-muted small"
-                                th:text="${'Generated: ' + generationResult.generatedCount + ' | Existing: ' + generationResult.alreadyGeneratedCount + ' | Failed: ' + generationResult.failedCount}">
-                                Generated: 0 | Existing: 0 | Failed: 0
-                            </div>
-                        </div>
-                        <span class="badge bg-light text-dark border rounded-pill px-3 py-2"
-                            th:text="${'Processed ' + generationResult.totalProcessedCount}">Processed 0</span>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover tax-generation-table mb-0">
-                        <colgroup>
-                            <col style="width: 18%;">
-                            <col style="width: 14%;">
-                            <col style="width: 24%;">
-                            <col style="width: 12%;">
-                            <col style="width: 16%;">
-                            <col style="width: 16%;">
-                        </colgroup>
-                        <thead>
-                            <tr>
-                                <th>Request</th>
-                                <th>Invoice ID</th>
-                                <th>Project</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:each="application : ${generationResult.applications}">
-                                <td>
-                                    <div class="tax-generation-main-text" th:text="${application.requestId}">REQ</div>
-                                    <div class="tax-generation-muted" th:text="${application.tiNumber ?: '-'}">TI</div>
-                                </td>
-                                <td th:text="${application.departmentTaxInvoiceId ?: '-'}">-</td>
-                                <td>
-                                    <div class="tax-generation-main-text" th:text="${application.projectName}">Project</div>
-                                    <div class="tax-generation-muted" th:text="${application.projectCode}">Code</div>
-                                </td>
-                                <td th:text="${application.issueDate != null ? #temporals.format(application.issueDate, 'dd-MMM-yyyy') : '-'}">
-                                    -
-                                </td>
-                                <td>
-                                    <span class="tax-status"
-                                        th:classappend="${application.generationStatus == 'Generated' || application.generationStatus == 'Already Generated'} ? ' generated' : (${application.generationStatus == 'Failed'} ? ' failed' : '')"
-                                        th:text="${application.generationStatus}">Status</span>
-                                    <div class="tax-generation-muted mt-1" th:text="${application.message}">Message</div>
-                                </td>
-                                <td class="text-end">
-                                    <a th:if="${application.generated}" class="btn btn-light btn-sm border rounded-pill px-3 fw-semibold"
-                                        th:href="@{/invoice/tax-invoices/application/{applicationId}(applicationId=${application.applicationId})}">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
 
@@ -410,8 +402,8 @@
                                         View
                                     </a>
                                     <a th:unless="${application.generated}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold"
-                                        th:href="@{/invoice/tax-invoices/application/{applicationId}/preview(applicationId=${application.applicationId})}">
-                                        Preview
+                                        th:href="@{/invoice/tax-invoices/application/{applicationId}(applicationId=${application.applicationId})}">
+                                        Open Invoice
                                     </a>
                                 </td>
                             </tr>
@@ -470,62 +462,167 @@
         </section>
     </th:block>
 
-    <script>
+    <script th:inline="javascript">
         (function () {
             const departmentSelect = document.getElementById('departmentId');
             const subDepartmentSelect = document.getElementById('subDepartmentId');
             const projectSelect = document.getElementById('projectId');
+            const subDepartmentUrl = /*[[@{/invoice/tax-invoices/generate/options/sub-departments}]]*/ '';
+            const projectUrl = /*[[@{/invoice/tax-invoices/generate/options/projects}]]*/ '';
 
             if (!departmentSelect || !subDepartmentSelect || !projectSelect) {
                 return;
             }
 
-            function setOptionVisibility(option, visible) {
-                option.hidden = !visible;
-                option.disabled = !visible;
+            let projectRequestSequence = 0;
+            let subDepartmentRequestSequence = 0;
+
+            function subDepartmentLabel(subDepartment) {
+                return subDepartment.name;
             }
 
-            function filterSubDepartments() {
+            function replaceOptions(select, placeholder, items, labelFor, selectedValue) {
+                select.innerHTML = '';
+                select.appendChild(new Option(placeholder, ''));
+                items.forEach(function (item) {
+                    select.appendChild(new Option(labelFor(item), String(item.id)));
+                });
+                // Keep the user's choice when it is still valid for the new scope.
+                const stillValid = items.some(function (item) { return String(item.id) === selectedValue; });
+                select.value = stillValid ? selectedValue : '';
+            }
+
+            function setLoading(select, text) {
+                select.innerHTML = '';
+                select.appendChild(new Option(text, ''));
+                select.disabled = true;
+            }
+
+            function fetchOptions(url, params) {
+                const query = new URLSearchParams();
+                Object.keys(params).forEach(function (key) {
+                    if (params[key]) {
+                        query.append(key, params[key]);
+                    }
+                });
+                return fetch(url + '?' + query.toString(), {
+                    headers: {
+                        'Accept': 'application/json',
+                        // Lets the session interceptor answer with JSON instead of redirecting to the login page.
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                }).then(function (response) {
+                    return response.json().catch(function () {
+                        return null;
+                    }).then(function (body) {
+                        if (!response.ok || !Array.isArray(body)) {
+                            const message = body && (body.message || body.error);
+                            console.error('Option load failed', response.status, url, body);
+                            throw new Error(message || ('Failed to load options (' + response.status + ')'));
+                        }
+                        return body;
+                    });
+                });
+            }
+
+            function projectLabel(project) {
+                return project.code ? project.name + ' (' + project.code + ')' : project.name;
+            }
+
+            function loadProjects() {
                 const departmentId = departmentSelect.value;
-                Array.from(subDepartmentSelect.options).forEach(function (option) {
-                    if (!option.value) {
-                        setOptionVisibility(option, true);
+                const sequence = ++projectRequestSequence;
+                const selectedValue = projectSelect.value;
+                if (!departmentId) {
+                    replaceOptions(projectSelect, 'Select Department First', [], projectLabel, '');
+                    projectSelect.disabled = true;
+                    return Promise.resolve();
+                }
+                setLoading(projectSelect, 'Loading projects...');
+                return fetchOptions(projectUrl, {
+                    departmentId: departmentId,
+                    subDepartmentId: subDepartmentSelect.value
+                }).then(function (projects) {
+                    if (sequence !== projectRequestSequence) {
                         return;
                     }
-                    setOptionVisibility(option, !departmentId || option.dataset.departmentId === departmentId);
+                    projectSelect.disabled = false;
+                    replaceOptions(projectSelect,
+                        projects.length ? 'Select Project' : 'No projects found for this selection',
+                        projects, projectLabel, selectedValue);
+                }).catch(function (error) {
+                    if (sequence === projectRequestSequence) {
+                        projectSelect.disabled = false;
+                        replaceOptions(projectSelect, (error && error.message) || 'Unable to load projects',
+                            [], projectLabel, '');
+                    }
                 });
-                if (subDepartmentSelect.selectedOptions.length
-                        && subDepartmentSelect.selectedOptions[0].disabled) {
-                    subDepartmentSelect.value = '';
+            }
+
+            function loadSubDepartments() {
+                const departmentId = departmentSelect.value;
+                const sequence = ++subDepartmentRequestSequence;
+                const selectedValue = subDepartmentSelect.value;
+                if (!departmentId) {
+                    replaceOptions(subDepartmentSelect, 'All Subdepartments', [], subDepartmentLabel, '');
+                    subDepartmentSelect.disabled = true;
+                    return Promise.resolve();
+                }
+                setLoading(subDepartmentSelect, 'Loading subdepartments...');
+                return fetchOptions(subDepartmentUrl, { departmentId: departmentId })
+                    .then(function (subDepartments) {
+                        if (sequence !== subDepartmentRequestSequence) {
+                            return;
+                        }
+                        subDepartmentSelect.disabled = false;
+                        replaceOptions(subDepartmentSelect, 'All Subdepartments', subDepartments,
+                            subDepartmentLabel, selectedValue);
+                    })
+                    .catch(function () {
+                        if (sequence === subDepartmentRequestSequence) {
+                            subDepartmentSelect.disabled = false;
+                            replaceOptions(subDepartmentSelect, 'All Subdepartments', [], subDepartmentLabel, '');
+                        }
+                    });
+            }
+
+            // The loaded employee list belongs to the submitted filter; any change means Load must run again.
+            function invalidateLoadedEmployees() {
+                const generateButton = document.getElementById('generateEmployeeInvoiceButton');
+                const loadedPanel = document.getElementById('loadedEmployeesPanel');
+                if (generateButton) {
+                    generateButton.remove();
+                }
+                if (loadedPanel) {
+                    loadedPanel.remove();
                 }
             }
 
-            function filterProjects() {
-                const departmentId = departmentSelect.value;
-                const subDepartmentId = subDepartmentSelect.value;
-                Array.from(projectSelect.options).forEach(function (option) {
-                    if (!option.value) {
-                        setOptionVisibility(option, true);
-                        return;
-                    }
-                    const matchesDepartment = !departmentId || option.dataset.departmentId === departmentId;
-                    const optionSubDepartmentId = option.dataset.subDepartmentId || '';
-                    const matchesSubDepartment = !subDepartmentId || optionSubDepartmentId === subDepartmentId;
-                    setOptionVisibility(option, matchesDepartment && matchesSubDepartment);
-                });
-                if (projectSelect.selectedOptions.length && projectSelect.selectedOptions[0].disabled) {
-                    projectSelect.value = '';
+            departmentSelect.addEventListener('change', function () {
+                // A new department invalidates both dependent selections.
+                invalidateLoadedEmployees();
+                subDepartmentSelect.value = '';
+                projectSelect.value = '';
+                loadSubDepartments().then(loadProjects);
+            });
+            subDepartmentSelect.addEventListener('change', function () {
+                invalidateLoadedEmployees();
+                loadProjects();
+            });
+            ['projectId', 'startDate', 'endDate'].forEach(function (id) {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.addEventListener('change', invalidateLoadedEmployees);
                 }
-            }
+            });
 
-            function refreshDependentOptions() {
-                filterSubDepartments();
-                filterProjects();
+            // The server renders lists already scoped to the posted selection; lock dependents until a department is chosen.
+            if (!departmentSelect.value) {
+                subDepartmentSelect.disabled = true;
+                replaceOptions(projectSelect, 'Select Department First', [], projectLabel, '');
+                projectSelect.disabled = true;
             }
-
-            departmentSelect.addEventListener('change', refreshDependentOptions);
-            subDepartmentSelect.addEventListener('change', filterProjects);
-            refreshDependentOptions();
         }());
     </script>
 </body>
