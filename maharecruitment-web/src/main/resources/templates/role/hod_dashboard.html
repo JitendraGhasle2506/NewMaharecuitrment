@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>HOD Dashboard</title>
+    <th:block th:replace="~{header/header :: var-files-header}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/role-dashboard.css}">
+</head>
+<body class="role-shell">
+    <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'HOD Dashboard', ~{::section})}">
+        <section>
+            <div class="card add-emp-card">
+                <div class="header"><h2>HOD Dashboard</h2></div>
+                <div class="card-body">
+                    <div class="role-hero">
+                        <h1>Mapped Employees</h1>
+                        <p>Employees mapped to you as reporting authority.</p>
+                    </div>
+                    <div class="panel mt-4">
+                        <h4>Employees <span class="badge text-bg-primary" th:text="${#lists.size(employees)}">0</span></h4>
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover mb-0">
+                                <thead><tr>
+                                    <th scope="col">Employee Code</th>
+                                    <th scope="col">Employee Name</th>
+                                    <th scope="col">Designation</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">Recruitment Type</th>
+                                    <th scope="col">Status</th>
+                                </tr></thead>
+                                <tbody>
+                                    <tr th:each="employee : ${employees}">
+                                        <td th:text="${employee.employeeCode}"></td>
+                                        <td th:text="${employee.fullName}"></td>
+                                        <td th:text="${employee.designation ?: '-'}"></td>
+                                        <td th:text="${employee.email}"></td>
+                                        <td th:text="${employee.recruitmentType}"></td>
+                                        <td th:text="${employee.status}"></td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(employees)}">
+                                        <td colspan="6" class="text-center text-muted">No employees are mapped to you.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</body>
+</html>
