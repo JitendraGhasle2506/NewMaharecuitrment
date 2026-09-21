@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.master.repository;
 
 import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -48,6 +49,11 @@ public interface ProjectMstRepository extends JpaRepository<ProjectMst, Long> {
 
     @EntityGraph(attributePaths = { "cell", "cell.wing" })
     List<ProjectMst> findByActiveFlagIgnoreCaseOrderByProjectNameAsc(String activeFlag);
+
+    @EntityGraph(attributePaths = { "cell", "cell.wing" })
+    List<ProjectMst> findByCell_CellIdInAndActiveFlagIgnoreCaseOrderByProjectNameAsc(
+            Collection<Long> cellIds,
+            String activeFlag);
 
     @Query(value = """
             SELECT *

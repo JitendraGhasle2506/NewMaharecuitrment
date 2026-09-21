@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.master.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,9 @@ public interface CellMasterRepository extends JpaRepository<CellMaster, Long> {
 
     @EntityGraph(attributePaths = "wing")
     Optional<CellMaster> findByCellId(Long cellId);
+
+    @EntityGraph(attributePaths = "wing")
+    List<CellMaster> findByCellIdIn(Collection<Long> cellIds);
 
     @EntityGraph(attributePaths = "wing")
     Optional<CellMaster> findFirstByCellNameIgnoreCaseAndActiveFlagIgnoreCaseAndWing_ActiveFlagIgnoreCase(

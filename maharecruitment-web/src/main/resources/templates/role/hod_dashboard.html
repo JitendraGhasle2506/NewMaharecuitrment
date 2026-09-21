@@ -5,6 +5,33 @@
     <title>HOD Dashboard</title>
     <th:block th:replace="~{header/header :: var-files-header}"></th:block>
     <link rel="stylesheet" th:href="@{/css/role-dashboard.css}">
+    <style>
+        .hod-stat-card {
+            width: 100%;
+            min-height: 150px;
+            border: 0;
+            border-radius: 14px;
+            padding: 1.25rem;
+            color: #fff;
+            text-align: left;
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .hod-stat-card:hover, .hod-stat-card:focus-visible {
+            color: #fff;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(31, 79, 120, .22);
+        }
+        .hod-stat-card.employees { background: linear-gradient(135deg, #1f4f78, #2f77ad); }
+        .hod-stat-card.cells { background: linear-gradient(135deg, #146c94, #25a3bd); }
+        .hod-stat-card.projects { background: linear-gradient(135deg, #5a3e9b, #8867cf); }
+        .hod-stat-card.present { background: linear-gradient(135deg, #198754, #42b883); }
+        .hod-stat-card.absent { background: linear-gradient(135deg, #b02a37, #e35d6a); }
+        .hod-stat-label { display: block; font-size: .82rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
+        .hod-stat-value { display: block; margin: .35rem 0; font-size: 2.2rem; font-weight: 700; line-height: 1; }
+        .hod-stat-hint { font-size: .85rem; opacity: .92; }
+        .hod-detail-panel { border: 1px solid #e8edf3; border-radius: 12px; overflow: hidden; }
+        .hod-detail-panel .panel-heading { padding: 1rem 1.25rem; background: #f8fafc; border-bottom: 1px solid #e8edf3; }
+    </style>
 </head>
 <body class="role-shell">
     <th:block th:replace="~{header/header :: var-sidebar-header('Home', 'HOD Dashboard', ~{::section})}">
@@ -13,36 +40,214 @@
                 <div class="header"><h2>HOD Dashboard</h2></div>
                 <div class="card-body">
                     <div class="role-hero">
-                        <h1>Mapped Employees</h1>
-                        <p>Employees mapped to you as reporting authority.</p>
+                        <h1>My Team Overview</h1>
+                        <p>View employees in your reporting hierarchy, along with the cells and projects in their scope.</p>
                     </div>
-                    <div class="panel mt-4">
-                        <h4>Employees <span class="badge text-bg-primary" th:text="${#lists.size(employees)}">0</span></h4>
-                        <div class="table-responsive">
-                            <table class="table align-middle table-hover mb-0">
-                                <thead><tr>
-                                    <th scope="col">Employee Code</th>
-                                    <th scope="col">Employee Name</th>
-                                    <th scope="col">Designation</th>
-                                    <th scope="col">Email</th>
-                                    <th scope="col">Recruitment Type</th>
-                                    <th scope="col">Status</th>
-                                </tr></thead>
-                                <tbody>
-                                    <tr th:each="employee : ${employees}">
-                                        <td th:text="${employee.employeeCode}"></td>
-                                        <td th:text="${employee.fullName}"></td>
-                                        <td th:text="${employee.designation ?: '-'}"></td>
-                                        <td th:text="${employee.email}"></td>
-                                        <td th:text="${employee.recruitmentType}"></td>
-                                        <td th:text="${employee.status}"></td>
-                                    </tr>
-                                    <tr th:if="${#lists.isEmpty(employees)}">
-                                        <td colspan="6" class="text-center text-muted">No employees are mapped to you.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <div class="row g-3 mt-2" role="tablist" aria-label="HOD dashboard details">
+                        <div class="col-md-4">
+                            <button type="button" class="hod-stat-card employees" id="employees-tab"
+                                    data-bs-toggle="tab" data-bs-target="#employees-panel" role="tab"
+                                    aria-controls="employees-panel" aria-selected="false">
+                                <span class="hod-stat-label">Total Employees</span>
+                                <span class="hod-stat-value" th:text="${dashboard.totalEmployees}">0</span>
+                                <span class="hod-stat-hint">Click to view employee list</span>
+                            </button>
                         </div>
+                        <div class="col-md-4">
+                            <button type="button" class="hod-stat-card cells" id="cells-tab"
+                                    data-bs-toggle="tab" data-bs-target="#cells-panel" role="tab"
+                                    aria-controls="cells-panel" aria-selected="false">
+                                <span class="hod-stat-label">Cells in Scope</span>
+                                <span class="hod-stat-value" th:text="${dashboard.totalCells}">0</span>
+                                <span class="hod-stat-hint">Click to view cells and counts</span>
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="hod-stat-card projects" id="projects-tab"
+                                    data-bs-toggle="tab" data-bs-target="#projects-panel" role="tab"
+                                    aria-controls="projects-panel" aria-selected="false">
+                                <span class="hod-stat-label">Projects in Scope</span>
+                                <span class="hod-stat-value" th:text="${dashboard.totalProjects}">0</span>
+                                <span class="hod-stat-hint">Click to view project details</span>
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="hod-stat-card present" id="present-tab"
+                                    data-bs-toggle="tab" data-bs-target="#present-panel" role="tab"
+                                    aria-controls="present-panel" aria-selected="false">
+                                <span class="hod-stat-label">Present Today</span>
+                                <span class="hod-stat-value" th:text="${dashboard.presentEmployeesCount}">0</span>
+                                <span class="hod-stat-hint">Click to view present employees</span>
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="hod-stat-card absent" id="absent-tab"
+                                    data-bs-toggle="tab" data-bs-target="#absent-panel" role="tab"
+                                    aria-controls="absent-panel" aria-selected="false">
+                                <span class="hod-stat-label">Absent Today</span>
+                                <span class="hod-stat-value" th:text="${dashboard.absentEmployeesCount}">0</span>
+                                <span class="hod-stat-hint">Click to view absent employees</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="tab-content mt-4">
+                        <section class="tab-pane fade hod-detail-panel" id="employees-panel" role="tabpanel"
+                                aria-labelledby="employees-tab" tabindex="0">
+                            <div class="panel-heading d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">Employees under your reporting hierarchy</h4>
+                                <span class="badge text-bg-primary" th:text="${dashboard.totalEmployees}">0</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table align-middle table-hover mb-0">
+                                    <thead><tr>
+                                        <th scope="col">Employee Code</th>
+                                        <th scope="col">Employee Name</th>
+                                        <th scope="col">Designation</th>
+                                        <th scope="col">Cell</th>
+                                        <th scope="col">Project</th>
+                                        <th scope="col">Email</th>
+                                        <th scope="col">Type</th>
+                                        <th scope="col">Status</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr th:each="employee : ${dashboard.employees}">
+                                            <td th:text="${employee.employeeCode}"></td>
+                                            <td th:text="${employee.fullName}"></td>
+                                            <td th:text="${employee.designation}"></td>
+                                            <td th:text="${employee.cellName}"></td>
+                                            <td th:text="${employee.projectName}"></td>
+                                            <td th:text="${employee.email}"></td>
+                                            <td th:text="${employee.recruitmentType}"></td>
+                                            <td th:text="${employee.status}"></td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(dashboard.employees)}">
+                                            <td colspan="8" class="text-center text-muted py-4">No employees are mapped to you.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section class="tab-pane fade hod-detail-panel" id="cells-panel" role="tabpanel"
+                                aria-labelledby="cells-tab" tabindex="0">
+                            <div class="panel-heading d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">Cells under your authority</h4>
+                                <span class="badge text-bg-info" th:text="${dashboard.totalCells}">0</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table align-middle table-hover mb-0">
+                                    <thead><tr>
+                                        <th scope="col">Cell</th>
+                                        <th scope="col">Wing</th>
+                                        <th scope="col">Employees in Scope</th>
+                                        <th scope="col">Projects</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr th:each="cell : ${dashboard.cells}">
+                                            <td th:text="${cell.cellName}"></td>
+                                            <td th:text="${cell.wingName}"></td>
+                                            <td th:text="${cell.employeeCount}"></td>
+                                            <td th:text="${cell.projectCount}"></td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(dashboard.cells)}">
+                                            <td colspan="4" class="text-center text-muted py-4">No cells are assigned to your reporting scope.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section class="tab-pane fade hod-detail-panel" id="projects-panel" role="tabpanel"
+                                aria-labelledby="projects-tab" tabindex="0">
+                            <div class="panel-heading d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">Projects in your team’s scope</h4>
+                                <span class="badge text-bg-secondary" th:text="${dashboard.totalProjects}">0</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table align-middle table-hover mb-0">
+                                    <thead><tr>
+                                        <th scope="col">Project</th>
+                                        <th scope="col">Project Code</th>
+                                        <th scope="col">Cell</th>
+                                        <th scope="col">Mapped Employees</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr th:each="project : ${dashboard.projects}">
+                                            <td th:text="${project.projectName}"></td>
+                                            <td th:text="${project.projectCode}"></td>
+                                            <td th:text="${project.cellName}"></td>
+                                            <td th:text="${project.employeeCount}"></td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(dashboard.projects)}">
+                                            <td colspan="4" class="text-center text-muted py-4">No projects are in your reporting scope.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section class="tab-pane fade hod-detail-panel" id="present-panel" role="tabpanel"
+                                aria-labelledby="present-tab" tabindex="0">
+                            <div class="panel-heading d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">Present employees today</h4>
+                                <span class="badge text-bg-success" th:text="${dashboard.presentEmployeesCount}">0</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table align-middle table-hover mb-0">
+                                    <thead><tr>
+                                        <th scope="col">Employee Code</th>
+                                        <th scope="col">Employee Name</th>
+                                        <th scope="col">Designation</th>
+                                        <th scope="col">Cell</th>
+                                        <th scope="col">Project</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr th:each="employee : ${dashboard.presentEmployees}">
+                                            <td th:text="${employee.employeeCode}"></td>
+                                            <td th:text="${employee.fullName}"></td>
+                                            <td th:text="${employee.designation}"></td>
+                                            <td th:text="${employee.cellName}"></td>
+                                            <td th:text="${employee.projectName}"></td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(dashboard.presentEmployees)}">
+                                            <td colspan="5" class="text-center text-muted py-4">No present attendance is recorded for your team today.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section class="tab-pane fade hod-detail-panel" id="absent-panel" role="tabpanel"
+                                aria-labelledby="absent-tab" tabindex="0">
+                            <div class="panel-heading d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">Absent employees today</h4>
+                                <span class="badge text-bg-danger" th:text="${dashboard.absentEmployeesCount}">0</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table align-middle table-hover mb-0">
+                                    <thead><tr>
+                                        <th scope="col">Employee Code</th>
+                                        <th scope="col">Employee Name</th>
+                                        <th scope="col">Designation</th>
+                                        <th scope="col">Cell</th>
+                                        <th scope="col">Project</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr th:each="employee : ${dashboard.absentEmployees}">
+                                            <td th:text="${employee.employeeCode}"></td>
+                                            <td th:text="${employee.fullName}"></td>
+                                            <td th:text="${employee.designation}"></td>
+                                            <td th:text="${employee.cellName}"></td>
+                                            <td th:text="${employee.projectName}"></td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(dashboard.absentEmployees)}">
+                                            <td colspan="5" class="text-center text-muted py-4">Everyone in your team is marked present today.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>

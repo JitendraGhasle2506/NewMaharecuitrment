@@ -23,7 +23,7 @@ public class HodDashboardController {
         if (user == null || user.id() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Your session has expired.");
         }
-        model.addAttribute("employees", dashboardService.getEmployees(user.id()));
+        model.addAttribute("dashboard", dashboardService.getDashboard(user.id()));
         return "role/hod_dashboard";
     }
 }
