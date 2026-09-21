@@ -169,6 +169,84 @@
             text-align: center;
         }
 
+        /* Keep editing spacious without changing the shared printable invoice layout. */
+        @media screen {
+            body.employee-billing-preview {
+                background: #f1f5f9;
+            }
+
+            .employee-billing-preview .preview-page {
+                max-width: 1120px;
+                padding: 24px 16px;
+                background: transparent;
+            }
+
+            .employee-billing-preview .preview-sheet {
+                padding: 24px;
+                border: 1px solid #d9e2ec;
+                border-radius: 12px;
+                overflow-x: auto;
+            }
+
+            .employee-billing-preview .invoice-brand-table td {
+                border: 0;
+                vertical-align: middle;
+            }
+
+            .employee-billing-preview .invoice-detail-grid {
+                table-layout: fixed;
+            }
+
+            .employee-billing-preview .invoice-detail-grid td {
+                border: 0 !important;
+                padding: 6px 8px;
+                overflow-wrap: anywhere;
+            }
+
+            .employee-billing-preview .invoice-detail-grid td:first-child {
+                width: 38%;
+            }
+
+            .employee-billing-preview .form-control {
+                width: 100%;
+                min-width: 0;
+                box-sizing: border-box;
+                font-size: 0.95rem;
+            }
+
+            .employee-billing-preview textarea.form-control {
+                min-height: 100px;
+                resize: vertical;
+            }
+
+            .employee-billing-preview .invoice-billed-to {
+                padding: 16px;
+                vertical-align: top;
+            }
+
+            .employee-billing-preview .invoice-items-table td {
+                overflow-wrap: anywhere;
+            }
+
+            .employee-billing-preview .preview-actions {
+                padding: 8px 0 16px;
+            }
+        }
+
+        @media screen and (max-width: 767.98px) {
+            .employee-billing-preview .preview-sheet {
+                padding: 12px;
+            }
+
+            .employee-billing-preview .preview-sheet > table {
+                min-width: 700px;
+            }
+
+            .employee-billing-preview .preview-actions .btn {
+                width: 100%;
+            }
+        }
+
         @media (max-width: 767.98px) {
             .preview-page {
                 padding: 6px 8px 10px;
@@ -257,7 +335,8 @@
     </style>
 </head>
 
-<body class="tax-invoice" th:classappend="${#bools.isTrue(embeddedPreviewMode)} ? ' embedded-mode' : ''">
+<body class="tax-invoice"
+    th:classappend="${(#bools.isTrue(embeddedPreviewMode) ? ' embedded-mode' : '') + (#bools.isTrue(employeeBillingPreview) ? ' employee-billing-preview' : '')}">
     <div class="preview-page">
         <form th:if="${#bools.isTrue(employeeBillingPreview)}" id="billingDetailsForm"
               th:action="@{/invoice/tax-invoices/generate/invoice}" th:object="${billingDetails}" method="post"
@@ -284,13 +363,13 @@
                         <img th:src="@{/img/mahait_logo.png}" width="70" alt="MahaIT Logo">
                     </td>
                     <td colspan="5" style="text-align:center; vertical-align: middle;">
-                        <h3 style="margin:0;" th:text="${invoice.companyName}">
+                        <h3 style="margin:0;" th:text="${#bools.isTrue(employeeBillingPreview) ? 'Tax Invoice' : invoice.companyName}">
                             Maharashtra Information Technology Corporation Limited
                         </h3>
                         <div th:text="${'CIN : ' + invoice.cinNumber}">CIN : U74999MH1998SGC099591</div>
                     </td>
                 </tr>
-                <tr>
+                <tr th:unless="${#bools.isTrue(employeeBillingPreview)}">
                     <td colspan="6" style="text-align:center;">
                         <h3 class="invoice-document-title">PROFORMA INVOICE</h3>
                     </td>

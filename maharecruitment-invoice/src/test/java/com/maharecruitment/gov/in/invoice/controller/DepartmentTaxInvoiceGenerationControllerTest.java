@@ -80,7 +80,8 @@ class DepartmentTaxInvoiceGenerationControllerTest {
                 .andExpect(view().name("invoice/tax-invoice-preview")).andReturn();
         assertThat(result.getResponse().getContentAsString()).contains("Generate Tax Invoice", "Original department",
                 "Original address", "27AAKCM6988L1ZG", "billingDetailsForm", "Bank Account Details")
-                .doesNotContain("id=\"printBtn\"");
+                .contains("employee-billing-preview", ">Tax Invoice</h3>")
+                .doesNotContain("id=\"printBtn\"", "PROFORMA INVOICE", ">MahaIT</h3>");
         return token;
     }
 
@@ -110,6 +111,7 @@ class DepartmentTaxInvoiceGenerationControllerTest {
                 new BufferedImageLuminanceSource(ImageIO.read(new ByteArrayInputStream(png)))))).getText();
         assertThat(qr).contains("REQUEST ID: REQ-NEW", "BILLED TO: Entered recipient", "TOTAL: INR 1180.00");
         assertThat(result.getResponse().getContentAsString()).contains("id=\"printBtn\"", "REQ-NEW")
+                .contains("PROFORMA INVOICE", ">MahaIT</h3>")
                 .doesNotContain("Generate Tax Invoice", "billingDetailsForm");
         verify(service, times(1)).buildEmployeeInvoice(any());
     }
