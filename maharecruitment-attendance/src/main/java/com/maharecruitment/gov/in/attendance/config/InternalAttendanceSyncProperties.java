@@ -39,6 +39,8 @@ public class InternalAttendanceSyncProperties {
 
     private String additionalCaCertificate = DEFAULT_ADDITIONAL_CA_CERTIFICATE;
 
+    private boolean trustAllCertificates;
+
     private boolean stopOnUpstreamUnavailable = true;
 
     private long minRequestIntervalMillis = 1100;
@@ -151,6 +153,14 @@ public class InternalAttendanceSyncProperties {
         this.additionalCaCertificate = StringUtils.hasText(additionalCaCertificate)
                 ? additionalCaCertificate.trim()
                 : DEFAULT_ADDITIONAL_CA_CERTIFICATE;
+    }
+
+    public boolean isTrustAllCertificates() {
+        return trustAllCertificates;
+    }
+
+    public void setTrustAllCertificates(boolean trustAllCertificates) {
+        this.trustAllCertificates = trustAllCertificates;
     }
 
     public boolean isStopOnUpstreamUnavailable() {

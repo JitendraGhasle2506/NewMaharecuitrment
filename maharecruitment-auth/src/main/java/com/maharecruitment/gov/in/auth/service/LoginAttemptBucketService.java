@@ -21,6 +21,7 @@ import com.maharecruitment.gov.in.auth.util.UserValidationUtil;
 public class LoginAttemptBucketService {
 
     private final UserRepository userRepository;
+    private final boolean protectionEnabled;
     private final int maximumFailures;
     private final Duration blockDuration;
     private final Clock clock;
@@ -29,13 +30,15 @@ public class LoginAttemptBucketService {
     @Autowired
     public LoginAttemptBucketService(
             UserRepository userRepository,
+            @Value("${security.login-protection.enabled:true}") boolean protectionEnabled,
             @Value("${security.login-protection.max-consecutive-failures:3}") int maximumFailures,
             @Value("${security.login-protection.block-duration:24h}") Duration blockDuration) {
-        this(userRepository, maximumFailures, blockDuration, Clock.systemUTC());
+        this(userRepository, protectionEnabled, maximumFailures, blockDuration, Clock.systemUTC());
     }
 
     LoginAttemptBucketService(
             UserRepository userRepository,
+            boolean protectionEnabled,
             int maximumFailures,
             Duration blockDuration,
             Clock clock) {
@@ -46,12 +49,25 @@ public class LoginAttemptBucketService {
             throw new IllegalArgumentException("Login block duration must be positive.");
         }
         this.userRepository = userRepository;
+        this.protectionEnabled = protectionEnabled;
         this.maximumFailures = maximumFailures;
         this.blockDuration = blockDuration;
         this.clock = clock;
     }
 
+    LoginAttemptBucketService(
+            UserRepository userRepository,
+            int maximumFailures,
+            Duration blockDuration,
+            Clock clock) {
+        this(userRepository, true, maximumFailures, blockDuration, clock);
+    }
+
     public LoginAttemptResult recordFailure(String identifier) {
+        if (!protectionEnabled) {
+            return LoginAttemptResult.notTracked(maximumFailures);
+        }
+
         Optional<User> user = findUser(identifier);
         if (user.isEmpty() || user.get().getId() == null) {
             return LoginAttemptResult.notTracked(maximumFailures);
@@ -88,7 +104,7 @@ public class LoginAttemptBucketService {
     }
 
     public boolean isBlocked(Long userId) {
-        if (userId == null) {
+        if (!protectionEnabled || userId == null) {
             return false;
         }
 

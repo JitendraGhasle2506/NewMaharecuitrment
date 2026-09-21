@@ -43,9 +43,10 @@ public class MobileLeaveServiceImpl implements MobileLeaveService {
     private static final String COMP_OFF_CODE = "CO";
 
     private static final List<MobileLeaveOptionsResponse.LeaveCategory> LEAVE_CATEGORIES = List.of(
-            new MobileLeaveOptionsResponse.LeaveCategory("FULL_DAY", "Full Day"),
-            new MobileLeaveOptionsResponse.LeaveCategory("FIRST_HALF", "First Half"),
-            new MobileLeaveOptionsResponse.LeaveCategory("SECOND_HALF", "Second Half"));
+            new MobileLeaveOptionsResponse.LeaveCategory("FULL_DAY", "Full Day")
+           // new MobileLeaveOptionsResponse.LeaveCategory("FIRST_HALF", "First Half"),
+           // new MobileLeaveOptionsResponse.LeaveCategory("SECOND_HALF", "Second Half")
+            );
 
     private final MobileEmployeeAccessService mobileEmployeeAccessService;
     private final LeaveApplicationService leaveApplicationService;

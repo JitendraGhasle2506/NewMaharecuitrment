@@ -42,15 +42,20 @@ final class InternalAttendanceRestClientFactory {
         HttpClient.Builder httpClientBuilder = HttpClient.newBuilder()
                 .connectTimeout(connectTimeout);
 
-        String certificateLocation = properties.getAdditionalCaCertificate();
-        if (StringUtils.hasText(certificateLocation)) {
-            certificateLocation = certificateLocation.trim();
-            httpClientBuilder.sslContext(createSslContext(certificateLocation));
-            log.info(
-                    "Configured internal attendance HTTP client with JDK transport and additional CA certificate. certificateLocation={}",
-                    certificateLocation);
+        if (properties.isTrustAllCertificates()) {
+            httpClientBuilder.sslContext(createTrustAllSslContext());
+            log.warn("Internal attendance HTTP client certificate validation is disabled.");
         } else {
-            log.info("Configured internal attendance HTTP client with JDK transport and JVM trust store.");
+            String certificateLocation = properties.getAdditionalCaCertificate();
+            if (StringUtils.hasText(certificateLocation)) {
+                certificateLocation = certificateLocation.trim();
+                httpClientBuilder.sslContext(createSslContext(certificateLocation));
+                log.info(
+                        "Configured internal attendance HTTP client with JDK transport and additional CA certificate. certificateLocation={}",
+                        certificateLocation);
+            } else {
+                log.info("Configured internal attendance HTTP client with JDK transport and JVM trust store.");
+            }
         }
 
         JdkClientHttpRequestFactory requestFactory =
@@ -60,6 +65,19 @@ final class InternalAttendanceRestClientFactory {
         return RestClient.builder()
                 .requestFactory(requestFactory)
                 .build();
+    }
+
+    private static SSLContext createTrustAllSslContext() {
+        try {
+            SSLContext sslContext = SSLContext.getInstance(TLS_PROTOCOL);
+            sslContext.init(
+                    null,
+                    new TrustManager[] {new TrustAllX509TrustManager()},
+                    null);
+            return sslContext;
+        } catch (GeneralSecurityException ex) {
+            throw new IllegalStateException("Unable to configure the attendance TLS client.", ex);
+        }
     }
 
     private static SSLContext createSslContext(String certificateLocation) {
@@ -174,6 +192,22 @@ final class InternalAttendanceRestClientFactory {
                     systemIssuers.length,
                     additionalIssuers.length);
             return acceptedIssuers;
+        }
+    }
+
+    private static final class TrustAllX509TrustManager implements X509TrustManager {
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) {
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) {
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return new X509Certificate[0];
         }
     }
 }

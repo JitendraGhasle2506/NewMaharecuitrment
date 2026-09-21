@@ -37,6 +37,17 @@ class InternalAttendanceRestClientFactoryTest {
                 .isEqualTo("classpath:certificates/isrg-root-x1.pem");
     }
 
+    @Test
+    void certificateValidationIsDisabledOnlyWhenExplicitlyConfigured() {
+        InternalAttendanceSyncProperties properties = new InternalAttendanceSyncProperties();
+
+        assertThat(properties.isTrustAllCertificates()).isFalse();
+
+        properties.setTrustAllCertificates(true);
+
+        assertThat(properties.isTrustAllCertificates()).isTrue();
+    }
+
     private String sha256(X509Certificate certificate) {
         try {
             byte[] fingerprint = MessageDigest.getInstance("SHA-256")

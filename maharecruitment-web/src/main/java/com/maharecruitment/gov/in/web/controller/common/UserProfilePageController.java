@@ -4,6 +4,8 @@ import java.security.Principal;
 import java.util.Objects;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,14 +14,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.maharecruitment.gov.in.common.security.ApplicationCookieService;
 import com.maharecruitment.gov.in.common.dto.SessionUserDTO;
 import com.maharecruitment.gov.in.auth.constant.CommonConstant;
 import com.maharecruitment.gov.in.auth.dto.UserPasswordChangeRequest;
 import com.maharecruitment.gov.in.auth.dto.UserProfileView;
 import com.maharecruitment.gov.in.auth.service.CurrentUserProfileService;
+import com.maharecruitment.gov.in.security.handler.CustomLogoutSuccessHandler;
 import com.maharecruitment.gov.in.web.dto.profile.PasswordChangeForm;
 import com.maharecruitment.gov.in.web.dto.profile.UserProfileForm;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
@@ -32,9 +38,16 @@ public class UserProfilePageController {
     private static final String SESSION_USER_KEY = "SESSION_USER";
 
     private final CurrentUserProfileService currentUserProfileService;
+    private final CustomLogoutSuccessHandler logoutHandler;
+    private final ApplicationCookieService applicationCookieService;
 
-    public UserProfilePageController(CurrentUserProfileService currentUserProfileService) {
+    public UserProfilePageController(
+            CurrentUserProfileService currentUserProfileService,
+            CustomLogoutSuccessHandler logoutHandler,
+            ApplicationCookieService applicationCookieService) {
         this.currentUserProfileService = currentUserProfileService;
+        this.logoutHandler = logoutHandler;
+        this.applicationCookieService = applicationCookieService;
     }
 
     @GetMapping
@@ -67,7 +80,7 @@ public class UserProfilePageController {
     public String changePassword(
             Principal principal,
             HttpSession session,
-            @Valid @ModelAttribute("passwordForm") PasswordChangeForm passwordForm,
+            @Valid @ModelAttribute("passwordForm") PasswordChangeForm passwordForm,HttpServletRequest request,HttpServletResponse response,
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
@@ -88,8 +101,17 @@ public class UserProfilePageController {
         }
 
         try {
+            boolean passwordChangeRequired = Boolean.TRUE.equals(
+                    session.getAttribute(CommonConstant.PASSWORD_CHANGE_REQUIRED_SESSION_ATTRIBUTE));
             currentUserProfileService.changePassword(actorEmail, toPasswordChangeRequest(passwordForm));
             session.setAttribute(CommonConstant.PASSWORD_CHANGE_REQUIRED_SESSION_ATTRIBUTE, false);
+            if (passwordChangeRequired) {
+                var authentication = SecurityContextHolder.getContext().getAuthentication();
+                logoutHandler.logout(request, response, authentication);
+                new SecurityContextLogoutHandler().logout(request, response, authentication);
+                applicationCookieService.expireRequestCookies(request, response);
+                return "redirect:/login?passwordChanged";
+            }
             redirectAttributes.addFlashAttribute("passwordSuccessMessage", "Password updated successfully.");
             return PROFILE_REDIRECT;
         } catch (RuntimeException ex) {
