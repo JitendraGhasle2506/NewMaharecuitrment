@@ -16,6 +16,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -65,7 +67,7 @@ class MobileLeaveServiceImplTest {
     }
 
     @Test
-    void optionsIncludeMasterTypesCategoriesAndCompOffFallback() {
+    void optionsIncludeMasterTypesFullDayCategoryAndCompOffFallback() {
         EmployeeEntity employee = employee(101L);
         LeaveEntity casualLeave = leaveType(1L, "CL", "Casual Leave");
         when(mobileEmployeeAccessService.requireCurrentActiveEmployee(101L)).thenReturn(employee);
@@ -78,7 +80,23 @@ class MobileLeaveServiceImplTest {
                 .containsExactly("CL", "CO");
         assertThat(response.leaveCategories())
                 .extracting(category -> category.code())
-                .containsExactly("FULL_DAY", "FIRST_HALF", "SECOND_HALF");
+                .containsExactly("FULL_DAY");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"FIRST_HALF", "SECOND_HALF"})
+    void unavailableHalfDayCategoriesAreRejectedWithoutSaving(String category) {
+        when(mobileEmployeeAccessService.requireCurrentActiveEmployee(101L)).thenReturn(employee(101L));
+        when(leaveRepository.findAll()).thenReturn(List.of(leaveType(1L, "CL", "Casual Leave")));
+        MobileLeaveApplyRequest request = new MobileLeaveApplyRequest(
+                101L, "CL", category, LocalDate.of(2026, 9, 22), LocalDate.of(2026, 9, 22), null, "Personal work");
+
+        assertThatThrownBy(() -> service.apply(request))
+                .isInstanceOfSatisfying(MobileApiException.class, ex -> {
+                    assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(ex.getCode()).isEqualTo("INVALID_LEAVE_CATEGORY");
+                });
+        verify(leaveApplicationService, never()).saveLeaveApplication(any());
     }
 
     @Test

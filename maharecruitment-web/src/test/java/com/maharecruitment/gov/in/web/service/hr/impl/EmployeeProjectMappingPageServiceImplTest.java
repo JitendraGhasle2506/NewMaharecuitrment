@@ -17,8 +17,10 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import com.maharecruitment.gov.in.master.entity.DepartmentMst;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.entity.ProjectScopeType;
+import com.maharecruitment.gov.in.master.entity.SubDepartment;
 import com.maharecruitment.gov.in.master.repository.ProjectMstRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeProjectMappingEntity;
@@ -75,14 +77,18 @@ class EmployeeProjectMappingPageServiceImplTest {
     }
 
     @Test
-    void externalEmployeeEditScreenContainsOnlyExternalProjects() {
+    void externalEmployeeEditScreenContainsOnlyExternalProjectsFromTheirDepartment() {
         EmployeeEntity employee = employee(7L, "EXTERNAL");
         ProjectMst externalProject = project(21L, ProjectScopeType.EXTERNAL);
+        ProjectMst otherDepartmentProject = project(22L, ProjectScopeType.EXTERNAL);
+        otherDepartmentProject.setDepartmentId(20L);
+        ProjectMst otherSubDepartmentProject = project(23L, ProjectScopeType.EXTERNAL);
+        otherSubDepartmentProject.setSubDepartmentId(99L);
         when(employeeRepository.findDetailedByEmployeeId(7L)).thenReturn(Optional.of(employee));
         when(mappingRepository.findByEmployeeEmployeeId(7L)).thenReturn(Optional.empty());
         when(projectRepository.findByProjectScopeTypeAndActiveFlagIgnoreCaseOrderByProjectNameAsc(
                 ProjectScopeType.EXTERNAL,
-                "Y")).thenReturn(List.of(externalProject));
+                "Y")).thenReturn(List.of(externalProject, otherDepartmentProject, otherSubDepartmentProject));
 
         var view = service.loadMapping(7L);
 
@@ -90,23 +96,27 @@ class EmployeeProjectMappingPageServiceImplTest {
         assertThat(view.availableProjects())
                 .extracting(project -> project.scope())
                 .containsExactly("EXTERNAL");
+        assertThat(view.availableProjects()).extracting(project -> project.projectId()).containsExactly(21L);
     }
 
     @Test
     void assignmentSearchUsesDatabasePaginationWithoutLoadingMappings() {
-        /* var pageable = PageRequest.of(1, 25);
+        var pageable = PageRequest.of(1, 25);
         EmployeeEntity employee = employee(7L, "EXTERNAL");
         when(employeeRepository.findActiveOnboardedWithoutProjectMapping(
                 "EXTERNAL",
+                null,
+                null,
+                null,
                 "%TEST%",
                 pageable)).thenReturn(new PageImpl<>(List.of(employee), pageable, 26));
 
-        var result = service.searchUnmappedEmployees("external", " test ", pageable);
+        var result = service.searchUnmappedEmployees("external", " test ", null, pageable);
 
         assertThat(result.getTotalElements()).isEqualTo(26);
         assertThat(result.getContent()).singleElement()
                 .satisfies(view -> assertThat(view.mappedProject()).isNull());
-        verify(mappingRepository, never()).findByEmployeeEmployeeIdIn(any()); */
+        verify(mappingRepository, never()).findByEmployeeEmployeeIdIn(any());
     }
 
     @Test
@@ -166,6 +176,55 @@ class EmployeeProjectMappingPageServiceImplTest {
         verify(mappingRepository, never()).saveAll(any());
     }
 
+    @Test
+    void bulkMappingRejectsDifferentDepartmentsWithoutSavingAnything() {
+        EmployeeEntity first = employee(7L, "EXTERNAL");
+        EmployeeEntity second = employee(8L, "EXTERNAL");
+        second.getDepartment().setDepartmentId(20L);
+        when(projectRepository.findById(21L)).thenReturn(Optional.of(project(21L, ProjectScopeType.EXTERNAL)));
+        when(employeeRepository.findDetailedByEmployeeIdIn(List.of(7L, 8L)))
+                .thenReturn(List.of(first, second));
+
+        assertThatThrownBy(() -> service.updateMappings(21L, List.of(7L, 8L)))
+                .isInstanceOf(RecruitmentNotificationException.class)
+                .hasMessage("Selected project belongs to a different department than the employee.");
+        verify(mappingRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void employeeCanBeMappedToProjectInTheirSubDepartment() {
+        EmployeeEntity employee = employee(7L, "EXTERNAL");
+        SubDepartment subDepartment = new SubDepartment();
+        subDepartment.setSubDeptId(15L);
+        subDepartment.setDepartment(employee.getDepartment());
+        employee.setSubDepartment(subDepartment);
+        ProjectMst project = project(21L, ProjectScopeType.EXTERNAL);
+        project.setSubDepartmentId(15L);
+        when(employeeRepository.findDetailedByEmployeeId(7L)).thenReturn(Optional.of(employee));
+        when(projectRepository.findById(21L)).thenReturn(Optional.of(project));
+
+        assertThat(service.updateMapping(7L, 21L)).isTrue();
+        verify(mappingRepository).save(any(EmployeeProjectMappingEntity.class));
+    }
+
+    @Test
+    void matchingDepartmentDoesNotAllowProjectInDifferentSubDepartment() {
+        EmployeeEntity employee = employee(7L, "EXTERNAL");
+        SubDepartment subDepartment = new SubDepartment();
+        subDepartment.setSubDeptId(15L);
+        subDepartment.setDepartment(employee.getDepartment());
+        employee.setSubDepartment(subDepartment);
+        ProjectMst project = project(21L, ProjectScopeType.EXTERNAL);
+        project.setSubDepartmentId(16L);
+        when(employeeRepository.findDetailedByEmployeeId(7L)).thenReturn(Optional.of(employee));
+        when(projectRepository.findById(21L)).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> service.updateMapping(7L, 21L))
+                .isInstanceOf(RecruitmentNotificationException.class)
+                .hasMessage("Selected project belongs to a different subdepartment than the employee.");
+        verify(mappingRepository, never()).save(any());
+    }
+
     private EmployeeEntity employee(Long id, String recruitmentType) {
         EmployeeEntity employee = new EmployeeEntity();
         employee.setEmployeeId(id);
@@ -174,6 +233,10 @@ class EmployeeProjectMappingPageServiceImplTest {
         employee.setEmail("employee@example.com");
         employee.setRecruitmentType(recruitmentType);
         employee.setStatus("ACTIVE");
+        DepartmentMst department = new DepartmentMst();
+        department.setDepartmentId(10L);
+        department.setDepartmentName("Test Department");
+        employee.setDepartment(department);
         return employee;
     }
 
@@ -184,6 +247,7 @@ class EmployeeProjectMappingPageServiceImplTest {
         project.setProjectCode("PRJ-" + id);
         project.setProjectScopeType(scope);
         project.setActiveFlag("Y");
+        project.setDepartmentId(10L);
         return project;
     }
 }

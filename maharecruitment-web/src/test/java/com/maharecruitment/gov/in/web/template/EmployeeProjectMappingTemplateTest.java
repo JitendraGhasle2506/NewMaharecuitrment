@@ -43,10 +43,11 @@ class EmployeeProjectMappingTemplateTest {
     }
 
     @Test
-    void formExplainsAndEnforcesScopeSpecificChoices() throws IOException {
+    void formExplainsAndEnforcesScopeAndDepartmentSpecificChoices() throws IOException {
         String html = Files.readString(TEMPLATE_ROOT.resolve("employee-project-mapping-form.html"));
         assertThat(html)
-                .contains("Only external projects are available for this external employee.")
+                .contains("Only external projects from the employee department or subdepartment are available.")
+                .contains("Only internal projects from the employee department or subdepartment are available.")
                 .contains("editView.availableProjects")
                 .contains("Save Project Mapping")
                 .contains("autocomplete=\"off\"");
