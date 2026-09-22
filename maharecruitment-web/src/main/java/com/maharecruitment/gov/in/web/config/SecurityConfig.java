@@ -254,6 +254,9 @@ public class SecurityConfig {
                 .requestMatchers("/coo/**")
                     .hasAnyAuthority("ROLE_COO", "ROLE_AUDITOR")
 
+                .requestMatchers("/cto/**").hasAuthority("ROLE_CTO")
+                .requestMatchers("/cfo/**").hasAuthority("ROLE_CFO")
+
                 .requestMatchers("/md/**").hasAuthority("ROLE_MD")
 
                 .requestMatchers("/employee/**").hasAuthority("ROLE_EMPLOYEE")

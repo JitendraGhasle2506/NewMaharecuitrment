@@ -102,6 +102,24 @@ class DesignationRoleAssignmentServiceImplTest {
     }
 
     @Test
+    void configureAndAssignRecognizesExecutiveDesignationAliases() {
+        Role ctoRole = role(3L, "ROLE_CTO");
+        ManpowerDesignationMaster designation = designation(11L, "Chief Technology Officer", null);
+        when(designationRepository.findByDesignationIdAndActiveFlagIgnoreCase(11L, "Y"))
+                .thenReturn(Optional.of(designation));
+        when(roleRepository.findByNameIgnoreCase("ROLE_CTO")).thenReturn(Optional.of(ctoRole));
+        when(employeeRepository.findByDesignation_DesignationIdAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
+                11L,
+                "ACTIVE"))
+                .thenReturn(List.of());
+
+        service.configureAndAssign(11L, "Chief Technology Officer");
+
+        assertEquals("ROLE_CTO", designation.getRoleName());
+        verify(designationRepository).save(designation);
+    }
+
+    @Test
     void getAssignmentsMarksUnavailableDesignationRoleForCorrection() {
         ManpowerDesignationMaster designation = designation(10L, "Legacy Designation", "ROLE_UNKNOWN");
         when(designationRepository.findByActiveFlagIgnoreCaseOrderByDesignationNameAsc("Y"))

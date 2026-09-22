@@ -31,7 +31,7 @@ public class R__auth_reference_data extends BaseJavaMigration {
     private void seedRoles(JdbcTemplate jdbcTemplate) {
         List<String> roles = List.of(
                 "ROLE_DEPARTMENT", "ROLE_HR", "ROLE_AGENCY", "ROLE_ADMIN",
-                "ROLE_USER", "ROLE_STM", "ROLE_HOD", "ROLE_COO",
+                "ROLE_USER", "ROLE_STM", "ROLE_HOD", "ROLE_COO", "ROLE_CTO", "ROLE_CFO",
                 "ROLE_MD", "ROLE_PM", "ROLE_AUDITOR", "ROLE_EMPLOYEE");
 
         for (String role : roles) {

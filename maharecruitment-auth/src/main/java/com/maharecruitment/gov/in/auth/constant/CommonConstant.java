@@ -27,6 +27,8 @@ public final class CommonConstant {
         roleTargetUrlMap.put("ROLE_PM", "/pm/dashboard");
         roleTargetUrlMap.put("ROLE_HOD", "/hod1/dashboard");
         roleTargetUrlMap.put("ROLE_COO", "/coo/dashboard");
+        roleTargetUrlMap.put("ROLE_CTO", "/cto/dashboard");
+        roleTargetUrlMap.put("ROLE_CFO", "/cfo/dashboard");
         roleTargetUrlMap.put("ROLE_MD", "/md/dashboard");
         roleTargetUrlMap.put("ROLE_AUDITOR", "/auditor/department-requests");
         roleTargetUrlMap.put("ROLE_DEPARTMENT", "/department/home");

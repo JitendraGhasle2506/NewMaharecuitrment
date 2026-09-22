@@ -34,7 +34,9 @@ public class DesignationRoleAssignmentServiceImpl implements DesignationRoleAssi
     private static final String ACTIVE = "ACTIVE";
     private static final String ACTIVE_FLAG_Y = "Y";
     private static final Set<String> ASSIGNABLE_ROLE_NAMES = Set.of(
+            "ROLE_CFO",
             "ROLE_COO",
+            "ROLE_CTO",
             "ROLE_EMPLOYEE",
             "ROLE_HOD",
             "ROLE_HR",
@@ -44,7 +46,9 @@ public class DesignationRoleAssignmentServiceImpl implements DesignationRoleAssi
             "ROLE_STM",
             "ROLE_USER");
     private static final Map<String, String> ROLE_ALIASES = Map.of(
+            "CHIEF_FINANCIAL_OFFICER", "ROLE_CFO",
             "CHIEF_OPERATING_OFFICER", "ROLE_COO",
+            "CHIEF_TECHNOLOGY_OFFICER", "ROLE_CTO",
             "HEAD_OF_DEPARTMENT", "ROLE_HOD",
             "SENIOR_TECHNICAL_MANAGER", "ROLE_STM",
             "PROJECT_MANAGER", "ROLE_PM",

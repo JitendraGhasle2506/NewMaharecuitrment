@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.web.service.navigation.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,6 +26,15 @@ class RoleBasedNavigationServiceTest {
     @Test
     void canAccessUrlAllowsSharedHrAuditorSubmenuForAuditor() {
         assertTrue(service.canAccessUrl("/hr/department/payment/list", List.of("ROLE_AUDITOR")));
+    }
+
+    @Test
+    void ctoAndCfoResolveToTheirOwnDashboardsAndRoutes() {
+        assertEquals("/cto/dashboard", service.resolveHomeUrl(List.of("ROLE_CTO")));
+        assertEquals("/cfo/dashboard", service.resolveHomeUrl(List.of("ROLE_CFO")));
+        assertTrue(service.canAccessUrl("/cto/dashboard", List.of("ROLE_CTO")));
+        assertTrue(service.canAccessUrl("/cfo/dashboard", List.of("ROLE_CFO")));
+        assertFalse(service.canAccessUrl("/cfo/dashboard", List.of("ROLE_CTO")));
     }
 
     @Test
