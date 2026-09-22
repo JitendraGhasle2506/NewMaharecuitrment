@@ -214,6 +214,9 @@
                         <p class="text-muted mb-0">Department, project, employee and invoice generation workspace.</p>
                     </div>
                 </div>
+                <a class="btn btn-outline-primary" th:href="@{/invoice/tax-invoices/generate/invoices}">
+                    View Generated Invoices
+                </a>
             </div>
 
             <div th:if="${successMessage}" class="alert alert-success border-0 shadow-sm" th:text="${successMessage}">

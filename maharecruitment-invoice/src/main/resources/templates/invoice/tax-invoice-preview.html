@@ -363,6 +363,8 @@
 <body class="tax-invoice"
     th:classappend="${(#bools.isTrue(embeddedPreviewMode) ? ' embedded-mode' : '') + (#bools.isTrue(employeeBillingPreview) ? ' employee-billing-preview' : '') + (#bools.isTrue(employeeInvoiceDocument) ? ' employee-invoice-document' : '')}">
     <div class="preview-page" th:fragment="invoiceContent">
+        <div th:if="${successMessage}" class="preview-banner no-print" role="status" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="preview-banner no-print" role="alert" th:text="${errorMessage}"></div>
         <form th:if="${#bools.isTrue(employeeBillingPreview)}" id="billingDetailsForm"
               th:action="@{/invoice/tax-invoices/generate/invoice}" th:object="${billingDetails}" method="post"
               class="preview-banner no-print">
@@ -608,6 +610,10 @@
         </div>
 
         <div th:if="${!#bools.isTrue(embeddedPreviewMode)}" class="preview-actions no-print">
+            <a th:if="${#bools.isTrue(employeeInvoiceDocument)}" class="btn"
+               th:href="@{/invoice/tax-invoices/generate/invoices}">View Generated Invoices</a>
+            <a th:if="${#bools.isTrue(employeeInvoiceDocument) and !#bools.isTrue(employeeBillingPreview)}" class="btn"
+               th:href="@{/invoice/tax-invoices/generate}">Create Another Invoice</a>
             <button th:if="${#bools.isTrue(employeeBillingPreview)}" type="submit" form="billingDetailsForm" class="btn btn-primary">Generate Tax Invoice</button>
             <button th:unless="${#bools.isTrue(employeeBillingPreview)}" id="printBtn" class="btn" onclick="printContent('print-content')">Print</button>
         </div>

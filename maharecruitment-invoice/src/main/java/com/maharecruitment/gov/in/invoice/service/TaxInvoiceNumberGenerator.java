@@ -3,7 +3,6 @@ package com.maharecruitment.gov.in.invoice.service;
 import java.time.LocalDate;
 import java.util.Locale;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,19 +43,11 @@ public class TaxInvoiceNumberGenerator {
     }
 
     private DepartmentTaxInvoiceSequenceEntity createSequenceRow(String financialYearCode) {
-        DepartmentTaxInvoiceSequenceEntity sequenceEntity = new DepartmentTaxInvoiceSequenceEntity();
-        sequenceEntity.setFinancialYearCode(financialYearCode);
-        sequenceEntity.setLastSequence(0);
-
-        try {
-            return sequenceRepository.saveAndFlush(sequenceEntity);
-        } catch (DataIntegrityViolationException ex) {
-            return sequenceRepository.findForUpdate(financialYearCode)
-                    .orElseThrow(() -> new TaxInvoiceException(
-                            "Unable to initialize tax invoice sequence for financial year "
-                                    + financialYearCode + ".",
-                            ex));
-        }
+        // ON CONFLICT avoids aborting the transaction when two requests start a financial year together.
+        sequenceRepository.initializeIfAbsent(financialYearCode);
+        return sequenceRepository.findForUpdate(financialYearCode)
+                .orElseThrow(() -> new TaxInvoiceException(
+                        "Unable to initialize tax invoice sequence for financial year " + financialYearCode + "."));
     }
 
     private String resolveFinancialYearCode(LocalDate issueDate) {

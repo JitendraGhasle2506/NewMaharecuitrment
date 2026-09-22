@@ -1,6 +1,7 @@
 package com.maharecruitment.gov.in.invoice.controller;
 
 import java.time.LocalDate;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -17,14 +18,17 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceBillingDetails;
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceGenerationFilter;
 import com.maharecruitment.gov.in.invoice.dto.TaxInvoiceView;
 import com.maharecruitment.gov.in.invoice.service.DepartmentTaxInvoiceGenerationService;
+import com.maharecruitment.gov.in.invoice.service.EmployeeTaxInvoiceService;
 import com.maharecruitment.gov.in.invoice.service.TaxInvoiceQrCodeGenerator;
 
 import jakarta.servlet.http.HttpSession;
@@ -42,11 +46,13 @@ public class DepartmentTaxInvoiceGenerationController {
 
     private final DepartmentTaxInvoiceGenerationService generationService;
     private final TaxInvoiceQrCodeGenerator qrCodeGenerator;
+    private final EmployeeTaxInvoiceService employeeInvoiceService;
 
     public DepartmentTaxInvoiceGenerationController(DepartmentTaxInvoiceGenerationService generationService,
-            TaxInvoiceQrCodeGenerator qrCodeGenerator) {
+            TaxInvoiceQrCodeGenerator qrCodeGenerator, EmployeeTaxInvoiceService employeeInvoiceService) {
         this.generationService = generationService;
         this.qrCodeGenerator = qrCodeGenerator;
+        this.employeeInvoiceService = employeeInvoiceService;
     }
 
     @GetMapping
@@ -85,26 +91,9 @@ public class DepartmentTaxInvoiceGenerationController {
             }
             model.addAttribute("employees", generationService.loadProjectEmployees(filter));
             model.addAttribute("employeesLoaded", true);
-            Draft draft = new Draft(UUID.randomUUID().toString(), Selection.from(filter), null);
+            Draft draft = new Draft(UUID.randomUUID().toString(), Selection.from(filter), null, null);
             session.setAttribute(DRAFT_SESSION_KEY, draft);
             model.addAttribute("loadToken", draft.token());
-        } catch (RuntimeException ex) {
-            model.addAttribute("errorMessage", ex.getMessage());
-        }
-        populateForm(model, filter);
-        return VIEW_NAME;
-    }
-
-    @PostMapping("/generate")
-    public String generate(
-            @ModelAttribute("invoiceFilter") TaxInvoiceGenerationFilter filter,
-            Model model) {
-        model.addAttribute(
-                "errorMessage",
-                "Direct generation is disabled. Preview the applications and open an invoice to generate it in the existing format.");
-        try {
-            model.addAttribute("preview", generationService.preview(filter));
-            model.addAttribute("previewReady", true);
         } catch (RuntimeException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
         }
@@ -124,9 +113,12 @@ public class DepartmentTaxInvoiceGenerationController {
                     || !draft.selection().equals(Selection.from(filter))) {
                 throw new IllegalArgumentException("The selection has changed or expired. Load employees again before Preview.");
             }
+            if (draft.savedInvoiceId() != null) {
+                return savedInvoiceRedirect(draft.savedInvoiceId());
+            }
             TaxInvoiceView invoice = generationService.buildEmployeeInvoice(filter);
             invoice.setQrCodeDataUrl(qrCodeGenerator.generateDataUrl(invoice));
-            draft = new Draft(draft.token(), draft.selection(), invoice);
+            draft = new Draft(draft.token(), draft.selection(), invoice, null);
             session.setAttribute(DRAFT_SESSION_KEY, draft);
             model.addAttribute("billingDetails", TaxInvoiceBillingDetails.from(invoice));
             return renderEmployeePreview(draft, model);
@@ -137,28 +129,57 @@ public class DepartmentTaxInvoiceGenerationController {
         return VIEW_NAME;
     }
 
-    @PostMapping("/invoice")
+    @PostMapping({"/invoice", "/generate"})
     public String employeeInvoice(
             @Valid @ModelAttribute("billingDetails") TaxInvoiceBillingDetails details,
             BindingResult bindingResult,
-            @RequestParam(required = false) String loadToken, HttpSession session, Model model) {
+            @RequestParam(required = false) String loadToken, HttpSession session, Model model,
+            Principal principal, RedirectAttributes redirectAttributes) {
         Draft draft = (Draft) session.getAttribute(DRAFT_SESSION_KEY);
         if (draft == null || draft.invoice() == null || !Objects.equals(loadToken, draft.token())) {
             model.addAttribute("errorMessage", "Load employees and preview the invoice before generating it.");
             populateForm(model, new TaxInvoiceGenerationFilter());
             return VIEW_NAME;
         }
+        if (draft.savedInvoiceId() != null) {
+            return savedInvoiceRedirect(draft.savedInvoiceId());
+        }
         if (bindingResult.hasErrors()) {
             return renderEmployeePreview(draft, model);
         }
-        // Use the server-side preview snapshot: posted totals, rows and selection cannot override it.
-        TaxInvoiceView invoice = draft.invoice();
-        details.applyTo(invoice);
+        try {
+            // Only billing fields are posted; rows, amounts and selection come from the server-side draft.
+            long id = employeeInvoiceService.generate(draft.token(), draft.selection().toFilter(), draft.invoice(),
+                    details, principal == null ? null : principal.getName());
+            session.setAttribute(DRAFT_SESSION_KEY, new Draft(draft.token(), draft.selection(), draft.invoice(), id));
+            redirectAttributes.addFlashAttribute("successMessage", "Tax invoice generated and saved successfully.");
+            return savedInvoiceRedirect(id);
+        } catch (RuntimeException ex) {
+            log.error("Failed to save employee tax invoice for projectId={}", draft.selection().projectId(), ex);
+            model.addAttribute("errorMessage", "Unable to save the tax invoice. Your preview and billing details have been retained. Please try again.");
+            return renderEmployeePreview(draft, model);
+        }
+    }
+
+    @GetMapping("/invoices")
+    public String generatedInvoices(@RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "0") int page, Model model) {
+        model.addAttribute("invoices", employeeInvoiceService.list(search, page));
+        model.addAttribute("search", search.trim());
+        return "invoice/employee-tax-invoice-list";
+    }
+
+    @GetMapping("/invoices/{invoiceId}")
+    public String savedInvoice(@PathVariable long invoiceId, Model model) {
+        TaxInvoiceView invoice = employeeInvoiceService.getInvoice(invoiceId);
         invoice.setQrCodeDataUrl(qrCodeGenerator.generateDataUrl(invoice));
         model.addAttribute("invoice", invoice);
         model.addAttribute("employeeInvoiceDocument", true);
-        session.removeAttribute(DRAFT_SESSION_KEY);
         return INVOICE_VIEW_NAME;
+    }
+
+    private String savedInvoiceRedirect(long id) {
+        return "redirect:/invoice/tax-invoices/generate/invoices/" + id;
     }
 
     private String renderEmployeePreview(Draft draft, Model model) {
@@ -175,9 +196,19 @@ public class DepartmentTaxInvoiceGenerationController {
             return new Selection(filter.getDepartmentId(), filter.getSubDepartmentId(), filter.getProjectId(),
                     filter.getStartDate(), filter.getEndDate());
         }
+
+        TaxInvoiceGenerationFilter toFilter() {
+            TaxInvoiceGenerationFilter filter = new TaxInvoiceGenerationFilter();
+            filter.setDepartmentId(departmentId);
+            filter.setSubDepartmentId(subDepartmentId);
+            filter.setProjectId(projectId);
+            filter.setStartDate(startDate);
+            filter.setEndDate(endDate);
+            return filter;
+        }
     }
 
-    private record Draft(String token, Selection selection, TaxInvoiceView invoice) { }
+    private record Draft(String token, Selection selection, TaxInvoiceView invoice, Long savedInvoiceId) { }
 
     @GetMapping(value = "/options/sub-departments", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
