@@ -14,12 +14,40 @@
                 </div>
                 <a class="btn btn-primary" th:href="@{/invoice/tax-invoices/generate}">Create Invoice</a>
             </div>
-            <form method="get" th:action="@{/invoice/tax-invoices/generate/invoices}" class="d-flex gap-2 mb-3">
-                <label for="invoiceSearch" class="visually-hidden">Search invoices</label>
-                <input id="invoiceSearch" type="search" name="search" th:value="${search}" class="form-control"
-                       placeholder="Search invoice number, request, project or recipient" maxlength="255">
-                <button type="submit" class="btn btn-outline-primary">Search</button>
-                <a class="btn btn-light" th:href="@{/invoice/tax-invoices/generate/invoices}">Clear</a>
+            <form method="get" th:action="@{/invoice/tax-invoices/generate/invoices}" class="row g-2 align-items-end mb-3">
+                <div class="col-12 col-md-3">
+                    <label for="invoiceDepartment" class="form-label small text-muted mb-1">Department</label>
+                    <select id="invoiceDepartment" name="departmentId" class="form-select">
+                        <option value="">All Departments</option>
+                        <option th:each="department : ${departments}" th:value="${department.id}"
+                                th:text="${department.name}" th:selected="${department.id == departmentId}">Department</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label for="invoiceMonth" class="form-label small text-muted mb-1">Generated Month</label>
+                    <select id="invoiceMonth" name="month" class="form-select">
+                        <option value="">All Months</option>
+                        <option th:each="entry : ${months}" th:value="${entry.key}" th:text="${entry.value}"
+                                th:selected="${entry.key == month}">Month</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label for="invoiceYear" class="form-label small text-muted mb-1">Generated Year</label>
+                    <select id="invoiceYear" name="year" class="form-select">
+                        <option value="">All Years</option>
+                        <option th:each="value : ${years}" th:value="${value}" th:text="${value}"
+                                th:selected="${value == year}">Year</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="invoiceSearch" class="form-label small text-muted mb-1">Search</label>
+                    <input id="invoiceSearch" type="search" name="search" th:value="${search}" class="form-control"
+                           placeholder="Invoice number, request, project or recipient" maxlength="255">
+                </div>
+                <div class="col-12 col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary flex-fill">Search</button>
+                    <a class="btn btn-light flex-fill" th:href="@{/invoice/tax-invoices/generate/invoices}">Clear</a>
+                </div>
             </form>
             <div class="card border-0 shadow-sm">
                 <div class="table-responsive">
@@ -31,7 +59,7 @@
                         <tbody>
                             <tr th:if="${invoices.empty}">
                                 <td colspan="7" class="text-center text-muted py-5"
-                                    th:text="${#strings.isEmpty(search) ? 'No tax invoices have been generated yet.' : 'No invoices match your search.'}"></td>
+                                    th:text="${#strings.isEmpty(search) and departmentId == null and month == null and year == null ? 'No tax invoices have been generated yet.' : 'No invoices match your filters.'}"></td>
                             </tr>
                             <tr th:each="invoice : ${invoices.content}">
                                 <td class="fw-semibold" th:text="${invoice.tiNumber}"></td>
@@ -50,9 +78,9 @@
                 <div class="card-footer bg-white d-flex justify-content-between align-items-center">
                     <span class="text-muted small" th:text="${invoices.totalElements + ' invoice(s)'}"></span>
                     <nav aria-label="Invoice pages" class="d-flex align-items-center gap-3">
-                        <a th:if="${invoices.hasPrevious()}" th:href="@{/invoice/tax-invoices/generate/invoices(page=${invoices.number - 1},search=${search})}">Previous</a>
+                        <a th:if="${invoices.hasPrevious()}" th:href="@{/invoice/tax-invoices/generate/invoices(page=${invoices.number - 1},search=${search},departmentId=${departmentId},month=${month},year=${year})}">Previous</a>
                         <span th:if="${invoices.totalPages > 0}" th:text="${'Page ' + (invoices.number + 1) + ' of ' + invoices.totalPages}"></span>
-                        <a th:if="${invoices.hasNext()}" th:href="@{/invoice/tax-invoices/generate/invoices(page=${invoices.number + 1},search=${search})}">Next</a>
+                        <a th:if="${invoices.hasNext()}" th:href="@{/invoice/tax-invoices/generate/invoices(page=${invoices.number + 1},search=${search},departmentId=${departmentId},month=${month},year=${year})}">Next</a>
                     </nav>
                 </div>
             </div>

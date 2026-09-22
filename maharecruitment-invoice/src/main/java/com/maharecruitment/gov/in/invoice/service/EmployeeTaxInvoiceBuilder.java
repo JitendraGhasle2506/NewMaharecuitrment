@@ -30,10 +30,8 @@ import com.maharecruitment.gov.in.master.entity.ManpowerDesignationMaster;
 import com.maharecruitment.gov.in.master.entity.ManpowerDesignationRate;
 import com.maharecruitment.gov.in.master.entity.ProjectMst;
 import com.maharecruitment.gov.in.master.entity.RateMaster;
-import com.maharecruitment.gov.in.master.entity.ResourceLevelExperience;
 import com.maharecruitment.gov.in.master.repository.ManpowerDesignationRateRepository;
 import com.maharecruitment.gov.in.master.repository.RateMasterRepository;
-import com.maharecruitment.gov.in.master.repository.ResourceLevelExperienceRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeProjectMappingEntity;
 
@@ -55,7 +53,6 @@ public class EmployeeTaxInvoiceBuilder {
     private final DepartmentTaxRateMasterRepository taxRateMasterRepository;
     private final MahaItProfileRepository mahaItProfileRepository;
     private final ManpowerDesignationRateRepository designationRateRepository;
-    private final ResourceLevelExperienceRepository levelRepository;
     private final RateMasterRepository rateMasterRepository;
     private final TaxInvoiceAmountCalculator amountCalculator;
     private final IndianCurrencyToWordsConverter currencyToWordsConverter;
@@ -68,7 +65,6 @@ public class EmployeeTaxInvoiceBuilder {
             DepartmentTaxRateMasterRepository taxRateMasterRepository,
             MahaItProfileRepository mahaItProfileRepository,
             ManpowerDesignationRateRepository designationRateRepository,
-            ResourceLevelExperienceRepository levelRepository,
             RateMasterRepository rateMasterRepository,
             TaxInvoiceAmountCalculator amountCalculator,
             IndianCurrencyToWordsConverter currencyToWordsConverter,
@@ -79,7 +75,6 @@ public class EmployeeTaxInvoiceBuilder {
         this.taxRateMasterRepository = taxRateMasterRepository;
         this.mahaItProfileRepository = mahaItProfileRepository;
         this.designationRateRepository = designationRateRepository;
-        this.levelRepository = levelRepository;
         this.rateMasterRepository = rateMasterRepository;
         this.amountCalculator = amountCalculator;
         this.currencyToWordsConverter = currencyToWordsConverter;
@@ -261,7 +256,7 @@ public class EmployeeTaxInvoiceBuilder {
                 mahaItCommissionMultiplier);
 
         TaxInvoiceLineItemView lineItem = TaxInvoiceLineItemView.builder()
-                .description(buildDescription(employeeName, designation, levelCode))
+                .description(buildDescription(employeeName, designation))
                 .requiredPeriodDisplay(PERIOD_DATE_FORMATTER.format(from) + " to " + PERIOD_DATE_FORMATTER.format(to))
                 .sacHsn(DEFAULT_SAC_HSN)
                 .quantity(1)
@@ -306,19 +301,9 @@ public class EmployeeTaxInvoiceBuilder {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    private String buildDescription(String employeeName, ManpowerDesignationMaster designation, String levelCode) {
+    private String buildDescription(String employeeName, ManpowerDesignationMaster designation) {
         String designationName = trimToNull(designation.getDesignationName());
-        String levelName = levelRepository.findByLevelCodeIgnoreCase(levelCode)
-                .map(ResourceLevelExperience::getLevelName)
-                .map(this::trimToNull)
-                .orElse(null);
-        String levelDisplay = levelName == null ? levelCode : levelName + " (" + levelCode + ")";
-
-        StringBuilder description = new StringBuilder(employeeName);
-        if (designationName != null) {
-            description.append(" - ").append(designationName);
-        }
-        return description.append(" - ").append(levelDisplay).toString();
+        return designationName == null ? employeeName : employeeName + " - " + designationName;
     }
 
     private DepartmentProjectApplicationEntity resolveProjectApplication(ProjectMst project) {

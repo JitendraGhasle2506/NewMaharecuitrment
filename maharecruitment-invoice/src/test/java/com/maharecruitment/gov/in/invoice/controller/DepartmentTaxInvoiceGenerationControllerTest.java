@@ -251,14 +251,35 @@ class DepartmentTaxInvoiceGenerationControllerTest {
         EmployeeTaxInvoiceListItem item = new EmployeeTaxInvoiceListItem(42L, "TI-2026-27-00001",
                 LocalDate.now(), "REQ-NEW", "Test Project", "Entered recipient", LocalDate.of(2026, 9, 1),
                 LocalDate.of(2026, 9, 30), new BigDecimal("1180"), java.time.LocalDateTime.now());
-        when(savedInvoices.findAll(eq("Test"), any())).thenReturn(new PageImpl<>(List.of(item), PageRequest.of(0, 20), 21));
+        when(savedInvoices.findAll(eq("Test"), isNull(), isNull(), isNull(), any()))
+                .thenReturn(new PageImpl<>(List.of(item), PageRequest.of(0, 20), 21));
         MvcResult result = mvc.perform(get(URL + "/invoices").param("search", " Test "))
                 .andExpect(status().isOk()).andReturn();
         assertThat(result.getResponse().getContentAsString()).contains("Generated Tax Invoices", "TI-2026-27-00001",
                 URL + "/invoices/42", "1,180.00", "Next", "page=1", "search=Test");
-        when(savedInvoices.findAll(eq(""), any())).thenReturn(new PageImpl<>(List.of()));
+        when(savedInvoices.findAll(eq(""), isNull(), isNull(), isNull(), any())).thenReturn(new PageImpl<>(List.of()));
         mvc.perform(get(URL + "/invoices")).andExpect(content().string(
                 org.hamcrest.Matchers.containsString("No tax invoices have been generated yet.")));
+    }
+
+    @Test
+    void generatedListFiltersByDepartmentAndGeneratedMonthAndYear() throws Exception {
+        int year = LocalDate.now().getYear();
+        EmployeeTaxInvoiceListItem item = new EmployeeTaxInvoiceListItem(42L, "TI-2026-27-00001",
+                LocalDate.now(), "REQ-NEW", "Test Project", "Entered recipient", LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 30), new BigDecimal("1180"), java.time.LocalDateTime.now());
+        when(service.getDepartmentOptions()).thenReturn(List.of(new TaxInvoiceGenerationOptionView(7L, "Finance", null, null, null)));
+        when(savedInvoices.findAll(eq(""), eq(7L), eq(9), eq(year), any()))
+                .thenReturn(new PageImpl<>(List.of(item), PageRequest.of(0, 20), 21));
+        String html = mvc.perform(get(URL + "/invoices").param("departmentId", "7").param("month", "9")
+                .param("year", String.valueOf(year))).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(html).contains("TI-2026-27-00001", "Finance", "September",
+                "departmentId=7", "month=9", "year=" + year);
+        // Out-of-range month and year are ignored rather than failing the page.
+        when(savedInvoices.findAll(eq(""), isNull(), isNull(), isNull(), any())).thenReturn(new PageImpl<>(List.of()));
+        mvc.perform(get(URL + "/invoices").param("month", "13").param("year", "1900")).andExpect(status().isOk());
+        verify(savedInvoices).findAll(eq(""), isNull(), isNull(), isNull(), any());
     }
 
     @Test

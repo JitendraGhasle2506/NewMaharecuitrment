@@ -29,7 +29,6 @@ class EmployeeTaxInvoiceRegressionTest {
     private final DepartmentTaxRateMasterRepository taxes = mock(DepartmentTaxRateMasterRepository.class);
     private final MahaItProfileRepository profiles = mock(MahaItProfileRepository.class);
     private final ManpowerDesignationRateRepository rates = mock(ManpowerDesignationRateRepository.class);
-    private final ResourceLevelExperienceRepository levels = mock(ResourceLevelExperienceRepository.class);
     private final RateMasterRepository commissions = mock(RateMasterRepository.class);
     private final DepartmentMstRepository departments = mock(DepartmentMstRepository.class);
     private final ProjectMstRepository projects = mock(ProjectMstRepository.class);
@@ -45,7 +44,7 @@ class EmployeeTaxInvoiceRegressionTest {
     void setup() {
         TaxInvoiceDisplayFormatter formatter = new TaxInvoiceDisplayFormatter();
         IndianCurrencyToWordsConverter words = new IndianCurrencyToWordsConverter();
-        builder = new EmployeeTaxInvoiceBuilder(registrations, applications, taxes, profiles, rates, levels,
+        builder = new EmployeeTaxInvoiceBuilder(registrations, applications, taxes, profiles, rates,
                 commissions, new TaxInvoiceAmountCalculator(), words, formatter,
                 new TaxInvoiceViewMapper(words, formatter, new TaxInvoiceQrCodeGenerator()));
         service = new DepartmentTaxInvoiceGenerationServiceImpl(departments, mock(SubDepartmentRepository.class),
@@ -107,7 +106,7 @@ class EmployeeTaxInvoiceRegressionTest {
                 .containsExactly(10L, 11L);
         TaxInvoiceView invoice = service.buildEmployeeInvoice(filter());
         assertThat(invoice.getLineItems()).hasSize(2).allSatisfy(line -> {
-            assertThat(line.getDescription()).isEqualTo("Same Name - Developer - L1");
+            assertThat(line.getDescription()).isEqualTo("Same Name - Developer");
             assertThat(line.getQuantity()).isEqualTo(1);
             assertThat(line.getTotalAmount()).isEqualByComparingTo("36300");
         });

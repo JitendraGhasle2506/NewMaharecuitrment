@@ -69,7 +69,9 @@ public class EmployeeTaxInvoiceService {
         }
     }
 
-    public Page<EmployeeTaxInvoiceListItem> list(String search, int page) {
-        return repository.findAll(search == null ? "" : search.trim(), PageRequest.of(Math.max(0, page), 20));
+    public Page<EmployeeTaxInvoiceListItem> list(String search, Long departmentId, Integer month, Integer year,
+            int page) {
+        return repository.findAll(search == null ? "" : search.trim(), departmentId, month, year,
+                PageRequest.of(Math.max(0, page), 20));
     }
 }

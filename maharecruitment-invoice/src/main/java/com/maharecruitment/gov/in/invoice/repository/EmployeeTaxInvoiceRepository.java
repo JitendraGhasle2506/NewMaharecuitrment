@@ -1,5 +1,6 @@
 package com.maharecruitment.gov.in.invoice.repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,14 +65,29 @@ public class EmployeeTaxInvoiceRepository {
                 Map.of("id", id), (rs, row) -> rs.getString("invoice_snapshot")).stream().findFirst();
     }
 
-    public Page<EmployeeTaxInvoiceListItem> findAll(String search, Pageable pageable) {
-        String where = search.isBlank() ? "" : """
-                 where lower(ti_number) like :search or lower(request_id) like :search
-                    or lower(project_name) like :search or lower(billed_to) like :search
-                """;
+    public Page<EmployeeTaxInvoiceListItem> findAll(String search, Long departmentId, Integer month, Integer year,
+            Pageable pageable) {
+        List<String> conditions = new ArrayList<>();
+        if (!search.isBlank()) {
+            conditions.add("""
+                    (lower(ti_number) like :search or lower(request_id) like :search
+                        or lower(project_name) like :search or lower(billed_to) like :search)""");
+        }
+        if (departmentId != null) {
+            conditions.add("department_id = :departmentId");
+        }
+        // Month and year filter on the date the invoice was generated, not the billing period.
+        if (month != null) {
+            conditions.add("extract(month from generated_on) = :month");
+        }
+        if (year != null) {
+            conditions.add("extract(year from generated_on) = :year");
+        }
+        String where = conditions.isEmpty() ? "" : " where " + String.join(" and ", conditions) + " ";
         String escapedSearch = search.toLowerCase(java.util.Locale.ROOT)
                 .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
         MapSqlParameterSource params = new MapSqlParameterSource("search", "%" + escapedSearch + "%")
+                .addValue("departmentId", departmentId).addValue("month", month).addValue("year", year)
                 .addValue("limit", pageable.getPageSize()).addValue("offset", pageable.getOffset());
         Long count = jdbc.queryForObject("select count(*) from employee_tax_invoice" + where, params, Long.class);
         // List only summary columns; large employee snapshots are loaded only when opening an invoice.

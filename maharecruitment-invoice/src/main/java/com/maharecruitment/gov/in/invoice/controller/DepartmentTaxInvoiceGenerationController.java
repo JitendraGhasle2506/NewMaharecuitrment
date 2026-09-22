@@ -1,11 +1,16 @@
 package com.maharecruitment.gov.in.invoice.controller;
 
 import java.time.LocalDate;
+import java.time.Month;
+import java.time.format.TextStyle;
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,9 +168,24 @@ public class DepartmentTaxInvoiceGenerationController {
 
     @GetMapping("/invoices")
     public String generatedInvoices(@RequestParam(defaultValue = "") String search,
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
             @RequestParam(defaultValue = "0") int page, Model model) {
-        model.addAttribute("invoices", employeeInvoiceService.list(search, page));
+        Integer validMonth = month != null && month >= 1 && month <= 12 ? month : null;
+        int currentYear = LocalDate.now().getYear();
+        List<Integer> years = IntStream.rangeClosed(0, 5).mapToObj(offset -> currentYear - offset).toList();
+        Integer validYear = years.contains(year) ? year : null;
+        model.addAttribute("invoices", employeeInvoiceService.list(search, departmentId, validMonth, validYear, page));
         model.addAttribute("search", search.trim());
+        model.addAttribute("departmentId", departmentId);
+        model.addAttribute("month", validMonth);
+        model.addAttribute("year", validYear);
+        model.addAttribute("departments", generationService.getDepartmentOptions());
+        model.addAttribute("months", Arrays.stream(Month.values())
+                .map(value -> Map.entry(value.getValue(), value.getDisplayName(TextStyle.FULL, Locale.ENGLISH)))
+                .toList());
+        model.addAttribute("years", years);
         return "invoice/employee-tax-invoice-list";
     }
 
