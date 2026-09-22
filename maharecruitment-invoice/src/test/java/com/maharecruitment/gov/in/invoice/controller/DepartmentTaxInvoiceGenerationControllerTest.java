@@ -147,7 +147,8 @@ class DepartmentTaxInvoiceGenerationControllerTest {
         assertThat(result.getResponse().getContentAsString()).contains("id=\"printBtn\"", "REQ-NEW")
                 .contains(">TAX INVOICE</h3>", "MAHARASHTRA INFORMATION TECHNOLOGY CORPORATION LIMITED")
                 .doesNotContain("PROFORMA INVOICE")
-                .doesNotContain("Generate Tax Invoice", "billingDetailsForm");
+                .contains(">Back</a>", ">Print</button>")
+                .doesNotContain("Generate Tax Invoice", "billingDetailsForm", "Create Another Invoice", "View Generated Invoices");
         verify(service, times(1)).buildEmployeeInvoice(any());
     }
 
@@ -228,7 +229,7 @@ class DepartmentTaxInvoiceGenerationControllerTest {
         verify(savedInvoices, times(1)).save(any(), any(), any(), any());
         session.invalidate();
         mvc.perform(get(URL + "/invoices/42")).andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("View Generated Invoices")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(">Back</a>")));
     }
 
     @Test
