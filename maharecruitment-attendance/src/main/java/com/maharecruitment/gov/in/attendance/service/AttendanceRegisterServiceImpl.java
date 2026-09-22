@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.maharecruitment.gov.in.common.util.SensitiveDataMaskingUtil;
+import com.maharecruitment.gov.in.auth.entity.User;
 import com.maharecruitment.gov.in.auth.repository.UserRepository;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeReportingMappingEntity;
 
@@ -39,8 +40,13 @@ import com.maharecruitment.gov.in.attendance.repository.HolidayRepository;
 import com.maharecruitment.gov.in.attendance.repository.WeekOffWorkingDayRepository;
 import com.maharecruitment.gov.in.department.entity.DepartmentProjectApplicationEntity;
 import com.maharecruitment.gov.in.department.repository.DepartmentProjectApplicationRepository;
+import com.maharecruitment.gov.in.master.entity.CellMaster;
+import com.maharecruitment.gov.in.recruitment.entity.CellReportingAuthorityMappingEntity;
+import com.maharecruitment.gov.in.recruitment.entity.EmployeeCellMappingEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeLocationMappingEntity;
+import com.maharecruitment.gov.in.recruitment.repository.CellReportingAuthorityMappingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeLocationMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
 import com.maharecruitment.gov.in.attendance.dto.ManualAttendanceRequestDTO;
@@ -64,6 +70,12 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 
 	@Autowired
 	private EmployeeLocationMappingRepository employeeLocationMappingRepository;
+
+	@Autowired
+	private EmployeeCellMappingRepository employeeCellMappingRepository;
+
+	@Autowired
+	private CellReportingAuthorityMappingRepository cellReportingAuthorityMappingRepository;
 
 	public AttendanceRegisterServiceImpl() {
 		// Explicit constructor for CGLIB proxying and debugging
@@ -443,14 +455,7 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		dto.setEmployeeCode(employee.getEmployeeCode());
 		dto.setJoiningDate(employee.getJoiningDate() != null ? employee.getJoiningDate().format(DISPLAY_DATE_FORMATTER) : "-");
 
-		// Populate Reporting HOD and Manager
-		EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository.findByEmployeeId(employeeId);
-		if (mapping != null) {
-			if (mapping.getHodUserId() != null) {
-				userRepository.findById(mapping.getHodUserId()).ifPresent(hod -> dto.setReportingHOD(hod.getName()));
-			}
-			dto.setReportingManager(resolveReportingAuthorityName(mapping));
-		}
+		populateReportingDetails(dto, employee);
 
 		// Today's Activity
 		LocalDate today = LocalDate.now();
@@ -1596,21 +1601,49 @@ public class AttendanceRegisterServiceImpl implements AttendanceRegisterService 
 		}
 	}
 
+	private void populateReportingDetails(AttendanceRegisterDTO dto, EmployeeEntity employee) {
+		EmployeeReportingMappingEntity mapping = employeeReportingMappingRepository
+				.findFirstByEmployeeIdOrderByMappingIdDesc(employee.getEmployeeId())
+				.orElse(null);
+		if (mapping != null) {
+			String authorityName = resolveAuthorityUserName(mapping.getHodUserId());
+			dto.setReportingHOD(authorityName);
+			dto.setReportingManager(mapping.getManagerEmployeeId() == null
+					? authorityName
+					: resolveReportingAuthorityName(mapping));
+			return;
+		}
+
+		// Cell reporting applies only when HR has not saved an individual mapping.
+		Long authorityUserId = employeeCellMappingRepository.findByEmployeeEmployeeId(employee.getEmployeeId())
+				.map(EmployeeCellMappingEntity::getCell)
+				.map(CellMaster::getCellId)
+				.flatMap(cellReportingAuthorityMappingRepository::findByCellCellId)
+				.map(CellReportingAuthorityMappingEntity::getAuthorityUserId)
+				.filter(userId -> employee.getUser() == null || !userId.equals(employee.getUser().getId()))
+				.orElse(null);
+		String authorityName = resolveAuthorityUserName(authorityUserId);
+		dto.setReportingHOD(authorityName);
+		dto.setReportingManager(authorityName);
+	}
+
+	private String resolveAuthorityUserName(Long authorityUserId) {
+		return authorityUserId == null ? null : userRepository.findById(authorityUserId)
+				.map(User::getName)
+				.map(this::textOrNull)
+				.orElse(null);
+	}
+
 	private String resolveReportingAuthorityName(EmployeeReportingMappingEntity mapping) {
 		if (mapping == null) {
 			return null;
 		}
-		if ("OTHER".equalsIgnoreCase(mapping.getManagerType())) {
-			return mapping.getHodUserId() == null
-					? null
-					: userRepository.findById(mapping.getHodUserId())
-							.map(com.maharecruitment.gov.in.auth.entity.User::getName)
-							.orElse(null);
+		if (mapping.getManagerEmployeeId() == null) {
+			return resolveAuthorityUserName(mapping.getHodUserId());
 		}
-		return mapping.getManagerEmployeeId() == null
-				? null
-				: employeeRepository.findById(mapping.getManagerEmployeeId())
-						.map(EmployeeEntity::getFullName)
-						.orElse(null);
+		return employeeRepository.findById(mapping.getManagerEmployeeId())
+				.map(EmployeeEntity::getFullName)
+				.map(this::textOrNull)
+				.orElse(null);
 	}
 }

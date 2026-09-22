@@ -14,7 +14,8 @@ public interface ReportingManagerService {
     
     List<Map<String, Object>> getProjects();
     
-    List<Map<String, Object>> getInternalEmployees(Long includeEmployeeId, Long hodUserId, String managerType);
+    List<Map<String, Object>> getInternalEmployees(
+            Long includeEmployeeId, Long hodUserId, String managerType, Long managerEmployeeId);
     
     List<Map<String, Object>> getAllMappings();
 

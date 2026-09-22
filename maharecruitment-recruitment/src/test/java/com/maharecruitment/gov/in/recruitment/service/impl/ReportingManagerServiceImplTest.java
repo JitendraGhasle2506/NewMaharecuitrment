@@ -2,6 +2,7 @@ package com.maharecruitment.gov.in.recruitment.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,6 +19,9 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -352,13 +356,13 @@ class ReportingManagerServiceImplTest {
     }
 
     @Test
-    void otherDoesNotRequireManagerAndStoresDirectHodMapping() {
+    void missingManagerTypeStoresDirectReportingAuthorityMapping() {
         EmployeeEntity employee = employee(101L, "Rahul Patil", "EMP101", "INTERNAL", "ACTIVE");
         stubValidHodAndEmployees(7L, employee);
         when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.empty());
         when(mappingRepository.findByEmployeeIdIn(List.of(101L))).thenReturn(List.of());
 
-        service.saveMapping(7L, "other", null, 99L, List.of(101L));
+        service.saveMapping(7L, null, null, 99L, List.of(101L));
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<EmployeeReportingMappingEntity>> captor = ArgumentCaptor.forClass(List.class);
@@ -581,6 +585,70 @@ class ReportingManagerServiceImplTest {
         verify(mappingRepository, never()).saveAll(anyList());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"OTHER", "STM", "PM"})
+    void assigningManagerReusesDirectAuthorityMappingAndCreatesOnlyNewEmployeeMappings(String managerType) {
+        EmployeeEntity manager = employee(50L, "Manager", "EMP050", "INTERNAL", "ACTIVE");
+        EmployeeEntity directReport = employee(101L, "Alpha", "EMP101", "INTERNAL", "ACTIVE");
+        EmployeeEntity unassigned = employee(102L, "Beta", "EMP102", "INTERNAL", "ACTIVE");
+        EmployeeReportingMappingEntity existing = reportingMapping(900L, 101L, 7L, "OTHER", null);
+        stubValidHodAndEmployees(7L, directReport, unassigned);
+        when(employeeRepository.findById(50L)).thenReturn(Optional.of(manager));
+        when(mappingRepository.findByEmployeeIdIn(List.of(101L, 102L))).thenReturn(List.of(existing));
+
+        service.saveMapping(7L, managerType, 50L, null, List.of(101L, 102L));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<EmployeeReportingMappingEntity>> captor = ArgumentCaptor.forClass(List.class);
+        verify(mappingRepository).saveAll(captor.capture());
+        List<EmployeeReportingMappingEntity> saved = captor.getValue();
+        assertEquals(2, saved.size());
+        assertSame(existing, saved.get(0));
+        assertEquals(900L, saved.get(0).getMappingId());
+        assertNull(saved.get(1).getMappingId());
+        assertEquals(List.of(101L, 102L), saved.stream().map(EmployeeReportingMappingEntity::getEmployeeId).toList());
+        assertTrue(saved.stream().allMatch(mapping -> Long.valueOf(7L).equals(mapping.getHodUserId())
+                && Long.valueOf(50L).equals(mapping.getManagerEmployeeId())
+                && managerType.equals(mapping.getManagerType())));
+    }
+
+    @Test
+    void assigningManagerDoesNotMoveEmployeeFromAnotherAuthority() {
+        EmployeeEntity manager = employee(50L, "Manager", "EMP050", "INTERNAL", "ACTIVE");
+        EmployeeEntity employee = employee(101L, "Alpha", "EMP101", "INTERNAL", "ACTIVE");
+        EmployeeReportingMappingEntity existing = reportingMapping(900L, 101L, 8L, "OTHER", null);
+        stubValidHodAndEmployees(7L, employee);
+        when(employeeRepository.findById(50L)).thenReturn(Optional.of(manager));
+        when(mappingRepository.findByEmployeeIdIn(List.of(101L))).thenReturn(List.of(existing));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.saveMapping(7L, "OTHER", 50L, null, List.of(101L)));
+
+        assertEquals(8L, existing.getHodUserId());
+        assertNull(existing.getManagerEmployeeId());
+        verify(mappingRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void assigningManagerRejectsEntireBatchIfAnyEmployeeAlreadyHasManager() {
+        EmployeeEntity manager = employee(50L, "Manager", "EMP050", "INTERNAL", "ACTIVE");
+        EmployeeEntity directReport = employee(101L, "Alpha", "EMP101", "INTERNAL", "ACTIVE");
+        EmployeeEntity managed = employee(102L, "Beta", "EMP102", "INTERNAL", "ACTIVE");
+        EmployeeReportingMappingEntity directMapping = reportingMapping(900L, 101L, 7L, "OTHER", null);
+        EmployeeReportingMappingEntity managedMapping = reportingMapping(901L, 102L, 7L, "OTHER", 60L);
+        stubValidHodAndEmployees(7L, directReport, managed);
+        when(employeeRepository.findById(50L)).thenReturn(Optional.of(manager));
+        when(mappingRepository.findByEmployeeIdIn(List.of(101L, 102L)))
+                .thenReturn(List.of(directMapping, managedMapping));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.saveMapping(7L, "OTHER", 50L, null, List.of(101L, 102L)));
+
+        assertNull(directMapping.getManagerEmployeeId());
+        assertEquals(60L, managedMapping.getManagerEmployeeId());
+        verify(mappingRepository, never()).saveAll(anyList());
+    }
+
     @Test
     void inactiveEmployeeCannotBeMapped() {
         EmployeeEntity employee = employee(101L, "Inactive", "EMP101", "INTERNAL", "INACTIVE");
@@ -724,13 +792,60 @@ class ReportingManagerServiceImplTest {
         existing.setEmployeeId(11L);
         when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
         when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.of(hodEmployee));
-        when(mappingRepository.findAll()).thenReturn(List.of(existing));
+        when(mappingRepository.findByEmployeeIdIn(Set.of(5L, 10L, 11L))).thenReturn(List.of(existing));
         when(employeeRepository.findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
                 "INTERNAL", "ACTIVE")).thenReturn(List.of(available, hodEmployee, mapped));
 
-        List<Map<String, Object>> result = service.getInternalEmployees(null, 7L, "OTHER");
+        List<Map<String, Object>> result = service.getInternalEmployees(null, 7L, "OTHER", null);
 
         assertEquals(List.of(10L), result.stream().map(row -> (Long) row.get("id")).toList());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", "OTHER", "STM", "PM"})
+    void employeesWithoutManagerRemainVisibleUnderTheirAuthority(String storedManagerType) {
+        EmployeeEntity authority = employee(5L, "Authority", "EMP005", "INTERNAL", "ACTIVE");
+        EmployeeEntity unassigned = employee(10L, "Alpha", "EMP010", "INTERNAL", "ACTIVE");
+        EmployeeEntity directReport = employee(11L, "Beta", "EMP011", "INTERNAL", "ACTIVE");
+        EmployeeEntity elsewhere = employee(12L, "Elsewhere", "EMP012", "INTERNAL", "ACTIVE");
+        EmployeeEntity managed = employee(13L, "Managed", "EMP013", "INTERNAL", "ACTIVE");
+        EmployeeEntity manager = employee(50L, "Manager", "EMP050", "INTERNAL", "ACTIVE");
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
+        when(employeeRepository.findByUser_Id(7L)).thenReturn(Optional.of(authority));
+        when(employeeRepository.findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
+                "INTERNAL", "ACTIVE")).thenReturn(List.of(authority, unassigned, directReport, elsewhere, managed, manager));
+        when(mappingRepository.findByEmployeeIdIn(Set.of(5L, 10L, 11L, 12L, 13L, 50L))).thenReturn(List.of(
+                reportingMapping(900L, 11L, 7L, storedManagerType, null),
+                reportingMapping(901L, 12L, 8L, "OTHER", null),
+                reportingMapping(902L, 13L, 7L, "OTHER", 60L)));
+
+        List<Map<String, Object>> withoutManager = service.getInternalEmployees(null, 7L, null, null);
+        List<Map<String, Object>> withManager = service.getInternalEmployees(null, 7L, "OTHER", 50L);
+
+        assertEquals(List.of(10L, 11L, 50L), withoutManager.stream().map(row -> (Long) row.get("id")).toList());
+        assertEquals(true, withoutManager.get(1).get("directAuthorityReport"));
+        assertEquals(false, withoutManager.get(1).get("canAssignManager"));
+        assertEquals(List.of(10L, 11L), withManager.stream().map(row -> (Long) row.get("id")).toList());
+        assertEquals(false, withManager.get(0).get("mapped"));
+        assertEquals(true, withManager.get(1).get("mapped"));
+        assertEquals(true, withManager.get(1).get("canAssignManager"));
+        verify(mappingRepository, never()).findAll();
+    }
+
+    @Test
+    void editingStillIncludesEmployeeWithAnAssignedManager() {
+        EmployeeEntity employee = employee(11L, "Beta", "EMP011", "INTERNAL", "ACTIVE");
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user(7L, "HOD")));
+        when(employeeRepository.findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(
+                "INTERNAL", "ACTIVE")).thenReturn(List.of(employee));
+        when(mappingRepository.findByEmployeeIdIn(Set.of(11L)))
+                .thenReturn(List.of(reportingMapping(900L, 11L, 7L, "OTHER", 60L)));
+
+        List<Map<String, Object>> result = service.getInternalEmployees(11L, 7L, "OTHER", 50L);
+
+        assertEquals(List.of(11L), result.stream().map(row -> (Long) row.get("id")).toList());
+        assertEquals(60L, result.get(0).get("mappedManagerEmployeeId"));
     }
 
     @Test
@@ -741,6 +856,17 @@ class ReportingManagerServiceImplTest {
     private void stubValidHodAndEmployees(Long hodUserId, EmployeeEntity... employees) {
         when(userRepository.findById(hodUserId)).thenReturn(Optional.of(user(hodUserId, "HOD")));
         when(employeeRepository.findAllById(any())).thenReturn(List.of(employees));
+    }
+
+    private EmployeeReportingMappingEntity reportingMapping(
+            Long mappingId, Long employeeId, Long authorityUserId, String managerType, Long managerEmployeeId) {
+        EmployeeReportingMappingEntity mapping = new EmployeeReportingMappingEntity();
+        mapping.setMappingId(mappingId);
+        mapping.setEmployeeId(employeeId);
+        mapping.setHodUserId(authorityUserId);
+        mapping.setManagerType(managerType);
+        mapping.setManagerEmployeeId(managerEmployeeId);
+        return mapping;
     }
 
     private User user(Long id, String name) {

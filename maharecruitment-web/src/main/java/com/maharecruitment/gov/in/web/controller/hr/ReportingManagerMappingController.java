@@ -64,9 +64,11 @@ public class ReportingManagerMappingController {
     public ResponseEntity<List<Map<String, Object>>> getInternalEmployees(
             @RequestParam(required = false) Long includeEmployeeId,
             @RequestParam(required = false) Long hodUserId,
-            @RequestParam(required = false) String managerType) {
+            @RequestParam(required = false) String managerType,
+            @RequestParam(required = false) Long managerEmployeeId) {
         return ResponseEntity.ok(
-                reportingManagerService.getInternalEmployees(includeEmployeeId, hodUserId, managerType));
+                reportingManagerService.getInternalEmployees(
+                        includeEmployeeId, hodUserId, managerType, managerEmployeeId));
     }
 
     @GetMapping("/api/mappings")
@@ -107,7 +109,7 @@ public class ReportingManagerMappingController {
     @PostMapping("/saveReportingMapping")
     public String saveReportingMapping(
             @RequestParam Long hodUserId,
-            @RequestParam String managerType,
+            @RequestParam(required = false) String managerType,
             @RequestParam(required = false) Long managerEmployeeId,
             @RequestParam(required = false) Long projectId,
             @RequestParam(required = false) Long mappingId,

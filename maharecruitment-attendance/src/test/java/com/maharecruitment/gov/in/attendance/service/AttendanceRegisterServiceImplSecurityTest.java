@@ -24,6 +24,8 @@ import com.maharecruitment.gov.in.auth.entity.DepartmentRegistrationEntity;
 import com.maharecruitment.gov.in.master.entity.LocationMaster;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeEntity;
 import com.maharecruitment.gov.in.recruitment.entity.EmployeeLocationMappingEntity;
+import com.maharecruitment.gov.in.recruitment.repository.CellReportingAuthorityMappingRepository;
+import com.maharecruitment.gov.in.recruitment.repository.EmployeeCellMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeLocationMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeReportingMappingRepository;
 import com.maharecruitment.gov.in.recruitment.repository.EmployeeRepository;
@@ -49,6 +51,9 @@ class AttendanceRegisterServiceImplSecurityTest {
         ReflectionTestUtils.setField(service, "holidayRepository", holidayRepository);
         ReflectionTestUtils.setField(service, "weekOffWorkingDayRepository", weekOffRepository);
         ReflectionTestUtils.setField(service, "employeeReportingMappingRepository", reportingRepository);
+        ReflectionTestUtils.setField(service, "employeeCellMappingRepository", mock(EmployeeCellMappingRepository.class));
+        ReflectionTestUtils.setField(service, "cellReportingAuthorityMappingRepository",
+                mock(CellReportingAuthorityMappingRepository.class));
         ReflectionTestUtils.setField(service, "leaveApplicationRepository", leaveRepository);
         ReflectionTestUtils.setField(service, "tourApplicationRepository", tourRepository);
         ReflectionTestUtils.setField(service, "manualAttendanceRequestRepository", manualRepository);
@@ -76,7 +81,7 @@ class AttendanceRegisterServiceImplSecurityTest {
         when(dailyRepository.findByEmployeeIdAndAttendanceDate(501L, today)).thenReturn(Optional.empty());
         when(holidayRepository.findByHolidayDateBetween(startDate, endDate)).thenReturn(List.of());
         when(weekOffRepository.findByWorkingDateBetween(startDate, endDate)).thenReturn(List.of());
-        when(reportingRepository.findByEmployeeId(501L)).thenReturn(null);
+        when(reportingRepository.findFirstByEmployeeIdOrderByMappingIdDesc(501L)).thenReturn(Optional.empty());
         when(leaveRepository.findByEmployeeIdAndStatus(501L, "APPROVED")).thenReturn(List.of());
         when(tourRepository.findByEmployeeIdAndStatus(501L, "APPROVED")).thenReturn(List.of());
         when(manualRepository.findByUserIdAndAttendanceDateBetween(501L, startDate, endDate))

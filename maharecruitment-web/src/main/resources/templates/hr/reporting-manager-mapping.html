@@ -186,6 +186,7 @@
                                  <form autocomplete="off" th:action="@{/hr/saveReportingMapping}" method="post" id="mappingForm">
                                  <input autocomplete="off" type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                  <input autocomplete="off" type="hidden" id="mappingId" name="mappingId" value="">
+                                 <input autocomplete="off" type="hidden" id="defaultManagerType" name="managerType" value="OTHER" disabled>
                                  <div class="alert alert-danger reporting-form-message hidden" id="employeeFormMessage" role="alert" tabindex="-1"></div>
                                 
                                 <!-- Step 1: Reporting Authority -->
@@ -229,22 +230,23 @@
 
                                 <!-- Step 2: Manager Type -->
                                 <div class="workflow-panel" id="managerTypeSection">
-                                    <label class="form-label d-block">2. Select Manager Type <span class="text-danger">*</span></label>
+                                    <label class="form-label d-block">2. Select Manager Type <span class="text-muted">(optional)</span></label>
+                                    <button type="button" class="btn btn-sm btn-link px-0 mb-2" id="clearManagerTypeBtn">Clear manager type / Report directly</button>
                                     <div class="option-grid">
                                     <div class="form-check choice-pill hidden" id="hodManagerTypeOption">
-                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeHOD" value="HOD" required>
+                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeHOD" value="HOD">
                                         <label class="form-check-label" for="typeHOD">Head of Department (HOD)</label>
                                     </div>
                                     <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeSTM" value="STM" required>
+                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeSTM" value="STM">
                                         <label class="form-check-label" for="typeSTM">Senior Technical Manager (STM)</label>
                                     </div>
                                     <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typePM" value="PM" required>
+                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typePM" value="PM">
                                         <label class="form-check-label" for="typePM">Project Manager (PM)</label>
                                     </div>
                                     <div class="form-check choice-pill">
-                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeOther" value="OTHER" required>
+                                        <input autocomplete="off" class="form-check-input managerTypeOption" type="radio" name="managerType" id="typeOther" value="OTHER">
                                         <label class="form-check-label" for="typeOther">Other Employees</label>
                                     </div>
                                     </div>
@@ -746,7 +748,9 @@
             }
 
             function resetDependentSelections() {
+                cancelEmployeeRequests();
                 $('input[name="managerType"]').prop('checked', false);
+                $('#defaultManagerType').prop('disabled', true);
                 replaceSelectOptions('#managerSelect', '-- Select Manager --', []);
                 $('#managerSelect').val('').prop('required', false);
                 $('#managerSection, #employeeSection, #submitSection').addClass('hidden');
@@ -766,6 +770,9 @@
                 }
                 if(type === 'STM') {
                     return 'Senior Technical Manager';
+                }
+                if(type === 'OTHER') {
+                    return 'Other Employee';
                 }
                 return 'Manager';
             }
@@ -802,6 +809,11 @@
 
             function selectedAuthorityType() {
                 return $('input[name="authorityType"]:checked').val() || '';
+            }
+
+            function selectedManagerType() {
+                return $('input[name="managerType"]:checked').val()
+                    || ($('#defaultManagerType').prop('disabled') ? '' : 'OTHER');
             }
 
             function populateAuthorityUsers(authorityType, currentSelection) {
@@ -850,6 +862,7 @@
             }
 
             function showDirectAuthorityMapping(authorityType, authorityUserId) {
+                $('#defaultManagerType').prop('disabled', true);
                 $('input[name="managerType"][value="'+authorityType+'"]').prop('checked', true);
                 syncChoiceState();
                 $('#managerSection').addClass('hidden');
@@ -861,6 +874,23 @@
                 loadInternalEmployees({
                     hodUserId: authorityUserId,
                     managerType: authorityType,
+                    includeEmployeeId: editingEmployeeId
+                });
+            }
+
+            function showUnassignedManagerTypeMapping(authorityUserId) {
+                $('input.managerTypeOption').prop('checked', false);
+                $('#defaultManagerType').prop('disabled', false);
+                syncChoiceState();
+                $('#managerSection').addClass('hidden');
+                $('#managerSelect').val('').prop('required', false);
+                updateSearchableSelect('#managerSelect');
+                $('#employeeLabel').html(
+                    '3. Select Internal Employees to Map <span class="text-danger">*</span>');
+                $('#employeeSection, #submitSection').removeClass('hidden');
+                loadInternalEmployees({
+                    hodUserId: authorityUserId,
+                    managerType: 'OTHER',
                     includeEmployeeId: editingEmployeeId
                 });
             }
@@ -881,13 +911,26 @@
                 updateManagerTypeOptions();
             });
 
+            $('#clearManagerTypeBtn').click(function() {
+                resetDependentSelections();
+                syncChoiceState();
+                var authorityUserId = $('#authoritySelect').val();
+                if(authorityUserId) {
+                    showUnassignedManagerTypeMapping(authorityUserId);
+                }
+            });
+
             $('#authoritySelect').change(function() {
                 var authorityType = selectedAuthorityType();
                 var authorityUserId = $(this).val();
                 resetDependentSelections();
                 updateManagerTypeOptions();
-                if(authorityUserId && isDirectManagerAuthority(authorityType)) {
-                    showDirectAuthorityMapping(authorityType, authorityUserId);
+                if(authorityUserId) {
+                    if(isDirectManagerAuthority(authorityType)) {
+                        showDirectAuthorityMapping(authorityType, authorityUserId);
+                    } else {
+                        showUnassignedManagerTypeMapping(authorityUserId);
+                    }
                 }
             });
 
@@ -949,8 +992,10 @@
 
             // 2. On selecting a manager type
             $('.managerTypeOption').change(function() {
+                cancelEmployeeRequests();
                 var type = $(this).val();
                 var authorityUserId = $('#authoritySelect').val();
+                $('#defaultManagerType').prop('disabled', true);
                 $('#managerSelect').val('').prop('required', false);
                 updateSearchableSelect('#managerSelect');
                 $('#managerSection').addClass('hidden');
@@ -969,31 +1014,28 @@
                     return;
                 }
 
-                if(type === 'OTHER') {
-                    $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
-                    $('#employeeSection').removeClass('hidden');
-                    $('#submitSection').removeClass('hidden');
-                    loadInternalEmployees({
-                        hodUserId: authorityUserId,
-                        managerType: 'OTHER',
-                        includeEmployeeId: editingEmployeeId
-                    });
-                    return;
-                }
-
+                $('#managerSection').removeClass('hidden');
+                $('#managerSelect').prop('required', true);
+                $('#managerLabel').html(
+                    '3. Select ' + managerTypeLabel(type)
+                    + ' <span class="text-danger">*</span>');
                 $('#employeeLabel').html(
-                    '3. Select ' + managerTypePluralLabel(type)
-                    + ' to Map <span class="text-danger">*</span>');
-                $('#employeeSection, #submitSection').removeClass('hidden');
-                loadManagerTargets(type);
+                    '4. Select Internal Employees to Map <span class="text-danger">*</span>');
+                loadManagers(type, null);
             });
 
             // 3. On selecting Manager -> Show Employees
             $('#managerSelect').change(function() {
+                cancelEmployeeRequests();
                 if($(this).val()) {
                     $('#employeeSection').removeClass('hidden');
                     $('#submitSection').removeClass('hidden');
-                    loadInternalEmployees({ includeEmployeeId: editingEmployeeId });
+                    loadInternalEmployees({
+                        includeEmployeeId: editingEmployeeId,
+                        hodUserId: $('#authoritySelect').val(),
+                        managerType: selectedManagerType(),
+                        managerEmployeeId: $(this).val()
+                    });
                 } else {
                     $('#employeeSection').addClass('hidden');
                     $('#submitSection').addClass('hidden');
@@ -1019,6 +1061,7 @@
                     populateAuthorityUsers(authorityType, hod);
                     updateManagerTypeOptions();
                     $('input[name="managerType"][value="'+mgrType+'"]').prop('checked', true);
+                    $('#defaultManagerType').prop('disabled', true);
                     syncChoiceState();
 
                     if(isDirectManagerAuthority(authorityType)) {
@@ -1026,17 +1069,8 @@
                         return;
                     }
 
-                    if(mgrType === 'OTHER') {
-                        $('#managerSection').addClass('hidden');
-                        $('#managerSelect').val('').prop('required', false);
-                        updateSearchableSelect('#managerSelect');
-                        $('#employeeLabel').html('3. Select Internal Employees to Map <span class="text-danger">*</span>');
-                        $('#employeeSection, #submitSection').removeClass('hidden');
-                        loadInternalEmployees({
-                            includeEmployeeId: editingEmployeeId,
-                            hodUserId: hod,
-                            managerType: 'OTHER'
-                        });
+                    if(mgrType === 'OTHER' && !mgr) {
+                        showUnassignedManagerTypeMapping(hod);
                         return;
                     }
 
@@ -1064,6 +1098,15 @@
                 });
             });
 
+            function cancelEmployeeRequests() {
+                if(activeEmployeeRequest && activeEmployeeRequest.readyState !== 4) {
+                    activeEmployeeRequest.abort();
+                }
+                if(activeManagerTargetsRequest && activeManagerTargetsRequest.readyState !== 4) {
+                    activeManagerTargetsRequest.abort();
+                }
+            }
+
             function loadInternalEmployees(params) {
                 var requestParams = $.extend({}, params || {});
                 Object.keys(requestParams).forEach(function(key) {
@@ -1076,9 +1119,7 @@
                 $('#employeeListContainer').html(
                     '<div class="text-center p-3 text-muted">Loading employees...</div>');
 
-                if(activeEmployeeRequest && activeEmployeeRequest.readyState !== 4) {
-                    activeEmployeeRequest.abort();
-                }
+                cancelEmployeeRequests();
                 var employeeRequest = $.ajax({
                     url: contextPath + 'hr/api/employees',
                     method: 'GET',
@@ -1127,20 +1168,23 @@
                     var employeeId = emp.id == null ? '' : String(emp.id);
                     var employeeName = escapeHtml(emp.name);
                     var isMapped = emp.mapped === true;
+                    var isLockedMapping = isMapped && emp.canAssignManager !== true;
                     var isCurrentMapping = isMapped
                         && String(emp.mappedAuthorityUserId) === String($('#authoritySelect').val())
                         && String(emp.mappedManagerType).toUpperCase()
-                            === String($('input[name="managerType"]:checked').val()).toUpperCase();
+                            === String(selectedManagerType()).toUpperCase();
                     var mappingStatus = '';
-                    if(isMapped) {
+                    if(emp.directAuthorityReport === true) {
+                        mappingStatus = '<span class="badge bg-info text-dark ms-2">No manager assigned</span>';
+                    } else if(isMapped) {
                         mappingStatus = isCurrentMapping
                             ? '<span class="badge bg-success ms-2">Already mapped</span>'
                             : '<span class="badge bg-secondary ms-2">Already mapped elsewhere</span>';
                     }
 
-                    return '<div class="employee-row'+(isMapped ? ' already-mapped' : '')+'">' +
+                    return '<div class="employee-row'+(isLockedMapping ? ' already-mapped' : '')+'">' +
                            '<input autocomplete="off" class="form-check-input emp-checkbox" type="checkbox" name="employeeIds" value="'+employeeId+'" id="emp_'+employeeId+'"'
-                           +(isMapped ? ' checked disabled' : '')+'>' +
+                           +(isLockedMapping ? ' checked disabled' : '')+'>' +
                            '<label class="form-check-label w-100" style="cursor:pointer;" for="emp_'+employeeId+'">'+employeeName+mappingStatus+'</label>' +
                            '</div>';
                 });
@@ -1150,18 +1194,20 @@
                     $('#emp_' + editingEmployeeId).prop('checked', true).prop('disabled', false);
                     $('.emp-checkbox').not('#emp_' + editingEmployeeId).prop('disabled', true);
                 }
-                updateEmployeeSelectionSummary();
+                filterEmployeeRows();
             }
 
             // Client side search filter
-            $('#employeeSearch').on('input', debounce(function() {
-                var term = $(this).val().toLowerCase();
+            function filterEmployeeRows() {
+                var term = $('#employeeSearch').val().toLowerCase();
                 $('#employeeListContainer .employee-row').each(function() {
                     var employeeName = $(this).find('label').text().toLowerCase();
                     $(this).toggle(employeeName.indexOf(term) > -1);
                 });
                 updateEmployeeSelectionSummary();
-            }, 150));
+            }
+
+            $('#employeeSearch').on('input', debounce(filterEmployeeRows, 150));
 
             // Select / Deselect All
             $('#selectAllBtn').click(function() {
@@ -1188,7 +1234,7 @@
             $('#mappingForm').submit(function(e) {
                 var authorityType = selectedAuthorityType();
                 var authorityUserId = $('#authoritySelect').val();
-                var managerType = $('input[name="managerType"]:checked').val();
+                var managerType = selectedManagerType();
                 if(!authorityType) {
                     showFormMessage('#employeeFormMessage', 'Please select COO, HOD, STM, PM or Other Employee.');
                     e.preventDefault();
@@ -1196,11 +1242,6 @@
                 }
                 if(!authorityUserId) {
                     showFormMessage('#employeeFormMessage', 'Please select a ' + authorityType + ' reporting authority.');
-                    e.preventDefault();
-                    return;
-                }
-                if(!managerType) {
-                    showFormMessage('#employeeFormMessage', 'Please select a manager type.');
                     e.preventDefault();
                     return;
                 }

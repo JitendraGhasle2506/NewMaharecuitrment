@@ -520,7 +520,8 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     public List<Map<String, Object>> getInternalEmployees(
             Long includeEmployeeId,
             Long hodUserId,
-            String managerType) {
+            String managerType,
+            Long managerEmployeeId) {
         if (TYPE_OTHER.equalsIgnoreCase(managerType) && hodUserId == null) {
             throw new IllegalArgumentException(
                     "Please select a reporting authority before selecting Other Employees.");
@@ -534,16 +535,22 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                     .orElse(null);
         }
 
-        Set<Long> mappedEmpIds = mappingRepository.findAll().stream()
-                .map(EmployeeReportingMappingEntity::getEmployeeId)
-                .collect(Collectors.toSet());
+        List<EmployeeEntity> employees = employeeRepository
+                .findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(INTERNAL, ACTIVE);
+        Map<Long, EmployeeReportingMappingEntity> mappingsByEmployeeId =
+                getLatestReportingMappingsByEmployeeId(employees);
         Long excludedAuthorityEmployeeId = authorityEmployeeId;
-        return employeeRepository
-                .findByRecruitmentTypeIgnoreCaseAndStatusIgnoreCaseOrderByFullNameAscEmployeeIdAsc(INTERNAL, ACTIVE)
-                .stream()
-                .filter(e -> !mappedEmpIds.contains(e.getEmployeeId()) || e.getEmployeeId().equals(includeEmployeeId))
+        return employees.stream()
+                .filter(e -> {
+                    EmployeeReportingMappingEntity mapping = mappingsByEmployeeId.get(e.getEmployeeId());
+                    return mapping == null
+                            || e.getEmployeeId().equals(includeEmployeeId)
+                            || reportsDirectlyToAuthority(mapping, hodUserId);
+                })
                 .filter(e -> excludedAuthorityEmployeeId == null
                         || !excludedAuthorityEmployeeId.equals(e.getEmployeeId()))
+                .filter(e -> managerEmployeeId == null
+                        || !managerEmployeeId.equals(e.getEmployeeId()))
                 .sorted(Comparator.comparing(
                         e -> e.getFullName() == null ? "" : e.getFullName(),
                         String.CASE_INSENSITIVE_ORDER))
@@ -556,8 +563,24 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                         displayName += " - " + designationName;
                     }
                     map.put("name", displayName);
+                    EmployeeReportingMappingEntity mapping = mappingsByEmployeeId.get(e.getEmployeeId());
+                    map.put("mapped", mapping != null);
+                    if (mapping != null) {
+                        boolean directReport = reportsDirectlyToAuthority(mapping, hodUserId);
+                        map.put("mappedAuthorityUserId", mapping.getHodUserId());
+                        map.put("mappedManagerType", mapping.getManagerType());
+                        map.put("mappedManagerEmployeeId", mapping.getManagerEmployeeId());
+                        map.put("directAuthorityReport", directReport);
+                        map.put("canAssignManager", directReport && managerEmployeeId != null);
+                    }
                     return map;
                 }).collect(Collectors.toList());
+    }
+
+    private boolean reportsDirectlyToAuthority(EmployeeReportingMappingEntity mapping, Long authorityUserId) {
+        return authorityUserId != null
+                && authorityUserId.equals(mapping.getHodUserId())
+                && mapping.getManagerEmployeeId() == null;
     }
 
     @Override
@@ -691,15 +714,24 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
 
         List<EmployeeReportingMappingEntity> existingMappings =
                 mappingRepository.findByEmployeeIdIn(request.employeeIds());
-        if (!existingMappings.isEmpty()) {
-            throw new IllegalStateException("Employee already has an active reporting mapping.");
+        Map<Long, EmployeeReportingMappingEntity> existingByEmployeeId = new HashMap<>();
+        for (EmployeeReportingMappingEntity existing : existingMappings) {
+            if (request.managerEmployeeId() == null
+                    || !reportsDirectlyToAuthority(existing, request.hodUserId())
+                    || existingByEmployeeId.putIfAbsent(existing.getEmployeeId(), existing) != null) {
+                throw new IllegalStateException("Employee already has an active reporting mapping.");
+            }
         }
 
         List<EmployeeReportingMappingEntity> mappings = request.employeeIds().stream()
-                .map(employeeId -> toEntity(new EmployeeReportingMappingEntity(), request, employeeId))
+                .map(employeeId -> {
+                    EmployeeReportingMappingEntity mapping = existingByEmployeeId.get(employeeId);
+                    return toEntity(mapping == null ? new EmployeeReportingMappingEntity() : mapping,
+                            request, employeeId);
+                })
                 .toList();
         mappingRepository.saveAll(mappings);
-        log.info("Created {} reporting mapping(s) for authority userId={} and managerType={}",
+        log.info("Saved {} reporting mapping(s) for authority userId={} and managerType={}",
                 mappings.size(), request.hodUserId(), request.managerType());
     }
 
@@ -852,6 +884,9 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
                         .orElse(null)
                 : null;
         for (EmployeeEntity employee : employees) {
+            if (normalizedManagerId != null && normalizedManagerId.equals(employee.getEmployeeId())) {
+                throw new IllegalArgumentException("A manager cannot be mapped as their own report.");
+            }
             if (!ACTIVE.equalsIgnoreCase(employee.getStatus())) {
                 throw new IllegalArgumentException("Inactive employees cannot be mapped.");
             }
@@ -924,8 +959,8 @@ public class ReportingManagerServiceImpl implements ReportingManagerService {
     }
 
     private String normalizeManagerType(String managerType) {
-        if (managerType == null) {
-            throw new IllegalArgumentException("A valid manager type is required.");
+        if (managerType == null || managerType.isBlank()) {
+            return TYPE_OTHER;
         }
         String normalized = managerType.trim().toUpperCase(Locale.ROOT);
         if (!TYPE_HOD.equals(normalized)
